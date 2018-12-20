@@ -116,11 +116,11 @@ Example (please note that `nevergrad` needs to be cloned in your working directo
 ```
 python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 ```
-See the [example file](benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`.
+See the [example file](nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`.
 
-Functions used for the experiments must derive from `nevergrad.functions.BaseFunction`. This abstract class helps you set up a description of your function settings through the `get_summary` method,  which is called to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](functions/functionlib.py) and [example.py](benchmark/additional/example.py) for examples.
+Functions used for the experiments must derive from `nevergrad.functions.BaseFunction`. This abstract class helps you set up a description of your function settings through the `get_summary` method,  which is called to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](nevergrad/functions/functionlib.py) and [example.py](nevergrad/benchmark/additional/example.py) for examples.
 
-If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiment.py](benchmark/experiment.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).
+If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiments.py](nevergrad/benchmark/experiments.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).
 
 ## Instrumentation
 
