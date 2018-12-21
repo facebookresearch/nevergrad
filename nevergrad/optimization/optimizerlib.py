@@ -196,7 +196,7 @@ class NoisyBandit(base.Optimizer):
 
 
 @registry.register
-class OptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
+class OptimisticDiscreteOnePlusOne(base.Optimizer):
     """Close to UCB, but new arms are chosen by discrete mutations from the best.
 
     This combines the discrete 1+1 algorithm and bandits."""
@@ -231,7 +231,7 @@ class RecombiningOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
 
 
 @registry.register
-class DoubleFastGAOptimisticDiscreteOnePlusOne(base.Optimizer):
+class DoubleFastGADiscreteOnePlusOne(base.Optimizer):
     """Close to discrete 1+1, but new arms are chosen by double-FastGA mutations from the current best.
     Doerr et al, Fast Genetic Algorithms, 2017
     """
