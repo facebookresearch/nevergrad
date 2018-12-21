@@ -133,7 +133,7 @@ Instrumentation can come in two flavors:
 In both cases, 3 types of variables are provided:
 - `SoftmaxCategorical` (token: `NG_SC`): converts a list of n (unordered) categorial variables into an n dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and somehow `adds noise to the estimation.
 - `OrderedDiscrete` (token: `NG_OD`): converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
-- `Gaussian` (token: `NG_G`): normalizes a n-dimendional variable with independant Gaussian priors (1-dimension per value).
+- `Gaussian` (token: `NG_G`): normalizes a n-dimensional variable with independent Gaussian priors (1-dimension per value).
 
 *Tokens are explained below*
 
@@ -194,7 +194,7 @@ int step_size = 0.1
 // @nevergrad@ step_size = NG_OD(0.1|0.01|0.001)
 ```
 - **prepare the command to execute** that will run your code. Make sure that the last printed line is just a float, which is the value to base the optimization upon. We will be doing minimization here, so this value must decrease for better results.
-- **create an optimization script** in Python3 using `nevergrad`, as shown in the "Optimization" section above. This instrumentation script will be the one runing your code in subprocesses. The function to optimize will be an instance of `nevergrad.instrumentation.FolderFunction`, which you will have set up to run your code:
+- **create an optimization script** in Python3 using `nevergrad`, as shown in the "Optimization" section above. This instrumentation script will be the one running your code in subprocesses. The function to optimize will be an instance of `nevergrad.instrumentation.FolderFunction`, which you will have set up to run your code:
 
 ```python
 from nevergrad.instrumentation import FolderFunction
@@ -225,7 +225,7 @@ Placeholder 0: Value 110.0, from data: [1]
 Some important things to note:
  - using `FolderFunction` argument `clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
  - under the hood, with or without `clean_copy=True`, when calling the function, `FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid deplicating large projects, but they have some drawbacks, see next point ;)
- - one can add a complilation step to `FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
+ - one can add a compilation step to `FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
 
 
 
