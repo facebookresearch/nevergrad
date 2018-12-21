@@ -91,6 +91,28 @@ def hm(x: np.ndarray) -> float:
     return float(np.sum((x**2) * (1.1 + np.cos(1. / x))))
 
 
+@registry.register
+def rosenbrock(x: np.ndarray) -> float:
+    return sum(100.0*(x[1:] - x[:-1]**2.0)**2.0 + (1 - x[:-1])**2.0)
+
+
+@registry.register
+def lunacek(x: np.ndarray) -> float:
+    """ Based on https://www.cs.unm.edu/~neal.holts/dga/benchmarkFunction/lunacek.html."""
+    problemDimensions = len(x)
+    s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
+    mu1 = 2.5
+    mu2 = - np.sqrt(abs((mu1**2 - 1.0) / s))
+    firstSum = 0.0
+    secondSum = 0.0
+    thirdSum = 0.0
+    for i in range(problemDimensions):
+        firstSum += (x[i]-mu1)**2
+        secondSum += (x[i]-mu2)**2
+        thirdSum += 1.0 - np.cos(2*np.pi*(x[i]-mu1))
+    return min(firstSum, 1.0*problemDimensions + secondSum)+10*thirdSum
+
+
 # following functions using discretization should not be used with translation/rotation
 
 
