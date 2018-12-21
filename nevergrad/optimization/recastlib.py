@@ -118,7 +118,6 @@ class BO(recaster.SequentialRecastOptimizer):
                 for j in range(self.dimension):
                     points_dict[str(j)].append(s[j])
             bo.explore(points_dict)
-        # print "n_iter=" + str(1+(self.budget //2))
         assert budget is not None
         assert self.budget is not None
         budget = self.budget - (budget if self.qr != "none" else 0)
