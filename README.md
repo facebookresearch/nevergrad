@@ -251,14 +251,16 @@ pre-commit install
 
 ## Citing
 
+```bibtex
 @misc{nevergrad,
-author = {J. Rapin and O. Teytaud},
-title = {Nevergrad - A gradient-free optimization platform},
-year = {2018},
-publisher = {GitHub},
-journal = {GitHub repository},
-howpublished = {\url{https://github.com/facebookresearch/nevergrad/}},
+    author = {J. Rapin and O. Teytaud},
+    title = {{Nevergrad - A gradient-free optimization platform}},
+    year = {2018},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://GitHub.com/FacebookResearch/Nevergrad}},
 }
+```
 
 
 ## License
