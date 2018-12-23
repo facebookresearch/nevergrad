@@ -7,14 +7,22 @@
 # from distutils.core import setup
 from setuptools import setup
 
-
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
-
-setup(name='nevergrad',
-      version='0.1.0',
-      description='Gradient-free optimization toolbox',
-      author='Facebook AI Research',
-      packages=['nevergrad'],
-      install_requires=requirements,)
+setup(
+    name='nevergrad',
+    version='0.1.0',
+    description='Gradient-free optimization toolbox',
+    author='Facebook AI Research',
+    packages=[
+        'nevergrad',
+        'nevergrad.benchmark',
+        'nevergrad.benchmark.additional',
+        'nevergrad.common',
+        'nevergrad.functions',
+        'nevergrad.instrumentation',
+        'nevergrad.optimization',
+    ],
+    install_requires=requirements,
+)
