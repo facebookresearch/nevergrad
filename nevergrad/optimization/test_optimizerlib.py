@@ -84,7 +84,7 @@ class OptimizerTests(TestCase):
         output = optim.optimize(fitness)
         if name not in self.recommendations.index:
             self.recommendations.loc[name, :] = tuple(output)
-            raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test.')
+            raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
         np.testing.assert_array_almost_equal(output, self.recommendations.loc[name, :], decimal=10,
                                              err_msg="Something has changed, if this is normal, delete "
                                              f"{self._RECOM_FILE} and rerun to update the values")
