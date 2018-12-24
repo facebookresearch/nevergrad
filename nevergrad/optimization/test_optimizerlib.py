@@ -3,11 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import random
 import warnings
+from pathlib import Path
+from unittest import SkipTest
 from unittest import TestCase
 from typing import Type
 import genty
 import numpy as np
+import pandas as pd
 from ..common.typetools import ArrayLike
 from . import base
 from .recaster import FinishedUnderlyingOptimizerWarning
@@ -16,7 +20,10 @@ from .optimizerlib import registry
 
 
 def fitness(x: ArrayLike) -> float:
-    return float(np.sum((np.array(x, copy=False) - np.array([0.5, -0.8]))**2))
+    """Simple quadratic fitness function which can be used with dimension up to 4
+    """
+    x0 = [0.5, -0.8, 0, 4][:len(x)]
+    return float(np.sum((np.array(x, copy=False) - x0)**2))
 
 
 def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, verify_value: bool = True) -> None:
@@ -43,10 +50,44 @@ SLOW = ["NoisyDE", "NoisyBandit"]
 @genty.genty
 class OptimizerTests(TestCase):
 
+    recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
+    _RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
+
+    @classmethod
+    def setUpClass(cls):
+        # load recorded recommendations
+        if cls._RECOM_FILE.exists():
+            cls.recommendations = pd.read_csv(cls._RECOM_FILE, index_col=0)
+
+    @classmethod
+    def tearDownClass(cls):
+        # sort and remove unused names
+        # then update recommendation file
+        names = sorted(x for x in cls.recommendations.index if x in registry)
+        recom = cls.recommendations.loc[names, :]
+        recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
+        recom.to_csv(cls._RECOM_FILE)
+
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
         verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
         check_optimizer(optimizer_cls, budget=300, verify_value=verify)
+
+    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})
+    def test_optimizers_recommendation(self, name, optimizer_cls):
+        if "CMA" in name:
+            raise SkipTest("Not playing nicely with the tests")  # thread problem?
+        np.random.seed(12)
+        if optimizer_cls.recast:
+            random.seed(12)  # may depend on non numpy generator
+        optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
+        output = optim.optimize(fitness)
+        if name not in self.recommendations.index:
+            self.recommendations.loc[name, :] = tuple(output)
+            raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
+        np.testing.assert_array_almost_equal(output, self.recommendations.loc[name, :], decimal=10,
+                                             err_msg="Something has changed, if this is normal, delete "
+                                             f"{self._RECOM_FILE} and rerun to update the values")
 
 
 def test_pso_to_real() -> None:
