@@ -10,9 +10,13 @@ import warnings
 import traceback
 from typing import Dict, Union, Callable, Any, Optional, Iterator
 import numpy as np
+from ..common import decorators
 from ..functions import BaseFunction
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry
+
+
+registry = decorators.Registry()
 
 
 class CallCounter:

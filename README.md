@@ -116,7 +116,7 @@ Example (please note that `nevergrad` needs to be cloned in your working directo
 ```
 python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 ```
-See the [example file](nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`.
+See the [example file](nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`. In this case, please refer to these [guidelines](docs/adding_an_algorithm.md).
 
 Functions used for the experiments must derive from `nevergrad.functions.BaseFunction`. This abstract class helps you set up a description of your function settings through the `get_summary` method,  which is called to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](nevergrad/functions/functionlib.py) and [example.py](nevergrad/benchmark/additional/example.py) for examples.
 
