@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from pathlib import Path
 from unittest import TestCase
 import genty
 import numpy as np
@@ -34,3 +35,10 @@ class UtilsTests(TestCase):
 def test_printed_assert_equal() -> None:
     testing.printed_assert_equal(0, 0)
     np.testing.assert_raises(AssertionError, testing.printed_assert_equal, 0, 1)
+
+
+def test_assert_markdown_links_not_broken() -> None:
+    folder = Path(__file__).parents[2].expanduser().absolute()
+    assert (folder / "README.md").exists(), f"Wrong root folder: {folder}"
+    assert testing._get_all_markdown_links(folder), "There should be at least one hyperlink!"
+    testing.assert_markdown_links_not_broken(folder)

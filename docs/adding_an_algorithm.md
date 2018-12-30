@@ -10,7 +10,7 @@ Implementations are however spread into several files:
 - [optimizerlib.py](../nevergrad/optimization/optimizerlib.py): this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
 - [oneshot.py](../nevergrad/optimization/oneshot.py): this is where one-shot optimizers are implemented
 - [differentialevolution.py](../nevergrad/optimization/differentialevolution.py): this is where evolutionary algorithms are implemteted.
-- [recastlib.py](../nevergrad/optimization/recatlib.py): this is where we implement ask & tell versions of existing Python implementations which do not follow this pattern. The underlying class which helps spawn a subprocess to run the existing implementation into is in [recaster.py](../nevergrad/optimization/recaster.py). Hopefully, you won't need this.
+- [recastlib.py](../nevergrad/optimization/recastlib.py): this is where we implement ask & tell versions of existing Python implementations which do not follow this pattern. The underlying class which helps spawn a subprocess to run the existing implementation into is in [recaster.py](../nevergrad/optimization/recaster.py). Hopefully, you won't need this.
 
 If you implement one new algorithm and if this algorithm is not one-shot/evolutionary/recast, you should implement it into [optimizerlib.py](../nevergrad/optimization/optimizerlib.py). If you implement a whole family of algorithms, you are welcome to create a new corresponding file.
 Still, this structure is not final, it is bound to evolve and you are welcome to amend it.
@@ -87,7 +87,7 @@ If for any reason one of this test is not suitable for your algorithm, we'll dis
 
 ## How to benchmark it
 
-Benchmarks are implemented in two files [experiments.py](../nevergrad/benchmarks/experiments.py) and [frozenexperiments.py](../nevergrad/benchmarks/frozenexperiments.py).
+Benchmarks are implemented in two files [experiments.py](../nevergrad/benchmark/experiments.py) and [frozenexperiments.py](../nevergrad/benchmark/frozenexperiments.py).
 While the former can be freely modified (benchmarks will be regularly added and removed), the latter file implements experiments which should not be modified when adding an algorithm, because they are used in tests, or for reproducibility of published results.
 
 Providing some benchmark results along your pull requests will highlight the interest of your algorithm. It is however not required. For now, there is no standard apprroach for benchmarking your algorithm. You can implement your own benchmark, or copy an existing one and add your algorithm. Feel free to propose other solutions.
@@ -96,4 +96,4 @@ Providing some benchmark results along your pull requests will highlight the int
 
 A benchmark is made of many `Experiment` instances.  An `Experiment` is basically the combination of a test function, and settings for the optimization (optimizer, budget, etc...).
 
-Benchmarks are specified using a generator of `Experiment` instances. See examples in [experiments.py](../nevergrad/benchmarks/experiments.py). If you want to make sure your benchmark is perfectly reproducible, you will need to be careful of properly seeding the functions and/or the experiments.
+Benchmarks are specified using a generator of `Experiment` instances. See examples in [experiments.py](../nevergrad/benchmark/experiments.py). If you want to make sure your benchmark is perfectly reproducible, you will need to be careful of properly seeding the functions and/or the experiments.
