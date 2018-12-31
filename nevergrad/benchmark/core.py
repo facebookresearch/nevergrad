@@ -64,7 +64,7 @@ class BenchmarkChunk:
     name: str
         Name of the benchmark
     repetitions: int
-        Number of repetitions to perform on the benchmar
+        Number of repetitions to perform on the benchmark
     seed: int
         A seed for the experiment plan (if seedable)
     cap_index: int
@@ -157,7 +157,7 @@ def _submit_jobs(experiment_name: str, num_workers: int = 1, seed: Optional[int]
         number of workers onto which the jobs will be distributed
     seed: int
         a seed for the experiment plan (if seedable)
-    exector: Executor-like object
+    executor: Executor-like object
         an object such as concurrent.futures.ThreadPoolExecutor for running experiments in parallel
     print_function: Callable
         a function to print at the end of each experiment (for custom logging)
@@ -195,7 +195,7 @@ def compute(experiment_name: str, num_workers: int = 1, seed: Optional[int] = No
         number of workers onto which the jobs will be distributed
     seed: int
         a seed for the experiment plan (if seedable)
-    exector: Executor-like object
+    executor: Executor-like object
         an object such as concurrent.futures.ThreadPoolExecutor for running experiments in parallel
     print_function: Callable
         a function to print at the end of each experiment (for custom logging)

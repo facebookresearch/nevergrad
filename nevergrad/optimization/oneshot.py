@@ -210,7 +210,7 @@ class LargeHaltonSearch(OneShotOptimizer):
     """Larger scale Halton search.
 
     This corresponds to Halton, but pushing points closer to boundaries. This is in case
-    exterme values are more likely to be useful.
+    extreme values are more likely to be useful.
     """
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -389,7 +389,7 @@ class LargeScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
 
 @registry.register
 class SmallHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact oppposite of the version with "Large" instead of "Small"."""
+    """Exact opposite of the version with "Large" instead of "Small"."""
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
@@ -403,7 +403,7 @@ class SmallHaltonSearchPlusMiddlePoint(OneShotOptimizer):
 
 @registry.register
 class SmallScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact oppposite of the version with "Large" instead of "Small"."""
+    """Exact opposite of the version with "Large" instead of "Small"."""
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
@@ -417,7 +417,7 @@ class SmallScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
 
 @registry.register
 class SmallHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact oppposite of the version with "Large" instead of "Small"."""
+    """Exact opposite of the version with "Large" instead of "Small"."""
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
@@ -431,7 +431,7 @@ class SmallHammersleySearchPlusMiddlePoint(OneShotOptimizer):
 
 @registry.register
 class SmallScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact oppposite of the version with "Large" instead of "Small"."""
+    """Exact opposite of the version with "Large" instead of "Small"."""
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)

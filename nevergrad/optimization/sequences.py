@@ -109,7 +109,7 @@ class RandomSampler(Sampler):
 class HaltonPermutationGenerator:
     """Provides a light-memory access to a possibly huge list of permutations
     (at the cost of being slightly slower)
-    """  # the bootleneck here is vdc anyway
+    """  # the bottleneck here is vdc anyway
 
     def __init__(self, dimension: int, scrambling: bool = False) -> None:
         self.dimension = dimension

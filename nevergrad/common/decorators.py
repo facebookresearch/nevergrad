@@ -32,7 +32,7 @@ class Registry(dict):
         return obj
 
     def register_with_info(self, **info: Any) -> Callable:
-        """Decorator for registring a function and information about it
+        """Decorator for registering a function and information about it
         """
         return functools.partial(self.register, info=info)
 

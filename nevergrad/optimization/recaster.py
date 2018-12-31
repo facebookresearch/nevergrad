@@ -62,7 +62,7 @@ class _MessagingThread(threading.Thread):
 
     Note
     ----
-    This thread must be overlayed into another MessagingThread  because:
+    This thread must be overlaid into another MessagingThread  because:
     - the threading part should hold no reference from outside (otherwise the destructors may wait each other)
     - the destructor cannot be implemented, hence there is no way to stop the thread automatically
     """
@@ -167,7 +167,7 @@ class RecastOptimizer(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget, num_workers=num_workers)
-        self._messaging_thread: Optional[MessagingThread] = None  # instanciate at runtime
+        self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
     def get_optimization_function(self) -> Callable[[Callable], ArrayLike]:
@@ -236,7 +236,7 @@ class RecastOptimizer(base.Optimizer):
         return self.current_bests["pessimistic"].x
 
     def __del__(self) -> None:
-        # explicitely ask the thread to stop (better be safe :))
+        # explicitly ask the thread to stop (better be safe :))
         if self._messaging_thread is not None:
             self._messaging_thread.stop()
 

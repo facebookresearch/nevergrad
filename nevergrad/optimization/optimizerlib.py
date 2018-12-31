@@ -23,7 +23,7 @@ from .recastlib import *
 
 @registry.register
 class OnePlusOne(base.Optimizer):
-    """Simple but sometimes powerfull optimization algorithm.
+    """Simple but sometimes powerful optimization algorithm.
 
     We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
@@ -54,7 +54,7 @@ class CauchyOnePlusOne(OnePlusOne):
 
     Many papers use Cauchy mutations, maybe the first one was
     X. Yao, Y. Liu and G. Lin, Evolutionary Programing Made Faster, IEEE
-    Transacations on Evolutionary Computation, vol. 3, 82-102, July 1999.
+    Transactions on Evolutionary Computation, vol. 3, 82-102, July 1999.
     """
 
     def _internal_ask(self) -> base.ArrayLike:

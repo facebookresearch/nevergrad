@@ -54,7 +54,7 @@ def create_seed_generator(seed: Optional[int]) -> Iterator[Optional[int]]:
 
 
 class Experiment:
-    """Specificies an experiment which can be run in benchmarks.
+    """Specifies an experiment which can be run in benchmarks.
 
     Parameters
     ----------
@@ -73,7 +73,7 @@ class Experiment:
     def __init__(self, function: BaseFunction, optimizer_name: str, budget: int, num_workers: int = 1, seed: Optional[int] = None) -> None:
         assert isinstance(function, BaseFunction), "All experiment functions should derive from BaseFunction"
         self.function = function
-        self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatible
+        self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         assert optimizer_name in optimizer_registry, f"{optimizer_name} is not registered"
         self._optimizer_parameters = {"optimizer_name": optimizer_name, "num_workers": num_workers, "budget": budget}
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
@@ -87,9 +87,9 @@ class Experiment:
     def is_incoherent(self) -> bool:
         """Flags settings which are known to be impossible to process.
         Currently, this means we flag:
-        - no_parallelizaiton optimizers for num_workers > 1
+        - no_parallelization optimizers for num_workers > 1
         """
-        # flag no_parallelizaiton when num_workers greater than 1
+        # flag no_parallelization when num_workers greater than 1
         optimizer = optimizer_registry[self._optimizer_parameters["optimizer_name"]]
         return optimizer.no_parallelization and bool(self._optimizer_parameters["num_workers"] > 1)  # type: ignore
 
@@ -123,7 +123,7 @@ class Experiment:
             np.random.seed(self.seed)
             random.seed(self.seed)
         budget, num_workers, optimizer_name = [self._optimizer_parameters[x] for x in ["budget", "num_workers", "optimizer_name"]]
-        # optimizer instanciation can be slow and is done only here to make xp iterators very fast
+        # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         optimizer = optimizer_registry[optimizer_name](dimension=self.function.dimension, budget=budget, num_workers=num_workers)
         assert optimizer.budget is not None, "A budget must be provided"
         assert optimizer.dimension == self.function.dimension
