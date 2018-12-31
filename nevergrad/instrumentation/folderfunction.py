@@ -7,7 +7,7 @@ from typing import List, Union, Optional, Any
 from pathlib import Path
 import numpy as np
 from ..instrumentation.utils import CommandFunction
-from .instanciate import InstrumentizedFolder
+from .instantiate import InstrumentizedFolder
 
 
 class FolderFunction:
@@ -27,7 +27,7 @@ class FolderFunction:
         whether to print the run command and from where it is run.
     clean_copy: bool
         whether to create an initial clean temporary copy of the folder in order to avoid
-        versionning problems (instanciations are lightweighted symlinks in any case)
+        versioning problems (instantiations are lightweight symlinks in any case)
     extension: tuple
         list of extensions for files to parametrize (files with dftokens)
 
@@ -37,8 +37,8 @@ class FolderFunction:
 
     Note
     ----
-    By default, postprocessings attribute holds a function which recovers the last line
-    and converts it to float. The sequence of postprocessings can however be tempered
+    By default, the postprocessing attribute holds a function which recovers the last line
+    and converts it to float. The sequence of postprocessing can however be tampered
     with directly in order to change it
 
     Caution
@@ -46,7 +46,7 @@ class FolderFunction:
         The clean copy is generally located in /tmp and may not be accessible for
         computation in a cluster. You may want to create a clean copy yourself
         in the folder of your choice, or set the the TemporaryDirectoryCopy class
-        (located in instrumentation.instanciate) CLEAN_COPY_DIRECTORY environment
+        (located in instrumentation.instantiate) CLEAN_COPY_DIRECTORY environment
         variable to a shared directory
     """
 
@@ -66,7 +66,7 @@ class FolderFunction:
         return self.instrumentized_folder.dimension
 
     def __call__(self, parameters: np.ndarray) -> Any:
-        with self.instrumentized_folder.instanciate(parameters) as folder:
+        with self.instrumentized_folder.instantiate(parameters) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")
             output: Any = CommandFunction(self.command, cwd=folder.parent)()

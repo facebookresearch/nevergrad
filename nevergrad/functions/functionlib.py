@@ -13,7 +13,7 @@ from ..common import tools
 
 
 class ArtificialFunction(BaseFunction):
-    """Aritificial function object. This allows the creation of functions with different
+    """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
     Parameters
@@ -40,13 +40,13 @@ class ArtificialFunction(BaseFunction):
 
     Example
     -------
-    >>> func = ArtifialFunction("sphere", 5, noise_level=.1)
+    >>> func = ArtificialFunction("sphere", 5, noise_level=.1)
     >>> x = [1, 2, 1, 0, .5]
     >>> func(x)  # returns a float
     >>> func(x)  # returns a different float since the function is noisy
     >>> func.oracle_call(x)   # returns a float
     >>> func.oracle_call(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
-    >>> func2 = ArtifialFunction("sphere", 5, noise_level=.1)
+    >>> func2 = ArtificialFunction("sphere", 5, noise_level=.1)
     >>> func2.oracle_call(x)   # returns a different float than before, because a random translation is applied
 
     Note
@@ -55,7 +55,7 @@ class ArtificialFunction(BaseFunction):
       Its value is useless_variables + num_blocks * block_dimension
     - The blocks are chosen with random sorted indices (blocks do not overlap)
     - A random translation is always applied to the function at initialization, so that
-      instanciating twice the functions will give 2 different functions (unless you use
+      instantiating twice the functions will give 2 different functions (unless you use
       seeding)
     """
 

@@ -32,7 +32,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     one would call provide_recommendation for the estimated optimum.
 
     This class is abstract, it provides _internal equivalents for the 3 main functions,
-    among which at least _internal_suggest_exploration must be overriden.
+    among which at least _internal_suggest_exploration must be overridden.
 
     Each optimizer instance should be used only once, with the initial provided budget
 
@@ -43,7 +43,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     budget: int/None
         number of allowed evaluations
     num_workers: int
-        number of evaluations which will be run in parallell at once
+        number of evaluations which will be run in parallel at once
     """
     # pylint: disable=too-many-locals
 

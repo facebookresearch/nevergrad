@@ -24,7 +24,7 @@ LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file
 
 def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
     """Utility for copying the tree structure of a folder and symlinking all files
-    This can help creating lightweight copies of a project, for instanciating several
+    This can help creating lightweight copies of a project, for instantiating several
     copies with different parameters.
     """
     folder, shadow_folder = (Path(x).expanduser().absolute() for x in (folder, shadow_folder))
@@ -91,24 +91,24 @@ class InstrumentizedFile(utils.Instrument):
 
 
 class InstrumentizedFolder:
-    """Folder with instrumentation tokens, which can be instanciated.
+    """Folder with instrumentation tokens, which can be instantiated.
 
     Parameters
     ----------
     folder: str/Path
-        the instrumentized folder to instanciante
+        the instrumentized folder to instantiate
     clean_copy: bool
         whether to create an initial clean temporary copy of the folder in order to avoid
-        versionning problems (instanciations are lightweighted symlinks in any case).
+        versioning problems (instantiations are lightweight symlinks in any case).
     extensions: list
-        extensions of the instrumentized files which must be instanciated
+        extensions of the instrumentized files which must be instantiated
 
     Caution
     -------
         The clean copy is generally located in /tmp and may not be accessible for
         computation in a cluster. You may want to create a clean copy yourself
         in the folder of your choice, or set the the TemporaryDirectoryCopy class
-        (located in instrumentation.instanciate) CLEAN_COPY_DIRECTORY environment
+        (located in instrumentation.instantiate) CLEAN_COPY_DIRECTORY environment
         variable to a shared directory
     """
 
@@ -137,22 +137,22 @@ class InstrumentizedFolder:
     def dimension(self) -> int:
         return sum(i.dimension for i in self.instrumentized_files)
 
-    def instanciate_to_folder(self, data: np.ndarray, outfolder: Union[Path, str]) -> None:
+    def instantiate_to_folder(self, data: np.ndarray, outfolder: Union[Path, str]) -> None:
         outfolder = Path(outfolder).expanduser().absolute()
-        assert outfolder != self.folder, "Do not instanciate on same folder!"
+        assert outfolder != self.folder, "Do not instantiate on same folder!"
         symlink_folder_tree(self.folder, outfolder)
-        texts = utils.process_instruments(self.instrumentized_files, data)  # instanciable files have same pattern as token
-        for instanciable, text in zip(self.instrumentized_files, texts):
-            inst_fp = outfolder / instanciable.filepath.relative_to(self.folder)
-            os.remove(str(inst_fp))  # remove symlink to avoid writting in original dir
+        texts = utils.process_instruments(self.instrumentized_files, data)  # instantiable files have same pattern as token
+        for instantiable, text in zip(self.instrumentized_files, texts):
+            inst_fp = outfolder / instantiable.filepath.relative_to(self.folder)
+            os.remove(str(inst_fp))  # remove symlink to avoid writing in original dir
             with inst_fp.open("w") as f:
                 f.write(text)
 
     @contextlib.contextmanager
-    def instanciate(self, data: np.ndarray) -> Generator[Path, None, None]:
+    def instantiate(self, data: np.ndarray) -> Generator[Path, None, None]:
         with tempfile.TemporaryDirectory() as tempfolder:
             subtempfolder = Path(tempfolder) / self.folder.name
-            self.instanciate_to_folder(data, subtempfolder)
+            self.instantiate_to_folder(data, subtempfolder)
             yield subtempfolder
 
     def get_summary(self, data: np.ndarray) -> str:

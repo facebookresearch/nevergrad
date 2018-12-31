@@ -47,11 +47,11 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--cap_index', type=int, default=None,
                         help="Stop after generationg/running settings #cap_index")
     parser.add_argument('--output', type=str, default=None,
-                        help="Output path for the CSV file (default: <experiment>.csv). Existint files are appended")
+                        help="Output path for the CSV file (default: <experiment>.csv). Existing files are appended")
     parser.add_argument('--imports', type=str, default=None,
                         help="Comma-separated list of file paths with additional experiment(s) and/or optimizer(s) definitions")
     parser.add_argument('--num_workers', type=int, default=1,
-                        help="Numbers of workers to use for the computation (splits the job in chuncks)")
+                        help="Numbers of workers to use for the computation (splits the job in chunks)")
     parser.add_argument('--repetitions', type=int, default=1,
                         help="Number of repetitions to perform for the experiment plan (seeds will be incremented)")
     parser.add_argument('--plot', nargs="?", default=False, const=True,

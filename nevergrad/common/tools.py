@@ -21,7 +21,7 @@ def pairwise(iterable: Iterable) -> Iterator[Tuple[Any, Any]]:
 
     Note
     ----
-    Nothing will be returned if lenght if iterator is strictly less
+    Nothing will be returned if length of iterator is strictly less
     than 2.
     """   # From itertools documentation
     a, b = itertools.tee(iterable)
@@ -31,7 +31,7 @@ def pairwise(iterable: Iterable) -> Iterator[Tuple[Any, Any]]:
 
 def grouper(iterable: Iterable, n: int, fillvalue: Optional[Any] = None) -> Iterator[List]:
     """Collect data into fixed-length chunks or blocks
-    Copied from itertools recipe documention
+    Copied from itertools recipe documentation
     Example: grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     """
     args = [iter(iterable)] * n
