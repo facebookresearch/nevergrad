@@ -439,3 +439,46 @@ class PSO(base.Optimizer):
         output = stats.norm.ppf(x)
         assert not any(x for x in np.isnan(output)), f"Encountered NaN value {output}"
         return output
+
+
+@registry.register
+class SPSA(base.Optimizer):
+    no_parallelization = True
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._rng = np.random.RandomState()
+        self.init = True
+        self.idx = 0
+        self.delta = self.ym = self.yp = None
+        self.t = np.zeros(self.dimension)
+        self.avg = np.zeros(self.dimension)
+        return
+
+    @staticmethod
+    def ck(k) -> float:
+        return 1e-1 / (k//2 + 1)**0.101
+
+    @staticmethod
+    def ak(k) -> float:
+        return 1e-5 / (k//2 + 1 + 10)**0.602
+
+    def _internal_ask(self) -> base.ArrayLike:
+        k = self.idx
+        if k % 2 == 0:
+            if not self.init:
+                self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta
+                self.avg += (self.t - self.avg) / (k // 2 + 1)
+            self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
+            return self.t - self.ck(k) * self.delta
+        return self.t + self.ck(k) * self.delta
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        setattr(self, ('ym' if self.idx % 2 == 0 else 'yp'), value)
+        self.idx += 1
+        if self.init and self.yp is not None and self.ym is not None:
+            self.init = False
+        return
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.avg

@@ -63,3 +63,20 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
             for budget in [30, 100, 3000, 10000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+
+@registry.register
+def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems. This benchmark is based on the noise benchmark.
+    """
+    seedg = create_seed_generator(seed)
+    optims = sorted(x for x, y in optimization.registry.items()
+                    if (any(e in x for e in "TBPSA SPSA".split())
+                        and "iscr" not in x))
+    for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
+        for optim in optims:
+            for rotation in [True, False]:
+                for name in ["sphere", "sphere4", "cigar"]:
+                    function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
+                    yield Experiment(function, optim, budget=budget, seed=next(seedg))
