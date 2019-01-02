@@ -59,7 +59,7 @@ An *ask and tell* interface is also available. The 3 key methods for this interf
 - `ask`: suggest a point on which to evaluate the function to optimize.
 - `tell`: for updated the optimizer with the value of the function at a given point.
 - `provide_recommendation`: returns the point the algorithms considers the best.
-For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK.
+For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute `no_parallelization=True` however do not support this.
 
 Here is a simpler example in the sequential case (this is what happens in the `optimize` method for `num_workers=1`):
 ```python

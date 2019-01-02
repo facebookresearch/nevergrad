@@ -43,7 +43,7 @@ Dict[str, Point]
 The key string is either `optimistic` or `pessimistic`, and the `Point` value is a `Value` with an additional `x` attribute, recording the location of the point.
 
 
-### Methods
+### Methods and attributes
 
 4 methods are designed to be overriden:
 - `__init__`: for the initialization of your algorithm
@@ -51,6 +51,7 @@ The key string is either `optimistic` or `pessimistic`, and the `Point` value is
 - `_internal_tell`: to update your algorithm with the new point. The default `tell` method calls this internal method after updating the archive (see paragraph above), please do not override it.
 - `_internal_provide_recommendation`: to provide the final recommendation. By default, the recommendation is the pessimistic best point.
 
+If the algorithm is not able to handle parallelization (if `ask` cannot be called multiple times consecutively), the `no_parallelization` **class attribute** must be set to `True`.
 
 
 ### Seeding
