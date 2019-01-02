@@ -51,7 +51,7 @@ def minidoe(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS performs best, followed by QR and random
     # nearly equally (Hammersley better than random, Halton not clearly; scrambling improves results).
-    # prepare list of parameters to sweep for independant variables
+    # prepare list of parameters to sweep for independent variables
     names = ["sphere"]
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)

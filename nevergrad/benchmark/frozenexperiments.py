@@ -34,7 +34,7 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def small_discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independant variables
+    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["hardonemax5", "hardjump5", "hardleadingones5"]
     optims = sorted(x for x, y in optimization.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x
@@ -92,7 +92,7 @@ def noise(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def dim10_smallbudget(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independant variables
+    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -108,7 +108,7 @@ def dim10_smallbudget(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def dim10_select_two_features(seed: Optional[int] = None) -> Iterator[Experiment]:     # 2 variables matter - Scrambled Hammersley rules.
-    # prepare list of parameters to sweep for independant variables
+    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -124,7 +124,7 @@ def dim10_select_two_features(seed: Optional[int] = None) -> Iterator[Experiment
 
 @registry.register
 def dim10_select_one_feature(seed: Optional[int] = None) -> Iterator[Experiment]:    # One and only one variable matters - LHS wins.
-    # prepare list of parameters to sweep for independant variables
+    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -140,7 +140,7 @@ def dim10_select_one_feature(seed: Optional[int] = None) -> Iterator[Experiment]
 
 @registry.register
 def doe_dim4(seed: Optional[int] = None) -> Iterator[Experiment]:  # Here, QR performs best, then Random, then LHS, then Cauchy.
-    # prepare list of parameters to sweep for independant variables
+    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]  # n for n in ArtificialFunction.list_sorted_function_names() if "sphere" in n]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
