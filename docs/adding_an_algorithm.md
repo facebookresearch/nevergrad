@@ -62,11 +62,11 @@ Seeding has an important part for the significance and reproducibility of the al
 - we can seed anyway from **outside** when we need it. This is what happens in the benchmarks: in this case we do want each independent run to be repeatable.
 
 For consistency and simplicity's sake, please prefer `numpy`'s random generator over the standard one.
-Also, we consider that instanciating a random generator for each optimizer and using it afterwards is a good practice:
+Also, you may instanciate a random generator for each optimizer and using it afterwards. This way it makes the optimizer independent of other uses of the default random generator.
+Still, please seed it with the standard numpy random generator so that seeding the standard generator will produce deterministic outputs:
 ```python
-self._rng = np.ranndom.RandomState()
+self._rng = np.ranndom.RandomState(np.random.randint(2**32))
 ```
-Indeed, it makes the optimizer independent of other uses of the default random generator. However, this is not a constraint, and most algorithms currently do not follow such practice.
 
 A unit tests automatically makes sure that all optimizers have repeatable bvehaviors on a simple test case when seeded from outside (see below).
 
