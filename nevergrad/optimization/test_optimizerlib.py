@@ -27,7 +27,8 @@ def fitness(x: ArrayLike) -> float:
 
 
 def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, verify_value: bool = True) -> None:
-    num_workers = 1 if optimizer_cls.recast else 2  # recast optimizer do not support num_workers > 1
+    # recast optimizer do not support num_workers > 1, and respect no_parallelization.
+    num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
     optimizer = optimizer_cls(dimension=2, budget=budget, num_workers=num_workers)
     with warnings.catch_warnings():
         # benchmark do not need to be efficient
@@ -44,7 +45,7 @@ def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, veri
             min(v.pessimistic_confidence_bound for v in archive.values()))
 
 
-SLOW = ["NoisyDE", "NoisyBandit"]
+SLOW = ["NoisyDE", "NoisyBandit", "SPSA"]
 
 
 @genty.genty
