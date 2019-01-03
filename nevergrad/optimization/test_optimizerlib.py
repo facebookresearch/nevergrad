@@ -27,7 +27,7 @@ def fitness(x: ArrayLike) -> float:
 
 
 def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, verify_value: bool = True) -> None:
-    num_workers = 1 if optimizer_cls.recast else 2  # recast optimizer do not support num_workers > 1
+    num_workers = 1 if optimizer_cls.no_parallelization else 2
     optimizer = optimizer_cls(dimension=2, budget=budget, num_workers=num_workers)
     with warnings.catch_warnings():
         # benchmark do not need to be efficient
@@ -86,8 +86,8 @@ class OptimizerTests(TestCase):
             self.recommendations.loc[name, :] = tuple(output)
             raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
         np.testing.assert_array_almost_equal(output, self.recommendations.loc[name, :], decimal=10,
-                                             err_msg="Something has changed, if this is normal, delete "
-                                             f"{self._RECOM_FILE} and rerun to update the values")
+                                             err_msg="Something has changed, if this is normal, delete the following "
+                                             f"file and rerun to update the values:\n{self._RECOM_FILE}")
 
 
 def test_pso_to_real() -> None:
