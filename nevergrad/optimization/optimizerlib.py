@@ -460,7 +460,8 @@ class SPSA(base.Optimizer):
         self._rng = np.random.RandomState(np.random.randint(2**32))
         self.init = True
         self.idx = 0
-        self.delta = self.ym = self.yp = None
+        self.delta = float('nan')
+        self.ym = self.yp = None
         self.t = np.zeros(self.dimension)
         self.avg = np.zeros(self.dimension)
         # Set A, a, c according to the practical implementation
@@ -489,7 +490,7 @@ class SPSA(base.Optimizer):
         k = self.idx
         if k % 2 == 0:
             if not self.init:
-                self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta
+                self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta # type: ignore
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
             self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
             return self.t - self.ck(k) * self.delta
