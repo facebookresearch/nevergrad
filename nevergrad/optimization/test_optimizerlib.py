@@ -55,13 +55,13 @@ class OptimizerTests(TestCase):
     _RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         # load recorded recommendations
         if cls._RECOM_FILE.exists():
             cls.recommendations = pd.read_csv(cls._RECOM_FILE, index_col=0)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         # sort and remove unused names
         # then update recommendation file
         names = sorted(x for x in cls.recommendations.index if x in registry)
@@ -74,8 +74,8 @@ class OptimizerTests(TestCase):
         verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
         check_optimizer(optimizer_cls, budget=300, verify_value=verify)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})
-    def test_optimizers_recommendation(self, name, optimizer_cls):
+    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
+    def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
         if "CMA" in name:
             raise SkipTest("Not playing nicely with the tests")  # thread problem?
         np.random.seed(12)

@@ -71,6 +71,10 @@ self._rng = np.ranndom.RandomState(np.random.randint(2**32))
 A unit tests automatically makes sure that all optimizers have repeatable bvehaviors on a simple test case when seeded from outside (see below).
 
 
+### About type hints
+
+We have used [type hints](https://docs.python.org/3/library/typing.html) throughout `nevergrad` to make it more robust, and the continuous integration will check that everything is correct when pull requests are submitted. However, **we do not want typing to be an annoyance** for contributors who do not care about it, so please feel entirely free to use `# type: ignore` on each line the continuous integration will flag as incorrect, so that the errors disappear. If we consider it useful to have correct typing, we will update the code after your pull request is merged.
+
 ## How to test it
 
 You are welcome to add tests if you want to make sure your implementation is correct. It is however not required since some tests are run on all registered algorithms. They will test two features:
