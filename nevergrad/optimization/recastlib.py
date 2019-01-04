@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict, List
+from typing import Optional, Callable, Dict, List, Any
 import numpy as np
 from bayes_opt import BayesianOptimization
 from scipy import optimize as scipyoptimize
@@ -71,12 +71,10 @@ class SQP(ScipyMinimizeBase):
 
 @registry.register
 class BO(recaster.SequentialRecastOptimizer):
-    def __init__(self, dimension, budget=None, num_workers=1):
-        super(BO, self).__init__(dimension, budget=budget, num_workers=num_workers)
-        self.qr = "none"
 
-    def _dirty_optimization(self, objective_function, num_workers):
-        return self._internal_optimize(objective_function, num_workers)
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.qr = "none"
 
     def get_optimization_function(self) -> Callable:
         # create a different sub-instance, so that the current instance is not referenced by the thread
@@ -86,10 +84,11 @@ class BO(recaster.SequentialRecastOptimizer):
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
 
-        def my_obj(**kwargs):
+        def my_obj(**kwargs: Any) -> float:
             v = [stats.norm.ppf(kwargs[str(i)]) for i in range(self.dimension)]
             v = [min(max(v_, -100), 100) for v_ in v]
             return -objective_function(v)   # We minimize!
+
         bounds = {}
         for i in range(self.dimension):
             bounds[str(i)] = (0., 1.)
@@ -131,27 +130,31 @@ class BO(recaster.SequentialRecastOptimizer):
 
 @registry.register
 class RBO(BO):
-    def __init__(self, dimension, budget=None, num_workers=1):
-        super(RBO, self).__init__(dimension, budget=budget, num_workers=num_workers)
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.qr = "r"
 
 
 @registry.register
 class QRBO(BO):
-    def __init__(self, dimension, budget=None, num_workers=1):
-        super(QRBO, self).__init__(dimension, budget=budget, num_workers=num_workers)
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.qr = "qr"
 
 
 @registry.register
 class MidQRBO(BO):
-    def __init__(self, dimension, budget=None, num_workers=1):
-        super(MidQRBO, self).__init__(dimension, budget=budget, num_workers=num_workers)
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.qr = "mqr"
 
 
 @registry.register
 class LBO(BO):
-    def __init__(self, dimension, budget=None, num_workers=1):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super(LBO, self).__init__(dimension, budget=budget, num_workers=num_workers)
         self.qr = "lhs"

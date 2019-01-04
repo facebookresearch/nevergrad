@@ -70,7 +70,7 @@ def test_remove_errors() -> None:
     assert isinstance(output, plotting.tools.Selector)
 
 
-def test_make_style_generator():
+def test_make_style_generator() -> None:
     num = 364
     gen = plotting._make_style_generator()
     output = [next(gen) for _ in range(num)]
