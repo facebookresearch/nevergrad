@@ -37,7 +37,6 @@ class BaseFunction(abc.ABC):
         assert dimension > 0
         assert isinstance(dimension, int)
         self._dimension = dimension
-        print("getting", transform)
         self._transform = transform
         self._noise_level = noise_level
         self._descriptors: Dict[str, Any] = {}
