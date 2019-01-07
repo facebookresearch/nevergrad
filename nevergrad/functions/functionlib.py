@@ -85,8 +85,8 @@ class ArtificialFunction(BaseFunction):
         info = corefuncs.registry.get_info(self._parameters["name"])
         self._only_index_transform = info.get("no_transfrom", False)
         # add descriptors
-        self.add_descriptors(**self._parameters, useful_dimensions=block_dimension * num_blocks,
-                             discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
+        self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
+                                 discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
         # transforms are initialized at runtime to avoid slow init
 
     @staticmethod
