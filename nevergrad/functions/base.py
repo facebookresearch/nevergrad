@@ -30,7 +30,7 @@ class BaseFunction(abc.ABC):
     - transforms must be registered through the "register_transform" class method before instanciation.
     """
 
-    _TRANSFORMS: Dict[str, Callable[["BaseFunction", np.ndarray], np.ndarray]] = {}
+    _TRANSFORMS: Dict[str, Callable[[Any, np.ndarray], np.ndarray]] = {}  # Any should be the current class (but typing would get messy)
 
     def __init__(self, dimension: int, noise_level: float = 0., transform: Optional[str] = None) -> None:
         assert noise_level >= 0, "Noise level must be greater or equal to 0"
@@ -65,13 +65,19 @@ class BaseFunction(abc.ABC):
         """
         return dict(self._descriptors)  # Avoid external modification
 
+    def transform(self, x: np.ndarray) -> np.ndarray:
+        """Transform the input to another function specific domain.
+        """
+        if self._transform is not None:
+            x = self._TRANSFORMS[self._transform](self, x)
+        return x
+
     def __call__(self, x: np.ndarray) -> float:
         """Returns the output of the function,
         after adding noise if noise_level > 0 and transforming the data
         Only overload this function if you want to change the noise pattern
         """
-        if self._transform is not None:
-            x = self._TRANSFORMS[self._transform](self, x)
+        x = self.transform(x)
         noise_level = self._noise_level
         fx = self.oracle_call(x)
         if noise_level:
