@@ -22,19 +22,15 @@ class CustomFunction(BaseFunction):
     def __init__(self, offset):
         super().__init__(dimension=1, noise_level=0)
         self.offset = offset
+        # add your own function descriptors (from base class, we already get "dimension" etc...)
+        # those will be recorded during benchmarks
+        self._descriptors.update(offset=offset)
 
     def oracle_call(self, x):  # np.ndarray as input
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
         return (x[0] - self.offset)**2
-
-    def get_description(self):
-        """Summarizes the parameterization of the function
-        """
-        summary = super().get_description()  # provides {"dimension": 1, ...}
-        summary["offset"] = self.offset  # add your own parameters
-        return summary
 
 
 @optimregistry.register  # register optimizers in the optimization registry

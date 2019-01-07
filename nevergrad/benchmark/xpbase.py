@@ -149,7 +149,7 @@ class Experiment:
         "run" must be called beforehand in order to have non-nan values for the loss.
         """
         summary = dict(self.result, seed=-1 if self.seed is None else self.seed)
-        summary.update(self.function.get_description())
+        summary.update(self.function.descriptors)
         summary.update(self._optimizer_parameters)
         return summary
 

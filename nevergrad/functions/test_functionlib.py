@@ -12,7 +12,7 @@ from . import functionlib
 
 
 DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
-                    "num_blocks", "rotation", "noise_level", "dimension", "discrete", "aggregator", "hashing"}
+                    "num_blocks", "rotation", "noise_level", "dimension", "discrete", "aggregator", "hashing", "transform"}
 
 
 def test_testcase_function_errors() -> None:
@@ -76,9 +76,8 @@ def test_oracle() -> None:
 
 def test_artificial_function_summary() -> None:
     func = functionlib.ArtificialFunction("sphere", 5)
-    summary = func.get_description()
-    testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
-    np.testing.assert_equal(summary["function_class"], "ArtificialFunction")
+    testing.assert_set_equal(func.descriptors.keys(), DESCRIPTION_KEYS)
+    np.testing.assert_equal(func.descriptors["function_class"], "ArtificialFunction")
 
 
 def test_duplicate() -> None:
