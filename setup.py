@@ -23,7 +23,7 @@ setup(
     author='Facebook AI Research',
     url="https://github.com/facebookresearch/nevergrad",
     packages=find_packages(),
-    classifiers=['License :: OSI Approved :: MIT License'
+    classifiers=['License :: OSI Approved :: MIT License',
                  'Intended Audience :: Science/Research',
                  'Topic :: Scientific/Engineering',
                  'Programming Language :: Python'],
