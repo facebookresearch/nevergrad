@@ -120,8 +120,14 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _run_with_error(self) -> None:
+    def _run_with_error(self, callbacks: Optional[Dict[str, base._OptimCallBack]] = None) -> None:
         """Run an experiment with the provided artificial function and optmizer
+
+        Parameter
+        ---------
+        callbacks: dict
+            a dictionary of callbacks to register on the optimizer with key "ask" and/or "tell" (see base Optimizer class).
+            This is only for easier debugging.
         """
         if self.seed is not None:
             np.random.seed(self.seed)
@@ -129,6 +135,9 @@ class Experiment:
         budget, num_workers, optimizer_name = [self._optimizer_parameters[x] for x in ["budget", "num_workers", "optimizer_name"]]
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         optimizer = optimizer_registry[optimizer_name](dimension=self.function.dimension, budget=budget, num_workers=num_workers)
+        if callbacks is not None:
+            for name, func in callbacks.items():
+                optimizer.register_callback(name, func)
         assert optimizer.budget is not None, "A budget must be provided"
         assert optimizer.dimension == self.function.dimension
         t0 = time.time()
@@ -139,7 +148,8 @@ class Experiment:
         self.result["elapsed_time"] = time.time() - t0
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         num_eval = 100
-        self.result["loss"] = sum(self.function.oracle_call(recommendation) for _ in range(num_eval)) / num_eval
+        t_recommendation = self.function.transform(recommendation)
+        self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = counter.num_calls
         if self.result["elapsed_budget"] > optimizer.budget:
             raise RuntimeError(f"Too much elapsed budget {self.result['elapsed_budget']} for {optimizer} on {self.function}")

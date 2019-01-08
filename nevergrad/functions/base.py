@@ -109,10 +109,12 @@ class BaseFunction(abc.ABC):
     @abc.abstractmethod
     def oracle_call(self, x: np.ndarray) -> float:
         """Implements the call of the function.
-        Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
+        Under the hood, __call__ delegates to oracle_call + applies the transform and add some noise if noise_level > 0.
 
-        Note
-        ----
-        "oracle_call" is not necessarily deterministic
+        Notes
+        -----
+        - "oracle_call" is not necessarily deterministic
+        - the transform is applied *before* this function, do not apply it here.
+
         """
         raise NotImplementedError
