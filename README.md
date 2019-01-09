@@ -4,7 +4,7 @@
 
 `nevergrad` is a Python 3.6+ library. It can be installed with:
 ```
-pip3 install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
+pip install nevergrad
 ```
 Alternatively, you can clone the repository and run `python3 setup.py develop` from inside the repository folder.
 
