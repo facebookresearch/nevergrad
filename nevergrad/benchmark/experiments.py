@@ -65,6 +65,37 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
+@registry.register
+def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = sorted(x for x, y in optimization.registry.items()
+                    if ("TBPSA" in x or "ois" in x or "epea" in x) and "iscr" not in x)
+    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:  #, 16000, 32000, 64000, 128000, 512000]:#, 1024000, 2048000, 4096000]:
+        for optim in optims:
+          for d in [1, 2, 3]:
+            for rotation in [True]:
+                for name in ["sphere"]:
+                    for noise_dissymmetry in [False, True]:
+                        function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                        yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    for budget in [25, 31, 37, 43, 50, 60]:#, 4000, 8000, 16000, 32000]:
+        for optim in sorted(x for x, y in optimization.registry.items() if "BO" in x):
+            for rotation in [False]:
+              for d in [20]:
+                for name in ["sphere", "cigar", "hm", "ellipsoid"]: #, "hm"]:
+                 for u in [0]:
+                    function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, useless_variables=d*u, translation_factor=1.)
+                    yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
 
 @registry.register
 def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:

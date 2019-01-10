@@ -33,12 +33,13 @@ def test_run_artificial_function() -> None:
 def test_run_with_error() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = Experiment(func, optimizer_name="OnePlusOne", budget=300, num_workers=1)
-    with patch("nevergrad.benchmark.xpbase.Experiment._run_with_error") as run:
+    with patch("nevergrad.optimization.optimizerlib.OnePlusOne.optimize") as run:
         run.side_effect = ValueError("test error string")
         with contextlib.redirect_stderr(sys.stdout):
             summary = xp.run()
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["error"], "ValueError")
+    assert not np.isnan(summary["loss"]), "Loss should be recorded with the current recommendation"
 
 
 @genty.genty

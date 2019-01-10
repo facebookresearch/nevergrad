@@ -58,9 +58,9 @@ def test_create_plots_from_csv() -> None:
 
 def test_remove_errors() -> None:
     data = [["alg0", 0, 10, np.nan],
-            ["alg1", 0, 20, ""],
-            ["alg1", np.nan, 30, "ValueError"],
-            ["alg2", np.nan, 40, "BlubluError"]]
+            ["alg2", np.nan, 30, "ValueError"],
+            ["alg1", 0, 20, "SomeHandledError"],
+            ["alg3", np.nan, 40, "BlubluError"]]
     df = pd.DataFrame(columns=["optimizer_name", "loss", "dimension", "error"], data=data)
     output = plotting.remove_errors(df)
     expected = pd.DataFrame(columns=["optimizer_name", "loss", "dimension"], data=[["alg0", 0, 10], ["alg1", 0, 20]])

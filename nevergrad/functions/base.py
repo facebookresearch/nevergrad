@@ -21,6 +21,8 @@ class BaseFunction(abc.ABC):
         dimension of the input space.
     noise_level: float
         level of the noise to add
+    noise_dissymmetry: bool
+        True if we dissymetrize the noise model
     transform: optional str
         name of a registered transform to be applied to the input data.
 
@@ -32,13 +34,14 @@ class BaseFunction(abc.ABC):
 
     _TRANSFORMS: Dict[str, Callable[[Any, np.ndarray], np.ndarray]] = {}  # Any should be the current class (but typing would get messy)
 
-    def __init__(self, dimension: int, noise_level: float = 0., transform: Optional[str] = None) -> None:
+    def __init__(self, dimension: int, noise_level: float = 0., noise_dissymmetry: bool = False, transform: Optional[str] = None) -> None:
         assert noise_level >= 0, "Noise level must be greater or equal to 0"
         assert dimension > 0
         assert isinstance(dimension, int)
         self._dimension = dimension
         self._transform = transform
         self._noise_level = noise_level
+        self._noise_dissymmetry = noise_dissymmetry
         self._descriptors: Dict[str, Any] = {}
         self._descriptors.update(dimension=dimension, noise_level=noise_level, function_class=self.__class__.__name__, transform=transform)
         if transform is not None and transform not in self._TRANSFORMS:
@@ -79,8 +82,11 @@ class BaseFunction(abc.ABC):
         """
         x = self.transform(x)
         noise_level = self._noise_level
+        noise_dissymmetry = self._noise_dissymmetry
         fx = self.oracle_call(x)
         if noise_level:
+            if noise_dissymmetry and x[0] > 0:
+                return fx
             fx += noise_level * np.random.normal(0, 1) * (self.oracle_call(x + np.random.normal(0, 1, self.dimension)) - fx)
         return fx
 
