@@ -33,11 +33,11 @@ def test_value_and_point() -> None:
 def test_sequential_executor() -> None:
     func = CounterFunction()
     executor = utils.SequentialExecutor()
-    job1 = executor.submit(func, 3)
+    job1 = executor.submit(func, [3])
     np.testing.assert_equal(job1.done(), True)
     np.testing.assert_equal(job1.result(), 4)
     np.testing.assert_equal(func.count, 1)
-    executor.submit(func, 3)
+    executor.submit(func, [3])
     np.testing.assert_equal(func.count, 2)
 
 

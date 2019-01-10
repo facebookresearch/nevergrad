@@ -116,6 +116,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         value: float
             value of the function
         """
+        if not isinstance(value, (int, float, np.int64, np.float64)):
+            raise TypeError(f'"tell" method only supports float values bug got: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
             warnings.warn(f"Updating fitness with {value} value")
         x = tuple(x)

@@ -18,9 +18,10 @@ class CounterFunction:
     def __init__(self) -> None:
         self.count = 0
 
-    def __call__(self, value: float) -> float:
+    def __call__(self, value: optimizerlib.base.ArrayLike) -> float:
+        assert len(value) == 1
         self.count += 1
-        return (value - 1)**2
+        return (value[0] - 1)**2
 
 
 class LoggingOptimizer(optimizerlib.base.Optimizer):
