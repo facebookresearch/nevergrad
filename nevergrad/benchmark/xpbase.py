@@ -120,7 +120,7 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, t0, num_calls, recommendation):
+    def _log_results(self, t0: float, num_calls: int, recommendation: float) -> None:
         """Internal method for logging results before handling the error
         """
         num_eval = 100  # evaluations of the cost function on the recommendation
@@ -129,7 +129,7 @@ class Experiment:
         t_recommendation = self.function.transform(recommendation)
         self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
-        if num_calls > self._optimizer_parameters["budget"]:
+        if num_calls > self._optimizer_parameters["budget"]:  # type: ignore
             optim_name = self._optimizer_parameters["optimizer_name"]
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {optim_name} on {self.function}")
 
