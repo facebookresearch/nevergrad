@@ -49,6 +49,68 @@ class OnePlusOne(base.Optimizer):
 
 
 @registry.register
+class NoisyOnePlusOne(base.Optimizer):
+    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
+
+    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
+    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
+    We use asynchronous updates, so that the 1+1 can actually be parallel and even
+    performs quite well in such a context - this is naturally close to 1+lambda.
+    Includes progressive widening.
+    """
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.sigma: float = 1
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if not self._num_suggestions:
+            return np.zeros(self.dimension)
+        else:
+            if self._num_suggestions <= len(self.archive) ** 3:
+                idx = np.random.choice(len(self.archive))
+                return list(self.archive.keys())[idx]
+        return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        if value <= self.current_bests["pessimistic"].mean:
+            self.sigma = 2. * self.sigma
+        else:
+            self.sigma = .84 * self.sigma
+
+
+@registry.register
+class OptimisticNoisyOnePlusOne(base.Optimizer):
+    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
+
+    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
+    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
+    We use asynchronous updates, so that the 1+1 can actually be parallel and even
+    performs quite well in such a context - this is naturally close to 1+lambda.
+    Includes progressive widening.
+    Includes optimism against uncertainty.
+    """
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.sigma: float = 1
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if not self._num_suggestions:
+            return np.zeros(self.dimension)
+        else:
+            if self._num_suggestions <= len(self.archive) ** 3:
+                return self.current_bests["optimistic"].x
+        return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        if value <= self.current_bests["pessimistic"].mean:
+            self.sigma = 2. * self.sigma
+        else:
+            self.sigma = .84 * self.sigma
+
+
+@registry.register
 class CauchyOnePlusOne(OnePlusOne):
     """Version of the OnePlusOne optimization algorithm with Cauchy mutations.
 
@@ -294,6 +356,22 @@ class PortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
             return np.zeros(self.dimension)
         if 20 * self._num_suggestions <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
+        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+
+
+@registry.register
+class PortfolioNoisyDiscreteOnePlusOne(base.Optimizer):
+    """Random number of mutated bits + bandit noise management + discrete 1+1 algorithm.
+
+    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
+    in Non-elitist Population", 2016."""
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if not self._num_suggestions:
+            return np.zeros(self.dimension)
+        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+            idx = np.random.choice(len(self.archive))
+            return list(self.archive.keys())[idx]
         return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
 
 

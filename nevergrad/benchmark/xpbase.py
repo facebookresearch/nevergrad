@@ -144,7 +144,10 @@ class Experiment:
         counter = CallCounter(self.function)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
-            recommendation = optimizer.optimize(counter, batch_mode=True)
+            try:
+                recommendation = optimizer.optimize(counter, batch_mode=True)
+            except OverflowError:
+                recommendation = optimizer._internal_provide_recommendation()
         self.result["elapsed_time"] = time.time() - t0
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         num_eval = 100

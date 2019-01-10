@@ -44,6 +44,8 @@ class Value:
             return self.optimistic_confidence_bound
         elif name == "pessimistic":
             return self.pessimistic_confidence_bound
+        elif name == "average":
+            return self.mean
         else:
             raise NotImplementedError
 
