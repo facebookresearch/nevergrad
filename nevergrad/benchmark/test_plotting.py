@@ -79,3 +79,10 @@ def test_make_style_generator() -> None:
     np.testing.assert_equal(len(set(output)), num)  # no repetition
     repeating = next(gen)
     np.testing.assert_equal(repeating, output[0])
+
+
+def test_name_style() -> None:
+    nstyle = plotting.NameStyle()
+    np.testing.assert_equal(nstyle["blublu"], "-ob")
+    np.testing.assert_equal(nstyle["plop"], "--vg")
+    np.testing.assert_equal(nstyle["blublu"], "-ob")
