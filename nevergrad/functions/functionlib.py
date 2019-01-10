@@ -63,7 +63,7 @@ class ArtificialFunction(BaseFunction):
 
     def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
                  useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False, 
-                 rotation: bool = False, translation_factor: int = 1, hashing: bool = False,
+                 rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
                  aggregator: str = "max") -> None:
         # pylint: disable=too-many-locals
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
