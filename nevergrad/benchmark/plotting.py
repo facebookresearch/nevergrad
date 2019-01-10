@@ -64,12 +64,19 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     df = tools.Selector(df)
     if "error" not in df.columns:  # backward compatibility
         return df  # type: ignore
-    errordf = df.select(error=lambda x: isinstance(x, str) and x)
+    # errors with no recommendation
+    errordf = df.select(error=lambda x: isinstance(x, str) and x, loss=np.isnan)
     for _, row in errordf.iterrows():
         print(f'Removing "{row["optimizer_name"]}" with dimension {row["dimension"]}: got error "{row["error"]}".')
-    output = df.select_and_drop(error=lambda x: not isinstance(x, str) or not x)
+    # error with recoreded recommendation
+    handlederrordf = df.select(error=lambda x: isinstance(x, str) and x, loss=lambda x: not np.isnan(x))
+    for _, row in handlederrordf.iterrows():
+        print(f'Keeping non-optimal recommendation of "{row["optimizer_name"]}" '
+              f'with dimension {row["dimension"]} which raised "{row["error"]}".')
+    err_inds = set(errordf.index)
+    output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
     assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
-    output.reindex()
+    output = tools.Selector(output.reset_index(drop=True))
     return output  # type: ignore
 
 
