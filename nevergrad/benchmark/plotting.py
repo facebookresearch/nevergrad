@@ -7,7 +7,7 @@ import os
 import argparse
 import itertools
 from pathlib import Path
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, Any
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -26,6 +26,20 @@ def _make_style_generator() -> Iterator[str]:
     markers = itertools.cycle("ov^<>8sp*hHDd")  # 13
     colors = itertools.cycle("bgrcmyk")  # 7
     return (l + m + c for l, m, c in zip(lines, markers, colors))
+
+
+class NameStyle(dict):
+    """Provides a style for each name, and keeps to it
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._gen = _make_style_generator()
+
+    def __getitem__(self, name: str) -> Any:
+        if name not in self:
+            self[name] = next(self._gen)
+        return super().__getitem__(name)
 
 
 def _make_winners_df(df: pd.DataFrame, all_optimizers: List[str]) -> tools.Selector:
@@ -85,6 +99,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     max_combsize: int
         maximum number of parameters to fix (combinations) when creating experiment plots
     """
+    # pylint: disable=too-many-locals
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
@@ -101,20 +116,12 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     df = tools.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     descriptors = sorted(set(df.columns) - (required | {"seed"}))  # now those should be actual interesting descriptors
     print(f"Descriptors: {descriptors}")
-    # plot mean loss / budget for each optimizer for 1 context
-    plt.close("all")
     #
-    for case in df.unique(descriptors):
-        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        make_xpresults_plot(subdf, description, output_folder / "xpresults{}{}.png".format("_" if description else "",
-                                                                                           description.replace(":", "")))
     # fight plot
-    descriptors.append("budget")  # now budget can be used as a descriptor
     # choice of the combination variables to fix
-    combinable = [x for x in descriptors if len(df.unique(x)) > 1]  # should be all now
+    fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
+    combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
-    #
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         # choice of the cases with values for the fixed variables
         for case in df.unique(fixed):
@@ -122,11 +129,22 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             casedf = df.select(**dict(zip(fixed, case)))
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
-            make_fight_plot(casedf, descriptors, num_rows, output_folder / name)
+            make_fight_plot(casedf, fight_descriptors, num_rows, output_folder / name)
+    plt.close("all")
+    #
+    # xp plots
+    # plot mean loss / budget for each optimizer for 1 context
+    name_style = NameStyle()  # keep the same style for each algorithm
+    for case in df.unique(descriptors):
+        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+        make_xpresults_plot(subdf, description, out_filepath, name_style)
     plt.close("all")
 
 
-def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[PathLike] = None) -> None:
+def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[PathLike] = None,
+                        name_style: Optional[dict] = None) -> None:
     """Creates a xp result plot out of the given dataframe: regret with respect to budget for
     each optimizer after averaging on all experiments (it is good practice to use a df
     which is filtered out for one set of input parameters)
@@ -139,7 +157,13 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         title of the plot
     output_filepath: Path
         If present, saves the plot to the given path
+    name_style: dict
+        a dict or dict-like object providing a line style for each optimizer name.
+        (can be helpful for consistency across plots)
     """
+    # pylint: disable=too-many-locals
+    if name_style is None:
+        name_style = NameStyle()
     # pylint: disable=too-many-locals
     df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"]])
     groupeddf = df.groupby(["optimizer_name", "budget"]).mean()
@@ -147,7 +171,6 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     plt.xlabel("Budget")
     plt.ylabel("Loss")
     plt.grid(True, which='both')
-    styles = _make_style_generator()
     optim_vals = {}
     # extract name and coordinates
     for optim in df.unique("optimizer_name"):
@@ -167,7 +190,7 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     for k, optim_name in enumerate(sorted_optimizers):
         xvals, yvals = optim_vals[optim_name]
         lowerbound = min(lowerbound, np.min(yvals))
-        handles.append(plt.loglog(xvals, yvals, next(styles), label=optim_name))
+        handles.append(plt.loglog(xvals, yvals, name_style[optim_name], label=optim_name))
         texts = []
         if xvals.size and yvals[-1] < upperbound:
             angle = 30 - 60 * k / len(optim_vals)
@@ -176,7 +199,6 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     if upperbound < np.inf:
         plt.gca().set_ylim(lowerbound, upperbound)
     # global info
-    #legend = plt.legend(fontsize=7, ncol=3, bbox_to_anchor=(1.1, -0.3), handlelength=3)
     legend = plt.legend(fontsize=7, ncol=2, handlelength=3,
                         loc='upper center', bbox_to_anchor=(0.5, -0.15))
     plt.title(title)
