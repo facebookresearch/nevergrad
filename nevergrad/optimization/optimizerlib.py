@@ -49,7 +49,7 @@ class OnePlusOne(base.Optimizer):
 
 
 @registry.register
-class NoisyOnePlusOne(base.Optimizer):
+class NoisyOnePlusOne(OnePlusOne):
     """Simple but sometimes powerfull optimization algorithm, for the noisy case.
 
     We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
@@ -59,28 +59,18 @@ class NoisyOnePlusOne(base.Optimizer):
     Includes progressive widening.
     """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sigma: float = 1
-
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)
         else:
-            if self._num_suggestions <= len(self.archive) ** 3:
+            if 20 * self._num_suggestions <= len(self.archive) ** 3:
                 idx = np.random.choice(len(self.archive))
                 return list(self.archive.keys())[idx]
         return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        if value <= self.current_bests["pessimistic"].mean:
-            self.sigma = 2. * self.sigma
-        else:
-            self.sigma = .84 * self.sigma
-
 
 @registry.register
-class OptimisticNoisyOnePlusOne(base.Optimizer):
+class OptimisticNoisyOnePlusOne(OnePlusOne):
     """Simple but sometimes powerfull optimization algorithm, for the noisy case.
 
     We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
@@ -91,23 +81,13 @@ class OptimisticNoisyOnePlusOne(base.Optimizer):
     Includes optimism against uncertainty.
     """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sigma: float = 1
-
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)
         else:
-            if self._num_suggestions <= len(self.archive) ** 3:
+            if 20 * self._num_suggestions <= len(self.archive) ** 3:
                 return self.current_bests["optimistic"].x
         return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
-
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        if value <= self.current_bests["pessimistic"].mean:
-            self.sigma = 2. * self.sigma
-        else:
-            self.sigma = .84 * self.sigma
 
 
 @registry.register
@@ -248,7 +228,7 @@ class NoisyBandit(base.Optimizer):
     Infinite arms: we add one arm when #trials >= #arms ** 3."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if self._num_suggestions >= len(self.archive) ** 3:
+        if 20 * self._num_suggestions >= len(self.archive) ** 3:
             return np.random.normal(0, 1, self.dimension)
         if np.random.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
@@ -266,7 +246,7 @@ class OptimisticDiscreteOnePlusOne(base.Optimizer):
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)
-        if self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_suggestions <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -283,7 +263,7 @@ class RecombiningOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)
-        elif self._num_suggestions <= len(self.archive) ** 3:
+        elif 20 * self._num_suggestions <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         elif self._num_suggestions % 2 == 0 or len(self.archive) < 3:
             return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
@@ -325,7 +305,7 @@ class DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)
-        if self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_suggestions <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -339,8 +319,23 @@ class FastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)
-        if self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_suggestions <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
+        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
+
+
+@registry.register
+class FastGANoisyDiscreteOnePlusOne(base.Optimizer):
+    """Close to UCB, but new arms are chosen by FastGA mutations from the current best.
+
+    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if not self._num_suggestions:
+            return np.zeros(self.dimension)
+        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+            idx = np.random.choice(len(self.archive))
+            return list(self.archive.keys())[idx]
         return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
 
 
