@@ -18,7 +18,7 @@ class _Variable(utils.Instrument):
     """Base variable class.
     Each class requires to provide a dimension and ways to process the data.
     They can be used directly for function instrumentation in Python, but they
-    must also provide a token managements for hardcoded code instrumentation.
+    must also provide token management for hardcoded code instrumentation.
     """
 
     pattern: Optional[str] = None
@@ -84,7 +84,7 @@ class SoftmaxCategorical(_Variable):
 
     def process_arg(self, arg: Any) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-        # TODO: Move to nevergrad.optimizatino.discretization.inverse_softmax_discretization
+        # TODO: Move to nevergrad.optimization.discretization.inverse_softmax_discretization
 
         def inverse_softmax_discretization(index: int, arity: int) -> ArrayLike:
             # p is an arbitrary probability that the provided arg will be sampled with the returned point

@@ -44,7 +44,7 @@ def check_seedable(maker: Any) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
-    # we use "Maker: Any" because signature for one or the other case (seedable or not) is way too complex, and won't help much here...
+    # we use "maker: Any" because signature for one or the other case (seedable or not) is way too complex, and won't help much here...
     random_seed = np.random.randint(1000)
     signature = inspect.signature(maker)
     if not signature.parameters:

@@ -12,7 +12,7 @@ class BaseFunction(abc.ABC):
     """Functions must inherit from this class for benchmarking purpose
     In child functions, implement "oracle_call". This method should provide the output of your function
     (BaseFunction.__call__ will use it and add noise if noise_level > 0)
-    Also, update "_descriptors" dict attribute so that function parametrization is recorded during benchmark.
+    Also, update "_descriptors" dict attribute so that function parameterization is recorded during benchmark.
     See ArtificialFunction for an example.
 
     Parameters
@@ -29,7 +29,7 @@ class BaseFunction(abc.ABC):
     Notes
     -----
     - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
-    - transforms must be registered through the "register_transform" class method before instanciation.
+    - transforms must be registered through the "register_transform" class method before instantiation.
     """
 
     _TRANSFORMS: Dict[str, Callable[[Any, np.ndarray], np.ndarray]] = {}  # Any should be the current class (but typing would get messy)
@@ -46,7 +46,7 @@ class BaseFunction(abc.ABC):
         self._descriptors.update(dimension=dimension, noise_level=noise_level, function_class=self.__class__.__name__, transform=transform)
         if transform is not None and transform not in self._TRANSFORMS:
             raise ValueError(f'Unknown transform "{self._transform}", available are:\n{list(self._TRANSFORMS.keys())}\n'
-                             f'(you must register new ones with "{self.__class__.__name__}.register_transform" before instanciation)')
+                             f'(you must register new ones with "{self.__class__.__name__}.register_transform" before instantiation)')
 
     @classmethod
     def register_transform(cls, name: str, func: Callable[["BaseFunction", np.ndarray], np.ndarray]) -> None:
@@ -63,7 +63,7 @@ class BaseFunction(abc.ABC):
 
     @property
     def descriptors(self) -> Dict[str, Any]:
-        """Description of the function parametrizaion, as a dict. This base class implementation provides function_class,
+        """Description of the function parameterization, as a dict. This base class implementation provides function_class,
             noise_level, transform and dimension
         """
         return dict(self._descriptors)  # Avoid external modification

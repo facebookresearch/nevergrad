@@ -172,7 +172,7 @@ class InstrumentedFunction:
     function: callable
         the callable to convert
     *args, **kwargs: Any
-        Any argument. Arguments of type variables.SoftmaxCategorical or variabls.Gaussian will be instrumentized
+        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumentized
         and others will be kept constant.
 
     Note
@@ -185,7 +185,7 @@ class InstrumentedFunction:
     def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
         assert callable(function)
         self._args = [variables._Constant.convert_non_token(x) for x in args]
-        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deteriministic
+        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deterministic
         self._function = function
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
@@ -218,7 +218,7 @@ class InstrumentedFunction:
         self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(data)
         return self._function(*self.last_call_args, **self.last_call_kwargs)
 
-    def get_summary(self, data: np.ndarray) -> Any:  # probably inpractical for large arrays
+    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
         """Prints the summary corresponding to the provided data
         """
         data = np.array(data, copy=False)
