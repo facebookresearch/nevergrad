@@ -85,7 +85,7 @@ class BaseFunction(abc.ABC):
         noise_dissymmetry = self._noise_dissymmetry
         fx = self.oracle_call(x)
         if noise_level:
-            if noise_dissymetry and x[0] > 0:
+            if noise_dissymmetry and x[0] > 0:
                 return fx
             fx += noise_level * np.random.normal(0, 1) * (self.oracle_call(x + np.random.normal(0, 1, self.dimension)) - fx)
         return fx
