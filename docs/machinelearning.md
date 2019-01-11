@@ -6,6 +6,7 @@ The second example is the optimization of mixed (continuous and discrete) hyperp
 
 The third example is the optimization of parameters in a noisy setting, typically as in reinforcement learning.
 
+## First example: optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom.
 ```python
 
 import nevergrad.optimization as optimization
@@ -55,9 +56,10 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error(recommendation))
+```
 
-
-
+### Second example: optimization of mixed (continuous and discrete) hyperparameters.
+```python
 # Optimization of mixed (continuous and discrete) hyperparameters.
 # We apply a softmax for converting real numbers to discrete values.
 print(" ")
@@ -121,7 +123,11 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
           train_and_return_test_error_mixed(recommendation))
 
 
+```
 
+### Third example: optimization of parameters for reinforcement learning.
+We do not average evaluations over multiple episodes - the algorithm is in charge of averaging.
+```python
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
 # This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.
 # We do *not* manually average over multiple evaluations; the algorithm will take care of averaging or reevaluate
