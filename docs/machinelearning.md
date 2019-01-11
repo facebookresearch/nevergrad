@@ -4,7 +4,7 @@ The first example is simply the optimization of continuous hyperparameters.
 
 The second example is the optimization of mixed (continuous and discrete) hyperparameters. A second, more complicated, objective function is proposed (just uncomment).
 
-The third example is the optimization of parameters in anoisy setting, typically as in reinforcement learning.
+The third example is the optimization of parameters in a noisy setting, typically as in reinforcement learning.
 
 ```python
 
