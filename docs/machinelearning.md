@@ -58,7 +58,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
           train_and_return_test_error(recommendation))
 ```
 
-### Second example: optimization of mixed (continuous and discrete) hyperparameters.
+## Second example: optimization of mixed (continuous and discrete) hyperparameters.
 ```python
 # Optimization of mixed (continuous and discrete) hyperparameters.
 # We apply a softmax for converting real numbers to discrete values.
@@ -125,7 +125,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
 
 ```
 
-### Third example: optimization of parameters for reinforcement learning.
+## Third example: optimization of parameters for reinforcement learning.
 We do not average evaluations over multiple episodes - the algorithm is in charge of averaging.
 ```python
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
