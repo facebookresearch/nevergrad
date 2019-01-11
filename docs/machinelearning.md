@@ -126,7 +126,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
 ```
 
 ## Third example: optimization of parameters for reinforcement learning.
-We do not average evaluations over multiple episodes - the algorithm is in charge of averaging.
+We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
 ```python
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
 # This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.
