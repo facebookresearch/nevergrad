@@ -75,7 +75,7 @@ class _MarkdownLink:
 def _get_all_markdown_links(folder: Union[str, Path]) -> List[_MarkdownLink]:
     """Returns a list of all existing markdown links
     """
-    pattern = re.compile(r"\[(?P<string>.+?)\]\((?P<link>.+?)\)")
+    pattern = re.compile(r"\[(?P<string>.+?)\]\((?P<link>\S+?)\)")
     folder = Path(folder).expanduser().absolute()
     links = []
     for rfilepath in folder.glob("**/*.md"):
