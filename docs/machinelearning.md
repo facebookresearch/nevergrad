@@ -26,6 +26,12 @@ def train_and_return_test_error(x):
 budget = 1200  # How many trainings we will do before concluding.
 
 
+# We compare several algorithms.
+# "RandomSearch" is well known, "ScrHammersleySearch" is a quasirandom; these two methods
+# are fully parallel, i.e. we can perform the 1200 trainings in parallel.
+# "CMA" and "PSO" are classical optimization algorithms, and "TwoPointsDE"
+# is Differential Evolution equipped with a 2-points crossover.
+# A complete list is available in optimization.registry.
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]:
 
     optim = optimization.registry[tool](dimension=300, budget=budget)
@@ -53,7 +59,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
 
 
 # Optimization of mixed (continuous and discrete) hyperparameters.
-
+# We apply a softmax for converting real numbers to discrete values.
 print(" ")
 print(" ")
 print("Optimization of mixed (continuous and discrete) hyperparameters ======")
@@ -71,6 +77,7 @@ def train_and_return_test_error_mixed(x):
     activation = softmax(x[:3], ["tanh", "sigmoid", "relu"])
     return np.linalg.norm(cx) + (1. if activation != "tanh" else 0.)
 
+#This version is possibly bigger.
 #def train_and_return_test_error_mixed(x):
 #    cx = x[:(len(x) // 2)]  # continuous part.
 #    presoftmax_values = x[(len(x) // 2):]  # discrete part.
@@ -116,6 +123,9 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
 
 
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
+# This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.
+# We do *not* manually average over multiple evaluations; the algorithm will take care of averaging or reevaluate
+# whatever it wants to reevaluate.
 
 print(" ")
 print(" ")
