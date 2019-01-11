@@ -7,21 +7,21 @@ from typing import List, Union, Optional, Any
 from pathlib import Path
 import numpy as np
 from ..instrumentation.utils import CommandFunction
-from .instantiate import InstrumentizedFolder
+from .instantiate import InstrumentedFolder
 
 
-class FolderFunction:
+class FolderFunction:  # should derive from BaseFunction?
     """Turns a folder into a parametrized function
     (with nevergrad tokens)
 
     Parameters
     ----------
     folder: Path/str
-        path to the folder to instrumentize
+        path to the folder to instrument
     command: list
         command to run from inside the folder. The last line in stdout will
         be the output of the function.
-        The command must be performed from just outside the instrumentized
+        The command must be performed from just outside the instrument
         directory
     verbose: bool
         whether to print the run command and from where it is run.
@@ -58,15 +58,15 @@ class FolderFunction:
         self.command = command
         self.verbose = verbose
         self.postprocessings = [get_last_line_as_float]
-        self.instrumentized_folder = InstrumentizedFolder(folder, extensions=extensions, clean_copy=clean_copy)
+        self.instrumented_folder = InstrumentedFolder(folder, extensions=extensions, clean_copy=clean_copy)
         self.last_full_output: Optional[str] = None
 
     @property
     def dimension(self) -> int:
-        return self.instrumentized_folder.dimension
+        return self.instrumented_folder.dimension
 
     def __call__(self, parameters: np.ndarray) -> Any:
-        with self.instrumentized_folder.instantiate(parameters) as folder:
+        with self.instrumented_folder.instantiate(parameters) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")
             output: Any = CommandFunction(self.command, cwd=folder.parent)()
@@ -82,7 +82,7 @@ class FolderFunction:
         return output
 
     def get_summary(self, parameters: np.ndarray) -> str:
-        return self.instrumentized_folder.get_summary(parameters)
+        return self.instrumented_folder.get_summary(parameters)
 
 
 def get_last_line_as_float(output: str) -> float:
