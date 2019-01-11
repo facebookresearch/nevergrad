@@ -174,7 +174,7 @@ class TBPSA(base.Optimizer):
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
+            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
             mean1 = sum(first_fifth) / float(self.llambda)
             std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
             mean2 = sum(last_fifth) / float(self.llambda)

@@ -53,6 +53,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error(recommendation))
+
 ```
 
 ## Second example: optimization of mixed (continuous and discrete) hyperparameters.
