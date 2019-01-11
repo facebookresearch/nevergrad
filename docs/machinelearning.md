@@ -14,9 +14,6 @@ import numpy as np
 
 
 # Optimization of continuous hyperparameters.
-
-print(" ")
-print(" ")
 print("Optimization of continuous hyperparameters =========")
 
 
@@ -60,10 +57,12 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
 
 ## Second example: optimization of mixed (continuous and discrete) hyperparameters.
 ```python
+import nevergrad.optimization as optimization
+import numpy as np
 # Optimization of mixed (continuous and discrete) hyperparameters.
 # We apply a softmax for converting real numbers to discrete values.
-print(" ")
-print(" ")
+
+
 print("Optimization of mixed (continuous and discrete) hyperparameters ======")
 
 
@@ -130,13 +129,15 @@ We do not average evaluations over multiple episodes - the algorithm is in charg
 TBPSA, based on population-control mechasnisms, performs quite well in this case.
 
 ```python
+import nevergrad.optimization as optimization
+import numpy as np
+
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
 # This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.
 # We do *not* manually average over multiple evaluations; the algorithm will take care of averaging or reevaluate
 # whatever it wants to reevaluate.
 
-print(" ")
-print(" ")
+
 print("Optimization of parameters in reinforcement learning ===============")
 
 
