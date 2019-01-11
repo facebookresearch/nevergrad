@@ -19,6 +19,7 @@ Alternatively, you can clone the repository and run `python3 setup.py develop` f
 The following README is very general, you can find:
 - machine learning examples in [machinelearning.md](docs/machinelearning.md).
 - optimization of classical objective functions in [benchmarks.md](docs/benchmarks.md).
+- guidelines of how to contribute by adding a new algorithm in [adding_an_algorithm.md](docs/adding_an_algorithm.md)
 
 ## Goals and structure
 
