@@ -15,8 +15,8 @@ pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergr
 ```
 
 Alternatively, you can clone the repository and run `python3 setup.py develop` from inside the repository folder.
-Examples for machine learning can be found in https://github.com/facebookresearch/nevergrad/master/tree/docs/machinelearning.md
-Examples of optimization of classical objective functions can be found in https://github.com/facebookresearch/nevergrad/master/tree/docs/benchmarks.md
+Examples for machine learning can be found in https://github.com/facebookresearch/nevergrad/tree/master/docs/machinelearning.md
+Examples of optimization of classical objective functions can be found in https://github.com/facebookresearch/nevergrad/tree/master/docs/benchmarks.md
 
 ## Goals and structure
 
