@@ -77,8 +77,9 @@ def train_and_return_test_error_mixed(x):
     cx = [x_ - 0.1 for x_ in x[3:]]
     activation = softmax(x[:3], ["tanh", "sigmoid", "relu"])
     return np.linalg.norm(cx) + (1. if activation != "tanh" else 0.)
+dimension = 10
 
-#This version is possibly bigger.
+#This version is bigger.
 #def train_and_return_test_error_mixed(x):
 #    cx = x[:(len(x) // 2)]  # continuous part.
 #    presoftmax_values = x[(len(x) // 2):]  # discrete part.
@@ -91,7 +92,7 @@ def train_and_return_test_error_mixed(x):
 #            values_for_this_softmax = []
 #    return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in cx]) + [
 #            1 if d != 1 else 0 for d in dx]
-
+#dimension = 300
 
 
 budget = 1200  # How many episode we will do before concluding.
@@ -99,7 +100,7 @@ budget = 1200  # How many episode we will do before concluding.
 
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
 
-    optim = optimization.registry[tool](dimension=300, budget=budget)
+    optim = optimization.registry[tool](dimension=dimension, budget=budget)
     
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
