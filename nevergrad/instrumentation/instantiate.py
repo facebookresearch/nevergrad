@@ -197,7 +197,8 @@ class InstrumentedFunction(base.BaseFunction):
         # keep track of what is instrumented (but "how" is probably too long/complex)
         instrumented = [f"arg{k}" for k, var in enumerate(self._args) if not isinstance(var, variables._Constant)]
         instrumented += sorted([x for x, y in self._kwargs.items() if not isinstance(y, variables._Constant)])
-        self._descriptors.update(name=function.__name__, instrumented=",".join(instrumented))
+        name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
+        self._descriptors.update(name=name, instrumented=",".join(instrumented))
         self._function = function
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None

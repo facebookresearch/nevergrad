@@ -90,3 +90,16 @@ def test_instrumented_function_kwarg_order() -> None:
     data = [-1, 1, 2, 3, 4, 100, -100]
     _, kwargs = ifunc(data)
     testing.printed_assert_equal(kwargs, {"kw1": 0, "kw2": "constant", "kw3": [[1, 2], [3, 4]], "kw4": 1})
+
+
+class _Callable:
+
+    def __call__(self, x: float) -> float:
+        return abs(x)
+
+
+def test_callable_instrumentation() -> None:
+    ifunc = instantiate.InstrumentedFunction(lambda x: x**2, variables.Gaussian(2, 2))
+    np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
+    ifunc = instantiate.InstrumentedFunction(_Callable(), variables.Gaussian(2, 2))
+    np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
