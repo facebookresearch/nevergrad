@@ -12,7 +12,6 @@ class DecoratorTests(TestCase):
 
     def test_registry(self) -> None:
         functions = decorators.Registry()
-        REGISTERED = functions._registered  # for compatibility... to be removed
         other = decorators.Registry()
 
         @functions.register
@@ -21,8 +20,10 @@ class DecoratorTests(TestCase):
 
         np.testing.assert_equal(dummy(), 12)
         np.testing.assert_array_equal(list(functions.keys()), ["dummy"])
-        np.testing.assert_array_equal([x.__name__ for x in REGISTERED], ["dummy"])
         np.testing.assert_array_equal(list(other.keys()), [])
+        functions.unregister("dummy")
+        functions.unregister("other_dummy_that_does_not_exist")
+        np.testing.assert_array_equal(list(functions.keys()), [])
 
     def test_info_registry(self) -> None:
         functions = decorators.Registry()
