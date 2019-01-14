@@ -5,7 +5,7 @@
 
 import warnings
 from unittest import TestCase
-from typing import List, Tuple
+from typing import List, Tuple, Any
 import genty
 import numpy as np
 from ..common import testing
@@ -21,7 +21,7 @@ class CounterFunction:
     def __call__(self, value: optimizerlib.base.ArrayLike) -> float:
         assert len(value) == 1
         self.count += 1
-        return (value[0] - 1)**2
+        return float(value[0] - 1)**2
 
 
 class LoggingOptimizer(optimizerlib.base.Optimizer):
@@ -58,6 +58,25 @@ class OptimizationTests(TestCase):
             warnings.simplefilter("ignore")
             optim.optimize(func, verbosity=2, batch_mode=batch_mode)
         testing.printed_assert_equal(optim.logs, expected)
+
+    @genty.genty_dataset(  # type: ignore
+        int_val=(3, False),
+        bool_val=(True, False),
+        int32_val=(np.int32(3), False),
+        int64_val=(np.int64(3), False),
+        float64_val=(np.float64(3), False),
+        float32_val=(np.float32(3), False),
+        list_val=([3, 5], True),
+        complex_val=(1j, True),
+        object_val=(object(), True),
+    )
+    def test_tell_types(self, value: Any, error: bool) -> None:
+        optim = LoggingOptimizer(num_workers=1)
+        x = optim.ask()
+        if error:
+            np.testing.assert_raises(TypeError, optim.tell, x, value)
+        else:
+            optim.tell(x, value)
 
 
 def test_base_optimizer() -> None:
