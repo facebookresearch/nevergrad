@@ -22,9 +22,10 @@ def test_symlink_folder_tree() -> None:
 
 
 @genty.genty
-class InstanciationTests(TestCase):
+class InstantiationTests(TestCase):
 
     # CAREFUL: avoid triggering errors if the module parses itself...
+    # Note: 'bidule' is French for dummy widget
     @genty.genty_dataset(  # type: ignore
         nothing=("    bidule", ".py", "    bidule"),
         python=(f"    # {LINETOKEN} bidule", ".py", "    bidule"),
@@ -44,11 +45,11 @@ class InstanciationTests(TestCase):
         with_clean_copy=(True,),
         without_clean_copy=(False,),
     )
-    def test_instrumentized_folder(self, clean_copy: bool) -> None:
+    def test_instrumented_folder(self, clean_copy: bool) -> None:
         path = Path(__file__).parent / "examples" / "basic"
-        ifolder = instantiate.InstrumentizedFolder(path, clean_copy=clean_copy)
+        ifolder = instantiate.InstrumentedFolder(path, clean_copy=clean_copy)
         np.testing.assert_equal(ifolder.dimension, 4)
-        np.testing.assert_equal(len(ifolder.instrumentized_files), 1)
+        np.testing.assert_equal(len(ifolder.instrumented_files), 1)
         with ifolder.instantiate([1, 2, 3, 4]) as tmp:
             with (tmp / "script.py").open("r") as f:
                 lines = f.readlines()
@@ -59,7 +60,7 @@ class InstanciationTests(TestCase):
 
 def test_instantiate_file() -> None:
     path = Path(__file__).parent / "examples" / "basic" / "script.py"
-    instantiatable = instantiate.InstrumentizedFile(path)
+    instantiatable = instantiate.InstrumentedFile(path)
     np.testing.assert_equal(instantiatable.dimension, 4)
     np.testing.assert_array_equal(instantiatable.variables, [variables.Gaussian(mean=90., std=20.),
                                                              variables.SoftmaxCategorical(possibilities=["1", "10", "100"])])
@@ -69,7 +70,7 @@ def _arg_return(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, A
     return args, kwargs
 
 
-def test_instrumentized_function() -> None:
+def test_instrumented_function() -> None:
     ifunc = instantiate.InstrumentedFunction(_arg_return, variables.SoftmaxCategorical([1, 12]), "constant",
                                              variables.Gaussian(0, 1, [2, 2]), constkwarg="blublu",
                                              plop=variables.SoftmaxCategorical([3, 4]))
@@ -78,9 +79,11 @@ def test_instrumentized_function() -> None:
     args, kwargs = ifunc(data)
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
+    testing.printed_assert_equal(ifunc.descriptors, {"dimension": 8, "name": "_arg_return", "instrumented": "arg0,arg2,plop",
+                                                     "noise_level": 0, "function_class": "InstrumentedFunction", "transform": None})
 
 
-def test_instrumentized_function_kwarg_order() -> None:
+def test_instrumented_function_kwarg_order() -> None:
     ifunc = instantiate.InstrumentedFunction(_arg_return, kw4=variables.SoftmaxCategorical([1, 0]), kw2="constant",
                                              kw3=variables.Gaussian(0, 1, [2, 2]), kw1=variables.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.dimension, 7)

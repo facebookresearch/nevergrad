@@ -4,8 +4,14 @@ The first example is simply the optimization of continuous hyperparameters.
 
 The second example is the optimization of mixed (continuous and discrete) hyperparameters. A second, more complicated, objective function is proposed (just uncomment).
 
+<<<<<<< HEAD
 The third example is the optimization of parameters in anoisy setting, typically as in reinforcement learning.
 
+=======
+The third example is the optimization of parameters in a noisy setting, typically as in reinforcement learning.
+
+## First example: optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom.
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 ```python
 
 import nevergrad.optimization as optimization
@@ -13,9 +19,12 @@ import numpy as np
 
 
 # Optimization of continuous hyperparameters.
+<<<<<<< HEAD
 
 print(" ")
 print(" ")
+=======
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 print("Optimization of continuous hyperparameters =========")
 
 
@@ -26,6 +35,15 @@ def train_and_return_test_error(x):
 budget = 1200  # How many trainings we will do before concluding.
 
 
+<<<<<<< HEAD
+=======
+# We compare several algorithms.
+# "RandomSearch" is well known, "ScrHammersleySearch" is a quasirandom; these two methods
+# are fully parallel, i.e. we can perform the 1200 trainings in parallel.
+# "CMA" and "PSO" are classical optimization algorithms, and "TwoPointsDE"
+# is Differential Evolution equipped with a 2-points crossover.
+# A complete list is available in optimization.registry.
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]:
 
     optim = optimization.registry[tool](dimension=300, budget=budget)
@@ -50,12 +68,25 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error(recommendation))
 
+<<<<<<< HEAD
 
 
 # Optimization of mixed (continuous and discrete) hyperparameters.
 
 print(" ")
 print(" ")
+=======
+```
+
+## Second example: optimization of mixed (continuous and discrete) hyperparameters.
+```python
+import nevergrad.optimization as optimization
+import numpy as np
+# Optimization of mixed (continuous and discrete) hyperparameters.
+# We apply a softmax for converting real numbers to discrete values.
+
+
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 print("Optimization of mixed (continuous and discrete) hyperparameters ======")
 
 
@@ -70,7 +101,13 @@ def train_and_return_test_error_mixed(x):
     cx = [x_ - 0.1 for x_ in x[3:]]
     activation = softmax(x[:3], ["tanh", "sigmoid", "relu"])
     return np.linalg.norm(cx) + (1. if activation != "tanh" else 0.)
+<<<<<<< HEAD
 
+=======
+dimension = 10
+
+#This version is bigger.
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 #def train_and_return_test_error_mixed(x):
 #    cx = x[:(len(x) // 2)]  # continuous part.
 #    presoftmax_values = x[(len(x) // 2):]  # discrete part.
@@ -83,7 +120,11 @@ def train_and_return_test_error_mixed(x):
 #            values_for_this_softmax = []
 #    return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in cx]) + [
 #            1 if d != 1 else 0 for d in dx]
+<<<<<<< HEAD
 
+=======
+#dimension = 300
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 
 
 budget = 1200  # How many episode we will do before concluding.
@@ -91,7 +132,11 @@ budget = 1200  # How many episode we will do before concluding.
 
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
 
+<<<<<<< HEAD
     optim = optimization.registry[tool](dimension=300, budget=budget)
+=======
+    optim = optimization.registry[tool](dimension=dimension, budget=budget)
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
     
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
@@ -114,11 +159,30 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO"]:
           train_and_return_test_error_mixed(recommendation))
 
 
+<<<<<<< HEAD
 
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
 
 print(" ")
 print(" ")
+=======
+```
+
+## Third example: optimization of parameters for reinforcement learning.
+We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
+TBPSA, based on population-control mechasnisms, performs quite well in this case.
+
+```python
+import nevergrad.optimization as optimization
+import numpy as np
+
+# Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
+# This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.
+# We do *not* manually average over multiple evaluations; the algorithm will take care of averaging or reevaluate
+# whatever it wants to reevaluate.
+
+
+>>>>>>> 494bb596725ded5d3438fe15445921a548a7ef0a
 print("Optimization of parameters in reinforcement learning ===============")
 
 

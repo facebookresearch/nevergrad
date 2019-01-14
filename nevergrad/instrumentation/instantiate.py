@@ -13,6 +13,7 @@ from pathlib import Path
 from collections import OrderedDict
 from typing import Union, List, Any, Optional, Generator, Callable, Tuple, Dict
 import numpy as np
+from ..functions import base
 from ..common.typetools import ArrayLike
 from . import utils
 from . import variables
@@ -50,7 +51,7 @@ def uncomment_line(line: str, extension: str) -> str:
     return line
 
 
-class InstrumentizedFile(utils.Instrument):
+class InstrumentedFile(utils.Instrument):
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
@@ -68,6 +69,9 @@ class InstrumentizedFile(utils.Instrument):
         values = utils.process_instruments(self.variables, data)
         text = utils.replace_placeholders_by_values(self.text, values)
         return text
+
+    def process_arg(self, arg: Any) -> ArrayLike:
+        raise NotImplementedError
 
     @property
     def dimension(self) -> int:
@@ -90,18 +94,18 @@ class InstrumentizedFile(utils.Instrument):
         return "\n".join(strings)
 
 
-class InstrumentizedFolder:
+class InstrumentedFolder:  # should derive from base function?
     """Folder with instrumentation tokens, which can be instantiated.
 
     Parameters
     ----------
     folder: str/Path
-        the instrumentized folder to instantiate
+        the instrumented folder to instantiate
     clean_copy: bool
         whether to create an initial clean temporary copy of the folder in order to avoid
         versioning problems (instantiations are lightweight symlinks in any case).
     extensions: list
-        extensions of the instrumentized files which must be instantiated
+        extensions of the instrumented files which must be instantiated
 
     Caution
     -------
@@ -121,28 +125,28 @@ class InstrumentizedFolder:
             self.folder = self._clean_copy.copyname
         if extensions is None:
             extensions = [".py", "m", ".cpp", ".hpp", ".c", ".h"]
-        self.instrumentized_files: List[InstrumentizedFile] = []
+        self.instrumented_files: List[InstrumentedFile] = []
         for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
             if fp.is_file() and fp.suffix in extensions:
-                instru_f = InstrumentizedFile(fp)
+                instru_f = InstrumentedFile(fp)
                 if instru_f.dimension:
-                    self.instrumentized_files.append(instru_f)
-        assert self.instrumentized_files, "Found no instrumentized file"
-        self.instrumentized_files = sorted(self.instrumentized_files, key=operator.attrgetter("filepath"))
+                    self.instrumented_files.append(instru_f)
+        assert self.instrumented_files, "Found no instrumented file"
+        self.instrumented_files = sorted(self.instrumented_files, key=operator.attrgetter("filepath"))
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.instrumentized_files}'
+        return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.instrumented_files}'
 
     @property
     def dimension(self) -> int:
-        return sum(i.dimension for i in self.instrumentized_files)
+        return sum(i.dimension for i in self.instrumented_files)
 
     def instantiate_to_folder(self, data: np.ndarray, outfolder: Union[Path, str]) -> None:
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
         symlink_folder_tree(self.folder, outfolder)
-        texts = utils.process_instruments(self.instrumentized_files, data)  # instantiable files have same pattern as token
-        for instantiable, text in zip(self.instrumentized_files, texts):
+        texts = utils.process_instruments(self.instrumented_files, data)  # instantiable files have same pattern as token
+        for instantiable, text in zip(self.instrumented_files, texts):
             inst_fp = outfolder / instantiable.filepath.relative_to(self.folder)
             os.remove(str(inst_fp))  # remove symlink to avoid writing in original dir
             with inst_fp.open("w") as f:
@@ -156,14 +160,14 @@ class InstrumentizedFolder:
             yield subtempfolder
 
     def get_summary(self, data: np.ndarray) -> str:
-        splitted_data = utils.split_data(data, self.instrumentized_files)
+        splitted_data = utils.split_data(data, self.instrumented_files)
         strings = []
-        for ifile, sdata in zip(self.instrumentized_files, splitted_data):
+        for ifile, sdata in zip(self.instrumented_files, splitted_data):
             strings.append(ifile.get_summary(sdata))
         return "\n\n".join(strings)
 
 
-class InstrumentedFunction:
+class InstrumentedFunction(base.BaseFunction):
     """Converts a multi-argument function into a mono-argument multidimensional continuous function
     which can be optimized.
 
@@ -172,29 +176,31 @@ class InstrumentedFunction:
     function: callable
         the callable to convert
     *args, **kwargs: Any
-        Any argument. Arguments of type variables.SoftmaxCategorical or variabls.Gaussian will be instrumentized
+        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumented
         and others will be kept constant.
 
     Note
     ----
-    Tokens can be:
-    - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
-    - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
+    - Tokens can be:
+      - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
+      - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
+    - This function can then be directly used in benchmarks *if it returns a float*.
+
     """
 
     def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
         assert callable(function)
         self._args = [variables._Constant.convert_non_token(x) for x in args]
-        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deteriministic
+        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deterministic
+        dim = sum(x.dimension for x in self._args + list(self._kwargs.values()))
+        super().__init__(dimension=dim)
+        # keep track of what is instrumented (but "how" is probably too long/complex)
+        instrumented = [f"arg{k}" for k, var in enumerate(self._args) if not isinstance(var, variables._Constant)]
+        instrumented += sorted([x for x, y in self._kwargs.items() if not isinstance(y, variables._Constant)])
+        self._descriptors.update(name=function.__name__, instrumented=",".join(instrumented))
         self._function = function
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
-
-    @property
-    def dimension(self) -> int:
-        """Dimension of the input space
-        """
-        return sum(x.dimension for x in self._args + list(self._kwargs.values()))
 
     def convert_to_arguments(self, data: np.ndarray) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Get the arguments and keyword arguments corresponding to the data
@@ -214,11 +220,18 @@ class InstrumentedFunction:
         data = chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(instruments, ordered_args)])
         return data
 
-    def __call__(self, data: np.ndarray) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(data)
+    def oracle_call(self, x: np.ndarray) -> Any:
+        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x)
         return self._function(*self.last_call_args, **self.last_call_kwargs)
 
-    def get_summary(self, data: np.ndarray) -> Any:  # probably inpractical for large arrays
+    def __call__(self, x: np.ndarray) -> Any:
+        # BaseFunction __call__ method should generally not be overriden,
+        # but here that would mess up with typing, and I would rather not constrain
+        # user to return only floats.
+        x = self.transform(x)
+        return self.oracle_call(x)
+
+    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
         """Prints the summary corresponding to the provided data
         """
         data = np.array(data, copy=False)

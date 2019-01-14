@@ -63,7 +63,7 @@ class Experiment:
     Parameters
     ----------
     function: BaseFunction
-        the function to run the experiment on. It must inherit from BaseFunction so that to implement
+        the function to run the experiment on. It must inherit from BaseFunction to implement
         descriptors for the function.
 
     Note
@@ -134,7 +134,7 @@ class Experiment:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {optim_name} on {self.function}")
 
     def _run_with_error(self, callbacks: Optional[Dict[str, base._OptimCallBack]] = None) -> None:
-        """Run an experiment with the provided artificial function and optmizer
+        """Run an experiment with the provided artificial function and optimizer
 
         Parameter
         ---------
