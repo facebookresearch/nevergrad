@@ -27,7 +27,5 @@ setup(
                  'Intended Audience :: Science/Research',
                  'Topic :: Scientific/Engineering',
                  'Programming Language :: Python'],
-    package_data={'': ['LICENSE'],
-                  'nevergrad': ['**/additional/*.py', '**/optimization/*.csv']},
     install_requires=requirements,
 )
