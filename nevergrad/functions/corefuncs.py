@@ -97,7 +97,7 @@ def rosenbrock(x: np.ndarray) -> float:
 
 
 @registry.register
-def deceptiveillcond(x):
+def deceptiveillcond(x: np.ndarray) -> float:
     assert len(x) >= 2
     return max(np.abs(np.arctan(x[1]/x[0])),
                np.sqrt(x[0]**2. + x[1]**2.),
@@ -105,7 +105,7 @@ def deceptiveillcond(x):
 
 
 @registry.register
-def deceptivepath(x):
+def deceptivepath(x: np.ndarray) -> float:
     assert len(x) >= 2
     distance = np.sqrt(x[0]**2 + x[1]**2)
     if distance == 0.:
@@ -118,7 +118,7 @@ def deceptivepath(x):
 
 
 @registry.register
-def deceptivemultimodal(x):
+def deceptivemultimodal(x: np.ndarray) -> float:
     assert len(x) >= 2
     distance = np.sqrt(x[0]**2 + x[1]**2)
     if distance == 0.:
