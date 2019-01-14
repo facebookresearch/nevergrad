@@ -54,7 +54,7 @@ def create_seed_generator(seed: Optional[int]) -> Iterator[Optional[int]]:
     """
     generator = None if seed is None else np.random.RandomState(seed=seed)
     while True:
-        yield None if generator is None else generator.randint(np.iinfo(np.uint32).max)
+        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)
 
 
 class Experiment:
