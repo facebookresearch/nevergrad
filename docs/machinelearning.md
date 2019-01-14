@@ -67,6 +67,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
         # Just be careful that you "tell" something that was asked.
+        # Here we ask 3 times and tell 3 times in order to fake asynchronicity
         x1 = optim.ask()
         x2 = optim.ask()
         x3 = optim.ask()
@@ -88,7 +89,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
 
 ## First example: optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom. Asynchronous version.
 ```python
-
+from concurrent import futures
 import nevergrad.optimization as optimization
 import numpy as np
 
@@ -113,8 +114,7 @@ budget = 1200  # How many trainings we will do before concluding.
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]:
 
     optim = optimization.registry[tool](dimension=300, budget=budget)
-
-    from concurrent import futures
+    
     with futures.ThreadPoolExecutor(max_workers=optim.num_workers) as executor:
         recommendation = optim.optimize(train_and_return_test_error, executor=executor)
     print("* ", tool, " provides a vector of parameters with test error ",
@@ -203,6 +203,7 @@ for tool in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDis
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
         # Just be careful that you "tell" something that was asked.
+        # Here we ask 3 times and tell 3 times in order to fake asynchronicity
         x1 = optim.ask()
         x2 = optim.ask()
         x3 = optim.ask()
@@ -220,8 +221,10 @@ for tool in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDis
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error_mixed(recommendation))
 
-
-
+# you can then recover the arguments in the initial function domain with:
+args, kwargs = train_and_return_test_error_mixed.convert_to_arguments(recommendation)
+# or print a summary
+print(train_and_return_test_error_mixed.get_summary(recommendation))
 ```
 
 ## Third example: optimization of parameters for reinforcement learning.
@@ -241,12 +244,8 @@ import numpy as np
 print("Optimization of parameters in reinforcement learning ===============")
 
 
-def simulate_and_return_test_error_with_rl(x):
-    return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in x]) + len(x) * np.random.normal()
-
-
-def simulate_and_return_test_error_with_rl_without_noise(x):
-    return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in x])
+def simulate_and_return_test_error_with_rl(x, noisy=True):
+    return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in x]) + noisy * len(x) * np.random.normal()
 
 
 budget = 1200  # How many trainings we will do before concluding.
@@ -260,6 +259,7 @@ for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
         # Just be careful that you "tell" something that was asked.
+        # Here we ask 3 times and tell 3 times in order to fake asynchronicity
         x1 = optim.ask()
         x2 = optim.ask()
         x3 = optim.ask()
@@ -275,7 +275,7 @@ for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
     
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
-          simulate_and_return_test_error_with_rl_without_noise(recommendation))
+          simulate_and_return_test_error_with_rl(recommendation, noisy=False))
 
 
 
