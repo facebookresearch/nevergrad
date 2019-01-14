@@ -6,10 +6,7 @@
 import re
 from typing import List, Any, Match, Optional
 import numpy as np
-from ..optimization.discretization import (softmax_discretization,
-                                           softmax_probas,
-                                           threshold_discretization,
-                                           inverse_threshold_discretization)
+from ..optimization import discretization
 from ..common.typetools import ArrayLike
 from . import utils
 
@@ -77,27 +74,18 @@ class SoftmaxCategorical(_Variable):
     def dimension(self) -> int:
         return len(self.possibilities)
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> Any:  # pylint: disable=arguments-differ
+    def process(self, data: ArrayLike, deterministic: bool = False) -> Any:
         assert len(data) == len(self.possibilities)
-        index = int(softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
+        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
         return self.possibilities[index]
 
     def process_arg(self, arg: Any) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-        # TODO: Move to nevergrad.optimization.discretization.inverse_softmax_discretization
-
-        def inverse_softmax_discretization(index: int, arity: int) -> ArrayLike:
-            # p is an arbitrary probability that the provided arg will be sampled with the returned point
-            p = (1 / arity) * 1.5
-            x = np.zeros(arity)
-            x[index] = np.log((p * (arity - 1)) / (1 - p))
-            return x
-
-        return inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
+        return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
 
     def get_summary(self, data: List[float]) -> str:
         output = self.process(data, deterministic=True)
-        probas = softmax_probas(data)
+        probas = discretization.softmax_probas(data)
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
 
@@ -126,13 +114,13 @@ class OrderedDiscrete(SoftmaxCategorical):
 
     def process(self, data: ArrayLike, deterministic: bool = False) -> Any:  # pylint: disable=arguments-differ, unused-argument
         assert len(data) == 1
-        index = threshold_discretization(data, arity=len(self.possibilities))[0]
+        index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
         return self.possibilities[index]
 
     def process_arg(self, arg: Any) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         index = self.possibilities.index(arg)
-        return inverse_threshold_discretization([index], len(self.possibilities))
+        return discretization.inverse_threshold_discretization([index], len(self.possibilities))
 
     def get_summary(self, data: List[float]) -> str:
         output = self.process(data, deterministic=True)
@@ -162,10 +150,13 @@ class Gaussian(_Variable):
     def dimension(self) -> int:
         return 1 if self.shape is None else int(np.prod(self.shape))
 
-    def process(self, data: List[float]) -> Any:
+    def process(self, data: List[float], deterministic: bool = True) -> Any:
         assert len(data) == self.dimension
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
+
+    def process_arg(self, arg: Any) -> List[float]:
+        return [(arg - self.mean) / self.std]
 
     def get_summary(self, data: List[float]) -> str:
         output = self.process(data)
@@ -188,7 +179,7 @@ class _Constant(utils.Instrument):
     def dimension(self) -> int:
         return 0
 
-    def process(self, data: List[float]) -> Any:  # pylint: disable=unused-argument
+    def process(self, data: List[float], deterministic: bool = False) -> Any:  # pylint: disable=unused-argument
         return self._value
 
     def process_arg(self, arg: Any) -> ArrayLike:
