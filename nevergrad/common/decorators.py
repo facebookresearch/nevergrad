@@ -31,6 +31,15 @@ class Registry(dict):
             self._information[name] = info
         return obj
 
+    def unregister(self, name:str) -> None:
+        """Remove a previously-registered function or class, e.g. so you can 
+        re-register it in a Jupyter notebook.
+        """
+        if name in self:
+            obj = self[name]
+            if obj in self._registered: self._registered.remove(obj)
+            del self[name]
+
     def register_with_info(self, **info: Any) -> Callable:
         """Decorator for registering a function and information about it
         """
