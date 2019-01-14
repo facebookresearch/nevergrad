@@ -532,7 +532,7 @@ class SPSA(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._rng = np.random.RandomState(np.random.randint(2**32))
+        self._rng = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
         self.init = True
         self.idx = 0
         self.delta = float('nan')

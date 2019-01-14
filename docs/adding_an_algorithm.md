@@ -65,7 +65,7 @@ For consistency and simplicity's sake, please prefer `numpy`'s random generator 
 Also, you may instanciate a random generator for each optimizer and using it afterwards. This way it makes the optimizer independent of other uses of the default random generator.
 Still, please seed it with the standard numpy random generator so that seeding the standard generator will produce deterministic outputs:
 ```python
-self._rng = np.ranndom.RandomState(np.random.randint(2**32))
+self._rng = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
 ```
 
 A unit tests automatically makes sure that all optimizers have repeatable bvehaviors on a simple test case when seeded from outside (see below).
