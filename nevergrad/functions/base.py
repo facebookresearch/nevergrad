@@ -24,7 +24,6 @@ class BaseFunction(abc.ABC):
 
     Notes
     -----
-    - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
     - transforms must be registered through the "register_transform" class method before instantiation.
     """
 
@@ -159,8 +158,6 @@ class ArtificiallyNoisyBaseFunction(BaseFunction):  # pylint: disable=abstract-m
     - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
     - transforms must be registered through the "register_transform" class method before instantiation.
     """
-
-    _TRANSFORMS: Dict[str, Callable[[Any, np.ndarray], np.ndarray]] = {}  # Any should be the current class (but typing would get messy)
 
     def __init__(self, dimension: int, noise_level: float = 0., noise_dissymmetry: bool = False, transform: Optional[str] = None) -> None:
         super().__init__(dimension, transform=transform)
