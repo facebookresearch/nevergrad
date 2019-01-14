@@ -6,22 +6,22 @@ train_and_return_test_error_mixed = instru.InstrumentedFunction(myfunction, arg1
 ```
 (as in an example below)
 
-If you have both continuous and discrete parameters, you have a good initial guess, maybe just use OrderedDiscrete for all discrete variables (yes, even if they are not ordered), Gaussian for all your continuous variables, and use PortfolioDiscreteOnePlusOne. Just take care that the default value (your initial guess) is at the middle in the list of possible values. You can check that things are correct by checking that for zero you get the default:
+If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete` for all discrete variables (yes, even if they are not ordered), `Gaussian` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne`. Just take care that the default value (your initial guess) is at the middle in the list of possible values. You can check that things are correct by checking that for zero you get the default:
 ```python
 args, kwarg = train_and_return_test_error_mixed.convert_to_arguments([0] * train_and_return_test_error_mixed.dimension)
 print(args)
 print(kwarg)
 ```
 
-The fact that you use ordered discrete variables is not a big deal because by nature PortfolioDiscreteOnePlusOne will ignore the order. This algorithm is quite stable. 
+The fact that you use ordered discrete variables is not a big deal because by nature `PortfolioDiscreteOnePlusOne` will ignore the order. This algorithm is quite stable. 
 
-If you have more budget, a cool possibility is to use CategoricalSoftmax for all discrete variables and then apply TwoPointsDE. You might also compare this to DE (classical differential evolution). This might need a budget in the hundreds.
+If you have more budget, a cool possibility is to use `CategoricalSoftmax` for all discrete variables and then apply `TwoPointsDE`. You might also compare this to DE (classical differential evolution). This might need a budget in the hundreds.
 
-If you want to double-check that you are not worse than random search, you might use RandomSearch.
+If you want to double-check that you are not worse than random search, you might use `RandomSearch`.
 
-If you want something fully parallel (the number of workers can be equal to the budget), then you might use ScrHammersleySearch. Yes, this includes the discrete case. Then, you should use OrderedDiscrete rather than CategoricalSoftmax. This does not have the traditional drawback of grid search and should still be more uniform than random. By nature ScrHammersleySearch will deal correctly with OrderedDiscrete type for CategoricalSoftmax.
+If you want something fully parallel (the number of workers can be equal to the budget), then you might use `ScrHammersleySearch`. Yes, this includes the discrete case. Then, you should use `OrderedDiscrete` rather than `CategoricalSoftmax`. This does not have the traditional drawback of grid search and should still be more uniform than random. By nature `ScrHammersleySearch` will deal correctly with `OrderedDiscrete` type for `CategoricalSoftmax`.
 
-If you are optimizing weights in reinforcement learning, you might use TBPSA (high noise) or CMA (low noise).
+If you are optimizing weights in reinforcement learning, you might use `TBPSA` (high noise) or `CMA` (low noise).
 
 
 
@@ -37,8 +37,8 @@ The second example is the optimization of mixed (continuous and discrete) hyperp
 The third example is the optimization of parameters in a noisy setting, typically as in reinforcement learning.
 
 ## First example: optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom. Synchronous version.
-```python
 
+```python
 import nevergrad.optimization as optimization
 import numpy as np
 
@@ -84,10 +84,10 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error(recommendation))
-
 ```
 
 ## First example: optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom. Asynchronous version.
+
 ```python
 from concurrent import futures
 import nevergrad.optimization as optimization
@@ -122,8 +122,8 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
 
 ```
 ## Second example: optimization of mixed (continuous and discrete) hyperparameters.
-```python
 
+```python
 import nevergrad.optimization as optimization
 from nevergrad import instrumentation as instru
 import numpy as np
@@ -228,8 +228,9 @@ print(train_and_return_test_error_mixed.get_summary(recommendation))
 ```
 
 ## Third example: optimization of parameters for reinforcement learning.
+
 We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
-TBPSA, based on population-control mechasnisms, performs quite well in this case.
+`TBPSA`, based on population-control mechasnisms, performs quite well in this case.
 
 ```python
 import nevergrad.optimization as optimization
@@ -276,10 +277,6 @@ for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           simulate_and_return_test_error_with_rl(recommendation, noisy=False))
-
-
-
-
 ```
 
 
