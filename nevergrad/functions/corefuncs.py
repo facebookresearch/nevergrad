@@ -97,6 +97,40 @@ def rosenbrock(x: np.ndarray) -> float:
 
 
 @registry.register
+def deceptiveillcond(x):
+    assert len(x) >= 2
+    return max(np.abs(np.arctan(x[1]/x[0])),
+               np.sqrt(x[0]**2. + x[1]**2.),
+               1. if x[0] > 0 else 0.) if x[0] != 0. else float("inf")
+
+
+@registry.register
+def deceptivepath(x):
+    assert len(x) >= 2
+    distance = np.sqrt(x[0]**2 + x[1]**2)
+    if distance == 0.:
+        return 0.
+    angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
+    invdistance = (1. / distance) 
+    if np.abs(np.cos(invdistance) - angle) > 0.1:
+        return 1.
+    return distance
+
+
+@registry.register
+def deceptivemultimodal(x):
+    assert len(x) >= 2
+    distance = np.sqrt(x[0]**2 + x[1]**2)
+    if distance == 0.:
+        return 0.
+    angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
+    invdistance = int(1. / distance) 
+    if np.abs(np.cos(invdistance) - angle) > 0.1:
+        return 1.
+    return distance
+
+
+@registry.register
 def lunacek(x: np.ndarray) -> float:
     """ Based on https://www.cs.unm.edu/~neal.holts/dga/benchmarkFunction/lunacek.html."""
     problemDimensions = len(x)
