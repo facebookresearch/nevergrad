@@ -8,11 +8,11 @@ from typing import List
 import numpy as np
 from . import utils
 from . import corefuncs
-from .base import BaseFunction
+from .base import ArtificiallyNoisyBaseFunction
 from ..common import tools
 
 
-class ArtificialFunction(BaseFunction):
+class ArtificialFunction(ArtificiallyNoisyBaseFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -62,7 +62,7 @@ class ArtificialFunction(BaseFunction):
     """
 
     def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
-                 useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False, 
+                 useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False,
                  rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
                  aggregator: str = "max") -> None:
         # pylint: disable=too-many-locals
@@ -81,7 +81,7 @@ class ArtificialFunction(BaseFunction):
             raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
         # record necessary info and prepare transforms
         dimension = block_dimension * num_blocks + useless_variables
-        super().__init__(dimension, noise_level, noise_dissymmetry)
+        super().__init__(dimension, noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
         self._aggregator = {"max": max, "mean": np.mean, "sum": sum}[aggregator]
         self._transforms: List[utils.Transform] = []
         # special case

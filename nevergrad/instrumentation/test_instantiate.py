@@ -80,7 +80,7 @@ def test_instrumented_function() -> None:
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     testing.printed_assert_equal(ifunc.descriptors, {"dimension": 8, "name": "_arg_return", "instrumented": "arg0,arg2,plop",
-                                                     "noise_level": 0, "function_class": "InstrumentedFunction", "transform": None})
+                                                     "function_class": "InstrumentedFunction", "transform": None})
 
 
 def test_instrumented_function_kwarg_order() -> None:
