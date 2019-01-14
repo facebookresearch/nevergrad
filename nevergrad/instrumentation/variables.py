@@ -155,7 +155,7 @@ class Gaussian(_Variable):
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
 
-    def process_arg(self, arg: Any) -> ArrayLike:
+    def process_arg(self, arg: Any) -> List[float]:
         return [(arg - self.mean) / self.std]
 
     def get_summary(self, data: List[float]) -> str:

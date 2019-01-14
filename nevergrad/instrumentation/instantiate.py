@@ -65,7 +65,7 @@ class InstrumentedFile(utils.Instrument):
             text = "\n".join(lines)
         self.text, self.variables = utils.replace_tokens_by_placeholders(text)
 
-    def process(self, data: np.ndarray, deterministic=False) -> str:
+    def process(self, data: np.ndarray, deterministic: bool = False) -> str:
         values = utils.process_instruments(self.variables, data, deterministic=deterministic)
         text = utils.replace_placeholders_by_values(self.text, values)
         return text
