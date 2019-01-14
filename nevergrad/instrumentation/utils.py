@@ -30,7 +30,7 @@ class Instrument:
     def process_arg(self, arg: Any) -> ArrayLike:
         raise NotImplementedError
 
-    def process(self, data: List[float]) -> Any:
+    def process(self, data: List[float], deterministic: bool = False) -> Any:
         raise NotImplementedError
 
     def get_summary(self, data: np.ndarray) -> str:
@@ -55,12 +55,13 @@ def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[Lis
     return splitted_data
 
 
-def process_instruments(instruments: Iterable[Instrument], data: List[float]) -> Tuple[Any, ...]:
+def process_instruments(instruments: Iterable[Instrument], data: List[float],
+                        deterministic: bool = False) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
     instruments = list(instruments)
     splitted_data = split_data(data, instruments)
-    return tuple([instrument.process(d) for instrument, d in zip(instruments, splitted_data)])
+    return tuple([instrument.process(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
 
 
 def replace_tokens_by_placeholders(text: str) -> Tuple[str, List[Instrument]]:

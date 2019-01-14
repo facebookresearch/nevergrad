@@ -65,8 +65,8 @@ class InstrumentedFile(utils.Instrument):
             text = "\n".join(lines)
         self.text, self.variables = utils.replace_tokens_by_placeholders(text)
 
-    def process(self, data: np.ndarray) -> str:
-        values = utils.process_instruments(self.variables, data)
+    def process(self, data: np.ndarray, deterministic=False) -> str:
+        values = utils.process_instruments(self.variables, data, deterministic=deterministic)
         text = utils.replace_placeholders_by_values(self.text, values)
         return text
 
@@ -203,14 +203,22 @@ class InstrumentedFunction(base.BaseFunction):
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
 
-    def convert_to_arguments(self, data: np.ndarray) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Get the arguments and keyword arguments corresponding to the data
+
+        Parameters
+        ----------
+        data: np.ndarray
+            input data
+        deterministic: bool
+            whether to process the data deterministically (some Variables such as SoftmaxCategorical are stochastic).
+            If True, the output is the most likely output.
         """
         data = np.array(data, copy=False)
         assert data.shape == (self.dimension,), f"Erroneous shape {data.shape}"
         args_dim = sum(x.dimension for x in self._args)
-        args = utils.process_instruments(self._args, data[:args_dim])
-        kwvals = utils.process_instruments(self._kwargs.values(), data[args_dim:])
+        args = utils.process_instruments(self._args, data[:args_dim], deterministic=deterministic)
+        kwvals = utils.process_instruments(self._kwargs.values(), data[args_dim:], deterministic=deterministic)
         kwargs = OrderedDict((kw, v) for kw, v in zip(self._kwargs.keys(), kwvals))
         return args, kwargs
 
@@ -222,7 +230,7 @@ class InstrumentedFunction(base.BaseFunction):
         return data
 
     def oracle_call(self, x: np.ndarray) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x)
+        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x, deterministic=False)
         return self._function(*self.last_call_args, **self.last_call_kwargs)
 
     def __call__(self, x: np.ndarray) -> Any:

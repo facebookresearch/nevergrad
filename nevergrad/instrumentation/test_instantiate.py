@@ -94,8 +94,8 @@ def test_instrumented_function_kwarg_order() -> None:
 
 class _Callable:
 
-    def __call__(self, x: float) -> float:
-        return abs(x)
+    def __call__(self, x: float, y: float = 0) -> float:
+        return abs(x + y)
 
 
 def test_callable_instrumentation() -> None:
@@ -103,3 +103,20 @@ def test_callable_instrumentation() -> None:
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = instantiate.InstrumentedFunction(_Callable(), variables.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
+
+
+def test_deterministic_convert_to_args() -> None:
+    ifunc = instantiate.InstrumentedFunction(_Callable(), variables.SoftmaxCategorical([0, 1, 2, 3]),
+                                             y=variables.SoftmaxCategorical([0, 1, 2, 3]))
+    data = [.01, 0, 0, 0, .01, 0, 0, 0]
+    for _ in range(20):
+        args, kwargs = ifunc.convert_to_arguments(data, deterministic=True)
+        testing.printed_assert_equal(args, [0])
+        testing.printed_assert_equal(kwargs, {"y": 0})
+    arg_sum, kwarg_sum = 0, 0
+    for _ in range(24):
+        args, kwargs = ifunc.convert_to_arguments(data, deterministic=False)
+        arg_sum += args[0]
+        kwarg_sum += kwargs["y"]
+    assert arg_sum != 0
+    assert kwarg_sum != 0

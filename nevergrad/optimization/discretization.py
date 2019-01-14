@@ -85,3 +85,11 @@ def softmax_probas(data: np.ndarray) -> np.ndarray:
     if not sum(data):
         data = np.ones(len(data))
     return data / np.sum(data)
+
+
+def inverse_softmax_discretization(index: int, arity: int) -> ArrayLike:
+    # p is an arbitrary probability that the provided arg will be sampled with the returned point
+    p = (1 / arity) * 1.5
+    x = np.zeros(arity)
+    x[index] = np.log((p * (arity - 1)) / (1 - p))
+    return x

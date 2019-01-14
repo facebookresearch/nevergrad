@@ -42,3 +42,4 @@ def test_hard_discrete() -> None:
 def test_gaussian() -> None:
     token = variables.Gaussian(1, 3)
     np.testing.assert_equal(token.process([.5]), 2.5)
+    np.testing.assert_equal(token.process(token.process_arg(12)), 12)
