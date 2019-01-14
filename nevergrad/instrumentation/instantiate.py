@@ -176,7 +176,7 @@ class InstrumentedFunction(base.BaseFunction):
     function: callable
         the callable to convert
     *args, **kwargs: Any
-        Any argument. Arguments of type variables.SoftmaxCategorical or variabls.Gaussian will be instrumented
+        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumented
         and others will be kept constant.
 
     Note
@@ -191,7 +191,7 @@ class InstrumentedFunction(base.BaseFunction):
     def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
         assert callable(function)
         self._args = [variables._Constant.convert_non_token(x) for x in args]
-        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deteriministic
+        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deterministic
         dim = sum(x.dimension for x in self._args + list(self._kwargs.values()))
         super().__init__(dimension=dim)
         # keep track of what is instrumented (but "how" is probably too long/complex)
@@ -231,7 +231,7 @@ class InstrumentedFunction(base.BaseFunction):
         x = self.transform(x)
         return self.oracle_call(x)
 
-    def get_summary(self, data: np.ndarray) -> Any:  # probably inpractical for large arrays
+    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
         """Prints the summary corresponding to the provided data
         """
         data = np.array(data, copy=False)

@@ -22,9 +22,10 @@ def test_symlink_folder_tree() -> None:
 
 
 @genty.genty
-class InstanciationTests(TestCase):
+class InstantiationTests(TestCase):
 
     # CAREFUL: avoid triggering errors if the module parses itself...
+    # Note: 'bidule' is French for dummy widget
     @genty.genty_dataset(  # type: ignore
         nothing=("    bidule", ".py", "    bidule"),
         python=(f"    # {LINETOKEN} bidule", ".py", "    bidule"),

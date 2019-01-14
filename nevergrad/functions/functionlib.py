@@ -78,7 +78,7 @@ class ArtificialFunction(BaseFunction):
         assert isinstance(translation_factor, (float, int)), f"Got non-float value {translation_factor}"
         if name not in corefuncs.registry:
             available = ", ".join(self.list_sorted_function_names())
-            raise ValueError(f'Unknown core function "{name}". Avaible names are:\n-----\n{available}')
+            raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
         # record necessary info and prepare transforms
         dimension = block_dimension * num_blocks + useless_variables
         super().__init__(dimension, noise_level, noise_dissymmetry)
@@ -99,7 +99,7 @@ class ArtificialFunction(BaseFunction):
         return sorted(corefuncs.registry)
 
     def initialize(self) -> None:
-        """Delayed initializations of the transforms to avoid slowing down the instance creation
+        """Delayed initialization of the transforms to avoid slowing down the instance creation
         (makes unit testing much faster).
         This functions creates the random transform used upon each block (translation + optional rotation).
         """
