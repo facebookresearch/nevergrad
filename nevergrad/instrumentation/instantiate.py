@@ -3,14 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from itertools import chain
 import os
 import re
 import tempfile
 import operator
 import contextlib
 from pathlib import Path
-from collections import OrderedDict
 from typing import Union, List, Any, Optional, Generator, Callable, Tuple, Dict
 import numpy as np
 from ..functions import base
@@ -190,13 +188,11 @@ class InstrumentedFunction(base.BaseFunction):
 
     def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
         assert callable(function)
-        self._args = [variables._Constant.convert_non_token(x) for x in args]
-        self._kwargs = OrderedDict(sorted((x, variables._Constant.convert_non_token(y)) for x, y in kwargs.items()))  # make deterministic
-        dim = sum(x.dimension for x in self._args + list(self._kwargs.values()))
-        super().__init__(dimension=dim)
+        self.instrumentation = variables.Instrumentation(*args, **kwargs)
+        super().__init__(dimension=self.instrumentation.dimension)
         # keep track of what is instrumented (but "how" is probably too long/complex)
-        instrumented = [f"arg{k}" for k, var in enumerate(self._args) if not isinstance(var, variables._Constant)]
-        instrumented += sorted([x for x, y in self._kwargs.items() if not isinstance(y, variables._Constant)])
+        instrumented = [f"arg{k}" if name is None else name for k, name in enumerate(self.instrumentation.names)
+                        if not isinstance(self.instrumentation.instruments[k], variables._Constant)]
         name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
         self._descriptors.update(name=name, instrumented=",".join(instrumented))
         self._function = function
@@ -214,20 +210,10 @@ class InstrumentedFunction(base.BaseFunction):
             whether to process the data deterministically (some Variables such as SoftmaxCategorical are stochastic).
             If True, the output is the most likely output.
         """
-        data = np.array(data, copy=False)
-        assert data.shape == (self.dimension,), f"Erroneous shape {data.shape}"
-        args_dim = sum(x.dimension for x in self._args)
-        args = utils.process_instruments(self._args, data[:args_dim], deterministic=deterministic)
-        kwvals = utils.process_instruments(self._kwargs.values(), data[args_dim:], deterministic=deterministic)
-        kwargs = OrderedDict((kw, v) for kw, v in zip(self._kwargs.keys(), kwvals))
-        return args, kwargs
+        return self.instrumentation.data_to_arguments(data, deterministic=deterministic)
 
     def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
-        instruments = self._args + list(self._kwargs.values())
-        ordered_args = args + tuple(kwargs[key] for key in self._kwargs.keys())  # Match the internal order of args
-        # Process and flatten all args
-        data = chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(instruments, ordered_args)])
-        return data
+        return self.instrumentation.arguments_to_data(*args, **kwargs)
 
     def oracle_call(self, x: np.ndarray) -> Any:
         self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x, deterministic=False)
