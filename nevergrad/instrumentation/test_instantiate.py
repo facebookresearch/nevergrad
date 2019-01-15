@@ -81,6 +81,7 @@ def test_instrumented_function() -> None:
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     testing.printed_assert_equal(ifunc.descriptors, {"dimension": 8, "name": "_arg_return", "instrumented": "arg0,arg2,plop",
                                                      "function_class": "InstrumentedFunction", "transform": None})
+    print(ifunc.get_summary(data))
 
 
 def test_instrumented_function_kwarg_order() -> None:

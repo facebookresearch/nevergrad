@@ -229,20 +229,13 @@ class InstrumentedFunction(base.BaseFunction):
     def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
         """Prints the summary corresponding to the provided data
         """
-        data = np.array(data, copy=False)
-        assert data.shape == (self.dimension,), f"Erroneous shape {data.shape}"
-        args_dim = sum(x.dimension for x in self._args)
         strings = []
-        # args
-        splitted_data = utils.split_data(data[:args_dim], self._args)
-        for k, (token, d) in enumerate(zip(self._args, splitted_data)):
-            if not isinstance(token, variables._Constant):
-                explanation = token.get_summary(d)
-                strings.append(f"arg #{k + 1}: {explanation}")
-        # kwargs
-        splitted_data = utils.split_data(data[args_dim:], self._kwargs.values())
-        for (kw, token), d in zip(self._kwargs.items(), splitted_data):
-            if not isinstance(token, variables._Constant):
-                explanation = token.get_summary(d)
-                strings.append(f'kwarg "{kw}": {explanation}')
+        names = self.instrumentation.names
+        instruments = self.instrumentation.instruments
+        splitted_data = utils.split_data(data, instruments)
+        for k, (name, var, d) in enumerate(zip(names, instruments, splitted_data)):
+            if not isinstance(var, variables._Constant):
+                explanation = var.get_summary(d)
+                sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
+                strings.append(f"{sname}: {explanation}")
         return " - " + "\n - ".join(strings)

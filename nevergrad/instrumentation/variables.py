@@ -203,7 +203,7 @@ class Instrumentation:
         self.instruments: List[utils.Instrument] = [_Constant.convert_non_instrument(a) for a in arguments]
 
     @property
-    def dimension(self):
+    def dimension(self) -> int:
         return sum(i.dimension for i in self.instruments)
 
     @staticmethod
@@ -215,14 +215,14 @@ class Instrumentation:
         _make_argument_names_and_list(3, z="blublu", machin="truc")
         >>> (None, "machin", "z"), (3, "truc", "blublu")
         """
-        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
         arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
         return names, arguments
 
     def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Converts data to arguments
         """
-        arguments: List[Any] = utils.process_instruments(self.instruments, data, deterministic=deterministic)
+        arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
         args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
         kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
         return args, kwargs
