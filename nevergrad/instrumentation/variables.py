@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
-from typing import List, Any, Match, Optional
+import itertools
+from typing import List, Any, Match, Optional, Tuple, Dict
 import numpy as np
 from ..optimization import discretization
 from ..common.typetools import ArrayLike
@@ -172,8 +173,8 @@ class _Constant(utils.Instrument):
         self._value = value
 
     @classmethod
-    def convert_non_token(cls, x: Any) -> utils.Instrument:
-        return x if isinstance(x, _Variable) else cls(x)
+    def convert_non_instrument(cls, x: Any) -> utils.Instrument:
+        return x if isinstance(x, utils.Instrument) else cls(x)
 
     @property
     def dimension(self) -> int:
@@ -191,3 +192,53 @@ class _Constant(utils.Instrument):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._value})"
+
+
+class Instrumentation:
+    """Class handling arguments instrumentation, and providing conversion to and from data.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        self.instruments: List[utils.Instrument] = [_Constant.convert_non_instrument(a) for a in arguments]
+
+    @property
+    def dimension(self) -> int:
+        return sum(i.dimension for i in self.instruments)
+
+    @staticmethod
+    def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
+        """Converts *args and **kwargs to a tuple of names (with None for positional),
+        and the corresponding tuple of values.
+
+        Eg:
+        _make_argument_names_and_list(3, z="blublu", machin="truc")
+        >>> (None, "machin", "z"), (3, "truc", "blublu")
+        """
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
+        arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
+        return names, arguments
+
+    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        """Converts data to arguments
+        """
+        arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
+        args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
+        kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
+        return args, kwargs
+
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        """Converts arguments to data
+
+        Note
+        ----
+        - you need to input the arguments in the same way than at initialization
+          with regard to positional and named arguments.
+        - this process is simplified, and is deterministic. Depending on your instrumentation,
+          you will probably not recover the same data.
+        """
+        names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
+                                     f"but expected:\n{self.names}")
+        data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
+        return np.array(data)
