@@ -66,3 +66,8 @@ def test_instrumentation() -> None:
     for _ in range(24):
         total += instru.data_to_arguments(data, deterministic=False)[1]["b"]
     assert total != 0
+    # check duplicate
+    instru2 = variables.Instrumentation(*instru.args, **instru.kwargs)
+    data = np.random.normal(0, 1, size=6)
+    testing.printed_assert_equal(instru2.data_to_arguments(data, deterministic=True),
+                                 instru.data_to_arguments(data, deterministic=True))

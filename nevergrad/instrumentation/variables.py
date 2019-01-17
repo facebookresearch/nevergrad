@@ -7,7 +7,7 @@ import re
 import itertools
 from typing import List, Any, Match, Optional, Tuple, Dict
 import numpy as np
-from ..optimization import discretization
+from . import discretization
 from ..common.typetools import ArrayLike
 from . import utils
 
@@ -205,6 +205,18 @@ class Instrumentation:
     @property
     def dimension(self) -> int:
         return sum(i.dimension for i in self.instruments)
+
+    @property
+    def args(self) -> Tuple[utils.Instrument, ...]:
+        """List of instruments passed as positional arguments
+        """
+        return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
+
+    @property
+    def kwargs(self) -> Dict[str, utils.Instrument]:
+        """Dictionary of instruments passed as named arguments
+        """
+        return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
 
     @staticmethod
     def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:

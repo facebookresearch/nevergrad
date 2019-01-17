@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-from ..optimization import discretization
+from ..instrumentation import discretization
 from ..common.decorators import Registry
 
 
