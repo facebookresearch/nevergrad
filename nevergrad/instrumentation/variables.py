@@ -207,7 +207,7 @@ class Instrumentation:
         return sum(i.dimension for i in self.instruments)
 
     @property
-    def args(self) -> List[utils.Instrument]:
+    def args(self) -> Tuple[utils.Instrument, ...]:
         """List of instruments passed as positional arguments
         """
         return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)

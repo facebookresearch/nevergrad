@@ -161,11 +161,6 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         return self._internal_provide_recommendation()
 
-    # For compatibility. To be removed. TODO(oteytaud)
-    def suggest_point(self) -> Tuple[float, ...]:
-        warnings.warn("suggest_point should be converted to suggest_exploration", DeprecationWarning)
-        return self.suggest_exploration()
-
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         pass
@@ -311,7 +306,7 @@ class IntrumentedOptimizer:
         assert isinstance(point, ArgPoint), '"tell" can only receive an ArgPoint'
         self._optimizer.tell(point.data, value)
 
-    def optimize(self, objective_function: Callable[[Any], float],
+    def optimize(self, objective_function: Callable[..., float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
                  verbosity: int = 0) -> ArgPoint:
