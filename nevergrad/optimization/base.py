@@ -7,9 +7,10 @@ import abc
 import time
 from numbers import Real
 import warnings
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
+from .. import instrumentation as instru
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
 from . import utils
@@ -249,16 +250,6 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                 sleeper.sleep()
         return self.provide_recommendation()
 
-    # the following functions are there for compatibility reasons only and should not be used
-
-    def update_with_fitness_value(self, x: ArrayLike, value: float) -> None:
-        warnings.warn("Use 'tell' instead of 'update_with_fitness_value' (will fail in December)", DeprecationWarning)  # TODO remove
-        self.tell(x, value)
-
-    def suggest_exploration(self) -> Tuple[float, ...]:
-        warnings.warn("Use 'ask' instead of 'suggest_exploration' (will fail in December)", DeprecationWarning)  # TODO remove
-        return self.ask()
-
 
 class OptimizationPrinter:
     """Printer to register as callback in an optimizer, for printing
@@ -284,3 +275,50 @@ class OptimizationPrinter:
             x = optimizer.provide_recommendation()
             point = x if x not in optimizer.archive else utils.Point(x, optimizer.archive[x])
             print(f"After {optimizer.num_evaluations}, recommendation is {point}")
+
+
+class ArgPoint(NamedTuple):
+    """Handle for args and kwargs arguments, keeping
+    the initial data in memory.
+    """
+    args: Tuple[Any, ...]
+    kwargs: Dict[str, Any]
+    data: ArrayLike
+
+
+class IntrumentedOptimizer:
+    """Optimizer which yields "ArgPoint"s instead of data points (np.ndarray).
+    ArgPoint structure directly provides args and kwargs to input to the function you
+    mean to optimize.
+    """
+
+    def __init__(self, optimizer: Optimizer, instrumentation: instru.Instrumentation) -> None:
+        assert optimizer.dimension == instrumentation.dimension
+        self._optimizer = optimizer
+        self.instrumentation = instrumentation
+
+    def ask(self) -> ArgPoint:
+        x = self._optimizer.ask()
+        args, kwargs = self.instrumentation.data_to_arguments(x)
+        return ArgPoint(args, kwargs, x)
+
+    def provide_recommendation(self) -> ArgPoint:
+        x = self._optimizer.provide_recommendation()
+        args, kwargs = self.instrumentation.data_to_arguments(x)
+        return ArgPoint(args, kwargs, x)
+
+    def tell(self, point: ArgPoint, value: float) -> None:
+        assert isinstance(point, ArgPoint), '"tell" can only receive an ArgPoint'
+        self._optimizer.tell(point.data, value)
+
+    def optimize(self, objective_function: Callable[[Any], float],
+                 executor: Optional[ExecutorLike] = None,
+                 batch_mode: bool = False,
+                 verbosity: int = 0) -> ArgPoint:
+        # for now, instrument the function and optimize
+        # this should be updated eventually to take benefit of the information
+        # provided by the instumentation
+        ifunc = instru.InstrumentedFunction(objective_function, *self.instrumentation.args,
+                                            **self.instrumentation.kwargs)
+        self._optimizer.optimize(ifunc, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
+        return self.provide_recommendation()
