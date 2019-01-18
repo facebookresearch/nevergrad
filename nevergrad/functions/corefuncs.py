@@ -5,7 +5,7 @@
 
 import numpy as np
 import time
-from ..optimization import discretization
+from ..instrumentation import discretization
 from ..common.decorators import Registry
 
 
