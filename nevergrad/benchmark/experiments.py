@@ -78,7 +78,7 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in optims:
             for budget in [30, 100, 3000]:
                 # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget/5, seed=next(seedg))
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=int(budget/5), seed=next(seedg))
 
 
 @registry.register
