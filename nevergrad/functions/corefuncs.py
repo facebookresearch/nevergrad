@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import time
 from ..instrumentation import discretization
 from ..common.decorators import Registry
 
@@ -36,6 +37,13 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
     val = np.sum(np.power(x, 4) - 16 * np.power(x, 2) + 5 * x)
     # return a positive value for maximization
     return float(39.16599 * len(x) + 1 * 0.5 * val + noise * np.random.normal(size=val.shape))
+
+
+@registry.register
+def delayedsphere(x: np.ndarray) -> float:
+    '''For asynchronous experiments, we induce delays.'''
+    time.sleep(abs(1./x[0]) / 100000. if x[0] != 0. else 0.)
+    return float(np.sum(x**2))
 
 
 @registry.register
@@ -111,7 +119,7 @@ def deceptivepath(x: np.ndarray) -> float:
     if distance == 0.:
         return 0.
     angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
-    invdistance = (1. / distance)
+    invdistance = (1. / distance) if distance > 0. else 0.
     if np.abs(np.cos(invdistance) - angle) > 0.1:
         return 1.
     return float(distance)
@@ -124,7 +132,7 @@ def deceptivemultimodal(x: np.ndarray) -> float:
     if distance == 0.:
         return 0.
     angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
-    invdistance = int(1. / distance)
+    invdistance = int(1. / distance) if distance > 0. else 0.
     if np.abs(np.cos(invdistance) - angle) > 0.1:
         return 1.
     return float(distance)
