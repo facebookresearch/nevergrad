@@ -70,7 +70,7 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["ScrHammersleySearch", "CMA", "PSO", "NaiveTBPSA", "SQP", "Powell", "Cobyla", "SSSAES", "OnePlusOne",
+    optims = ["ScrHammersleySearch", "CMA", "PSO", "NaiveTBPSA", "SSSAES", "OnePlusOne",
     "DE", "TwoPointsDE"]
     functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor) for name in names for bd in [25] for uv_factor in [0, 5]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
