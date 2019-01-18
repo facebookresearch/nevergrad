@@ -10,7 +10,7 @@ from setuptools import find_packages
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
