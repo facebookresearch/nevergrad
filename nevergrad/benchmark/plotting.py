@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 from ..common import tools
 from ..common.typetools import PathLike
+# pylint: disable=too-many-locals
 
 
 _DPI = 100
@@ -106,7 +107,6 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     max_combsize: int
         maximum number of parameters to fix (combinations) when creating experiment plots
     """
-    # pylint: disable=too-many-locals
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
@@ -168,10 +168,8 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         a dict or dict-like object providing a line style for each optimizer name.
         (can be helpful for consistency across plots)
     """
-    # pylint: disable=too-many-locals
     if name_style is None:
         name_style = NameStyle()
-    # pylint: disable=too-many-locals
     df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"]])
     groupeddf = df.groupby(["optimizer_name", "budget"]).mean()
     plt.clf()
@@ -239,6 +237,7 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
         subdf = df.select(**dict(zip(categories, subcase)))
         victories += _make_winners_df(subdf, all_optimizers)
     winrates = _make_sorted_winrates_df(victories)
+    mean_win = winrates.mean(axis=1)
     winrates.fillna(.5)  # unplayed
     sorted_names = winrates.index
     # number of subcases actually computed is twice self-victories
@@ -252,7 +251,8 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
     ax.set_xticks(list(range(len(sorted_names))))
     ax.set_xticklabels(sorted_names, rotation=90, fontsize=7)
     ax.set_yticks(list(range(num_rows)))
-    ax.set_yticklabels(sorted_names[: num_rows], rotation=45, fontsize=7)
+    # pylint: disable=anomalous-backslash-in-string
+    ax.set_yticklabels([f"{name} ({100 * val:2.1f}\%)" for name, val in zip(mean_win.index[: num_rows], mean_win)], rotation=45, fontsize=7)
     plt.tight_layout()
     fig.colorbar(cax, orientation='vertical')
     if output_filepath is not None:
