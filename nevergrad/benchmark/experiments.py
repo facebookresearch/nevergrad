@@ -37,11 +37,11 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    optims = sorted(x for x, y in optimization.registry.items() if "CMA" in x or "DE" in x or "TBPSA" in x or "PSO" in x
-                    or "Powell" in x or "SQP" in x or ("OnePlusOne" in x and "iscr" not in x) or "SSSAES" in x or "SPSA"
-                    in x)
-    functions = [ArtificialFunction(name, block_dimension=2, rotation=rotation)
-                 for name in names for rotation in [False, True]]
+    optims = ["PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
+    functions = [ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation,
+                                    aggregator=aggregator)
+                 for name in names for rotation in [False, True] for n_blocks in [1, 2, 8, 16] for
+                 aggregator in ["sum", "max"]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:

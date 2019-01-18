@@ -119,7 +119,7 @@ def deceptivepath(x: np.ndarray) -> float:
     if distance == 0.:
         return 0.
     angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
-    invdistance = (1. / distance)
+    invdistance = (1. / distance) if distance > 0. else 0.
     if np.abs(np.cos(invdistance) - angle) > 0.1:
         return 1.
     return float(distance)
@@ -132,7 +132,7 @@ def deceptivemultimodal(x: np.ndarray) -> float:
     if distance == 0.:
         return 0.
     angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
-    invdistance = int(1. / distance)
+    invdistance = int(1. / distance) if distance > 0. else 0.
     if np.abs(np.cos(invdistance) - angle) > 0.1:
         return 1.
     return float(distance)
