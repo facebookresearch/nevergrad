@@ -11,7 +11,8 @@ from .xpbase import create_seed_generator
 from .xpbase import registry
 # register all frozen experiments
 from . import frozenexperiments  # pylint:disable=unused-import
-# pylint: disable=stop-iteration-return
+from . import cec2019_experiments  # pylint:disable=unused-import
+# pylint: disable=stop-iteration-return, too-many-nested-blocks
 
 
 @registry.register
@@ -136,13 +137,32 @@ def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in optimization.registry.items()
                     if ("TBPSA" in x or "ois" in x or "epea" in x) and "iscr" not in x)
-    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:  #, 16000, 32000, 64000, 128000, 512000]:#, 1024000, 2048000, 4096000]:
+    # , 16000, 32000, 64000, 128000, 512000]:#, 1024000, 2048000, 4096000]:
+    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:
         for optim in optims:
-          for d in [1, 2, 3]:
+            for d in [1, 2, 3]:
+                for rotation in [True]:
+                    for name in ["sphere"]:
+                        for noise_dissymmetry in [False, True]:
+                            function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
+                                                          noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                            yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = sorted(x for x, y in optimization.registry.items()
+                    if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x))
+    for budget in [50000]:
+        for optim in optims:
+          for d in [2, 20, 200]:
             for rotation in [True]:
-                for name in ["sphere"]:
+                for name in ["sphere", "rosenbrock"]:
                     for noise_dissymmetry in [False, True]:
-                        function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                        function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=1.)
                         yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
@@ -168,14 +188,15 @@ def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    for budget in [25, 31, 37, 43, 50, 60]:#, 4000, 8000, 16000, 32000]:
+    for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
         for optim in sorted(x for x, y in optimization.registry.items() if "BO" in x):
             for rotation in [False]:
-              for d in [20]:
-                for name in ["sphere", "cigar", "hm", "ellipsoid"]: #, "hm"]:
-                 for u in [0]:
-                    function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, useless_variables=d*u, translation_factor=1.)
-                    yield Experiment(function, optim, budget=budget, seed=next(seedg))
+                for d in [20]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
+                        for u in [0]:
+                            function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
+                                                          useless_variables=d*u, translation_factor=1.)
+                            yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
 @registry.register

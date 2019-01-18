@@ -10,7 +10,7 @@ from ..functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
-# pylint: disable=stop-iteration-return
+# pylint: disable=stop-iteration-return, too-many-nested-blocks
 
 
 @registry.register

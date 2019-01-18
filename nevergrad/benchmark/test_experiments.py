@@ -23,6 +23,25 @@ class ExperimentsTests(TestCase):
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
         check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
+    @genty.genty_dataset(
+        parallelcec=("parallelcec",),
+        noisycec=("noisycec",),
+        oneshotcec=("oneshotcec",),
+        deceptivecec=("deceptivecec",),
+    )
+    def test_cec_experiments(self, name: str) -> None:
+        assert name in experiments.registry, f'CEC experiment "{name}" is not registered'
+        xps = list(experiments.registry[name]())
+        optims = {xp._optimizer_parameters["optimizer_name"] for xp in xps}
+        custom = "CustomOptimizer"
+        assert custom in optims, f"Missing {custom}, found: {optims}"
+        # need several different cases
+        bounds = [300, 301]  # TODO decide bounds
+        num_settings = sum(1 for xp in xps if xp._optimizer_parameters["optimizer_name"] == custom)
+        assert bounds[0] <= num_settings <= bounds[1], f"Experiment has {num_settings} settings, not in bounds {bounds}"
+        bounds = [300, 301]  # TODO decide bounds
+        assert bounds[0] <= len(xps) <= bounds[1], f"Experiment has {len(xps)} settings, not in bounds {bounds}"
+
 
 def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
     generators = [maker() for _ in range(2)]
