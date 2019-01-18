@@ -4,12 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
-from typing import List, Any, Match, Optional
+import itertools
+from typing import List, Any, Match, Optional, Tuple, Dict
 import numpy as np
-from ..optimization.discretization import (softmax_discretization,
-                                           softmax_probas,
-                                           threshold_discretization,
-                                           inverse_threshold_discretization)
+from . import discretization
 from ..common.typetools import ArrayLike
 from . import utils
 
@@ -77,27 +75,18 @@ class SoftmaxCategorical(_Variable):
     def dimension(self) -> int:
         return len(self.possibilities)
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> Any:  # pylint: disable=arguments-differ
+    def process(self, data: ArrayLike, deterministic: bool = False) -> Any:
         assert len(data) == len(self.possibilities)
-        index = int(softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
+        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
         return self.possibilities[index]
 
     def process_arg(self, arg: Any) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-        # TODO: Move to nevergrad.optimization.discretization.inverse_softmax_discretization
-
-        def inverse_softmax_discretization(index: int, arity: int) -> ArrayLike:
-            # p is an arbitrary probability that the provided arg will be sampled with the returned point
-            p = (1 / arity) * 1.5
-            x = np.zeros(arity)
-            x[index] = np.log((p * (arity - 1)) / (1 - p))
-            return x
-
-        return inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
+        return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
 
     def get_summary(self, data: List[float]) -> str:
         output = self.process(data, deterministic=True)
-        probas = softmax_probas(data)
+        probas = discretization.softmax_probas(data)
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
 
@@ -126,13 +115,13 @@ class OrderedDiscrete(SoftmaxCategorical):
 
     def process(self, data: ArrayLike, deterministic: bool = False) -> Any:  # pylint: disable=arguments-differ, unused-argument
         assert len(data) == 1
-        index = threshold_discretization(data, arity=len(self.possibilities))[0]
+        index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
         return self.possibilities[index]
 
     def process_arg(self, arg: Any) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         index = self.possibilities.index(arg)
-        return inverse_threshold_discretization([index], len(self.possibilities))
+        return discretization.inverse_threshold_discretization([index], len(self.possibilities))
 
     def get_summary(self, data: List[float]) -> str:
         output = self.process(data, deterministic=True)
@@ -162,10 +151,13 @@ class Gaussian(_Variable):
     def dimension(self) -> int:
         return 1 if self.shape is None else int(np.prod(self.shape))
 
-    def process(self, data: List[float]) -> Any:
+    def process(self, data: List[float], deterministic: bool = True) -> Any:
         assert len(data) == self.dimension
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
+
+    def process_arg(self, arg: Any) -> List[float]:
+        return [(arg - self.mean) / self.std]
 
     def get_summary(self, data: List[float]) -> str:
         output = self.process(data)
@@ -181,14 +173,14 @@ class _Constant(utils.Instrument):
         self._value = value
 
     @classmethod
-    def convert_non_token(cls, x: Any) -> utils.Instrument:
-        return x if isinstance(x, _Variable) else cls(x)
+    def convert_non_instrument(cls, x: Any) -> utils.Instrument:
+        return x if isinstance(x, utils.Instrument) else cls(x)
 
     @property
     def dimension(self) -> int:
         return 0
 
-    def process(self, data: List[float]) -> Any:  # pylint: disable=unused-argument
+    def process(self, data: List[float], deterministic: bool = False) -> Any:  # pylint: disable=unused-argument
         return self._value
 
     def process_arg(self, arg: Any) -> ArrayLike:
@@ -200,3 +192,65 @@ class _Constant(utils.Instrument):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._value})"
+
+
+class Instrumentation:
+    """Class handling arguments instrumentation, and providing conversion to and from data.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        self.instruments: List[utils.Instrument] = [_Constant.convert_non_instrument(a) for a in arguments]
+
+    @property
+    def dimension(self) -> int:
+        return sum(i.dimension for i in self.instruments)
+
+    @property
+    def args(self) -> Tuple[utils.Instrument, ...]:
+        """List of instruments passed as positional arguments
+        """
+        return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
+
+    @property
+    def kwargs(self) -> Dict[str, utils.Instrument]:
+        """Dictionary of instruments passed as named arguments
+        """
+        return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
+
+    @staticmethod
+    def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
+        """Converts *args and **kwargs to a tuple of names (with None for positional),
+        and the corresponding tuple of values.
+
+        Eg:
+        _make_argument_names_and_list(3, z="blublu", machin="truc")
+        >>> (None, "machin", "z"), (3, "truc", "blublu")
+        """
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
+        arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
+        return names, arguments
+
+    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        """Converts data to arguments
+        """
+        arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
+        args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
+        kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
+        return args, kwargs
+
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        """Converts arguments to data
+
+        Note
+        ----
+        - you need to input the arguments in the same way than at initialization
+          with regard to positional and named arguments.
+        - this process is simplified, and is deterministic. Depending on your instrumentation,
+          you will probably not recover the same data.
+        """
+        names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
+                                     f"but expected:\n{self.names}")
+        data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
+        return np.array(data)

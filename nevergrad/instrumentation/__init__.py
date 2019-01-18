@@ -6,4 +6,5 @@
 from .folderfunction import FolderFunction
 from .instantiate import InstrumentedFunction
 from . import variables
+from .variables import Instrumentation
 from .utils import TemporaryDirectoryCopy

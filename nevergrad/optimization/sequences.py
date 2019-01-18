@@ -13,7 +13,6 @@ from ..common.typetools import ArrayLike
 
 
 samplers = Registry()
-SAMPLERS = samplers._registered
 
 
 def _get_first_primes(num: int) -> np.ndarray:
