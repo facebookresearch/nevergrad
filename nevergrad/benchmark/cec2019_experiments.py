@@ -40,7 +40,7 @@ def oneshotcec(seed: Optional[int] = None) -> Iterator[Experiment]:     # 2 vari
                 for budget in [4, 8, 16, 32, 128, 512, 2048, 8192]:
                     function = ArtificialFunction("sphere", block_dimension=block_dimension,
                                                   useless_variables=block_dimension * useless_coeff)
-                    yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
+                    yield Experiment(function, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
