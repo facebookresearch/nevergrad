@@ -42,11 +42,8 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
                     in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks, rotation=rotation)
                  for name in names for bd in [2] for uv_factor in [0] for n_blocks in [1] for rotation in [False, True]]
-    noisyfunctions =  [ArtificialFunction(name="sphere", rotation=rotation, block_dimension=bd, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
-                 for name in noisynames for bd in [2] for rotation in [False, True] for noise_dissymmetry in [False,
-                 True]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
-    for func in functions + noisyfunctions:
+    for func in functions:
         for optim in optims:
             for budget in [25,37,50,75,87,100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300,
                            1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600,
