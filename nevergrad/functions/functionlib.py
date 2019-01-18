@@ -66,6 +66,7 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction):
                  rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
                  aggregator: str = "max") -> None:
         # pylint: disable=too-many-locals
+        self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
         assert all(isinstance(x, bool) for x in [hashing, rotation])

@@ -33,6 +33,29 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = [n for n in ArtificialFunction.list_sorted_function_names() if "decepti" in n]
+    optims = sorted(x for x, y in optimization.registry.items() if "CMA" in x or "DE" in x or "TBPSA" in x or "PSO" in x
+                    or "Powell" in x or "SQP" in x or ("OnePlusOne" in x and "iscr" not in x) or "SSSAES" in x or "SPSA"
+                    in x)
+    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks, rotation=rotation)
+                 for name in names for bd in [2] for uv_factor in [0] for n_blocks in [1] for rotation in [False, True]]
+    noisyfunctions =  [ArtificialFunction(name="sphere", rotation=rotation, block_dimension=bd, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                 for name in noisynames for bd in [2] for rotation in [False, True] for noise_dissymmetry in [False,
+                 True]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for func in functions + noisyfunctions:
+        for optim in optims:
+            for budget in [25,37,50,75,87,100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300,
+                           1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600,
+                           2700, 2800, 2900, 3000]:  # , 10000]:
+                if budget < 100 or ("maxdec" not in func.name and "sumdec" not in func.name):
+                    yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def minidoe(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)

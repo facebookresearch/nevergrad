@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import time
 from ..optimization import discretization
 from ..common.decorators import Registry
 
@@ -36,6 +37,13 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
     val = np.sum(np.power(x, 4) - 16 * np.power(x, 2) + 5 * x)
     # return a positive value for maximization
     return float(39.16599 * len(x) + 1 * 0.5 * val + noise * np.random.normal(size=val.shape))
+
+
+@registry.register
+def delayedsphere(x: np.ndarray) -> float:
+    '''For asynchronous experiments, we induce delays.'''
+    time.sleep(abs(1./x[0]) / 100000. if x[0] != 0. else 0.)
+    return float(np.sum(x**2))
 
 
 @registry.register

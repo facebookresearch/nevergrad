@@ -182,7 +182,7 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     # extract name and coordinates
     for optim in df.unique("optimizer_name"):
         xvals = np.array(groupeddf.loc[optim, :].index)
-        yvals = np.maximum(1e-30, np.array(groupeddf.loc[optim, :].loc[:, "loss"]))  # avoid small vals for logplot
+        yvals = np.maximum(1e-5, np.array(groupeddf.loc[optim, :].loc[:, "loss"]))  # avoid small vals for logplot
         optim_name = optim.replace("Search", "").replace("oint", "t").replace("Optimizer", "")
         optim_vals[optim_name] = (xvals, yvals)
     # lower upper bound to twice stupid/idiot at most
