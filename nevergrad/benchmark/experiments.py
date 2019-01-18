@@ -167,23 +167,6 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
-    """
-    seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items()
-                    if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x))
-    for budget in [50000]:
-        for optim in optims:
-          for d in [2, 20, 200]:
-            for rotation in [True]:
-                for name in ["sphere", "rosenbrock"]:
-                    for noise_dissymmetry in [False, True]:
-                        function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=1.)
-                        yield Experiment(function, optim, budget=budget, seed=next(seedg))
-
-
-@registry.register
 def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
