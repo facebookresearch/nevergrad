@@ -80,8 +80,10 @@ def noisycec(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items()
-                    if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x))
+    optims = ["FastGAOptimisticNoisyDiscreteOnePlusOne", "TBPSA", "NoisyBandit",
+              "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", "SPSA", "NoisyOnePlusOne",
+              "RandomSearch", "PortfolioOptimisticNoisyDiscreteOnePlusOne",
+              "NoisyDiscreteOnePlusOne", "RandomScaleRandomSearch", "PortfolioNoisyDiscreteOnePlusOne"]
     optims.append("CustomOptimizer")
     for budget in [50000]:
         for optim in optims:
