@@ -66,6 +66,53 @@ def minidoe(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = ["ScrHammersleySearch", "CMA", "PSO", "NaiveTBPSA", "SQP", "Powell", "Cobyla", "SSSAES", "OnePlusOne",
+    "DE", "TwoPointsDE"]
+    functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor) for name in names for bd in [25] for uv_factor in [0, 5]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget/5, seed=next(seedg))
+
+
+@registry.register
+def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot)
+    functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor) for name in names for bd in [3, 25] for uv_factor in [0, 5]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+
+@registry.register
+def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    functions = [ArtificialFunction(name, block_dimension=50,
+                 rotation=rotation) for name in ["cigar", "ellipsoid"]
+                 for rotation in [True, False]]
+    for optim in optims:
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim,
+                    budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS performs best, followed by QR and random
     # nearly equally (Hammersley better than random, Halton not clearly; scrambling improves results).
     # prepare list of parameters to sweep for independent variables
@@ -96,6 +143,23 @@ def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
                 for name in ["sphere"]:
                     for noise_dissymmetry in [False, True]:
                         function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                        yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = sorted(x for x, y in optimization.registry.items()
+                    if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x))
+    for budget in [50000]:
+        for optim in optims:
+          for d in [2, 20, 200]:
+            for rotation in [True]:
+                for name in ["sphere", "rosenbrock"]:
+                    for noise_dissymmetry in [False, True]:
+                        function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d, noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=1.)
                         yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
