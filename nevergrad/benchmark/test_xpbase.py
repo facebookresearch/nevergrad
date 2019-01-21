@@ -17,7 +17,8 @@ from .xpbase import Experiment
 from .xpbase import create_seed_generator
 
 
-DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "num_workers", "budget", "error"} | ARTIFICIAL_KEYS
+DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name",
+                    "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
 
 
 def test_run_artificial_function() -> None:

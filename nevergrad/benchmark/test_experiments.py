@@ -54,7 +54,7 @@ def check_seedable(maker: Any) -> None:
     algo = "OnePlusOne"  # for simplifying the test
     for seed in [random_seed, random_seed, random_seed + 1]:
         xps = list(itertools.islice(maker(seed), 0, 8))
-        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp._optimizer_parameters["num_workers"]), seed=xp.seed)
+        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed)
                       for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
