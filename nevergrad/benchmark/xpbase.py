@@ -40,8 +40,16 @@ class CallCounter:
 
 
 class OptimizerSettings:
+    """Handle for optimizer settings (name, num_workers etc)
+    Optimizers can be instanciated through this class, providing the optimization space dimension.
+
+    Note
+    ----
+    Eventually, this class should be moved to be directly used for defining experiments.
+    """
 
     def __init__(self, name: str, budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+        self._setting_names = [x for x in locals() if x != "self"]
         assert name in optimizer_registry, f"{name} is not registered"
         self.name = name
         self.budget = budget
@@ -62,15 +70,19 @@ class OptimizerSettings:
         return optimizer.no_parallelization and bool(self.num_workers > 1)
 
     def instanciate(self, dimension: int) -> base.Optimizer:
+        """Instanciate an optimizer, providing the optimization space dimension
+        """
         optim: base.Optimizer = optimizer_registry[self.name](dimension=dimension, budget=self.budget, num_workers=self.num_workers)
         return optim
 
     def get_description(self) -> Dict[str, Any]:
-        return {"optimizer_name": self.name, "budget": self.budget, "num_workers": self.num_workers, "batch_mode": self.batch_mode}
+        """Returns a dictionary describing the optimizer settings
+        """
+        return {x if x != "name" else "optimizer_name": getattr(self, x) for x in self._setting_names}
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
-            return all(getattr(self, attr) == getattr(other, attr) for attr in ["name", "budget", "num_workers", "batch_mode"])
+            return all(getattr(self, attr) == getattr(other, attr) for attr in self._setting_names)
         return False
 
 
