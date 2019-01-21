@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional
+from typing import Iterator, Optional, List
+from ..functions.base import BaseFunction
 from ..functions import ArtificialFunction
 from ..functions import mlda as _mlda
 from .. import optimization
@@ -203,8 +204,8 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs = [_mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)]
-             for rescale in [True, False]]
+    funcs: List[BaseFunction] = [_mlda.Clustering.from_mlda(name, num, rescale)
+                                 for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]]
     funcs += [_mlda.SammonMapping.from_mlda("Virus", rescale=False), _mlda.SammonMapping.from_mlda("Virus", rescale=True),
               _mlda.SammonMapping.from_mlda("Employees")]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]

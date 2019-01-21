@@ -69,7 +69,7 @@ class ProblemTests(TestCase):
         np.testing.assert_almost_equal(value, 0 if name == "Virus" else 5.152, decimal=4)
 
 
-def test_sammon_circle():
+def test_sammon_circle() -> None:
     func = problems.SammonMapping.from_2d_circle()
     assert np.max(func._proximity) <= 2.
 

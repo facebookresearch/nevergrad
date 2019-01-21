@@ -191,7 +191,7 @@ class SammonMapping(BaseFunction):
         return pb
 
     @classmethod
-    def from_2d_circle(cls, num_points=12):
+    def from_2d_circle(cls, num_points: int = 12) -> "SammonMapping":
         """Simple test case where the points are in a 2d circle.
         """
         idata = np.exp(np.linspace(0, 2 * np.pi, num_points) * 1j)
