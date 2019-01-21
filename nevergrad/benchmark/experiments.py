@@ -203,6 +203,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
+@registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[BaseFunction] = [_mlda.Clustering.from_mlda(name, num, rescale)
                                  for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]]
@@ -212,8 +213,8 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
-             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "SSSAES", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
-             "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "miniCMAAT", "MiniDE"]
+             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
+             "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
     # pylint: disable=too-many-nested-blocks
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for func in funcs:
