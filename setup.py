@@ -27,5 +27,6 @@ setup(
                  'Intended Audience :: Science/Research',
                  'Topic :: Scientific/Engineering',
                  'Programming Language :: Python'],
+    data_files=[('', ['LICENSE', 'requirements.txt'])],
     install_requires=requirements,
 )
