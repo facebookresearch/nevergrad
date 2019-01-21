@@ -58,9 +58,10 @@ class MockedSteadyExecutor:
         value = function(*args, **kwargs)
         job = MockedSteadyJob(value, self)
         # compute the delay and add to queue
-        delay = 0
-        if hasattr(function, "computation_time"):
-            delay = max(0, function.computation_time((args, kwargs), value))  # type: ignore
+        delay = 0.
+        special_method_name = "computation_time"
+        if hasattr(function, special_method_name):
+            delay = max(0, getattr(function, special_method_name)((args, kwargs), value))
         heapq.heappush(self.priority_queue, OrderedJobs(self._time + delay, self._order, job))
         # update order and "next" finished job
         self._order += 1
