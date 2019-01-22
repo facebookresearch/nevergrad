@@ -141,5 +141,5 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
         if isinstance(self._func, PostponedObject):
-            return self._func(arguments, value)
+            return self._func.get_postponing_delay(arguments, value)
         return 0

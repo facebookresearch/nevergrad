@@ -122,11 +122,12 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: BaseFunction, optimizer_name: str, budget: int, num_workers: int = 1, seed: Optional[int] = None) -> None:
+    def __init__(self, function: BaseFunction, optimizer_name: str, budget: int, num_workers: int = 1,
+                 batch_mode: bool = True, seed: Optional[int] = None) -> None:
         assert isinstance(function, BaseFunction), "All experiment functions should derive from BaseFunction"
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
-        self.optimsettings = OptimizerSettings(name=optimizer_name, num_workers=num_workers, budget=budget)
+        self.optimsettings = OptimizerSettings(name=optimizer_name, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
 
     def __repr__(self) -> str:
