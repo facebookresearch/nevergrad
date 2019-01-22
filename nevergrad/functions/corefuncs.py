@@ -5,6 +5,7 @@
 
 import numpy as np
 import time
+from .base import PostponedObject
 from ..instrumentation import discretization
 from ..common.decorators import Registry
 

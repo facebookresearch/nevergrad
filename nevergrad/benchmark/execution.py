@@ -1,5 +1,6 @@
 import heapq
 from typing import List, Callable, Any, NamedTuple
+from ..functions.base import PostponedObject  # this object only serves to provide delays that the executor must use to order jobs
 
 
 class MockedSteadyJob:
@@ -59,9 +60,8 @@ class MockedSteadyExecutor:
         job = MockedSteadyJob(value, self)
         # compute the delay and add to queue
         delay = 0.
-        special_method_name = "computation_time"
-        if hasattr(function, special_method_name):
-            delay = max(0, getattr(function, special_method_name)((args, kwargs), value))
+        if isinstance(function, PostponedObject):
+            delay = max(0, function.get_postponing_delay((args, kwargs), value))
         heapq.heappush(self.priority_queue, OrderedJobs(self._time + delay, self._order, job))
         # update order and "next" finished job
         self._order += 1

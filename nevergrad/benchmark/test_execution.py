@@ -6,13 +6,13 @@ import numpy as np
 from . import execution
 
 
-class Function:
+class Function(execution.PostponedObject):
 
     def __call__(self, x: int, y: int) -> float:
         return x + y
 
     # pylint: disable=unused-argument
-    def computation_time(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         return 5 - value
 
 
