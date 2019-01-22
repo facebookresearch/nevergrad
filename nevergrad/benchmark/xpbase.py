@@ -131,7 +131,7 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim=self.function.dimension) on {self.function}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
 
     @property
     def is_incoherent(self) -> bool:
