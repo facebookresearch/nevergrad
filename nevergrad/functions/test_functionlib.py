@@ -73,6 +73,13 @@ def test_oracle() -> None:
     np.testing.assert_array_almost_equal(y3, y4)  # should be different
 
 
+def test_function_transform() -> None:
+    func = functionlib.ArtificialFunction("sphere", 2, num_blocks=1, noise_level=.1)
+    output = func.transform([0, 0])
+    np.testing.assert_equal(output.shape, (1, 2))
+    np.testing.assert_equal(len([x for x in output]), 1)
+
+
 def test_artificial_function_summary() -> None:
     func = functionlib.ArtificialFunction("sphere", 5)
     testing.assert_set_equal(func.descriptors.keys(), DESCRIPTION_KEYS)
