@@ -199,7 +199,7 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         texts = []
         if xvals.size and yvals[-1] < upperbound:
             angle = 30 - 60 * k / len(optim_vals)
-            texts.append(plt.text(xvals[-1], yvals[-1], "{} ({:.3g})".format(optim_name, min(yvals)),
+            texts.append(plt.text(xvals[-1], yvals[-1], "{} ({:.3g})".format(optim_name, yvals[-1]),
                                   {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
     if upperbound < np.inf:
         plt.gca().set_ylim(lowerbound, upperbound)
