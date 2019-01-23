@@ -172,6 +172,7 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         name_style = NameStyle()
     df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"]])
     groupeddf = df.groupby(["optimizer_name", "budget"]).mean()
+    groupeddf_std = df.groupby(["optimizer_name", "budget"]).std().loc[groupeddf.index, :]  # std is currently unused
     plt.clf()
     plt.xlabel("Budget")
     plt.ylabel("Loss")
@@ -181,25 +182,26 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     for optim in df.unique("optimizer_name"):
         xvals = np.array(groupeddf.loc[optim, :].index)
         yvals = np.maximum(1e-30, np.array(groupeddf.loc[optim, :].loc[:, "loss"]))  # avoid small vals for logplot
+        stds = groupeddf_std.loc[optim, :].loc[:, "loss"]
         optim_name = optim.replace("Search", "").replace("oint", "t").replace("Optimizer", "")
-        optim_vals[optim_name] = (xvals, yvals)
+        optim_vals[optim_name] = {"x": xvals, "y": yvals, "std": stds}
     # lower upper bound to twice stupid/idiot at most
-    upperbound = np.inf
-    for optim, (_, yvals) in optim_vals.items():
+    upperbound = max(np.max(vals["y"]) for vals in optim_vals.values())
+    for optim, vals in optim_vals.items():
         if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
-            upperbound = min(upperbound, 2 * np.max(yvals))
+            upperbound = min(upperbound, 2 * np.max(vals["y"]))
     # plot from best to worst
     lowerbound = np.inf
     handles = []
-    sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x][1][-1], reverse=True)
+    sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["y"][-1], reverse=True)
     for k, optim_name in enumerate(sorted_optimizers):
-        xvals, yvals = optim_vals[optim_name]
-        lowerbound = min(lowerbound, np.min(yvals))
-        handles.append(plt.loglog(xvals, yvals, name_style[optim_name], label=optim_name))
+        vals = optim_vals[optim_name]
+        lowerbound = min(lowerbound, np.min(vals["y"]))
+        handles.append(plt.loglog(vals["x"], vals["y"], name_style[optim_name], label=optim_name))
         texts = []
-        if xvals.size and yvals[-1] < upperbound:
+        if vals["x"].size and vals["y"][-1] < upperbound:
             angle = 30 - 60 * k / len(optim_vals)
-            texts.append(plt.text(xvals[-1], yvals[-1], "{} ({:.3g})".format(optim_name, yvals[-1]),
+            texts.append(plt.text(vals["x"][-1], vals["y"][-1], "{} ({:.3g})".format(optim_name, vals["y"][-1]),
                                   {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
     if upperbound < np.inf:
         plt.gca().set_ylim(lowerbound, upperbound)
