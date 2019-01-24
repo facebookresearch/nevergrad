@@ -39,7 +39,7 @@ class ExperimentsTests(TestCase):
         bounds = [18, 1680]  # TODO decide bounds
         num_settings = sum(1 for xp in xps if xp._optimizer_parameters["optimizer_name"] == custom)
         assert bounds[0] <= num_settings <= bounds[1], f"Experiment has {num_settings} settings, not in bounds {bounds}"
-        bounds = [144, 1680]  # TODO decide bounds
+        bounds = [144, 15120]  # TODO decide bounds
         assert bounds[0] <= len(xps) <= bounds[1], f"Experiment has {len(xps)} settings, not in bounds {bounds}"
 
 
