@@ -28,8 +28,6 @@ class FolderFunction:  # should derive from BaseFunction?
     clean_copy: bool
         whether to create an initial clean temporary copy of the folder in order to avoid
         versioning problems (instantiations are lightweight symlinks in any case)
-    extension: tuple
-        list of extensions for files to parametrize (files with dftokens)
 
     Returns
     -------
@@ -51,14 +49,11 @@ class FolderFunction:  # should derive from BaseFunction?
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, folder: Union[Path, str], command: List[str], verbose: bool = False, clean_copy: bool = False,
-                 extensions: Optional[List[str]] = None) -> None:
-        if extensions is None:
-            extensions = [".py", "m", ".cpp", ".hpp", ".c", ".h"]
+    def __init__(self, folder: Union[Path, str], command: List[str], verbose: bool = False, clean_copy: bool = False) -> None:
         self.command = command
         self.verbose = verbose
         self.postprocessings = [get_last_line_as_float]
-        self.instrumented_folder = InstrumentedFolder(folder, extensions=extensions, clean_copy=clean_copy)
+        self.instrumented_folder = InstrumentedFolder(folder, clean_copy=clean_copy)
         self.last_full_output: Optional[str] = None
 
     @property

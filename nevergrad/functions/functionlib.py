@@ -112,10 +112,7 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         for transform_inds in tools.grouper(indices, n=self._parameters["block_dimension"]):
             self._transforms.append(utils.Transform(transform_inds, **{x: self._parameters[x] for x in ["translation_factor", "rotation"]}))
 
-    def oracle_call(self, x: np.ndarray) -> float:
-        """Implements the call of the function.
-        Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
-        """
+    def transform(self, x: np.ndarray) -> np.ndarray:
         if not self._transforms:
             self.initialize()
         if self._parameters["hashing"]:
@@ -124,12 +121,19 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
             x = np.random.normal(0., 1., len(x))
             np.random.set_state(state)
         x = np.asarray(x)
-        results = []
+        data = []
         for transform in self._transforms:
-            translated_x = transform(x)
-            if self._only_index_transform:
-                translated_x = x[transform.indices]  # only subsampling in this case
-            results.append(self._func(translated_x))
+
+            data.append(x[transform.indices] if self._only_index_transform else transform(x))
+        return np.array(data)
+
+    def oracle_call(self, x: np.ndarray) -> float:
+        """Implements the call of the function.
+        Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
+        """
+        results = []
+        for block in x:
+            results.append(self._func(block))
         return float(self._aggregator(results))
 
     def duplicate(self) -> "ArtificialFunction":

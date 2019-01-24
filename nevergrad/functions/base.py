@@ -170,8 +170,10 @@ class ArtificiallyNoisyBaseFunction(BaseFunction):  # pylint: disable=abstract-m
         noise = 0
         noise_level = self._noise_level
         if noise_level:
-            if not self._noise_dissymmetry or x_input[0] <= 0:
-                side_point = self.transform(x_input + np.random.normal(0, 1, self.dimension))
+            if not self._noise_dissymmetry or x_transf.ravel()[0] <= 0:
+                side_point = self.transform(x_input + np.random.normal(0, 1, size=self.dimension))
+                if self._noise_dissymmetry:
+                    noise_level *= (1. + x_transf.ravel()[0]*100.)
                 noise = noise_level * np.random.normal(0, 1) * (self.oracle_call(side_point) - fx)
         return fx + noise
 
