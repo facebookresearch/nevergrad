@@ -27,7 +27,7 @@ FILE_TYPES = {
 FILE_TYPES[".h"] = FILE_TYPES[".hpp"] = FILE_TYPES[".cpp"] = FILE_TYPES[".c"]
 
 
-def register_file_type(suffix: str, comment_chars: str):
+def register_file_type(suffix: str, comment_chars: str) -> None:
     """Register a new file type to be used for token instrumentation by providing the relevant file suffix as well as
     the characters that indicate a comment."""
     if not suffix.startswith("."):
