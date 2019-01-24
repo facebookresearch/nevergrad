@@ -19,6 +19,20 @@ from . import variables
 
 BIG_NUMBER = 3000
 LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file...
+FILE_TYPES = {
+    ".c": dict(comment="//"),
+    ".py": dict(comment="#"),
+    ".m": dict(comment="%"),
+}
+FILE_TYPES[".h"] = FILE_TYPES[".hpp"] = FILE_TYPES[".cpp"] = FILE_TYPES[".c"]
+
+
+def register_file_type(suffix: str, comment_chars: str):
+    """Register a new file type to be used for token instrumentation by providing the relevant file suffix as well as
+    the characters that indicate a comment."""
+    if not suffix.startswith("."):
+        suffix = f".{suffix}"
+    FILE_TYPES[suffix] = {"comment": comment_chars}
 
 
 def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
@@ -35,10 +49,11 @@ def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str
 
 
 def uncomment_line(line: str, extension: str) -> str:
-    comment_chars = {x: "//" for x in [".cpp", ".hpp", ".c", ".h"]}
-    comment_chars.update({".py": r"#", ".m": r"%"})
+    if extension not in FILE_TYPES:
+        raise RuntimeError(f'Unknown file type: {extension}\nDid you register it using {register_file_type.__name__}?')
+    comment_chars = FILE_TYPES[extension]["comment"]
     pattern = r'^(?P<indent> *)'
-    pattern += r'(?P<linetoken>' + comment_chars[extension] + r" *" + LINETOKEN + r" *)"
+    pattern += r'(?P<linetoken>' + comment_chars + r" *" + LINETOKEN + r" *)"
     pattern += r'(?P<command>.*)'
     lineseg = re.search(pattern, line)
     if lineseg is not None:
@@ -58,7 +73,7 @@ class InstrumentedFile(utils.Instrument):
             text = f.read()
         if "NG_" in text and LINETOKEN in text:  # assuming there is a token somewhere
             lines = text.splitlines()
-            ext = filepath.suffix
+            ext = filepath.suffix.lower()
             lines = [(l if LINETOKEN not in l else uncomment_line(l, ext)) for l in lines]
             text = "\n".join(lines)
         self.text, self.variables = utils.replace_tokens_by_placeholders(text)
@@ -102,8 +117,6 @@ class InstrumentedFolder:  # should derive from base function?
     clean_copy: bool
         whether to create an initial clean temporary copy of the folder in order to avoid
         versioning problems (instantiations are lightweight symlinks in any case).
-    extensions: list
-        extensions of the instrumented files which must be instantiated
 
     Caution
     -------
@@ -114,18 +127,16 @@ class InstrumentedFolder:  # should derive from base function?
         variable to a shared directory
     """
 
-    def __init__(self, folder: Union[Path, str], clean_copy: bool = False, extensions: Optional[List[str]] = None) -> None:
+    def __init__(self, folder: Union[Path, str], clean_copy: bool = False) -> None:
         self._clean_copy = None
         self.folder = Path(folder).expanduser().absolute()
         assert self.folder.exists(), "{folder} does not seem to exist"
         if clean_copy:
             self._clean_copy = utils.TemporaryDirectoryCopy(str(folder))
             self.folder = self._clean_copy.copyname
-        if extensions is None:
-            extensions = [".py", "m", ".cpp", ".hpp", ".c", ".h"]
         self.instrumented_files: List[InstrumentedFile] = []
         for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
-            if fp.is_file() and fp.suffix in extensions:
+            if fp.is_file() and fp.suffix.lower() in FILE_TYPES:
                 instru_f = InstrumentedFile(fp)
                 if instru_f.dimension:
                     self.instrumented_files.append(instru_f)
