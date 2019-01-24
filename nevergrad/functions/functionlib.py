@@ -123,7 +123,6 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         x = np.asarray(x)
         data = []
         for transform in self._transforms:
-
             data.append(x[transform.indices] if self._only_index_transform else transform(x))
         return np.array(data)
 
