@@ -79,8 +79,19 @@ def sumdeceptive(x: np.ndarray) -> float:
 
 
 @registry.register
+def altcigar(x: np.ndarray) -> float:
+    return float(x[-1]**2 + 1000000. * np.sum(x[:-1]**2))
+
+
+@registry.register
 def cigar(x: np.ndarray) -> float:
     return float(x[0]**2 + 1000000. * np.sum(x[1:]**2))
+
+
+@registry.register
+def altellipsoid(y: np.ndarray) -> float:
+    x = y[::-1]
+    return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
 
 
 @registry.register
