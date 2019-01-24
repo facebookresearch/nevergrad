@@ -45,7 +45,7 @@ class InstantiationTests(TestCase):
     def test_uncomment_line(self, line: str, ext: str, expected: str) -> None:
         self._test_uncomment_line(line, ext, expected)
 
-    @genty.genty_dataset(
+    @genty.genty_dataset(  # type: ignore
         custom=(f"// {LINETOKEN} bidule", ".custom", "//", "bidule"),
         wrong_comment_chars=(f"// {LINETOKEN} bidule", ".custom", "#", RuntimeError),
     )
