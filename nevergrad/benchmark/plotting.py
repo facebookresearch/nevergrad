@@ -249,10 +249,10 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
     ax = fig.add_subplot(111)
     cax = ax.imshow(100 * data, cmap=cm.seismic, interpolation='none', vmin=0, vmax=100)
     ax.set_xticks(list(range(len(sorted_names))))
-    ax.set_xticklabels(sorted_names, rotation=90, fontsize=7)
+    ax.set_xticklabels([s.replace("Search", "") for s in sorted_names], rotation=90, fontsize=7)
     ax.set_yticks(list(range(num_rows)))
     # pylint: disable=anomalous-backslash-in-string
-    ax.set_yticklabels([f"{name} ({100 * val:2.1f}\%)" for name, val in zip(mean_win.index[: num_rows], mean_win)], rotation=45, fontsize=7)
+    ax.set_yticklabels([(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)], rotation=45, fontsize=7)
     plt.tight_layout()
     fig.colorbar(cax, orientation='vertical')
     if output_filepath is not None:

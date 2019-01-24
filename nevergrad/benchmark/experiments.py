@@ -49,9 +49,60 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
             for budget in [25,37,50,75,87] + list(range(100, 3001, 100)):
                  yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
+@registry.register
+def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "cigar", "ellipsoid", "rosenbrock", "rastrigin"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
+                 for name in names for bd in [1, 4, 20] for uv_factor in [0, 10] for n_blocks in [1]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
 
 @registry.register
-def minidoe(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
+                 for name in names for bd in [4, 20] for uv_factor in [0] for n_blocks in [1]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 60, 100]:
+             for toto in range(27):
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
+                 for name in names for bd in [2] for uv_factor in [10] for n_blocks in [1]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 60, 100]:
+             for toto in range(27):
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+
+
+@registry.register
+def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
@@ -136,11 +187,12 @@ def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in optimization.registry.items()
-                    if ("TBPSA" in x or "ois" in x or "epea" in x) and "iscr" not in x)
+                     if "TBPSA" in x or "andit" in x)
+#                    if ("TBPSA" in x or "ois" in x or "epea" in x) and "iscr" not in x)
     # , 16000, 32000, 64000, 128000, 512000]:#, 1024000, 2048000, 4096000]:
-    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:
+    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000]:
         for optim in optims:
-            for d in [1, 2, 3]:
+            for d in [2]:
                 for rotation in [True]:
                     for name in ["sphere"]:
                         for noise_dissymmetry in [False, True]:

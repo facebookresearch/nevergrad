@@ -85,9 +85,9 @@ def noisycec(seed: Optional[int] = None) -> Iterator[Experiment]:
               "RandomSearch", "PortfolioOptimisticNoisyDiscreteOnePlusOne",
               "NoisyDiscreteOnePlusOne", "RandomScaleRandomSearch", "PortfolioNoisyDiscreteOnePlusOne"]
     optims.append("CustomOptimizer")
-    for budget in [50000]:
+    for budget in [10000, 50000]:
         for optim in optims:
-          for d in [2, 20, 200]:
+          for d in [2, 20, 40]:
             for rotation in [True]:
                 for name in ["sphere", "rosenbrock"]:
                     for noise_dissymmetry in [False, True]:
