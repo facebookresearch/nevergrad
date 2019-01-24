@@ -16,7 +16,6 @@ from .base import registry
 from .differentialevolution import *
 from .oneshot import *
 from .recastlib import *
-from .cec2019_optimizer import *
 
 
 # # # # # optimizers # # # # #
