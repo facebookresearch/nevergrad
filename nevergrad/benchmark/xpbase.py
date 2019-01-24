@@ -8,19 +8,19 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Callable, Any, Optional, Iterator
+from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple
 import numpy as np
 from ..common import decorators
 from ..functions import BaseFunction
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry
-from .execution import MockedSteadyExecutor
+from . import execution
 
 
 registry = decorators.Registry()
 
 
-class CallCounter:
+class CallCounter(execution.PostponedObject):
     """Simple wrapper which counts the number
     of calls to a function.
 
@@ -37,6 +37,13 @@ class CallCounter:
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         self.num_calls += 1
         return self.func(*args, **kwargs)
+
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+        """Propagate subfunction delay
+        """
+        if isinstance(self.func, execution.PostponedObject):
+            return self.func.get_postponing_delay(arguments, value)
+        return 0
 
 
 class OptimizerSettings:
@@ -200,7 +207,7 @@ class Experiment:
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             # use default executor for batch mode (sequential, but mock for steady state
             # ("production" steady state is a not strictly steady state + does not handle mocked delays)
-            executor: Optional[MockedSteadyExecutor] = None if self.optimsettings.batch_mode else MockedSteadyExecutor()
+            executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
             try:
                 recommendation = optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except

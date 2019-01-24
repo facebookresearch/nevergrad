@@ -13,6 +13,7 @@ class Function(execution.PostponedObject):
 
     # pylint: disable=unused-argument
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+        print("waiting", 5 - value)
         return 5 - value
 
 
