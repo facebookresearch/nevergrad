@@ -19,12 +19,7 @@ from . import variables
 
 BIG_NUMBER = 3000
 LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file...
-FILE_TYPES = {
-    ".c": dict(comment="//"),
-    ".py": dict(comment="#"),
-    ".m": dict(comment="%"),
-}
-FILE_TYPES[".h"] = FILE_TYPES[".hpp"] = FILE_TYPES[".cpp"] = FILE_TYPES[".c"]
+COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#", ".m": "%"}
 
 
 def register_file_type(suffix: str, comment_chars: str) -> None:
@@ -32,7 +27,7 @@ def register_file_type(suffix: str, comment_chars: str) -> None:
     the characters that indicate a comment."""
     if not suffix.startswith("."):
         suffix = f".{suffix}"
-    FILE_TYPES[suffix] = {"comment": comment_chars}
+    COMMENT_CHARS[suffix] = comment_chars
 
 
 def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
@@ -49,11 +44,10 @@ def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str
 
 
 def uncomment_line(line: str, extension: str) -> str:
-    if extension not in FILE_TYPES:
+    if extension not in COMMENT_CHARS:
         raise RuntimeError(f'Unknown file type: {extension}\nDid you register it using {register_file_type.__name__}?')
-    comment_chars = FILE_TYPES[extension]["comment"]
     pattern = r'^(?P<indent> *)'
-    pattern += r'(?P<linetoken>' + comment_chars + r" *" + LINETOKEN + r" *)"
+    pattern += r'(?P<linetoken>' + COMMENT_CHARS[extension] + r" *" + LINETOKEN + r" *)"
     pattern += r'(?P<command>.*)'
     lineseg = re.search(pattern, line)
     if lineseg is not None:
@@ -136,7 +130,7 @@ class InstrumentedFolder:  # should derive from base function?
             self.folder = self._clean_copy.copyname
         self.instrumented_files: List[InstrumentedFile] = []
         for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
-            if fp.is_file() and fp.suffix.lower() in FILE_TYPES:
+            if fp.is_file() and fp.suffix.lower() in COMMENT_CHARS:
                 instru_f = InstrumentedFile(fp)
                 if instru_f.dimension:
                     self.instrumented_files.append(instru_f)
