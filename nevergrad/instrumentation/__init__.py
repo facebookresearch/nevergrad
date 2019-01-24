@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from .folderfunction import FolderFunction
-from .instantiate import InstrumentedFunction
+from .instantiate import InstrumentedFunction, register_file_type
 from . import variables
 from .variables import Instrumentation
 from .utils import TemporaryDirectoryCopy

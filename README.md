@@ -50,7 +50,7 @@ Optimizing (minimizing!) a function using an optimizer (here OnePlusOne) can be 
 from nevergrad.optimization import optimizerlib
 
 def square(x):
-    return (x - .5)**2
+    return sum((x - .5)**2)
 
 optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100, num_workers=5)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
@@ -136,6 +136,8 @@ Functions used for the experiments must derive from `nevergrad.functions.BaseFun
 If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiments.py](nevergrad/benchmark/experiments.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).
 
 ## Instrumentation
+
+**Please note that instrumentation is still a work in progress. We will try to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that their will be breaking changes (see Issues #44 to #47).**
 
 The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous space. For this, discrete/categorial variables must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do this.
 
@@ -239,6 +241,7 @@ Some important things to note:
  - using `FolderFunction` argument `clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
  - under the hood, with or without `clean_copy=True`, when calling the function, `FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid duplicating large projects, but they have some drawbacks, see next point ;)
  - one can add a compilation step to `FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
+ - the following external file types are registered by default: `[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using `instrumentation.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment.
 
 
 
