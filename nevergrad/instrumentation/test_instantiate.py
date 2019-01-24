@@ -24,6 +24,13 @@ def test_symlink_folder_tree() -> None:
 @genty.genty
 class InstantiationTests(TestCase):
 
+    def _test_uncomment_line(self, line: str, ext: str, expected: str) -> None:
+        if isinstance(expected, str):
+            output = instantiate.uncomment_line(line, ext)
+            np.testing.assert_equal(output, expected)
+        else:
+            np.testing.assert_raises(expected, instantiate.uncomment_line, line, ext)
+
     # CAREFUL: avoid triggering errors if the module parses itself...
     # Note: 'bidule' is French for dummy widget
     @genty.genty_dataset(  # type: ignore
@@ -33,13 +40,19 @@ class InstantiationTests(TestCase):
         bad_python=("    // @" + "nevergrad@ bidule", ".py", RuntimeError),
         cpp=(f"  //{LINETOKEN}bidule", ".cpp", "  bidule"),
         matlab=(f"%{LINETOKEN}bidule", ".m", "bidule"),
+        unknown=(f"// {LINETOKEN} bidule", ".unknown", RuntimeError),
     )
     def test_uncomment_line(self, line: str, ext: str, expected: str) -> None:
-        if isinstance(expected, str):
-            output = instantiate.uncomment_line(line, ext)
-            np.testing.assert_equal(output, expected)
-        else:
-            np.testing.assert_raises(expected, instantiate.uncomment_line, line, ext)
+        self._test_uncomment_line(line, ext, expected)
+
+    @genty.genty_dataset(
+        custom=(f"// {LINETOKEN} bidule", ".custom", "//", "bidule"),
+        wrong_comment_chars=(f"// {LINETOKEN} bidule", ".custom", "#", RuntimeError),
+    )
+    def test_uncomment_line_custom_file_type(self, line: str, ext: str, comment: str, expected: str) -> None:
+        instantiate.register_file_type(ext, comment)
+        self._test_uncomment_line(line, ext, expected)
+        del instantiate.FILE_TYPES[ext]
 
     @genty.genty_dataset(  # type: ignore
         with_clean_copy=(True,),
