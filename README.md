@@ -85,6 +85,15 @@ recommendation = optimizer.provide_recommendation()
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)
 
+
+**You can print the full list of optimizers** with:
+```
+from nevergrad.optimization import registry
+print(sorted(registry.keys()))
+```
+All algorithms have strenghts and weaknesses. If you are not very familiar with them, we recommend trying `OnePlusOne`, `TwoPointsDE` or `CMA` which perform well in a broad range of settings.
+
+
 ## Benchmarks
 
 The benchmark tools aim at providing a way to evaluate optimizers on a large range of settings. They provide a way to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.
