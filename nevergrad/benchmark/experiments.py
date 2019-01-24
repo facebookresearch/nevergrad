@@ -51,7 +51,8 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    # General experiment comparing one-shot optimizers, excluding those with "large" or "small"
+    # in the name.
     seedg = create_seed_generator(seed)
     names = ["sphere", "cigar", "ellipsoid", "rosenbrock", "rastrigin"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -67,7 +68,8 @@ def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    # General experiment comparing one-shot optimizers, excluding those with "large" or "small"
+    # in the name.
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -84,7 +86,7 @@ def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    # Experiment comparing one-shot optimizers in the context of useless vars vs critical vars.
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -102,8 +104,8 @@ def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # Additional large scale experiments for one-shot optimizers.
     seedg = create_seed_generator(seed)
     names = ["sphere"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -219,8 +221,8 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Comparing one-shot optimizers as initializers for Bayesian Optimization.
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
