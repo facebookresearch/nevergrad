@@ -52,7 +52,7 @@ class InstantiationTests(TestCase):
     def test_uncomment_line_custom_file_type(self, line: str, ext: str, comment: str, expected: str) -> None:
         instantiate.register_file_type(ext, comment)
         self._test_uncomment_line(line, ext, expected)
-        del instantiate.FILE_TYPES[ext]
+        del instantiate.COMMENT_CHARS[ext]
 
     @genty.genty_dataset(  # type: ignore
         with_clean_copy=(True,),
