@@ -20,7 +20,7 @@ class Registry(dict):
         The info variable can be filled up using the register_with_info
         decorator instead of this one.
         """
-        name = obj.__name__
+        name = obj.__name__ if hasattr(obj, "__name__") else obj.__class__.__name__
         if name in self:
             raise RuntimeError(f'Encountered a name collision "{name}"')
         self[name] = obj

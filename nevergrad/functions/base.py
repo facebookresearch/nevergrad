@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import abc
-from typing import Dict, Any, Callable, Optional
+from typing import Dict, Any, Callable, Optional, Tuple
 import numpy as np
 
 
@@ -170,7 +170,24 @@ class ArtificiallyNoisyBaseFunction(BaseFunction):  # pylint: disable=abstract-m
         noise = 0
         noise_level = self._noise_level
         if noise_level:
-            if not self._noise_dissymmetry or x_input[0] <= 0:
-                side_point = self.transform(x_input + np.random.normal(0, 1, self.dimension))
+            if not self._noise_dissymmetry or x_transf.ravel()[0] <= 0:
+                side_point = self.transform(x_input + np.random.normal(0, 1, size=self.dimension))
+                if self._noise_dissymmetry:
+                    noise_level *= (1. + x_transf.ravel()[0]*100.)
                 noise = noise_level * np.random.normal(0, 1) * (self.oracle_call(side_point) - fx)
         return fx + noise
+
+
+class PostponedObject(abc.ABC):
+    """Abstract class to inherit in order to notify the steady state benchmark executor that
+    the function implements a delay. This delay will be used while benchmarking to provide the
+    evaluation in a varying order.
+    The main aim of this class is to make sure there is no typo in the name of the special function.
+
+    See benchmark/execution.py for more details. This object is implemented here to avoid circular
+    imports.
+    """
+
+    @abc.abstractmethod
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+        raise NotImplementedError
