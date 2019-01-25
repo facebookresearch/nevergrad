@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# Ideas and original code from:
+# Ideas and reference implementations from:
 # - Pascal Kerschke, University of Muenster
 # - Marcus Gallagher, University of Queensland
 # - Mike Preuss, LIACS, Leiden University
