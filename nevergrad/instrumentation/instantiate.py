@@ -9,7 +9,7 @@ import tempfile
 import operator
 import contextlib
 from pathlib import Path
-from typing import Union, List, Any, Optional, Generator, Callable, Tuple, Dict
+from typing import Union, List, Any, Optional, Generator, Callable, Tuple, Dict, Set
 import numpy as np
 from ..functions import base
 from ..common.typetools import ArrayLike
@@ -78,13 +78,13 @@ class FileTextFunction:
         self._text = text
         self.parameters = {x.name for x in self.placeholders}
 
-    def __call__(self, **kwargs):
+    def __call__(self, **kwargs: Any) -> str:
         unexpected, missing = set(kwargs) - self.parameters, self.parameters - set(kwargs)
         if unexpected or missing:
             raise ValueError(f"Found unexpected arguments: {unexpected}\n and/or missing arguments {missing}.")
         return utils.Placeholder.sub(self._text, **kwargs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         names = sorted(self.parameters)
         return f"{self.__class__.__name__}({self.filepath})({', '.join(names)})"
 
@@ -117,7 +117,7 @@ class FolderInstantiator:
             self._clean_copy = utils.TemporaryDirectoryCopy(str(folder))
             self.folder = self._clean_copy.copyname
         self.file_functions: List[FileTextFunction] = []
-        names = set()
+        names: Set[str] = set()
         for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
             if fp.is_file() and fp.suffix.lower() in COMMENT_CHARS:
                 file_func = FileTextFunction(fp)

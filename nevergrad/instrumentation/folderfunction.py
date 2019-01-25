@@ -7,6 +7,7 @@ from typing import List, Union, Optional, Any
 from pathlib import Path
 from ..instrumentation.utils import CommandFunction
 from .instantiate import FolderInstantiator
+from . import utils
 
 
 class FolderFunction:  # should derive from BaseFunction?
@@ -56,10 +57,10 @@ class FolderFunction:  # should derive from BaseFunction?
         self.last_full_output: Optional[str] = None
 
     @property
-    def placeholders(self):
+    def placeholders(self) -> List[utils.Placeholder]:
         return self.instantiator.placeholders
 
-    def __call__(self, **kwargs) -> Any:
+    def __call__(self, **kwargs: Any) -> Any:
         with self.instantiator.instantiate(**kwargs) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")
