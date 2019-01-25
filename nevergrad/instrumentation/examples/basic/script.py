@@ -5,8 +5,8 @@
 
 """This is a very basic example of an instrumented python script
 """
-discrete_value = 10
-# @nevergrad@ discrete_value = NG_SC{1|10|100}
-continuous_value = 90
-# @nevergrad@ continuous_value = NG_G{90, 20}
-print(abs(continuous_value - 100) * discrete_value)  # last print should provide the fitness value (minimization)
+value1 = 10
+# @nevergrad@ value1 = NG_VAR{value1|this is a comment}
+value2 = 90
+# @nevergrad@ value2 = NG_VAR{value2}
+print(abs(value1 - 100) * value2)  # last print should provide the fitness value (minimization)

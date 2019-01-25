@@ -58,50 +58,38 @@ def uncomment_line(line: str, extension: str) -> str:
     return line
 
 
-class InstrumentedFile(utils.Instrument):
+class FileTextFunction:
+    """Function created from a file and generating the text file after
+    replacement of the placeholders
+    """
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
         assert filepath.exists(), "{filepath} does not exist"
         with filepath.open("r") as f:
             text = f.read()
-        if "NG_" in text and LINETOKEN in text:  # assuming there is a token somewhere
+        if LINETOKEN in text:
             lines = text.splitlines()
             ext = filepath.suffix.lower()
             lines = [(l if LINETOKEN not in l else uncomment_line(l, ext)) for l in lines]
             text = "\n".join(lines)
-        self.text, self.variables = utils.replace_tokens_by_placeholders(text)
+        self.placeholders = utils.Placeholder.finditer(text)
+        # TODO check no repeat
+        self._text = text
+        self.parameters = {x.name for x in self.placeholders}
 
-    def process(self, data: np.ndarray, deterministic: bool = False) -> str:
-        values = utils.process_instruments(self.variables, data, deterministic=deterministic)
-        text = utils.replace_placeholders_by_values(self.text, values)
-        return text
+    def __call__(self, **kwargs):
+        unexpected, missing = set(kwargs) - self.parameters, self.parameters - set(kwargs)
+        if unexpected or missing:
+            raise ValueError(f"Found unexpected arguments: {unexpected}\n and/or missing arguments {missing}.")
+        return utils.Placeholder.sub(self._text, **kwargs)
 
-    def process_arg(self, arg: Any) -> ArrayLike:
-        raise NotImplementedError
-
-    @property
-    def dimension(self) -> int:
-        return sum(t.dimension for t in self.variables)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.filepath})"
-
-    def get_summary(self, data: np.ndarray) -> str:
-        splitted_data = utils.split_data(data, self.variables)
-        strings = [f"In file {self.filepath}"]
-        lines = self.text.splitlines()
-        for line_ind, line in enumerate(lines):
-            matches = list(re.finditer(utils._HOLDER_PATTERN, line))
-            if matches:
-                strings.extend([f"- on line #{line_ind + 1}", line.strip()])
-                for match in matches:
-                    ind = int(match.group("index"))
-                    strings.append("Placeholder {}: {}".format(ind, self.variables[ind].get_summary(splitted_data[ind])))
-        return "\n".join(strings)
+    def __repr__(self):
+        names = sorted(self.parameters)
+        return f"{self.__class__.__name__}({self.filepath})({', '.join(names)})"
 
 
-class InstrumentedFolder:  # should derive from base function?
+class FolderInstantiator:
     """Folder with instrumentation tokens, which can be instantiated.
 
     Parameters
@@ -124,50 +112,47 @@ class InstrumentedFolder:  # should derive from base function?
     def __init__(self, folder: Union[Path, str], clean_copy: bool = False) -> None:
         self._clean_copy = None
         self.folder = Path(folder).expanduser().absolute()
-        assert self.folder.exists(), "{folder} does not seem to exist"
+        assert self.folder.exists(), f"{folder} does not seem to exist"
         if clean_copy:
             self._clean_copy = utils.TemporaryDirectoryCopy(str(folder))
             self.folder = self._clean_copy.copyname
-        self.instrumented_files: List[InstrumentedFile] = []
+        self.file_functions: List[FileTextFunction] = []
+        names = set()
         for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
             if fp.is_file() and fp.suffix.lower() in COMMENT_CHARS:
-                instru_f = InstrumentedFile(fp)
-                if instru_f.dimension:
-                    self.instrumented_files.append(instru_f)
-        assert self.instrumented_files, "Found no instrumented file"
-        self.instrumented_files = sorted(self.instrumented_files, key=operator.attrgetter("filepath"))
+                file_func = FileTextFunction(fp)
+                fnames = {ph.name for ph in file_func.placeholders}
+                if fnames:
+                    if fnames & names:
+                        raise RuntimeError(f"Found {fp} placeholders in another file: {fnames & names}")
+                    self.file_functions.append(file_func)
+        assert self.file_functions, "Found no file with placeholders"
+        self.file_functions = sorted(self.file_functions, key=operator.attrgetter("filepath"))
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.instrumented_files}'
+        return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.file_functions}'
 
     @property
-    def dimension(self) -> int:
-        return sum(i.dimension for i in self.instrumented_files)
+    def placeholders(self) -> List[utils.Placeholder]:
+        return [p for f in self.file_functions for p in f.placeholders]
 
-    def instantiate_to_folder(self, data: np.ndarray, outfolder: Union[Path, str]) -> None:
+    def instantiate_to_folder(self, outfolder: Union[Path, str], **kwargs: Any) -> None:  # TODO change API to avoid outfolder
+        # TODO check argument list as in file function
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
         symlink_folder_tree(self.folder, outfolder)
-        texts = utils.process_instruments(self.instrumented_files, data)  # instantiable files have same pattern as token
-        for instantiable, text in zip(self.instrumented_files, texts):
-            inst_fp = outfolder / instantiable.filepath.relative_to(self.folder)
+        for file_func in self.file_functions:
+            inst_fp = outfolder / file_func.filepath.relative_to(self.folder)
             os.remove(str(inst_fp))  # remove symlink to avoid writing in original dir
             with inst_fp.open("w") as f:
-                f.write(text)
+                f.write(file_func(**{x: y for x, y in kwargs.items() if x in file_func.parameters}))
 
     @contextlib.contextmanager
-    def instantiate(self, data: np.ndarray) -> Generator[Path, None, None]:
+    def instantiate(self, **kwargs: Any) -> Generator[Path, None, None]:
         with tempfile.TemporaryDirectory() as tempfolder:
             subtempfolder = Path(tempfolder) / self.folder.name
-            self.instantiate_to_folder(data, subtempfolder)
+            self.instantiate_to_folder(subtempfolder, **kwargs)
             yield subtempfolder
-
-    def get_summary(self, data: np.ndarray) -> str:
-        splitted_data = utils.split_data(data, self.instrumented_files)
-        strings = []
-        for ifile, sdata in zip(self.instrumented_files, splitted_data):
-            strings.append(ifile.get_summary(sdata))
-        return "\n\n".join(strings)
 
 
 class InstrumentedFunction(base.BaseFunction):

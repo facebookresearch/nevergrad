@@ -5,9 +5,8 @@
 
 from typing import List, Union, Optional, Any
 from pathlib import Path
-import numpy as np
 from ..instrumentation.utils import CommandFunction
-from .instantiate import InstrumentedFolder
+from .instantiate import FolderInstantiator
 
 
 class FolderFunction:  # should derive from BaseFunction?
@@ -53,15 +52,15 @@ class FolderFunction:  # should derive from BaseFunction?
         self.command = command
         self.verbose = verbose
         self.postprocessings = [get_last_line_as_float]
-        self.instrumented_folder = InstrumentedFolder(folder, clean_copy=clean_copy)
+        self.instantiator = FolderInstantiator(folder, clean_copy=clean_copy)
         self.last_full_output: Optional[str] = None
 
     @property
-    def dimension(self) -> int:
-        return self.instrumented_folder.dimension
+    def placeholders(self):
+        return self.instantiator.placeholders
 
-    def __call__(self, parameters: np.ndarray) -> Any:
-        with self.instrumented_folder.instantiate(parameters) as folder:
+    def __call__(self, **kwargs) -> Any:
+        with self.instantiator.instantiate(**kwargs) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")
             output: Any = CommandFunction(self.command, cwd=folder.parent)()
@@ -75,9 +74,6 @@ class FolderFunction:  # should derive from BaseFunction?
         if self.verbose:
             print(f"FolderFunction returns: {output}")
         return output
-
-    def get_summary(self, parameters: np.ndarray) -> str:
-        return self.instrumented_folder.get_summary(parameters)
 
 
 def get_last_line_as_float(output: str) -> float:

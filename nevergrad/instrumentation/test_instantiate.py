@@ -13,6 +13,7 @@ from ..common import testing
 from . import instantiate
 from .instantiate import LINETOKEN
 from . import variables
+from . import utils
 
 
 def test_symlink_folder_tree() -> None:
@@ -58,25 +59,23 @@ class InstantiationTests(TestCase):
         with_clean_copy=(True,),
         without_clean_copy=(False,),
     )
-    def test_instrumented_folder(self, clean_copy: bool) -> None:
+    def test_folder_instantiator(self, clean_copy: bool) -> None:
         path = Path(__file__).parent / "examples" / "basic"
-        ifolder = instantiate.InstrumentedFolder(path, clean_copy=clean_copy)
-        np.testing.assert_equal(ifolder.dimension, 4)
-        np.testing.assert_equal(len(ifolder.instrumented_files), 1)
-        with ifolder.instantiate([1, 2, 3, 4]) as tmp:
+        ifolder = instantiate.FolderInstantiator(path, clean_copy=clean_copy)
+        testing.printed_assert_equal(ifolder.placeholders, [utils.Placeholder("value1", "this is a comment"),
+                                                            utils.Placeholder("value2", None)])
+        np.testing.assert_equal(len(ifolder.file_functions), 1)
+        with ifolder.instantiate(value1=12, value2=110.) as tmp:
             with (tmp / "script.py").open("r") as f:
                 lines = f.readlines()
-        np.testing.assert_equal(lines[10], "continuous_value = 110.0\n")
-        text = ifolder.get_summary(np.random.normal(size=ifolder.dimension))
-        np.testing.assert_equal(len(text.splitlines()), 7)
+        np.testing.assert_equal(lines[10], "value2 = 110.0\n")
 
 
-def test_instantiate_file() -> None:
+def test_file_text_function() -> None:
     path = Path(__file__).parent / "examples" / "basic" / "script.py"
-    instantiatable = instantiate.InstrumentedFile(path)
-    np.testing.assert_equal(instantiatable.dimension, 4)
-    np.testing.assert_array_equal(instantiatable.variables, [variables.Gaussian(mean=90., std=20.),
-                                                             variables.SoftmaxCategorical(possibilities=["1", "10", "100"])])
+    filefunc = instantiate.FileTextFunction(path)
+    testing.printed_assert_equal(filefunc.placeholders, [utils.Placeholder("value1", "this is a comment"),
+                                                         utils.Placeholder("value2", None)])
 
 
 def _arg_return(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:

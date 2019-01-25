@@ -13,12 +13,6 @@ from typing import List, Any, Iterable, Tuple, Union, Optional, Match, Set, Dict
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
-from ..common.decorators import Registry
-
-
-vartypes = Registry()
-_HOLDER = "<[placeholder_{index}>]"  # should bug in any language
-_HOLDER_PATTERN = _HOLDER.replace("[", r"\[").replace("]", r"\]").format(index="(?P<index>[0-9]+)")
 
 
 class Instrument:
@@ -35,6 +29,56 @@ class Instrument:
 
     def get_summary(self, data: np.ndarray) -> str:
         raise NotImplementedError
+
+    def __eq__(self, other: Any) -> bool:
+        return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
+
+    def __repr__(self) -> str:
+        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
+        return f"{self.__class__.__name__}({args})"
+
+
+class Placeholder:
+    """Placeholder tokend to for external code instrumentation
+    """
+
+    pattern = r'NG_VAR' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
+
+    def __init__(self, name: str, comment: Optional[str]) -> None:
+        self.name = name
+        self.comment = comment
+
+    @classmethod
+    def finditer(cls, text: str) -> List['Placeholder']:
+        prog = re.compile(cls.pattern)
+        return [cls(x.group("name"), x.group("comment")) for x in prog.finditer(text)]
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.name!a}, {self.comment!a})'
+
+    def __eq__(self, other: Any) -> bool:
+        if self.__class__ == other.__class__:
+            return (self.name, self.comment) == (other.name, other.comment)
+        return False
+
+    @classmethod
+    def sub(cls, text: str, **kwargs: Any) ->str:
+        found: Set[str] = set()
+
+        def _replacer(regex: Match) -> str:
+            name = regex.group("name")
+            if name in found:
+                raise RuntimeError(f'Trying to remplace a second time placeholder "{name}"')
+            if name not in kwargs:
+                raise KeyError(f'Could not find a value for placeholder "{name}"')
+            found.add(name)
+            return str(kwargs[name])
+
+        text = re.sub(cls.pattern, _replacer, text)
+        missing = set(kwargs) - found
+        if missing:
+            raise RuntimeError(f"All values have not been consumed: {missing}")
+        return text
 
 
 def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[List[float]]:
@@ -62,53 +106,6 @@ def process_instruments(instruments: Iterable[Instrument], data: List[float],
     instruments = list(instruments)
     splitted_data = split_data(data, instruments)
     return tuple([instrument.process(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
-
-
-def replace_tokens_by_placeholders(text: str) -> Tuple[str, List[Instrument]]:
-    """Removes the nevergrad tokens and replace them with placeholders
-
-    Returns
-    -------
-    text: str
-        text with placeholders with format "<[placeholder_{index}>]"
-    variables: list
-        list of corresponding nevergrad variables
-    """
-    tokenclasses = [x[1] for x in sorted(vartypes.items())]  # must be deterministic
-    variables: List[Instrument] = []
-
-    for tokenclass in tokenclasses:
-
-        def _replacer(regex: Match) -> str:
-            variables.append(tokenclass.from_regex(regex))  # pylint: disable=cell-var-from-loop
-            return _HOLDER.format(index=len(variables) - 1)
-
-        text = re.sub(tokenclass.pattern, _replacer, text)
-    return text, variables
-
-
-def replace_placeholders_by_values(text: str, values: Tuple[Any, ...]) -> str:
-    """Removes the nevergrad tokens and replace them with placeholders
-
-    Parameters
-    ----------
-    text: str
-        text with placeholders with format "<[placeholder_{index}>]"
-    values: list
-        list of values for each placeholder
-    """
-    found: Set[int] = set()
-
-    def _replacer(regex: Match) -> str:
-        index = int(regex.group("index"))
-        if index in found:
-            raise RuntimeError(f"Trying to remplace a second time token #{index}")
-        found.add(index)
-        return str(values[index])
-
-    text = re.sub(_HOLDER_PATTERN, _replacer, text)
-    np.testing.assert_equal(len(found), len(values), "All values have not been consumed")
-    return text
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):

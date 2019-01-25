@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import re
 import itertools
 from typing import List, Any, Match, Optional, Tuple, Dict
 import numpy as np
@@ -12,38 +11,9 @@ from ..common.typetools import ArrayLike
 from . import utils
 
 
-class _Variable(utils.Instrument):
-    """Base variable class.
-    Each class requires to provide a dimension and ways to process the data.
-    They can be used directly for function instrumentation in Python, but they
-    must also provide token management for hardcoded code instrumentation.
-    """
-
-    pattern: Optional[str] = None
-    example: Optional[str] = None
-
-    @classmethod
-    def from_regex(cls, regex: Match) -> '_Variable':
-        raise NotImplementedError
-
-    @classmethod
-    def from_str(cls, string: str) -> '_Variable':
-        if cls.pattern is None:
-            raise ValueError("pattern must be provided")
-        regex = re.search(cls.pattern, string)
-        if regex is None:
-            raise RuntimeError("Could not find regex")
-        return cls.from_regex(regex)
-
-    def __eq__(self, other: Any) -> bool:
-        return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
-
-    def __repr__(self) -> str:
-        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
-        return f"{self.__class__.__name__}({args})"
+_Variable = utils.Instrument
 
 
-@utils.vartypes.register
 class SoftmaxCategorical(_Variable):
     """Discrete set of n values transformed to a n-dim continuous variable.
     Each of the dimension encodes a weight for a value, and the softmax of weights
@@ -67,10 +37,6 @@ class SoftmaxCategorical(_Variable):
     def __init__(self, possibilities: List[Any]) -> None:
         self.possibilities = list(possibilities)
 
-    @classmethod
-    def from_regex(cls, regex: Match) -> _Variable:
-        return cls(regex.group("possibilities").split("|"))
-
     @property
     def dimension(self) -> int:
         return len(self.possibilities)
@@ -91,7 +57,6 @@ class SoftmaxCategorical(_Variable):
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
 
 
-@utils.vartypes.register
 class OrderedDiscrete(SoftmaxCategorical):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
@@ -105,9 +70,6 @@ class OrderedDiscrete(SoftmaxCategorical):
     ----
     The variables are assumed to be ordered.
     """
-
-    pattern = r'NG_OD' + r'{(?P<possibilities>.*?\|.*?)}'
-    example = 'NG_OD{p1|p2|p3...}'
 
     @property
     def dimension(self) -> int:
@@ -128,7 +90,6 @@ class OrderedDiscrete(SoftmaxCategorical):
         return f"Value {output}, from data: {data[0]}"
 
 
-@utils.vartypes.register
 class Gaussian(_Variable):
     """Gaussian variable with a mean and a standard deviation, and
     possibly a shape (when using directly in Python)

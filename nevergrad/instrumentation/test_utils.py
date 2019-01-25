@@ -8,7 +8,7 @@ import time
 import contextlib
 from unittest import TestCase
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 import numpy as np
 import genty
 from ..common import testing
@@ -20,25 +20,31 @@ from . import utils
 class UtilsTests(TestCase):
 
     @genty.genty_dataset(  # type: ignore
-        all_fine=(2, ["a", "b", "c"], "blublu a c\nb"),
-        too_many_values=(2, ["a", "b", "c", "d"], AssertionError),
-        too_few_values=(2, ["a", "b"], IndexError),
-        repeating_index=(1, ["a", "b", "c"], RuntimeError),
-    )
-    def test_replace_placeholders_by_values(self, last_index: int, values: Tuple[str], expected: Any) -> None:
-        text = "blublu <[placeholder_{}>] <[placeholder_{}>]\n<[placeholder_{}>]".format(0, last_index, 1)
-        if isinstance(expected, str):
-            output = utils.replace_placeholders_by_values(text, values)
-            np.testing.assert_equal(output, expected)
-        else:
-            np.testing.assert_raises(expected, utils.replace_placeholders_by_values, text, values)
-
-    @genty.genty_dataset(  # type: ignore
         empty=([], [], [])
     )
     def test_split_data(self, tokens: List, data: List, expected: List) -> None:
         output = utils.split_data(data, tokens)
         testing.printed_assert_equal(output, expected)
+
+    @genty.genty_dataset(  # type: ignore
+        void=("bvcebsl\nsoefn", []),
+        unique_no_comment=("bfseibf\nbsfei NG_VAR{machin}", [("machin", None)]),
+        several=("bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}", [("truc", "blublu"), ("bidule", None)]),
+    )
+    def test_placeholder(self, text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
+        placeholders = utils.Placeholder.finditer(text)
+        testing.printed_assert_equal(placeholders, [utils.Placeholder(*x) for x in name_comments])
+
+
+def test_placeholder_substitution() -> None:
+    text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehn NG_VAR{bidule}"
+    expected = "bfkes\nsgrdgrgbdrk#12#sehn 24"
+    output = utils.Placeholder.sub(text, truc="#12#", bidule=24)
+    np.testing.assert_equal(output, expected)
+    np.testing.assert_raises(KeyError, utils.Placeholder.sub, text, truc="#12#")
+    np.testing.assert_raises(RuntimeError, utils.Placeholder.sub, text, truc="#12#", bidule=24, chouette=12)
+    text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}NG_VAR{bidule|bis}"
+    np.testing.assert_raises(RuntimeError, utils.Placeholder.sub, text, truc="#12#", bidule=24)
 
 
 def test_process_instruments() -> None:
@@ -47,17 +53,6 @@ def test_process_instruments() -> None:
     values = utils.process_instruments(tokens, [0, 200, 0, 0, 0, 2])
     np.testing.assert_equal(values, [1, 11])
     np.testing.assert_raises(AssertionError, utils.process_instruments, tokens, [0, 200, 0, 0, 0, 2, 3])
-
-
-def test_replace_tokens_by_placeholders() -> None:
-    intext = "blublu NG_SC{0|1|2} NG_G{2,3}\nNG_SC{a|b}"
-    outtext, tokens = utils.replace_tokens_by_placeholders(intext)
-    expected_text = "blublu <[placeholder_{}>] <[placeholder_{}>]\n<[placeholder_{}>]".format(1, 0, 2)
-    expected_vars = [variables.Gaussian(mean=2.0, std=3),
-                     variables.SoftmaxCategorical(possibilities=["0", "1", "2"]),
-                     variables.SoftmaxCategorical(possibilities=["a", "b"])]
-    np.testing.assert_equal(outtext, expected_text)
-    np.testing.assert_array_equal(tokens, expected_vars)
 
 
 def test_temporary_directory_copy() -> None:

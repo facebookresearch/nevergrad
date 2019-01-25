@@ -9,12 +9,7 @@ from . import folderfunction
 
 
 def test_folder_function() -> None:
-    folder = Path(__file__).parents[1]
-    func = folderfunction.FolderFunction(str(folder), ["python", "-m", "nevergrad.instrumentation.test_folderfunction"], clean_copy=True)
-    output = func([12] * func.dimension)
+    folder = Path(__file__).parent / "examples" / "basic"
+    func = folderfunction.FolderFunction(str(folder), ["python", "basic/script.py"], clean_copy=True)
+    output = func(value1=98, value2=6)
     np.testing.assert_equal(output, 12)
-
-
-if __name__ == "__main__":
-    print("Hello World!")
-    # @nevergrad@ print(NG_G{0,1})
