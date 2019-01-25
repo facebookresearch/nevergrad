@@ -102,11 +102,14 @@ All algorithms have strenghts and weaknesses. Questionable rules of thumb could 
 - RandomSearch is the classical random search baseline; don't use softmax with this optimizer.
 
 **How to optimizer machine learning hyperparameters**:
-When optimizing hyperparameters as e.g. in machine learning: if you don't know what to do, 
+When optimizing hyperparameters as e.g. in machine learning. If you don't know what to do, 
 - use softmax for discrete variables. 
 - use TwoPointsDE with num_workers scaled.
 See https://github.com/facebookresearch/nevergrad/blob/master/docs/machinelearning.md for more.
-Or if you want something more aimed at robustly outperforming random search, use other discretizations without softmax.
+
+Or if you want something more aimed at robustly outperforming random search:
+- use OrderedDiscrete for discrete variables, taking care that the default value is in the middle.
+- Use ScrHammersleySearchPlusMiddlePoint (PlusMiddlePoint only if you have continuous parameters or good default values for discrete parameters).
 
 ## Benchmarks
 
