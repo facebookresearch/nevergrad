@@ -6,7 +6,7 @@
 # Ideas and original code from:
 # - Pascal Kerschke, University of Muenster
 # - Marcus Gallagher, University of Queensland
-# - Mike Preuss, WWU Munster
+# - Mike Preuss, LIACS, Leiden University
 
 from typing import Tuple, Optional
 import numpy as np
