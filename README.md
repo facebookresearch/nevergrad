@@ -85,6 +85,35 @@ recommendation = optimizer.provide_recommendation()
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)
 
+### Choosing an optimizer
+
+**You can print the full list of optimizers** with:
+```
+from nevergrad.optimization import registry
+print(sorted(registry.keys()))
+```
+
+All algorithms have strenghts and weaknesses. Questionable rules of thumb could be:
+- `TwoPointsDE` is excellent in many cases, including very high `num_workers`.
+- `DiscretePortfolioOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
+- `OnePlusOne` is a simple robust method for continuous parameters with `num_workers` < 8.
+- `CMA` is excellent for control (e.g. neurocontrol) when the environment is not very noisy (num_workers ~50 ok) and when the budget is large (e.g. 1000 x the dimension).
+- `TBPSA` is excellent for problems corrupted by noise, in particular overparametrized (neural) ones; very high `num_workers` ok).
+- `PSO` is excellent in terms of robustness, high `num_workers` ok.
+- `ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. `num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
+- `RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
+
+**Optimizing machine learning hyperparameters**:
+
+When optimizing hyperparameters as e.g. in machine learning. If you don't know what to do, 
+- use `SoftmaxCategorical` for discrete variables (see below). 
+- use `TwoPointsDE` with `num_workers` equal to the number of workers available to you.
+See https://github.com/facebookresearch/nevergrad/blob/master/docs/machinelearning.md for more.
+
+Or if you want something more aimed at robustly outperforming random search:
+- use `OrderedDiscrete` for discrete variables, taking care that the default value is in the middle.
+- Use `ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
+
 ## Benchmarks
 
 The benchmark tools aim at providing a way to evaluate optimizers on a large range of settings. They provide a way to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.
