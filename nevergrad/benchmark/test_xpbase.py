@@ -25,8 +25,8 @@ DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer
 
 class Function(BaseFunction, execution.PostponedObject):
 
-    def oracle_call(self, x) -> float:
-        return x[0]
+    def oracle_call(self, x: np.ndarray) -> float:
+        return float(x[0])
 
     # pylint: disable=unused-argument
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
@@ -86,7 +86,7 @@ class ExperimentsTests(TestCase):
         w3_batch=(True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
         w3_steady=(False, ['s0', 's1', 's2', 'u2', 's3', 'u1', 's4', 'u0', 'u3', 'u4']),  # u0 and u1 are delayed
     )
-    def test_batch_mode_parameter(self, batch_mode, expected):
+    def test_batch_mode_parameter(self, batch_mode: bool, expected: List[str]) -> None:
         func = Function(dimension=1)
         optim = test_base.LoggingOptimizer(3)
         with patch.object(xpbase.OptimizerSettings, "instanciate", return_value=optim):
