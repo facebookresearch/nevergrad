@@ -580,3 +580,29 @@ class SPSA(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.avg
+
+
+@registry.register
+class Portfolio(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget // 3 + (budget % 3 > 0), num_workers),
+                       TwoPointsDE(dimension, budget // 3 + (budget % 3 > 1), num_workers),
+                       ScrHammersleySearch(dimension, budget // 3, num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+
+    def _internal_ask(self) -> base.ArrayLike:
+        optim_index = self._num_suggestions % len(self.optims)
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x

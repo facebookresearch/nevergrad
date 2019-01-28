@@ -150,6 +150,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         This function can be called multiple times to explore several points in parallel
         """
         suggestion = self._internal_ask()
+        assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_suggestions += 1
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
