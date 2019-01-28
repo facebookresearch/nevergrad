@@ -12,6 +12,7 @@ import contextlib
 from pathlib import Path
 from typing import Union, List, Any, Optional, Generator, Set, Match, Dict
 import numpy as np
+from ..common import testing
 from . import utils
 
 
@@ -129,9 +130,7 @@ class FileTextFunction:
         self.parameters = {x.name for x in self.placeholders}
 
     def __call__(self, **kwargs: Any) -> str:
-        unexpected, missing = set(kwargs) - self.parameters, self.parameters - set(kwargs)
-        if unexpected or missing:
-            raise ValueError(f"Found unexpected arguments: {unexpected}\n and/or missing arguments {missing}.")
+        testing.assert_set_equal(kwargs, self.parameters, err_msg="Wrong input parameters.")
         return Placeholder.sub(self._text, self.filepath.suffix, replacers=kwargs)
 
     def __repr__(self) -> str:
@@ -186,7 +185,7 @@ class FolderInstantiator:
     def placeholders(self) -> List[Placeholder]:
         return [p for f in self.file_functions for p in f.placeholders]
 
-    def instantiate_to_folder(self, outfolder: Union[Path, str], **kwargs: Any) -> None:  # TODO change API to avoid outfolder
+    def instantiate_to_folder(self, outfolder: Union[Path, str], kwargs: Dict[str, Any]) -> None:
         # TODO check argument list as in file function
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
@@ -201,7 +200,7 @@ class FolderInstantiator:
     def instantiate(self, **kwargs: Any) -> Generator[Path, None, None]:
         with tempfile.TemporaryDirectory() as tempfolder:
             subtempfolder = Path(tempfolder) / self.folder.name
-            self.instantiate_to_folder(subtempfolder, **kwargs)
+            self.instantiate_to_folder(subtempfolder, kwargs)
             yield subtempfolder
 
 
@@ -264,6 +263,7 @@ class FolderFunction:
         return self.instantiator.placeholders
 
     def __call__(self, **kwargs: Any) -> Any:
+        testing.assert_set_equal(kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters.")
         with self.instantiator.instantiate(**kwargs) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")
