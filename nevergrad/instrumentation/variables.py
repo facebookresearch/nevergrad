@@ -92,9 +92,6 @@ class Gaussian(utils.Variable):
     The output will simply be mean + std * data
     """
 
-    pattern = r'NG_G' + r'{(?P<mean>.*?),(?P<std>.*?)}'
-    example = 'NG_G{1,2}'
-
     def __init__(self, mean: float, std: float, shape: Optional[List[int]] = None) -> None:
         self.mean = mean
         self.std = std
