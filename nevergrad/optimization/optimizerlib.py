@@ -586,10 +586,11 @@ class SPSA(base.Optimizer):
 class Portfolio(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
         self.optims = [CMA(dimension, budget // 3 + (budget % 3 > 0), num_workers),
                        TwoPointsDE(dimension, budget // 3 + (budget % 3 > 1), num_workers),
                        ScrHammersleySearch(dimension, budget // 3, num_workers)]
-        self.who_asked = defaultdict(list)
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask(self) -> base.ArrayLike:
         optim_index = self._num_suggestions % len(self.optims)
