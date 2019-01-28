@@ -73,8 +73,8 @@ class InstantiationTests(TestCase):
 
     @genty.genty_dataset(  # type: ignore
         void=("bvcebsl\nsoefn", []),
-        unique_no_comment=("bfseibf\nbsfei NG_VAR{machin}", [("machin", None)]),
-        several=("bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}", [("truc", "blublu"), ("bidule", None)]),
+        unique_no_comment=("bfseibf\nbsfei NG_ARG{machin}", [("machin", None)]),
+        several=("bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}", [("truc", "blublu"), ("bidule", None)]),
     )
     def test_placeholder(self, text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
         placeholders = Placeholder.finditer(text)
@@ -85,19 +85,19 @@ class InstantiationTests(TestCase):
         cpp=(".cpp", "{{1, 2}, {3, 4}}"),
     )
     def test_placeholder_for_array(self, extension: str, expected: str) -> None:
-        text = "NG_VAR{bidule}"
+        text = "NG_ARG{bidule}"
         output = Placeholder.sub(text, extension, {"bidule": np.array([[1, 2], [3, 4]])})
         np.testing.assert_equal(output, expected)
 
 
 def test_placeholder_substitution() -> None:
-    text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehn NG_VAR{bidule}"
+    text = "bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehn NG_ARG{bidule}"
     expected = "bfkes\nsgrdgrgbdrk'#12#'sehn 24"
     output = Placeholder.sub(text, ".py", {"truc": "#12#", "bidule": 24})
     np.testing.assert_equal(output, expected)
     np.testing.assert_raises(KeyError, Placeholder.sub, text, ".py", {"truc": "#12#"})
     np.testing.assert_raises(RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24, "chouette": 2})
-    text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}NG_VAR{bidule|bis}"
+    text = "bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}NG_ARG{bidule|bis}"
     np.testing.assert_raises(RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24})
 
 

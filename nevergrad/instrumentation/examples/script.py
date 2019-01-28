@@ -6,9 +6,9 @@
 """This is a very basic example of an instrumented python script
 """
 value1 = 10
-# @nevergrad@ value1 = NG_VAR{value1|this is a comment}
+# @nevergrad@ value1 = NG_ARG{value1|this is a comment}
 value2 = 90
-# @nevergrad@ value2 = NG_VAR{value2}
+# @nevergrad@ value2 = NG_ARG{value2}
 string = "plop"
-# @nevergrad@ string = NG_VAR{string}
+# @nevergrad@ string = NG_ARG{string}
 print(12 if string == "blublu" else abs(value1 - 100) * value2)  # last print should provide the fitness value (minimization)

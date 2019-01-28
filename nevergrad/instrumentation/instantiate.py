@@ -36,7 +36,7 @@ class Placeholder:
     """Placeholder tokend to for external code instrumentation
     """
 
-    pattern = r'NG_VAR' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
+    pattern = r'NG_ARG' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
 
     def __init__(self, name: str, comment: Optional[str]) -> None:
         self.name = name
@@ -122,7 +122,7 @@ class FileTextFunction:
         deprecated_placeholders = ["NG_G{", "NG_OD{", "NG_SC{"]
         if any(x in text for x in deprecated_placeholders):
             raise RuntimeError(f"Found one of deprecated placeholders {deprecated_placeholders}. The API has now evolved to "
-                               "a single placeholder NG_VAR{name|comment}, and FolderFunction now takes as many kwargs "
+                               "a single placeholder NG_ARG{name|comment}, and FolderFunction now takes as many kwargs "
                                "as placeholders and must be instrumented before optimization.\n"
                                "Please refer to the README, PR #73 or issue #45 for more information")
         if LINETOKEN in text:
@@ -132,7 +132,7 @@ class FileTextFunction:
             text = "\n".join(lines)
         self.placeholders = Placeholder.finditer(text)
         self._text = text
-        self.parameters = set()
+        self.parameters: Set[str] = set()
         for x in self.placeholders:
             if x.name not in self.parameters:
                 self.parameters.add(x.name)

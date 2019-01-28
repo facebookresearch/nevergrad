@@ -15,6 +15,7 @@ def test_instrumentation() -> None:
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, .5878], decimal=4)
     args, kwargs = instru.data_to_arguments(data, deterministic=True)
     testing.printed_assert_equal((args, kwargs), ((4., 3), {'a': 0, 'b': 3}))
+    assert ", 3, a=Ordered" in repr(instru), f"Erroneous representation {instru}"
     # check deterministic
     data = [0, 0, 0, 0, 0, 0]
     total = 0
@@ -77,17 +78,17 @@ def test_callable_instrumentation() -> None:
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
 
 
-def test_deterministic_convert_to_args() -> None:
+def test_deterministic_data_to_arguments() -> None:
     ifunc = core.InstrumentedFunction(_Callable(), variables.SoftmaxCategorical([0, 1, 2, 3]),
                                       y=variables.SoftmaxCategorical([0, 1, 2, 3]))
     data = [.01, 0, 0, 0, .01, 0, 0, 0]
     for _ in range(20):
-        args, kwargs = ifunc.convert_to_arguments(data, deterministic=True)
+        args, kwargs = ifunc.data_to_arguments(data, deterministic=True)
         testing.printed_assert_equal(args, [0])
         testing.printed_assert_equal(kwargs, {"y": 0})
     arg_sum, kwarg_sum = 0, 0
     for _ in range(24):
-        args, kwargs = ifunc.convert_to_arguments(data, deterministic=False)
+        args, kwargs = ifunc.data_to_arguments(data, deterministic=False)
         arg_sum += args[0]
         kwarg_sum += kwargs["y"]
     assert arg_sum != 0

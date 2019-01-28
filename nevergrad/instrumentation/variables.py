@@ -124,7 +124,7 @@ class _Constant(utils.Variable):
     """
 
     def __init__(self, value: Any) -> None:
-        self._value = value
+        self.value = value
 
     @classmethod
     def convert_non_instrument(cls, x: Any) -> utils.Variable:
@@ -135,14 +135,14 @@ class _Constant(utils.Variable):
         return 0
 
     def process(self, data: List[float], deterministic: bool = False) -> Any:  # pylint: disable=unused-argument
-        return self._value
+        return self.value
 
     def process_arg(self, arg: Any) -> ArrayLike:
-        assert arg == self._value, f'{arg} != {self._value}'
+        assert arg == self.value, f'{arg} != {self.value}'
         return []
 
     def get_summary(self, data: List[float]) -> str:
         raise RuntimeError("Constant summary should not be called")
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._value})"
+        return f"{self.__class__.__name__}({self.value})"

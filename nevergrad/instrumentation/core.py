@@ -1,3 +1,4 @@
+import warnings
 import itertools
 from typing import List, Any, Tuple, Dict, Optional, Callable
 import numpy as np
@@ -70,6 +71,32 @@ class Instrumentation:
         data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
         return np.array(data)
 
+    def instrument(self, function: Callable) -> "InstrumentedFunction":
+        return InstrumentedFunction(function, *self.args, **self.kwargs)
+
+    def __repr__(self) -> str:
+        arguments = [repr(x if not isinstance(x, variables._Constant) else x.value) for x in self.args]
+        sorted_kwargs = [(x, repr(self.kwargs[x].value  # type: ignore
+                                  if isinstance(self.kwargs[x], variables._Constant) else self.kwargs[x]))
+                         for x in sorted(self.kwargs)]
+        return "{}({})".format(self.__class__.__name__, ", ".join(arguments + [f"{x}={y}" for x, y in sorted_kwargs]))
+
+    def get_summary(self, data: np.ndarray) -> Any:
+        """Provides the summary string corresponding to the provided data
+
+        Note
+        ----
+        This is impractical for large arrays
+        """
+        strings = []
+        splitted_data = utils.split_data(data, self.instruments)
+        for k, (name, var, d) in enumerate(zip(self.names, self.instruments, splitted_data)):
+            if not isinstance(var, variables._Constant):
+                explanation = var.get_summary(d)
+                sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
+                strings.append(f"{sname}: {explanation}")
+        return " - " + "\n - ".join(strings)
+
 
 class InstrumentedFunction(base.BaseFunction):
     """Converts a multi-argument function into a mono-argument multidimensional continuous function
@@ -105,7 +132,7 @@ class InstrumentedFunction(base.BaseFunction):
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
 
-    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Get the arguments and keyword arguments corresponding to the data
 
         Parameters
@@ -118,11 +145,11 @@ class InstrumentedFunction(base.BaseFunction):
         """
         return self.instrumentation.data_to_arguments(data, deterministic=deterministic)
 
-    def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
         return self.instrumentation.arguments_to_data(*args, **kwargs)
 
     def oracle_call(self, x: np.ndarray) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x, deterministic=False)
+        self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
         return self._function(*self.last_call_args, **self.last_call_kwargs)
 
     def __call__(self, x: np.ndarray) -> Any:
@@ -133,15 +160,14 @@ class InstrumentedFunction(base.BaseFunction):
         return self.oracle_call(x)
 
     def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
-        """Prints the summary corresponding to the provided data
+        """Provides the summary corresponding to the provided data
         """
-        strings = []
-        names = self.instrumentation.names
-        instruments = self.instrumentation.instruments
-        splitted_data = utils.split_data(data, instruments)
-        for k, (name, var, d) in enumerate(zip(names, instruments, splitted_data)):
-            if not isinstance(var, variables._Constant):
-                explanation = var.get_summary(d)
-                sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
-                strings.append(f"{sname}: {explanation}")
-        return " - " + "\n - ".join(strings)
+        return self.instrumentation.get_summary(data)
+
+    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        warnings.warn("convert_to_arguments is deprecated, please use data_to_arguments instead")
+        return self.data_to_arguments(data, deterministic=deterministic)
+
+    def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
+        warnings.warn("convert_to_data is deprecated, please use arguments_to_data instead")
+        return self.arguments_to_data(*args, **kwargs)
