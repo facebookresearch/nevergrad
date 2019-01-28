@@ -125,9 +125,13 @@ class FileTextFunction:
             lines = [(l if LINETOKEN not in l else uncomment_line(l, ext)) for l in lines]
             text = "\n".join(lines)
         self.placeholders = Placeholder.finditer(text)
-        # TODO check no repeat
         self._text = text
-        self.parameters = {x.name for x in self.placeholders}
+        self.parameters = set()
+        for x in self.placeholders:
+            if x.name not in self.parameters:
+                self.parameters.add(x.name)
+            else:
+                raise RuntimeError(f'Found duplicate placeholder (names must be unique) with name "{x.name}" in file:\n{self.filepath}')
 
     def __call__(self, **kwargs: Any) -> str:
         testing.assert_set_equal(kwargs, self.parameters, err_msg="Wrong input parameters.")
@@ -167,13 +171,13 @@ class FolderInstantiator:
             self.folder = self._clean_copy.copyname
         self.file_functions: List[FileTextFunction] = []
         names: Set[str] = set()
-        for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
+        for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files (+ build files?)
             if fp.is_file() and fp.suffix.lower() in COMMENT_CHARS:
                 file_func = FileTextFunction(fp)
                 fnames = {ph.name for ph in file_func.placeholders}
                 if fnames:
                     if fnames & names:
-                        raise RuntimeError(f"Found {fp} placeholders in another file: {fnames & names}")
+                        raise RuntimeError(f"Found {fp} placeholders in another file (names must be unique): {fnames & names}")
                     self.file_functions.append(file_func)
         assert self.file_functions, "Found no file with placeholders"
         self.file_functions = sorted(self.file_functions, key=operator.attrgetter("filepath"))
@@ -186,7 +190,7 @@ class FolderInstantiator:
         return [p for f in self.file_functions for p in f.placeholders]
 
     def instantiate_to_folder(self, outfolder: Union[Path, str], kwargs: Dict[str, Any]) -> None:
-        # TODO check argument list as in file function
+        testing.assert_set_equal(kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters.")
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
         symlink_folder_tree(self.folder, outfolder)
@@ -263,7 +267,6 @@ class FolderFunction:
         return self.instantiator.placeholders
 
     def __call__(self, **kwargs: Any) -> Any:
-        testing.assert_set_equal(kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters.")
         with self.instantiator.instantiate(**kwargs) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")

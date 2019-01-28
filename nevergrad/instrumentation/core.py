@@ -14,6 +14,8 @@ class Instrumentation:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
         self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        num_instru = len(set(id(i) for i in self.instruments))
+        assert len(self.instruments) == num_instru, "All instruments must be different (sharing is not supported)"
 
     @property
     def dimension(self) -> int:

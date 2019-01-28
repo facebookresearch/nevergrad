@@ -139,7 +139,8 @@ class CommandFunction:
         The logs are bufferized. They will be printed if the job fails, or sent as output of the function
         Errors are provided with the internal stderr
         """
-        full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]  # TODO bad parsing
+        # TODO make the following command more robust (probably fails in multiple cases)
+        full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
         if self.verbose:
             print(f"The following command is sent: {full_command}")
         outlines: List[str] = []

@@ -32,6 +32,11 @@ def test_instrumentation() -> None:
                                  instru.data_to_arguments(data, deterministic=True))
 
 
+def test_instrumentation_init_error() -> None:
+    variable = variables.Gaussian(0, 1)
+    np.testing.assert_raises(AssertionError, core.Instrumentation, variable, variable)
+
+
 def _arg_return(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
     return args, kwargs
 
