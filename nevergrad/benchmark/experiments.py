@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional
+from typing import Iterator, Optional, List
+from ..functions.base import BaseFunction
 from ..functions import ArtificialFunction
+from ..functions import mlda as _mlda
 from .. import optimization
 from .xpbase import Experiment
 from .xpbase import create_seed_generator
@@ -185,3 +187,26 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                 for name in ["sphere", "sphere4", "cigar"]:
                     function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[BaseFunction] = [_mlda.Clustering.from_mlda(name, num, rescale)
+                                 for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]]
+    funcs += [_mlda.SammonMapping.from_mlda("Virus", rescale=False), _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+              _mlda.SammonMapping.from_mlda("Employees")]
+    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
+             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
+             "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
+    # pylint: disable=too-many-nested-blocks
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for func in funcs:
+            for num_workers in [1, 10, 100]:
+                if num_workers < budget:
+                    for algo in algos:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp

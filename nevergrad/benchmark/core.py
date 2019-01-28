@@ -37,7 +37,7 @@ def save_or_append_to_csv(df: pd.DataFrame, path: Path) -> None:
     if path.exists():
         print("Appending to existing file")
         predf = pd.read_csv(str(path))
-        df = pd.concat([predf, df])#, sort=False)
+        df = pd.concat([predf, df], sort=False)
     df.to_csv(path, index=False)
 
 
@@ -176,6 +176,9 @@ def _submit_jobs(experiment_name: str, num_workers: int = 1, seed: Optional[int]
         executor = SequentialExecutor()
     jobs: List[JobLike] = []
     bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
+    # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
+    next(registry[experiment_name]())
+    # run
     for chunk in bench.split(num_workers):
         # split experiment this way to avoid one job running most slow settings
         jobs.append(executor.submit(chunk.compute, print_function))
