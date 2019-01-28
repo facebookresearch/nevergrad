@@ -9,17 +9,55 @@ import tempfile
 import operator
 import contextlib
 from pathlib import Path
-from typing import Union, List, Any, Optional, Generator, Callable, Tuple, Dict, Set
-import numpy as np
-from ..functions import base
-from ..common.typetools import ArrayLike
+from typing import Union, List, Any, Optional, Generator, Set, Match
 from . import utils
-from . import variables
 
 
-BIG_NUMBER = 3000
 LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file...
 COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#", ".m": "%"}
+
+
+class Placeholder:
+    """Placeholder tokend to for external code instrumentation
+    """
+
+    pattern = r'NG_VAR' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
+
+    def __init__(self, name: str, comment: Optional[str]) -> None:
+        self.name = name
+        self.comment = comment
+
+    @classmethod
+    def finditer(cls, text: str) -> List['Placeholder']:
+        prog = re.compile(cls.pattern)
+        return [cls(x.group("name"), x.group("comment")) for x in prog.finditer(text)]
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.name!a}, {self.comment!a})'
+
+    def __eq__(self, other: Any) -> bool:
+        if self.__class__ == other.__class__:
+            return (self.name, self.comment) == (other.name, other.comment)
+        return False
+
+    @classmethod
+    def sub(cls, text: str, **kwargs: Any) ->str:
+        found: Set[str] = set()
+
+        def _replacer(regex: Match) -> str:
+            name = regex.group("name")
+            if name in found:
+                raise RuntimeError(f'Trying to remplace a second time placeholder "{name}"')
+            if name not in kwargs:
+                raise KeyError(f'Could not find a value for placeholder "{name}"')
+            found.add(name)
+            return str(kwargs[name])
+
+        text = re.sub(cls.pattern, _replacer, text)
+        missing = set(kwargs) - found
+        if missing:
+            raise RuntimeError(f"All values have not been consumed: {missing}")
+        return text
 
 
 def register_file_type(suffix: str, comment_chars: str) -> None:
@@ -73,7 +111,7 @@ class FileTextFunction:
             ext = filepath.suffix.lower()
             lines = [(l if LINETOKEN not in l else uncomment_line(l, ext)) for l in lines]
             text = "\n".join(lines)
-        self.placeholders = utils.Placeholder.finditer(text)
+        self.placeholders = Placeholder.finditer(text)
         # TODO check no repeat
         self._text = text
         self.parameters = {x.name for x in self.placeholders}
@@ -82,7 +120,7 @@ class FileTextFunction:
         unexpected, missing = set(kwargs) - self.parameters, self.parameters - set(kwargs)
         if unexpected or missing:
             raise ValueError(f"Found unexpected arguments: {unexpected}\n and/or missing arguments {missing}.")
-        return utils.Placeholder.sub(self._text, **kwargs)
+        return Placeholder.sub(self._text, **kwargs)
 
     def __repr__(self) -> str:
         names = sorted(self.parameters)
@@ -133,7 +171,7 @@ class FolderInstantiator:
         return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.file_functions}'
 
     @property
-    def placeholders(self) -> List[utils.Placeholder]:
+    def placeholders(self) -> List[Placeholder]:
         return [p for f in self.file_functions for p in f.placeholders]
 
     def instantiate_to_folder(self, outfolder: Union[Path, str], **kwargs: Any) -> None:  # TODO change API to avoid outfolder
@@ -155,77 +193,73 @@ class FolderInstantiator:
             yield subtempfolder
 
 
-class InstrumentedFunction(base.BaseFunction):
-    """Converts a multi-argument function into a mono-argument multidimensional continuous function
-    which can be optimized.
+class FolderFunction:
+    """Turns a folder into a parametrized function
+    (with nevergrad tokens)
 
     Parameters
     ----------
-    function: callable
-        the callable to convert
-    *args, **kwargs: Any
-        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumented
-        and others will be kept constant.
+    folder: Path/str
+        path to the folder to instrument
+    command: list
+        command to run from inside the folder. The last line in stdout will
+        be the output of the function.
+        The command must be performed from just outside the instrument
+        directory
+    verbose: bool
+        whether to print the run command and from where it is run.
+    clean_copy: bool
+        whether to create an initial clean temporary copy of the folder in order to avoid
+        versioning problems (instantiations are lightweight symlinks in any case)
+
+    Returns
+    -------
+    the post-processed output of the called command
 
     Note
     ----
-    - Tokens can be:
-      - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
-      - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
-    - This function can then be directly used in benchmarks *if it returns a float*.
+    By default, the postprocessing attribute holds a function which recovers the last line
+    and converts it to float. The sequence of postprocessing can however be tampered
+    with directly in order to change it
 
+    Caution
+    -------
+        The clean copy is generally located in /tmp and may not be accessible for
+        computation in a cluster. You may want to create a clean copy yourself
+        in the folder of your choice, or set the the TemporaryDirectoryCopy class
+        (located in instrumentation.instantiate) CLEAN_COPY_DIRECTORY environment
+        variable to a shared directory
     """
 
-    def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
-        assert callable(function)
-        self.instrumentation = variables.Instrumentation(*args, **kwargs)
-        super().__init__(dimension=self.instrumentation.dimension)
-        # keep track of what is instrumented (but "how" is probably too long/complex)
-        instrumented = [f"arg{k}" if name is None else name for k, name in enumerate(self.instrumentation.names)
-                        if not isinstance(self.instrumentation.instruments[k], variables._Constant)]
-        name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
-        self._descriptors.update(name=name, instrumented=",".join(instrumented))
-        self._function = function
-        self.last_call_args: Optional[Tuple[Any, ...]] = None
-        self.last_call_kwargs: Optional[Dict[str, Any]] = None
+    # pylint: disable=too-many-arguments
+    def __init__(self, folder: Union[Path, str], command: List[str], verbose: bool = False, clean_copy: bool = False) -> None:
+        self.command = command
+        self.verbose = verbose
+        self.postprocessings = [get_last_line_as_float]
+        self.instantiator = FolderInstantiator(folder, clean_copy=clean_copy)
+        self.last_full_output: Optional[str] = None
 
-    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
-        """Get the arguments and keyword arguments corresponding to the data
+    @property
+    def placeholders(self) -> List[Placeholder]:
+        return self.instantiator.placeholders
 
-        Parameters
-        ----------
-        data: np.ndarray
-            input data
-        deterministic: bool
-            whether to process the data deterministically (some Variables such as SoftmaxCategorical are stochastic).
-            If True, the output is the most likely output.
-        """
-        return self.instrumentation.data_to_arguments(data, deterministic=deterministic)
+    def __call__(self, **kwargs: Any) -> Any:
+        with self.instantiator.instantiate(**kwargs) as folder:
+            if self.verbose:
+                print(f"Running {self.command} from {folder.parent} which holds {folder}")
+            output: Any = utils.CommandFunction(self.command, cwd=folder.parent)()
+        if self.verbose:
+            print(f"FolderFunction recovered full output:\n{output}")
+        self.last_full_output = output.strip()
+        if not output:
+            raise ValueError("No output")
+        for postproc in self.postprocessings:
+            output = postproc(output)
+        if self.verbose:
+            print(f"FolderFunction returns: {output}")
+        return output
 
-    def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
-        return self.instrumentation.arguments_to_data(*args, **kwargs)
 
-    def oracle_call(self, x: np.ndarray) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x, deterministic=False)
-        return self._function(*self.last_call_args, **self.last_call_kwargs)
-
-    def __call__(self, x: np.ndarray) -> Any:
-        # BaseFunction __call__ method should generally not be overriden,
-        # but here that would mess up with typing, and I would rather not constrain
-        # user to return only floats.
-        x = self.transform(x)
-        return self.oracle_call(x)
-
-    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
-        """Prints the summary corresponding to the provided data
-        """
-        strings = []
-        names = self.instrumentation.names
-        instruments = self.instrumentation.instruments
-        splitted_data = utils.split_data(data, instruments)
-        for k, (name, var, d) in enumerate(zip(names, instruments, splitted_data)):
-            if not isinstance(var, variables._Constant):
-                explanation = var.get_summary(d)
-                sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
-                strings.append(f"{sname}: {explanation}")
-        return " - " + "\n - ".join(strings)
+def get_last_line_as_float(output: str) -> float:
+    split_output = output.strip().splitlines()
+    return float(split_output[-1])

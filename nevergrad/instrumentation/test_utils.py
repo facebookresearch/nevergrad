@@ -8,7 +8,7 @@ import time
 import contextlib
 from unittest import TestCase
 from pathlib import Path
-from typing import List, Tuple, Any, Optional
+from typing import List, Any
 import numpy as np
 import genty
 from ..common import testing
@@ -25,26 +25,6 @@ class UtilsTests(TestCase):
     def test_split_data(self, tokens: List, data: List, expected: List) -> None:
         output = utils.split_data(data, tokens)
         testing.printed_assert_equal(output, expected)
-
-    @genty.genty_dataset(  # type: ignore
-        void=("bvcebsl\nsoefn", []),
-        unique_no_comment=("bfseibf\nbsfei NG_VAR{machin}", [("machin", None)]),
-        several=("bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}", [("truc", "blublu"), ("bidule", None)]),
-    )
-    def test_placeholder(self, text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
-        placeholders = utils.Placeholder.finditer(text)
-        testing.printed_assert_equal(placeholders, [utils.Placeholder(*x) for x in name_comments])
-
-
-def test_placeholder_substitution() -> None:
-    text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehn NG_VAR{bidule}"
-    expected = "bfkes\nsgrdgrgbdrk#12#sehn 24"
-    output = utils.Placeholder.sub(text, truc="#12#", bidule=24)
-    np.testing.assert_equal(output, expected)
-    np.testing.assert_raises(KeyError, utils.Placeholder.sub, text, truc="#12#")
-    np.testing.assert_raises(RuntimeError, utils.Placeholder.sub, text, truc="#12#", bidule=24, chouette=12)
-    text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}NG_VAR{bidule|bis}"
-    np.testing.assert_raises(RuntimeError, utils.Placeholder.sub, text, truc="#12#", bidule=24)
 
 
 def test_process_instruments() -> None:

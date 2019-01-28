@@ -4,12 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import re
 import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Iterable, Tuple, Union, Optional, Match, Set, Dict
+from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -36,49 +35,6 @@ class Instrument:
     def __repr__(self) -> str:
         args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
         return f"{self.__class__.__name__}({args})"
-
-
-class Placeholder:
-    """Placeholder tokend to for external code instrumentation
-    """
-
-    pattern = r'NG_VAR' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
-
-    def __init__(self, name: str, comment: Optional[str]) -> None:
-        self.name = name
-        self.comment = comment
-
-    @classmethod
-    def finditer(cls, text: str) -> List['Placeholder']:
-        prog = re.compile(cls.pattern)
-        return [cls(x.group("name"), x.group("comment")) for x in prog.finditer(text)]
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.name!a}, {self.comment!a})'
-
-    def __eq__(self, other: Any) -> bool:
-        if self.__class__ == other.__class__:
-            return (self.name, self.comment) == (other.name, other.comment)
-        return False
-
-    @classmethod
-    def sub(cls, text: str, **kwargs: Any) ->str:
-        found: Set[str] = set()
-
-        def _replacer(regex: Match) -> str:
-            name = regex.group("name")
-            if name in found:
-                raise RuntimeError(f'Trying to remplace a second time placeholder "{name}"')
-            if name not in kwargs:
-                raise KeyError(f'Could not find a value for placeholder "{name}"')
-            found.add(name)
-            return str(kwargs[name])
-
-        text = re.sub(cls.pattern, _replacer, text)
-        missing = set(kwargs) - found
-        if missing:
-            raise RuntimeError(f"All values have not been consumed: {missing}")
-        return text
 
 
 def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[List[float]]:
