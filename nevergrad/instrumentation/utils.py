@@ -14,7 +14,7 @@ import numpy as np
 from ..common.typetools import ArrayLike
 
 
-class Instrument:
+class Variable:
 
     @property
     def dimension(self) -> int:
@@ -37,7 +37,7 @@ class Instrument:
         return f"{self.__class__.__name__}({args})"
 
 
-def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[List[float]]:
+def split_data(data: List[float], instruments: Iterable[Variable]) -> List[List[float]]:
     """Splits data according to the data requirements of the instruments
     """
     # this functions should be tested
@@ -55,7 +55,7 @@ def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[Lis
     return splitted_data
 
 
-def process_instruments(instruments: Iterable[Instrument], data: List[float],
+def process_instruments(instruments: Iterable[Variable], data: List[float],
                         deterministic: bool = False) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)

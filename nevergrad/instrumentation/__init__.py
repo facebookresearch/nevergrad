@@ -5,5 +5,5 @@
 
 from .instantiate import register_file_type, FolderFunction
 from . import variables
-from .variables import Instrumentation, InstrumentedFunction
+from .core import Instrumentation, InstrumentedFunction
 from .utils import TemporaryDirectoryCopy

@@ -1,0 +1,145 @@
+import itertools
+from typing import List, Any, Tuple, Dict, Optional, Callable
+import numpy as np
+from ..common.typetools import ArrayLike
+from ..functions import base
+from . import utils
+from . import variables
+
+
+class Instrumentation:
+    """Class handling arguments instrumentation, and providing conversion to and from data.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
+
+    @property
+    def dimension(self) -> int:
+        return sum(i.dimension for i in self.instruments)
+
+    @property
+    def args(self) -> Tuple[utils.Variable, ...]:
+        """List of instruments passed as positional arguments
+        """
+        return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
+
+    @property
+    def kwargs(self) -> Dict[str, utils.Variable]:
+        """Dictionary of instruments passed as named arguments
+        """
+        return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
+
+    @staticmethod
+    def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
+        """Converts *args and **kwargs to a tuple of names (with None for positional),
+        and the corresponding tuple of values.
+
+        Eg:
+        _make_argument_names_and_list(3, z="blublu", machin="truc")
+        >>> (None, "machin", "z"), (3, "truc", "blublu")
+        """
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
+        arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
+        return names, arguments
+
+    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        """Converts data to arguments
+        """
+        arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
+        args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
+        kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
+        return args, kwargs
+
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        """Converts arguments to data
+
+        Note
+        ----
+        - you need to input the arguments in the same way than at initialization
+          with regard to positional and named arguments.
+        - this process is simplified, and is deterministic. Depending on your instrumentation,
+          you will probably not recover the same data.
+        """
+        names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
+                                     f"but expected:\n{self.names}")
+        data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
+        return np.array(data)
+
+
+class InstrumentedFunction(base.BaseFunction):
+    """Converts a multi-argument function into a mono-argument multidimensional continuous function
+    which can be optimized.
+
+    Parameters
+    ----------
+    function: callable
+        the callable to convert
+    *args, **kwargs: Any
+        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumented
+        and others will be kept constant.
+
+    Note
+    ----
+    - Tokens can be:
+      - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
+      - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
+    - This function can then be directly used in benchmarks *if it returns a float*.
+
+    """
+
+    def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
+        assert callable(function)
+        self.instrumentation = Instrumentation(*args, **kwargs)
+        super().__init__(dimension=self.instrumentation.dimension)
+        # keep track of what is instrumented (but "how" is probably too long/complex)
+        instrumented = [f"arg{k}" if name is None else name for k, name in enumerate(self.instrumentation.names)
+                        if not isinstance(self.instrumentation.instruments[k], variables._Constant)]
+        name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
+        self._descriptors.update(name=name, instrumented=",".join(instrumented))
+        self._function = function
+        self.last_call_args: Optional[Tuple[Any, ...]] = None
+        self.last_call_kwargs: Optional[Dict[str, Any]] = None
+
+    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        """Get the arguments and keyword arguments corresponding to the data
+
+        Parameters
+        ----------
+        data: np.ndarray
+            input data
+        deterministic: bool
+            whether to process the data deterministically (some Variables such as SoftmaxCategorical are stochastic).
+            If True, the output is the most likely output.
+        """
+        return self.instrumentation.data_to_arguments(data, deterministic=deterministic)
+
+    def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
+        return self.instrumentation.arguments_to_data(*args, **kwargs)
+
+    def oracle_call(self, x: np.ndarray) -> Any:
+        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x, deterministic=False)
+        return self._function(*self.last_call_args, **self.last_call_kwargs)
+
+    def __call__(self, x: np.ndarray) -> Any:
+        # BaseFunction __call__ method should generally not be overriden,
+        # but here that would mess up with typing, and I would rather not constrain
+        # user to return only floats.
+        x = self.transform(x)
+        return self.oracle_call(x)
+
+    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
+        """Prints the summary corresponding to the provided data
+        """
+        strings = []
+        names = self.instrumentation.names
+        instruments = self.instrumentation.instruments
+        splitted_data = utils.split_data(data, instruments)
+        for k, (name, var, d) in enumerate(zip(names, instruments, splitted_data)):
+            if not isinstance(var, variables._Constant):
+                explanation = var.get_summary(d)
+                sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
+                strings.append(f"{sname}: {explanation}")
+        return " - " + "\n - ".join(strings)
