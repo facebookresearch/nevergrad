@@ -9,4 +9,6 @@ value1 = 10
 # @nevergrad@ value1 = NG_VAR{value1|this is a comment}
 value2 = 90
 # @nevergrad@ value2 = NG_VAR{value2}
-print(abs(value1 - 100) * value2)  # last print should provide the fitness value (minimization)
+string = "plop"
+# @nevergrad@ string = NG_VAR{string}
+print(12 if string == "blublu" else abs(value1 - 100) * value2)  # last print should provide the fitness value (minimization)

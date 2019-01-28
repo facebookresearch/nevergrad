@@ -10,12 +10,25 @@ import tempfile
 import operator
 import contextlib
 from pathlib import Path
-from typing import Union, List, Any, Optional, Generator, Set, Match
+from typing import Union, List, Any, Optional, Generator, Set, Match, Dict
+import numpy as np
 from . import utils
 
 
 LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file...
 COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#", ".m": "%"}
+
+
+def _convert_to_string(data: Any, extension: str) -> str:
+    """Converts the data into a string to be injected in a file
+    """
+    if isinstance(data, np.ndarray):
+        string = repr(data.tolist())
+    else:
+        string = repr(data)
+    if extension in [".h", ".hpp", ".cpp", ".c"] and isinstance(data, np.ndarray):  # TODO: custom extensions are handled as python
+        string = string.replace("[", "{").replace("]", "}")
+    return string
 
 
 class Placeholder:
@@ -42,8 +55,9 @@ class Placeholder:
         return False
 
     @classmethod
-    def sub(cls, text: str, **kwargs: Any) ->str:
+    def sub(cls, text: str, extension: str, replacers: Dict) ->str:
         found: Set[str] = set()
+        kwargs = {x: _convert_to_string(y, extension) for x, y in replacers.items()}
 
         def _replacer(regex: Match) -> str:
             name = regex.group("name")
@@ -118,7 +132,7 @@ class FileTextFunction:
         unexpected, missing = set(kwargs) - self.parameters, self.parameters - set(kwargs)
         if unexpected or missing:
             raise ValueError(f"Found unexpected arguments: {unexpected}\n and/or missing arguments {missing}.")
-        return Placeholder.sub(self._text, **kwargs)
+        return Placeholder.sub(self._text, self.filepath.suffix, replacers=kwargs)
 
     def __repr__(self) -> str:
         names = sorted(self.parameters)

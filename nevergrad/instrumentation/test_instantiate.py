@@ -21,6 +21,9 @@ def test_symlink_folder_tree() -> None:
         instantiate.symlink_folder_tree(path, folder)
 
 
+_EXPECTED = [Placeholder(*x) for x in [("value1", "this is a comment"), ("value2", None), ("string", None)]]
+
+
 @genty.genty
 class InstantiationTests(TestCase):
 
@@ -61,10 +64,9 @@ class InstantiationTests(TestCase):
     def test_folder_instantiator(self, clean_copy: bool) -> None:
         path = Path(__file__).parent / "examples"
         ifolder = instantiate.FolderInstantiator(path, clean_copy=clean_copy)
-        testing.printed_assert_equal(ifolder.placeholders, [Placeholder("value1", "this is a comment"),
-                                                            Placeholder("value2", None)])
+        testing.printed_assert_equal(ifolder.placeholders, _EXPECTED)
         np.testing.assert_equal(len(ifolder.file_functions), 1)
-        with ifolder.instantiate(value1=12, value2=110.) as tmp:
+        with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
             with (tmp / "script.py").open("r") as f:
                 lines = f.readlines()
         np.testing.assert_equal(lines[10], "value2 = 110.0\n")
@@ -78,27 +80,37 @@ class InstantiationTests(TestCase):
         placeholders = Placeholder.finditer(text)
         testing.printed_assert_equal(placeholders, [Placeholder(*x) for x in name_comments])
 
+    @genty.genty_dataset(  # type: ignore
+        python=(".py", "[[1, 2], [3, 4]]"),
+        cpp=(".cpp", "{{1, 2}, {3, 4}}"),
+    )
+    def test_placeholder_for_array(self, extension: str, expected: str) -> None:
+        text = "NG_VAR{bidule}"
+        output = Placeholder.sub(text, extension, {"bidule": np.array([[1, 2], [3, 4]])})
+        np.testing.assert_equal(output, expected)
+
 
 def test_placeholder_substitution() -> None:
     text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehn NG_VAR{bidule}"
-    expected = "bfkes\nsgrdgrgbdrk#12#sehn 24"
-    output = Placeholder.sub(text, truc="#12#", bidule=24)
+    expected = "bfkes\nsgrdgrgbdrk'#12#'sehn 24"
+    output = Placeholder.sub(text, ".py", {"truc": "#12#", "bidule": 24})
     np.testing.assert_equal(output, expected)
-    np.testing.assert_raises(KeyError, Placeholder.sub, text, truc="#12#")
-    np.testing.assert_raises(RuntimeError, Placeholder.sub, text, truc="#12#", bidule=24, chouette=12)
+    np.testing.assert_raises(KeyError, Placeholder.sub, text, ".py", {"truc": "#12#"})
+    np.testing.assert_raises(RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24, "chouette": 2})
     text = "bfkes\nsgrdgrgbdrkNG_VAR{truc|blublu}sehnNG_VAR{bidule}NG_VAR{bidule|bis}"
-    np.testing.assert_raises(RuntimeError, Placeholder.sub, text, truc="#12#", bidule=24)
+    np.testing.assert_raises(RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24})
 
 
 def test_file_text_function() -> None:
     path = Path(__file__).parent / "examples" / "script.py"
     filefunc = instantiate.FileTextFunction(path)
-    testing.printed_assert_equal(filefunc.placeholders, [Placeholder("value1", "this is a comment"),
-                                                         Placeholder("value2", None)])
+    testing.printed_assert_equal(filefunc.placeholders, _EXPECTED)
 
 
 def test_folder_function() -> None:
     folder = Path(__file__).parent / "examples"
     func = instantiate.FolderFunction(str(folder), ["python", "examples/script.py"], clean_copy=True)
-    output = func(value1=98, value2=6)
+    output = func(value1=98, value2=12, string="plop")
+    np.testing.assert_equal(output, 24)
+    output = func(value1=98, value2=12, string="blublu")
     np.testing.assert_equal(output, 12)
