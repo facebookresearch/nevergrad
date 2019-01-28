@@ -99,3 +99,10 @@ def test_artifificial_function_with_jump() -> None:
     func2 = functionlib.ArtificialFunction("jump5", 5)
     np.testing.assert_equal(func1._only_index_transform, False)
     np.testing.assert_equal(func2._only_index_transform, True)
+
+
+def test_get_posptoning_delay() -> None:
+    func = functionlib.ArtificialFunction("sphere", 2)
+    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0)
+    func = functionlib.ArtificialFunction("DelayedSphere", 2)
+    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0.0005)

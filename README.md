@@ -50,7 +50,7 @@ Optimizing (minimizing!) a function using an optimizer (here OnePlusOne) can be 
 from nevergrad.optimization import optimizerlib
 
 def square(x):
-    return (x - .5)**2
+    return sum((x - .5)**2)
 
 optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100, num_workers=5)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
@@ -84,6 +84,35 @@ recommendation = optimizer.provide_recommendation()
 ```
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)
+
+### Choosing an optimizer
+
+**You can print the full list of optimizers** with:
+```
+from nevergrad.optimization import registry
+print(sorted(registry.keys()))
+```
+
+All algorithms have strenghts and weaknesses. Questionable rules of thumb could be:
+- `TwoPointsDE` is excellent in many cases, including very high `num_workers`.
+- `PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
+- `OnePlusOne` is a simple robust method for continuous parameters with `num_workers` < 8.
+- `CMA` is excellent for control (e.g. neurocontrol) when the environment is not very noisy (num_workers ~50 ok) and when the budget is large (e.g. 1000 x the dimension).
+- `TBPSA` is excellent for problems corrupted by noise, in particular overparametrized (neural) ones; very high `num_workers` ok).
+- `PSO` is excellent in terms of robustness, high `num_workers` ok.
+- `ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. `num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
+- `RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
+
+**Optimizing machine learning hyperparameters**:
+
+When optimizing hyperparameters as e.g. in machine learning. If you don't know what to do, 
+- use `SoftmaxCategorical` for discrete variables (see below). 
+- use `TwoPointsDE` with `num_workers` equal to the number of workers available to you.
+See https://github.com/facebookresearch/nevergrad/blob/master/docs/machinelearning.md for more.
+
+Or if you want something more aimed at robustly outperforming random search:
+- use `OrderedDiscrete` for discrete variables, taking care that the default value is in the middle.
+- Use `ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
 ## Benchmarks
 
@@ -136,6 +165,8 @@ Functions used for the experiments must derive from `nevergrad.functions.BaseFun
 If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiments.py](nevergrad/benchmark/experiments.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).
 
 ## Instrumentation
+
+**Please note that instrumentation is still a work in progress. We will try to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that their will be breaking changes (see Issues #44 to #47).**
 
 The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous space. For this, discrete/categorial variables must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do this.
 
@@ -239,6 +270,7 @@ Some important things to note:
  - using `FolderFunction` argument `clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
  - under the hood, with or without `clean_copy=True`, when calling the function, `FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid duplicating large projects, but they have some drawbacks, see next point ;)
  - one can add a compilation step to `FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
+ - the following external file types are registered by default: `[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using `instrumentation.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment.
 
 
 
