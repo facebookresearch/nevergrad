@@ -169,25 +169,25 @@ If you want your experiment plan to be seedable, be extra careful as to how you 
 **Please note that instrumentation is still a work in progress. We will try to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that their will be breaking changes (see Issues #44 to #47).**
 
 The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed. For this, discrete/categorial arguments must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do thanks to:
-- the `variables` modules, providing priors that can be used to define each argument.
-- the `Instrumentation`, and `InstrumentedFunction` classes which provide an interface for converting any arguments into the data space used for optimization.
-- the `FolderFunction` which helps transform any code into a Python function in a few line of codes, which you can then intrument easily and optimize. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
+- the `variables` modules providing priors that can be used to define each argument.
+- the `Instrumentation`, and `InstrumentedFunction` classes which provide an interface for converting any arguments into the data space used for optimization, and convert from data space back to the arguments space.
+- the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
 
 ### Variables
 
 3 types of variables are currently provided:
-- `SoftmaxCategorical`: converts a list of n (unordered) categorial variables into an n dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and somehow `adds noise to the estimation.
+- `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
-- `Gaussian`: normalizes a n-dimensional variable with independent Gaussian priors (1-dimension per value).
+- `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
 
 
 ### Instrumentation
 
-Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation` and provide `arguments_to_data` and `data_to_arguments` methods.
+Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods.
 
 
-```
+```python
 from nevergrad import instrumentation as inst
 
 # argument transformation
@@ -235,11 +235,10 @@ ifunc([1, -80, -80, 80, 3])  # will print "b e blublu" and return 49 = 7**2
 # check the instrumentation output explanation above if this is not clear
 ```
 
-You can then directly perform optimizaiton on this object:
+You can then directly perform optimization on this object:
 ```python
 from nevergrad.optimization import optimizerlib
 optimizer = optimizerlib.OnePlusOne(dimension=ifunc.dimension, budget=100)
-# alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
 recommendation = optimizer.optimize(ifunc)
 ```
 
@@ -264,7 +263,7 @@ Sometimes it is completely impractical or impossible to have a simple Python3.6+
 
 We provide tooling for this situation. Go through this steps to instrument your code:
  - **identify the variables** (parameters, constants...) you want to optimize.
- - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for instrumentation, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the cocde:
+ - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for instrumentation, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the code:
 ```c
 int step_size = 0.1
 // @nevergrad@ step_size = NG_ARG{step|any comment}
