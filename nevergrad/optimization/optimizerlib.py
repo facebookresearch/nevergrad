@@ -597,6 +597,7 @@ class Portfolio(base.Optimizer):
         self.optim_index = (self.optim_index + 1) % len(self.optims)
         individual = self.optims[self.optim_index].ask()
         self.who_asked[individual] += [self.optim_index]
+        return individual
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         optim_index = self.who_asked[x][0]
