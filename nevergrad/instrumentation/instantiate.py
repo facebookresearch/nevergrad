@@ -119,6 +119,12 @@ class FileTextFunction:
         assert filepath.exists(), "{filepath} does not exist"
         with filepath.open("r") as f:
             text = f.read()
+        deprecated_placeholders = ["NG_G{", "NG_OD{", "NG_SC{"]
+        if any(x in text for x in deprecated_placeholders):
+            raise RuntimeError(f"Found one of deprecated placeholders {deprecated_placeholders}. The API has now evolved to "
+                               "a single placeholder NG_VAR{name|comment}, and FolderFunction now takes as many kwargs "
+                               "as placeholders and must be instrumented before optimization.\n"
+                               "Please refer to the README, PR #73 or issue #45 for more information")
         if LINETOKEN in text:
             lines = text.splitlines()
             ext = filepath.suffix.lower()
