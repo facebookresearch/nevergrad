@@ -603,4 +603,5 @@ class Portfolio(base.Optimizer):
         del self.who_asked[x][0]
         self.optims[optim_index].tell(x, value)
 
-
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
