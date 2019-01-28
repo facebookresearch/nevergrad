@@ -5,6 +5,7 @@
 
 import os
 import re
+import warnings
 import tempfile
 import operator
 import contextlib
@@ -61,11 +62,8 @@ class Placeholder:
 
 
 def register_file_type(suffix: str, comment_chars: str) -> None:
-    """Register a new file type to be used for token instrumentation by providing the relevant file suffix as well as
-    the characters that indicate a comment."""
-    if not suffix.startswith("."):
-        suffix = f".{suffix}"
-    COMMENT_CHARS[suffix] = comment_chars
+    warnings.warn("Please use FolderFunction.register_file_type static method instead")
+    FolderFunction.register_file_type(suffix=suffix, comment_chars=comment_chars)
 
 
 def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
@@ -238,6 +236,14 @@ class FolderFunction:
         self.postprocessings = [get_last_line_as_float]
         self.instantiator = FolderInstantiator(folder, clean_copy=clean_copy)
         self.last_full_output: Optional[str] = None
+
+    @staticmethod
+    def register_file_type(suffix: str, comment_chars: str) -> None:
+        """Register a new file type to be used for token instrumentation by providing the relevant file suffix as well as
+        the characters that indicate a comment."""
+        if not suffix.startswith("."):
+            suffix = f".{suffix}"
+        COMMENT_CHARS[suffix] = comment_chars
 
     @property
     def placeholders(self) -> List[Placeholder]:

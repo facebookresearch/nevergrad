@@ -50,7 +50,7 @@ class InstantiationTests(TestCase):
         wrong_comment_chars=(f"// {LINETOKEN} bidule", ".custom", "#", RuntimeError),
     )
     def test_uncomment_line_custom_file_type(self, line: str, ext: str, comment: str, expected: str) -> None:
-        instantiate.register_file_type(ext, comment)
+        instantiate.FolderFunction.register_file_type(ext, comment)
         self._test_uncomment_line(line, ext, expected)
         del instantiate.COMMENT_CHARS[ext]
 
