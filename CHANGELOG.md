@@ -1,5 +1,9 @@
 # Changelog
 
+## master
+
+- fixed `PSO` in asynchronous case
+- started refactoring `instrumentation` in depth, and more specifically instantiation of external code (breaking change)
 
 ## v0.1.3
 
