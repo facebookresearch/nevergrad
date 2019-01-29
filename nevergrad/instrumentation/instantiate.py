@@ -5,20 +5,80 @@
 
 import os
 import re
+import warnings
 import tempfile
 import operator
 import contextlib
 from pathlib import Path
-from typing import Union, List, Any, Optional, Generator, Callable, Tuple, Dict
+from typing import Union, List, Any, Optional, Generator, Set, Match, Dict
 import numpy as np
-from ..functions import base
-from ..common.typetools import ArrayLike
+from ..common import testing
 from . import utils
-from . import variables
 
 
-BIG_NUMBER = 3000
 LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file...
+COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#", ".m": "%"}
+
+
+def _convert_to_string(data: Any, extension: str) -> str:
+    """Converts the data into a string to be injected in a file
+    """
+    if isinstance(data, np.ndarray):
+        string = repr(data.tolist())
+    else:
+        string = repr(data)
+    if extension in [".h", ".hpp", ".cpp", ".c"] and isinstance(data, np.ndarray):  # TODO: custom extensions are handled as python
+        string = string.replace("[", "{").replace("]", "}")
+    return string
+
+
+class Placeholder:
+    """Placeholder tokend to for external code instrumentation
+    """
+
+    pattern = r'NG_ARG' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
+
+    def __init__(self, name: str, comment: Optional[str]) -> None:
+        self.name = name
+        self.comment = comment
+
+    @classmethod
+    def finditer(cls, text: str) -> List['Placeholder']:
+        prog = re.compile(cls.pattern)
+        return [cls(x.group("name"), x.group("comment")) for x in prog.finditer(text)]
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.name!a}, {self.comment!a})'
+
+    def __eq__(self, other: Any) -> bool:
+        if self.__class__ == other.__class__:
+            return (self.name, self.comment) == (other.name, other.comment)
+        return False
+
+    @classmethod
+    def sub(cls, text: str, extension: str, replacers: Dict) ->str:
+        found: Set[str] = set()
+        kwargs = {x: _convert_to_string(y, extension) for x, y in replacers.items()}
+
+        def _replacer(regex: Match) -> str:
+            name = regex.group("name")
+            if name in found:
+                raise RuntimeError(f'Trying to remplace a second time placeholder "{name}"')
+            if name not in kwargs:
+                raise KeyError(f'Could not find a value for placeholder "{name}"')
+            found.add(name)
+            return str(kwargs[name])
+
+        text = re.sub(cls.pattern, _replacer, text)
+        missing = set(kwargs) - found
+        if missing:
+            raise RuntimeError(f"All values have not been consumed: {missing}")
+        return text
+
+
+def register_file_type(suffix: str, comment_chars: str) -> None:
+    warnings.warn("Please use FolderFunction.register_file_type static method instead")
+    FolderFunction.register_file_type(suffix=suffix, comment_chars=comment_chars)
 
 
 def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
@@ -35,10 +95,10 @@ def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str
 
 
 def uncomment_line(line: str, extension: str) -> str:
-    comment_chars = {x: "//" for x in [".cpp", ".hpp", ".c", ".h"]}
-    comment_chars.update({".py": r"#", ".m": r"%"})
+    if extension not in COMMENT_CHARS:
+        raise RuntimeError(f'Unknown file type: {extension}\nDid you register it using {register_file_type.__name__}?')
     pattern = r'^(?P<indent> *)'
-    pattern += r'(?P<linetoken>' + comment_chars[extension] + r" *" + LINETOKEN + r" *)"
+    pattern += r'(?P<linetoken>' + COMMENT_CHARS[extension] + r" *" + LINETOKEN + r" *)"
     pattern += r'(?P<command>.*)'
     lineseg = re.search(pattern, line)
     if lineseg is not None:
@@ -49,50 +109,46 @@ def uncomment_line(line: str, extension: str) -> str:
     return line
 
 
-class InstrumentedFile(utils.Instrument):
+class FileTextFunction:
+    """Function created from a file and generating the text file after
+    replacement of the placeholders
+    """
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
         assert filepath.exists(), "{filepath} does not exist"
         with filepath.open("r") as f:
             text = f.read()
-        if "NG_" in text and LINETOKEN in text:  # assuming there is a token somewhere
+        deprecated_placeholders = ["NG_G{", "NG_OD{", "NG_SC{"]
+        if any(x in text for x in deprecated_placeholders):
+            raise RuntimeError(f"Found one of deprecated placeholders {deprecated_placeholders}. The API has now evolved to "
+                               "a single placeholder NG_ARG{name|comment}, and FolderFunction now takes as many kwargs "
+                               "as placeholders and must be instrumented before optimization.\n"
+                               "Please refer to the README, PR #73 or issue #45 for more information")
+        if LINETOKEN in text:
             lines = text.splitlines()
-            ext = filepath.suffix
+            ext = filepath.suffix.lower()
             lines = [(l if LINETOKEN not in l else uncomment_line(l, ext)) for l in lines]
             text = "\n".join(lines)
-        self.text, self.variables = utils.replace_tokens_by_placeholders(text)
+        self.placeholders = Placeholder.finditer(text)
+        self._text = text
+        self.parameters: Set[str] = set()
+        for x in self.placeholders:
+            if x.name not in self.parameters:
+                self.parameters.add(x.name)
+            else:
+                raise RuntimeError(f'Found duplicate placeholder (names must be unique) with name "{x.name}" in file:\n{self.filepath}')
 
-    def process(self, data: np.ndarray, deterministic: bool = False) -> str:
-        values = utils.process_instruments(self.variables, data, deterministic=deterministic)
-        text = utils.replace_placeholders_by_values(self.text, values)
-        return text
-
-    def process_arg(self, arg: Any) -> ArrayLike:
-        raise NotImplementedError
-
-    @property
-    def dimension(self) -> int:
-        return sum(t.dimension for t in self.variables)
+    def __call__(self, **kwargs: Any) -> str:
+        testing.assert_set_equal(kwargs, self.parameters, err_msg="Wrong input parameters.")
+        return Placeholder.sub(self._text, self.filepath.suffix, replacers=kwargs)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.filepath})"
-
-    def get_summary(self, data: np.ndarray) -> str:
-        splitted_data = utils.split_data(data, self.variables)
-        strings = [f"In file {self.filepath}"]
-        lines = self.text.splitlines()
-        for line_ind, line in enumerate(lines):
-            matches = list(re.finditer(utils._HOLDER_PATTERN, line))
-            if matches:
-                strings.extend([f"- on line #{line_ind + 1}", line.strip()])
-                for match in matches:
-                    ind = int(match.group("index"))
-                    strings.append("Placeholder {}: {}".format(ind, self.variables[ind].get_summary(splitted_data[ind])))
-        return "\n".join(strings)
+        names = sorted(self.parameters)
+        return f"{self.__class__.__name__}({self.filepath})({', '.join(names)})"
 
 
-class InstrumentedFolder:  # should derive from base function?
+class FolderInstantiator:
     """Folder with instrumentation tokens, which can be instantiated.
 
     Parameters
@@ -102,8 +158,6 @@ class InstrumentedFolder:  # should derive from base function?
     clean_copy: bool
         whether to create an initial clean temporary copy of the folder in order to avoid
         versioning problems (instantiations are lightweight symlinks in any case).
-    extensions: list
-        extensions of the instrumented files which must be instantiated
 
     Caution
     -------
@@ -114,128 +168,127 @@ class InstrumentedFolder:  # should derive from base function?
         variable to a shared directory
     """
 
-    def __init__(self, folder: Union[Path, str], clean_copy: bool = False, extensions: Optional[List[str]] = None) -> None:
+    def __init__(self, folder: Union[Path, str], clean_copy: bool = False) -> None:
         self._clean_copy = None
         self.folder = Path(folder).expanduser().absolute()
-        assert self.folder.exists(), "{folder} does not seem to exist"
+        assert self.folder.exists(), f"{folder} does not seem to exist"
         if clean_copy:
             self._clean_copy = utils.TemporaryDirectoryCopy(str(folder))
             self.folder = self._clean_copy.copyname
-        if extensions is None:
-            extensions = [".py", "m", ".cpp", ".hpp", ".c", ".h"]
-        self.instrumented_files: List[InstrumentedFile] = []
-        for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files
-            if fp.is_file() and fp.suffix in extensions:
-                instru_f = InstrumentedFile(fp)
-                if instru_f.dimension:
-                    self.instrumented_files.append(instru_f)
-        assert self.instrumented_files, "Found no instrumented file"
-        self.instrumented_files = sorted(self.instrumented_files, key=operator.attrgetter("filepath"))
+        self.file_functions: List[FileTextFunction] = []
+        names: Set[str] = set()
+        for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files (+ build files?)
+            if fp.is_file() and fp.suffix.lower() in COMMENT_CHARS:
+                file_func = FileTextFunction(fp)
+                fnames = {ph.name for ph in file_func.placeholders}
+                if fnames:
+                    if fnames & names:
+                        raise RuntimeError(f"Found {fp} placeholders in another file (names must be unique): {fnames & names}")
+                    self.file_functions.append(file_func)
+        assert self.file_functions, "Found no file with placeholders"
+        self.file_functions = sorted(self.file_functions, key=operator.attrgetter("filepath"))
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.instrumented_files}'
+        return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.file_functions}'
 
     @property
-    def dimension(self) -> int:
-        return sum(i.dimension for i in self.instrumented_files)
+    def placeholders(self) -> List[Placeholder]:
+        return [p for f in self.file_functions for p in f.placeholders]
 
-    def instantiate_to_folder(self, data: np.ndarray, outfolder: Union[Path, str]) -> None:
+    def instantiate_to_folder(self, outfolder: Union[Path, str], kwargs: Dict[str, Any]) -> None:
+        testing.assert_set_equal(kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters.")
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
         symlink_folder_tree(self.folder, outfolder)
-        texts = utils.process_instruments(self.instrumented_files, data)  # instantiable files have same pattern as token
-        for instantiable, text in zip(self.instrumented_files, texts):
-            inst_fp = outfolder / instantiable.filepath.relative_to(self.folder)
+        for file_func in self.file_functions:
+            inst_fp = outfolder / file_func.filepath.relative_to(self.folder)
             os.remove(str(inst_fp))  # remove symlink to avoid writing in original dir
             with inst_fp.open("w") as f:
-                f.write(text)
+                f.write(file_func(**{x: y for x, y in kwargs.items() if x in file_func.parameters}))
 
     @contextlib.contextmanager
-    def instantiate(self, data: np.ndarray) -> Generator[Path, None, None]:
+    def instantiate(self, **kwargs: Any) -> Generator[Path, None, None]:
         with tempfile.TemporaryDirectory() as tempfolder:
             subtempfolder = Path(tempfolder) / self.folder.name
-            self.instantiate_to_folder(data, subtempfolder)
+            self.instantiate_to_folder(subtempfolder, kwargs)
             yield subtempfolder
 
-    def get_summary(self, data: np.ndarray) -> str:
-        splitted_data = utils.split_data(data, self.instrumented_files)
-        strings = []
-        for ifile, sdata in zip(self.instrumented_files, splitted_data):
-            strings.append(ifile.get_summary(sdata))
-        return "\n\n".join(strings)
 
-
-class InstrumentedFunction(base.BaseFunction):
-    """Converts a multi-argument function into a mono-argument multidimensional continuous function
-    which can be optimized.
+class FolderFunction:
+    """Turns a folder into a parametrized function
+    (with nevergrad tokens)
 
     Parameters
     ----------
-    function: callable
-        the callable to convert
-    *args, **kwargs: Any
-        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumented
-        and others will be kept constant.
+    folder: Path/str
+        path to the folder to instrument
+    command: list
+        command to run from inside the folder. The last line in stdout will
+        be the output of the function.
+        The command must be performed from just outside the instrument
+        directory
+    verbose: bool
+        whether to print the run command and from where it is run.
+    clean_copy: bool
+        whether to create an initial clean temporary copy of the folder in order to avoid
+        versioning problems (instantiations are lightweight symlinks in any case)
+
+    Returns
+    -------
+    the post-processed output of the called command
 
     Note
     ----
-    - Tokens can be:
-      - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
-      - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
-    - This function can then be directly used in benchmarks *if it returns a float*.
+    By default, the postprocessing attribute holds a function which recovers the last line
+    and converts it to float. The sequence of postprocessing can however be tampered
+    with directly in order to change it
 
+    Caution
+    -------
+        The clean copy is generally located in /tmp and may not be accessible for
+        computation in a cluster. You may want to create a clean copy yourself
+        in the folder of your choice, or set the the TemporaryDirectoryCopy class
+        (located in instrumentation.instantiate) CLEAN_COPY_DIRECTORY environment
+        variable to a shared directory
     """
 
-    def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
-        assert callable(function)
-        self.instrumentation = variables.Instrumentation(*args, **kwargs)
-        super().__init__(dimension=self.instrumentation.dimension)
-        # keep track of what is instrumented (but "how" is probably too long/complex)
-        instrumented = [f"arg{k}" if name is None else name for k, name in enumerate(self.instrumentation.names)
-                        if not isinstance(self.instrumentation.instruments[k], variables._Constant)]
-        name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
-        self._descriptors.update(name=name, instrumented=",".join(instrumented))
-        self._function = function
-        self.last_call_args: Optional[Tuple[Any, ...]] = None
-        self.last_call_kwargs: Optional[Dict[str, Any]] = None
+    # pylint: disable=too-many-arguments
+    def __init__(self, folder: Union[Path, str], command: List[str], verbose: bool = False, clean_copy: bool = False) -> None:
+        self.command = command
+        self.verbose = verbose
+        self.postprocessings = [get_last_line_as_float]
+        self.instantiator = FolderInstantiator(folder, clean_copy=clean_copy)
+        self.last_full_output: Optional[str] = None
 
-    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
-        """Get the arguments and keyword arguments corresponding to the data
+    @staticmethod
+    def register_file_type(suffix: str, comment_chars: str) -> None:
+        """Register a new file type to be used for token instrumentation by providing the relevant file suffix as well as
+        the characters that indicate a comment."""
+        if not suffix.startswith("."):
+            suffix = f".{suffix}"
+        COMMENT_CHARS[suffix] = comment_chars
 
-        Parameters
-        ----------
-        data: np.ndarray
-            input data
-        deterministic: bool
-            whether to process the data deterministically (some Variables such as SoftmaxCategorical are stochastic).
-            If True, the output is the most likely output.
-        """
-        return self.instrumentation.data_to_arguments(data, deterministic=deterministic)
+    @property
+    def placeholders(self) -> List[Placeholder]:
+        return self.instantiator.placeholders
 
-    def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
-        return self.instrumentation.arguments_to_data(*args, **kwargs)
+    def __call__(self, **kwargs: Any) -> Any:
+        with self.instantiator.instantiate(**kwargs) as folder:
+            if self.verbose:
+                print(f"Running {self.command} from {folder.parent} which holds {folder}")
+            output: Any = utils.CommandFunction(self.command, cwd=folder.parent)()
+        if self.verbose:
+            print(f"FolderFunction recovered full output:\n{output}")
+        self.last_full_output = output.strip()
+        if not output:
+            raise ValueError("No output")
+        for postproc in self.postprocessings:
+            output = postproc(output)
+        if self.verbose:
+            print(f"FolderFunction returns: {output}")
+        return output
 
-    def oracle_call(self, x: np.ndarray) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.convert_to_arguments(x, deterministic=False)
-        return self._function(*self.last_call_args, **self.last_call_kwargs)
 
-    def __call__(self, x: np.ndarray) -> Any:
-        # BaseFunction __call__ method should generally not be overriden,
-        # but here that would mess up with typing, and I would rather not constrain
-        # user to return only floats.
-        x = self.transform(x)
-        return self.oracle_call(x)
-
-    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
-        """Prints the summary corresponding to the provided data
-        """
-        strings = []
-        names = self.instrumentation.names
-        instruments = self.instrumentation.instruments
-        splitted_data = utils.split_data(data, instruments)
-        for k, (name, var, d) in enumerate(zip(names, instruments, splitted_data)):
-            if not isinstance(var, variables._Constant):
-                explanation = var.get_summary(d)
-                sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
-                strings.append(f"{sname}: {explanation}")
-        return " - " + "\n - ".join(strings)
+def get_last_line_as_float(output: str) -> float:
+    split_output = output.strip().splitlines()
+    return float(split_output[-1])

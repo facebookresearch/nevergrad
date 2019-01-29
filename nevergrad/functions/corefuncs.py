@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import numpy as np
 import time
+from typing import Dict, Any, Tuple
+import numpy as np
+from .base import PostponedObject
 from ..instrumentation import discretization
 from ..common.decorators import Registry
 
@@ -46,6 +48,19 @@ def delayedsphere(x: np.ndarray) -> float:
     return float(np.sum(x**2))
 
 
+class DelayedSphere(PostponedObject):
+
+    def __call__(self, x: np.ndarray) -> float:
+        return float(np.sum(x**2))
+
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+        x = arguments[0][0]
+        return float(abs(1./x[0]) / 1000.) if x[0] != 0. else 0.
+
+
+registry.register(DelayedSphere())
+
+
 @registry.register
 def sphere(x: np.ndarray) -> float:
     return float(np.sum(x**2))
@@ -79,8 +94,19 @@ def sumdeceptive(x: np.ndarray) -> float:
 
 
 @registry.register
+def altcigar(x: np.ndarray) -> float:
+    return float(x[-1]**2 + 1000000. * np.sum(x[:-1]**2))
+
+
+@registry.register
 def cigar(x: np.ndarray) -> float:
     return float(x[0]**2 + 1000000. * np.sum(x[1:]**2))
+
+
+@registry.register
+def altellipsoid(y: np.ndarray) -> float:
+    x = y[::-1]
+    return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
 
 
 @registry.register

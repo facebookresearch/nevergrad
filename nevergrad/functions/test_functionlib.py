@@ -71,9 +71,13 @@ def test_oracle() -> None:
     y3 = func.oracle_call(x)   # returns a float
     y4 = func.oracle_call(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
     np.testing.assert_array_almost_equal(y3, y4)  # should be different
-    func = functionlib.ArtificialFunction("sphere", 5, noise_level=.1)
-    y5 = func.oracle_call(x)   # returns a different float than before, because a random translation is applied
-    np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y4, y5)
+
+
+def test_function_transform() -> None:
+    func = functionlib.ArtificialFunction("sphere", 2, num_blocks=1, noise_level=.1)
+    output = func.transform([0, 0])
+    np.testing.assert_equal(output.shape, (1, 2))
+    np.testing.assert_equal(len([x for x in output]), 1)
 
 
 def test_artificial_function_summary() -> None:
@@ -95,3 +99,10 @@ def test_artifificial_function_with_jump() -> None:
     func2 = functionlib.ArtificialFunction("jump5", 5)
     np.testing.assert_equal(func1._only_index_transform, False)
     np.testing.assert_equal(func2._only_index_transform, True)
+
+
+def test_get_posptoning_delay() -> None:
+    func = functionlib.ArtificialFunction("sphere", 2)
+    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0)
+    func = functionlib.ArtificialFunction("DelayedSphere", 2)
+    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0.0005)

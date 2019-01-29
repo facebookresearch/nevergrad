@@ -10,13 +10,13 @@ from setuptools import find_packages
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
 setup(
     name='nevergrad',
-    version='0.1.1',
+    version='0.1.3',
     license='MIT',
     description='A Python toolbox for performing gradient-free optimization',
     long_description=long_description,
@@ -27,5 +27,8 @@ setup(
                  'Intended Audience :: Science/Research',
                  'Topic :: Scientific/Engineering',
                  'Programming Language :: Python'],
+    data_files=[('', ['LICENSE', 'requirements.txt']),
+                ('nevergrad', ["nevergrad/benchmark/additional/example.py",
+                               "nevergrad/instrumentation/examples/script.py"])],
     install_requires=requirements,
 )
