@@ -37,15 +37,15 @@ class ExperimentsTests(TestCase):
     def test_cec_experiments(self, name: str) -> None:
         assert name in experiments.registry, f'CEC experiment "{name}" is not registered'
         xps = list(experiments.registry[name]())
-        optims = {xp._optimizer_parameters["optimizer_name"] for xp in xps}
+        optims = {xp.optimsettings.name for xp in xps}
         custom = "CustomOptimizer"
         assert custom in optims, f"Missing {custom}, found: {optims}"
         # need several different cases
-        bounds = [300, 301]  # TODO decide bounds
-        num_settings = sum(1 for xp in xps if xp._optimizer_parameters["optimizer_name"] == custom)
+        bounds = [12, 1680]  # TODO decide bounds
+        num_settings = sum(1 for xp in xps if xp.optimsettings.name == custom)
         assert bounds[0] <= num_settings <= bounds[1], f"Experiment has {num_settings} settings, not in bounds {bounds}"
-        bounds = [300, 301]  # TODO decide bounds
-        assert bounds[0] <= len(xps) <= bounds[1], f"Experiment has {len(xps)} settings, not in bounds {bounds}"
+        bounds = [140, 15200]  # TODO decide bounds
+        assert bounds[0] <= len(xps) <= bounds[1], f"Experiment plan has {len(xps)} experiments, not in bounds {bounds}"
 
 
 def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
