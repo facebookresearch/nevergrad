@@ -85,7 +85,7 @@ class OptimizerTests(TestCase):
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        if "CMA" in name:
+        if name in ["CMA", "Portfolio"]:
             raise SkipTest("Not playing nicely with the tests")  # thread problem?
         np.random.seed(12)
         if optimizer_cls.recast:
@@ -104,3 +104,9 @@ def test_pso_to_real() -> None:
     output = optimizerlib.PSO.to_real([.3, .5, .9])
     np.testing.assert_almost_equal(output, [-.52, 0, 1.28], decimal=2)
     np.testing.assert_raises(AssertionError, optimizerlib.PSO.to_real, [.3, .5, 1.2])
+
+
+def test_portfolio_budget() -> None:
+    for k in range(3, 13):
+        optimizer = optimizerlib.Portfolio(dimension=2, budget=k)
+        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
