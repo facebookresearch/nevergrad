@@ -131,6 +131,15 @@ def rosenbrock(x: np.ndarray) -> float:
 
 
 @registry.register
+def griewank(x: np.ndarray) -> float:
+    part1 = sum([_x**2 for _x in x])
+    part2 = 1
+    for i in range(len(x)):
+        part2 *= np.cos(float(x[i]) / np.sqrt(i+1))
+    return 1 + (float(part1)/4000.0) - float(part2)
+
+
+@registry.register
 def deceptiveillcond(x: np.ndarray) -> float:
     assert len(x) >= 2
     return float(max(np.abs(np.arctan(x[1]/x[0])),
