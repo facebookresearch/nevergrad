@@ -13,7 +13,12 @@ class Instrumentation:
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        self.names: Tuple[Optional[str], ...] = ()
+        self.instruments: List[utils.Variable] = []
+        self._set_args_kwargs(args, kwargs)
+
+    def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict) -> None:
+        self.names, arguments = self._make_argument_names_and_list(args, kwargs)
         self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.instruments))
         assert len(self.instruments) == num_instru, "All instruments must be different (sharing is not supported)"
@@ -35,7 +40,7 @@ class Instrumentation:
         return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
 
     @staticmethod
-    def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
+    def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
         """Converts *args and **kwargs to a tuple of names (with None for positional),
         and the corresponding tuple of values.
 
@@ -43,7 +48,7 @@ class Instrumentation:
         _make_argument_names_and_list(3, z="blublu", machin="truc")
         >>> (None, "machin", "z"), (3, "truc", "blublu")
         """
-        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))
         arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
         return names, arguments
 
@@ -65,7 +70,7 @@ class Instrumentation:
         - this process is simplified, and is deterministic. Depending on your instrumentation,
           you will probably not recover the same data.
         """
-        names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        names, arguments = self._make_argument_names_and_list(args, kwargs)
         assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
                                      f"but expected:\n{self.names}")
         data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
