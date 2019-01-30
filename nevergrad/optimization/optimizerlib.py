@@ -496,16 +496,9 @@ class PSO(base.Optimizer):
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         x = tuple(x)
         assert self.locations[x]
-        point = None
-        for i, l in enumerate(self.locations[x]):
-            if tuple(self.to_real(self.pop[l])) == x:
-                location = l
-                point = tuple(self.to_real(self.pop[l]))
-                del self.locations[x][i]
-                break
-        #location = self.locations[x][0]
-        #del self.locations[x][0]
-        #point = tuple(self.to_real(self.pop[location]))
+        location = self.locations[x][0]
+        del self.locations[x][0]
+        point = tuple(self.to_real(self.pop[location]))
         assert x == point, str(x) + f"{x} vs {point}     {self.pop}"
         self.pop_fitness[location] = value
         if value < self.pso_best_fitness:
