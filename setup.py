@@ -16,7 +16,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='nevergrad',
-    version='0.1.2',
+    version='0.1.3',
     license='MIT',
     description='A Python toolbox for performing gradient-free optimization',
     long_description=long_description,
@@ -28,6 +28,7 @@ setup(
                  'Topic :: Scientific/Engineering',
                  'Programming Language :: Python'],
     data_files=[('', ['LICENSE', 'requirements.txt']),
-                ('nevergrad', ["nevergrad/benchmark/additional/example.py"])],
+                ('nevergrad', ["nevergrad/benchmark/additional/example.py",
+                               "nevergrad/instrumentation/examples/script.py"])],
     install_requires=requirements,
 )

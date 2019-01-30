@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Optional, List, Dict, Tuple
-from collections import defaultdict
+from collections import defaultdict, deque
 import numpy as np
 from scipy import stats
 import cma
@@ -449,6 +449,7 @@ class PSO(base.Optimizer):
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
         self.eps = 1e-10
+        self.queue = deque(range(self.llambda))
 
     def _internal_ask(self) -> base.ArrayLike:
         self.index += 1
@@ -463,7 +464,9 @@ class PSO(base.Optimizer):
                 self.pop_best_fitness += [float("inf")]
                 self.pop_fitness += [None]
         # Focusing on the right guy in the population.
-        location = self.index % self.llambda
+        if not self.queue:
+            raise RuntimeError("Queue is empty, you tried to ask more than population size")
+        location = self.queue.popleft()
         # First, the initialization.
         if self.pop_fitness[location] is None:  # This guy is not evaluated.
             assert self.pop[location] is not None
@@ -513,6 +516,7 @@ class PSO(base.Optimizer):
         if value < self.pop_best_fitness[location]:  # type: ignore
             self.pop_best[location] = [s for s in self.pop[location]]
             self.pop_best_fitness[location] = value
+        self.queue.append(location)
 
     @staticmethod
     def to_real(x: base.ArrayLike) -> base.ArrayLike:

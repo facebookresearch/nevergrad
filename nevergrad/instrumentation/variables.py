@@ -3,48 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import re
-import itertools
-from typing import List, Any, Match, Optional, Tuple, Dict
+from typing import List, Any, Match, Optional
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
 from . import utils
 
 
-class _Variable(utils.Instrument):
-    """Base variable class.
-    Each class requires to provide a dimension and ways to process the data.
-    They can be used directly for function instrumentation in Python, but they
-    must also provide token management for hardcoded code instrumentation.
-    """
-
-    pattern: Optional[str] = None
-    example: Optional[str] = None
-
-    @classmethod
-    def from_regex(cls, regex: Match) -> '_Variable':
-        raise NotImplementedError
-
-    @classmethod
-    def from_str(cls, string: str) -> '_Variable':
-        if cls.pattern is None:
-            raise ValueError("pattern must be provided")
-        regex = re.search(cls.pattern, string)
-        if regex is None:
-            raise RuntimeError("Could not find regex")
-        return cls.from_regex(regex)
-
-    def __eq__(self, other: Any) -> bool:
-        return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
-
-    def __repr__(self) -> str:
-        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
-        return f"{self.__class__.__name__}({args})"
-
-
-@utils.vartypes.register
-class SoftmaxCategorical(_Variable):
+class SoftmaxCategorical(utils.Variable):
     """Discrete set of n values transformed to a n-dim continuous variable.
     Each of the dimension encodes a weight for a value, and the softmax of weights
     provide probabilities for each possible value. A random value is sampled from
@@ -67,10 +33,6 @@ class SoftmaxCategorical(_Variable):
     def __init__(self, possibilities: List[Any]) -> None:
         self.possibilities = list(possibilities)
 
-    @classmethod
-    def from_regex(cls, regex: Match) -> _Variable:
-        return cls(regex.group("possibilities").split("|"))
-
     @property
     def dimension(self) -> int:
         return len(self.possibilities)
@@ -91,7 +53,6 @@ class SoftmaxCategorical(_Variable):
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
 
 
-@utils.vartypes.register
 class OrderedDiscrete(SoftmaxCategorical):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
@@ -105,9 +66,6 @@ class OrderedDiscrete(SoftmaxCategorical):
     ----
     The variables are assumed to be ordered.
     """
-
-    pattern = r'NG_OD' + r'{(?P<possibilities>.*?\|.*?)}'
-    example = 'NG_OD{p1|p2|p3...}'
 
     @property
     def dimension(self) -> int:
@@ -128,15 +86,11 @@ class OrderedDiscrete(SoftmaxCategorical):
         return f"Value {output}, from data: {data[0]}"
 
 
-@utils.vartypes.register
-class Gaussian(_Variable):
+class Gaussian(utils.Variable):
     """Gaussian variable with a mean and a standard deviation, and
     possibly a shape (when using directly in Python)
     The output will simply be mean + std * data
     """
-
-    pattern = r'NG_G' + r'{(?P<mean>.*?),(?P<std>.*?)}'
-    example = 'NG_G{1,2}'
 
     def __init__(self, mean: float, std: float, shape: Optional[List[int]] = None) -> None:
         self.mean = mean
@@ -144,7 +98,7 @@ class Gaussian(_Variable):
         self.shape = shape
 
     @classmethod
-    def from_regex(cls, regex: Match) -> _Variable:
+    def from_regex(cls, regex: Match) -> utils.Variable:
         return cls(float(regex.group("mean")), float(regex.group("std")))
 
     @property
@@ -164,93 +118,31 @@ class Gaussian(_Variable):
         return f"Value {output}, from data: {data}"
 
 
-class _Constant(utils.Instrument):
+class _Constant(utils.Variable):
     """Fake variable so that constant variables can fit into the
     pipeline.
     """
 
     def __init__(self, value: Any) -> None:
-        self._value = value
+        self.value = value
 
     @classmethod
-    def convert_non_instrument(cls, x: Any) -> utils.Instrument:
-        return x if isinstance(x, utils.Instrument) else cls(x)
+    def convert_non_instrument(cls, x: Any) -> utils.Variable:
+        return x if isinstance(x, utils.Variable) else cls(x)
 
     @property
     def dimension(self) -> int:
         return 0
 
     def process(self, data: List[float], deterministic: bool = False) -> Any:  # pylint: disable=unused-argument
-        return self._value
+        return self.value
 
     def process_arg(self, arg: Any) -> ArrayLike:
-        assert arg == self._value, f'{arg} != {self._value}'
+        assert arg == self.value, f'{arg} != {self.value}'
         return []
 
     def get_summary(self, data: List[float]) -> str:
         raise RuntimeError("Constant summary should not be called")
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._value})"
-
-
-class Instrumentation:
-    """Class handling arguments instrumentation, and providing conversion to and from data.
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
-        self.instruments: List[utils.Instrument] = [_Constant.convert_non_instrument(a) for a in arguments]
-
-    @property
-    def dimension(self) -> int:
-        return sum(i.dimension for i in self.instruments)
-
-    @property
-    def args(self) -> Tuple[utils.Instrument, ...]:
-        """List of instruments passed as positional arguments
-        """
-        return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
-
-    @property
-    def kwargs(self) -> Dict[str, utils.Instrument]:
-        """Dictionary of instruments passed as named arguments
-        """
-        return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
-
-    @staticmethod
-    def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
-        """Converts *args and **kwargs to a tuple of names (with None for positional),
-        and the corresponding tuple of values.
-
-        Eg:
-        _make_argument_names_and_list(3, z="blublu", machin="truc")
-        >>> (None, "machin", "z"), (3, "truc", "blublu")
-        """
-        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
-        arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
-        return names, arguments
-
-    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
-        """Converts data to arguments
-        """
-        arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
-        args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
-        kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
-        return args, kwargs
-
-    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
-        """Converts arguments to data
-
-        Note
-        ----
-        - you need to input the arguments in the same way than at initialization
-          with regard to positional and named arguments.
-        - this process is simplified, and is deterministic. Depending on your instrumentation,
-          you will probably not recover the same data.
-        """
-        names, arguments = self._make_argument_names_and_list(*args, **kwargs)
-        assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
-                                     f"but expected:\n{self.names}")
-        data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
-        return np.array(data)
+        return f"{self.__class__.__name__}({self.value})"

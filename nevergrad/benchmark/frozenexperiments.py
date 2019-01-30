@@ -178,13 +178,11 @@ def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
-    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-                 for name in names for bd in [4, 20] for uv_factor in [0] for n_blocks in [1]]
+    functions = [ArtificialFunction(name, block_dimension=bd) for name in names for bd in [4, 20]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 60, 100]:
-             for toto in range(27):
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -195,13 +193,11 @@ def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
     optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
-    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-                 for name in names for bd in [2] for uv_factor in [10] for n_blocks in [1]]
+    functions = [ArtificialFunction(name, block_dimension=2, num_blocks=1, useless_variables=20) for name in names]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 60, 100]:
-             for toto in range(27):
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -222,3 +218,13 @@ def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
+@registry.register
+def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    optims = ["NoisyBandit", "TBPSA", "NaiveTBPSA"]
+    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:
+        for optim in optims:
+            for noise_dissymmetry in [False, True]:
+                function = ArtificialFunction(name="sphere", rotation=True, block_dimension=1, noise_level=10,
+                                              noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                yield Experiment(function, optim, budget=budget, seed=next(seedg))

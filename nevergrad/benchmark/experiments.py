@@ -135,26 +135,6 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
 
 
 @registry.register
-def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
-    """
-    seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items()
-                    if "TBPSA" in x or "andit" in x)
-#                    if ("TBPSA" in x or "ois" in x or "epea" in x) and "iscr" not in x)
-    # , 16000, 32000, 64000, 128000, 512000]:#, 1024000, 2048000, 4096000]:
-    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000]:
-        for optim in optims:
-            for d in [2]:
-                for rotation in [True]:
-                    for name in ["sphere"]:
-                        for noise_dissymmetry in [False, True]:
-                            function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
-                                                          noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
-                            yield Experiment(function, optim, budget=budget, seed=next(seedg))
-
-
-@registry.register
 def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
