@@ -7,6 +7,7 @@ from typing import Iterator, Optional, List
 from ..functions.base import BaseFunction
 from ..functions import ArtificialFunction
 from ..functions import mlda as _mlda
+from ..functions.arcoating import ARCoating
 from .. import optimization
 from .xpbase import Experiment
 from .xpbase import create_seed_generator
@@ -189,3 +190,18 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register_with_info(time=60 * 48, num_workers=64, mem="1GB")
+def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
+    func = ARCoating()
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
+             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
+    # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+    for budget in [100 * 5**k for k in range(6)]:  # from 100 to 312500
+        for num_workers in [1, 10, 100]:
+            for algo in algos:
+                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
