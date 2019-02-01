@@ -27,10 +27,8 @@ class SoftmaxCategorical(utils.Variable):
     functions become stochastic, hence "adding noise"
     """
 
-    pattern = r'NG_SC' + r'{(?P<possibilities>.*?\|.*?)}'
-    example = 'NG_SC{p1|p2|p3...}'
-
-    def __init__(self, possibilities: List[Any]) -> None:
+    def __init__(self, possibilities: List[Any], deterministic: bool = False) -> None:
+        self.deterministic = deterministic
         self.possibilities = list(possibilities)
 
     @property
@@ -39,6 +37,7 @@ class SoftmaxCategorical(utils.Variable):
 
     def process(self, data: ArrayLike, deterministic: bool = False) -> Any:
         assert len(data) == len(self.possibilities)
+        deterministic = deterministic | self.deterministic
         index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
         return self.possibilities[index]
 
@@ -51,6 +50,9 @@ class SoftmaxCategorical(utils.Variable):
         probas = discretization.softmax_probas(data)
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
+
+    def _short_repr(self) -> str:
+        return "SC({}|{})".format(",".join([str(x) for x in self.possibilities]), int(self.deterministic))
 
 
 class OrderedDiscrete(SoftmaxCategorical):
@@ -85,6 +87,9 @@ class OrderedDiscrete(SoftmaxCategorical):
         output = self.process(data, deterministic=True)
         return f"Value {output}, from data: {data[0]}"
 
+    def _short_repr(self) -> str:
+        return "OD({})".format(",".join([str(x) for x in self.possibilities]))
+
 
 class Gaussian(utils.Variable):
     """Gaussian variable with a mean and a standard deviation, and
@@ -117,6 +122,9 @@ class Gaussian(utils.Variable):
         output = self.process(data)
         return f"Value {output}, from data: {data}"
 
+    def _short_repr(self) -> str:
+        return f"G({self.mean},{self.std})"
+
 
 class _Constant(utils.Variable):
     """Fake variable so that constant variables can fit into the
@@ -144,5 +152,5 @@ class _Constant(utils.Variable):
     def get_summary(self, data: List[float]) -> str:
         raise RuntimeError("Constant summary should not be called")
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.value})"
+    def _short_repr(self) -> str:
+        return f"{self.value}"

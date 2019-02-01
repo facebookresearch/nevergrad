@@ -36,6 +36,9 @@ def test_instrumentation() -> None:
     data = np.random.normal(0, 1, size=6)
     testing.printed_assert_equal(instru2.data_to_arguments(data, deterministic=True),
                                  instru.data_to_arguments(data, deterministic=True))
+    # check naming
+    testing.printed_assert_equal("G(0,1),3,a=OD(0,1,2,3),b=SC(0,1,2,3|0)", instru.name)
+    testing.printed_assert_equal("blublu", instru.with_name("blublu").name)
 
 
 def test_instrumentation_init_error() -> None:
@@ -56,8 +59,9 @@ def test_instrumented_function() -> None:
     args, kwargs = ifunc(data)
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
-    testing.printed_assert_equal(ifunc.descriptors, {"dimension": 8, "name": "_arg_return", "instrumented": "arg0,arg2,plop",
-                                                     "function_class": "InstrumentedFunction", "transform": None})
+    testing.printed_assert_equal(ifunc.descriptors, {
+        "dimension": 8, "name": "_arg_return", "function_class": "InstrumentedFunction", "transform": None,
+        "instrumentation": "SC(1,12|0),constant,G(0,1),constkwarg=blublu,plop=SC(3,4|0)"})
     print(ifunc.get_summary(data))
 
 
