@@ -136,6 +136,7 @@ class Experiment:
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(name=optimizer_name, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
+        self.recommendation: Optional[base.ArrayLike] = None
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
@@ -171,13 +172,13 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, t0: float, num_calls: int, recommendation: base.ArrayLike) -> None:
+    def _log_results(self, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         num_eval = 100  # evaluations of the cost function on the recommendation
         self.result["elapsed_time"] = time.time() - t0
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
-        t_recommendation = self.function.transform(recommendation)
+        t_recommendation = self.function.transform(self.recommendation)
         self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
@@ -209,12 +210,12 @@ class Experiment:
             # ("production" steady state is a not strictly steady state + does not handle mocked delays)
             executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
             try:
-                recommendation = optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
+                self.recommendation = optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
-                recommendation = optimizer.provide_recommendation()  # get the recommendation anyway
-                self._log_results(t0, counter.num_calls, recommendation)
+                self.recommendation = optimizer.provide_recommendation()  # get the recommendation anyway
+                self._log_results(t0, counter.num_calls)
                 raise e
-        self._log_results(t0, counter.num_calls, recommendation)
+        self._log_results(t0, counter.num_calls)
 
     def get_description(self) -> Dict[str, Union[str, float, bool]]:
         """Return the description of the experiment, as a dict.
