@@ -78,10 +78,11 @@ class OptimizerTests(TestCase):
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
         recom.to_csv(cls._RECOM_FILE)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
+    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
     def test_optimizers(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
-        check_optimizer(optimizer_cls, budget=300, verify_value=verify)
+        verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+        # BO is extremely slow, run it anyway but very low budget and no verification
+        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
