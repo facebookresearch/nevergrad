@@ -107,6 +107,60 @@ class CauchyOnePlusOne(OnePlusOne):
 
 
 @registry.register
+class MicroCMA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1e-6)
+        self.listx: List[base.ArrayLike] = []
+        self.listy: List[float] = []
+
+    def _internal_ask(self) -> base.ArrayLike:
+        return self.es.ask(1)[0]
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.listx += [x]
+        self.listy += [value]
+        if len(self.listx) >= self.es.popsize:
+            try:
+                self.es.tell(self.listx, self.listy)
+            except RuntimeError:
+                pass
+            else:
+                self.listx = []
+                self.listy = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.es.result.xbest
+
+
+@registry.register
+class MilliCMA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1e-3)
+        self.listx: List[base.ArrayLike] = []
+        self.listy: List[float] = []
+
+    def _internal_ask(self) -> base.ArrayLike:
+        return self.es.ask(1)[0]
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.listx += [x]
+        self.listy += [value]
+        if len(self.listx) >= self.es.popsize:
+            try:
+                self.es.tell(self.listx, self.listy)
+            except RuntimeError:
+                pass
+            else:
+                self.listx = []
+                self.listy = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.es.result.xbest
+
+
+@registry.register
 class CMA(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
@@ -611,6 +665,209 @@ class Portfolio(base.Optimizer):
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
+@registry.register
+class AShalf(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       LhsDE(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget //2 
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class AS10(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       LhsDE(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget //10 
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class AS6(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       LhsDE(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 6
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class AS2(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       LhsDE(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 3
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+
+
+@registry.register
+class AS(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       LhsDE(dimension, budget=None, num_workers=num_workers),
+                       ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 3
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
 
 @registry.register
 class ASelect(base.Optimizer):
@@ -654,6 +911,88 @@ class ASelect(base.Optimizer):
 
 
 @registry.register
+class ASelect4(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
+#                       ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 3
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+@registry.register
+class CMADECMA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       #CMA(dimension, budget=None, num_workers=num_workers),
+                       TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 3
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+
+@registry.register
 class ASelect2(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
@@ -662,6 +1001,46 @@ class ASelect2(base.Optimizer):
                        ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class ASelect5(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 6
         self.best_optim = None
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -703,6 +1082,129 @@ class ASelect3(base.Optimizer):
                        ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 10
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class MultiCMA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       CMA(dimension, budget=None, num_workers=num_workers),
+                       CMA(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 10
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class TripleCMA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       CMA(dimension, budget=None, num_workers=num_workers),
+                       CMA(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 3
+        self.best_optim = None
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_suggestions % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_value = float("inf")
+                optim_index = None
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_value:
+                        optim_index = i
+                        best_value = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        tx = tuple(x)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(x, value)
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class MultiScaleCMA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
+                       MilliCMA(dimension, budget=None, num_workers=num_workers),
+                       MicroCMA(dimension, budget=None, num_workers=num_workers)]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.budget_before_choosing = budget // 3
         self.best_optim = None
 
     def _internal_ask(self) -> base.ArrayLike:

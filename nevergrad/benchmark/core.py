@@ -37,7 +37,7 @@ def save_or_append_to_csv(df: pd.DataFrame, path: Path) -> None:
     if path.exists():
         print("Appending to existing file")
         predf = pd.read_csv(str(path))
-        df = pd.concat([predf, df], sort=False)
+        df = pd.concat([predf, df])#, sort=False)
     df.to_csv(path, index=False)
 
 

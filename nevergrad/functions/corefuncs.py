@@ -55,7 +55,7 @@ class DelayedSphere(PostponedObject):
 
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         x = arguments[0][0]
-        return float(abs(1./x[0]) / 1000.) if x[0] != 0. else 0.
+        return float(abs(1./x[0] ** 3.) / 1000.) if x[0] != 0. else 0.
 
 
 registry.register(DelayedSphere())

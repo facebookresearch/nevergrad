@@ -171,22 +171,25 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[BaseFunction] = [_mlda.Clustering.from_mlda(name, num, rescale)
-                                 for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]]
+                                 for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [False]]  # I removed True
     funcs += [_mlda.SammonMapping.from_mlda("Virus", rescale=False), _mlda.SammonMapping.from_mlda("Virus", rescale=True),
               _mlda.SammonMapping.from_mlda("Employees")]
-    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["sine"]]  #"quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
-             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
-             "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
+    #algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
+    algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch",
+             "PSO", "OnePlusOne", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
+              "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint", "HaltonSearchPlusMiddlePoint", "MiniQrDE","HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
+             "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
+#    algos = ["ASelect2", "CMA", "ScrHammersleySearch", "TwoPointsDE"]
     # pylint: disable=too-many-nested-blocks
-    algos += ["Portfolio", "ASelect", "ASelect2", "ASelect3"]
-    for budget in [3200, 6400, 12800, 25600, 51200]:
-        for func in funcs:
-            for num_workers in [1, 10, 100]:
-                if num_workers < budget:
-                    for algo in algos:
+    algos += ["CMADECMA", "AS6", "AS10", "AShalf",  "AS2", "AS", "Portfolio", "ASelect", "ASelect2", "ASelect3", "ASelect4", "ASelect5", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    for budget in [9600, 12800, 25600]:#, 51200]:#, 102400]:
+        for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
+            for algo in algos:
+                for func in funcs:
+                    if num_workers < budget:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
