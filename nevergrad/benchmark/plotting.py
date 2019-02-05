@@ -208,6 +208,21 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     # global info
     legend = plt.legend(fontsize=7, ncol=2, handlelength=3,
                         loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+    # split long strings at a comma.
+    if len(title) > 60:
+        indices_commas = [i for i in range(len(title)) if title[i] == ","]
+        if len(indices_commas) >= 0:
+            min_distance_to_middle = float("inf")
+            best_index: Optional[int] = None
+            for i in indices_commas:
+                distance_to_middle = abs(i - len(title) / 2.)
+                if distance_to_middle < min_distance_to_middle:
+                    best_index = i
+                    min_distance_to_middle = distance_to_middle
+            assert best_index is not None
+            title = title[:(best_index+1)] + "\n" + title[(best_index+1):]
+
     plt.title(title)
     # plt.tight_layout()
     # plt.axis('tight')
