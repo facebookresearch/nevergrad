@@ -1,0 +1,15 @@
+The source code in this folder was created by:
+- Mamadou Aliou Barry
+- Marie-Claire Cambourieux
+- Rémi Pollès
+- Antoine Moreau
+from University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal.
+
+Publication:
+- Aliou Barry, Mamadou; Berthier, Vincent; Wilts, Bodo D.; Cambourieux, Marie-Claire; Pollès, Rémi;
+  Teytaud, Olivier; Centeno, Emmanuel; Biais, Nicolas; Moreau, Antoine (2018)
+  Evolutionary algorithms converge towards evolved biological photonic structures,
+  https://arxiv.org/abs/1808.04689
+- Defrance, J., Lemaître, C., Ajib, R., Benedicto, J., Mallet, E., Pollès, R., Plumey, J.-P.,
+  Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
+  Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
