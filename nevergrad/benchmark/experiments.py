@@ -178,13 +178,15 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
     #algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
-    algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch",
-             "PSO", "OnePlusOne", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
+    algos = ["NaiveTBPSA", "ScrHammersleySearch",
+             "PSO", "OnePlusOne", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE", "Zero",   # Cobyla freezes :(
               "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint", "HaltonSearchPlusMiddlePoint", "MiniQrDE","HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
              "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
 #    algos = ["ASelect2", "CMA", "ScrHammersleySearch", "TwoPointsDE"]
     # pylint: disable=too-many-nested-blocks
     algos += ["CMADECMA", "AS6", "AS10", "AShalf",  "AS2", "AS", "Portfolio", "ASelect", "ASelect2", "ASelect3", "ASelect4", "ASelect5", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    algos += ["MAS"]
+    algos += ["MAS2"]
     for budget in [9600, 12800, 25600]:#, 51200]:#, 102400]:
         for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
             for algo in algos:
