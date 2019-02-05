@@ -124,7 +124,6 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
 ## Second example: optimization of mixed (continuous and discrete) hyperparameters.
 
 ```python
-
 import nevergrad.optimization as optimization
 from nevergrad import instrumentation as instru
 import numpy as np
