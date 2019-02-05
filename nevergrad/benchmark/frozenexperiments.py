@@ -10,7 +10,7 @@ from ..functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
-# pylint: disable=stop-iteration-return
+# pylint: disable=stop-iteration-return, too-many-nested-blocks
 
 
 @registry.register
@@ -152,3 +152,79 @@ def doe_dim4(seed: Optional[int] = None) -> Iterator[Experiment]:  # Here, QR pe
             for budget in [30, 100, 3000, 10000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # General experiment comparing one-shot optimizers, excluding those with "large" or "small"
+    # in the name.
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "cigar", "ellipsoid", "rosenbrock", "rastrigin"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
+                 for name in names for bd in [1, 4, 20] for uv_factor in [0, 10] for n_blocks in [1]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # General experiment comparing one-shot optimizers, excluding those with "large" or "small"
+    # in the name.
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    functions = [ArtificialFunction(name, block_dimension=bd) for name in names for bd in [4, 20]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 60, 100]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # Experiment comparing one-shot optimizers in the context of useless vars vs critical vars.
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    functions = [ArtificialFunction(name, block_dimension=2, num_blocks=1, useless_variables=20) for name in names]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 60, 100]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Comparing one-shot optimizers as initializers for Bayesian Optimization.
+    """
+    seedg = create_seed_generator(seed)
+    for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
+        for optim in sorted(x for x, y in optimization.registry.items() if "BO" in x):
+            for rotation in [False]:
+                for d in [20]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
+                        for u in [0]:
+                            function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
+                                                          useless_variables=d*u, translation_factor=1.)
+                            yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    optims = ["NoisyBandit", "TBPSA", "NaiveTBPSA"]
+    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:
+        for optim in optims:
+            for noise_dissymmetry in [False, True]:
+                function = ArtificialFunction(name="sphere", rotation=True, block_dimension=1, noise_level=10,
+                                              noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
+                yield Experiment(function, optim, budget=budget, seed=next(seedg))

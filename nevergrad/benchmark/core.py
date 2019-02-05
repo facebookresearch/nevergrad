@@ -176,6 +176,9 @@ def _submit_jobs(experiment_name: str, num_workers: int = 1, seed: Optional[int]
         executor = SequentialExecutor()
     jobs: List[JobLike] = []
     bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
+    # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
+    next(registry[experiment_name]())
+    # run
     for chunk in bench.split(num_workers):
         # split experiment this way to avoid one job running most slow settings
         jobs.append(executor.submit(chunk.compute, print_function))

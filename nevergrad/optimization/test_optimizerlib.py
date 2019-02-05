@@ -78,14 +78,15 @@ class OptimizerTests(TestCase):
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
         recom.to_csv(cls._RECOM_FILE)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
+    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
     def test_optimizers(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
-        check_optimizer(optimizer_cls, budget=300, verify_value=verify)
+        verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+        # BO is extremely slow, run it anyway but very low budget and no verification
+        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        if "CMA" in name:
+        if name in ["CMA", "Portfolio"]:
             raise SkipTest("Not playing nicely with the tests")  # thread problem?
         np.random.seed(12)
         if optimizer_cls.recast:
@@ -104,3 +105,9 @@ def test_pso_to_real() -> None:
     output = optimizerlib.PSO.to_real([.3, .5, .9])
     np.testing.assert_almost_equal(output, [-.52, 0, 1.28], decimal=2)
     np.testing.assert_raises(AssertionError, optimizerlib.PSO.to_real, [.3, .5, 1.2])
+
+
+def test_portfolio_budget() -> None:
+    for k in range(3, 13):
+        optimizer = optimizerlib.Portfolio(dimension=2, budget=k)
+        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))

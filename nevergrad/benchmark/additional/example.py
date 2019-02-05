@@ -20,7 +20,7 @@ class CustomFunction(BaseFunction):
     """
 
     def __init__(self, offset):
-        super().__init__(dimension=1, noise_level=0)
+        super().__init__(dimension=1)
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks

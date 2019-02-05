@@ -5,12 +5,14 @@
 
 import warnings
 from unittest import TestCase
-from typing import List, Tuple
+from typing import List, Tuple, Any
 import genty
 import numpy as np
 from ..common import testing
-from .base import OptimizationPrinter
+from ..instrumentation import Instrumentation
+from ..instrumentation import variables as var
 from . import optimizerlib
+from . import base
 
 
 class CounterFunction:
@@ -18,23 +20,23 @@ class CounterFunction:
     def __init__(self) -> None:
         self.count = 0
 
-    def __call__(self, value: optimizerlib.base.ArrayLike) -> float:
+    def __call__(self, value: base.ArrayLike) -> float:
         assert len(value) == 1
         self.count += 1
-        return (value[0] - 1)**2
+        return float(value[0] - 1)**2
 
 
-class LoggingOptimizer(optimizerlib.base.Optimizer):
+class LoggingOptimizer(base.Optimizer):
 
     def __init__(self, num_workers: int = 1) -> None:
         super().__init__(dimension=1, budget=5, num_workers=num_workers)
         self.logs: List[str] = []
 
-    def _internal_ask(self) -> optimizerlib.base.ArrayLike:
+    def _internal_ask(self) -> base.ArrayLike:
         self.logs.append(f"s{self._num_suggestions}")  # s for suggest
         return np.array((self._num_suggestions,))
 
-    def _internal_tell(self, x: optimizerlib.base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         self.logs.append(f"u{x[0]}")  # u for update
 
 
@@ -59,6 +61,25 @@ class OptimizationTests(TestCase):
             optim.optimize(func, verbosity=2, batch_mode=batch_mode)
         testing.printed_assert_equal(optim.logs, expected)
 
+    @genty.genty_dataset(  # type: ignore
+        int_val=(3, False),
+        bool_val=(True, False),
+        int32_val=(np.int32(3), False),
+        int64_val=(np.int64(3), False),
+        float64_val=(np.float64(3), False),
+        float32_val=(np.float32(3), False),
+        list_val=([3, 5], True),
+        complex_val=(1j, True),
+        object_val=(object(), True),
+    )
+    def test_tell_types(self, value: Any, error: bool) -> None:
+        optim = LoggingOptimizer(num_workers=1)
+        x = optim.ask()
+        if error:
+            np.testing.assert_raises(TypeError, optim.tell, x, value)
+        else:
+            optim.tell(x, value)
+
 
 def test_base_optimizer() -> None:
     zeroptim = optimizerlib.Zero(dimension=2, budget=4, num_workers=1)
@@ -77,13 +98,18 @@ def test_base_optimizer() -> None:
 
 def test_optimize() -> None:
     optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100, num_workers=5)
-    optimizer.register_callback("tell", OptimizationPrinter(num_eval=10, num_sec=.1))
+    optimizer.register_callback("tell", base.OptimizationPrinter(num_eval=10, num_sec=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         result = optimizer.optimize(func, verbosity=2)
     np.testing.assert_almost_equal(result[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
-    # check compatibility
-    x = optimizer.suggest_exploration()
-    optimizer.update_with_fitness_value(x, 12)
+
+
+def test_instrumented_optimizer() -> None:
+    instru = Instrumentation(var.Gaussian(0, 1), var.SoftmaxCategorical([0, 1]))
+    opt = optimizerlib.registry["RandomSearch"](dimension=instru.dimension, budget=10)
+    iopt = base.IntrumentedOptimizer(opt, instru)
+    output = iopt.optimize(lambda x, y: x**2 + y)  # type: ignore
+    assert isinstance(output, base.ArgPoint)

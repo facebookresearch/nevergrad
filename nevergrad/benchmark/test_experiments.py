@@ -5,10 +5,12 @@
 
 import inspect
 import itertools
-from typing import Callable, Iterator, Any
 from unittest import TestCase
+from unittest.mock import patch
+from typing import Callable, Iterator, Any
 import genty
 import numpy as np
+from ..functions.mlda import datasets
 from ..common import testing
 from ..common.tools import Selector
 from .xpbase import Experiment
@@ -18,10 +20,13 @@ from . import experiments
 @genty.genty
 class ExperimentsTests(TestCase):
 
-    @genty.genty_dataset(**{name: (maker,) for name, maker in experiments.registry.items()})  # type: ignore
-    def test_experiments_registry(self, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
-        check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-        check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
+    @genty.genty_dataset(**{name: (name, maker,) for name, maker in experiments.registry.items()})  # type: ignore
+    def test_experiments_registry(self, name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
+        with patch("shutil.which", return_value="here"):  # do not check for missing packages
+            with datasets.mocked_data():  # mock mlda data that should be downloaded
+                check_maker(maker)  # this is to extract the function for reuse if other external packages need it
+            if name != "mlda":
+                check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
 
 def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
@@ -54,7 +59,7 @@ def check_seedable(maker: Any) -> None:
     algo = "OnePlusOne"  # for simplifying the test
     for seed in [random_seed, random_seed, random_seed + 1]:
         xps = list(itertools.islice(maker(seed), 0, 8))
-        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp._optimizer_parameters["num_workers"]), seed=xp.seed)
+        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed)
                       for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])

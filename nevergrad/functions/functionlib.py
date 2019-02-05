@@ -4,15 +4,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
-from typing import List
+from typing import List, Tuple, Any, Dict
 import numpy as np
 from . import utils
 from . import corefuncs
-from .base import BaseFunction
+from .base import ArtificiallyNoisyBaseFunction
+from .base import PostponedObject
 from ..common import tools
 
 
-class ArtificialFunction(BaseFunction):
+class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -62,10 +63,11 @@ class ArtificialFunction(BaseFunction):
     """
 
     def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
-                 useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False, 
+                 useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False,
                  rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
                  aggregator: str = "max") -> None:
         # pylint: disable=too-many-locals
+        self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
         assert all(isinstance(x, bool) for x in [hashing, rotation])
@@ -81,7 +83,8 @@ class ArtificialFunction(BaseFunction):
             raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
         # record necessary info and prepare transforms
         dimension = block_dimension * num_blocks + useless_variables
-        super().__init__(dimension, noise_level, noise_dissymmetry)
+        super().__init__(dimension, noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
+        self._func = corefuncs.registry[name]
         self._aggregator = {"max": max, "mean": np.mean, "sum": sum}[aggregator]
         self._transforms: List[utils.Transform] = []
         # special case
@@ -109,10 +112,7 @@ class ArtificialFunction(BaseFunction):
         for transform_inds in tools.grouper(indices, n=self._parameters["block_dimension"]):
             self._transforms.append(utils.Transform(transform_inds, **{x: self._parameters[x] for x in ["translation_factor", "rotation"]}))
 
-    def oracle_call(self, x: np.ndarray) -> float:
-        """Implements the call of the function.
-        Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
-        """
+    def transform(self, x: np.ndarray) -> np.ndarray:
         if not self._transforms:
             self.initialize()
         if self._parameters["hashing"]:
@@ -121,15 +121,28 @@ class ArtificialFunction(BaseFunction):
             x = np.random.normal(0., 1., len(x))
             np.random.set_state(state)
         x = np.asarray(x)
-        results = []
+        data = []
         for transform in self._transforms:
-            translated_x = transform(x)
-            if self._only_index_transform:
-                translated_x = x[transform.indices]  # only subsampling in this case
-            results.append(corefuncs.registry[self._parameters["name"]](translated_x))
+            data.append(x[transform.indices] if self._only_index_transform else transform(x))
+        return np.array(data)
+
+    def oracle_call(self, x: np.ndarray) -> float:
+        """Implements the call of the function.
+        Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
+        """
+        results = []
+        for block in x:
+            results.append(self._func(block))
         return float(self._aggregator(results))
 
     def duplicate(self) -> "ArtificialFunction":
         """Create an equivalent instance, initialized with the same settings
         """
         return self.__class__(**self._parameters)  # type: ignore
+
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+        """Delay before returning results in steady state mode benchmarks (fake execution time)
+        """
+        if isinstance(self._func, PostponedObject):
+            return self._func.get_postponing_delay(arguments, value)
+        return 0

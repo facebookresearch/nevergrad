@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 from ..common import tools
 from ..common.typetools import PathLike
+# pylint: disable=too-many-locals
 
 
 _DPI = 100
@@ -106,7 +107,6 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     max_combsize: int
         maximum number of parameters to fix (combinations) when creating experiment plots
     """
-    # pylint: disable=too-many-locals
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
@@ -168,12 +168,11 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         a dict or dict-like object providing a line style for each optimizer name.
         (can be helpful for consistency across plots)
     """
-    # pylint: disable=too-many-locals
     if name_style is None:
         name_style = NameStyle()
-    # pylint: disable=too-many-locals
     df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"]])
     groupeddf = df.groupby(["optimizer_name", "budget"]).mean()
+    groupeddf_std = df.groupby(["optimizer_name", "budget"]).std().loc[groupeddf.index, :]  # std is currently unused
     plt.clf()
     plt.xlabel("Budget")
     plt.ylabel("Loss")
@@ -183,25 +182,26 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     for optim in df.unique("optimizer_name"):
         xvals = np.array(groupeddf.loc[optim, :].index)
         yvals = np.maximum(1e-30, np.array(groupeddf.loc[optim, :].loc[:, "loss"]))  # avoid small vals for logplot
+        stds = groupeddf_std.loc[optim, :].loc[:, "loss"]
         optim_name = optim.replace("Search", "").replace("oint", "t").replace("Optimizer", "")
-        optim_vals[optim_name] = (xvals, yvals)
+        optim_vals[optim_name] = {"x": xvals, "y": yvals, "std": stds}
     # lower upper bound to twice stupid/idiot at most
-    upperbound = np.inf
-    for optim, (_, yvals) in optim_vals.items():
+    upperbound = max(np.max(vals["y"]) for vals in optim_vals.values())
+    for optim, vals in optim_vals.items():
         if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
-            upperbound = min(upperbound, 2 * np.max(yvals))
+            upperbound = min(upperbound, 2 * np.max(vals["y"]))
     # plot from best to worst
     lowerbound = np.inf
     handles = []
-    sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x][1][-1], reverse=True)
+    sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["y"][-1], reverse=True)
     for k, optim_name in enumerate(sorted_optimizers):
-        xvals, yvals = optim_vals[optim_name]
-        lowerbound = min(lowerbound, np.min(yvals))
-        handles.append(plt.loglog(xvals, yvals, name_style[optim_name], label=optim_name))
+        vals = optim_vals[optim_name]
+        lowerbound = min(lowerbound, np.min(vals["y"]))
+        handles.append(plt.loglog(vals["x"], vals["y"], name_style[optim_name], label=optim_name))
         texts = []
-        if xvals.size and yvals[-1] < upperbound:
+        if vals["x"].size and vals["y"][-1] < upperbound:
             angle = 30 - 60 * k / len(optim_vals)
-            texts.append(plt.text(xvals[-1], yvals[-1], "{} ({:.3g})".format(optim_name, min(yvals)),
+            texts.append(plt.text(vals["x"][-1], vals["y"][-1], "{} ({:.3g})".format(optim_name, vals["y"][-1]),
                                   {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
     if upperbound < np.inf:
         plt.gca().set_ylim(lowerbound, upperbound)
@@ -253,6 +253,7 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
         subdf = df.select(**dict(zip(categories, subcase)))
         victories += _make_winners_df(subdf, all_optimizers)
     winrates = _make_sorted_winrates_df(victories)
+    mean_win = winrates.mean(axis=1)
     winrates.fillna(.5)  # unplayed
     sorted_names = winrates.index
     # number of subcases actually computed is twice self-victories
@@ -264,9 +265,10 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
     ax = fig.add_subplot(111)
     cax = ax.imshow(100 * data, cmap=cm.seismic, interpolation='none', vmin=0, vmax=100)
     ax.set_xticks(list(range(len(sorted_names))))
-    ax.set_xticklabels(sorted_names, rotation=90, fontsize=7)
+    ax.set_xticklabels([s.replace("Search", "") for s in sorted_names], rotation=90, fontsize=7)
     ax.set_yticks(list(range(num_rows)))
-    ax.set_yticklabels(sorted_names[: num_rows], rotation=45, fontsize=7)
+    # pylint: disable=anomalous-backslash-in-string
+    ax.set_yticklabels([(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)], rotation=45, fontsize=7)
     plt.tight_layout()
     fig.colorbar(cax, orientation='vertical')
     if output_filepath is not None:

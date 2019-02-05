@@ -13,7 +13,6 @@ from ..common.typetools import ArrayLike
 
 
 samplers = Registry()
-SAMPLERS = samplers._registered
 
 
 def _get_first_primes(num: int) -> np.ndarray:
@@ -86,7 +85,7 @@ class LHSSampler(Sampler):
         self.permutations = np.zeros((dimension, budget), dtype=int)
         for k in range(dimension):
             self.permutations[k] = np.random.permutation(budget)
-        self.seed = np.random.randint(np.iinfo(np.uint32).max)
+        self.seed = np.random.randint(2**32, dtype=np.uint32)
         self.randg = np.random.RandomState(self.seed)
 
     def reinitialize(self) -> None:
@@ -115,7 +114,7 @@ class HaltonPermutationGenerator:
         self.dimension = dimension
         self.scrambling = scrambling
         self.primes = _get_first_primes(dimension).tolist()
-        self.seed = np.random.randint(np.iinfo(np.uint32).max)
+        self.seed = np.random.randint(2**32, dtype=np.uint32)
         self.fulllist = np.arange(self.primes[-1]) if self.primes else []
 
     def get_permutations_generator(self) -> Iterator[ArrayLike]:

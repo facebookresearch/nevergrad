@@ -4,14 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import abc
-from typing import Dict, Any, Callable, Optional
+from typing import Dict, Any, Callable, Optional, Tuple
 import numpy as np
 
 
 class BaseFunction(abc.ABC):
     """Functions must inherit from this class for benchmarking purpose
     In child functions, implement "oracle_call". This method should provide the output of your function
-    (BaseFunction.__call__ will use it and add noise if noise_level > 0)
+    (BaseFunction.__call__ will use it, and call the _add_noise method if you implemented it)
     Also, update "_descriptors" dict attribute so that function parameterization is recorded during benchmark.
     See ArtificialFunction for an example.
 
@@ -19,31 +19,23 @@ class BaseFunction(abc.ABC):
     ----------
     dimension: int
         dimension of the input space.
-    noise_level: float
-        level of the noise to add
-    noise_dissymmetry: bool
-        True if we dissymetrize the noise model
     transform: optional str
         name of a registered transform to be applied to the input data.
 
     Notes
     -----
-    - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
     - transforms must be registered through the "register_transform" class method before instantiation.
     """
 
     _TRANSFORMS: Dict[str, Callable[[Any, np.ndarray], np.ndarray]] = {}  # Any should be the current class (but typing would get messy)
 
-    def __init__(self, dimension: int, noise_level: float = 0., noise_dissymmetry: bool = False, transform: Optional[str] = None) -> None:
-        assert noise_level >= 0, "Noise level must be greater or equal to 0"
+    def __init__(self, dimension: int, transform: Optional[str] = None) -> None:
         assert dimension > 0
         assert isinstance(dimension, int)
         self._dimension = dimension
         self._transform = transform
-        self._noise_level = noise_level
-        self._noise_dissymmetry = noise_dissymmetry
         self._descriptors: Dict[str, Any] = {}
-        self._descriptors.update(dimension=dimension, noise_level=noise_level, function_class=self.__class__.__name__, transform=transform)
+        self._descriptors.update(dimension=dimension, function_class=self.__class__.__name__, transform=transform)
         if transform is not None and transform not in self._TRANSFORMS:
             raise ValueError(f'Unknown transform "{self._transform}", available are:\n{list(self._TRANSFORMS.keys())}\n'
                              f'(you must register new ones with "{self.__class__.__name__}.register_transform" before instantiation)')
@@ -77,17 +69,29 @@ class BaseFunction(abc.ABC):
 
     def __call__(self, x: np.ndarray) -> float:
         """Returns the output of the function,
-        after adding noise if noise_level > 0 and transforming the data
-        Only overload this function if you want to change the noise pattern
+        after transforming the data and adding noise through _add_noise
+        (by default, _add_noise does not add any noise).
+        It is preferable to avoid overloading this function in order to avoid issues
+        with transformations and noise. Override _add_noise and oracle_call instead.
         """
-        x = self.transform(x)
-        noise_level = self._noise_level
-        noise_dissymmetry = self._noise_dissymmetry
-        fx = self.oracle_call(x)
-        if noise_level:
-            if noise_dissymmetry and x[0] > 0:
-                return fx
-            fx += noise_level * np.random.normal(0, 1) * (self.oracle_call(x + np.random.normal(0, 1, self.dimension)) - fx)
+        x_transf = self.transform(x)
+        fx = self.oracle_call(x_transf)
+        noisy_fx = self._add_noise(x, x_transf, fx)
+        return noisy_fx
+
+    def _add_noise(self, x_input: np.ndarray, x_transf: np.ndarray, fx: float) -> float:  # pylint: disable=unused-argument
+        """Adds noise to the output of the function
+        This is useful for artificial functions only.
+
+        Parameters
+        ----------
+        x_input: np.ndarray
+            Input point, before transformation
+        x_transf: np.nparray
+            Input point, after transformation
+        fx: float
+            Output before noise, returned by oracle_call
+        """
         return fx
 
     def __repr__(self) -> str:
@@ -115,7 +119,12 @@ class BaseFunction(abc.ABC):
     @abc.abstractmethod
     def oracle_call(self, x: np.ndarray) -> float:
         """Implements the call of the function.
-        Under the hood, __call__ delegates to oracle_call + applies the transform and add some noise if noise_level > 0.
+        Under the hood, __call__ delegates to oracle_call + applies the transform and add some noise if need be.
+
+        Parameter
+        ---------
+        x: np.ndarray
+            The input data *before* transformation.
 
         Notes
         -----
@@ -123,4 +132,62 @@ class BaseFunction(abc.ABC):
         - the transform is applied *before* this function, do not apply it here.
 
         """
+        raise NotImplementedError
+
+
+class ArtificiallyNoisyBaseFunction(BaseFunction):  # pylint: disable=abstract-method
+    """Functions must inherit from this class for benchmarking purpose
+    In child functions, implement "oracle_call". This method should provide the output of your function
+    (BaseFunction.__call__ will use it and add noise if noise_level > 0)
+    Also, update "_descriptors" dict attribute so that function parameterization is recorded during benchmark.
+    See ArtificialFunction for an example.
+
+    Parameters
+    ----------
+    dimension: int
+        dimension of the input space.
+    noise_level: float
+        level of the noise to add
+    noise_dissymmetry: bool
+        True if we dissymetrize the noise model
+    transform: optional str
+        name of a registered transform to be applied to the input data.
+
+    Notes
+    -----
+    - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
+    - transforms must be registered through the "register_transform" class method before instantiation.
+    """
+
+    def __init__(self, dimension: int, noise_level: float = 0., noise_dissymmetry: bool = False, transform: Optional[str] = None) -> None:
+        super().__init__(dimension, transform=transform)
+        assert noise_level >= 0, "Noise level must be greater or equal to 0"
+        self._noise_level = noise_level
+        self._noise_dissymmetry = noise_dissymmetry
+        self._descriptors.update(noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
+
+    def _add_noise(self, x_input: np.ndarray, x_transf: np.ndarray, fx: float) -> float:  # pylint: disable=unused-argument
+        noise = 0
+        noise_level = self._noise_level
+        if noise_level:
+            if not self._noise_dissymmetry or x_transf.ravel()[0] <= 0:
+                side_point = self.transform(x_input + np.random.normal(0, 1, size=self.dimension))
+                if self._noise_dissymmetry:
+                    noise_level *= (1. + x_transf.ravel()[0]*100.)
+                noise = noise_level * np.random.normal(0, 1) * (self.oracle_call(side_point) - fx)
+        return fx + noise
+
+
+class PostponedObject(abc.ABC):
+    """Abstract class to inherit in order to notify the steady state benchmark executor that
+    the function implements a delay. This delay will be used while benchmarking to provide the
+    evaluation in a varying order.
+    The main aim of this class is to make sure there is no typo in the name of the special function.
+
+    See benchmark/execution.py for more details. This object is implemented here to avoid circular
+    imports.
+    """
+
+    @abc.abstractmethod
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         raise NotImplementedError
