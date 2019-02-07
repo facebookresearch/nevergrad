@@ -688,7 +688,7 @@ class ASCMADEthird(Portfolio):
         else:
             if self.best_optim is None:
                 best_value = float("inf")
-                optim_index = None
+                optim_index = -1
                 for i, optim in enumerate(self.optims):
                     val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
                     if not val > best_value:
