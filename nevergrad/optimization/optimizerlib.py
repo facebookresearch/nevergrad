@@ -708,8 +708,6 @@ class ASCMADEQRthird(ASCMADEthird):
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        LhsDE(dimension, budget=None, num_workers=num_workers),
                        ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -718,8 +716,6 @@ class ASCMA2PDEthird(ASCMADEQRthird):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -735,8 +731,6 @@ class CMandAS2(ASCMADEthird):
                 CMA(dimension, budget=None, num_workers=num_workers),
                 CMA(dimension, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -752,8 +746,6 @@ class CMandAS(CMandAS2):
             self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                            CMA(dimension, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 3
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -766,8 +758,6 @@ class CM(CMandAS2):
             self.optims = [OnePlusOne(dimension, budget=None, num_workers=num_workers)]
         if budget > 50 * dimension:
             self.optims = [CMA(dimension, budget=None, num_workers=num_workers)]
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -778,8 +768,6 @@ class MultiCMA(CM):
                        CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 10
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -790,8 +778,6 @@ class TripleCMA(CM):
                        CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 3
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -802,5 +788,3 @@ class MultiScaleCMA(CM):
                        MilliCMA(dimension, budget=None, num_workers=num_workers),
                        MicroCMA(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 3
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
