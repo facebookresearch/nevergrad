@@ -132,10 +132,8 @@ def rosenbrock(x: np.ndarray) -> float:
 
 @registry.register
 def griewank(x: np.ndarray) -> float:
-    part1 = sum([_x**2 for _x in x])
-    part2 = 1
-    for i in range(len(x)):
-        part2 *= np.cos(float(x[i]) / np.sqrt(i+1))
+    part1 = np.sum(x**2)
+    part2 = np.prod(np.cos(x / np.sqrt(1 + np.arange(len(x)))))
     return 1 + (float(part1)/4000.0) - float(part2)
 
 
