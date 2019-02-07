@@ -723,6 +723,7 @@ class CMandAS2(ASCMADEthird):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
+        assert budget is not None
         self.budget_before_choosing = 2 * budget
         if budget < 201:
             self.optims = [OnePlusOne(dimension, budget=None, num_workers=num_workers)]
@@ -738,6 +739,7 @@ class CMandAS(CMandAS2):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
+        assert budget is not None
         self.budget_before_choosing = 2 * budget
         if budget < 201:
             self.optims = [OnePlusOne(dimension, budget=None, num_workers=num_workers)]
@@ -752,6 +754,7 @@ class CMandAS(CMandAS2):
 class CM(CMandAS2):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = 2 * budget
         if budget < 201:
@@ -764,6 +767,7 @@ class CM(CMandAS2):
 class MultiCMA(CM):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers)]
@@ -774,6 +778,7 @@ class MultiCMA(CM):
 class TripleCMA(CM):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers)]
@@ -787,4 +792,5 @@ class MultiScaleCMA(CM):
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        MilliCMA(dimension, budget=None, num_workers=num_workers),
                        MicroCMA(dimension, budget=None, num_workers=num_workers)]
+        assert budget is not None
         self.budget_before_choosing = budget // 3
