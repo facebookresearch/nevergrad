@@ -178,15 +178,41 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
-             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",  # Cobyla freezes :(
-             "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
-    # pylint: disable=too-many-nested-blocks
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for func in funcs:
-            for num_workers in [1, 10, 100]:
-                if num_workers < budget:
-                    for algo in algos:
+        for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for func in funcs:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[BaseFunction] = [_mlda.Clustering.from_mlda(name, num, rescale)
+                                 for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]]
+    funcs += [_mlda.SammonMapping.from_mlda("Virus", rescale=False), _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+              _mlda.SammonMapping.from_mlda("Employees")]
+    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "ScrHammersleySearch",
+             "PSO", "OnePlusOne", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE", "Zero",
+             "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch",
+             "RandomSearchPlusMiddlePoint", "HaltonSearchPlusMiddlePoint", "MiniQrDE",
+             "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
+             "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch",
+             "MilliCMA", "MicroCMA"]
+    # pylint: disable=too-many-nested-blocks
+    algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
+        "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    for budget in [9600, 12800, 25600]:#, 51200]:#, 102400]:
+        for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
+            for algo in algos:
+                for func in funcs:
+                    if num_workers < budget:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp

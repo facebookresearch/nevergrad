@@ -25,7 +25,7 @@ class ExperimentsTests(TestCase):
         with patch("shutil.which", return_value="here"):  # do not check for missing packages
             with datasets.mocked_data():  # mock mlda data that should be downloaded
                 check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-            if name != "mlda":
+            if "mlda" not in name:
                 check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
 
