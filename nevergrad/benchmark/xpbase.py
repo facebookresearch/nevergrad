@@ -8,18 +8,19 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Callable, Any, Optional, Iterator
+from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple
 import numpy as np
 from ..common import decorators
 from ..functions import BaseFunction
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry
+from . import execution
 
 
 registry = decorators.Registry()
 
 
-class CallCounter:
+class CallCounter(execution.PostponedObject):
     """Simple wrapper which counts the number
     of calls to a function.
 
@@ -36,6 +37,60 @@ class CallCounter:
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         self.num_calls += 1
         return self.func(*args, **kwargs)
+
+    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+        """Propagate subfunction delay
+        """
+        if isinstance(self.func, execution.PostponedObject):
+            return self.func.get_postponing_delay(arguments, value)
+        return 0
+
+
+class OptimizerSettings:
+    """Handle for optimizer settings (name, num_workers etc)
+    Optimizers can be instanciated through this class, providing the optimization space dimension.
+
+    Note
+    ----
+    Eventually, this class should be moved to be directly used for defining experiments.
+    """
+
+    def __init__(self, name: str, budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+        self._setting_names = [x for x in locals() if x != "self"]
+        assert name in optimizer_registry, f"{name} is not registered"
+        self.name = name
+        self.budget = budget
+        self.num_workers = num_workers
+        self.batch_mode = batch_mode
+
+    def __repr__(self) -> str:
+        return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
+
+    @property
+    def is_incoherent(self) -> bool:
+        """Flags settings which are known to be impossible to process.
+        Currently, this means we flag:
+        - no_parallelization optimizers for num_workers > 1
+        """
+        # flag no_parallelization when num_workers greater than 1
+        optimizer = optimizer_registry[self.name]
+        return optimizer.no_parallelization and bool(self.num_workers > 1)
+
+    def instanciate(self, dimension: int) -> base.Optimizer:
+        """Instanciate an optimizer, providing the optimization space dimension
+        """
+        optim: base.Optimizer = optimizer_registry[self.name](dimension=dimension, budget=self.budget, num_workers=self.num_workers)
+        return optim
+
+    def get_description(self) -> Dict[str, Any]:
+        """Returns a dictionary describing the optimizer settings
+        """
+        return {x if x != "name" else "optimizer_name": getattr(self, x) for x in self._setting_names}
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return all(getattr(self, attr) == getattr(other, attr) for attr in self._setting_names)
+        return False
 
 
 def create_seed_generator(seed: Optional[int]) -> Iterator[Optional[int]]:
@@ -74,18 +129,17 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: BaseFunction, optimizer_name: str, budget: int, num_workers: int = 1, seed: Optional[int] = None) -> None:
+    def __init__(self, function: BaseFunction, optimizer_name: str, budget: int, num_workers: int = 1,
+                 batch_mode: bool = True, seed: Optional[int] = None) -> None:
         assert isinstance(function, BaseFunction), "All experiment functions should derive from BaseFunction"
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
-        assert optimizer_name in optimizer_registry, f"{optimizer_name} is not registered"
-        self._optimizer_parameters = {"optimizer_name": optimizer_name, "num_workers": num_workers, "budget": budget}
+        self.optimsettings = OptimizerSettings(name=optimizer_name, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
+        self.recommendation: Optional[base.ArrayLike] = None
 
     def __repr__(self) -> str:
-        budget, num_workers, optimizer_name = [self._optimizer_parameters[x] for x in ["budget", "num_workers", "optimizer_name"]]
-        dim = self.function.dimension
-        return f"Experiment: {optimizer_name}(dimension={dim}, budget={budget}, num_workers={num_workers}) on {self.function}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
 
     @property
     def is_incoherent(self) -> bool:
@@ -93,9 +147,7 @@ class Experiment:
         Currently, this means we flag:
         - no_parallelization optimizers for num_workers > 1
         """
-        # flag no_parallelization when num_workers greater than 1
-        optimizer = optimizer_registry[self._optimizer_parameters["optimizer_name"]]
-        return optimizer.no_parallelization and bool(self._optimizer_parameters["num_workers"] > 1)  # type: ignore
+        return self.optimsettings.is_incoherent
 
     def run(self) -> Dict[str, Any]:
         """Run an experiment with the provided settings
@@ -120,18 +172,17 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, t0: float, num_calls: int, recommendation: float) -> None:
+    def _log_results(self, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         num_eval = 100  # evaluations of the cost function on the recommendation
         self.result["elapsed_time"] = time.time() - t0
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
-        t_recommendation = self.function.transform(recommendation)
+        t_recommendation = self.function.transform(self.recommendation)
         self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
-        if num_calls > self._optimizer_parameters["budget"]:  # type: ignore
-            optim_name = self._optimizer_parameters["optimizer_name"]
-            raise RuntimeError(f"Too much elapsed budget {num_calls} for {optim_name} on {self.function}")
+        if num_calls > self.optimsettings.budget:
+            raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
 
     def _run_with_error(self, callbacks: Optional[Dict[str, base._OptimCallBack]] = None) -> None:
         """Run an experiment with the provided artificial function and optimizer
@@ -145,25 +196,26 @@ class Experiment:
         if self.seed is not None:
             np.random.seed(self.seed)
             random.seed(self.seed)
-        budget, num_workers, optimizer_name = [self._optimizer_parameters[x] for x in ["budget", "num_workers", "optimizer_name"]]
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
-        optimizer = optimizer_registry[optimizer_name](dimension=self.function.dimension, budget=budget, num_workers=num_workers)
+        optimizer = self.optimsettings.instanciate(dimension=self.function.dimension)
         if callbacks is not None:
             for name, func in callbacks.items():
                 optimizer.register_callback(name, func)
         assert optimizer.budget is not None, "A budget must be provided"
-        assert optimizer.dimension == self.function.dimension
         t0 = time.time()
         counter = CallCounter(self.function)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
+            # use default executor for batch mode (sequential, but mock for steady state
+            # ("production" steady state is a not strictly steady state + does not handle mocked delays)
+            executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
             try:
-                recommendation = optimizer.optimize(counter, batch_mode=True)
+                self.recommendation = optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
-                recommendation = optimizer.provide_recommendation()  # get the recommendation anyway
-                self._log_results(t0, counter.num_calls, recommendation)
+                self.recommendation = optimizer.provide_recommendation()  # get the recommendation anyway
+                self._log_results(t0, counter.num_calls)
                 raise e
-        self._log_results(t0, counter.num_calls, recommendation)
+        self._log_results(t0, counter.num_calls)
 
     def get_description(self) -> Dict[str, Union[str, float, bool]]:
         """Return the description of the experiment, as a dict.
@@ -171,10 +223,10 @@ class Experiment:
         """
         summary = dict(self.result, seed=-1 if self.seed is None else self.seed)
         summary.update(self.function.descriptors)
-        summary.update(self._optimizer_parameters)
+        summary.update(self.optimsettings.get_description())
         return summary
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Experiment):
             return False
-        return self.function == other.function and self._optimizer_parameters == other._optimizer_parameters
+        return self.function == other.function and self.optimsettings == other.optimsettings

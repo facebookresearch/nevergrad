@@ -9,6 +9,7 @@ from typing import List, Tuple, Any
 import genty
 import numpy as np
 from ..common import testing
+from ..instrumentation import Instrumentation
 from ..instrumentation import variables as var
 from . import optimizerlib
 from . import base
@@ -107,7 +108,7 @@ def test_optimize() -> None:
 
 
 def test_instrumented_optimizer() -> None:
-    instru = var.Instrumentation(var.Gaussian(0, 1), var.SoftmaxCategorical([0, 1]))
+    instru = Instrumentation(var.Gaussian(0, 1), var.SoftmaxCategorical([0, 1]))
     opt = optimizerlib.registry["RandomSearch"](dimension=instru.dimension, budget=10)
     iopt = base.IntrumentedOptimizer(opt, instru)
     output = iopt.optimize(lambda x, y: x**2 + y)  # type: ignore

@@ -150,6 +150,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         This function can be called multiple times to explore several points in parallel
         """
         suggestion = self._internal_ask()
+        assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_suggestions += 1
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
@@ -232,7 +233,10 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                 (finished if x_job[1].done() else runnings).append(x_job)
             # process finished
             if finished:
-                sleeper.stop_timer()
+                if budget or sleeper._start is not None:
+                    # ignore stop if no more suggestion is sent
+                    # this is an ugly hack to avoid warnings at the end of steady mode
+                    sleeper.stop_timer()
                 for x, job in finished:
                     self.tell(x, job.result())
                     if verbosity:

@@ -8,7 +8,7 @@ import time
 import contextlib
 from unittest import TestCase
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import List, Any
 import numpy as np
 import genty
 from ..common import testing
@@ -18,20 +18,6 @@ from . import utils
 
 @genty.genty
 class UtilsTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        all_fine=(2, ["a", "b", "c"], "blublu a c\nb"),
-        too_many_values=(2, ["a", "b", "c", "d"], AssertionError),
-        too_few_values=(2, ["a", "b"], IndexError),
-        repeating_index=(1, ["a", "b", "c"], RuntimeError),
-    )
-    def test_replace_placeholders_by_values(self, last_index: int, values: Tuple[str], expected: Any) -> None:
-        text = "blublu <[placeholder_{}>] <[placeholder_{}>]\n<[placeholder_{}>]".format(0, last_index, 1)
-        if isinstance(expected, str):
-            output = utils.replace_placeholders_by_values(text, values)
-            np.testing.assert_equal(output, expected)
-        else:
-            np.testing.assert_raises(expected, utils.replace_placeholders_by_values, text, values)
 
     @genty.genty_dataset(  # type: ignore
         empty=([], [], [])
@@ -47,17 +33,6 @@ def test_process_instruments() -> None:
     values = utils.process_instruments(tokens, [0, 200, 0, 0, 0, 2])
     np.testing.assert_equal(values, [1, 11])
     np.testing.assert_raises(AssertionError, utils.process_instruments, tokens, [0, 200, 0, 0, 0, 2, 3])
-
-
-def test_replace_tokens_by_placeholders() -> None:
-    intext = "blublu NG_SC{0|1|2} NG_G{2,3}\nNG_SC{a|b}"
-    outtext, tokens = utils.replace_tokens_by_placeholders(intext)
-    expected_text = "blublu <[placeholder_{}>] <[placeholder_{}>]\n<[placeholder_{}>]".format(1, 0, 2)
-    expected_vars = [variables.Gaussian(mean=2.0, std=3),
-                     variables.SoftmaxCategorical(possibilities=["0", "1", "2"]),
-                     variables.SoftmaxCategorical(possibilities=["a", "b"])]
-    np.testing.assert_equal(outtext, expected_text)
-    np.testing.assert_array_equal(tokens, expected_vars)
 
 
 def test_temporary_directory_copy() -> None:

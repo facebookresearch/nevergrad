@@ -4,24 +4,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import re
 import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Iterable, Tuple, Union, Optional, Match, Set, Dict
+from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
-from ..common.decorators import Registry
 
 
-vartypes = Registry()
-_HOLDER = "<[placeholder_{index}>]"  # should bug in any language
-_HOLDER_PATTERN = _HOLDER.replace("[", r"\[").replace("]", r"\]").format(index="(?P<index>[0-9]+)")
-
-
-class Instrument:
+class Variable:
 
     @property
     def dimension(self) -> int:
@@ -36,8 +29,26 @@ class Instrument:
     def get_summary(self, data: np.ndarray) -> str:
         raise NotImplementedError
 
+    def __eq__(self, other: Any) -> bool:
+        return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
 
-def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[List[float]]:
+    def __repr__(self) -> str:
+        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
+        return f"{self.__class__.__name__}({args})"
+
+    def _short_repr(self) -> str:
+        raise NotImplementedError
+
+    def __format__(self, format_spec: str) -> str:
+        if format_spec == "short":
+            return self._short_repr()
+        elif format_spec == "display":
+            # ugly hack below, but simplifies code a lot
+            return self._short_repr() if self.__class__.__name__ == "_Constant" else repr(self)
+        return repr(self)
+
+
+def split_data(data: List[float], instruments: Iterable[Variable]) -> List[List[float]]:
     """Splits data according to the data requirements of the instruments
     """
     # this functions should be tested
@@ -55,60 +66,13 @@ def split_data(data: List[float], instruments: Iterable[Instrument]) -> List[Lis
     return splitted_data
 
 
-def process_instruments(instruments: Iterable[Instrument], data: List[float],
+def process_instruments(instruments: Iterable[Variable], data: List[float],
                         deterministic: bool = False) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
     instruments = list(instruments)
     splitted_data = split_data(data, instruments)
     return tuple([instrument.process(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
-
-
-def replace_tokens_by_placeholders(text: str) -> Tuple[str, List[Instrument]]:
-    """Removes the nevergrad tokens and replace them with placeholders
-
-    Returns
-    -------
-    text: str
-        text with placeholders with format "<[placeholder_{index}>]"
-    variables: list
-        list of corresponding nevergrad variables
-    """
-    tokenclasses = [x[1] for x in sorted(vartypes.items())]  # must be deterministic
-    variables: List[Instrument] = []
-
-    for tokenclass in tokenclasses:
-
-        def _replacer(regex: Match) -> str:
-            variables.append(tokenclass.from_regex(regex))  # pylint: disable=cell-var-from-loop
-            return _HOLDER.format(index=len(variables) - 1)
-
-        text = re.sub(tokenclass.pattern, _replacer, text)
-    return text, variables
-
-
-def replace_placeholders_by_values(text: str, values: Tuple[Any, ...]) -> str:
-    """Removes the nevergrad tokens and replace them with placeholders
-
-    Parameters
-    ----------
-    text: str
-        text with placeholders with format "<[placeholder_{index}>]"
-    values: list
-        list of values for each placeholder
-    """
-    found: Set[int] = set()
-
-    def _replacer(regex: Match) -> str:
-        index = int(regex.group("index"))
-        if index in found:
-            raise RuntimeError(f"Trying to remplace a second time token #{index}")
-        found.add(index)
-        return str(values[index])
-
-    text = re.sub(_HOLDER_PATTERN, _replacer, text)
-    np.testing.assert_equal(len(found), len(values), "All values have not been consumed")
-    return text
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):
@@ -186,7 +150,8 @@ class CommandFunction:
         The logs are bufferized. They will be printed if the job fails, or sent as output of the function
         Errors are provided with the internal stderr
         """
-        full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]  # TODO bad parsing
+        # TODO make the following command more robust (probably fails in multiple cases)
+        full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
         if self.verbose:
             print(f"The following command is sent: {full_command}")
         outlines: List[str] = []
