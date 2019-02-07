@@ -28,23 +28,27 @@ from ...common.typetools import ArrayLike
 from ...instrumentation.utils import CommandFunction
 
 
+def tanh_crop(x, min_val, max_val):
+    return .5 * (max_val + min_val) + .5 * (max_val - min_val) * np.tanh(x)
+
+
 def photonics_transform(func: "Photonics", x: ArrayLike) -> np.ndarray:
     n = len(x)
     assert not n % 4, f"points length should be a multiple of 4, got {n}"
     if func.name == "bragg":
         # n multiple of 2, from 16 to 80
-        # domain (n=60): [2,3]^30 x [0,+inf]^30
+        # domain (n=60): [2,3]^30 x [0,300]^30
         y = np.array(x, copy=True)
-        y[:n // 2] = 2 + .5 * (1 + np.tanh(y[:n // 2]))
-        y[n // 2:] = 100 * y[n // 2:]**2
+        y[:n // 2] = tanh_crop(y[:n // 2], 2, 3)
+        y[n // 2:] = tanh_crop(y[n // 2:], 0, 300)
     elif func.name == "chirped":
         # n multiple of 2, from 10 to 80
-        # domain (n=60): [0,+inf]^60
-        y = 100 * np.array(x)**2
+        # domain (n=60): [0,300]^60
+        y = tanh_crop(x, 0, 300)
     elif func.name == "morpho":
         # n multiple of 4, from 16 to 60
         # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-        y = .5 * (1 + np.tanh(np.array(x)))
+        y = tanh_crop(x, 0, 1)
         q = n // 4
         y[:q] *= 300
         y[q: 2 * q] *= 600
