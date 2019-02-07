@@ -15,9 +15,9 @@ from . import core
 class BenchmarkTests(TestCase):
 
     @genty.genty_dataset(  # type: ignore
-        bragg=("bragg", [2.93, 2.18, 2.35, 2.12, 114.66, 206.99, 31.86, 8.75]),
+        bragg=("bragg", [2.93, 2.18, 2.35, 2.12, 31.53, 15.98, 226.69, 193.11]),
         morpho=("morpho", [280.36, 52.96, 208.16, 72.69, 89.92, 60.37, 226.69, 193.11]),
-        chirped=("chirped", [176.68, 59.3, 10., 98.17, 114.66, 206.99, 31.86, 8.75]),
+        chirped=("chirped", [280.36, 52.96, 104.08, 36.34, 31.53, 15.98, 226.69, 193.11]),
     )
     def test_photonics_transforms(self, pb: str, expected: List[float]) -> None:
         np.random.seed(24)
@@ -29,6 +29,11 @@ class BenchmarkTests(TestCase):
         np.random.seed(24)
         x2 = np.random.normal(0, 1, size=8)
         np.testing.assert_almost_equal(x, x2, decimal=2, err_msg="x was modified in the process")
+
+
+def test_tanh_crop() -> None:
+    output = core.tanh_crop([-1e9, 1e9, 0], -12, 16)
+    np.testing.assert_almost_equal(output, [-12, 16, 2])
 
 
 def test_morpho_transform_constraints() -> None:
