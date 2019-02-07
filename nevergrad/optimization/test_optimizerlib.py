@@ -87,7 +87,7 @@ class OptimizerTests(TestCase):
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
         if name in ["CMA", "Portfolio"]:
-            raise SkipTest("Not playing nicely with the tests")  # thread problem?
+            raise SkipTest("Not playing nicely with the tests")  # due to unsufficient budget.
         np.random.seed(12)
         if optimizer_cls.recast:
             random.seed(12)  # may depend on non numpy generator

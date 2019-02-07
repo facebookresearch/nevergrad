@@ -648,6 +648,8 @@ class Portfolio(base.Optimizer):
         self.optims = [CMA(dimension, budget // 3 + (budget % 3 > 0), num_workers),
                        TwoPointsDE(dimension, budget // 3 + (budget % 3 > 1), num_workers),
                        ScrHammersleySearch(dimension, budget // 3, num_workers)]
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -673,6 +675,8 @@ class AS2(Portfolio):
         assert budget is not None
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        LhsDE(dimension, budget=None, num_workers=num_workers)]
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = None
@@ -704,6 +708,8 @@ class AS(AS2):
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        LhsDE(dimension, budget=None, num_workers=num_workers),
                        ScrHaltonSearch(dimension, budget=None, num_workers=num_workers)]
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -712,6 +718,8 @@ class CMADE(AS2):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -727,6 +735,8 @@ class CM3(AS2):
                 CMA(dimension, budget=None, num_workers=num_workers),
                 CMA(dimension, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -742,6 +752,8 @@ class CM2(CM3):
             self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                            CMA(dimension, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 3
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -754,6 +766,8 @@ class CM(CM3):
             self.optims = [OnePlusOne(dimension, budget=None, num_workers=num_workers)]
         if budget > 50 * dimension:
             self.optims = [CMA(dimension, budget=None, num_workers=num_workers)]
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -764,6 +778,8 @@ class MultiCMA(CM3):
                        CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 10
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -774,6 +790,8 @@ class TripleCMA(CM3):
                        CMA(dimension, budget=None, num_workers=num_workers),
                        CMA(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 3
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
 
 
 @registry.register
@@ -784,3 +802,5 @@ class MultiScaleCMA(CM3):
                        MilliCMA(dimension, budget=None, num_workers=num_workers),
                        MicroCMA(dimension, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 3
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
