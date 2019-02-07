@@ -186,7 +186,8 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     # pylint: disable=too-many-nested-blocks
     algos += ["CMADECMA", "AS6", "AS10", "AShalf",  "AS2", "AS", "Portfolio", "ASelect", "ASelect2", "ASelect3", "ASelect4", "ASelect5", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
     algos += ["MAS"]
-    algos += ["MAS2"]
+    algos += ["MAS2", "CM"]
+    algos += ["CM2","CM3"]
     for budget in [9600, 12800, 25600]:#, 51200]:#, 102400]:
         for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
             for algo in algos:
