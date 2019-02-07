@@ -69,7 +69,7 @@ def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
     """
     assert all(x == y for x, y in zip(victories.index, victories.columns))
     winrates = victories / (victories + victories.T)
-    mean_win = winrates.mean(axis=1).sort_values(ascending=False)
+    mean_win = winrates.quantile(.05, axis=1).sort_values(ascending=False)
     return winrates.loc[mean_win.index, mean_win.index]
 
 
@@ -254,7 +254,7 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
         subdf = df.select(**dict(zip(categories, subcase)))
         victories += _make_winners_df(subdf, all_optimizers)
     winrates = _make_sorted_winrates_df(victories)
-    mean_win = winrates.mean(axis=1)
+    mean_win = winrates.quantile(.05, axis=1)
     winrates.fillna(.5)  # unplayed
     sorted_names = winrates.index
     # number of subcases actually computed is twice self-victories
@@ -269,7 +269,10 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
     ax.set_xticklabels([s.replace("Search", "") for s in sorted_names], rotation=90, fontsize=7)
     ax.set_yticks(list(range(num_rows)))
     # pylint: disable=anomalous-backslash-in-string
-    ax.set_yticklabels([(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)], rotation=45, fontsize=7)
+    best_names = [(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
+    ax.set_yticklabels(best_names, rotation=45, fontsize=7)
+    data_df = pd.DataFrame(index=best_names, columns=sorted_names, data=data)
+    data_df.to_csv("fight_all_data.csv")
     plt.tight_layout()
     fig.colorbar(cax, orientation='vertical')
     if output_filepath is not None:
