@@ -649,8 +649,6 @@ class Portfolio(base.Optimizer):
         self.optims = [CMA(dimension, budget // 3 + (budget % 3 > 0), num_workers),
                        TwoPointsDE(dimension, budget // 3 + (budget % 3 > 1), num_workers),
                        ScrHammersleySearch(dimension, budget // 3, num_workers)]
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask(self) -> base.ArrayLike:
