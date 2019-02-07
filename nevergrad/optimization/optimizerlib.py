@@ -669,7 +669,7 @@ class Portfolio(base.Optimizer):
 
 
 @registry.register
-class AS2(Portfolio):
+class ASCMADEthird(Portfolio):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -702,7 +702,7 @@ class AS2(Portfolio):
 
 
 @registry.register
-class AS(AS2):
+class ASCMADEQRthird(ASCMADEthird):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -713,7 +713,7 @@ class AS(AS2):
 
 
 @registry.register
-class CMADE(AS2):
+class ASCMA2PDEthird(AS2):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -723,7 +723,7 @@ class CMADE(AS2):
 
 
 @registry.register
-class CM3(AS2):
+class CMandAS2(ASCMAQRthird):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -740,7 +740,7 @@ class CM3(AS2):
 
 
 @registry.register
-class CM2(CM3):
+class CMandAS(CMandAS2):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -757,7 +757,7 @@ class CM2(CM3):
 
 
 @registry.register
-class CM(CM3):
+class CM(CMandAS2):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -771,7 +771,7 @@ class CM(CM3):
 
 
 @registry.register
-class MultiCMA(CM3):
+class MultiCMA(CM):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -783,7 +783,7 @@ class MultiCMA(CM3):
 
 
 @registry.register
-class TripleCMA(CM3):
+class TripleCMA(CM):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -795,7 +795,7 @@ class TripleCMA(CM3):
 
 
 @registry.register
-class MultiScaleCMA(CM3):
+class MultiScaleCMA(CM):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),

@@ -206,7 +206,8 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
              "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch",
              "MilliCMA", "MicroCMA"]
     # pylint: disable=too-many-nested-blocks
-    algos += ["MultiCMA", "TripleCMA", "MultiScaleCMA", "CM2","CM3", "AS2", "CMADE", "AS", "Portfolio"]
+    algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
+        "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
     for budget in [9600, 12800, 25600]:#, 51200]:#, 102400]:
         for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
             for algo in algos:
