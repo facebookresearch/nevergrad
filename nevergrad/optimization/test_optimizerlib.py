@@ -29,6 +29,7 @@ def fitness(x: ArrayLike) -> float:
 def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, verify_value: bool = True) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
+
     optimizer = optimizer_cls(dimension=2, budget=budget, num_workers=num_workers)
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
     for k in range(1, num_attempts + 1):
