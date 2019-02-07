@@ -679,7 +679,7 @@ class ASCMADEthird(Portfolio):
             self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
-        self.best_optim = None
+        self.best_optim = -1
 
     def _internal_ask(self) -> base.ArrayLike:
         if self.budget_before_choosing > 0:
