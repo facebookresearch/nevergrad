@@ -399,7 +399,7 @@ class PortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
 
     The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
     in Non-elitist Population", 2016."""
-
+    combined = True
     def _internal_ask(self) -> base.ArrayLike:
         if not self._num_suggestions:
             return np.zeros(self.dimension)

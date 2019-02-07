@@ -53,6 +53,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
 
     # optimizer qualifiers
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
+    combined = False  # algorithm which are combinations of existing algorithms
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
