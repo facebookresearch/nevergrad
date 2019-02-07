@@ -642,6 +642,7 @@ class SPSA(base.Optimizer):
 
 @registry.register
 class Portfolio(base.Optimizer):
+    """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -670,13 +671,12 @@ class Portfolio(base.Optimizer):
 
 @registry.register
 class ASCMADEthird(Portfolio):
+    """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
                        LhsDE(dimension, budget=None, num_workers=num_workers)]
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(dimension, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
@@ -703,6 +703,7 @@ class ASCMADEthird(Portfolio):
 
 @registry.register
 class ASCMADEQRthird(ASCMADEthird):
+    """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -712,6 +713,7 @@ class ASCMADEQRthird(ASCMADEthird):
 
 @registry.register
 class ASCMA2PDEthird(ASCMADEQRthird):
+    """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -720,6 +722,7 @@ class ASCMA2PDEthird(ASCMADEQRthird):
 
 @registry.register
 class CMandAS2(ASCMADEthird):
+    """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -736,6 +739,7 @@ class CMandAS2(ASCMADEthird):
 
 @registry.register
 class CMandAS(CMandAS2):
+    """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -752,6 +756,7 @@ class CMandAS(CMandAS2):
 
 @registry.register
 class CM(CMandAS2):
+    """Competence map, simplest."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -765,6 +770,7 @@ class CM(CMandAS2):
 
 @registry.register
 class MultiCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/10 of the budget."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -776,6 +782,7 @@ class MultiCMA(CM):
 
 @registry.register
 class TripleCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -787,6 +794,7 @@ class TripleCMA(CM):
 
 @registry.register
 class MultiScaleCMA(CM):
+    """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
