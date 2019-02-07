@@ -723,7 +723,7 @@ class ASCMA2PDEthird(ASCMADEQRthird):
 
 
 @registry.register
-class CMandAS2(ASCMAQRthird):
+class CMandAS2(ASCMADEthird):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
