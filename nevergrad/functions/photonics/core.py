@@ -115,7 +115,7 @@ class Photonics(BaseFunction):
         self.name = name
         path = Path(__file__).absolute().parent / 'src' / (name + '.m')
         assert path.exists(), f"Path {path} does not exist (anymore?)"
-        self._func = CommandFunction(["octave", "--norc", "--no-gui", "--quiet", path.name], cwd=path.parent, verbose=False,
+        self._func = CommandFunction(["octave", "--no-history", "--norc", "--no-gui", "--quiet", path.name], cwd=path.parent, verbose=False,
                                      env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"))
         self._descriptors.update(name=name)
 
