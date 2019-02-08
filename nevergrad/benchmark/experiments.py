@@ -180,7 +180,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
+        for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:
                     for func in funcs:
@@ -207,9 +207,9 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
              "MilliCMA", "MicroCMA"]
     # pylint: disable=too-many-nested-blocks
     algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
-        "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
-    for budget in [9600, 12800, 25600]:#, 51200]:#, 102400]:
-        for num_workers in [10, 100, 1000]:  #[1, 10, 100]:
+              "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    for budget in [9600, 12800, 25600]:  # , 51200]:#, 102400]:
+        for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
             for algo in algos:
                 for func in funcs:
                     if num_workers < budget:
@@ -218,7 +218,7 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield xp
 
 
-@registry.register_with_info(time=60 * 48, num_workers=64, mem="1GB")
+@registry.register
 def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
     func = ARCoating()
     seedg = create_seed_generator(seed)
