@@ -54,7 +54,9 @@ def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, veri
             min(v.pessimistic_confidence_bound for v in archive.values()))
 
 
-SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne"]
+SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird"]
+UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
+              "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
 
 @genty.genty
@@ -86,9 +88,8 @@ class OptimizerTests(TestCase):
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        if name in ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
-            "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]:
-            raise SkipTest("Not playing nicely with the tests")  # due to CMA not seedable.
+        if name in UNSEEDABLE:
+            raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
         np.random.seed(12)
         if optimizer_cls.recast:
             random.seed(12)  # may depend on non numpy generator
