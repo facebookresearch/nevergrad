@@ -16,7 +16,7 @@ function [cost,R]=chirped(X,varargin)
 
   bar=length(X);
   if length(varargin)==0
-    lambda=linspace(500,800,8);
+    lambda=linspace(500,800,50);
   else
       lambda=varargin{1};
   end
