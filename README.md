@@ -5,19 +5,20 @@
 `nevergrad` is a Python 3.6+ library. It can be installed with:
 
 ```
-pip install nevergrad[all]
+pip install nevergrad
 ```
 
 You can also install the master branch instead of the latest release with:
 
 ```
-pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad[all]
+pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
 ```
 
-Alternatively, you can clone the repository and run `pip install -e .[all]` from inside the repository folder.
+Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
 
-In all these options, you may omit the `[all]` flag if you only care for the optimization and/or the instrumentation part (no benchmark).
-`ZSH` user may need to use quotation marks when providing the `[all]` flag (example: `pip install -e '.[all]'`)
+By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interesting in the benchmarking part,
+you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
+the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
 
