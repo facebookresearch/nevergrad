@@ -1,3 +1,7 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 import heapq
 from typing import List, Callable, Any, NamedTuple
 from ..functions.base import PostponedObject  # this object only serves to provide delays that the executor must use to order jobs

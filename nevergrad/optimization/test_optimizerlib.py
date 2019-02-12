@@ -54,7 +54,9 @@ def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, veri
             min(v.pessimistic_confidence_bound for v in archive.values()))
 
 
-SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne"]
+SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird"]
+UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
+              "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
 
 @genty.genty
@@ -78,15 +80,16 @@ class OptimizerTests(TestCase):
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
         recom.to_csv(cls._RECOM_FILE)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
+    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
     def test_optimizers(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
-        check_optimizer(optimizer_cls, budget=300, verify_value=verify)
+        verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+        # BO is extremely slow, run it anyway but very low budget and no verification
+        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        if name in ["CMA", "Portfolio"]:
-            raise SkipTest("Not playing nicely with the tests")  # thread problem?
+        if name in UNSEEDABLE:
+            raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
         np.random.seed(12)
         if optimizer_cls.recast:
             random.seed(12)  # may depend on non numpy generator

@@ -36,6 +36,17 @@ class Variable:
         args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
         return f"{self.__class__.__name__}({args})"
 
+    def _short_repr(self) -> str:
+        raise NotImplementedError
+
+    def __format__(self, format_spec: str) -> str:
+        if format_spec == "short":
+            return self._short_repr()
+        elif format_spec == "display":
+            # ugly hack below, but simplifies code a lot
+            return self._short_repr() if self.__class__.__name__ == "_Constant" else repr(self)
+        return repr(self)
+
 
 def split_data(data: List[float], instruments: Iterable[Variable]) -> List[List[float]]:
     """Splits data according to the data requirements of the instruments

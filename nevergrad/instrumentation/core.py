@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import warnings
 import itertools
 from typing import List, Any, Tuple, Dict, Optional, Callable
@@ -13,7 +18,25 @@ class Instrumentation:
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        self.names: Tuple[Optional[str], ...] = ()
+        self.instruments: List[utils.Variable] = []
+        self._set_args_kwargs(args, kwargs)
+        self._name: Optional[str] = None
+
+    @property
+    def name(self) -> str:
+        if self._name is not None:
+            return self._name
+        return format(self, "short")
+
+    def with_name(self, name: str) -> "Instrumentation":
+        """Sets a name and return the current instrumentation (for chaining)
+        """
+        self._name = name
+        return self
+
+    def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict) -> None:
+        self.names, arguments = self._make_argument_names_and_list(args, kwargs)
         self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.instruments))
         assert len(self.instruments) == num_instru, "All instruments must be different (sharing is not supported)"
@@ -35,7 +58,7 @@ class Instrumentation:
         return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
 
     @staticmethod
-    def _make_argument_names_and_list(*args: Any, **kwargs: Any) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
+    def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
         """Converts *args and **kwargs to a tuple of names (with None for positional),
         and the corresponding tuple of values.
 
@@ -43,7 +66,7 @@ class Instrumentation:
         _make_argument_names_and_list(3, z="blublu", machin="truc")
         >>> (None, "machin", "z"), (3, "truc", "blublu")
         """
-        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))
         arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
         return names, arguments
 
@@ -65,7 +88,7 @@ class Instrumentation:
         - this process is simplified, and is deterministic. Depending on your instrumentation,
           you will probably not recover the same data.
         """
-        names, arguments = self._make_argument_names_and_list(*args, **kwargs)
+        names, arguments = self._make_argument_names_and_list(args, kwargs)
         assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
                                      f"but expected:\n{self.names}")
         data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
@@ -74,12 +97,16 @@ class Instrumentation:
     def instrument(self, function: Callable) -> "InstrumentedFunction":
         return InstrumentedFunction(function, *self.args, **self.kwargs)
 
+    def __format__(self, format_spec: str) -> str:
+        arguments = [format(x, format_spec) for x in self.args]
+        sorted_kwargs = [(name, format(self.kwargs[name], format_spec)) for name in sorted(self.kwargs)]
+        all_params = arguments + [f"{x}={y}" for x, y in sorted_kwargs]
+        if format_spec == "short":
+            return ",".join(all_params)
+        return "{}({})".format(self.__class__.__name__, ", ".join(all_params))
+
     def __repr__(self) -> str:
-        arguments = [repr(x if not isinstance(x, variables._Constant) else x.value) for x in self.args]
-        sorted_kwargs = [(x, repr(self.kwargs[x].value  # type: ignore
-                                  if isinstance(self.kwargs[x], variables._Constant) else self.kwargs[x]))
-                         for x in sorted(self.kwargs)]
-        return "{}({})".format(self.__class__.__name__, ", ".join(arguments + [f"{x}={y}" for x, y in sorted_kwargs]))
+        return f"{self:display}"
 
     def get_summary(self, data: np.ndarray) -> Any:
         """Provides the summary string corresponding to the provided data
@@ -124,10 +151,8 @@ class InstrumentedFunction(base.BaseFunction):
         self.instrumentation = Instrumentation(*args, **kwargs)
         super().__init__(dimension=self.instrumentation.dimension)
         # keep track of what is instrumented (but "how" is probably too long/complex)
-        instrumented = [f"arg{k}" if name is None else name for k, name in enumerate(self.instrumentation.names)
-                        if not isinstance(self.instrumentation.instruments[k], variables._Constant)]
         name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
-        self._descriptors.update(name=name, instrumented=",".join(instrumented))
+        self._descriptors.update(name=name, instrumentation=self.instrumentation.name)
         self._function = function
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None

@@ -168,7 +168,7 @@ If you want your experiment plan to be seedable, be extra careful as to how you 
 
 **Please note that instrumentation is still a work in progress. We will try to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that their will be breaking changes (see Issues #44 to #47).**
 
-**More specifically, the current description applies to the master branch but is not implemented in the current release (v0.1.3).**
+**More specifically, the current description applies to the master branch but is only implemented in the most recent releases (from v0.1.4).**
 
 The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed. For this, discrete/categorial arguments must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do thanks to:
 - the `variables` modules providing priors that can be used to define each argument.
