@@ -134,9 +134,12 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         for case in df.unique(fixed):
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
+            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            fplotter = FightPlotter(data_df)
+            # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
-            make_fight_plot(casedf, fight_descriptors, num_rows, output_folder / name)
+            fplotter.save(str(output_folder / name), dpi=_DPI)
     plt.close("all")
     #
     # xp plots
@@ -231,49 +234,80 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         plt.savefig(str(output_filepath), bbox_extra_artists=[legend] + texts, bbox_inches='tight', dpi=_DPI)
 
 
-def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, output_filepath: Optional[PathLike] = None) -> None:
+# @contextlib.contextmanager
+# def xticks_on_top() -> Iterator[None]:
+#     values_for_top = {'xtick.bottom': False, 'xtick.labelbottom': False,
+#                       'xtick.top': True, 'xtick.labeltop': True}
+#     defaults = {x: plt.rcParams[x] for x in values_for_top if x in plt.rcParams}
+#     plt.rcParams.update(values_for_top)
+#     yield
+#     plt.rcParams.update(defaults)
+
+
+class FightPlotter:
     """Creates a fight plot out of the given dataframe, by iterating over all cases with fixed category variables.
 
     Parameters
     ----------
-    df: pd.DataFrame
-        run data
-    categories: list
-        List of variables to fix for obtaining similar run conditions
-    num_rows: int
-        number of rows to plot (best algorithms)
-    output_filepath: Path
-        If present, saves the plot to the given path
+    winrates_df: pd.DataFrame
+        winrate data as a dataframe
     """
-    all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown
-    num_rows = min(num_rows, len(all_optimizers))
-    victories = pd.DataFrame(index=all_optimizers, columns=all_optimizers, data=0.)
-    # iterate on all sub cases
-    subcases = df.unique(categories)
-    for subcase in subcases:  # TODO linearize this (precompute all subcases)? requires memory
-        subdf = df.select(**dict(zip(categories, subcase)))
-        victories += _make_winners_df(subdf, all_optimizers)
-    winrates = _make_sorted_winrates_df(victories)
-    mean_win = winrates.mean(axis=1)
-    winrates.fillna(.5)  # unplayed
-    sorted_names = winrates.index
-    # number of subcases actually computed is twice self-victories
-    sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
-    data = np.array(winrates.iloc[:num_rows, :])
-    # make plot
-    plt.close("all")
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    cax = ax.imshow(100 * data, cmap=cm.seismic, interpolation='none', vmin=0, vmax=100)
-    ax.set_xticks(list(range(len(sorted_names))))
-    ax.set_xticklabels([s.replace("Search", "") for s in sorted_names], rotation=90, fontsize=7)
-    ax.set_yticks(list(range(num_rows)))
-    # pylint: disable=anomalous-backslash-in-string
-    ax.set_yticklabels([(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)], rotation=45, fontsize=7)
-    plt.tight_layout()
-    fig.colorbar(cax, orientation='vertical')
-    if output_filepath is not None:
-        plt.savefig(str(output_filepath), dpi=_DPI)
+
+    def __init__(self, winrates_df: pd.DataFrame) -> None:
+        # make plot
+        self.winrates = winrates_df
+        self._fig = plt.figure()
+        self._ax = self._fig.add_subplot(111)
+        self._cax = self._ax.imshow(100 * np.array(self.winrates), cmap=cm.seismic, interpolation='none', vmin=0, vmax=100)
+        x_names = self.winrates.columns
+        self._ax.set_xticks(list(range(len(x_names))))
+        self._ax.set_xticklabels(x_names, rotation=90, fontsize=7)  # , ha="left")
+        y_names = self.winrates.index
+        self._ax.set_yticks(list(range(len(y_names))))
+        self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
+        self._fig.colorbar(self._cax)  # , orientation='horizontal')
+        plt.tight_layout()
+
+    @staticmethod
+    def winrates_from_selection(df: tools.Selector, categories: List[str], num_rows: int = 5) -> pd.DataFrame:
+        """Creates a fight plot win rate data out of the given run dataframe,
+        by iterating over all cases with fixed category variables.
+
+        Parameters
+        ----------
+        df: pd.DataFrame
+            run data
+        categories: list
+            List of variables to fix for obtaining similar run conditions
+        num_rows: int
+            number of rows to plot (best algorithms)
+        """
+        all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown
+        num_rows = min(num_rows, len(all_optimizers))
+        victories = pd.DataFrame(index=all_optimizers, columns=all_optimizers, data=0.)
+        # iterate on all sub cases
+        subcases = df.unique(categories)
+        for subcase in subcases:  # TODO linearize this (precompute all subcases)? requires memory
+            subdf = df.select(**dict(zip(categories, subcase)))
+            victories += _make_winners_df(subdf, all_optimizers)
+        winrates = _make_sorted_winrates_df(victories)
+        mean_win = winrates.mean(axis=1)
+        winrates.fillna(.5)  # unplayed
+        sorted_names = winrates.index
+        # number of subcases actually computed is twice self-victories
+        sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
+        data = np.array(winrates.iloc[:num_rows, :])
+        # pylint: disable=anomalous-backslash-in-string
+        best_names = [(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
+        return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
+
+    def save(self, *args, **kwargs):
+        """Shortcut to the figure savefig method
+        """
+        self._fig.savefig(*args, **kwargs)
+
+    def __del__(self):
+        plt.close(self._fig)
 
 
 def main() -> None:
