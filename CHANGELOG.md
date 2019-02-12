@@ -2,8 +2,14 @@
 
 ## master
 
+N/A
+
+## v0.1.4
+
 - fixed `PSO` in asynchronous case
 - started refactoring `instrumentation` in depth, and more specifically instantiation of external code (breaking change)
+- Added Photonics and ARCoating test functions
+- Added variants of algorithms
 
 ## v0.1.3
 
