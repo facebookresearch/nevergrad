@@ -7,7 +7,7 @@ import os
 import argparse
 import itertools
 from pathlib import Path
-from typing import Iterator, List, Optional, Any
+from typing import Iterator, List, Optional, Any, Dict
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -29,7 +29,7 @@ def _make_style_generator() -> Iterator[str]:
     return (l + m + c for l, m, c in zip(lines, markers, colors))
 
 
-class NameStyle(dict):
+class NameStyle(Dict[str, Any]):
     """Provides a style for each name, and keeps to it
     """
 
@@ -39,7 +39,7 @@ class NameStyle(dict):
 
     def __getitem__(self, name: str) -> Any:
         if name not in self:
-            self[name] = next(self._gen)
+            super().__setitem__(name, next(self._gen))
         return super().__getitem__(name)
 
 
@@ -154,7 +154,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
 
 
 def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[PathLike] = None,
-                        name_style: Optional[dict] = None) -> None:
+                        name_style: Optional[Dict[str, Any]] = None) -> None:
     """Creates a xp result plot out of the given dataframe: regret with respect to budget for
     each optimizer after averaging on all experiments (it is good practice to use a df
     which is filtered out for one set of input parameters)
@@ -300,12 +300,12 @@ class FightPlotter:
         best_names = [(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """Shortcut to the figure savefig method
         """
         self._fig.savefig(*args, **kwargs)
 
-    def __del__(self):
+    def __del__(self) -> None:
         plt.close(self._fig)
 
 

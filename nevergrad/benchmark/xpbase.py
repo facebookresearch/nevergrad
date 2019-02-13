@@ -30,7 +30,7 @@ class CallCounter(execution.PostponedObject):
         the callable to wrap
     """
 
-    def __init__(self, func: Callable) -> None:
+    def __init__(self, func: Callable[..., Any]) -> None:
         self.func = func
         self.num_calls = 0
 

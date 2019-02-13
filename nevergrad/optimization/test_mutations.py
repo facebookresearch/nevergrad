@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from unittest import TestCase
-from typing import Callable
+from typing import Callable, Any
 import numpy as np
 import genty
 from .utils import Value
@@ -34,7 +34,7 @@ class MutationTests(TestCase):
         doubledoerr=(mutations.doubledoerr_discrete_mutation,),
         doerr=(mutations.doerr_discrete_mutation,),
     )
-    def test_run_with_array(self, func: Callable) -> None:
+    def test_run_with_array(self, func: Callable[..., Any]) -> None:
         data = [0.1, -.1, 1, -.2] * 3
         np.random.seed(12)
         output1 = func(data)

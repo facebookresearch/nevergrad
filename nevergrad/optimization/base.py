@@ -72,7 +72,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # instance state
         self._num_suggestions = 0
         self._num_evaluations = 0
-        self._callbacks: Dict[str, List[Callable]] = {}
+        self._callbacks: Dict[str, List[Any]] = {}
 
     @property
     def num_suggestions(self) -> int:

@@ -138,7 +138,7 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
     def duplicate(self) -> "ArtificialFunction":
         """Create an equivalent instance, initialized with the same settings
         """
-        return self.__class__(**self._parameters)  # type: ignore
+        return self.__class__(**self._parameters)
 
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)

@@ -22,11 +22,11 @@ class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         assert self.method is not None, "A method must be specified"
 
-    def get_optimization_function(self) -> Callable:
+    def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
-        return subinstance._optimization_function  # type: ignore
+        return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
         # pylint:disable=unused-argument
@@ -35,7 +35,7 @@ class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         best_x = np.zeros(self.dimension)
         remaining = budget - self._num_suggestions
         while remaining > 0:  # try to restart if budget is not elapsed
-            options: dict = {} if self.budget is None else {"maxiter": remaining}
+            options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(objective_function, best_x, method=self.method, options=options, tol=0)
             if res.fun < best_res:
                 best_res = res.fun
@@ -76,11 +76,11 @@ class BO(recaster.SequentialRecastOptimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.qr = "none"
 
-    def get_optimization_function(self) -> Callable:
+    def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
-        return subinstance._optimization_function  # type: ignore
+        return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
 

@@ -88,7 +88,7 @@ def test_name_style() -> None:
     np.testing.assert_equal(nstyle["blublu"], "-ob")
 
 
-def test_split_long_title():
+def test_split_long_title() -> None:
     title = "abcd,efgh"
     np.testing.assert_equal(plotting.split_long_title(title), title)
     title = ",".join(["a" * 25, "b" * 25, "c" * 25, "d" * 15])

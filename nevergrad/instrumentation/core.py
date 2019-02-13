@@ -35,7 +35,7 @@ class Instrumentation:
         self._name = name
         return self
 
-    def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict) -> None:
+    def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
         self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.instruments))
@@ -58,7 +58,7 @@ class Instrumentation:
         return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
 
     @staticmethod
-    def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
+    def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
         """Converts *args and **kwargs to a tuple of names (with None for positional),
         and the corresponding tuple of values.
 
@@ -66,7 +66,7 @@ class Instrumentation:
         _make_argument_names_and_list(3, z="blublu", machin="truc")
         >>> (None, "machin", "z"), (3, "truc", "blublu")
         """
-        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))
+        names: Tuple[Optional[str], ...] = tuple([None] * len(args) + sorted(kwargs))  # type: ignore
         arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
         return names, arguments
 
@@ -94,7 +94,7 @@ class Instrumentation:
         data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
         return np.array(data)
 
-    def instrument(self, function: Callable) -> "InstrumentedFunction":
+    def instrument(self, function: Callable[..., Any]) -> "InstrumentedFunction":
         return InstrumentedFunction(function, *self.args, **self.kwargs)
 
     def __format__(self, format_spec: str) -> str:
@@ -146,7 +146,7 @@ class InstrumentedFunction(base.BaseFunction):
 
     """
 
-    def __init__(self, function: Callable, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         assert callable(function)
         self.instrumentation = Instrumentation(*args, **kwargs)
         super().__init__(dimension=self.instrumentation.dimension)
