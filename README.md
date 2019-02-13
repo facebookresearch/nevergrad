@@ -42,7 +42,7 @@ The structure of the package follows its goal, you will therefore find subpackag
 
 The following README is very general, here are links to find more details on:
 - [how to perform optimization](docs/optimization.md) using `nevergrad`, including using parallelization and a few recommendation on which algorithm should be used depending on the settings
-- [how to instrument](docs/instrumentation.md) to convert a function with any kind of parameters into a function with defined on a continuous vectorial space where optimization can be performed. It also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
+- [how to instrument](docs/instrumentation.md) functions with any kind of parameters in order to convert them into a function defined on a continuous vectorial space where optimization can be performed. It also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
 - [how to benchmark](docs/benchmarking.md) all optimizers on various test functions.
 - [benchmark results](docs/benchmarks.md) of some standard optimizers an simple test cases.
 - examples of [optimization for machine learning](docs/machinelearning.md).
