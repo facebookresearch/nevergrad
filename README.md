@@ -44,7 +44,7 @@ The following README is very general, here are links to find more details on:
 - [how to perform optimization](docs/optimization.md) using `nevergrad`, including using parallelization and a few recommendation on which algorithm should be used depending on the settings
 - [how to instrument](docs/instrumentation.md) to convert a function with any kind of parameters into a function with defined on a continuous vectorial space where optimization can be performed. It also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
 - [how to benchmark](docs/benchmarking.md) all optimizers on various test functions.
-- [benchmark examples](docs/benchmarks.md).
+- [benchmark results](docs/benchmarks.md) of some standard optimizers an simple test cases.
 - examples of [optimization for machine learning](docs/machinelearning.md).
 - how to [contribute](.github/CONTRIBUTING.md) through issues and pull requests and how to setup your dev environment.
 - guidelines of how to contribute by [adding a new algorithm](docs/adding_an_algorithm.md).
@@ -63,9 +63,9 @@ from nevergrad.optimization import optimizerlib
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100, num_workers=5)
+optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
-recommendation = optimizer.optimize(square, executor=None, batch_mode=True)
+recommendation = optimizer.optimize(square)
 ```
 
 You can print the full list of optimizers with:
@@ -73,6 +73,8 @@ You can print the full list of optimizers with:
 from nevergrad.optimization import registry
 print(sorted(registry.keys()))
 ```
+
+The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
 
 ## Citing
 
@@ -86,7 +88,6 @@ print(sorted(registry.keys()))
     howpublished = {\url{https://GitHub.com/FacebookResearch/Nevergrad}},
 }
 ```
-
 
 ## License
 

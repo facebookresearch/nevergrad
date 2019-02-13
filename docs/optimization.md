@@ -1,6 +1,8 @@
-## Optimization
+# Optimization
 
 **All optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.**
+
+## Basic example
 
 Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can be easily run with:
 
@@ -10,21 +12,23 @@ from nevergrad.optimization import optimizerlib
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100, num_workers=5)
+optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
-recommendation = optimizer.optimize(square, executor=None, batch_mode=True)
+recommendation = optimizer.optimize(square)
 ```
 
-`num_workers=5` with `batch_mode=True` will ask the optimizer for 5 points to evaluate, run the evaluations, then update the optimizer with the 5 function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. `num_workers > 1` with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism).
 
-Providing an executor is easy:
+## Using several workers
+
+Running the funciton evaluation in parallel with several workers is as easy as provided an executor:
 ```python
 from concurrent import futures
-with futures.ThreadPoolExecutor(max_workers=optimizer.num_workers) as executor:
-    recommendation = optimizer.optimize(square, executor=executor, batch_mode=True)
+with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
+    recommendation = optimizer.optimize(square, executor=executor, batch_mode=False, num_workers=5)
 ```
+`num_workers=5` with `batch_mode=True` will ask the optimizer for 5 points to evaluate, run the evaluations, then update the optimizer with the 5 function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. `num_workers > 1` with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism). `batch_mode=False` (steady state mode) will ask for a new evaluation whenever a worker is ready.
 
-`batch_mode=False` (steady state mode) will ask for a new evaluation whenever a worker is ready. The current implementation is efficient in this sense; but keep in mind that this steady state mode has drawbacks in terms of reproducibility: the order in which evaluations are launched is not controlled.
+## Ask and tell interface
 
 An *ask and tell* interface is also available. The 3 key methods for this interface are respectively:
 - `ask`: suggest a point on which to evaluate the function to optimize.
@@ -43,7 +47,7 @@ recommendation = optimizer.provide_recommendation()
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)
 
-### Choosing an optimizer
+## Choosing an optimizer
 
 **You can print the full list of optimizers** with:
 ```
@@ -61,7 +65,7 @@ All algorithms have strenghts and weaknesses. Questionable rules of thumb could 
 - `ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. `num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
 - `RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
 
-### Optimizing machine learning hyperparameters
+## Optimizing machine learning hyperparameters
 
 When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see [instrumentation](instrumentation.md)) to use:
 - use `SoftmaxCategorical` for discrete variables
