@@ -1,19 +1,21 @@
 # Nevergrad for machine learning: which optimizer should I use ?
 
-Let us assume that you have defined an objective function as in 
+Let us assume that you have defined an objective function as in
 ```python
-train_and_return_test_error_mixed = instru.InstrumentedFunction(myfunction, arg1, arg2, "blublu", value=value)
+train_and_return_test_error_mixed = instru.InstrumentedFunction(myfunction, arg1, arg2,
+                                                                "blublu", value=value)
 ```
 (as in an example below)
 
 If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete` for all discrete variables (yes, even if they are not ordered), `Gaussian` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne`. Just take care that the default value (your initial guess) is at the middle in the list of possible values. You can check that things are correct by checking that for zero you get the default:
 ```python
-args, kwarg = train_and_return_test_error_mixed.convert_to_arguments([0] * train_and_return_test_error_mixed.dimension)
+dim = train_and_return_test_error_mixed.dimension
+args, kwarg = train_and_return_test_error_mixed.convert_to_arguments([0] * dim)
 print(args)
 print(kwarg)
 ```
 
-The fact that you use ordered discrete variables is not a big deal because by nature `PortfolioDiscreteOnePlusOne` will ignore the order. This algorithm is quite stable. 
+The fact that you use ordered discrete variables is not a big deal because by nature `PortfolioDiscreteOnePlusOne` will ignore the order. This algorithm is quite stable.
 
 If you have more budget, a cool possibility is to use `CategoricalSoftmax` for all discrete variables and then apply `TwoPointsDE`. You might also compare this to DE (classical differential evolution). This might need a budget in the hundreds.
 
@@ -63,7 +65,7 @@ budget = 1200  # How many trainings we will do before concluding.
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]:
 
     optim = optimization.registry[tool](dimension=300, budget=budget)
-    
+
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
         # Just be careful that you "tell" something that was asked.
@@ -80,7 +82,7 @@ for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
         optim.tell(x1, y1)
         optim.tell(x2, y2)
         optim.tell(x3, y3)
-    
+
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error(recommendation))
@@ -114,7 +116,7 @@ budget = 1200  # How many trainings we will do before concluding.
 for tool in ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]:
 
     optim = optimization.registry[tool](dimension=300, budget=budget)
-    
+
     with futures.ThreadPoolExecutor(max_workers=optim.num_workers) as executor:
         recommendation = optim.optimize(train_and_return_test_error, executor=executor)
     print("* ", tool, " provides a vector of parameters with test error ",
@@ -151,10 +153,11 @@ train_and_return_test_error_mixed = instru.InstrumentedFunction(myfunction, arg1
 print(train_and_return_test_error_mixed.dimension)  # 5 dimensional space
 
 # The dimension is 5 because:
-# - the 1st discrete variable has 1 possible values, represented by a hard thresholding in a 1-dimensional space, i.e. we add 1 coordinate to the continuous problem
-# - the 2nd discrete variable has 3 possible values, represented by softmax, i.e. we add 3 coordinates to the continuous problem
-# - the 3rd variable has no uncertainty, so it does not introduce any coordinate in the continuous problem
-# - the 4th variable is a real number, represented by single coordinate.
+# - the 1st discrete var. has 1 possible values, represented by a hard thresholding in a 1-dimensional space, i.e. we add 1 coordinate to the continuous problem
+# - the 2nd discrete var. has 3 possible values, represented by softmax,
+#   i.e. we add 3 coordinates to the continuous problem
+# - the 3rd var. has no uncertainty, so it does not introduce any coordinate in the continuous problem
+# - the 4th var. is a real number, represented by single coordinate.
 
 train_and_return_test_error_mixed([1, -80, -80, 80, 3])  # will print "b e blublu" and return 49 = (mean + std * arg)**2 = (1 + 2 * 3)**2
 # b is selected because 1 > 0 (the threshold is 0 here since there are 2 values.
@@ -199,7 +202,7 @@ budget = 1200  # How many episode we will do before concluding.
 for tool in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDiscreteOnePlusOne", "CMA", "PSO"]:
 
     optim = optimization.registry[tool](dimension=dimension, budget=budget)
-    
+
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
         # Just be careful that you "tell" something that was asked.
@@ -216,7 +219,7 @@ for tool in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDis
         optim.tell(x1, y1)
         optim.tell(x2, y2)
         optim.tell(x3, y3)
-    
+
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           train_and_return_test_error_mixed(recommendation))
@@ -238,8 +241,8 @@ import numpy as np
 
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
 # This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.
-# We do *not* manually average over multiple evaluations; the algorithm will take care of averaging or reevaluate
-# whatever it wants to reevaluate.
+# We do *not* manually average over multiple evaluations; the algorithm will take care
+# of averaging or reevaluate whatever it wants to reevaluate.
 
 
 print("Optimization of parameters in reinforcement learning ===============")
@@ -256,7 +259,7 @@ for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
         "PortfolioNoisyDiscreteOnePlusOne"]:
 
     optim = optimization.registry[tool](dimension=300, budget=budget)
-    
+
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
         # Just be careful that you "tell" something that was asked.
@@ -273,11 +276,8 @@ for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
         optim.tell(x1, y1)
         optim.tell(x2, y2)
         optim.tell(x3, y3)
-    
+
     recommendation = optim.provide_recommendation()
     print("* ", tool, " provides a vector of parameters with test error ",
           simulate_and_return_test_error_with_rl(recommendation, noisy=False))
 ```
-
-
-
