@@ -21,7 +21,7 @@ Finally, we use pre-commit hooks to make sure the code follows the same coding s
 
 ## Guidelines
 
-We have added some specific guidelines on how to [add a new algorithm](docs/adding_an_algorithm.md) which can help you find your way in the structure of the optimization subpackage.
+We have added some specific guidelines on how to [add a new algorithm](../docs/adding_an_algorithm.md) which can help you find your way in the structure of the optimization subpackage.
 
 ## Pull Requests
 We actively welcome your pull requests.
