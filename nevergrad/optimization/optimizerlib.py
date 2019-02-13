@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque
+from typing import Optional, List, Dict, Tuple, Deque, Any
 from collections import defaultdict, deque
 import numpy as np
 from scipy import stats
@@ -113,7 +113,7 @@ class CMA(base.Optimizer):
         self.es: Optional[cma.CMAEvolutionStrategy] = None
         popsize = max(num_workers, 4 + int(3 * np.log(dimension)))
         # delay initialization to ease implementation of variants
-        self._cma_init = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize}}
+        self._cma_init: Dict[str, Any] = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize}}
         self.listx: List[base.ArrayLike] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
