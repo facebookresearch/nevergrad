@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -65,7 +65,7 @@ def crossover(parent: ArrayLike, donor: ArrayLike) -> ArrayLike:
     return discrete_mutation(mix)
 
 
-def get_roulette(archive: dict, num: Optional[int] = None) -> Any:
+def get_roulette(archive: Dict[Any, Any], num: Optional[int] = None) -> Any:
     """Apply a roulette tournament selection.
     """
     if num is None:

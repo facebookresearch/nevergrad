@@ -57,7 +57,7 @@ class MockedSteadyExecutor:
         self._order = 0
         self._time = 0.
 
-    def submit(self, function: Callable, *args: Any, **kwargs: Any) -> MockedSteadyJob:
+    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> MockedSteadyJob:
         if self.priority_queue:  # new job may come before the current "next" job
             self.priority_queue[0].job._done = False
         value = function(*args, **kwargs)

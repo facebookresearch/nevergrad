@@ -22,7 +22,7 @@ class UtilsTests(TestCase):
     @genty.genty_dataset(  # type: ignore
         empty=([], [], [])
     )
-    def test_split_data(self, tokens: List, data: List, expected: List) -> None:
+    def test_split_data(self, tokens: List[utils.Variable], data: List[float], expected: List[List[float]]) -> None:
         output = utils.split_data(data, tokens)
         testing.printed_assert_equal(output, expected)
 

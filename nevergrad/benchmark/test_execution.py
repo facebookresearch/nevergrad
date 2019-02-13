@@ -28,7 +28,7 @@ class ExecutorTest(TestCase):
         simple=(add, list(range(10))),
         delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
     )
-    def test_mocked_steady_executor(self, func: Callable, expected: List[int]) -> None:
+    def test_mocked_steady_executor(self, func: Callable[..., Any], expected: List[int]) -> None:
         executor = execution.MockedSteadyExecutor()
         jobs: List[execution.MockedSteadyJob] = []
         for k in range(10):

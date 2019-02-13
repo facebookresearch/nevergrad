@@ -56,11 +56,11 @@ class Placeholder:
         return False
 
     @classmethod
-    def sub(cls, text: str, extension: str, replacers: Dict) ->str:
+    def sub(cls, text: str, extension: str, replacers: Dict[str, Any]) -> str:
         found: Set[str] = set()
         kwargs = {x: _convert_to_string(y, extension) for x, y in replacers.items()}
 
-        def _replacer(regex: Match) -> str:
+        def _replacer(regex: Match[str]) -> str:
             name = regex.group("name")
             if name in found:
                 raise RuntimeError(f'Trying to remplace a second time placeholder "{name}"')

@@ -142,5 +142,5 @@ class SequentialExecutor:
     (just calls the function and returns a FinishedJob)
     """
 
-    def submit(self, function: Callable, *args: Any, **kwargs: Any) -> FinishedJob:
+    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> FinishedJob:
         return FinishedJob(function(*args, **kwargs))

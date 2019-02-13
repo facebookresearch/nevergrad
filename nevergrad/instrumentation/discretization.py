@@ -68,7 +68,7 @@ def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = F
         warnings.warn("Encountered NaN values for discretization")
         data[np.isnan(data)] = -np.inf
     if deterministic:
-        output: list = np.argmax(data, axis=1).tolist()
+        output: List[float] = np.argmax(data, axis=1).tolist()
         return output
     return [np.random.choice(arity, p=softmax_probas(d)) for d in data]
 

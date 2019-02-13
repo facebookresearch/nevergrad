@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import itertools
-from typing import Iterable, List, Any
+from typing import Iterable, List, Any, Tuple
 from unittest import TestCase
 import genty
 import numpy as np
@@ -21,7 +21,7 @@ class ToolsTests(TestCase):
         two=([1, 2], [(1, 2)]),
         three=([1, 2, 3], [(1, 2), (2, 3)]),
     )
-    def test_pairwise(self, iterator: Iterable, expected: List) -> None:
+    def test_pairwise(self, iterator: Iterable[Any], expected: List[Tuple[Any, ...]]) -> None:
         output = list(tools.pairwise(iterator))
         testing.printed_assert_equal(output, expected)
 
@@ -32,7 +32,7 @@ class ToolsTests(TestCase):
         values=({"c1": ["i3-c1", "i2-c1"]}, ["i2", "i3"]),
         conditions=({"c1": ["i3-c1", "i2-c1"], "c2": "i3-c2"}, ["i3"]),
     )
-    def test_selector(self, criteria: Any, expected: List) -> None:
+    def test_selector(self, criteria: Any, expected: List[str]) -> None:
         df = tools.Selector(index=["i1", "i2", "i3"], columns=["c1", "c2"])
         for i, c in itertools.product(df.index, df.columns):
             df.loc[i, c] = f"{i}-{c}"

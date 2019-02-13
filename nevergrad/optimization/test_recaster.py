@@ -5,7 +5,7 @@
 
 import time
 from unittest import TestCase
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 import genty
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -59,7 +59,7 @@ def fake_cost_function(x: ArrayLike) -> float:
 
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
 
-    def get_optimization_function(self) -> Callable[[Callable], ArrayLike]:
+    def get_optimization_function(self) -> Callable[[Callable[..., Any]], ArrayLike]:
         suboptim = optimizerlib.OnePlusOne(dimension=2, budget=self.budget)
         return suboptim.optimize
 

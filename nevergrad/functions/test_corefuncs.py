@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from unittest import TestCase
-from typing import Callable
+from typing import Callable, Any
 import numpy as np
 import genty
 from . import corefuncs
@@ -14,7 +14,7 @@ from . import corefuncs
 class CoreFuncsTests(TestCase):
 
     @genty.genty_dataset(**{name: (name, func) for name, func in corefuncs.registry.items()})  # type: ignore
-    def test_core_function(self, name: str, func: Callable) -> None:
+    def test_core_function(self, name: str, func: Callable[..., Any]) -> None:
         x = np.random.normal(0, 1, 100)
         outputs = []
         for _ in range(2):
