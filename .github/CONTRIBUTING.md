@@ -3,7 +3,7 @@ We want to make contributing to this project as easy and transparent as possible
 
 ## Our Development Process
 
-To install `nevergrad` in development mode (if you wish to contribute to it), clone the repository and run `pip install -e .` from inside the repository folder.
+To install `nevergrad` in development mode (if you wish to contribute to it), clone the repository and run `pip install -e '.[all]'` from inside the repository folder.
 
 Most of the code is covered by unit tests. You can run them with:
 ```
