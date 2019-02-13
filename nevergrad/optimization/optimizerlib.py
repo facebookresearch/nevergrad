@@ -107,71 +107,22 @@ class CauchyOnePlusOne(OnePlusOne):
 
 
 @registry.register
-class MicroCMA(base.Optimizer):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1e-6)
-        self.listx: List[base.ArrayLike] = []
-        self.listy: List[float] = []
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return self.es.ask(1)[0]
-
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.listx += [x]
-        self.listy += [value]
-        if len(self.listx) >= self.es.popsize:
-            try:
-                self.es.tell(self.listx, self.listy)
-            except RuntimeError:
-                pass
-            else:
-                self.listx = []
-                self.listy = []
-
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return self.es.result.xbest
-
-
-@registry.register
-class MilliCMA(base.Optimizer):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1e-3)
-        self.listx: List[base.ArrayLike] = []
-        self.listy: List[float] = []
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return self.es.ask(1)[0]
-
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.listx += [x]
-        self.listy += [value]
-        if len(self.listx) >= self.es.popsize:
-            try:
-                self.es.tell(self.listx, self.listy)
-            except RuntimeError:
-                pass
-            else:
-                self.listx = []
-                self.listy = []
-
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return self.es.result.xbest
-
-
-@registry.register
 class CMA(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1.0)
+        self.es: Optional[cma.CMAEvolutionStrategy] = None
+        self._cma_init = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {}}  # delay initialization to ease implementation of variants
         self.listx: List[base.ArrayLike] = []
         self.listy: List[float] = []
 
     def _internal_ask(self) -> base.ArrayLike:
+        if self.es is None:
+            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         return self.es.ask(1)[0]
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        if self.es is None:
+            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         self.listx += [x]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
@@ -184,7 +135,33 @@ class CMA(base.Optimizer):
                 self.listy = []
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
+        if self.es is None:
+            return RuntimeError("Either ask or tell method should have been called before")
         return self.es.result.xbest
+
+
+@registry.register
+class MicroCMA(CMA):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._cma_init["sigma0"] = 1e-6
+
+
+@registry.register
+class MilliCMA(CMA):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._cma_init["sigma0"] = 1e-3
+
+
+@registry.register
+class DiagonalCMA(CMA):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._cma_init["inopts"] = {'CMA_diagonal': True}
 
 
 @registry.register
@@ -643,6 +620,7 @@ class SPSA(base.Optimizer):
 @registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -672,6 +650,7 @@ class Portfolio(base.Optimizer):
 @registry.register
 class ASCMADEthird(Portfolio):
     """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -704,6 +683,7 @@ class ASCMADEthird(Portfolio):
 @registry.register
 class ASCMADEQRthird(ASCMADEthird):
     """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -714,6 +694,7 @@ class ASCMADEQRthird(ASCMADEthird):
 @registry.register
 class ASCMA2PDEthird(ASCMADEQRthird):
     """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
@@ -723,6 +704,7 @@ class ASCMA2PDEthird(ASCMADEQRthird):
 @registry.register
 class CMandAS2(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -732,14 +714,15 @@ class CMandAS2(ASCMADEthird):
             self.optims = [OnePlusOne(dimension, budget=None, num_workers=num_workers)]
         if budget > 50 * dimension or num_workers < 30:
             self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
-                CMA(dimension, budget=None, num_workers=num_workers),
-                CMA(dimension, budget=None, num_workers=num_workers)]
+                           CMA(dimension, budget=None, num_workers=num_workers),
+                           CMA(dimension, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
 
 
 @registry.register
 class CMandAS(CMandAS2):
     """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(dimension, budget=None, num_workers=num_workers)]
@@ -757,6 +740,7 @@ class CMandAS(CMandAS2):
 @registry.register
 class CM(CMandAS2):
     """Competence map, simplest."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -771,6 +755,7 @@ class CM(CMandAS2):
 @registry.register
 class MultiCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/10 of the budget."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -783,6 +768,7 @@ class MultiCMA(CM):
 @registry.register
 class TripleCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -795,6 +781,7 @@ class TripleCMA(CM):
 @registry.register
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
+
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.optims = [CMA(dimension, budget=None, num_workers=num_workers),
