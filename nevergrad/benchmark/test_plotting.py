@@ -86,3 +86,12 @@ def test_name_style() -> None:
     np.testing.assert_equal(nstyle["blublu"], "-ob")
     np.testing.assert_equal(nstyle["plop"], "--vg")
     np.testing.assert_equal(nstyle["blublu"], "-ob")
+
+
+def test_split_long_title():
+    title = "abcd,efgh"
+    np.testing.assert_equal(plotting.split_long_title(title), title)
+    title = ",".join(["a" * 25, "b" * 25, "c" * 25, "d" * 15])
+    np.testing.assert_equal(plotting.split_long_title(title), title[:52] + "\n" + title[52:])
+    title = "a" * 70
+    np.testing.assert_equal(plotting.split_long_title(title), title)

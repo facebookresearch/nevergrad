@@ -28,7 +28,7 @@ def import_additional_module(filepath: PathLike) -> None:
     spec = importlib.util.spec_from_file_location("nevergrad.additionalimport." + filepath.with_suffix("").name, str(filepath))
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    spec.loader.exec_module(module)
+    spec.loader.exec_module(module)  # type: ignore
 
 
 def save_or_append_to_csv(df: pd.DataFrame, path: Path) -> None:
