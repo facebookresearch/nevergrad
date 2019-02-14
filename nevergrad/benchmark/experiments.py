@@ -119,6 +119,27 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP",
+              "Cobyla", "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE",
+              "RotationInvariantDE"]
+    optims += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
+               "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell"]
+    optims += ["ParaSQPCMA"]
+    functions = [ArtificialFunction(name, block_dimension=50,
+                                    rotation=rotation) for name in ["cigar", "ellipsoid"]
+                 for rotation in [True, False]]
+    for optim in optims:
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim,
+                                 budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS performs best, followed by QR and random
     # nearly equally (Hammersley better than random, Halton not clearly; scrambling improves results).
     # prepare list of parameters to sweep for independent variables
@@ -145,11 +166,27 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
     for budget in [50000]:
         for optim in optims:
             for d in [2, 20, 200]:
-                for rotation in [True]:
-                    for name in ["sphere", "rosenbrock"]:
-                        for noise_dissymmetry in [False, True]:
+                for name in ["sphere", "rosenbrock"]:
+                    for noise_dissymmetry in [False, True]:
+                        function = ArtificialFunction(name=name, rotation=True, block_dimension=d,
+                                                      noise_level=10, noise_dissymmetry=noise_dissymmetry,
+                                                      translation_factor=1.)
+                        yield Experiment(function, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
+        for optim in sorted(x for x, y in optimization.registry.items() if "BO" in x):
+            for rotation in [False]:
+                for d in [20]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
+                        for u in [0]:
                             function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
-                                                          noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=1.)
+                                                          useless_variables=d*u, translation_factor=1.)
                             yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
@@ -178,9 +215,11 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch"]
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
+             "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",
+             "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
+        for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:
                     for func in funcs:
