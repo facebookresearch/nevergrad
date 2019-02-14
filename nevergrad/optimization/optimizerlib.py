@@ -840,9 +840,6 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
-#from .algorithmselection import *
-
-
 @registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
@@ -881,7 +878,7 @@ class ParaPortfolio(Portfolio):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert budget is not None
 
-        def intshare(n, m):
+        def intshare(n: int, m: int) -> Tuple[int, ...]:
             x = [n // m] * m
             i = 0
             while sum(x) < n:
@@ -924,7 +921,7 @@ class ParaSQPCMA(ParaPortfolio):
         for i in range(num_workers - nw):
             self.optims += [SQP(dimension, 1)]
             if i > 0:
-                self.optims[-1].set_initial_guess(np.random.normal(0, 1, self.dimension))
+                self.optims[-1].initial_guess = np.random.normal(0, 1, self.dimension)  # type: ignore
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
 
