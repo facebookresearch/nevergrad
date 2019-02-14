@@ -69,6 +69,7 @@ def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
     """
     assert all(x == y for x, y in zip(victories.index, victories.columns))
     winrates = victories / (victories + victories.T)
+    #mean_win = winrates.quantile(.05, axis=1).sort_values(ascending=False)
     mean_win = winrates.mean(axis=1).sort_values(ascending=False)
     return winrates.loc[mean_win.index, mean_win.index]
 
@@ -254,6 +255,7 @@ def make_fight_plot(df: tools.Selector, categories: List[str], num_rows: int, ou
         subdf = df.select(**dict(zip(categories, subcase)))
         victories += _make_winners_df(subdf, all_optimizers)
     winrates = _make_sorted_winrates_df(victories)
+    #mean_win = winrates.quantile(0.05, axis=1)
     mean_win = winrates.mean(axis=1)
     winrates.fillna(.5)  # unplayed
     sorted_names = winrates.index

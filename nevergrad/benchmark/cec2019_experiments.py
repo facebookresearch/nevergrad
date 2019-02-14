@@ -20,6 +20,8 @@ def deceptivecec(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
     optims = ["PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
+    optims += ["CMandAS2", "CMandAS",
+        "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
     optims.append("CustomOptimizer")
     functions = [ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation,
                                     aggregator=aggregator)
@@ -35,13 +37,15 @@ def deceptivecec(seed: Optional[int] = None) -> Iterator[Experiment]:
 def parallelcec(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
+    names = ["sphere", "rastrigin", "cigar", "hm", "ellipsoid", "griewank"]
     optims = ["ScrHammersleySearch", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE"]
+    optims += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
+        "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "ParaPortfolio", "ParaSQPCMA", "PCEDA", "MPCEDA", "MEDA", "EDA"]
     optims.append("CustomOptimizer")
     functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor) for name in names for bd in [25] for uv_factor in [0, 5]]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
+            for budget in [300, 1000, 3000]:
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=int(budget/5), seed=next(seedg))
 
 
@@ -49,12 +53,12 @@ def parallelcec(seed: Optional[int] = None) -> Iterator[Experiment]:
 def oneshotcec(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot)
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and not any(z in x for x in ["Large", "Small", "Stupid", "Zero"]))
     optims.append("CustomOptimizer")
     functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor) for name in names for bd in [3, 25] for uv_factor in [0, 5]]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
+            for budget in [30, 100, 300, 1000, 3000]:
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
@@ -63,7 +67,11 @@ def illcondicec(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP",
+              "Cobyla", "Powell", "RPowell", "RCobyla", "RSQP"]
+    #optims += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
+    #    "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP"]
+    optims += ["ParaSQPCMA"]
     optims.append("CustomOptimizer")
     functions = [ArtificialFunction(name, block_dimension=50,
                  rotation=rotation) for name in ["cigar", "ellipsoid"]
@@ -81,13 +89,13 @@ def noisycec(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = ["FastGAOptimisticNoisyDiscreteOnePlusOne", "TBPSA", "NoisyBandit",
-              "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", "SPSA", "NoisyOnePlusOne",
+              "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", "SPSA",
               "RandomSearch", "PortfolioOptimisticNoisyDiscreteOnePlusOne",
               "NoisyDiscreteOnePlusOne", "RandomScaleRandomSearch", "PortfolioNoisyDiscreteOnePlusOne"]
     optims.append("CustomOptimizer")
-    for budget in [50000]:
+    for budget in [25000, 50000]:
         for optim in optims:
-          for d in [2, 20, 200]:
+          for d in [2, 20, 50]:
             for rotation in [True]:
                 for name in ["sphere", "rosenbrock"]:
                     for noise_dissymmetry in [False, True]:

@@ -120,6 +120,28 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP",
+              "Cobyla", "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE",
+              "RotationInvariantDE"]
+    optims += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
+        "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell"]
+    optims += ["ParaSQPCMA"]
+    optims.append("CustomOptimizer")
+    functions = [ArtificialFunction(name, block_dimension=50,
+                 rotation=rotation) for name in ["cigar", "ellipsoid"]
+                 for rotation in [True, False]]
+    for optim in optims:
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim,
+                    budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS performs best, followed by QR and random
     # nearly equally (Hammersley better than random, Halton not clearly; scrambling improves results).
     # prepare list of parameters to sweep for independent variables
@@ -134,25 +156,6 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
             for budget in [30, 100, 3000, 10000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
-def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
-    """
-    seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items()
-                    if ("TBPSA" in x or "ois" in x or "epea" in x) and "iscr" not in x)
-    # , 16000, 32000, 64000, 128000, 512000]:#, 1024000, 2048000, 4096000]:
-    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:
-        for optim in optims:
-            for d in [1, 2, 3]:
-                for rotation in [True]:
-                    for name in ["sphere"]:
-                        for noise_dissymmetry in [False, True]:
-                            function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
-                                                          noise_level=10, noise_dissymmetry=noise_dissymmetry, translation_factor=10.)
-                            yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
 @registry.register
