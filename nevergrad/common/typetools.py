@@ -31,5 +31,5 @@ class JobLike(Protocol):
 class ExecutorLike(Protocol):
     # pylint: disable=pointless-statement, unused-argument
 
-    def submit(self, function: Callable, *args: Any, **kwargs: Any) -> JobLike:
+    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> JobLike:
         ...

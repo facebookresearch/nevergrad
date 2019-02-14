@@ -103,7 +103,7 @@ class Gaussian(utils.Variable):
         self.shape = shape
 
     @classmethod
-    def from_regex(cls, regex: Match) -> utils.Variable:
+    def from_regex(cls, regex: Match[str]) -> utils.Variable:
         return cls(float(regex.group("mean")), float(regex.group("std")))
 
     @property

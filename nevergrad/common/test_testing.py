@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
+from typing import Iterable
 from unittest import TestCase
 import genty
 import numpy as np
@@ -19,7 +20,7 @@ class UtilsTests(TestCase):
         additional=((1, 4, 3, 2), ["  - additional element(s): {4}."]),
         both=((1, 2, 4), ["  - additional element(s): {4}.", "  - missing element(s): {3}."]),
     )
-    def test_assert_set_equal(self, estimate: testing.Iterable, message: str) -> None:
+    def test_assert_set_equal(self, estimate: Iterable[int], message: str) -> None:
         reference = {1, 2, 3}
         try:
             testing.assert_set_equal(estimate, reference)

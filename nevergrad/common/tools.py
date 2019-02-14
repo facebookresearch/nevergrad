@@ -15,7 +15,7 @@ from .typetools import PathLike
 from . import testing
 
 
-def pairwise(iterable: Iterable) -> Iterator[Tuple[Any, Any]]:
+def pairwise(iterable: Iterable[Any]) -> Iterator[Tuple[Any, Any]]:
     """Returns an iterator over sliding pairs of the input iterator
     s -> (s0,s1), (s1,s2), (s2, s3), ...
 
@@ -29,7 +29,7 @@ def pairwise(iterable: Iterable) -> Iterator[Tuple[Any, Any]]:
     return zip(a, b)
 
 
-def grouper(iterable: Iterable, n: int, fillvalue: Optional[Any] = None) -> Iterator[List]:
+def grouper(iterable: Iterable[Any], n: int, fillvalue: Optional[Any] = None) -> Iterator[List[Any]]:
     """Collect data into fixed-length chunks or blocks
     Copied from itertools recipe documentation
     Example: grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
@@ -38,7 +38,7 @@ def grouper(iterable: Iterable, n: int, fillvalue: Optional[Any] = None) -> Iter
     return itertools.zip_longest(*args, fillvalue=fillvalue)
 
 
-def roundrobin(*iterables: Iterable) -> Iterator[Any]:
+def roundrobin(*iterables: Iterable[Any]) -> Iterator[Any]:
     """roundrobin('ABC', 'D', 'EF') --> A D E B F C
     """
     # Recipe credited to George Sakkis
@@ -58,7 +58,7 @@ class Selector(pd.DataFrame):  # type: ignore
     """Pandas dataframe class with a simplified selection function
     """
 
-    def select(self, **kwargs: Union[str, Sequence[str], Callable]) -> 'Selector':
+    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
         """Select rows based on a value, a sequence of values or a discriminating function
 
         Parameters
@@ -83,7 +83,7 @@ class Selector(pd.DataFrame):  # type: ignore
             df = df.loc[selected, :]
         return Selector(df)
 
-    def select_and_drop(self, **kwargs: Union[str, Sequence[str], Callable]) -> 'Selector':
+    def select_and_drop(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
         """Same as select, but drops the columns used for selection
         """
         df = self.select(**kwargs)

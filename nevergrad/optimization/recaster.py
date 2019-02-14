@@ -68,7 +68,7 @@ class _MessagingThread(threading.Thread):
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, caller: Callable, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, caller: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         super().__init__()
         self.messages: List[Message] = []
         self.call_count = 0
@@ -120,7 +120,7 @@ class MessagingThread:
     """Encapsulate the inner thread, so that kill order is automatically called at deletion.
     """
 
-    def __init__(self, caller: Callable, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, caller: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         self._thread = _MessagingThread(caller, *args, **kwargs)
         self._thread.start()
 
@@ -170,7 +170,7 @@ class RecastOptimizer(base.Optimizer):
         self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
-    def get_optimization_function(self) -> Callable[[Callable], ArrayLike]:
+    def get_optimization_function(self) -> Callable[[Callable[..., Any]], ArrayLike]:
         """Return an optimization procedure function (taking a function to optimize as input)
 
         Note

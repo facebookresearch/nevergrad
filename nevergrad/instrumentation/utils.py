@@ -75,7 +75,7 @@ def process_instruments(instruments: Iterable[Variable], data: List[float],
     return tuple([instrument.process(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
 
 
-class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):
+class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
     """Creates a full copy of a directory inside a temporary directory
     This class can be used as TemporaryDirectory but:
     - the created copy path is available through the copyname attribute

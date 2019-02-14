@@ -9,7 +9,7 @@ from typing import Iterable, Any, Union, List
 import numpy as np
 
 
-def assert_set_equal(estimate: Iterable, reference: Iterable, err_msg: str = "") -> None:
+def assert_set_equal(estimate: Iterable[Any], reference: Iterable[Any], err_msg: str = "") -> None:
     """Asserts that both sets are equals, with comprehensive error message.
     This function should only be used in tests.
     Parameters

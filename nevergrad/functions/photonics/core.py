@@ -28,7 +28,7 @@ from ...common.typetools import ArrayLike
 from ...instrumentation.utils import CommandFunction
 
 
-def tanh_crop(x, min_val, max_val):
+def tanh_crop(x: ArrayLike, min_val: float, max_val: float) -> np.ndarray:
     return .5 * (max_val + min_val) + .5 * (max_val - min_val) * np.tanh(x)
 
 

@@ -7,13 +7,13 @@ from typing import Any, Callable, Optional, Dict
 import functools
 
 
-class Registry(dict):
+class Registry(dict):  # type: ignore
     """Registers function or classes as a dict.
     """
 
     def __init__(self) -> None:
         super().__init__()
-        self._information: Dict[str, dict] = {}
+        self._information: Dict[str, Dict[Any, Any]] = {}
 
     def register(self, obj: Any, info: Optional[Dict[Any, Any]] = None) -> Any:
         """Decorator method for registering functions/classes
@@ -36,12 +36,12 @@ class Registry(dict):
         if name in self:
             del self[name]
 
-    def register_with_info(self, **info: Any) -> Callable:
+    def register_with_info(self, **info: Any) -> Callable[..., Any]:
         """Decorator for registering a function and information about it
         """
         return functools.partial(self.register, info=info)
 
-    def get_info(self, name: str) -> dict:
+    def get_info(self, name: str) -> Dict[Any, Any]:
         if name not in self:
             raise ValueError(f'"{name}" is not registered.')
         return self._information.setdefault(name, {})
