@@ -88,10 +88,25 @@ def test_save_or_append_to_csv() -> None:
         np.testing.assert_array_equal(np.array(df), [[1, 2, -1], [3, 4, -1], [5, -1, 6]])
 
 
+def test_moduler_split() -> None:
+    total_length = np.random.randint(100, 200)
+    split = np.random.randint(1, 12)
+    modulers = core.Moduler(1, 0, total_length).split(split)
+    data = list(range(total_length))
+    err_msg = f"Moduler failed for total_length={total_length} and split={split}."
+    all_indices = set()
+    for moduler in modulers:
+        indices = {k for k in data if moduler(k)}
+        np.testing.assert_equal(len(indices), len(moduler), err_msg=err_msg)
+        all_indices.update(indices)
+    np.testing.assert_equal(len(all_indices), len(data), err_msg=err_msg)
+
+
 def test_experiment_chunk_split() -> None:
     chunk = core.BenchmarkChunk(name="repeated_basic", seed=12, repetitions=2)
     chunks = chunk.split(2)
     chunks = [chunks[0]] + chunks[1].split(3)
+    np.testing.assert_array_equal([len(c) for c in chunks], [10, 4, 3, 3])
     chained = [x[0] for x in itertools.chain.from_iterable(chunks)]
     # check full order (everythink only once)
     np.testing.assert_array_equal(chained, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18,
