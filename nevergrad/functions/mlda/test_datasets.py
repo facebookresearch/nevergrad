@@ -80,7 +80,7 @@ def test_xls_get_data() -> None:
         # create an example file
         filepath = Path(tmp) / "example.xls"
         df = pd.DataFrame(columns=["a", "b"], data=[[1, 2], [3, 4]])
-        df.to_excel(filepath)
+        df.to_excel(filepath, index=False)
         # get the output
         with patch("nevergrad.functions.mlda.datasets.get_dataset_filepath") as path_getter:
             path_getter.return_value = filepath

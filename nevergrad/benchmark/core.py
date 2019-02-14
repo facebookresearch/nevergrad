@@ -134,7 +134,7 @@ class BenchmarkChunk:
         for local_ind, (index, xp) in enumerate(self):
             if local_ind < len(self.summaries):
                 continue  # already computed
-            print(f"Starting {index}: {xp}/{len([x for x in enumerate(self)])}", flush=True)
+            print(f"Starting {index}: {xp}", flush=True)
             xp.run()
             summary = xp.get_description()
             if process_function is not None:

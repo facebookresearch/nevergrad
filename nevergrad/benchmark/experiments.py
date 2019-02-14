@@ -14,7 +14,6 @@ from .xpbase import create_seed_generator
 from .xpbase import registry
 # register all frozen experiments
 from . import frozenexperiments  # pylint:disable=unused-import
-from . import cec2019_experiments  # pylint:disable=unused-import
 # pylint: disable=stop-iteration-return, too-many-nested-blocks
 
 
@@ -130,7 +129,6 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
                "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell"]
     optims += ["ParaSQPCMA"]
-    optims.append("CustomOptimizer")
     functions = [ArtificialFunction(name, block_dimension=50,
                                     rotation=rotation) for name in ["cigar", "ellipsoid"]
                  for rotation in [True, False]]
