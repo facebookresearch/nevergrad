@@ -178,7 +178,9 @@ class BenchmarkChunk:
                     warnings.warn(f"Could not resume unfinished xp: {self._current_experiment}")
                     self._current_experiment = xp
                 else:
-                    print("Resuming existing experiment.", flush=True)
+                    opt = self._current_experiment._optimizer
+                    if opt is not None:
+                        print(f"Resuming existing experiment from iteration {opt.num_ask}.", flush=True)
             self._current_experiment.run()
             summary = self._current_experiment.get_description()
             if process_function is not None:
