@@ -176,6 +176,7 @@ class BenchmarkChunk:
                     warnings.warn(f"Could not resume unfinished xp: {self._current_experiment}")
                 else:
                     print("Resuming existing experiment.", flush=True)
+                    xp = self._current_experiment  # replace by this one which is already started
             self._current_experiment = xp
             xp.run()
             summary = xp.get_description()
