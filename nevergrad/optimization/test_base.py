@@ -33,8 +33,8 @@ class LoggingOptimizer(base.Optimizer):
         self.logs: List[str] = []
 
     def _internal_ask(self) -> base.ArrayLike:
-        self.logs.append(f"s{self._num_suggestions}")  # s for suggest
-        return np.array((self._num_suggestions,))
+        self.logs.append(f"s{self._num_ask}")  # s for suggest
+        return np.array((self._num_ask,))
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         self.logs.append(f"u{x[0]}")  # u for update
@@ -93,7 +93,7 @@ def test_base_optimizer() -> None:
     zeroptim.tell([0, 0], 10)
     zeroptim.tell([1, 1], 1)
     np.testing.assert_equal(zeroptim.provide_recommendation(), [1, 1])
-    np.testing.assert_equal(zeroptim._num_suggestions, 1)
+    np.testing.assert_equal(zeroptim._num_ask, 1)
 
 
 def test_optimize() -> None:

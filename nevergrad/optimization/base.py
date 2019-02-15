@@ -70,17 +70,27 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # instance state
-        self._num_suggestions = 0
-        self._num_evaluations = 0
+        self._num_ask = 0
+        self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
 
     @property
+    def num_ask(self) -> int:
+        return self._num_ask
+
+    @property
+    def num_tell(self) -> int:
+        return self._num_tell
+
+    @property
     def num_suggestions(self) -> int:
-        return self._num_suggestions
+        warnings.warn("Use num_ask property instead", DeprecationWarning)
+        return self.num_ask
 
     @property
     def num_evaluations(self) -> int:
-        return self._num_evaluations
+        warnings.warn("Use num_tell property instead", DeprecationWarning)
+        return self.num_tell
 
     @property
     def name(self) -> str:
@@ -140,7 +150,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                 if not (np.isnan(value) or value == np.inf):
                     assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
         self._internal_tell(x, value)
-        self._num_evaluations += 1
+        self._num_tell += 1
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, x, value)
@@ -151,13 +161,18 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         suggestion = self._internal_ask()
         assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
-        self._num_suggestions += 1
+        self._num_ask += 1
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
         return suggestion
 
     def provide_recommendation(self) -> Tuple[float, ...]:
+        """Provides the best point to use as a minimum, given the budget that was used
+        """
+        return self.recommend()  # duplicate method
+
+    def recommend(self) -> Tuple[float, ...]:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self._internal_provide_recommendation()
@@ -270,10 +285,10 @@ class OptimizationPrinter:
     def __call__(self, optimizer: Optimizer, *args: Any, **kwargs: Any) -> None:
         if self._last_time is None:
             self._last_time = time.time()
-        if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_evaluations % self._num_eval):
+        if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_tell % self._num_eval):
             x = optimizer.provide_recommendation()
             point = x if x not in optimizer.archive else utils.Point(x, optimizer.archive[x])
-            print(f"After {optimizer.num_evaluations}, recommendation is {point}")
+            print(f"After {optimizer.num_tell}, recommendation is {point}")
 
 
 class ArgPoint(NamedTuple):
