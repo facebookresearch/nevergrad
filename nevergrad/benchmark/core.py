@@ -172,16 +172,17 @@ class BenchmarkChunk:
             indstr = f'{index} ({local_ind + 1}/{len(self)} of worker)'
             print(f"Starting {indstr}: {xp}", flush=True)
             if self._current_experiment is not None:
+                self._current_experiment = xp
+            else:  # computation was started but interrupted (eg: KeyboardInterrupt)
                 if xp != self._current_experiment:
                     warnings.warn(f"Could not resume unfinished xp: {self._current_experiment}")
+                    self._current_experiment = xp
                 else:
                     print("Resuming existing experiment.", flush=True)
-                    xp = self._current_experiment  # replace by this one which is already started
-            self._current_experiment = xp
-            xp.run()
-            summary = xp.get_description()
+            self._current_experiment.run()
+            summary = self._current_experiment.get_description()
             if process_function is not None:
-                process_function(self, xp)
+                process_function(self, self._current_experiment)
             self.summaries.append(summary)
             self._current_experiment = None
             print(f"Finished {indstr}", flush=True)
