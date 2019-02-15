@@ -213,14 +213,12 @@ class Experiment:
             # ("production" steady state is a not strictly steady state + does not handle mocked delays)
             executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
             try:
-                self.recommendation = self._optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode,
-                                                               executor=executor, verbosity=1)
+                self.recommendation = self._optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
                 raise e
         self._log_results(t0, counter.num_calls)
-        self._optimizer = None
 
     def get_description(self) -> Dict[str, Union[str, float, bool]]:
         """Return the description of the experiment, as a dict.
