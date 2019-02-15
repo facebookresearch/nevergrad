@@ -137,6 +137,7 @@ class Experiment:
         self.optimsettings = OptimizerSettings(name=optimizer_name, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.ArrayLike] = None
+        self.final_averaging_repetitions = 100
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
@@ -175,7 +176,7 @@ class Experiment:
     def _log_results(self, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
-        num_eval = 100  # evaluations of the cost function on the recommendation
+        num_eval = self.final_averaging_repetitions  # evaluations of the cost function on the recommendation
         self.result["elapsed_time"] = time.time() - t0
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         t_recommendation = self.function.transform(self.recommendation)
