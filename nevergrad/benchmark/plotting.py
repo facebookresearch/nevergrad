@@ -7,7 +7,7 @@ import os
 import argparse
 import itertools
 from pathlib import Path
-from typing import Iterator, List, Optional, Any
+from typing import Iterator, List, Optional, Any, Dict
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -29,7 +29,7 @@ def _make_style_generator() -> Iterator[str]:
     return (l + m + c for l, m, c in zip(lines, markers, colors))
 
 
-class NameStyle(dict):
+class NameStyle(Dict[str, Any]):
     """Provides a style for each name, and keeps to it
     """
 
@@ -39,7 +39,7 @@ class NameStyle(dict):
 
     def __getitem__(self, name: str) -> Any:
         if name not in self:
-            self[name] = next(self._gen)
+            super().__setitem__(name, next(self._gen))
         return super().__getitem__(name)
 
 
@@ -69,6 +69,7 @@ def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
     """
     assert all(x == y for x, y in zip(victories.index, victories.columns))
     winrates = victories / (victories + victories.T)
+    # mean_win = winrates.quantile(.05, axis=1).sort_values(ascending=False)
     mean_win = winrates.mean(axis=1).sort_values(ascending=False)
     return winrates.loc[mean_win.index, mean_win.index]
 
@@ -154,7 +155,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
 
 
 def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[PathLike] = None,
-                        name_style: Optional[dict] = None) -> None:
+                        name_style: Optional[Dict[str, Any]] = None) -> None:
     """Creates a xp result plot out of the given dataframe: regret with respect to budget for
     each optimizer after averaging on all experiments (it is good practice to use a df
     which is filtered out for one set of input parameters)
@@ -211,27 +212,26 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
     # global info
     legend = plt.legend(fontsize=7, ncol=2, handlelength=3,
                         loc='upper center', bbox_to_anchor=(0.5, -0.15))
-
-    # split long strings at a comma.
-    if len(title) > 60:
-        indices_commas = [i for i in range(len(title)) if title[i] == ","]
-        if len(indices_commas) >= 0:
-            min_distance_to_middle = float("inf")
-            best_index: Optional[int] = None
-            for i in indices_commas:
-                distance_to_middle = abs(i - len(title) / 2.)
-                if distance_to_middle < min_distance_to_middle:
-                    best_index = i
-                    min_distance_to_middle = distance_to_middle
-            assert best_index is not None
-            title = title[:(best_index+1)] + "\n" + title[(best_index+1):]
-
+    title = split_long_title(title)
     plt.title(title)
     # plt.tight_layout()
     # plt.axis('tight')
     # plt.tick_params(axis='both', which='both')
     if output_filepath is not None:
         plt.savefig(str(output_filepath), bbox_extra_artists=[legend] + texts, bbox_inches='tight', dpi=_DPI)
+
+
+def split_long_title(title: str) -> str:
+    """Splits a long title around the middle comma
+    """
+    if len(title) <= 60:
+        return title
+    comma_indices = np.where(np.array([c for c in title]) == ",")[0]
+    if not comma_indices.size:
+        return title
+    best_index = comma_indices[np.argmin(abs(comma_indices - len(title) // 2))]
+    title = title[:(best_index+1)] + "\n" + title[(best_index+1):]
+    return title
 
 
 # @contextlib.contextmanager
@@ -301,12 +301,12 @@ class FightPlotter:
         best_names = [(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """Shortcut to the figure savefig method
         """
         self._fig.savefig(*args, **kwargs)
 
-    def __del__(self):
+    def __del__(self) -> None:
         plt.close(self._fig)
 
 

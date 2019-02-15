@@ -12,7 +12,7 @@ from . import base
 from . import mutations
 from .base import registry
 # families of optimizers
-# pylint: disable=unused-wildcard-import,wildcard-import
+# pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *
 from .oneshot import *
 from .recastlib import *
@@ -167,6 +167,206 @@ class DiagonalCMA(CMA):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._cma_init["inopts"]['CMA_diagonal'] = True
+
+
+@registry.register
+class EDA(base.Optimizer):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        self.covariance = np.identity(dimension)
+        self.mu = dimension
+        self.llambda = 4 * dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center = np.zeros(dimension)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+        # Archive
+        self.archive_fitness: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+        return self.current_center
+
+    def _internal_ask(self) -> base.ArrayLike:
+        mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.dimension))
+        assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
+        individual = tuple(mutated_sigma * np.random.multivariate_normal(self.current_center, self.covariance))
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.covariance = .1 * np.cov(np.array(self.evaluated_population).T)
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+@registry.register
+class PCEDA(EDA):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.archive_fitness += [value]
+        if len(self.archive_fitness) >= 5 * self.llambda:
+            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
+            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+            mean1 = sum(first_fifth) / float(self.llambda)
+            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
+            mean2 = sum(last_fifth) / float(self.llambda)
+            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
+            z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+            if z < 2.:
+                self.mu *= 2
+            else:
+                self.mu = int(self.mu * 0.84)
+                if self.mu < self.dimension:
+                    self.mu = self.dimension
+            self.llambda = 4 * self.mu
+            if self.num_workers > 1:
+                self.llambda = max(self.llambda, self.num_workers)
+                self.mu = self.llambda // 4
+            self.archive_fitness = []
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.covariance = np.cov(np.array(self.evaluated_population).T)
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+@registry.register
+class MPCEDA(EDA):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.archive_fitness += [value]
+        if len(self.archive_fitness) >= 5 * self.llambda:
+            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
+            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+            mean1 = sum(first_fifth) / float(self.llambda)
+            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
+            mean2 = sum(last_fifth) / float(self.llambda)
+            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
+            z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+            if z < 2.:
+                self.mu *= 2
+            else:
+                self.mu = int(self.mu * 0.84)
+                if self.mu < self.dimension:
+                    self.mu = self.dimension
+            self.llambda = 4 * self.mu
+            if self.num_workers > 1:
+                self.llambda = max(self.llambda, self.num_workers)
+                self.mu = self.llambda // 4
+            self.archive_fitness = []
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.covariance *= .9
+            self.covariance += .1 * np.cov(np.array(self.evaluated_population).T)
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+@registry.register
+class MEDA(EDA):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.covariance *= .9
+            self.covariance += .1 * np.cov(np.array(self.evaluated_population).T)
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
 
 
 @registry.register
@@ -650,6 +850,61 @@ class Portfolio(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
+
+
+@registry.register
+class ParaPortfolio(Portfolio):
+    """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+
+        def intshare(n: int, m: int) -> Tuple[int, ...]:
+            x = [n // m] * m
+            i = 0
+            while sum(x) < n:
+                x[i] += 1
+                i += 1
+            return tuple(x)
+        nw1, nw2, nw3, nw4 = intshare(num_workers - 1, 4)
+        self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
+        assert len(self.which_optim) == num_workers
+        #b1, b2, b3, b4, b5 = intshare(budget, 5)
+        self.optims = [CMA(dimension, num_workers=nw1),
+                       TwoPointsDE(dimension, num_workers=nw2),
+                       PSO(dimension, num_workers=nw3),
+                       SQP(dimension, 1),
+                       ScrHammersleySearch(dimension, budget=(budget // len(self.which_optim)) * nw4)
+                       ]
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+
+    def _internal_ask(self) -> base.ArrayLike:
+        optim_index = self.which_optim[self._num_suggestions % len(self.which_optim)]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual)] += [optim_index]
+        return individual
+
+
+@registry.register
+class ParaSQPCMA(ParaPortfolio):
+    """Passive portfolio of CMA and many SQP."""
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        nw = num_workers // 2
+        self.which_optim = [0] * nw
+        for i in range(num_workers - nw):
+            self.which_optim += [i+1]
+        assert len(self.which_optim) == num_workers
+        #b1, b2, b3, b4, b5 = intshare(budget, 5)
+        self.optims = [CMA(dimension, num_workers=nw)]
+        for i in range(num_workers - nw):
+            self.optims += [SQP(dimension, 1)]
+            if i > 0:
+                self.optims[-1].initial_guess = np.random.normal(0, 1, self.dimension)  # type: ignore
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
 
 @registry.register
