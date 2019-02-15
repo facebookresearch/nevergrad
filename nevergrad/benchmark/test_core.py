@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import tempfile
 import itertools
 from unittest import TestCase
@@ -123,4 +124,16 @@ def test_experiment_chunk_seeding() -> None:
     chunk = core.BenchmarkChunk(name="repeated_basic", seed=12, repetitions=2, cap_index=cap_index)
     xps = [xp for _, xp in chunk]
     assert xps[0].seed != xps[cap_index].seed
-    np.testing.assert_equal(len(xps), 2 * cap_index)
+
+
+def test_benchmark_chunk_resuming() -> None:
+    chunk = core.BenchmarkChunk(name="repeated_basic", seed=12, repetitions=1, cap_index=2)
+    # creating an error on the first experiment
+    with patch("nevergrad.benchmark.xpbase.Experiment.run") as run:
+        run.side_effect = ValueError("test error string")
+        np.testing.assert_raises(ValueError, chunk.compute)
+    # making sure we restart from the actual experiment
+    assert chunk._current_experiment is not None
+    with warnings.catch_warnings(record=True) as w:
+        chunk.compute()
+        assert not w, "A warning was raised while it should not have (experiment could not be resumed)"

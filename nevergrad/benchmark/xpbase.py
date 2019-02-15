@@ -138,6 +138,7 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.ArrayLike] = None
         self.final_averaging_repetitions = 100
+        self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
@@ -195,14 +196,16 @@ class Experiment:
             This is only for easier debugging.
         """
         if self.seed is not None:
+            # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(self.seed)
             random.seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
-        optimizer = self.optimsettings.instanciate(dimension=self.function.dimension)
+        if self._optimizer is None:  # if optimizer is not None, we are resuming a job (after KeyboardInterrupt for instance)
+            self._optimizer = self.optimsettings.instanciate(dimension=self.function.dimension)
         if callbacks is not None:
             for name, func in callbacks.items():
-                optimizer.register_callback(name, func)
-        assert optimizer.budget is not None, "A budget must be provided"
+                self._optimizer.register_callback(name, func)
+        assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
         counter = CallCounter(self.function)
         with warnings.catch_warnings():
@@ -211,9 +214,9 @@ class Experiment:
             # ("production" steady state is a not strictly steady state + does not handle mocked delays)
             executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
             try:
-                self.recommendation = optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
+                self.recommendation = self._optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
-                self.recommendation = optimizer.provide_recommendation()  # get the recommendation anyway
+                self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
                 raise e
         self._log_results(t0, counter.num_calls)

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import datetime
+import warnings
 import itertools
 import importlib.util
 from pathlib import Path
@@ -94,6 +95,7 @@ class BenchmarkChunk:
         plan holds 10k experiment, we can select the first cap_index=100 for instance)
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, name: str, repetitions: int = 1, seed: Optional[int] = None, cap_index: Optional[int] = None) -> None:
         self.name = name
         self.seed = seed
@@ -101,6 +103,7 @@ class BenchmarkChunk:
         self._moduler: Optional[Moduler] = None
         self.repetitions = repetitions
         self.summaries: List[Dict[str, Any]] = []
+        self._current_experiment: Optional[Experiment] = None  # for stopping and resuming
         self._id = (datetime.datetime.now().strftime("%y-%m-%d_%H%M") + "_" +
                     "".join(np.random.choice([x for x in "abcdefghijklmnopqrstuvwxyz"], 4)))
 
@@ -124,6 +127,7 @@ class BenchmarkChunk:
         # check experiments.py to see seedable xp
         generators = [maker() if seed is None else maker(seed=seed) for seed in seeds]
         generators = [itertools.islice(g, 0, self.cap_index) for g in generators]
+        # pylint: disable=not-callable
         enumerated_selection = ((k, s) for (k, s) in enumerate(itertools.chain.from_iterable(generators)) if self.moduler(k))
         return enumerated_selection
 
@@ -167,11 +171,22 @@ class BenchmarkChunk:
                 continue  # already computed
             indstr = f'{index} ({local_ind + 1}/{len(self)} of worker)'
             print(f"Starting {indstr}: {xp}", flush=True)
-            xp.run()
-            summary = xp.get_description()
+            if self._current_experiment is None:
+                self._current_experiment = xp
+            else:  # computation was started but interrupted (eg: KeyboardInterrupt)
+                if xp != self._current_experiment:
+                    warnings.warn(f"Could not resume unfinished xp: {self._current_experiment}")
+                    self._current_experiment = xp
+                else:
+                    opt = self._current_experiment._optimizer
+                    if opt is not None:
+                        print(f"Resuming existing experiment from iteration {opt.num_ask}.", flush=True)
+            self._current_experiment.run()
+            summary = self._current_experiment.get_description()
             if process_function is not None:
-                process_function(self, xp)
+                process_function(self, self._current_experiment)
             self.summaries.append(summary)
+            self._current_experiment = None
             print(f"Finished {indstr}", flush=True)
         return tools.Selector(data=self.summaries)
 
