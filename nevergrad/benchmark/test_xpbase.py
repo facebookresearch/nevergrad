@@ -52,6 +52,7 @@ def test_run_with_error() -> None:
             summary = xp.run()
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["error"], "ValueError")
+    assert xp._optimizer is not None
     np.testing.assert_equal(xp._optimizer.num_tell, 0)  # make sure optimizer is kept in case we need to restart (eg.: KeyboardInterrupt)
     assert not np.isnan(summary["loss"]), "Loss should be recorded with the current recommendation"
 
