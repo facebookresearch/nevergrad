@@ -5,9 +5,10 @@
 
 import abc
 import time
-from numbers import Real
 import warnings
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple
+from numbers import Real
+from collections import deque
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple, Deque
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -73,6 +74,9 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_ask = 0
         self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
+        # to make optimize function stoppable halway through
+        self._running_jobs: List[Tuple[ArrayLike, JobLike]] = []
+        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike]] = deque()
 
     @property
     def num_ask(self) -> int:
@@ -219,45 +223,46 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # pylint: disable=too-many-branches
         if self.budget is None:
             raise ValueError("Budget must be specified")
-        num_workers = self.num_workers  # num_jobs ?
-        budget = self.budget
         if executor is None:
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
-            if num_workers > 1:
-                warnings.warn(f"num_workers = {num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
+            if self.num_workers > 1:
+                warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
+        tmp_runnings: List[Tuple[ArrayLike, JobLike]] = []
+        tmp_finished: Deque[Tuple[ArrayLike, JobLike]] = deque()
         # go
-        runnings: List[Tuple[Any, JobLike]] = []
-        finished: List[Tuple[Any, JobLike]] = []
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
-        while budget or runnings:
-            if not batch_mode or not runnings:
-                new_sugg = min(budget, num_workers - len(runnings))
+        remaining_budget = self.budget - self.num_ask
+        while remaining_budget or self._running_jobs:
+            if not batch_mode or not self._running_jobs:
+                new_sugg = min(remaining_budget, self.num_workers - len(self._running_jobs))
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
                     x = self.ask()
-                    runnings.append((x, executor.submit(objective_function, x)))
-                    budget -= 1
+                    self._running_jobs.append((x, executor.submit(objective_function, x)))
                 if new_sugg:
                     sleeper.start_timer()
+            remaining_budget = self.budget - self.num_ask
             # split (repopulate finished and runnings in only one loop to avoid
             # weird effects if job finishes in between two list comprehensions)
-            tmp = runnings
-            runnings, finished = [], []
-            for x_job in tmp:
-                (finished if x_job[1].done() else runnings).append(x_job)
+            tmp_runnings, tmp_finished = [], deque()
+            for x_job in self._running_jobs:
+                (tmp_finished if x_job[1].done() else tmp_runnings).append(x_job)
+            self._running_jobs, self._finished_jobs = tmp_runnings, tmp_finished
             # process finished
-            if finished:
-                if budget or sleeper._start is not None:
+            if self._finished_jobs:
+                if remaining_budget or sleeper._start is not None:
                     # ignore stop if no more suggestion is sent
                     # this is an ugly hack to avoid warnings at the end of steady mode
                     sleeper.stop_timer()
-                for x, job in finished:
+                while self._finished_jobs:
+                    x, job = self._finished_jobs[0]
                     self.tell(x, job.result())
+                    self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
                 if verbosity:
-                    print(f"{budget} remaining budget and {len(runnings)} running jobs")
+                    print(f"{remaining_budget} remaining budget and {len(self._running_jobs)} running jobs")
                     if verbosity > 1:
                         print("Current pessimistic best is: {}".format(self.current_bests["pessimistic"]))
             else:
