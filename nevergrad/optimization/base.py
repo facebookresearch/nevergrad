@@ -259,7 +259,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                 while self.finished:
                     x, job = self.finished[0]
                     self.tell(x, job.result())
-                    self.finished.popleft()
+                    self.finished.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
                 if verbosity:
