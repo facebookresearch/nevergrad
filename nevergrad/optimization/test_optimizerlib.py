@@ -53,10 +53,10 @@ def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, veri
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
             min(v.pessimistic_confidence_bound for v in archive.values()))
 
-
+    
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
         "PCEDA", "MPCEDA", "EDA", "MEDA"]
-UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2",
+UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "DiagonalCMA",
               "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
 

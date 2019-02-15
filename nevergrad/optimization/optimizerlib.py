@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Deque, Any
 from collections import defaultdict, deque
 import numpy as np
 from scipy import stats
@@ -107,71 +107,27 @@ class CauchyOnePlusOne(OnePlusOne):
 
 
 @registry.register
-class MicroCMA(base.Optimizer):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1e-6)
-        self.listx: List[base.ArrayLike] = []
-        self.listy: List[float] = []
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return self.es.ask(1)[0]
-
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.listx += [x]
-        self.listy += [value]
-        if len(self.listx) >= self.es.popsize:
-            try:
-                self.es.tell(self.listx, self.listy)
-            except RuntimeError:
-                pass
-            else:
-                self.listx = []
-                self.listy = []
-
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return self.es.result.xbest
-
-
-@registry.register
-class MilliCMA(base.Optimizer):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1e-3)
-        self.listx: List[base.ArrayLike] = []
-        self.listy: List[float] = []
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return self.es.ask(1)[0]
-
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.listx += [x]
-        self.listy += [value]
-        if len(self.listx) >= self.es.popsize:
-            try:
-                self.es.tell(self.listx, self.listy)
-            except RuntimeError:
-                pass
-            else:
-                self.listx = []
-                self.listy = []
-
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return self.es.result.xbest
-
-
-@registry.register
 class CMA(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es = cma.CMAEvolutionStrategy([0.] * dimension, 1.0)
+        self.es: Optional[cma.CMAEvolutionStrategy] = None
+        popsize = max(num_workers, 4 + int(3 * np.log(dimension)))
+        # delay initialization to ease implementation of variants
+        self._cma_init: Dict[str, Any] = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize}}
         self.listx: List[base.ArrayLike] = []
         self.listy: List[float] = []
+        self.to_be_asked: Deque[np.ndarray] = deque()
 
     def _internal_ask(self) -> base.ArrayLike:
-        return self.es.ask(1)[0]
+        if self.es is None:
+            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
+        if not self.to_be_asked:
+            self.to_be_asked.extend(self.es.ask())
+        return self.to_be_asked.popleft()
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        if self.es is None:
+            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         self.listx += [x]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
@@ -184,7 +140,33 @@ class CMA(base.Optimizer):
                 self.listy = []
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
+        if self.es is None:
+            return RuntimeError("Either ask or tell method should have been called before")
         return self.es.result.xbest
+
+
+@registry.register
+class MicroCMA(CMA):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._cma_init["sigma0"] = 1e-6
+
+
+@registry.register
+class MilliCMA(CMA):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._cma_init["sigma0"] = 1e-3
+
+
+@registry.register
+class DiagonalCMA(CMA):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._cma_init["inopts"]['CMA_diagonal'] = True
 
 
 @registry.register
