@@ -171,7 +171,7 @@ class BenchmarkChunk:
                 continue  # already computed
             indstr = f'{index} ({local_ind + 1}/{len(self)} of worker)'
             print(f"Starting {indstr}: {xp}", flush=True)
-            if self._current_experiment is not None:
+            if self._current_experiment is None:
                 self._current_experiment = xp
             else:  # computation was started but interrupted (eg: KeyboardInterrupt)
                 if xp != self._current_experiment:
