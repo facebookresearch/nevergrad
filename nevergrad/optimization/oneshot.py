@@ -268,7 +268,7 @@ class HaltonSearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.HaltonSampler(self.dimension)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return stats.norm.ppf(self.sampler())
 
@@ -284,7 +284,7 @@ class ScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.ScrHaltonSampler(self.dimension)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return stats.norm.ppf(self.sampler())
 
@@ -300,7 +300,7 @@ class HammersleySearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return stats.norm.ppf(self.sampler())
 
@@ -316,7 +316,7 @@ class ScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return stats.norm.ppf(self.sampler())
 
@@ -334,7 +334,7 @@ class LargeHaltonSearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.HaltonSampler(self.dimension)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 100. * stats.norm.ppf(self.sampler())
 
@@ -350,7 +350,7 @@ class LargeScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.ScrHaltonSampler(self.dimension)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 100. * stats.norm.ppf(self.sampler())
 
@@ -366,7 +366,7 @@ class LargeHammersleySearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 100. * stats.norm.ppf(self.sampler())
 
@@ -382,7 +382,7 @@ class LargeScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 100. * stats.norm.ppf(self.sampler())
 
@@ -396,7 +396,7 @@ class SmallHaltonSearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.HaltonSampler(self.dimension)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 0.01 * stats.norm.ppf(self.sampler())
 
@@ -410,7 +410,7 @@ class SmallScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.ScrHaltonSampler(self.dimension)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 0.01 * stats.norm.ppf(self.sampler())
 
@@ -424,7 +424,7 @@ class SmallHammersleySearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 0.01 * stats.norm.ppf(self.sampler())
 
@@ -438,7 +438,7 @@ class SmallScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
         self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 0.01 * stats.norm.ppf(self.sampler())
 
@@ -450,7 +450,7 @@ class RandomSearchPlusMiddlePoint(OneShotOptimizer):
     The middle point is the very first one."""
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return np.random.normal(0, 1, self.dimension)
 
@@ -459,7 +459,7 @@ class RandomSearchPlusMiddlePoint(OneShotOptimizer):
 class SmallScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 0.01 * np.random.normal(0, 1, self.dimension)
 
@@ -468,7 +468,7 @@ class SmallScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
 class RandomScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return np.exp(np.random.normal(0., 1.) - 2.) * np.random.normal(0., 1. / np.sqrt(self.dimension), self.dimension)
 
@@ -484,6 +484,6 @@ class RandomScaleRandomSearch(OneShotOptimizer):
 class LargerScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return 500. * np.random.normal(0, 1, self.dimension)

@@ -36,7 +36,7 @@ class OnePlusOne(base.Optimizer):
         self.sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         else:
             return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
@@ -60,10 +60,10 @@ class NoisyOnePlusOne(OnePlusOne):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         else:
-            if 20 * self._num_suggestions <= len(self.archive) ** 3:
+            if 20 * self._num_ask <= len(self.archive) ** 3:
                 idx = np.random.choice(len(self.archive))
                 return list(self.archive.keys())[idx]
         return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
@@ -82,10 +82,10 @@ class OptimisticNoisyOnePlusOne(OnePlusOne):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         else:
-            if 20 * self._num_suggestions <= len(self.archive) ** 3:
+            if 20 * self._num_ask <= len(self.archive) ** 3:
                 return self.current_bests["optimistic"].x
         return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
 
@@ -100,7 +100,7 @@ class CauchyOnePlusOne(OnePlusOne):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         else:
             return self.current_bests["pessimistic"].x + self.sigma * np.random.standard_cauchy(self.dimension)
@@ -464,7 +464,7 @@ class NoisyBandit(base.Optimizer):
     Infinite arms: we add one arm when #trials >= #arms ** 3."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if 20 * self._num_suggestions >= len(self.archive) ** 3:
+        if 20 * self._num_ask >= len(self.archive) ** 3:
             return np.random.normal(0, 1, self.dimension)
         if np.random.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
@@ -480,9 +480,9 @@ class OptimisticDiscreteOnePlusOne(base.Optimizer):
     This combines the discrete 1+1 algorithm and bandits."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -497,11 +497,11 @@ class RecombiningOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        elif 20 * self._num_suggestions <= len(self.archive) ** 3:
+        elif 20 * self._num_ask <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
-        elif self._num_suggestions % 2 == 0 or len(self.archive) < 3:
+        elif self._num_ask % 2 == 0 or len(self.archive) < 3:
             return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
         else:
             return mutations.crossover(self.current_bests["pessimistic"].x,
@@ -515,7 +515,7 @@ class DoubleFastGADiscreteOnePlusOne(base.Optimizer):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -527,7 +527,7 @@ class FastGAOptimisticDiscreteOnePlusOne(base.Optimizer):
     This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -539,9 +539,9 @@ class DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -553,9 +553,9 @@ class FastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -567,9 +567,9 @@ class FastGANoisyDiscreteOnePlusOne(base.Optimizer):
     This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             idx = np.random.choice(len(self.archive))
             return list(self.archive.keys())[idx]
         return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
@@ -583,9 +583,9 @@ class PortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     in Non-elitist Population", 2016."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
         return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -598,9 +598,9 @@ class PortfolioNoisyDiscreteOnePlusOne(base.Optimizer):
     in Non-elitist Population", 2016."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             idx = np.random.choice(len(self.archive))
             return list(self.archive.keys())[idx]
         return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
@@ -611,11 +611,11 @@ class RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
     """Adding crossover to PortfolioOptimisticNoisyDiscreteOnePlusOneOptimizer."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if 20 * self._num_suggestions <= len(self.archive) ** 3:
+        if 20 * self._num_ask <= len(self.archive) ** 3:
             return self.current_bests["optimistic"].x
-        if self._num_suggestions % 2 == 0 or len(self.archive) < 3:
+        if self._num_ask % 2 == 0 or len(self.archive) < 3:
             return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
         else:
             return mutations.crossover(self.current_bests["pessimistic"].x,
@@ -630,9 +630,9 @@ class NoisyDiscreteOnePlusOne(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
-        if self._num_suggestions <= len(self.archive) ** 3:
+        if self._num_ask <= len(self.archive) ** 3:
             # numpy does not accept choice on list of tuples, must choose index instead
             idx = np.random.choice(len(self.archive))
             return list(self.archive.keys())[idx]
@@ -644,7 +644,7 @@ class DiscreteOnePlusOne(base.Optimizer):
     """Discrete 1+1 optimization algorithm."""
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -658,7 +658,7 @@ class PortfolioDiscreteOnePlusOne(base.Optimizer):
     """
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
+        if not self._num_ask:
             return np.zeros(self.dimension)
         return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
 
@@ -837,7 +837,7 @@ class Portfolio(base.Optimizer):
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask(self) -> base.ArrayLike:
-        optim_index = self._num_suggestions % len(self.optims)
+        optim_index = self._num_ask % len(self.optims)
         individual = self.optims[optim_index].ask()
         self.who_asked[tuple(individual)] += [optim_index]
         return individual
@@ -880,7 +880,7 @@ class ParaPortfolio(Portfolio):
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask(self) -> base.ArrayLike:
-        optim_index = self.which_optim[self._num_suggestions % len(self.which_optim)]
+        optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
         individual = self.optims[optim_index].ask()
         self.who_asked[tuple(individual)] += [optim_index]
         return individual
@@ -923,7 +923,7 @@ class ASCMADEthird(Portfolio):
     def _internal_ask(self) -> base.ArrayLike:
         if self.budget_before_choosing > 0:
             self.budget_before_choosing -= 1
-            optim_index = self._num_suggestions % len(self.optims)
+            optim_index = self._num_ask % len(self.optims)
         else:
             if self.best_optim is None:
                 best_value = float("inf")

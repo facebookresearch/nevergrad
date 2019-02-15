@@ -64,7 +64,7 @@ class NoisyDE(base.Optimizer):
         if self._qr_init and self.sampler is None:
             self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=self.llambda)
         self.match_population_size_to_lambda()
-        location = self._num_suggestions % self.llambda
+        location = self._num_ask % self.llambda
         i = (self.population[location])
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
 
