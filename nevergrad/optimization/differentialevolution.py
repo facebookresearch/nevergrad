@@ -260,3 +260,11 @@ class BPRotationInvariantDE(DE):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.CR = 1
         self.llambda = max(self.llambda, 7*dimension)
+
+
+@base.registry.register
+class InocDE(DE):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.inoculation = True
