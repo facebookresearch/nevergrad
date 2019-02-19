@@ -702,12 +702,13 @@ class PSO(base.Optimizer):
         # Focusing on the right guy in the population.
         if not self.queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
-        location = self.queue.popleft()
+        location = self.queue[0]  # don't remove just yet
         # First, the initialization.
         if self.pop_fitness[location] is None:  # This guy is not evaluated.
             assert self.pop[location] is not None
             guy = tuple(self.to_real(self.pop[location]))
             self.locations[guy] += [location]
+            self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
             return guy
         # We are in a standard case.
         # Speed mutation.
@@ -724,6 +725,7 @@ class PSO(base.Optimizer):
         self.pop[location] = [max(0.+self.eps, min(1.-self.eps, x_)) for x_ in self.pop[location]]
         guy = tuple(self.to_real(self.pop[location]))
         self.locations[guy] += [location]
+        self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
         return guy
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
@@ -733,7 +735,6 @@ class PSO(base.Optimizer):
         x = tuple(x)
         assert self.locations[x]
         location = self.locations[x][0]
-        del self.locations[x][0]
         point = tuple(self.to_real(self.pop[location]))
         assert x == point, str(x) + f"{x} vs {point}     {self.pop}"
         self.pop_fitness[location] = value
@@ -745,7 +746,8 @@ class PSO(base.Optimizer):
         if value < self.pop_best_fitness[location]:  # type: ignore
             self.pop_best[location] = [s for s in self.pop[location]]
             self.pop_best_fitness[location] = value
-        self.queue.append(location)
+        del self.locations[x][0]
+        self.queue.append(location)  # update when everything is well done (safer for checkpointing)
 
     @staticmethod
     def to_real(x: base.ArrayLike) -> base.ArrayLike:
