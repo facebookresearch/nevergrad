@@ -195,12 +195,12 @@ class Experiment:
             a dictionary of callbacks to register on the optimizer with key "ask" and/or "tell" (see base Optimizer class).
             This is only for easier debugging.
         """
-        if self.seed is not None:
+        if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(self.seed)
             random.seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
-        if self._optimizer is None:  # if optimizer is not None, we are resuming a job (after KeyboardInterrupt for instance)
+        if self._optimizer is None:
             self._optimizer = self.optimsettings.instanciate(dimension=self.function.dimension)
         if callbacks is not None:
             for name, func in callbacks.items():
