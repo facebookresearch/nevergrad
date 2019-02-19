@@ -233,7 +233,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
         first_iteration = True
-        while remaining_budget or self._running_jobs:
+        while remaining_budget or self._running_jobs or self._finished_jobs:
             # # # # # Update optimizer with finished jobs # # # # #
             # this is the first thing to do when resuming an existing optimization run
             # process finished
