@@ -232,7 +232,29 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
-        while remaining_budget or self._running_jobs:
+        first_iteration = True
+        while remaining_budget or self._running_jobs or self._finished_jobs:
+            # # # # # Update optimizer with finished jobs # # # # #
+            # this is the first thing to do when resuming an existing optimization run
+            # process finished
+            if self._finished_jobs:
+                if (remaining_budget or sleeper._start is not None) and not first_iteration:
+                    # ignore stop if no more suggestion is sent
+                    # this is an ugly hack to avoid warnings at the end of steady mode
+                    sleeper.stop_timer()
+                while self._finished_jobs:
+                    x, job = self._finished_jobs[0]
+                    self.tell(x, job.result())
+                    self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
+                    if verbosity:
+                        print(f"Updating fitness with value {job.result()}")
+                if verbosity:
+                    print(f"{remaining_budget} remaining budget and {len(self._running_jobs)} running jobs")
+                    if verbosity > 1:
+                        print("Current pessimistic best is: {}".format(self.current_bests["pessimistic"]))
+            elif not first_iteration:
+                sleeper.sleep()
+            # # # # # Start new jobs # # # # #
             if not batch_mode or not self._running_jobs:
                 new_sugg = min(remaining_budget, self.num_workers - len(self._running_jobs))
                 if verbosity and new_sugg:
@@ -249,24 +271,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             for x_job in self._running_jobs:
                 (tmp_finished if x_job[1].done() else tmp_runnings).append(x_job)
             self._running_jobs, self._finished_jobs = tmp_runnings, tmp_finished
-            # process finished
-            if self._finished_jobs:
-                if remaining_budget or sleeper._start is not None:
-                    # ignore stop if no more suggestion is sent
-                    # this is an ugly hack to avoid warnings at the end of steady mode
-                    sleeper.stop_timer()
-                while self._finished_jobs:
-                    x, job = self._finished_jobs[0]
-                    self.tell(x, job.result())
-                    self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
-                    if verbosity:
-                        print(f"Updating fitness with value {job.result()}")
-                if verbosity:
-                    print(f"{remaining_budget} remaining budget and {len(self._running_jobs)} running jobs")
-                    if verbosity > 1:
-                        print("Current pessimistic best is: {}".format(self.current_bests["pessimistic"]))
-            else:
-                sleeper.sleep()
+            first_iteration = False
         return self.provide_recommendation()
 
 

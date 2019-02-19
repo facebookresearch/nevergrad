@@ -55,7 +55,7 @@ def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, veri
 
     
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
-        "PCEDA", "MPCEDA", "EDA", "MEDA"]
+        "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
 UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "DiagonalCMA",
               "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
