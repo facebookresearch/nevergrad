@@ -145,4 +145,4 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         """
         if isinstance(self._func, PostponedObject):
             return self._func.get_postponing_delay(arguments, value)
-        return 0
+        return 1.

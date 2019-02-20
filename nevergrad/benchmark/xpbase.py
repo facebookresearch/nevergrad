@@ -61,7 +61,11 @@ class OptimizerSettings:
         self.name = name
         self.budget = budget
         self.num_workers = num_workers
-        self.batch_mode = batch_mode
+        self.executor = execution.MockedTimedExecutor(batch_mode)
+
+    @property
+    def batch_mode(self):
+        return self.executor.batch_mode
 
     def __repr__(self) -> str:
         return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
@@ -179,6 +183,7 @@ class Experiment:
         """
         num_eval = self.final_averaging_repetitions  # evaluations of the cost function on the recommendation
         self.result["elapsed_time"] = time.time() - t0
+        self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         t_recommendation = self.function.transform(self.recommendation)
         self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
@@ -208,13 +213,11 @@ class Experiment:
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
         counter = CallCounter(self.function)
+        executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
-            # use default executor for batch mode (sequential, but mock for steady state
-            # ("production" steady state is a not strictly steady state + does not handle mocked delays)
-            executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
             try:
-                self.recommendation = self._optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
+                self.recommendation = self._optimizer.optimize(counter, batch_mode=executor.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)

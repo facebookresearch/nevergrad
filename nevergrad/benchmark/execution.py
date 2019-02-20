@@ -15,7 +15,7 @@ class MockedTimedJob:
 
     # pylint: disable=too-many-instance-attributes
     def __init__(self, func: Callable[..., Any], args: Tuple[Any, ...], kwargs: Dict[str, Any],
-                 executor: "MockedSteadyExecutor") -> None:
+                 executor: "MockedTimedExecutor") -> None:
         self._executor = executor
         self._time = executor.time  # time at instantiation
         # function
@@ -30,26 +30,27 @@ class MockedTimedJob:
 
     @property
     def release_time(self) -> float:
-        return self._get_delay() + self._time
+        self.process()
+        assert self._delay is not None
+        return self._delay + self._time
 
     def done(self) -> bool:
-        self._executor._process_submissions()
-        return self._done
+        return self._executor.check_is_done(self)
 
-    def _get_delay(self) -> float:
+    def process(self) -> None:
         if self._delay is None:
             self._output = self._func(*self._args, **self._kwargs)
             # compute the delay and add to queue
             self._delay = 1.
             if isinstance(self._func, PostponedObject):
                 self._delay = max(0, self._func.get_postponing_delay((self._args, self._kwargs), self._output))
-        return self._delay
 
     def result(self) -> Any:
         """Return the result if "done()" is true, and raises
         a RuntimeError otherwise.
         """
-        if not self._done:
+        self.process()
+        if not self.done():
             raise RuntimeError("Asking result which is not ready")
         self._is_read = True
         self._executor.notify_read(self)
@@ -67,7 +68,7 @@ class OrderedJobs(NamedTuple):
     job: MockedTimedJob
 
 
-class MockedSteadyExecutor:
+class MockedTimedExecutor:
     """Executor that mocks a steady state, by only providing 1 job at a time which is done() while
     not having been "read" (i.e. "result()" method was not executed).
     This ensures we control the order of update of the optimizer for benchmarking.
@@ -76,7 +77,8 @@ class MockedSteadyExecutor:
     submission. To this end, callables must implement a "computation_time" method.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, batch_mode: bool = False) -> None:
+        self.batch_mode = batch_mode
         self._to_be_processed: Deque[MockedTimedJob] = deque()
         self._steady_priority_queue: List[OrderedJobs] = []
         self._order = 0
@@ -92,28 +94,34 @@ class MockedSteadyExecutor:
         return job
 
     def _process_submissions(self) -> None:
-        if self._steady_priority_queue:
-            self._steady_priority_queue[0].job._done = False
-        # first pass: compute everything (this may take a long time, safer this way in case of interruption)
-        for job in self._to_be_processed:
-            job._get_delay()
-        # second path: update
+        """Process all submissions which have not been processed yet.
+        """
         while self._to_be_processed:
             job = self._to_be_processed[0]
-            heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
+            job.process()  # trigger computation
+            if not self.batch_mode:
+                heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
             self._to_be_processed.popleft()  # remove right after it is added to the heap queue
             self._order += 1
-        if self._steady_priority_queue:
-            self._steady_priority_queue[0].job._done = True
-        self._to_be_processed.clear()
+
+    def check_is_done(self, job: MockedTimedJob) -> bool:
+        """Called whenever "done" method is called on a job.
+        """
+        self._process_submissions()  # make sure everything is up to date
+        if self.batch_mode or job._is_read:
+            return True
+        else:
+            return job is self._steady_priority_queue[0].job
 
     def notify_read(self, job: MockedTimedJob) -> None:
         """Called whenever a result is read, so as to activate the next result in line
+        in case of steady mode, and to update executor time.
         """
         self._process_submissions()  # make sure everything is up to date
-        expected = self._steady_priority_queue[0]
-        assert job is expected.job, "Only first job should be read"
-        self._time = expected.release_time
-        heapq.heappop(self._steady_priority_queue)
-        if self._steady_priority_queue:
-            self._steady_priority_queue[0].job._done = True
+        if not self.batch_mode:
+            expected = self._steady_priority_queue[0]
+            assert job is expected.job, "Only first job should be read"
+            heapq.heappop(self._steady_priority_queue)
+            if self._steady_priority_queue:
+                self._steady_priority_queue[0].job._done = True
+        self._time = max(self._time, job.release_time)
