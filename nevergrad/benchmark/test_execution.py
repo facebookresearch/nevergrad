@@ -17,7 +17,6 @@ class Function(execution.PostponedObject):
 
     # pylint: disable=unused-argument
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
-        print("waiting", 5 - value)
         return 5 - value
 
 
@@ -29,7 +28,7 @@ class ExecutorTest(TestCase):
         delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
     )
     def test_mocked_steady_executor(self, func: Callable[..., Any], expected: List[int]) -> None:
-        executor = execution.MockedTimedExecutor()
+        executor = execution.MockedTimedExecutor(batch_mode=False)
         jobs: List[execution.MockedTimedJob] = []
         for k in range(10):
             jobs.append(executor.submit(func, k, 0))
@@ -44,7 +43,7 @@ class ExecutorTest(TestCase):
 
 def test_mocked_steady_executor_time() -> None:
     func = Function()
-    executor = execution.MockedTimedExecutor()
+    executor = execution.MockedTimedExecutor(batch_mode=False)
     jobs = [executor.submit(func, 0, 0)]
     np.testing.assert_equal(jobs[0].done(), True)
     jobs.append(executor.submit(func, 2, 0))
@@ -68,3 +67,16 @@ def test_mocked_steady_executor_time() -> None:
             new_finished[0].result()
         new_finished = [j for j in jobs if j.done() and not j._is_read]
     np.testing.assert_array_equal(order, [2, 0, 3])
+
+
+def test_batch_executor_time() -> None:
+    func = Function()
+    executor = execution.MockedTimedExecutor(batch_mode=True)
+    jobs = [executor.submit(func, k, 0) for k in range(3)]
+    np.testing.assert_equal([j.release_time for j in jobs], [5, 4, 3])
+    np.testing.assert_equal([j.done() for j in jobs], [True, True, True])
+    for job in jobs:
+        job.result()
+    np.testing.assert_equal(executor.time, 5)
+    job = executor.submit(func, 0, 0)
+    np.testing.assert_equal(job.release_time, 10)
