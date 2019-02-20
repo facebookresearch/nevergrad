@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import heapq
-from typing import List, Callable, Any, NamedTuple, Tuple, Dict, Optional
+from collections import deque
+from typing import List, Callable, Any, NamedTuple, Tuple, Dict, Optional, Deque
 from ..functions.base import PostponedObject  # this object only serves to provide delays that the executor must use to order jobs
 
 
@@ -15,6 +16,8 @@ class MockedTimedJob:
     # pylint: disable=too-many-instance-attributes
     def __init__(self, func: Callable[..., Any], args: Tuple[Any, ...], kwargs: Dict[str, Any],
                  executor: "MockedSteadyExecutor") -> None:
+        self._executor = executor
+        self._time = executor.time  # time at instantiation
         # function
         self._func = func
         self._args = args
@@ -23,8 +26,11 @@ class MockedTimedJob:
         self._output: Any = None
         self._delay: Optional[float] = None  # float when properly job is computed
         self._done = False
-        self._is_read = False
-        self._executor = executor
+        self._is_read = False  # for the record
+
+    @property
+    def release_time(self) -> float:
+        return self._get_delay() + self._time
 
     def done(self) -> bool:
         self._executor._process_submissions()
@@ -46,7 +52,7 @@ class MockedTimedJob:
         if not self._done:
             raise RuntimeError("Asking result which is not ready")
         self._is_read = True
-        self._executor.update_queue()
+        self._executor.notify_read(self)
         return self._output
 
     def __repr__(self) -> str:
@@ -71,16 +77,18 @@ class MockedSteadyExecutor:
     """
 
     def __init__(self) -> None:
-        self._to_be_processed: List[MockedTimedJob] = []
+        self._to_be_processed: Deque[MockedTimedJob] = deque()
         self._steady_priority_queue: List[OrderedJobs] = []
         self._order = 0
         self._time = 0.
 
+    @property
+    def time(self) -> float:
+        return self._time
+
     def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> MockedTimedJob:
-        if self._steady_priority_queue:  # new job may come before the current "next" job
-            self._steady_priority_queue[0].job._done = False
         job = MockedTimedJob(function, args, kwargs, self)
-        self._to_be_processed.append(job)
+        self._to_be_processed.append(job)  # save for later processing
         return job
 
     def _process_submissions(self) -> None:
@@ -90,20 +98,22 @@ class MockedSteadyExecutor:
         for job in self._to_be_processed:
             job._get_delay()
         # second path: update
-        for job in self._to_be_processed:
-            delay = job._get_delay()
-            heapq.heappush(self._steady_priority_queue, OrderedJobs(self._time + delay, self._order, job))
-            # update order and "next" finished job
+        while self._to_be_processed:
+            job = self._to_be_processed[0]
+            heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
+            self._to_be_processed.popleft()  # remove right after it is added to the heap queue
             self._order += 1
         if self._steady_priority_queue:
             self._steady_priority_queue[0].job._done = True
         self._to_be_processed.clear()
 
-    def update_queue(self) -> None:
+    def notify_read(self, job: MockedTimedJob) -> None:
         """Called whenever a result is read, so as to activate the next result in line
         """
-        self._process_submissions()
-        while self._steady_priority_queue and self._steady_priority_queue[0].job._is_read:
-            self._time = heapq.heappop(self._steady_priority_queue).release_time
-            if self._steady_priority_queue:
-                self._steady_priority_queue[0].job._done = True
+        self._process_submissions()  # make sure everything is up to date
+        expected = self._steady_priority_queue[0]
+        assert job is expected.job, "Only first job should be read"
+        self._time = expected.release_time
+        heapq.heappop(self._steady_priority_queue)
+        if self._steady_priority_queue:
+            self._steady_priority_queue[0].job._done = True

@@ -66,6 +66,5 @@ def test_mocked_steady_executor_time() -> None:
             assert len(new_finished) == 1, f'Weird list: {new_finished}'
             order.append(jobs.index(new_finished[0]))
             new_finished[0].result()
-        print(jobs)
         new_finished = [j for j in jobs if j.done() and not j._is_read]
     np.testing.assert_array_equal(order, [2, 0, 3])
