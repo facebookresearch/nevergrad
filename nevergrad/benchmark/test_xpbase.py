@@ -19,7 +19,7 @@ from . import execution
 from . import xpbase
 
 
-DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name",
+DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
                     "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
 
 

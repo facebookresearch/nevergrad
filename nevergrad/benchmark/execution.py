@@ -78,7 +78,7 @@ class MockedTimedExecutor:
     """
 
     def __init__(self, batch_mode: bool = False) -> None:
-        self._batch_mode = batch_mode
+        self.batch_mode = batch_mode
         self._to_be_processed: Deque[MockedTimedJob] = deque()
         self._steady_priority_queue: List[OrderedJobs] = []
         self._order = 0
@@ -99,7 +99,7 @@ class MockedTimedExecutor:
         while self._to_be_processed:
             job = self._to_be_processed[0]
             job.process()  # trigger computation
-            if not self._batch_mode:
+            if not self.batch_mode:
                 heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
             self._to_be_processed.popleft()  # remove right after it is added to the heap queue
             self._order += 1
@@ -108,7 +108,7 @@ class MockedTimedExecutor:
         """Called whenever "done" method is called on a job.
         """
         self._process_submissions()  # make sure everything is up to date
-        if self._batch_mode or job._is_read:
+        if self.batch_mode or job._is_read:
             return True
         else:
             return job is self._steady_priority_queue[0].job
@@ -118,7 +118,7 @@ class MockedTimedExecutor:
         in case of steady mode, and to update executor time.
         """
         self._process_submissions()  # make sure everything is up to date
-        if not self._batch_mode:
+        if not self.batch_mode:
             expected = self._steady_priority_queue[0]
             assert job is expected.job, "Only first job should be read"
             heapq.heappop(self._steady_priority_queue)

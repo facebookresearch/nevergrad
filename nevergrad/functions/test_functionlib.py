@@ -103,6 +103,6 @@ def test_artifificial_function_with_jump() -> None:
 
 def test_get_posptoning_delay() -> None:
     func = functionlib.ArtificialFunction("sphere", 2)
-    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0)
+    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 1.)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
     np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0.0005)
