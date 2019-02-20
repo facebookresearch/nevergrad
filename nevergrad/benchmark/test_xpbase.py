@@ -35,12 +35,13 @@ class Function(BaseFunction, execution.PostponedObject):
 
 def test_run_artificial_function() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
-    xp = xpbase.Experiment(func, optimizer_name="OnePlusOne", budget=300, num_workers=1)
+    xp = xpbase.Experiment(func, optimizer_name="OnePlusOne", budget=300, num_workers=2, batch_mode=True)
     summary = xp.run()
     assert summary["elapsed_time"] < .5  # should be much faster
     assert summary["loss"] < .001
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 300)
+    np.testing.assert_equal(summary["pseudotime"], 150.)  # defaults to 1 unit per eval ( /2 because 2 workers)
 
 
 def test_run_with_error() -> None:
