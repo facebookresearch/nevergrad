@@ -30,13 +30,13 @@ class ExecutorTest(TestCase):
     )
     def test_mocked_steady_executor(self, func: Callable[..., Any], expected: List[int]) -> None:
         executor = execution.MockedSteadyExecutor()
-        jobs: List[execution.MockedSteadyJob] = []
+        jobs: List[execution.MockedTimedJob] = []
         for k in range(10):
             jobs.append(executor.submit(func, k, 0))
         results: List[float] = []
         while jobs:
             finished = [j for j in jobs if j.done()]
-            np.testing.assert_(len(finished) == 1)
+            np.testing.assert_equal(len(finished), 1)
             results.append(finished[0].result())
             jobs.remove(finished[0])
         np.testing.assert_array_equal(results, expected)
@@ -56,8 +56,9 @@ def test_mocked_steady_executor_time() -> None:
     # now making sure that jobs start from new time
     jobs.append(executor.submit(func, 4, 0))
     jobs.append(executor.submit(func, 3, 0))
-    np.testing.assert_array_equal([j.release_time for j in executor.priority_queue], [4, 5, 5])
-    new_finished: Optional[List[execution.MockedSteadyJob]] = None
+    np.testing.assert_equal(sum(j.done() for j in jobs), 2)
+    np.testing.assert_array_equal([j.release_time for j in executor._steady_priority_queue], [4, 5, 5])
+    new_finished: Optional[List[execution.MockedTimedJob]] = None
     order: List[int] = []
     # pylint: disable=unsubscriptable-object
     while new_finished is None or new_finished:
@@ -65,6 +66,5 @@ def test_mocked_steady_executor_time() -> None:
             assert len(new_finished) == 1, f'Weird list: {new_finished}'
             order.append(jobs.index(new_finished[0]))
             new_finished[0].result()
-        print(jobs)
         new_finished = [j for j in jobs if j.done() and not j._is_read]
     np.testing.assert_array_equal(order, [2, 0, 3])
