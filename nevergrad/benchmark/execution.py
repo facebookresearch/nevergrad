@@ -76,10 +76,11 @@ class MockedTimedExecutor:
     submission. To this end, callables must implement a "computation_time" method.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, batch_mode: bool = False) -> None:
+        self._batch_mode = batch_mode
         self._to_be_processed: Deque[MockedTimedJob] = deque()
         self._steady_priority_queue: List[OrderedJobs] = []
-        self._order = 0
+        self._order = -1
         self._time = 0.
 
     @property
@@ -92,6 +93,8 @@ class MockedTimedExecutor:
         return job
 
     def _process_submissions(self) -> None:
+        if not self._to_be_processed:
+            return  # don't bother
         if self._steady_priority_queue:
             self._steady_priority_queue[0].job._done = False
         # first pass: compute everything (this may take a long time, safer this way in case of interruption)
@@ -100,20 +103,24 @@ class MockedTimedExecutor:
         # second path: update
         while self._to_be_processed:
             job = self._to_be_processed[0]
-            heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
+            if self._batch_mode:
+                self._time = max(self._time, job.release_time)
+                job._done = True
+            else:
+                self._order += 1
+                heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
             self._to_be_processed.popleft()  # remove right after it is added to the heap queue
-            self._order += 1
         if self._steady_priority_queue:
             self._steady_priority_queue[0].job._done = True
-        self._to_be_processed.clear()
 
     def notify_read(self, job: MockedTimedJob) -> None:
         """Called whenever a result is read, so as to activate the next result in line
         """
         self._process_submissions()  # make sure everything is up to date
-        expected = self._steady_priority_queue[0]
-        assert job is expected.job, "Only first job should be read"
-        self._time = expected.release_time
-        heapq.heappop(self._steady_priority_queue)
-        if self._steady_priority_queue:
-            self._steady_priority_queue[0].job._done = True
+        if not self._batch_mode:
+            expected = self._steady_priority_queue[0]
+            assert job is expected.job, "Only first job should be read"
+            self._time = expected.release_time
+            heapq.heappop(self._steady_priority_queue)
+            if self._steady_priority_queue:
+                self._steady_priority_queue[0].job._done = True
