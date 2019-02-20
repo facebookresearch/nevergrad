@@ -30,26 +30,27 @@ class MockedTimedJob:
 
     @property
     def release_time(self) -> float:
-        return self._get_delay() + self._time
+        self.process()
+        assert self._delay is not None
+        return self._delay + self._time
 
     def done(self) -> bool:
-        self._executor._process_submissions()
-        return self._done
+        return self._executor.check_is_done(self)
 
-    def _get_delay(self) -> float:
+    def process(self) -> None:
         if self._delay is None:
             self._output = self._func(*self._args, **self._kwargs)
             # compute the delay and add to queue
             self._delay = 1.
             if isinstance(self._func, PostponedObject):
                 self._delay = max(0, self._func.get_postponing_delay((self._args, self._kwargs), self._output))
-        return self._delay
 
     def result(self) -> Any:
         """Return the result if "done()" is true, and raises
         a RuntimeError otherwise.
         """
-        if not self._done or self._delay is None:
+        self.process()
+        if not self.done():
             raise RuntimeError("Asking result which is not ready")
         self._is_read = True
         self._executor.notify_read(self)
@@ -93,22 +94,28 @@ class MockedTimedExecutor:
         return job
 
     def _process_submissions(self) -> None:
-        if self._steady_priority_queue:
-            self._steady_priority_queue[0].job._done = False
+        """Process all submissions which have not been processed yet.
+        """
         while self._to_be_processed:
             job = self._to_be_processed[0]
-            job._get_delay()  # trigger computation
-            if self._batch_mode:
-                job._done = True
-            else:
+            job.process()  # trigger computation
+            if not self._batch_mode:
                 heapq.heappush(self._steady_priority_queue, OrderedJobs(job.release_time, self._order, job))
             self._to_be_processed.popleft()  # remove right after it is added to the heap queue
             self._order += 1
-        if self._steady_priority_queue:
-            self._steady_priority_queue[0].job._done = True
+
+    def check_is_done(self, job: MockedTimedJob) -> bool:
+        """Called whenever "done" method is called on a job.
+        """
+        self._process_submissions()  # make sure everything is up to date
+        if self._batch_mode or job._is_read:
+            return True
+        else:
+            return job is self._steady_priority_queue[0].job
 
     def notify_read(self, job: MockedTimedJob) -> None:
         """Called whenever a result is read, so as to activate the next result in line
+        in case of steady mode, and to update executor time.
         """
         self._process_submissions()  # make sure everything is up to date
         if not self._batch_mode:
