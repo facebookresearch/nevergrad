@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
-from typing import Tuple, Any, Callable, List
+from typing import Tuple, Any, Callable, List, Optional
 import numpy as np
 
 
@@ -123,17 +123,24 @@ def sample_nash(optimizer: Any) -> Tuple[float, ...]:   # Somehow like fictitiou
     return nash[index][0]
 
 
-class FinishedJob:
-    """Future-like object with a pre-computed value
+class DelayedJob:
+    """Future-like object which delays computation
     """
 
-    def __init__(self, result: Any) -> None:
-        self._result = result
+    def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self._result: Optional[Any] = None
+        self._computed = False
 
     def done(self) -> bool:
         return True
 
     def result(self) -> Any:
+        if not self._computed:
+            self._result = self.func(*self.args, **self.kwargs)
+            self._computed = True
         return self._result
 
 
@@ -142,5 +149,5 @@ class SequentialExecutor:
     (just calls the function and returns a FinishedJob)
     """
 
-    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> FinishedJob:
-        return FinishedJob(function(*args, **kwargs))
+    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
+        return DelayedJob(function, *args, **kwargs)

@@ -37,7 +37,10 @@ def test_sequential_executor() -> None:
     np.testing.assert_equal(job1.done(), True)
     np.testing.assert_equal(job1.result(), 4)
     np.testing.assert_equal(func.count, 1)
-    executor.submit(func, [3])
+    job2 = executor.submit(func, [3])
+    np.testing.assert_equal(job2.done(), True)
+    np.testing.assert_equal(func.count, 1)  # not computed just yet
+    job2.result()
     np.testing.assert_equal(func.count, 2)
 
 

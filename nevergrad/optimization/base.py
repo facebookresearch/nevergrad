@@ -132,6 +132,9 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         value: float
             value of the function
         """
+        # call callbacks for logging etc...
+        for callback in self._callbacks.get("tell", []):
+            callback(self, x, value)
         if not isinstance(value, Real):
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
@@ -155,20 +158,17 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                     assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
         self._internal_tell(x, value)
         self._num_tell += 1
-        # call callbacks for logging etc...
-        for callback in self._callbacks.get("tell", []):
-            callback(self, x, value)
 
     def ask(self) -> Tuple[float, ...]:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
         """
-        suggestion = self._internal_ask()
-        assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
-        self._num_ask += 1
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
+        suggestion = self._internal_ask()
+        assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        self._num_ask += 1
         return suggestion
 
     def provide_recommendation(self) -> Tuple[float, ...]:
