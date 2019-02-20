@@ -29,7 +29,7 @@ class ExecutorTest(TestCase):
         delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
     )
     def test_mocked_steady_executor(self, func: Callable[..., Any], expected: List[int]) -> None:
-        executor = execution.MockedSteadyExecutor()
+        executor = execution.MockedTimedExecutor()
         jobs: List[execution.MockedTimedJob] = []
         for k in range(10):
             jobs.append(executor.submit(func, k, 0))
@@ -44,7 +44,7 @@ class ExecutorTest(TestCase):
 
 def test_mocked_steady_executor_time() -> None:
     func = Function()
-    executor = execution.MockedSteadyExecutor()
+    executor = execution.MockedTimedExecutor()
     jobs = [executor.submit(func, 0, 0)]
     np.testing.assert_equal(jobs[0].done(), True)
     jobs.append(executor.submit(func, 2, 0))

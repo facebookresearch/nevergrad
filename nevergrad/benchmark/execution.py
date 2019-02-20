@@ -15,7 +15,7 @@ class MockedTimedJob:
 
     # pylint: disable=too-many-instance-attributes
     def __init__(self, func: Callable[..., Any], args: Tuple[Any, ...], kwargs: Dict[str, Any],
-                 executor: "MockedSteadyExecutor") -> None:
+                 executor: "MockedTimedExecutor") -> None:
         self._executor = executor
         self._time = executor.time  # time at instantiation
         # function
@@ -67,7 +67,7 @@ class OrderedJobs(NamedTuple):
     job: MockedTimedJob
 
 
-class MockedSteadyExecutor:
+class MockedTimedExecutor:
     """Executor that mocks a steady state, by only providing 1 job at a time which is done() while
     not having been "read" (i.e. "result()" method was not executed).
     This ensures we control the order of update of the optimizer for benchmarking.

@@ -212,7 +212,7 @@ class Experiment:
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             # use default executor for batch mode (sequential, but mock for steady state
             # ("production" steady state is a not strictly steady state + does not handle mocked delays)
-            executor: Optional[execution.MockedSteadyExecutor] = None if self.optimsettings.batch_mode else execution.MockedSteadyExecutor()
+            executor: Optional[execution.MockedTimedExecutor] = None if self.optimsettings.batch_mode else execution.MockedTimedExecutor()
             try:
                 self.recommendation = self._optimizer.optimize(counter, batch_mode=self.optimsettings.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
