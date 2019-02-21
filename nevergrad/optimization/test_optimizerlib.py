@@ -53,7 +53,7 @@ def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, veri
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
             min(v.pessimistic_confidence_bound for v in archive.values()))
 
-    
+
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
         "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
 UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "DiagonalCMA",
@@ -95,6 +95,7 @@ class OptimizerTests(TestCase):
         if optimizer_cls.recast:
             random.seed(12)  # may depend on non numpy generator
         optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
+        np.testing.assert_equal(optim.name, name)
         output = optim.optimize(fitness)
         if name not in self.recommendations.index:
             self.recommendations.loc[name, :] = tuple(output)
