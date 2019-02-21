@@ -64,8 +64,9 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.num_workers = int(num_workers)
         self.budget = budget
         np.testing.assert_equal(dimension, int(dimension), f"Dimension must be an int")
-        self.dimension = int(dimension)
         dimension = int(dimension)
+        self.dimension = dimension
+        self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: Dict[Tuple[float, ...], utils.Value] = {}
         self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
@@ -95,10 +96,6 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def num_evaluations(self) -> int:
         warnings.warn("Use num_tell property instead", DeprecationWarning)
         return self.num_tell
-
-    @property
-    def name(self) -> str:
-        return self.__class__.__name__
 
     def __repr__(self) -> str:
         return f"Instance of {self.name}(dimension={self.dimension}, budget={self.budget}, num_workers={self.num_workers})"
@@ -299,6 +296,38 @@ class OptimizationPrinter:
             x = optimizer.provide_recommendation()
             point = x if x not in optimizer.archive else utils.Point(x, optimizer.archive[x])
             print(f"After {optimizer.num_tell}, recommendation is {point}")
+
+
+class OptimizerFamily:
+    """Factory/family of optimizers.
+    This class only provides a very general pattern for it and enable its instances for use in
+    benchmarks.
+    """
+    # this class will probably evolve in the near future
+    # the naming pattern is not yet very clear, better ideas are welcome
+
+    # optimizer qualifiers
+    recast = False  # algorithm which were not designed to work with the suggest/update pattern
+    one_shot = False  # algorithm designed to suggest all budget points at once
+    no_parallelization = False  # algorithm which is designed to run sequentially only
+    hashed = False
+
+    def __init__(self, **kwargs: Any) -> None:  # keyword only, to be as explicit as possible
+        self._kwargs = kwargs
+        params = ", ".join(f"{x}={y!r}" for x, y in sorted(kwargs.items()))
+        self.name = f"{self.__class__.__name__}({params})"  # ugly hack
+
+    def __repr__(self) -> str:
+        return self.name
+
+    def with_name(self, name: str, register: bool = False) -> 'OptimizerFamily':
+        self.name = name
+        if register:
+            registry.register_name(name, self)
+        return self
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+        raise NotImplementedError
 
 
 class ArgPoint(NamedTuple):

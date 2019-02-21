@@ -64,7 +64,7 @@ class OptimizerSettings:
         self.executor = execution.MockedTimedExecutor(batch_mode)
 
     @property
-    def batch_mode(self):
+    def batch_mode(self) -> bool:
         return self.executor.batch_mode
 
     def __repr__(self) -> str:

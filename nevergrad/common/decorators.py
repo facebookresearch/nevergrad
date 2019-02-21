@@ -21,13 +21,18 @@ class Registry(dict):  # type: ignore
         decorator instead of this one.
         """
         name = obj.__name__ if hasattr(obj, "__name__") else obj.__class__.__name__
+        self.register_name(name, obj, info)
+        return obj
+
+    def register_name(self, name: str, obj: Any, info: Optional[Dict[Any, Any]] = None) -> None:
+        """Register an object with a provided name
+        """
         if name in self:
             raise RuntimeError(f'Encountered a name collision "{name}"')
         self[name] = obj
         if info is not None:
             assert isinstance(info, dict)
             self._information[name] = info
-        return obj
 
     def unregister(self, name: str) -> None:
         """Remove a previously-registered function or class, e.g. so you can

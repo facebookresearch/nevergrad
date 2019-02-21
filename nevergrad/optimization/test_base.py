@@ -5,13 +5,14 @@
 
 import warnings
 from unittest import TestCase
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 import genty
 import numpy as np
 from ..common import testing
 from ..instrumentation import Instrumentation
 from ..instrumentation import variables as var
 from . import optimizerlib
+from . import test_optimizerlib
 from . import base
 
 
@@ -113,3 +114,29 @@ def test_instrumented_optimizer() -> None:
     iopt = base.IntrumentedOptimizer(opt, instru)
     output = iopt.optimize(lambda x, y: x**2 + y)  # type: ignore
     assert isinstance(output, base.ArgPoint)
+
+
+class StupidFamily(base.OptimizerFamily):
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+        class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
+        run = class_(dimension=dimension, budget=budget, num_workers=num_workers)
+        run.name = self.name
+        return run  # type: ignore
+
+
+def test_optimizer_family() -> None:
+    for zero in [True, False]:
+        optf = StupidFamily(zero=zero)
+        opt = optf(dimension=2, budget=4, num_workers=1)
+        recom = opt.optimize(test_optimizerlib.fitness)
+        np.testing.assert_equal(recom == np.zeros(2), zero)
+
+
+def test_naming() -> None:
+    optf = StupidFamily(zero=True)
+    opt = optf(dimension=2, budget=4, num_workers=1)
+    np.testing.assert_equal(repr(opt), "Instance of StupidFamily(zero=True)(dimension=2, budget=4, num_workers=1)")
+    optf.with_name("BlubluOptimizer", register=True)
+    opt = base.registry["BlubluOptimizer"](dimension=2, budget=4, num_workers=1)
+    np.testing.assert_equal(repr(opt), "Instance of BlubluOptimizer(dimension=2, budget=4, num_workers=1)")
