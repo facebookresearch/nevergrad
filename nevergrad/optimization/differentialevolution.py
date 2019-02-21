@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
@@ -12,7 +12,7 @@ from . import sequences
 
 
 @base.registry.register
-class NoisyDE(base.Optimizer):
+class DE(base.Optimizer):
     """Differential evolution.
 
     Default pop size equal to 30
@@ -28,6 +28,7 @@ class NoisyDE(base.Optimizer):
         self._lhs_init = False
         self._qr_init = False
         self._por_DE = False
+        self._recommendation = "optimistic"
         self.llambda = max(30, num_workers)
         self.scale = 1.0
         self.population: List[Optional[ArrayLike]] = []
@@ -52,11 +53,14 @@ class NoisyDE(base.Optimizer):
             self.population += [None] * (self.llambda - len(self.population))
 
     def _internal_provide_recommendation(self) -> Tuple[float, ...]:  # This is NOT the naive version. We deal with noise.
-        med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
-        good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
-        if not good_guys:
-            return self.current_bests["pessimistic"].x
-        return sum([np.array(g) for g in good_guys]) / len(good_guys)  # type: ignore
+        if self._recommendation == "noisy":
+            med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
+            good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
+            if not good_guys:
+                return self.current_bests["pessimistic"].x
+            return sum([np.array(g) for g in good_guys]) / len(good_guys)  # type: ignore
+        else:
+            return self.current_bests[self._recommendation].x
 
     def _internal_ask(self) -> Tuple[float, ...]:
         if self._lhs_init and self.sampler is None:
@@ -163,76 +167,43 @@ class NoisyDE(base.Optimizer):
         self.candidates[idx] = None
 
 
-@base.registry.register
-class DE(NoisyDE):
-    """Classical DE, in which we return the best at the end."""
+class DifferentialEvolution(base.OptimizerFamily):
 
-    def _internal_provide_recommendation(self) -> Tuple[float, ...]:
-        return self.current_bests["optimistic"].x
+    # pylint: disable=unused-argument,too-many-arguments
+    def __init__(self, lhs_init: bool = False, qr_init: bool = False, por_DE: bool = False, scale: Union[str, float] = 1.,
+                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
+                 CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0):
+        super().__init__(**{x: y for x, y in locals().items() if x not in ["self", "__class__"]})
+        assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
 
-
-@base.registry.register
-class OnePointDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.k = 1
-
-
-@base.registry.register
-class TwoPointsDE(OnePointDE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.k = 2
-
-
-@base.registry.register
-class LhsDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._lhs_init = True
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> DE:
+        run = DE(dimension=dimension, budget=budget, num_workers=num_workers)
+        # ugly but effective :s
+        for name, value in self._kwargs.items():
+            rename = name
+            if hasattr(run, "_" + name):
+                rename = "_" + rename
+            elif name == "crossover":
+                rename = "k"
+            elif name == "scale" and isinstance(value, str):
+                if value == "mini":
+                    value = 1. / np.sqrt(dimension)
+                else:
+                    raise ValueError(f'Unknown scaling: "{value}".')
+            setattr(run, rename, value)
+        run.name = repr(self)
+        return run
 
 
-@base.registry.register
-class QrDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._qr_init = True
-
-
-@base.registry.register
-class MiniDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.scale = 1. / np.sqrt(dimension)
-
-
-@base.registry.register
-class MiniLhsDE(LhsDE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.scale = 1. / np.sqrt(dimension)
-
-
-@base.registry.register
-class MiniQrDE(QrDE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.scale = 1. / np.sqrt(dimension)
-
-
-@base.registry.register
-class AlmostRotationInvariantDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.CR = 0.9
+OnePointDE = DifferentialEvolution(crossover=1).with_name("OnePointDE", register=True)
+TwoPointsDE = DifferentialEvolution(crossover=2).with_name("TwoPointsDE", register=True)
+LhsDE = DifferentialEvolution(lhs_init=True).with_name("LhsDE", register=True)
+QrDE = DifferentialEvolution(qr_init=True).with_name("QrDE", register=True)
+MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
+MiniLhsDE = DifferentialEvolution(lhs_init=True, scale="mini").with_name("MiniLhsDE", register=True)
+MiniQrDE = DifferentialEvolution(qr_init=True, scale="mini").with_name("MiniQrDE", register=True)
+OnePointDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
+AlmostRotationInvariantDE = DifferentialEvolution(CR=.9).with_name("AlmostRotationInvariantDE", register=True)
 
 
 @base.registry.register
