@@ -12,8 +12,7 @@ from . import base
 from . import sequences
 
 
-@base.registry.register
-class DE(base.Optimizer):
+class _DE(base.Optimizer):
     """Differential evolution.
 
     Default pop size equal to 30
@@ -170,21 +169,50 @@ class DE(base.Optimizer):
 class DifferentialEvolution(base.OptimizerFamily):
 
     # pylint: disable=unused-argument,too-many-arguments
-    def __init__(self, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
-                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
-                 CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0):
+    def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
+                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "pessimistic",
+                 CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard"):
+        """
+        Parameters
+        ----------
+        initialization: "LHS", "QR" or None
+            algorithm for the initialization phase
+        por_DE: bool
+            TODO
+        scale: float
+            scale of random component of the updates
+        inoculation: bool
+            TODO
+        hyperinoc: bool
+            TODO
+        recommendation: "pessimistic", "optimistic", "mean" or "noisy"
+            choice of the criterion for the best point to recommend
+        CR: float
+            TODO
+        F1: float
+            TODO
+        F2: float
+            TODO
+        crossover: int
+            TODO
+        popsize: "standard", "dimension", "large"
+            size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
+            and "large" max(num_workers, 30, 7 * dimension).
+        """
         # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert crossover in [0, 1, 2]
         assert initialization in [None, "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
+        assert popsize in ["large", "dimension", "standard"]
         # keep all parameters and set initialize superclass for print
         self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
         defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
         super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
 
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> DE:
-        run = DE(dimension=dimension, budget=budget, num_workers=num_workers)
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _DE:
+        run = _DE(dimension=dimension, budget=budget, num_workers=num_workers)
+        pop_choice = {"standard": 0, "dimension": dimension + 1, "large": 7 * dimension}
         # ugly but effective :s
         for name, value in self._parameters.items():
             rename = name
@@ -197,11 +225,15 @@ class DifferentialEvolution(base.OptimizerFamily):
                     value = 1. / np.sqrt(dimension)
                 else:
                     raise ValueError(f'Unknown scaling: "{value}".')
+            elif name == "popsize":
+                value = max(run.llambda, pop_choice[value])
+                rename = "llambda"
             setattr(run, rename, value)
         run.name = repr(self)
         return run
 
 
+DE = DifferentialEvolution().with_name("DE", register=True)
 OnePointDE = DifferentialEvolution(crossover=1).with_name("OnePointDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover=2).with_name("TwoPointsDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
@@ -211,30 +243,7 @@ MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").with_name(
 MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").with_name("MiniQrDE", register=True)
 OnePointDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(CR=.9).with_name("AlmostRotationInvariantDE", register=True)
-
-
-@base.registry.register
-class AlmostRotationInvariantDEAndBigPop(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.CR = 0.9
-        self.llambda = max(self.llambda, dimension+1)
-
-
-@base.registry.register
-class RotationInvariantDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.CR = 1
-        self.llambda = max(self.llambda, dimension+1)
-
-
-@base.registry.register
-class BPRotationInvariantDE(DE):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.CR = 1
-        self.llambda = max(self.llambda, 7*dimension)
+AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(CR=.9, popsize="dimension").with_name("AlmostRotationInvariantDEAndBigPop",
+                                                                                                 register=True)
+RotationInvariantDE = DifferentialEvolution(CR=1., popsize="dimension").with_name("RotationInvariantDE", register=True)
+BPRotationInvariantDE = DifferentialEvolution(CR=1., popsize="large").with_name("BPRotationInvariantDE", register=True)

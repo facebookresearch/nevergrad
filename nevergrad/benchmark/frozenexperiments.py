@@ -32,8 +32,8 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
     optims: List[Union[str, optimizerlib.base.OptimizerFamily]] = ["OnePlusOne", optimizerlib.DifferentialEvolution()]
-    for optim in optims:
-        for _ in range(5):
+    for _ in range(5):
+        for optim in optims:
             yield Experiment(function.duplicate(), optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
 
 

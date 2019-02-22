@@ -63,6 +63,7 @@ def test_launch() -> None:
             repeated_launch("repeated_basic", cap_index=4, num_workers=2, output=output, plot=True)
             assert output.exists()
             df = core.tools.Selector.read_csv(str(output))
+            testing.assert_set_equal(df.unique("optimizer_name"), {"DifferentialEvolution()", "OnePlusOne"})
             assert isinstance(df, core.tools.Selector)
             np.testing.assert_equal(len(df), 4)
 
