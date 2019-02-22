@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional
+from typing import Iterator, Optional, List, Union
 import numpy as np
 from .. import optimization
+from ..optimization import optimizerlib
 from ..functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
@@ -21,7 +22,7 @@ def basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
     np.random.seed(seed)  # seed before initializing the function!
     function.initialize()  # initialization uses randomness
-    return iter([Experiment(function, optimizer_name="OnePlusOne", num_workers=2, budget=4, seed=next(seedg))])
+    return iter([Experiment(function, optimizer="OnePlusOne", num_workers=2, budget=4, seed=next(seedg))])
 
 
 @registry.register
@@ -29,7 +30,11 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Test settings
     """
     seedg = create_seed_generator(seed)
-    return (next(basic(next(seedg))) for _ in range(10))
+    function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
+    optims: List[Union[str, optimizerlib.base.OptimizerFamily]] = ["OnePlusOne", optimizerlib.DifferentialEvolution()]
+    for _ in range(5):
+        for optim in optims:
+            yield Experiment(function.duplicate(), optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
 
 
 @registry.register

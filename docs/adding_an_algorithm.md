@@ -75,6 +75,11 @@ A unit tests automatically makes sure that all optimizers have repeatable bvehav
 
 We have used [type hints](https://docs.python.org/3/library/typing.html) throughout `nevergrad` to make it more robust, and the continuous integration will check that everything is correct when pull requests are submitted. However, **we do not want typing to be an annoyance** for contributors who do not care about it, so please feel entirely free to use `# type: ignore` on each line the continuous integration will flag as incorrect, so that the errors disappear. If we consider it useful to have correct typing, we will update the code after your pull request is merged.
 
+
+### Optimizer families
+
+If it makes sense to create several variations of your optimizer, using different hyperparameters, you can implement an `OptimizerFamily`. The only aim of this class is to create `Optimizers` and set the parameters before returning it. This is still an experimental API which may evolve soon, and an example can be found in the implementation of [differential evolution algorithms](../nevergrad/optimization/differentialevolution.py).
+
 ## How to test it
 
 You are welcome to add tests if you want to make sure your implementation is correct. It is however not required since some tests are run on all registered algorithms. They will test two features:

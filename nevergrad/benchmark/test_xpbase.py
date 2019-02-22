@@ -35,7 +35,7 @@ class Function(BaseFunction, execution.PostponedObject):
 
 def test_run_artificial_function() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
-    xp = xpbase.Experiment(func, optimizer_name="OnePlusOne", budget=300, num_workers=2, batch_mode=True)
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=2, batch_mode=True)
     summary = xp.run()
     assert summary["elapsed_time"] < .5  # should be much faster
     assert summary["loss"] < .001
@@ -46,7 +46,7 @@ def test_run_artificial_function() -> None:
 
 def test_run_with_error() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
-    xp = xpbase.Experiment(func, optimizer_name="OnePlusOne", budget=300, num_workers=1)
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=1)
     with patch("nevergrad.optimization.optimizerlib.OnePlusOne.optimize") as run:
         run.side_effect = ValueError("test error string")
         with contextlib.redirect_stderr(sys.stdout):
@@ -66,7 +66,7 @@ class ExperimentsTests(TestCase):
     )
     def test_is_incoherent(self, optimizer: str, num_workers: int, expected: bool) -> None:
         func = ArtificialFunction(name="sphere", block_dimension=2)
-        xp = xpbase.Experiment(func, optimizer_name=optimizer, budget=300, num_workers=num_workers)
+        xp = xpbase.Experiment(func, optimizer=optimizer, budget=300, num_workers=num_workers)
         np.testing.assert_equal(xp.is_incoherent, expected)
 
     @genty.genty_dataset(  # type: ignore
@@ -93,13 +93,13 @@ class ExperimentsTests(TestCase):
         func = Function(dimension=1)
         optim = test_base.LoggingOptimizer(3)
         with patch.object(xpbase.OptimizerSettings, "instanciate", return_value=optim):
-            xp = xpbase.Experiment(func, optimizer_name="OnePlusOne", budget=10, num_workers=3, batch_mode=batch_mode)
+            xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=10, num_workers=3, batch_mode=batch_mode)
             xp._run_with_error()
             testing.printed_assert_equal(optim.logs, expected)
 
 
 def test_equality() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
-    xp1 = xpbase.Experiment(func, optimizer_name="OnePlusOne", budget=300, num_workers=2)
-    xp2 = xpbase.Experiment(func, optimizer_name="RandomSearch", budget=300, num_workers=2)
+    xp1 = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=2)
+    xp2 = xpbase.Experiment(func, optimizer="RandomSearch", budget=300, num_workers=2)
     assert xp1 != xp2

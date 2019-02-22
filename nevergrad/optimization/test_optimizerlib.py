@@ -104,6 +104,20 @@ class OptimizerTests(TestCase):
                                              err_msg="Something has changed, if this is normal, delete the following "
                                              f"file and rerun to update the values:\n{self._RECOM_FILE}")
 
+    @genty.genty_dataset(  # type: ignore
+        de=("DE", 10, 10, 30),
+        de_w=("DE", 50, 40, 40),
+        de1=("OnePointDE", 10, 10, 30),
+        de1_w=("OnePointDE", 50, 40, 40),
+        dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
+        dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
+        dim_d_rot=("RotationInvariantDE", 50, 40, 51),
+        large=("BPRotationInvariantDE", 10, 40, 70),
+    )
+    def test_differential_evolution_popsize(self, name: str, dimension: int, num_workers: int, expected: int) -> None:
+        optim = registry[name](dimension=dimension, budget=100, num_workers=num_workers)
+        np.testing.assert_equal(optim.llambda, expected)
+
 
 def test_pso_to_real() -> None:
     output = optimizerlib.PSO.to_real([.3, .5, .9])
@@ -115,3 +129,9 @@ def test_portfolio_budget() -> None:
     for k in range(3, 13):
         optimizer = optimizerlib.Portfolio(dimension=2, budget=k)
         np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
+
+
+def test_differential_evolution_repr() -> None:
+    Cls = optimizerlib.DifferentialEvolution
+    np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
+    np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")
