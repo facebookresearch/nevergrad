@@ -52,14 +52,13 @@ class _DE(base.Optimizer):
             self.population += [None] * (self.llambda - len(self.population))
 
     def _internal_provide_recommendation(self) -> Tuple[float, ...]:  # This is NOT the naive version. We deal with noise.
-        if self._recommendation == "noisy":
-            med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
-            good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
-            if not good_guys:
-                return self.current_bests["pessimistic"].x
-            return sum([np.array(g) for g in good_guys]) / len(good_guys)  # type: ignore
-        else:
+        if self._recommendation != "noisy":
             return self.current_bests[self._recommendation].x
+        med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
+        good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
+        if not good_guys:
+            return self.current_bests["pessimistic"].x
+        return sum([np.array(g) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask(self) -> Tuple[float, ...]:
         if self.sampler is None and self._initialization is not None:
