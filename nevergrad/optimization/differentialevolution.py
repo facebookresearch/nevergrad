@@ -241,7 +241,7 @@ QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=Tru
 MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
 MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").with_name("MiniLhsDE", register=True)
 MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").with_name("MiniQrDE", register=True)
-OnePointDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
+NoisyDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(CR=.9).with_name("AlmostRotationInvariantDE", register=True)
 AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(CR=.9, popsize="dimension").with_name("AlmostRotationInvariantDEAndBigPop",
                                                                                                  register=True)
