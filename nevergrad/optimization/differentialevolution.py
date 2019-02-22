@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import inspect
 from typing import Optional, Tuple, List, Union
 import numpy as np
 from scipy import stats
@@ -173,13 +174,15 @@ class DifferentialEvolution(base.OptimizerFamily):
     def __init__(self, lhs_init: bool = False, qr_init: bool = False, por_DE: bool = False, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
                  CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0):
-        super().__init__(**{x: y for x, y in locals().items() if x not in ["self", "__class__"]})
+        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
+        defaults = {x: y.default for x, y in inspect.signature(self.__init__).parameters.items()}
+        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
 
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> DE:
         run = DE(dimension=dimension, budget=budget, num_workers=num_workers)
         # ugly but effective :s
-        for name, value in self._kwargs.items():
+        for name, value in self._parameters.items():
             rename = name
             if hasattr(run, "_" + name):
                 rename = "_" + rename
