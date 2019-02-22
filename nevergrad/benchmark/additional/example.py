@@ -44,4 +44,4 @@ def additional_experiment():  # The signature can also include a seed argument i
     for budget in [10, 100]:
         for optimizer in ["NewOptimizer", "RandomSearch"]:
             for func in funcs:  # 2 realizations of the same function
-                yield Experiment(func, optimizer_name=optimizer, budget=budget, num_workers=1)
+                yield Experiment(func, optimizer=optimizer, budget=budget, num_workers=1)

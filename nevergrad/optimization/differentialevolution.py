@@ -28,7 +28,7 @@ class DE(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._initialization: Optional[str] = None
         self._por_DE = False
-        self._recommendation = "optimistic"
+        self._recommendation = "pessimistic"
         self.llambda = max(30, num_workers)
         self.scale = 1.0
         self.population: List[Optional[ArrayLike]] = []

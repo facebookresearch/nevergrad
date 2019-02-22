@@ -8,12 +8,12 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple
+from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple, Type
 import numpy as np
 from ..common import decorators
 from ..functions import BaseFunction
 from ..optimization import base
-from ..optimization.optimizerlib import registry as optimizer_registry
+from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
 
 
@@ -55,13 +55,18 @@ class OptimizerSettings:
     Eventually, this class should be moved to be directly used for defining experiments.
     """
 
-    def __init__(self, name: str, budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+    def __init__(self, optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
         self._setting_names = [x for x in locals() if x != "self"]
-        assert name in optimizer_registry, f"{name} is not registered"
-        self.name = name
+        if isinstance(optimizer, str):
+            assert optimizer in optimizer_registry, f"{optimizer} is not registered"
+        self.optimizer = optimizer
         self.budget = budget
         self.num_workers = num_workers
         self.executor = execution.MockedTimedExecutor(batch_mode)
+
+    @property
+    def name(self) -> str:
+        return self.optimizer if isinstance(self.optimizer, str) else self.optimizer.name
 
     @property
     def batch_mode(self) -> bool:
@@ -70,6 +75,9 @@ class OptimizerSettings:
     def __repr__(self) -> str:
         return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
 
+    def _get_factory(self) -> Union[Type[base.Optimizer], base.OptimizerFamily]:
+        return optimizer_registry[self.optimizer] if isinstance(self.optimizer, str) else self.optimizer
+
     @property
     def is_incoherent(self) -> bool:
         """Flags settings which are known to be impossible to process.
@@ -77,19 +85,19 @@ class OptimizerSettings:
         - no_parallelization optimizers for num_workers > 1
         """
         # flag no_parallelization when num_workers greater than 1
-        optimizer = optimizer_registry[self.name]
-        return optimizer.no_parallelization and bool(self.num_workers > 1)
+        return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
     def instanciate(self, dimension: int) -> base.Optimizer:
         """Instanciate an optimizer, providing the optimization space dimension
         """
-        optim: base.Optimizer = optimizer_registry[self.name](dimension=dimension, budget=self.budget, num_workers=self.num_workers)
-        return optim
+        return self._get_factory()(dimension=dimension, budget=self.budget, num_workers=self.num_workers)
 
     def get_description(self) -> Dict[str, Any]:
         """Returns a dictionary describing the optimizer settings
         """
-        return {x if x != "name" else "optimizer_name": getattr(self, x) for x in self._setting_names}
+        descr = {x: getattr(self, x) for x in self._setting_names if x != "optimizer"}
+        descr["optimizer_name"] = self.optimizer if isinstance(self.optimizer, str) else self.optimizer.name
+        return descr
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
@@ -133,12 +141,12 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: BaseFunction, optimizer_name: str, budget: int, num_workers: int = 1,
+    def __init__(self, function: BaseFunction, optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None) -> None:
         assert isinstance(function, BaseFunction), "All experiment functions should derive from BaseFunction"
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
-        self.optimsettings = OptimizerSettings(name=optimizer_name, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
+        self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.ArrayLike] = None
         self.final_averaging_repetitions = 100

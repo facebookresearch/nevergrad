@@ -6,6 +6,7 @@
 from typing import Iterator, Optional
 import numpy as np
 from .. import optimization
+from ..optimization import optimizerlib
 from ..functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
@@ -21,7 +22,7 @@ def basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
     np.random.seed(seed)  # seed before initializing the function!
     function.initialize()  # initialization uses randomness
-    return iter([Experiment(function, optimizer_name="OnePlusOne", num_workers=2, budget=4, seed=next(seedg))])
+    return iter([Experiment(function, optimizer="OnePlusOne", num_workers=2, budget=4, seed=next(seedg))])
 
 
 @registry.register
@@ -29,7 +30,10 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Test settings
     """
     seedg = create_seed_generator(seed)
-    return (next(basic(next(seedg))) for _ in range(10))
+    function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
+    for optim in ["OnePlusOne", optimizerlib.DifferentialEvolution()]:
+        for _ in range(5):
+            yield Experiment(function.duplicate(), optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
 
 
 @registry.register
