@@ -27,7 +27,7 @@ class _DE(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._initialization: Optional[str] = None
         self._por_DE = False
-        self._recommendation = "pessimistic"
+        self._recommendation = "optimistic"
         self.llambda = max(30, num_workers)
         self.scale = 1.0
         self.population: List[Optional[ArrayLike]] = []
@@ -169,7 +169,7 @@ class DifferentialEvolution(base.OptimizerFamily):
 
     # pylint: disable=unused-argument,too-many-arguments
     def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
-                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "pessimistic",
+                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
                  CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard"):
         """Differential evolution algorithms.
 
