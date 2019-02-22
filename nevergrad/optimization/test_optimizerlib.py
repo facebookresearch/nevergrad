@@ -115,3 +115,9 @@ def test_portfolio_budget() -> None:
     for k in range(3, 13):
         optimizer = optimizerlib.Portfolio(dimension=2, budget=k)
         np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
+
+
+def test_differential_evolution_repr() -> None:
+    Cls = optimizerlib.DifferentialEvolution
+    np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
+    np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")

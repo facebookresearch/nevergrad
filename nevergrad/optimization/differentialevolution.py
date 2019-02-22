@@ -26,8 +26,7 @@ class DE(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._lhs_init = False
-        self._qr_init = False
+        self._initialization: Optional[str] = None
         self._por_DE = False
         self._recommendation = "optimistic"
         self.llambda = max(30, num_workers)
@@ -64,10 +63,10 @@ class DE(base.Optimizer):
             return self.current_bests[self._recommendation].x
 
     def _internal_ask(self) -> Tuple[float, ...]:
-        if self._lhs_init and self.sampler is None:
-            self.sampler = sequences.LHSSampler(self.dimension, budget=self.llambda)
-        if self._qr_init and self.sampler is None:
-            self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=self.llambda)
+        if self.sampler is None and self._initialization is not None:
+            assert self._initialization in ["LHS", "QR"]
+            sampler_cls = sequences.LHSSampler if self._initialization == "LHS" else sequences.ScrHammersleySampler
+            self.sampler = sampler_cls(self.dimension, budget=self.llambda)
         self.match_population_size_to_lambda()
         location = self._num_ask % self.llambda
         i = (self.population[location])
@@ -84,11 +83,11 @@ class DE(base.Optimizer):
             if self.hyperinoc:
                 p = [float(self.llambda - location), location]
                 p = [p_ / sum(p) for p_ in p]
-                sample = self.sampler() if (self._lhs_init or self._qr_init) else np.random.normal(0, 1, self.dimension)  # type: ignore
+                sample = self.sampler() if self._initialization is not None else np.random.normal(0, 1, self.dimension)  # type: ignore
                 new_guy = tuple([np.random.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
             else:
                 new_guy = tuple(inoc * self.scale * (np.random.normal(0, 1, self.dimension)
-                                                     if not (self._qr_init or self._lhs_init)
+                                                     if self._initialization is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             self.population[location] = new_guy
             self.population_fitnesses[location] = None
@@ -171,13 +170,18 @@ class DE(base.Optimizer):
 class DifferentialEvolution(base.OptimizerFamily):
 
     # pylint: disable=unused-argument,too-many-arguments
-    def __init__(self, lhs_init: bool = False, qr_init: bool = False, por_DE: bool = False, scale: Union[str, float] = 1.,
+    def __init__(self, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
                  CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0):
-        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
-        defaults = {x: y.default for x, y in inspect.signature(self.__init__).parameters.items()}
-        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
+        # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
+        assert crossover in [0, 1, 2]
+        assert initialization in [None, "LHS", "QR"]
+        assert isinstance(scale, float) or scale == "mini"
+        # keep all parameters and set initialize superclass for print
+        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
+        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
 
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> DE:
         run = DE(dimension=dimension, budget=budget, num_workers=num_workers)
@@ -200,11 +204,11 @@ class DifferentialEvolution(base.OptimizerFamily):
 
 OnePointDE = DifferentialEvolution(crossover=1).with_name("OnePointDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover=2).with_name("TwoPointsDE", register=True)
-LhsDE = DifferentialEvolution(lhs_init=True).with_name("LhsDE", register=True)
-QrDE = DifferentialEvolution(qr_init=True).with_name("QrDE", register=True)
+LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
+QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=True)
 MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
-MiniLhsDE = DifferentialEvolution(lhs_init=True, scale="mini").with_name("MiniLhsDE", register=True)
-MiniQrDE = DifferentialEvolution(qr_init=True, scale="mini").with_name("MiniQrDE", register=True)
+MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").with_name("MiniLhsDE", register=True)
+MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").with_name("MiniQrDE", register=True)
 OnePointDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(CR=.9).with_name("AlmostRotationInvariantDE", register=True)
 
