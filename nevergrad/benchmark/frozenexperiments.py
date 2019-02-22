@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional
+from typing import Iterator, Optional, List, Union
 import numpy as np
 from .. import optimization
 from ..optimization import optimizerlib
@@ -31,7 +31,8 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
-    for optim in ["OnePlusOne", optimizerlib.DifferentialEvolution()]:
+    optims: List[Union[str, optimizerlib.base.OptimizerFamily]] = ["OnePlusOne", optimizerlib.DifferentialEvolution()]
+    for optim in optims:
         for _ in range(5):
             yield Experiment(function.duplicate(), optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
 
