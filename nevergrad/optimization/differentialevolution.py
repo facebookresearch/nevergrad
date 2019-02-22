@@ -172,7 +172,13 @@ class DifferentialEvolution(base.OptimizerFamily):
     def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "pessimistic",
                  CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard"):
-        """
+        """Differential evolution algorithms.
+
+        Default pop size is 30
+        We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
+        Default settings are CR =.5, F1=.8, F2=.8, curr-to-best.
+        Initial population: pure random.
+
         Parameters
         ----------
         initialization: "LHS", "QR" or None
