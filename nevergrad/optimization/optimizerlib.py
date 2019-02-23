@@ -449,6 +449,46 @@ class TBPSA(base.Optimizer):
 
 
 @registry.register
+class CTBPSA(base.Optimizer):
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self.tbpsa = TBPSA(dimension, budget=budget, num_workers=num_workers)
+        self.num_repeat = 0
+        self.repeator = {}
+        self.listor = {}
+
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.num_repeat == 0:
+            self.current_point = self.tbpsa.ask()
+            self.num_repeat = max(1, int(self.tbpsa.llambda**.1))
+            self.repeator[self.current_point] = self.num_repeat
+            self.listor[self.current_point] = []
+        self.num_repeat -= 1
+        return self.current_point
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.repeator[x] -= 1
+        self.listor[self.current_point] += [value]
+        if self.repeator[x] == 0:
+            self.tbpsa.tell(x, mean(self.listor[self.current_point]))
+            del self.repeator[x]
+            del self.listor[x]
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+        return self.tbpsa.provide_recommendation()
+
+@registry.register
+class RCTBPSA(CTBPSA):
+    def _internal_ask(self) -> base.ArrayLike:
+        if self.num_repeat == 0:
+            self.current_point = self.tbpsa.ask()
+            self.num_repeat = int(max(1, self.tbpsa.num_ask**.1))
+            self.repeator[self.current_point] = self.num_repeat
+        self.num_repeat -= 1
+        return self.current_point
+
+
+@registry.register
 class NaiveTBPSA(TBPSA):
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:

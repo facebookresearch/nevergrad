@@ -226,8 +226,8 @@ def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
-    optims = ["NoisyBandit", "TBPSA", "NaiveTBPSA"]
-    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:
+    optims = ["NoisyBandit", "TBPSA", "NaiveTBPSA", "CTBPSA", "RCTBPSA"]
+    for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000]:
         for optim in optims:
             for noise_dissymmetry in [False, True]:
                 function = ArtificialFunction(name="sphere", rotation=True, block_dimension=1, noise_level=10,
