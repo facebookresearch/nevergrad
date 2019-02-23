@@ -126,9 +126,9 @@ class BO(recaster.SequentialRecastOptimizer):
             budget = int(np.sqrt(self.budget))
             sampler: Optional[sequences.Sampler] = None
             if self.qr == "qr":
-                sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
+                sampler = sequences.HammersleySampler(self.dimension, budget=budget, scrambling=True)
             elif self.qr == "mqr":
-                sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget - 1)
+                sampler = sequences.HammersleySampler(self.dimension, budget=budget - 1, scrambling=True)
             elif self.qr == "lhs":
                 sampler = sequences.LHSSampler(self.dimension, budget=budget)
             elif self.qr == "r":

@@ -152,13 +152,6 @@ class HaltonSampler(Sampler):
 
 
 @samplers.register
-class ScrHaltonSampler(HaltonSampler):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None) -> None:
-        super().__init__(dimension, budget, scrambling=True)
-
-
-@samplers.register
 class HammersleySampler(HaltonSampler):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, scrambling: bool = False) -> None:
@@ -168,13 +161,6 @@ class HammersleySampler(HaltonSampler):
     def _internal_sampler(self) -> ArrayLike:
         assert self.budget is not None
         return np.concatenate(([(self.index + .5) / float(self.budget)], super()._internal_sampler()))
-
-
-@samplers.register
-class ScrHammersleySampler(HammersleySampler):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None) -> None:
-        super().__init__(dimension, budget, scrambling=True)
 
 
 class Rescaler:

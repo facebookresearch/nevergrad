@@ -75,7 +75,7 @@ def test_permutation_generator() -> None:
 
 def test_rescaler_on_hammersley() -> None:
     np.random.seed(12)
-    sampler = sequences.ScrHammersleySampler(dimension=3, budget=4)
+    sampler = sequences.HammersleySampler(dimension=3, budget=4, scrambling=True)
     samples = list(sampler)
     sampler.reinitialize()
     samples2 = list(sampler)

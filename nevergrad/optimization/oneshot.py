@@ -244,7 +244,7 @@ class RescaleScrHammersleySearch(OneShotOptimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=self.budget)
+        self.sampler = sequences.HammersleySampler(self.dimension, budget=self.budget, scrambling=True)
         self.rescaler = sequences.Rescaler(self.sampler)
         self.sampler.reinitialize()
         self.iterator = iter(self.sampler)
