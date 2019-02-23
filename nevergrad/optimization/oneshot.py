@@ -153,12 +153,28 @@ HaltonSearch = DeterministicSearch().with_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True).with_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = DeterministicSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
 LargeScrHaltonSearch = DeterministicSearch(scale=100., scrambled=True).with_name("LargeScrHaltonSearch", register=True)
+LargeHaltonSearchPlusMiddlePoint = DeterministicSearch(
+    scale=100., middle_point=True).with_name("LargeHaltonSearchPlusMiddlePoint", register=True)
+SmallHaltonSearchPlusMiddlePoint = DeterministicSearch(
+    scale=.01, middle_point=True).with_name("SmallHaltonSearchPlusMiddlePoint", register=True)
 ScrHaltonSearch = DeterministicSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
 ScrHaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True, scrambled=True).with_name("ScrHaltonSearchPlusMiddlePoint",
                                                                                                   register=True)
+LargeScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
+    scale=100., middle_point=True, scrambled=True).with_name("LargeScrHaltonSearchPlusMiddlePoint", register=True)
+SmallScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
+    scale=.01, middle_point=True, scrambled=True).with_name("SmallScrHaltonSearchPlusMiddlePoint", register=True)
 HammersleySearch = DeterministicSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
 HammersleySearchPlusMiddlePoint = DeterministicSearch(sampler="Hammersley", middle_point=True).with_name("HammersleySearchPlusMiddlePoint",
                                                                                                          register=True)
+LargeHammersleySearchPlusMiddlePoint = DeterministicSearch(
+    scale=100., sampler="Hammersley", middle_point=True).with_name("LargeHammersleySearchPlusMiddlePoint", register=True)
+SmallHammersleySearchPlusMiddlePoint = DeterministicSearch(
+    scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallHammersleySearchPlusMiddlePoint", register=True)
+LargeScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
+    scrambled=True, scale=100., sampler="Hammersley", middle_point=True).with_name("LargeScrHammersleySearchPlusMiddlePoint", register=True)
+SmallScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
+    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallScrHammersleySearchPlusMiddlePoint", register=True)
 ScrHammersleySearchPlusMiddlePoint = DeterministicSearch(scrambled=True, sampler="Hammersley",
                                                          middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
 LargeHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
@@ -169,126 +185,6 @@ CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley
                                                                                                              register=True)
 LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
 CauchyLHSSearch = DeterministicSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
-
-
-@registry.register
-class LargeHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale Halton search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale scrambled Halton search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale Hammersley search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale scrambled Hammersley search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
 
 
 @registry.register
