@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import inspect
 from typing import Optional, Tuple
 from scipy import stats
 import numpy as np
@@ -69,8 +70,34 @@ class StupidRandom(RandomSearch):
 # # # # # implementations # # # # #
 
 
-@registry.register
-class HaltonSearch(OneShotOptimizer):
+class _DetermisticSearch(OneShotOptimizer):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._sampler_instance: Optional[sequences.Sampler] = None
+        self._sampler = "Halton"
+        self._middle_point = False
+        self._scrambled = False
+        self._cauchy = False
+        self._scale = 1.
+
+    @property
+    def sampler(self) -> sequences.Sampler:
+        if self._sampler_instance is None:
+            budget = None if self.budget is None else self.budget  # TODO: - self._middle_point
+            samplers = {"Halton": sequences.HaltonSampler,
+                        "Hammersley": sequences.HammersleySampler,
+                        "LHS": sequences.LHSSampler,
+                        }
+            self._sampler_instance = samplers[self._sampler](self.dimension, budget, scrambling=self._scrambled)
+        return self._sampler_instance
+
+    def _internal_ask(self) -> ArrayLike:
+        # pylint: disable=not-callable
+        return self._scale * (stats.cauchy.ppf if self._cauchy else stats.norm.ppf)(self.sampler())
+
+
+class DeterministicSearch(base.OptimizerFamily):
     """Halton low-discrepancy search.
 
     This is a one-shot optimization method, hopefully better than random search
@@ -79,111 +106,57 @@ class HaltonSearch(OneShotOptimizer):
     it is usually better to use Halton with scrambling.
     When the budget is known in advance, it is also better to replace Halton by Hammersley.
     Reference: Halton 1964: Algorithm 247: Radical-inverse quasi-random point sequence, ACM, p. 701.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHaltonSearch(OneShotOptimizer):
-    """Scrambled Halton search.
+    Adds scrambling to the Halton search; much better in high dimension and rarely worse
+    than the original Halton search.
 
     Adds scrambling to the Halton search; much better in high dimension and rarely worse
     than the original Halton search.
-    """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
+    hammersley version of the halton search.
+    basically the key difference with halton is adding one coordinate evenly spaced.
+    the discrepancy is better; but we need the budget in advance.
 
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class HammersleySearch(OneShotOptimizer):
-    """Hammersley version of the Halton search.
-
-    Basically the key difference with Halton is adding one coordinate evenly spaced.
-    The discrepancy is better; but we need the budget in advance."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHammersleySearch(OneShotOptimizer):
-    """Scrambled Hammersley sequence.
-
+    Scrambled Hammersley sequence.
     This combines Scrambled Halton and Hammersley.
-    """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class CauchyScrHammersleySearch(OneShotOptimizer):
-    """Scrambled Hammersley sequence.
-
-    This combines Scrambled Halton and Hammersley.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.cauchy.ppf(self.sampler())
-
-
-@registry.register
-class LHSSearch(OneShotOptimizer):
-    """Latin Hypercube Sampling.
-
+    Latin Hypercube Sampling.
     Though partially incremental versions exist, this implementation needs the budget in advance.
     This can be great in terms of discrepancy when the budget is not very high - for high
     budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
     """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.LHSSampler(self.dimension, budget=self.budget)
+    one_shot = True
 
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
+    # pylint: disable=unused-argument
+    def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point=False,
+                 cauchy: bool = False, scale: float = 1.):
+        # keep all parameters and set initialize superclass for print
+        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
+        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _DetermisticSearch:
+        run = _DetermisticSearch(dimension=dimension, budget=budget, num_workers=num_workers)
+        # ugly but effective :s
+        for name, value in self._parameters.items():
+            setattr(run, "_" + name, value)
+        run.name = repr(self)
+        return run
 
 
-@registry.register
-class CauchyLHSSearch(OneShotOptimizer):
-    """Latin Hypercube Sampling.
-
-    Though partially incremental versions exist, this implementation needs the budget in advance.
-    This can be great in terms of discrepancy when the budget is not very high - for high
-    budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.LHSSampler(self.dimension, budget=self.budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.cauchy.ppf(self.sampler())
+HaltonSearch = DeterministicSearch().with_name("HaltonSearch", register=True)
+LargeHaltonSearch = DeterministicSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
+LargeScrHaltonSearch = DeterministicSearch(scale=100., scrambled=True).with_name("LargeScrHaltonSearch", register=True)
+ScrHaltonSearch = DeterministicSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
+HammersleySearch = DeterministicSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
+LargeHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
+LargeScrHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch",
+                                                                                                           register=True)
+ScrHammersleySearch = DeterministicSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
+CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyScrHammersleySearch",
+                                                                                                             register=True)
+LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
+CauchyLHSSearch = DeterministicSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
 
 
 @registry.register
@@ -203,58 +176,6 @@ class RescaleScrHammersleySearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         return stats.norm.ppf(self.rescaler.apply(next(self.iterator)))
-
-
-@registry.register
-class LargeHaltonSearch(OneShotOptimizer):
-    """Larger scale Halton search.
-
-    This corresponds to Halton, but pushing points closer to boundaries. This is in case
-    extreme values are more likely to be useful.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHaltonSearch(OneShotOptimizer):
-    """Larger scale scrambled Halton search."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeHammersleySearch(OneShotOptimizer):
-    """Larger scale Hammersley search."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHammersleySearch(OneShotOptimizer):
-    """Larger scale scrambled Hammersley search."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
 
 
 @registry.register

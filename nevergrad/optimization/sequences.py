@@ -80,7 +80,9 @@ class Sampler:
 @samplers.register
 class LHSSampler(Sampler):
 
-    def __init__(self, dimension: int, budget: int) -> None:
+    def __init__(self, dimension: int, budget: int, scrambling: bool = False) -> None:
+        if scrambling:
+            raise ValueError("LHSSampler does not support scrambling")
         super().__init__(dimension, budget)
         self.permutations = np.zeros((dimension, budget), dtype=int)
         for k in range(dimension):
