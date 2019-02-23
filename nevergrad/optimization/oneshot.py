@@ -94,6 +94,8 @@ class _DetermisticSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
+        if self._middle_point and not self._num_ask:
+            return np.zeros(self.dimension)
         return self._scale * (stats.cauchy.ppf if self._cauchy else stats.norm.ppf)(self.sampler())
 
 
@@ -123,13 +125,16 @@ class DeterministicSearch(base.OptimizerFamily):
     Though partially incremental versions exist, this implementation needs the budget in advance.
     This can be great in terms of discrepancy when the budget is not very high - for high
     budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
+
+    Adding a middle point in the larger scale scrambled Halton search.
+    The additional point is the very first one.
     """
 
     one_shot = True
 
     # pylint: disable=unused-argument
-    def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point=False,
-                 cauchy: bool = False, scale: float = 1.):
+    def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
+                 cauchy: bool = False, scale: float = 1.) -> None:
         # keep all parameters and set initialize superclass for print
         self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
         defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
@@ -145,10 +150,17 @@ class DeterministicSearch(base.OptimizerFamily):
 
 
 HaltonSearch = DeterministicSearch().with_name("HaltonSearch", register=True)
+HaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True).with_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = DeterministicSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
 LargeScrHaltonSearch = DeterministicSearch(scale=100., scrambled=True).with_name("LargeScrHaltonSearch", register=True)
 ScrHaltonSearch = DeterministicSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
+ScrHaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True, scrambled=True).with_name("ScrHaltonSearchPlusMiddlePoint",
+                                                                                                  register=True)
 HammersleySearch = DeterministicSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
+HammersleySearchPlusMiddlePoint = DeterministicSearch(sampler="Hammersley", middle_point=True).with_name("HammersleySearchPlusMiddlePoint",
+                                                                                                         register=True)
+ScrHammersleySearchPlusMiddlePoint = DeterministicSearch(scrambled=True, sampler="Hammersley",
+                                                         middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
 LargeHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
 LargeScrHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch",
                                                                                                            register=True)
@@ -157,91 +169,6 @@ CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley
                                                                                                              register=True)
 LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
 CauchyLHSSearch = DeterministicSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
-
-
-@registry.register
-class RescaleScrHammersleySearch(OneShotOptimizer):
-    """Rescaled version of scrambled Hammersley search.
-
-    We need the budget in advance, and rescale each variable linearly for almost matching the bounds.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=self.budget)
-        self.rescaler = sequences.Rescaler(self.sampler)
-        self.sampler.reinitialize()
-        self.iterator = iter(self.sampler)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.rescaler.apply(next(self.iterator)))
-
-
-@registry.register
-class HaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Halton search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Scrambled Halton search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class HammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Hammersley search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Scrambled Hammersley search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-# In "Large" samplers, all points are multiplied by 100.
 
 
 @registry.register
@@ -365,6 +292,15 @@ class SmallScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
 
 
 @registry.register
+class LargerScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
+
+    def _internal_ask(self) -> ArrayLike:
+        if not self._num_ask:
+            return np.zeros(self.dimension)
+        return 500. * np.random.normal(0, 1, self.dimension)
+
+
+@registry.register
 class RandomSearchPlusMiddlePoint(OneShotOptimizer):
     """Random search plus a middle point.
 
@@ -402,9 +338,19 @@ class RandomScaleRandomSearch(OneShotOptimizer):
 
 
 @registry.register
-class LargerScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
+class RescaleScrHammersleySearch(OneShotOptimizer):
+    """Rescaled version of scrambled Hammersley search.
+
+    We need the budget in advance, and rescale each variable linearly for almost matching the bounds.
+    """
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        assert self.budget is not None, "A budget must be provided"
+        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=self.budget)
+        self.rescaler = sequences.Rescaler(self.sampler)
+        self.sampler.reinitialize()
+        self.iterator = iter(self.sampler)
 
     def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 500. * np.random.normal(0, 1, self.dimension)
+        return stats.norm.ppf(self.rescaler.apply(next(self.iterator)))
