@@ -8,7 +8,7 @@ import warnings
 from pathlib import Path
 from unittest import SkipTest
 from unittest import TestCase
-from typing import Type
+from typing import Type, Union
 import genty
 import numpy as np
 import pandas as pd
@@ -82,7 +82,9 @@ class OptimizerTests(TestCase):
         recom.to_csv(cls._RECOM_FILE)
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
-    def test_optimizers(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
+    def test_optimizers(self, name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+        if isinstance(optimizer_cls, base.OptimizerFamily):
+            assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
         verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
         # BO is extremely slow, run it anyway but very low budget and no verification
         check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)

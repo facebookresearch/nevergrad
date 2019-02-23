@@ -149,6 +149,7 @@ class DeterministicSearch(base.OptimizerFamily):
         return run
 
 
+# pylint: disable=line-too-long
 HaltonSearch = DeterministicSearch().with_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True).with_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = DeterministicSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
@@ -158,15 +159,15 @@ LargeHaltonSearchPlusMiddlePoint = DeterministicSearch(
 SmallHaltonSearchPlusMiddlePoint = DeterministicSearch(
     scale=.01, middle_point=True).with_name("SmallHaltonSearchPlusMiddlePoint", register=True)
 ScrHaltonSearch = DeterministicSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
-ScrHaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True, scrambled=True).with_name("ScrHaltonSearchPlusMiddlePoint",
-                                                                                                  register=True)
+ScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
+    middle_point=True, scrambled=True).with_name("ScrHaltonSearchPlusMiddlePoint", register=True)
 LargeScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
     scale=100., middle_point=True, scrambled=True).with_name("LargeScrHaltonSearchPlusMiddlePoint", register=True)
 SmallScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
     scale=.01, middle_point=True, scrambled=True).with_name("SmallScrHaltonSearchPlusMiddlePoint", register=True)
 HammersleySearch = DeterministicSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
-HammersleySearchPlusMiddlePoint = DeterministicSearch(sampler="Hammersley", middle_point=True).with_name("HammersleySearchPlusMiddlePoint",
-                                                                                                         register=True)
+HammersleySearchPlusMiddlePoint = DeterministicSearch(
+    sampler="Hammersley", middle_point=True).with_name("HammersleySearchPlusMiddlePoint", register=True)
 LargeHammersleySearchPlusMiddlePoint = DeterministicSearch(
     scale=100., sampler="Hammersley", middle_point=True).with_name("LargeHammersleySearchPlusMiddlePoint", register=True)
 SmallHammersleySearchPlusMiddlePoint = DeterministicSearch(
@@ -175,14 +176,14 @@ LargeScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
     scrambled=True, scale=100., sampler="Hammersley", middle_point=True).with_name("LargeScrHammersleySearchPlusMiddlePoint", register=True)
 SmallScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
     scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallScrHammersleySearchPlusMiddlePoint", register=True)
-ScrHammersleySearchPlusMiddlePoint = DeterministicSearch(scrambled=True, sampler="Hammersley",
-                                                         middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
+ScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
+    scrambled=True, sampler="Hammersley", middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
 LargeHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
-LargeScrHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch",
-                                                                                                           register=True)
+LargeScrHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley",
+                                               scrambled=True).with_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = DeterministicSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
-CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyScrHammersleySearch",
-                                                                                                             register=True)
+CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley",
+                                                scrambled=True).with_name("CauchyScrHammersleySearch", register=True)
 LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
 CauchyLHSSearch = DeterministicSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
 
