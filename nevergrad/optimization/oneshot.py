@@ -72,6 +72,7 @@ class StupidRandom(RandomSearch):
 
 class _DetermisticSearch(OneShotOptimizer):
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._sampler_instance: Optional[sequences.Sampler] = None
@@ -80,6 +81,8 @@ class _DetermisticSearch(OneShotOptimizer):
         self._scrambled = False
         self._cauchy = False
         self._scale = 1.
+        self._rescaled = False
+        self._rescaler: Optional[sequences.Rescaler] = None
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -90,13 +93,19 @@ class _DetermisticSearch(OneShotOptimizer):
                         "LHS": sequences.LHSSampler,
                         }
             self._sampler_instance = samplers[self._sampler](self.dimension, budget, scrambling=self._scrambled)
+            if self._rescaled:
+                self._rescaler = sequences.Rescaler(self.sampler)
+                self._sampler_instance.reinitialize()  # sampler was consumed by the scaler
         return self._sampler_instance
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._middle_point and not self._num_ask:
             return np.zeros(self.dimension)
-        return self._scale * (stats.cauchy.ppf if self._cauchy else stats.norm.ppf)(self.sampler())
+        sample = self.sampler()
+        if self._rescaler is not None:
+            sample = self._rescaler.apply(sample)
+        return self._scale * (stats.cauchy.ppf if self._cauchy else stats.norm.ppf)(sample)
 
 
 class DeterministicSearch(base.OptimizerFamily):
@@ -134,7 +143,7 @@ class DeterministicSearch(base.OptimizerFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
-                 cauchy: bool = False, scale: float = 1.) -> None:
+                 cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
         # keep all parameters and set initialize superclass for print
         self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
         defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
@@ -179,9 +188,11 @@ SmallScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
 ScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
     scrambled=True, sampler="Hammersley", middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
 LargeHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
-LargeScrHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley",
-                                               scrambled=True).with_name("LargeScrHammersleySearch", register=True)
+LargeScrHammersleySearch = DeterministicSearch(
+    scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = DeterministicSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
+RescaleScrHammersleySearch = DeterministicSearch(
+    sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
 CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley",
                                                 scrambled=True).with_name("CauchyScrHammersleySearch", register=True)
 LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
@@ -232,22 +243,3 @@ class RandomScaleRandomSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         return np.exp(np.random.normal(0., 1.) - 2.) * np.random.normal(0., 1. / np.sqrt(self.dimension), self.dimension)
-
-
-@registry.register
-class RescaleScrHammersleySearch(OneShotOptimizer):
-    """Rescaled version of scrambled Hammersley search.
-
-    We need the budget in advance, and rescale each variable linearly for almost matching the bounds.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=self.budget, scrambling=True)
-        self.rescaler = sequences.Rescaler(self.sampler)
-        self.sampler.reinitialize()
-        self.iterator = iter(self.sampler)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.rescaler.apply(next(self.iterator)))

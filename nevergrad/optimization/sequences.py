@@ -51,7 +51,7 @@ class Sampler:
         self.index += 1
         return sample
 
-    def __iter__(self) -> Iterator[ArrayLike]:
+    def __iter__(self) -> Iterator[ArrayLike]:  # unused, but could be useful
         assert self.index == 0, "Reinitialize before iterating again"  # backward compatibility
         assert self.budget is not None, "Iterable does not work if budget is not specified"  # TODO make it work
         return (self() for _ in range(self.budget))
