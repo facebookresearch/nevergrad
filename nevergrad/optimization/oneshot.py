@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import inspect
-from typing import Optional, Union
+from typing import Optional, Union, Type
 from scipy import stats
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -19,35 +19,51 @@ class OneShotOptimizer(base.Optimizer):
     one_shot = True
 
 
+class _ParametrizedFamily(base.OptimizerFamily):
+
+    _optimizer_class: Optional[Type[base.Optimizer]] = None
+
+    def __init__(self) -> None:
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
+                    if x not in ["self", "__class__"]}
+        # only print non defaults
+        different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x]}
+        super().__init__(**different)
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+        assert self._optimizer_class is not None
+        run = self._optimizer_class(dimension=dimension, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
+        assert hasattr(run, "_parameters")
+        run._parameters = self  # type: ignore
+        run.name = self.name
+        return run
+
+
 # # # # # very basic baseline optimizers # # # # #
 
 class _RandomSearch(OneShotOptimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._middle_point = False
-        self._scrambled = False
-        self._cauchy = False
-        self._stupid = False
-        self._scale: Union[str, float] = 1.
+        self._parameters = RandomSearchFamily()
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
-        if self._middle_point and not self._num_ask:
+        if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)
-        scale = self._scale
-        if isinstance(self._scale, str) and self._scale == "random":
+        scale = self._parameters.scale
+        if isinstance(scale, str) and scale == "random":
             scale = np.exp(np.random.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
-        point = np.random.standard_cauchy(self.dimension) if self._cauchy else np.random.normal(0, 1, self.dimension)
+        point = np.random.standard_cauchy(self.dimension) if self._parameters.cauchy else np.random.normal(0, 1, self.dimension)
         return scale * point
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        if self._stupid:
+        if self._parameters.stupid:
             return self._internal_ask()
         return super()._internal_provide_recommendation()
 
 
-class RandomSearchFamily(base.OptimizerFamily):
+class RandomSearchFamily(_ParametrizedFamily):
     """Provides random suggestions, and a recommendation
     based on the best returned fitness values.
     Use StupidRandom instead if you would rather the recommendation
@@ -55,6 +71,7 @@ class RandomSearchFamily(base.OptimizerFamily):
     Uses Cauchy distribution.
     """
 
+    _optimizer_class = _RandomSearch
     one_shot = True
 
     # pylint: disable=unused-argument
@@ -62,17 +79,11 @@ class RandomSearchFamily(base.OptimizerFamily):
                  cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
         assert isinstance(scale, (int, float)) or scale == "random"
-        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
-        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
-
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _RandomSearch:
-        run = _RandomSearch(dimension=dimension, budget=budget, num_workers=num_workers)
-        # ugly but effective :s
-        for name, value in self._parameters.items():
-            setattr(run, "_" + name, value)
-        run.name = repr(self)
-        return run
+        self.middle_point = middle_point
+        self.stupid = stupid
+        self.cauchy = cauchy
+        self.scale = scale
+        super().__init__()
 
 
 Zero = RandomSearchFamily(scale=0.).with_name("Zero", register=True)

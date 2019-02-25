@@ -133,7 +133,10 @@ def test_portfolio_budget() -> None:
         np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
-def test_differential_evolution_repr() -> None:
+def test_optimizer_families_repr() -> None:
     Cls = optimizerlib.DifferentialEvolution
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")
+    #
+    optimf = optimizerlib.RandomSearchFamily(cauchy=True)
+    np.testing.assert_equal(repr(optimf), "RandomSearchFamily(cauchy=True)")
