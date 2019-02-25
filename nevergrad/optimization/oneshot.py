@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import inspect
-from typing import Optional, Tuple
+from typing import Optional
 from scipy import stats
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -22,49 +22,60 @@ class OneShotOptimizer(base.Optimizer):
 
 # # # # # very basic baseline optimizers # # # # #
 
+class _RandomSearch(OneShotOptimizer):
 
-@registry.register
-class Zero(OneShotOptimizer):
-    """Always returns 0 (including for the recommendation)
-    """
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._middle_point = False
+        self._scrambled = False
+        self._cauchy = False
+        self._stupid = False
+        self._scale = 1.
 
-    def _internal_ask(self) -> Tuple[float, ...]:
-        return tuple([0] * self.dimension)
+    def _internal_ask(self) -> ArrayLike:
+        # pylint: disable=not-callable
+        if self._middle_point and not self._num_ask:
+            return np.zeros(self.dimension)
+        point = np.random.standard_cauchy(self.dimension) if self._cauchy else np.random.normal(0, 1, self.dimension)
+        return self._scale * point
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        if self._stupid:
+            return self._internal_ask()
+        return super()._internal_provide_recommendation()
 
 
-@registry.register
-class RandomSearch(OneShotOptimizer):
+class RandomSearchFamily(base.OptimizerFamily):
     """Provides random suggestions, and a recommendation
     based on the best returned fitness values.
     Use StupidRandom instead if you would rather the recommendation
     should not be based on past fitness values.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class CauchyRandomSearch(OneShotOptimizer):
-    """Provides random suggestions, and a recommendation
-    based on the best returned fitness values.
     Uses Cauchy distribution.
     """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        return np.random.standard_cauchy(self.dimension)
+    one_shot = True
+
+    # pylint: disable=unused-argument
+    def __init__(self, *, middle_point: bool = False, stupid: bool = False,
+                 cauchy: bool = False, scale: float = 1.) -> None:
+        # keep all parameters and set initialize superclass for print
+        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
+        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _RandomSearch:
+        run = _RandomSearch(dimension=dimension, budget=budget, num_workers=num_workers)
+        # ugly but effective :s
+        for name, value in self._parameters.items():
+            setattr(run, "_" + name, value)
+        run.name = repr(self)
+        return run
 
 
-@registry.register
-class StupidRandom(RandomSearch):
-    """Provides random suggestions, and a random recommendation
-    which is *not* based on past fitness values.
-    Use RandomSearch instead if you would rather the recommendation
-    be based on past fitness values.
-    """
-
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return np.random.normal(0, 1, self.dimension)
+Zero = RandomSearchFamily(scale=0.).with_name("Zero", register=True)
+RandomSearch = RandomSearchFamily().with_name("RandomSearch", register=True)
+StupidRandom = RandomSearchFamily(stupid=True).with_name("StupidRandom", register=True)
+CauchyRandomSearch = RandomSearchFamily(cauchy=True).with_name("CauchyRandomSearch", register=True)
 
 
 # # # # # implementations # # # # #
