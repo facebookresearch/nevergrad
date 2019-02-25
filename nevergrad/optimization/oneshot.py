@@ -24,7 +24,7 @@ class _RandomSearch(OneShotOptimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._parameters = RandomSearchFamily()  # updated by the parametrized family
+        self._parameters = RandomSearchMaker()  # updated by the parametrized family
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
@@ -42,12 +42,20 @@ class _RandomSearch(OneShotOptimizer):
         return super()._internal_provide_recommendation()
 
 
-class RandomSearchFamily(base.ParametrizedFamily):
-    """Provides random suggestions, and a recommendation
-    based on the best returned fitness values.
-    Use StupidRandom instead if you would rather the recommendation
-    should not be based on past fitness values.
-    Uses Cauchy distribution.
+class RandomSearchMaker(base.ParametrizedFamily):
+    """Provides random suggestions.
+
+    Parameters
+    ----------
+    stupid: bool
+        Provides a random recommendation instead of the best point so far (for baseline)
+    middle_point: bool
+        enforces that the first suggested point (ask) is zero.
+    cauchy: bool
+        use a Cauchy distribution instead of Gaussian distribution
+    scale: float or "random"
+        scalar for multiplying the suggested point values. If "random", this
+        used a randomized pattern for the scale.
     """
 
     _optimizer_class = _RandomSearch
@@ -65,18 +73,18 @@ class RandomSearchFamily(base.ParametrizedFamily):
         super().__init__()
 
 
-Zero = RandomSearchFamily(scale=0.).with_name("Zero", register=True)
-RandomSearch = RandomSearchFamily().with_name("RandomSearch", register=True)
-RandomSearchPlusMiddlePoint = RandomSearchFamily(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
-LargerScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
+Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
+RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
+RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
+LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
-SmallScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
+SmallScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     middle_point=True, scale=.01).with_name("SmallScaleRandomSearchPlusMiddlePoint", register=True)
-StupidRandom = RandomSearchFamily(stupid=True).with_name("StupidRandom", register=True)
-CauchyRandomSearch = RandomSearchFamily(cauchy=True).with_name("CauchyRandomSearch", register=True)
-RandomScaleRandomSearch = RandomSearchFamily(
+StupidRandom = RandomSearchMaker(stupid=True).with_name("StupidRandom", register=True)
+CauchyRandomSearch = RandomSearchMaker(cauchy=True).with_name("CauchyRandomSearch", register=True)
+RandomScaleRandomSearch = RandomSearchMaker(
     scale="random", middle_point=True).with_name("RandomScaleRandomSearch", register=True)
-RandomScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
+RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     scale="random", middle_point=True).with_name("RandomScaleRandomSearchPlusMiddlePoint", register=True)
 
 
@@ -84,7 +92,7 @@ class _DetermisticSearch(OneShotOptimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._parameters = DeterministicSearch()  # updated by the parametrized family
+        self._parameters = SamplingSearch()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None
 
@@ -112,35 +120,41 @@ class _DetermisticSearch(OneShotOptimizer):
         return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)
 
 
-class DeterministicSearch(base.ParametrizedFamily):
-    """Halton low-discrepancy search.
-
-    This is a one-shot optimization method, hopefully better than random search
+class SamplingSearch(base.ParametrizedFamily):
+    """This is a one-shot optimization method, hopefully better than random search
     by ensuring more uniformity.
-    However, Halton is a low quality sampling method when the dimension is high;
-    it is usually better to use Halton with scrambling.
-    When the budget is known in advance, it is also better to replace Halton by Hammersley.
-    Reference: Halton 1964: Algorithm 247: Radical-inverse quasi-random point sequence, ACM, p. 701.
-    Adds scrambling to the Halton search; much better in high dimension and rarely worse
-    than the original Halton search.
 
-    Adds scrambling to the Halton search; much better in high dimension and rarely worse
-    than the original Halton search.
+    Parameters
+    ----------
+    sampler: str
+        Choice of the sampler among "Halton", "Hammersley" and "LHS".
+    scrambled: bool
+        Adds scrambling to the search; much better in high dimension and rarely worse
+        than the original search.
+    middle_point: bool
+        enforces that the first suggested point (ask) is zero.
+    cauchy: bool
+        use Cauchy inverse distribution instead of Gaussian when fitting points to real space
+        (instead of box).
+    scale: float or "random"
+        scalar for multiplying the suggested point values.
+    rescaled: bool
+        rescales the sampling pattern to reach the boundaries.
 
-    hammersley version of the halton search.
-    basically the key difference with halton is adding one coordinate evenly spaced.
-    the discrepancy is better; but we need the budget in advance.
-
-    Scrambled Hammersley sequence.
-    This combines Scrambled Halton and Hammersley.
-
-    Latin Hypercube Sampling.
-    Though partially incremental versions exist, this implementation needs the budget in advance.
-    This can be great in terms of discrepancy when the budget is not very high - for high
-    budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
-
-    Adding a middle point in the larger scale scrambled Halton search.
-    The additional point is the very first one.
+    Notes
+    -----
+    - Halton is a low quality sampling method when the dimension is high; it is usually better
+      to use Halton with scrambling.
+    - When the budget is known in advance, it is also better to replace Halton by Hammersley.
+      Basically the key difference with Halton is adding one coordinate evenly spaced
+      (the discrepancy is better).
+      budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
+    - Reference: Halton 1964: Algorithm 247: Radical-inverse quasi-random point sequence, ACM, p. 701.
+      adds scrambling to the Halton search; much better in high dimension and rarely worse
+      than the original Halton search.
+    - About Latin Hypercube Sampling (LHS):
+      Though partially incremental versions exist, this implementation needs the budget in advance.
+      This can be great in terms of discrepancy when the budget is not very high.
     """
 
     one_shot = True
@@ -160,41 +174,41 @@ class DeterministicSearch(base.ParametrizedFamily):
 
 
 # pylint: disable=line-too-long
-HaltonSearch = DeterministicSearch().with_name("HaltonSearch", register=True)
-HaltonSearchPlusMiddlePoint = DeterministicSearch(middle_point=True).with_name("HaltonSearchPlusMiddlePoint", register=True)
-LargeHaltonSearch = DeterministicSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
-LargeScrHaltonSearch = DeterministicSearch(scale=100., scrambled=True).with_name("LargeScrHaltonSearch", register=True)
-LargeHaltonSearchPlusMiddlePoint = DeterministicSearch(
+HaltonSearch = SamplingSearch().with_name("HaltonSearch", register=True)
+HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).with_name("HaltonSearchPlusMiddlePoint", register=True)
+LargeHaltonSearch = SamplingSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
+LargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True).with_name("LargeScrHaltonSearch", register=True)
+LargeHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=100., middle_point=True).with_name("LargeHaltonSearchPlusMiddlePoint", register=True)
-SmallHaltonSearchPlusMiddlePoint = DeterministicSearch(
+SmallHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=.01, middle_point=True).with_name("SmallHaltonSearchPlusMiddlePoint", register=True)
-ScrHaltonSearch = DeterministicSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
-ScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
+ScrHaltonSearch = SamplingSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
+ScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True).with_name("ScrHaltonSearchPlusMiddlePoint", register=True)
-LargeScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
+LargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=100., middle_point=True, scrambled=True).with_name("LargeScrHaltonSearchPlusMiddlePoint", register=True)
-SmallScrHaltonSearchPlusMiddlePoint = DeterministicSearch(
+SmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=.01, middle_point=True, scrambled=True).with_name("SmallScrHaltonSearchPlusMiddlePoint", register=True)
-HammersleySearch = DeterministicSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
-HammersleySearchPlusMiddlePoint = DeterministicSearch(
+HammersleySearch = SamplingSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
+HammersleySearchPlusMiddlePoint = SamplingSearch(
     sampler="Hammersley", middle_point=True).with_name("HammersleySearchPlusMiddlePoint", register=True)
-LargeHammersleySearchPlusMiddlePoint = DeterministicSearch(
+LargeHammersleySearchPlusMiddlePoint = SamplingSearch(
     scale=100., sampler="Hammersley", middle_point=True).with_name("LargeHammersleySearchPlusMiddlePoint", register=True)
-SmallHammersleySearchPlusMiddlePoint = DeterministicSearch(
+SmallHammersleySearchPlusMiddlePoint = SamplingSearch(
     scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallHammersleySearchPlusMiddlePoint", register=True)
-LargeScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
+LargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, scale=100., sampler="Hammersley", middle_point=True).with_name("LargeScrHammersleySearchPlusMiddlePoint", register=True)
-SmallScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
+SmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallScrHammersleySearchPlusMiddlePoint", register=True)
-ScrHammersleySearchPlusMiddlePoint = DeterministicSearch(
+ScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
-LargeHammersleySearch = DeterministicSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
-LargeScrHammersleySearch = DeterministicSearch(
+LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
+LargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
-ScrHammersleySearch = DeterministicSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
-RescaleScrHammersleySearch = DeterministicSearch(
+ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
+RescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
-CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley",
-                                                scrambled=True).with_name("CauchyScrHammersleySearch", register=True)
-LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
-CauchyLHSSearch = DeterministicSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
+CauchyScrHammersleySearch = SamplingSearch(
+    cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyScrHammersleySearch", register=True)
+LHSSearch = SamplingSearch(sampler="LHS").with_name("LHSSearch", register=True)
+CauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)

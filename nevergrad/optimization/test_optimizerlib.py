@@ -138,5 +138,5 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")
     #
-    optimf = optimizerlib.RandomSearchFamily(cauchy=True)
-    np.testing.assert_equal(repr(optimf), "RandomSearchFamily(cauchy=True)")
+    optimf = optimizerlib.RandomSearchMaker(cauchy=True)
+    np.testing.assert_equal(repr(optimf), "RandomSearchMaker(cauchy=True)")

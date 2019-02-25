@@ -343,6 +343,9 @@ class ParametrizedFamily(OptimizerFamily):
     def __init__(self) -> None:
         defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
                     if x not in ["self", "__class__"]}
+        diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
+        if diff:  # this is to help durring development
+            raise RuntimeError(f"Mismatch between attributes and arguments of ParametrizedFamily: {diff}")
         # only print non defaults
         different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x] and not x.startswith("_")}
         super().__init__(**different)
