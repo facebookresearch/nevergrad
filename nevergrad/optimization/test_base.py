@@ -121,7 +121,7 @@ class StupidFamily(base.OptimizerFamily):
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
         run = class_(dimension=dimension, budget=budget, num_workers=num_workers)
-        run.name = self.name
+        run.name = self._repr
         return run  # type: ignore
 
 
