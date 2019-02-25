@@ -3,8 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import inspect
-from typing import Optional, Union, Type
+from typing import Optional, Union
 from scipy import stats
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -18,34 +17,14 @@ class OneShotOptimizer(base.Optimizer):
     # pylint: disable=abstract-method
     one_shot = True
 
-
-class _ParametrizedFamily(base.OptimizerFamily):
-
-    _optimizer_class: Optional[Type[base.Optimizer]] = None
-
-    def __init__(self) -> None:
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
-                    if x not in ["self", "__class__"]}
-        # only print non defaults
-        different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x]}
-        super().__init__(**different)
-
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
-        assert self._optimizer_class is not None
-        run = self._optimizer_class(dimension=dimension, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
-        assert hasattr(run, "_parameters")
-        run._parameters = self  # type: ignore
-        run.name = self.name
-        return run
-
-
 # # # # # very basic baseline optimizers # # # # #
+
 
 class _RandomSearch(OneShotOptimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._parameters = RandomSearchFamily()
+        self._parameters = RandomSearchFamily()  # updated by the parametrized family
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
@@ -63,7 +42,7 @@ class _RandomSearch(OneShotOptimizer):
         return super()._internal_provide_recommendation()
 
 
-class RandomSearchFamily(_ParametrizedFamily):
+class RandomSearchFamily(base.ParametrizedFamily):
     """Provides random suggestions, and a recommendation
     based on the best returned fitness values.
     Use StupidRandom instead if you would rather the recommendation
@@ -103,10 +82,9 @@ RandomScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
 
 class _DetermisticSearch(OneShotOptimizer):
 
-    # pylint: disable=too-many-instance-attributes
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._parameters = DeterministicSearch()
+        self._parameters = RandomSearchFamily()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None
 
@@ -134,7 +112,7 @@ class _DetermisticSearch(OneShotOptimizer):
         return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)
 
 
-class DeterministicSearch(_ParametrizedFamily):
+class DeterministicSearch(base.ParametrizedFamily):
     """Halton low-discrepancy search.
 
     This is a one-shot optimization method, hopefully better than random search
