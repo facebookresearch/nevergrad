@@ -106,13 +106,8 @@ class _DetermisticSearch(OneShotOptimizer):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._parameters = DeterministicSearch()
         self._sampler_instance: Optional[sequences.Sampler] = None
-        self._sampler = "Halton"
-        self._middle_point = False
-        self._scrambled = False
-        self._cauchy = False
-        self._scale = 1.
-        self._rescaled = False
         self._rescaler: Optional[sequences.Rescaler] = None
 
     @property
@@ -123,23 +118,23 @@ class _DetermisticSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            self._sampler_instance = samplers[self._sampler](self.dimension, budget, scrambling=self._scrambled)
-            if self._rescaled:
+            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled)
+            if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
                 self._sampler_instance.reinitialize()  # sampler was consumed by the scaler
         return self._sampler_instance
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
-        if self._middle_point and not self._num_ask:
+        if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        return self._scale * (stats.cauchy.ppf if self._cauchy else stats.norm.ppf)(sample)
+        return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)
 
 
-class DeterministicSearch(base.OptimizerFamily):
+class DeterministicSearch(_ParametrizedFamily):
     """Halton low-discrepancy search.
 
     This is a one-shot optimization method, hopefully better than random search
@@ -171,22 +166,19 @@ class DeterministicSearch(base.OptimizerFamily):
     """
 
     one_shot = True
+    _optimizer_class = _DetermisticSearch
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
                  cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
         # keep all parameters and set initialize superclass for print
-        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
-        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
-
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _DetermisticSearch:
-        run = _DetermisticSearch(dimension=dimension, budget=budget, num_workers=num_workers)
-        # ugly but effective :s
-        for name, value in self._parameters.items():
-            setattr(run, "_" + name, value)
-        run.name = repr(self)
-        return run
+        self.sampler = sampler
+        self.middle_point = middle_point
+        self.scrambled = scrambled
+        self.cauchy = cauchy
+        self.scale = scale
+        self.rescaled = rescaled
+        super().__init__()
 
 
 # pylint: disable=line-too-long
