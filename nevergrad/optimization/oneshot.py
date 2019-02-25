@@ -4,13 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import inspect
-from typing import Optional
+from typing import Optional, Union
 from scipy import stats
 import numpy as np
 from ..common.typetools import ArrayLike
 from . import sequences
 from . import base
-from .base import registry
 
 # # # # # classes of optimizers # # # # #
 
@@ -30,14 +29,17 @@ class _RandomSearch(OneShotOptimizer):
         self._scrambled = False
         self._cauchy = False
         self._stupid = False
-        self._scale = 1.
+        self._scale: Union[str, float] = 1.
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._middle_point and not self._num_ask:
             return np.zeros(self.dimension)
+        scale = self._scale
+        if isinstance(self._scale, str) and self._scale == "random":
+            scale = np.exp(np.random.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = np.random.standard_cauchy(self.dimension) if self._cauchy else np.random.normal(0, 1, self.dimension)
-        return self._scale * point
+        return scale * point
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._stupid:
@@ -57,8 +59,9 @@ class RandomSearchFamily(base.OptimizerFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
-                 cauchy: bool = False, scale: float = 1.) -> None:
+                 cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
+        assert isinstance(scale, (int, float)) or scale == "random"
         self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
         defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
         super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
@@ -74,11 +77,17 @@ class RandomSearchFamily(base.OptimizerFamily):
 
 Zero = RandomSearchFamily(scale=0.).with_name("Zero", register=True)
 RandomSearch = RandomSearchFamily().with_name("RandomSearch", register=True)
+RandomSearchPlusMiddlePoint = RandomSearchFamily(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
+LargerScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
+    middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
+SmallScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
+    middle_point=True, scale=.01).with_name("SmallScaleRandomSearchPlusMiddlePoint", register=True)
 StupidRandom = RandomSearchFamily(stupid=True).with_name("StupidRandom", register=True)
 CauchyRandomSearch = RandomSearchFamily(cauchy=True).with_name("CauchyRandomSearch", register=True)
-
-
-# # # # # implementations # # # # #
+RandomScaleRandomSearch = RandomSearchFamily(
+    scale="random", middle_point=True).with_name("RandomScaleRandomSearch", register=True)
+RandomScaleRandomSearchPlusMiddlePoint = RandomSearchFamily(
+    scale="random", middle_point=True).with_name("RandomScaleRandomSearchPlusMiddlePoint", register=True)
 
 
 class _DetermisticSearch(OneShotOptimizer):
@@ -208,49 +217,3 @@ CauchyScrHammersleySearch = DeterministicSearch(cauchy=True, sampler="Hammersley
                                                 scrambled=True).with_name("CauchyScrHammersleySearch", register=True)
 LHSSearch = DeterministicSearch(sampler="LHS").with_name("LHSSearch", register=True)
 CauchyLHSSearch = DeterministicSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
-
-
-@registry.register
-class LargerScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 500. * np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class RandomSearchPlusMiddlePoint(OneShotOptimizer):
-    """Random search plus a middle point.
-
-    The middle point is the very first one."""
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class SmallScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return 0.01 * np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class RandomScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return np.exp(np.random.normal(0., 1.) - 2.) * np.random.normal(0., 1. / np.sqrt(self.dimension), self.dimension)
-
-
-@registry.register
-class RandomScaleRandomSearch(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        return np.exp(np.random.normal(0., 1.) - 2.) * np.random.normal(0., 1. / np.sqrt(self.dimension), self.dimension)
