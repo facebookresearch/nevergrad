@@ -51,7 +51,7 @@ class Sampler:
         self.index += 1
         return sample
 
-    def __iter__(self) -> Iterator[ArrayLike]:
+    def __iter__(self) -> Iterator[ArrayLike]:  # unused, but could be useful
         assert self.index == 0, "Reinitialize before iterating again"  # backward compatibility
         assert self.budget is not None, "Iterable does not work if budget is not specified"  # TODO make it work
         return (self() for _ in range(self.budget))
@@ -80,7 +80,9 @@ class Sampler:
 @samplers.register
 class LHSSampler(Sampler):
 
-    def __init__(self, dimension: int, budget: int) -> None:
+    def __init__(self, dimension: int, budget: int, scrambling: bool = False) -> None:
+        if scrambling:
+            raise ValueError("LHSSampler does not support scrambling")
         super().__init__(dimension, budget)
         self.permutations = np.zeros((dimension, budget), dtype=int)
         for k in range(dimension):
@@ -150,13 +152,6 @@ class HaltonSampler(Sampler):
 
 
 @samplers.register
-class ScrHaltonSampler(HaltonSampler):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None) -> None:
-        super().__init__(dimension, budget, scrambling=True)
-
-
-@samplers.register
 class HammersleySampler(HaltonSampler):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, scrambling: bool = False) -> None:
@@ -166,13 +161,6 @@ class HammersleySampler(HaltonSampler):
     def _internal_sampler(self) -> ArrayLike:
         assert self.budget is not None
         return np.concatenate(([(self.index + .5) / float(self.budget)], super()._internal_sampler()))
-
-
-@samplers.register
-class ScrHammersleySampler(HammersleySampler):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None) -> None:
-        super().__init__(dimension, budget, scrambling=True)
 
 
 class Rescaler:

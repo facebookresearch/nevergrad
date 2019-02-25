@@ -66,7 +66,7 @@ class OptimizerSettings:
 
     @property
     def name(self) -> str:
-        return self.optimizer if isinstance(self.optimizer, str) else self.optimizer.name
+        return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
 
     @property
     def batch_mode(self) -> bool:
@@ -96,7 +96,7 @@ class OptimizerSettings:
         """Returns a dictionary describing the optimizer settings
         """
         descr = {x: getattr(self, x) for x in self._setting_names if x != "optimizer"}
-        descr["optimizer_name"] = self.optimizer if isinstance(self.optimizer, str) else self.optimizer.name
+        descr["optimizer_name"] = self.name
         return descr
 
     def __eq__(self, other: Any) -> bool:

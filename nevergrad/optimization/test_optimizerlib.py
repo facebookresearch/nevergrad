@@ -8,7 +8,7 @@ import warnings
 from pathlib import Path
 from unittest import SkipTest
 from unittest import TestCase
-from typing import Type
+from typing import Type, Union
 import genty
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ def fitness(x: ArrayLike) -> float:
     return float(np.sum((np.array(x, copy=False) - x0)**2))
 
 
-def check_optimizer(optimizer_cls: Type[base.Optimizer], budget: int = 300, verify_value: bool = True) -> None:
+def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]], budget: int = 300, verify_value: bool = True) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
@@ -82,7 +82,9 @@ class OptimizerTests(TestCase):
         recom.to_csv(cls._RECOM_FILE)
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
-    def test_optimizers(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
+    def test_optimizers(self, name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+        if isinstance(optimizer_cls, base.OptimizerFamily):
+            assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
         verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
         # BO is extremely slow, run it anyway but very low budget and no verification
         check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
@@ -131,7 +133,10 @@ def test_portfolio_budget() -> None:
         np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
-def test_differential_evolution_repr() -> None:
+def test_optimizer_families_repr() -> None:
     Cls = optimizerlib.DifferentialEvolution
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")
+    #
+    optimf = optimizerlib.RandomSearchMaker(cauchy=True)
+    np.testing.assert_equal(repr(optimf), "RandomSearchMaker(cauchy=True)")

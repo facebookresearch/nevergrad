@@ -5,10 +5,11 @@
 
 import abc
 import time
+import inspect
 import warnings
 from numbers import Real
 from collections import deque
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple, Deque
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple, Deque, Type
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -315,19 +316,47 @@ class OptimizerFamily:
     def __init__(self, **kwargs: Any) -> None:  # keyword only, to be as explicit as possible
         self._kwargs = kwargs
         params = ", ".join(f"{x}={y!r}" for x, y in sorted(kwargs.items()))
-        self.name = f"{self.__class__.__name__}({params})"  # ugly hack
+        self._repr = f"{self.__class__.__name__}({params})"  # ugly hack
 
     def __repr__(self) -> str:
-        return self.name
+        return self._repr
 
     def with_name(self, name: str, register: bool = False) -> 'OptimizerFamily':
-        self.name = name
+        self._repr = name
         if register:
             registry.register_name(name, self)
         return self
 
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
         raise NotImplementedError
+
+
+class ParametrizedFamily(OptimizerFamily):
+    """This is a special case of an optimizer family for which the family instance serves to*
+    hold the parameters.
+    This class assumes that the attributes are set to the init parameters.
+    See oneshot.py for examples
+    """
+
+    _optimizer_class: Optional[Type[Optimizer]] = None
+
+    def __init__(self) -> None:
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
+                    if x not in ["self", "__class__"]}
+        diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
+        if diff:  # this is to help durring development
+            raise RuntimeError(f"Mismatch between attributes and arguments of ParametrizedFamily: {diff}")
+        # only print non defaults
+        different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x] and not x.startswith("_")}
+        super().__init__(**different)
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+        assert self._optimizer_class is not None
+        run = self._optimizer_class(dimension=dimension, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
+        assert hasattr(run, "_parameters")
+        run._parameters = self  # type: ignore
+        run.name = repr(self)
+        return run
 
 
 class ArgPoint(NamedTuple):

@@ -63,8 +63,8 @@ class _DE(base.Optimizer):
     def _internal_ask(self) -> Tuple[float, ...]:
         if self.sampler is None and self._initialization is not None:
             assert self._initialization in ["LHS", "QR"]
-            sampler_cls = sequences.LHSSampler if self._initialization == "LHS" else sequences.ScrHammersleySampler
-            self.sampler = sampler_cls(self.dimension, budget=self.llambda)
+            sampler_cls = sequences.LHSSampler if self._initialization == "LHS" else sequences.HammersleySampler
+            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=self._initialization == "QR")
         self.match_population_size_to_lambda()
         location = self._num_ask % self.llambda
         i = (self.population[location])
