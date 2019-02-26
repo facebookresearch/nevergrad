@@ -36,14 +36,14 @@ class _DE(base.Optimizer):
     def scale(self) -> float:
         scale = self._parameters.scale
         if isinstance(scale, str):
-            assert scale == "mini"
+            assert scale == "mini"  # computing on demand because it requires to know the dimension
             scale = 1. / np.sqrt(self.dimension)
         assert isinstance(scale, float)
         return scale
 
     @property
     def llambda(self) -> int:
-        if self._llambda is None:
+        if self._llambda is None:  # computing on demand because it requires to know the dimension
             pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
             self._llambda = max(30, self.num_workers, pop_choice[self._parameters.popsize])
         return self._llambda
