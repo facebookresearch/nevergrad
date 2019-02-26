@@ -26,6 +26,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
+        subinstance._parameters = self._parameters
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
@@ -53,7 +54,7 @@ class ScipyOptimizer(base.ParametrizedFamily):
     _optimizer_class = _ScipyMinimizeBase
 
     def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False):
-        assert method in ["Nelder-Mead", "Cobyla", "SQP", "Powell"], f"Unknown method '{method}'"
+        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         super().__init__()
@@ -62,10 +63,10 @@ class ScipyOptimizer(base.ParametrizedFamily):
 NelderMead = ScipyOptimizer(method="Nelder-Mead").with_name("NelderMead", register=True)
 Powell = ScipyOptimizer(method="Powell").with_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).with_name("RPowell", register=True)
-Cobyla = ScipyOptimizer(method="Cobyla").with_name("Cobyla", register=True)
-RCobyla = ScipyOptimizer(method="Cobyla", random_restart=True).with_name("RCobyla", register=True)
-SQP = ScipyOptimizer(method="SQP").with_name("SQP", register=True)
-RSQP = ScipyOptimizer(method="SQP", random_restart=True).with_name("RSQP", register=True)
+Cobyla = ScipyOptimizer(method="COBYLA").with_name("Cobyla", register=True)
+RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).with_name("RCobyla", register=True)
+SQP = ScipyOptimizer(method="SLSQP").with_name("SQP", register=True)
+RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).with_name("RSQP", register=True)
 
 
 @registry.register
