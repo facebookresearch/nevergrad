@@ -138,9 +138,8 @@ OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling=("random", 1.), mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
-# TODO: check "Optmistic" for following algorithm
-FastGAOptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="fastga").with_name("FastGAOptimisticDiscreteOnePlusOne", register=True)
+FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="doublefastga").with_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
 FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
