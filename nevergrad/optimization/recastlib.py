@@ -9,25 +9,23 @@ from bayes_opt import BayesianOptimization
 from scipy import optimize as scipyoptimize
 from scipy import stats
 from . import base
-from .base import registry
 from . import recaster
 from . import sequences
 
 
-class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
+class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1, method: Optional[str] = None) -> None:
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.method = method
+        self._parameters = ScipyOptimizer()
         self.multirun = 1  # work in progress
-        assert self.method is not None, "A method must be specified"
         self.initial_guess: Optional[base.ArrayLike] = None
-        self.random_restart = False
 
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
+        subinstance._parameters = self._parameters
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
@@ -40,8 +38,8 @@ class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(objective_function, best_x if not self.random_restart else
-                                         np.random.normal(0., 1., self.dimension), method=self.method, options=options, tol=0)
+            res = scipyoptimize.minimize(objective_function, best_x if not self._parameters.random_restart else
+                                         np.random.normal(0., 1., self.dimension), method=self._parameters.method, options=options, tol=0)
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x
@@ -49,63 +47,48 @@ class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         return best_x
 
 
-@registry.register
-class NelderMead(ScipyMinimizeBase):
+class ScipyOptimizer(base.ParametrizedFamily):
+    """Scripy optimizers in a ask and tell format
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers, method="Nelder-Mead")
+    Parameters
+    ----------
+    method: str
+        Name of the method to use, among Nelder-Mead, COBYLA, SLSQP and Powell
+    random_restart: bool
+        whether to restart at a random point if the optimizer converged but the budget is not entirely
+        spent yet (otherwise, restarts from best point)
+    """
 
+    recast = True
+    _optimizer_class = _ScipyMinimizeBase
 
-@registry.register
-class Powell(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="Powell")
-
-
-@registry.register
-class RPowell(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="Powell")
-        self.random_restart = True
-
-
-@registry.register
-class Cobyla(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="COBYLA")
+    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False):
+        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        self.method = method
+        self.random_restart = random_restart
+        super().__init__()
 
 
-@registry.register
-class RCobyla(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="COBYLA")
-        self.random_restart = True
+NelderMead = ScipyOptimizer(method="Nelder-Mead").with_name("NelderMead", register=True)
+Powell = ScipyOptimizer(method="Powell").with_name("Powell", register=True)
+RPowell = ScipyOptimizer(method="Powell", random_restart=True).with_name("RPowell", register=True)
+Cobyla = ScipyOptimizer(method="COBYLA").with_name("Cobyla", register=True)
+RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).with_name("RCobyla", register=True)
+SQP = ScipyOptimizer(method="SLSQP").with_name("SQP", register=True)
+RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).with_name("RSQP", register=True)
 
 
-@registry.register
-class SQP(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="SLSQP")
-
-
-@registry.register
-class RSQP(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="SLSQP")
-        self.random_restart = True
-
-
-@registry.register
-class BO(recaster.SequentialRecastOptimizer):
+class _BO(recaster.SequentialRecastOptimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.qr = "none"
+        self._parameters = ParametrizedBO()
 
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
+        subinstance._parameters = self._parameters
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
@@ -119,23 +102,23 @@ class BO(recaster.SequentialRecastOptimizer):
         for i in range(self.dimension):
             bounds[str(i)] = (0., 1.)
         bo = BayesianOptimization(my_obj, bounds)
-        if self.qr != "none":
+        if self._parameters.qr != "none":
             points_dict: Dict[str, List[base.ArrayLike]] = {}
             for i in range(self.dimension):
                 points_dict[str(i)] = []
             budget = int(np.sqrt(self.budget))
             sampler: Optional[sequences.Sampler] = None
-            if self.qr == "qr":
+            if self._parameters.qr == "qr":
                 sampler = sequences.HammersleySampler(self.dimension, budget=budget, scrambling=True)
-            elif self.qr == "mqr":
+            elif self._parameters.qr == "mqr":
                 sampler = sequences.HammersleySampler(self.dimension, budget=budget - 1, scrambling=True)
-            elif self.qr == "lhs":
+            elif self._parameters.qr == "lhs":
                 sampler = sequences.LHSSampler(self.dimension, budget=budget)
-            elif self.qr == "r":
+            elif self._parameters.qr == "r":
                 sampler = sequences.RandomSampler(self.dimension, budget=budget)
             assert sampler is not None
             for i in range(budget):
-                if self.qr == "mqr" and not i:
+                if self._parameters.qr == "mqr" and not i:
                     s = [0.5] * self.dimension
                 else:
                     s = list(sampler())
@@ -144,8 +127,8 @@ class BO(recaster.SequentialRecastOptimizer):
                     points_dict[str(j)].append(s[j])
             bo.explore(points_dict)
         assert self.budget is not None
-        budget = self.budget - (budget if self.qr != "none" else 0)
-        ip = 1 if self.qr == "none" else 0
+        budget = self.budget - (budget if self._parameters.qr != "none" else 0)
+        ip = 1 if self._parameters.qr == "none" else 0
         bo.maximize(n_iter=budget - ip, init_points=ip)
         # print [bo.res['max']['max_params'][str(i)] for i in xrange(self.dimension)]
         v = [stats.norm.ppf(bo.res['max']['max_params'][str(i)]) for i in range(self.dimension)]
@@ -153,33 +136,24 @@ class BO(recaster.SequentialRecastOptimizer):
         return v
 
 
-@registry.register
-class RBO(BO):
+class ParametrizedBO(base.ParametrizedFamily):
+    """Bayesian optimization
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.qr = "r"
+    qr: str
+        TODO
+    """
 
+    recast = True
+    _optimizer_class = _BO
 
-@registry.register
-class QRBO(BO):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.qr = "qr"
-
-
-@registry.register
-class MidQRBO(BO):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.qr = "mqr"
+    def __init__(self, *, qr: str = "none"):
+        assert qr in ["r", "qr", "mqr", "lhs", "none"]
+        self.qr = qr
+        super().__init__()
 
 
-@registry.register
-class LBO(BO):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super(LBO, self).__init__(dimension, budget=budget, num_workers=num_workers)
-        self.qr = "lhs"
+BO = ParametrizedBO().with_name("BO", register=True)
+RBO = ParametrizedBO(qr="r").with_name("RBO", register=True)
+QRBO = ParametrizedBO(qr="qr").with_name("QRBO", register=True)
+MidQRBO = ParametrizedBO(qr="mqr").with_name("MidQRBO", register=True)
+LBO = ParametrizedBO(qr="lhs").with_name("LBO", register=True)

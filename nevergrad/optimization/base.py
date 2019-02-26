@@ -354,6 +354,7 @@ class ParametrizedFamily(OptimizerFamily):
         assert self._optimizer_class is not None
         run = self._optimizer_class(dimension=dimension, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
         assert hasattr(run, "_parameters")
+        assert isinstance(run._parameters, self.__class__)  # type: ignore
         run._parameters = self  # type: ignore
         run.name = repr(self)
         return run
