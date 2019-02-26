@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Any
+from typing import Optional, List, Dict, Tuple, Deque, Any, Union, Callable
 from collections import defaultdict, deque
 import numpy as np
 from scipy import stats
@@ -21,8 +21,7 @@ from .recastlib import *
 # # # # # optimizers # # # # #
 
 
-@registry.register
-class OnePlusOne(base.Optimizer):
+class _OnePlusOne(base.Optimizer):
     """Simple but sometimes powerful optimization algorithm.
 
     We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
@@ -33,77 +32,132 @@ class OnePlusOne(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sigma: float = 1
+        self._parameters = ParametrizedOnePlusOne()
+        self._mutations: Dict[str, Callable[[base.ArrayLike], base.ArrayLike]] = {
+            "discrete": mutations.discrete_mutation,
+            "fastga": mutations.doerr_discrete_mutation,
+            "doublefastga": mutations.doubledoerr_discrete_mutation,
+            "portfolio": mutations.portfolio_discrete_mutation}
+        self._sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
+        # pylint: disable=too-many-return-statements, too-many-branches
+        noise_handling = self._parameters.noise_handling
         if not self._num_ask:
             return np.zeros(self.dimension)
+        # for noisy version
+        if noise_handling is not None:
+            limit = (.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
+            strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
+            if self._num_ask <= limit:
+                if strategy in ["cubic", "random"]:
+                    idx = np.random.choice(len(self.archive))
+                    return list(self.archive.keys())[idx]
+                elif strategy == "optimistic":
+                    return self.current_bests["optimistic"].x
+        # crossover
+        if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
+            return mutations.crossover(self.current_bests["pessimistic"].x,
+                                       mutations.get_roulette(self.archive, num=2))
+        # mutating
+        mutation = self._parameters.mutation
+        if mutation == "gaussian":  # standard case
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)
+        elif mutation == "cauchy":
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)
+        elif mutation == "crossover":
+            if self._num_ask % 2 == 0 or len(self.archive) < 3:
+                return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+            else:
+                return mutations.crossover(self.current_bests["pessimistic"].x,
+                                           mutations.get_roulette(self.archive, num=2))
         else:
-            return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+            return self._mutations[mutation](self.current_bests["pessimistic"].x)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        if value <= self.current_bests["pessimistic"].mean:
-            self.sigma = 2. * self.sigma
-        else:
-            self.sigma = .84 * self.sigma
+        # only used for cauchy and gaussian
+        self._sigma *= 2. if value <= self.current_bests["pessimistic"].mean else .84
 
 
-@registry.register
-class NoisyOnePlusOne(OnePlusOne):
-    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
-
-    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
-    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
+class ParametrizedOnePlusOne(base.ParametrizedFamily):
+    """Simple but sometimes powerfull class of optimization algorithm.
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
-    Includes progressive widening.
-    """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        else:
-            if 20 * self._num_ask <= len(self.archive) ** 3:
-                idx = np.random.choice(len(self.archive))
-                return list(self.archive.keys())[idx]
-        return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+    Parameters
+    ----------
+    noise_handling: str or Tuple[str, float]
+        method for handling the noise. The name can be either "random" (a random point
+        is reevaluated regularly) or "optimistic" (the best optimistic point is reevaluated
+        regularly, optimism in front of uncertainty). A coefficient can also be provided
+        to tune the regularity of these reevaluations (default .05)
+    mutation: str
+        One of the available mutations from:
+        - "gaussian": standard mutation by adding a Gaussian random variable (with progressive
+        widening) to the best pessimistic point
+        - "cauchy": same as Gaussian but with a Cauchy distribution.
+        - "discrete": TODO
+        - "fastga": FastGA mutations from the current best
+        - "doublefastga": double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - "portfolio": Random number of mutated bits (called niform mixing in
+           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
+    crossover: bool
+        whether to add a genetic crossover step every other iteration.
 
-
-@registry.register
-class OptimisticNoisyOnePlusOne(OnePlusOne):
-    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
-
-    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
+    Notes
+    -----
+    For the noisy case, we use the one-fifth adaptation rule,
+    going back to Schumer and Steiglitz (1968).
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
-    We use asynchronous updates, so that the 1+1 can actually be parallel and even
-    performs quite well in such a context - this is naturally close to 1+lambda.
-    Includes progressive widening.
-    Includes optimism against uncertainty.
     """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        else:
-            if 20 * self._num_ask <= len(self.archive) ** 3:
-                return self.current_bests["optimistic"].x
-        return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+    _optimizer_class = _OnePlusOne
+
+    def __init__(self, *, noise_handling: Optional[Union[str, Tuple[str, float]]] = None,
+                 mutation: str = "gaussian", crossover: bool = False):
+        if noise_handling is not None:
+            if isinstance(noise_handling, str):
+                assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+            else:
+                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert noise_handling[1] > 0., "the factor must be a float greater than 0"
+                assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
+        self.noise_handling = noise_handling
+        self.mutation = mutation
+        self.crossover = crossover
+        super().__init__()
 
 
-@registry.register
-class CauchyOnePlusOne(OnePlusOne):
-    """Version of the OnePlusOne optimization algorithm with Cauchy mutations.
-
-    Many papers use Cauchy mutations, maybe the first one was
-    X. Yao, Y. Liu and G. Lin, Evolutionary Programing Made Faster, IEEE
-    Transactions on Evolutionary Computation, vol. 3, 82-102, July 1999.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        else:
-            return self.current_bests["pessimistic"].x + self.sigma * np.random.standard_cauchy(self.dimension)
+OnePlusOne = ParametrizedOnePlusOne().with_name("OnePlusOne", register=True)
+NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").with_name("NoisyOnePlusOne", register=True)
+OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
+DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("DiscreteOnePlusOne", register=True)
+OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="discrete").with_name("OptimisticDiscreteOnePlusOne", register=True)
+NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling=("random", 1.), mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
+DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
+FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
+DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="doublefastga").with_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="fastga").with_name("FastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="random", mutation="fastga").with_name("FastGANoisyDiscreteOnePlusOne", register=True)
+PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
+PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="portfolio").with_name("PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
+PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="random", mutation="portfolio").with_name("PortfolioNoisyDiscreteOnePlusOne", register=True)
+CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").with_name("CauchyOnePlusOne", register=True)
+RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="discrete", noise_handling="optimistic").with_name(
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
+RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="portfolio", noise_handling="optimistic").with_name(
+        "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
 @registry.register
@@ -471,196 +525,6 @@ class NoisyBandit(base.Optimizer):
             idx = np.random.choice(len(self.archive))
             return list(self.archive.keys())[idx]
         return self.current_bests["optimistic"].x
-
-
-@registry.register
-class OptimisticDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB, but new arms are chosen by discrete mutations from the best.
-
-    This combines the discrete 1+1 algorithm and bandits."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class RecombiningOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Combining the discrete 1+1, noise management a la bandit, and genetic crossovers.
-
-    Close to UCB, but new arms are chosen by discrete mutations from the current best and
-    we crossover with the best every two new arms.
-    This combines the discrete 1+1, bandits and genetic crossovers.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        elif 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        elif self._num_ask % 2 == 0 or len(self.archive) < 3:
-            return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-        else:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
-
-
-@registry.register
-class DoubleFastGADiscreteOnePlusOne(base.Optimizer):
-    """Close to discrete 1+1, but new arms are chosen by double-FastGA mutations from the current best.
-    Doerr et al, Fast Genetic Algorithms, 2017
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class FastGAOptimisticDiscreteOnePlusOne(base.Optimizer):
-    """Close to discrete 1+1, but new arms are chosen by FastGA mutations from the current best.
-
-    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB and discrete 1+1, but new arms are chosen by double-FastGA mutations from the current best.
-    Doerr et al, Fast Genetic Algorithms, 2017
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class FastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB, but new arms are chosen by FastGA mutations from the current best.
-
-    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class FastGANoisyDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB, but new arms are chosen by FastGA mutations from the current best.
-
-    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
-        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class PortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Random number of mutated bits + bandit noise management + discrete 1+1 algorithm.
-
-    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
-    in Non-elitist Population", 2016."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class PortfolioNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Random number of mutated bits + bandit noise management + discrete 1+1 algorithm.
-
-    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
-    in Non-elitist Population", 2016."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
-        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Adding crossover to PortfolioOptimisticNoisyDiscreteOnePlusOneOptimizer."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        if self._num_ask % 2 == 0 or len(self.archive) < 3:
-            return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-        else:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
-
-
-@registry.register
-class NoisyDiscreteOnePlusOne(base.Optimizer):
-    """Bandit + discrete mutations from current LCB-best."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if self._num_ask <= len(self.archive) ** 3:
-            # numpy does not accept choice on list of tuples, must choose index instead
-            idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
-        return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class DiscreteOnePlusOne(base.Optimizer):
-    """Discrete 1+1 optimization algorithm."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class PortfolioDiscreteOnePlusOne(base.Optimizer):
-    """Discrete 1+1 optimization algorithm with random number of mutated bits.
-
-    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
-    in Non-elitist Population", 2016.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
 
 
 @registry.register
