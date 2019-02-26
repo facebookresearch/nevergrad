@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Any
+from typing import Optional, List, Dict, Tuple, Deque, Any, Union
 from collections import defaultdict, deque
 import numpy as np
 from scipy import stats
@@ -47,18 +47,14 @@ class _OnePlusOne(base.Optimizer):
             return np.zeros(self.dimension)
         # for noisy version
         if noise_handling is not None:
-            if noise_handling == "cubic":
-                if self._num_ask <= len(self.archive) ** 3:
+            limit = (.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
+            strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
+            if self._num_ask <= limit:
+                if strategy in ["cubic", "random"]:
                     idx = np.random.choice(len(self.archive))
                     return list(self.archive.keys())[idx]
-            elif 20 * self._num_ask <= len(self.archive) ** 3:
-                if noise_handling == "random":
-                    idx = np.random.choice(len(self.archive))
-                    return list(self.archive.keys())[idx]
-                elif noise_handling == "optimistic":
+                elif strategy == "optimistic":
                     return self.current_bests["optimistic"].x
-                else:
-                    raise ValueError("Unkwnown noise handling")
         # crossover
         if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             return mutations.crossover(self.current_bests["pessimistic"].x,
@@ -101,8 +97,15 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
 
     _optimizer_class = _OnePlusOne
 
-    def __init__(self, *, noise_handling: Optional[str] = None, mutation: str = "gaussian", crossover: bool = False):
-        assert noise_handling in [None, "cubic", "random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+    def __init__(self, *, noise_handling: Optional[Union[str, Tuple[str, float]]] = None,
+                 mutation: str = "gaussian", crossover: bool = False):
+        if noise_handling is not None:
+            if isinstance(noise_handling, str):
+                assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+            else:
+                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert noise_handling[1] > 0., "the factor must be a float greater than 0"
+                assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "doerr", "doubledoerr", "portfolio"], f"Unkwnown mutation: '{mutation}'"
         self.noise_handling = noise_handling
         self.mutation = mutation
@@ -117,7 +120,7 @@ DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("Disc
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="discrete").with_name("OptimisticDiscreteOnePlusOne", register=True)
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="cubic", mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
+    noise_handling=("random", 1.), mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doubledoerr").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
 # TODO: check "Optmistic" for following algorithm
 FastGAOptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").with_name("FastGAOptimisticDiscreteOnePlusOne", register=True)
@@ -133,43 +136,12 @@ PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="random", mutation="portfolio").with_name("PortfolioNoisyDiscreteOnePlusOne", register=True)
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").with_name("CauchyOnePlusOne", register=True)
-
-
-@registry.register
-class RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Adding crossover to PortfolioOptimisticNoisyDiscreteOnePlusOneOptimizer."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        if self._num_ask % 2 == 0 or len(self.archive) < 3:
-            return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-        else:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
-
-
-@registry.register
-class RecombiningOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Combining the discrete 1+1, noise management a la bandit, and genetic crossovers.
-
-    Close to UCB, but new arms are chosen by discrete mutations from the current best and
-    we crossover with the best every two new arms.
-    This combines the discrete 1+1, bandits and genetic crossovers.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        elif 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        elif self._num_ask % 2 == 0 or len(self.archive) < 3:
-            return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-        else:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
+RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="discrete", noise_handling="optimistic").with_name(
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
+RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="portfolio", noise_handling="optimistic").with_name(
+        "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
 @registry.register
