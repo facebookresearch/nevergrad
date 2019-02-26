@@ -25,16 +25,14 @@ class _DE(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._parameters = DifferentialEvolution()
         self._initialization: Optional[str] = None
-        self._por_DE = False
         self._recommendation = "optimistic"
-        self.llambda = max(30, num_workers)
+        self._llambda = max(30, num_workers)
         self.scale = 1.0
         self.population: List[Optional[ArrayLike]] = []
         self.candidates: List[Optional[ArrayLike]] = []
         self.population_fitnesses: List[Optional[float]] = []
-        self.inoculation = False
-        self.hyperinoc = False
         self.sampler: Optional[sequences.Sampler] = None
         self.NF = False  # This is not a noise-free variant of DE.
         # parameters
@@ -42,6 +40,10 @@ class _DE(base.Optimizer):
         self.F1 = 0.8
         self.F2 = 0.8
         self.k = 0  # crossover
+
+    @property
+    def llambda(self):
+        return self._llambda
 
     def match_population_size_to_lambda(self) -> None:
         # TODO: Ideally, this should be done only once in __init__ and/or eventually when changing the value of
@@ -70,15 +72,15 @@ class _DE(base.Optimizer):
         i = (self.population[location])
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
 
-        if self._por_DE:
+        if self._parameters.por_DE:
             self.CR = np.random.uniform(0., 1.)
 
         if any(x is None for x in [i, a, b, c]):
-            if self.inoculation:
+            if self._parameters.inoculation:
                 inoc = float(location) / float(self.llambda)
             else:
                 inoc = 1.
-            if self.hyperinoc:
+            if self._parameters.hyperinoc:
                 p = [float(self.llambda - location), location]
                 p = [p_ / sum(p) for p_ in p]
                 sample = self.sampler() if self._initialization is not None else np.random.normal(0, 1, self.dimension)  # type: ignore
@@ -167,7 +169,7 @@ class _DE(base.Optimizer):
 
 class DifferentialEvolution(base.OptimizerFamily):
 
-    # pylint: disable=unused-argument,too-many-arguments
+    # pylint: disable=unused-argument,too-many-arguments, too-many-instance-attributes
     def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
                  CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard"):
@@ -210,6 +212,17 @@ class DifferentialEvolution(base.OptimizerFamily):
         assert initialization in [None, "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
+        self.initialization = initialization
+        self.por_DE = por_DE
+        self.scale = scale
+        self.inoculation = inoculation
+        self.hyperinoc = hyperinoc
+        self.recommendation = recommendation
+        self.CR = CR
+        self.F1 = F1
+        self.F2 = F2
+        self.crossover = crossover
+        self.popsize = popsize
         # keep all parameters and set initialize superclass for print
         self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
         defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
@@ -217,6 +230,7 @@ class DifferentialEvolution(base.OptimizerFamily):
 
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _DE:
         run = _DE(dimension=dimension, budget=budget, num_workers=num_workers)
+        run._parameters = self
         pop_choice = {"standard": 0, "dimension": dimension + 1, "large": 7 * dimension}
         # ugly but effective :s
         for name, value in self._parameters.items():
@@ -232,7 +246,7 @@ class DifferentialEvolution(base.OptimizerFamily):
                     raise ValueError(f'Unknown scaling: "{value}".')
             elif name == "popsize":
                 value = max(run.llambda, pop_choice[value])
-                rename = "llambda"
+                rename = "_llambda"
             setattr(run, rename, value)
         run.name = repr(self)
         return run

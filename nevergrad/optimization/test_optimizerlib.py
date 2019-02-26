@@ -83,6 +83,8 @@ class OptimizerTests(TestCase):
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
     def test_optimizers(self, name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+        if "DE" not in name:
+            raise SkipTest
         if isinstance(optimizer_cls, base.OptimizerFamily):
             assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
         verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
@@ -91,6 +93,8 @@ class OptimizerTests(TestCase):
 
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
+        if "DE" not in name:
+            raise SkipTest
         if name in UNSEEDABLE:
             raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
         np.random.seed(12)
