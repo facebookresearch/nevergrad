@@ -99,7 +99,7 @@ class _DetermisticSearch(OneShotOptimizer):
     @property
     def sampler(self) -> sequences.Sampler:
         if self._sampler_instance is None:
-            budget = None if self.budget is None else self.budget  # TODO: - self._middle_point
+            budget = None if self.budget is None else self.budget - self._parameters.middle_point
             samplers = {"Halton": sequences.HaltonSampler,
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
