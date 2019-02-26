@@ -26,23 +26,26 @@ class _DE(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
-        self._initialization: Optional[str] = None
-        self._recommendation = "optimistic"
-        self._llambda = max(30, num_workers)
-        self.scale = 1.0
+        self._llambda: Optional[int] = None
         self.population: List[Optional[ArrayLike]] = []
         self.candidates: List[Optional[ArrayLike]] = []
         self.population_fitnesses: List[Optional[float]] = []
         self.sampler: Optional[sequences.Sampler] = None
         self.NF = False  # This is not a noise-free variant of DE.
-        # parameters
-        self.CR = 0.5
-        self.F1 = 0.8
-        self.F2 = 0.8
-        self.k = 0  # crossover
 
     @property
-    def llambda(self):
+    def scale(self) -> float:
+        scale = self._parameters.scale
+        if isinstance(scale, str):
+            assert scale == "mini"
+            scale = 1. / np.sqrt(self.dimension)
+        return scale
+
+    @property
+    def llambda(self) -> int:
+        if self._llambda is None:
+            pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
+            self._llambda = max(30, self.num_workers, pop_choice[self._parameters.popsize])
         return self._llambda
 
     def match_population_size_to_lambda(self) -> None:
@@ -54,8 +57,8 @@ class _DE(base.Optimizer):
             self.population += [None] * (self.llambda - len(self.population))
 
     def _internal_provide_recommendation(self) -> Tuple[float, ...]:  # This is NOT the naive version. We deal with noise.
-        if self._recommendation != "noisy":
-            return self.current_bests[self._recommendation].x
+        if self._parameters.recommendation != "noisy":
+            return self.current_bests[self._parameters.recommendation].x
         med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
         good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
         if not good_guys:
@@ -63,17 +66,19 @@ class _DE(base.Optimizer):
         return sum([np.array(g) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask(self) -> Tuple[float, ...]:
-        if self.sampler is None and self._initialization is not None:
-            assert self._initialization in ["LHS", "QR"]
-            sampler_cls = sequences.LHSSampler if self._initialization == "LHS" else sequences.HammersleySampler
-            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=self._initialization == "QR")
+        init = self._parameters.initialization
+        if self.sampler is None and init is not None:
+            assert init in ["LHS", "QR"]
+            sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
+            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR")
         self.match_population_size_to_lambda()
         location = self._num_ask % self.llambda
         i = (self.population[location])
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
 
+        CR = self._parameters.CR
         if self._parameters.por_DE:
-            self.CR = np.random.uniform(0., 1.)
+            CR = np.random.uniform(0., 1.)
 
         if any(x is None for x in [i, a, b, c]):
             if self._parameters.inoculation:
@@ -83,11 +88,11 @@ class _DE(base.Optimizer):
             if self._parameters.hyperinoc:
                 p = [float(self.llambda - location), location]
                 p = [p_ / sum(p) for p_ in p]
-                sample = self.sampler() if self._initialization is not None else np.random.normal(0, 1, self.dimension)  # type: ignore
+                sample = self.sampler() if init is not None else np.random.normal(0, 1, self.dimension)  # type: ignore
                 new_guy = tuple([np.random.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
             else:
                 new_guy = tuple(inoc * self.scale * (np.random.normal(0, 1, self.dimension)
-                                                     if self._initialization is None
+                                                     if init is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             self.population[location] = new_guy
             self.population_fitnesses[location] = None
@@ -110,13 +115,13 @@ class _DE(base.Optimizer):
             if k == 2:
                 donor = np.array(self.current_bests["pessimistic"].x)
         else:
-            donor = i + self.F1 * (a - b) + self.F2 * (self.current_bests["pessimistic"].x - i)
-        k = self.k
+            donor = i + self._parameters.F1 * (a - b) + self._parameters.F2 * (self.current_bests["pessimistic"].x - i)
+        k = self._parameters.crossover
         assert k <= 2
         if k == 0 or self.dimension < 3:
             R = np.random.randint(self.dimension)
             for idx in range(self.dimension):
-                if idx != R and np.random.uniform(0, 1) > self.CR:
+                if idx != R and np.random.uniform(0, 1) > CR:
                     donor[idx] = i[idx]
         elif k == 1 or self.dimension < 4:
             R = np.random.choice(np.arange(1, self.dimension))
@@ -218,6 +223,7 @@ class DifferentialEvolution(base.OptimizerFamily):
         self.inoculation = inoculation
         self.hyperinoc = hyperinoc
         self.recommendation = recommendation
+        # parameters
         self.CR = CR
         self.F1 = F1
         self.F2 = F2
@@ -231,23 +237,6 @@ class DifferentialEvolution(base.OptimizerFamily):
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _DE:
         run = _DE(dimension=dimension, budget=budget, num_workers=num_workers)
         run._parameters = self
-        pop_choice = {"standard": 0, "dimension": dimension + 1, "large": 7 * dimension}
-        # ugly but effective :s
-        for name, value in self._parameters.items():
-            rename = name
-            if hasattr(run, "_" + name):
-                rename = "_" + rename
-            elif name == "crossover":
-                rename = "k"
-            elif name == "scale" and isinstance(value, str):
-                if value == "mini":
-                    value = 1. / np.sqrt(dimension)
-                else:
-                    raise ValueError(f'Unknown scaling: "{value}".')
-            elif name == "popsize":
-                value = max(run.llambda, pop_choice[value])
-                rename = "_llambda"
-            setattr(run, rename, value)
         run.name = repr(self)
         return run
 
