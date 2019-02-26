@@ -88,7 +88,7 @@ RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     scale="random", middle_point=True).with_name("RandomScaleRandomSearchPlusMiddlePoint", register=True)
 
 
-class _DetermisticSearch(OneShotOptimizer):
+class _SamplingSearch(OneShotOptimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
@@ -158,7 +158,7 @@ class SamplingSearch(base.ParametrizedFamily):
     """
 
     one_shot = True
-    _optimizer_class = _DetermisticSearch
+    _optimizer_class = _SamplingSearch
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
