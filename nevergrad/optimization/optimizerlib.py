@@ -41,7 +41,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
-        # pylint: disable=too-many-return-statements
+        # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self._parameters.noise_handling
         if not self._num_ask:
             return np.zeros(self.dimension)
@@ -59,12 +59,22 @@ class _OnePlusOne(base.Optimizer):
                     return self.current_bests["optimistic"].x
                 else:
                     raise ValueError("Unkwnown noise handling")
+        # crossover
+        if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
+            return mutations.crossover(self.current_bests["pessimistic"].x,
+                                       mutations.get_roulette(self.archive, num=2))
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
             return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)
         elif mutation == "cauchy":
             return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)
+        elif mutation == "crossover":
+            if self._num_ask % 2 == 0 or len(self.archive) < 3:
+                return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+            else:
+                return mutations.crossover(self.current_bests["pessimistic"].x,
+                                           mutations.get_roulette(self.archive, num=2))
         else:
             return self._mutations[mutation](self.current_bests["pessimistic"].x)
 
@@ -91,11 +101,12 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
 
     _optimizer_class = _OnePlusOne
 
-    def __init__(self, *, noise_handling: Optional[str] = None, mutation: str = "gaussian"):
+    def __init__(self, *, noise_handling: Optional[str] = None, mutation: str = "gaussian", crossover: bool = False):
         assert noise_handling in [None, "cubic", "random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "doerr", "doubledoerr", "portfolio"], f"Unkwnown mutation: '{mutation}'"
         self.noise_handling = noise_handling
         self.mutation = mutation
+        self.crossover = crossover
         super().__init__()
 
 
