@@ -35,8 +35,8 @@ class _OnePlusOne(base.Optimizer):
         self._parameters = ParametrizedOnePlusOne()
         self._mutations: Dict[str, Callable[[base.ArrayLike], base.ArrayLike]] = {
             "discrete": mutations.discrete_mutation,
-            "doerr": mutations.doerr_discrete_mutation,
-            "doubledoerr": mutations.doubledoerr_discrete_mutation,
+            "fastga": mutations.doerr_discrete_mutation,
+            "doublefastga": mutations.doubledoerr_discrete_mutation,
             "portfolio": mutations.portfolio_discrete_mutation}
         self._sigma: float = 1
 
@@ -80,19 +80,35 @@ class _OnePlusOne(base.Optimizer):
 
 
 class ParametrizedOnePlusOne(base.ParametrizedFamily):
-    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
-    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
-    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
+    """Simple but sometimes powerfull class of optimization algorithm.
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
-    Includes progressive widening.
 
-    with current_best in noisy case = "optimistic"
-    Includes optimism against uncertainty.
+    Parameters
+    ----------
+    noise_handling: str or Tuple[str, float]
+        method for handling the noise. The name can be either "random" (a random point
+        is reevaluated regularly) or "optimistic" (the best optimistic point is reevaluated
+        regularly, optimism in front of uncertainty). A coefficient can also be provided
+        to tune the regularity of these reevaluations (default .05)
+    mutation: str
+        One of the available mutations from:
+        - "gaussian": standard mutation by adding a Gaussian random variable (with progressive
+        widening) to the best pessimistic point
+        - "cauchy": same as Gaussian but with a Cauchy distribution.
+        - "discrete": TODO
+        - "fastga": FastGA mutations from the current best
+        - "doublefastga": double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - "portfolio": Random number of mutated bits (called niform mixing in
+           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
+    crossover: bool
+        whether to add a genetic crossover step every other iteration.
 
-    OptimisticDiscreteOnePlusOne(base.Optimizer):
-    lose to UCB, but new arms are chosen by discrete mutations from the best.
-    This combines the discrete 1+1 algorithm and bandits.
+    Notes
+    -----
+    For the noisy case, we use the one-fifth adaptation rule,
+    going back to Schumer and Steiglitz (1968).
+    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     """
 
     _optimizer_class = _OnePlusOne
@@ -106,7 +122,7 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0., "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "doerr", "doubledoerr", "portfolio"], f"Unkwnown mutation: '{mutation}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -121,15 +137,16 @@ OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="discrete").with_name("OptimisticDiscreteOnePlusOne", register=True)
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling=("random", 1.), mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
-DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doubledoerr").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
+DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
 # TODO: check "Optmistic" for following algorithm
-FastGAOptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").with_name("FastGAOptimisticDiscreteOnePlusOne", register=True)
+FastGAOptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="fastga").with_name("FastGAOptimisticDiscreteOnePlusOne", register=True)
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="optimistic", mutation="doubledoerr").with_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+    noise_handling="optimistic", mutation="doublefastga").with_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
 FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="optimistic", mutation="doerr").with_name("FastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+    noise_handling="optimistic", mutation="fastga").with_name("FastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
 FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="random", mutation="doerr").with_name("FastGANoisyDiscreteOnePlusOne", register=True)
+    noise_handling="random", mutation="fastga").with_name("FastGANoisyDiscreteOnePlusOne", register=True)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
 PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="portfolio").with_name("PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
