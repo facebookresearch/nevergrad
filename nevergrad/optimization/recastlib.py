@@ -14,15 +14,13 @@ from . import recaster
 from . import sequences
 
 
-class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
+class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1, method: Optional[str] = None) -> None:
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.method = method
+        self._parameters = ScipyOptimizer()
         self.multirun = 1  # work in progress
-        assert self.method is not None, "A method must be specified"
         self.initial_guess: Optional[base.ArrayLike] = None
-        self.random_restart = False
 
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
@@ -40,8 +38,8 @@ class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(objective_function, best_x if not self.random_restart else
-                                         np.random.normal(0., 1., self.dimension), method=self.method, options=options, tol=0)
+            res = scipyoptimize.minimize(objective_function, best_x if not self._parameters.random_restart else
+                                         np.random.normal(0., 1., self.dimension), method=self._parameters.method, options=options, tol=0)
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x
@@ -49,50 +47,25 @@ class ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         return best_x
 
 
-@registry.register
-class NelderMead(ScipyMinimizeBase):
+class ScipyOptimizer(base.ParametrizedFamily):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers, method="Nelder-Mead")
+    recast = True
+    _optimizer_class = _ScipyMinimizeBase
 
-
-@registry.register
-class Powell(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="Powell")
-
-
-@registry.register
-class RPowell(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="Powell")
-        self.random_restart = True
+    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False):
+        assert method in ["Nelder-Mead", "Cobyla", "SQP", "Powell"], f"Unknown method '{method}'"
+        self.method = method
+        self.random_restart = random_restart
+        super().__init__()
 
 
-@registry.register
-class Cobyla(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="COBYLA")
-
-
-@registry.register
-class RCobyla(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="COBYLA")
-        self.random_restart = True
-
-
-@registry.register
-class SQP(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="SLSQP")
-
-
-@registry.register
-class RSQP(ScipyMinimizeBase):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers, method="SLSQP")
-        self.random_restart = True
+NelderMead = ScipyOptimizer(method="Nelder-Mead").with_name("NelderMead", register=True)
+Powell = ScipyOptimizer(method="Powell").with_name("Powell", register=True)
+RPowell = ScipyOptimizer(method="Powell", random_restart=True).with_name("RPowell", register=True)
+Cobyla = ScipyOptimizer(method="Cobyla").with_name("Cobyla", register=True)
+RCobyla = ScipyOptimizer(method="Cobyla", random_restart=True).with_name("RCobyla", register=True)
+SQP = ScipyOptimizer(method="SQP").with_name("SQP", register=True)
+RSQP = ScipyOptimizer(method="SQP", random_restart=True).with_name("RSQP", register=True)
 
 
 @registry.register
@@ -152,6 +125,17 @@ class BO(recaster.SequentialRecastOptimizer):
         v = [min(max(v_, -100), 100) for v_ in v]
         return v
 
+
+# class ParametrizedBO(base.ParametrizedFamily):
+#
+#    recast = True
+#    _optimizer_class = _BO
+#
+#    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False):
+#        assert method in ["Nelder-Mead", "Cobyla", "SQP"]
+#        self.method = method
+#        self.random_restart = random_restart
+#        super().__init__()
 
 @registry.register
 class RBO(BO):
