@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Any, Union
+from typing import Optional, List, Dict, Tuple, Deque, Any, Union, Callable
 from collections import defaultdict, deque
 import numpy as np
 from scipy import stats
@@ -33,11 +33,11 @@ class _OnePlusOne(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedOnePlusOne()
-        self._mutations = {"discrete": mutations.discrete_mutation,
-                           "doerr": mutations.doerr_discrete_mutation,
-                           "doubledoerr": mutations.doubledoerr_discrete_mutation,
-                           "portfolio": mutations.portfolio_discrete_mutation,
-                           }
+        self._mutations: Dict[str, Callable[[base.ArrayLike], base.ArrayLike]] = {
+            "discrete": mutations.discrete_mutation,
+            "doerr": mutations.doerr_discrete_mutation,
+            "doubledoerr": mutations.doubledoerr_discrete_mutation,
+            "portfolio": mutations.portfolio_discrete_mutation}
         self._sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
