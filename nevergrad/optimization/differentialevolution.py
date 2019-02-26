@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import inspect
 from typing import Optional, Tuple, List, Union
 import numpy as np
 from scipy import stats
@@ -39,6 +38,7 @@ class _DE(base.Optimizer):
         if isinstance(scale, str):
             assert scale == "mini"
             scale = 1. / np.sqrt(self.dimension)
+        assert isinstance(scale, float)
         return scale
 
     @property
@@ -49,8 +49,6 @@ class _DE(base.Optimizer):
         return self._llambda
 
     def match_population_size_to_lambda(self) -> None:
-        # TODO: Ideally, this should be done only once in __init__ and/or eventually when changing the value of
-        # self.llambda
         if len(self.population) < self.llambda:
             self.candidates += [None] * (self.llambda - len(self.population))
             self.population_fitnesses += [None] * (self.llambda - len(self.population))
@@ -172,9 +170,11 @@ class _DE(base.Optimizer):
         self.candidates[idx] = None
 
 
-class DifferentialEvolution(base.OptimizerFamily):
+# pylint: disable=too-many-arguments, too-many-instance-attributes
+class DifferentialEvolution(base.ParametrizedFamily):
 
-    # pylint: disable=unused-argument,too-many-arguments, too-many-instance-attributes
+    _optimizer_class = _DE
+
     def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
                  CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard"):
@@ -229,16 +229,7 @@ class DifferentialEvolution(base.OptimizerFamily):
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
-        # keep all parameters and set initialize superclass for print
-        self._parameters = {x: y for x, y in locals().items() if x not in {"__class__", "self"}}
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()}
-        super().__init__(**{x: y for x, y in self._parameters.items() if y != defaults[x]})  # only print non defaults
-
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> _DE:
-        run = _DE(dimension=dimension, budget=budget, num_workers=num_workers)
-        run._parameters = self
-        run.name = repr(self)
-        return run
+        super().__init__()
 
 
 DE = DifferentialEvolution().with_name("DE", register=True)
