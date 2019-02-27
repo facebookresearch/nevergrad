@@ -74,7 +74,7 @@ class _DE(base.Optimizer):
         i = (self.population[location])
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
 
-        CR = self._parameters.CR if isinstance(self._parameters.CR, float) else 1. / self.dimension
+        CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
         if self._parameters.por_DE:
             CR = np.random.uniform(0., 1.)
 
@@ -178,7 +178,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
     def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic", NF: bool = True,
                  CR: Union[str, float] = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard",
-                 hashed: bool = True) -> None:
+                 hashed: bool = False) -> None:
         """Differential evolution algorithms.
 
         Default pop size is 30
