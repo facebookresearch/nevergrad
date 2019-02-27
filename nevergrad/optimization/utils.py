@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
-from typing import Tuple, Any, Callable, List, Optional, Dict
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView
 import numpy as np
 
 
@@ -155,7 +155,7 @@ class SequentialExecutor:
 
 def _tobytes(x: np.ndarray) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
-    assert x.ndim == 1
+    assert x.ndim == 1, f"Input shape: {x.shape}"
     assert x.dtype == np.float
     return x.tobytes()  # type: ignore
 
@@ -182,3 +182,6 @@ class Archive:
     def keys(self) -> None:
         raise RuntimeError("Generating numpy arrays from the bytes keys is inefficient, select the keys from "
                            "bytesdict and convert it manually with np.frombuffer")
+
+    def values(self) -> ValuesView[Value]:
+        return self.bytesdict.values()
