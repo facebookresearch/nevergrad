@@ -74,7 +74,7 @@ class _DE(base.Optimizer):
         i = (self.population[location])
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
 
-        CR = self._parameters.CR
+        CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
         if self._parameters.por_DE:
             CR = np.random.uniform(0., 1.)
 
@@ -101,7 +101,7 @@ class _DE(base.Optimizer):
         a = np.array(a)
         b = np.array(b)
         c = np.array(c)
-        if self.hashed:
+        if self._parameters.hashed:
             k = np.random.randint(3)
             if k == 0:
                 if self.NF:
@@ -176,8 +176,9 @@ class DifferentialEvolution(base.ParametrizedFamily):
     _optimizer_class = _DE
 
     def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
-                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic",
-                 CR: float = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard"):
+                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic", NF: bool = True,
+                 CR: Union[str, float] = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard",
+                 hashed: bool = False) -> None:
         """Differential evolution algorithms.
 
         Default pop size is 30
@@ -210,6 +211,10 @@ class DifferentialEvolution(base.ParametrizedFamily):
         popsize: "standard", "dimension", "large"
             size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
             and "large" max(num_workers, 30, 7 * dimension).
+        NF: bool
+            TODO
+        hashed: bool
+            TODO
         """
         # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
@@ -217,6 +222,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
         assert initialization in [None, "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
+        assert isinstance(CR, float) or CR == "dimension"
         self.initialization = initialization
         self.por_DE = por_DE
         self.scale = scale
@@ -229,6 +235,8 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
+        self.NF = NF
+        self.hashed = hashed
         super().__init__()
 
 
