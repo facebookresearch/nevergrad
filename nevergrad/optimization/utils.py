@@ -4,8 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator
 import numpy as np
+from ..common.typetools import ArrayLike
 
 
 class Value:
@@ -153,7 +154,7 @@ class SequentialExecutor:
         return DelayedJob(function, *args, **kwargs)
 
 
-def _tobytes(x: np.ndarray) -> bytes:
+def _tobytes(x: ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
     assert x.dtype == np.float
@@ -179,9 +180,21 @@ class Archive:
     def get(self, x: np.ndarray, default: Optional[Value] = None) -> Optional[Value]:
         return self.bytesdict.get(_tobytes(x), default)
 
+    def __len__(self) -> int:
+        return len(self.bytesdict)
+
     def keys(self) -> None:
         raise RuntimeError("Generating numpy arrays from the bytes keys is inefficient, select the keys from "
                            "bytesdict and convert it manually with np.frombuffer")
 
     def values(self) -> ValuesView[Value]:
         return self.bytesdict.values()
+
+    def items_as_array(self) -> Iterator[Tuple[np.ndarray, Value]]:
+        """Functions that iterates on key values but transforms keys
+        to np.ndarray. This is to simplify interactions, but should not
+        be used in an algorithm since the conversion can be inefficient.
+        Prefer using self.bytesdict.items() directly, and convert the bytes
+        to np.ndarray using np.frombuffer(b)
+        """
+        return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())

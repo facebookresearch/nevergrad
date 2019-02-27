@@ -66,6 +66,8 @@ def test_archive() -> None:
     y = np.frombuffer(next(iter(archive.bytesdict.keys())))
     assert data in archive
     np.testing.assert_equal(y, data)
+    items = list(archive.items_as_array())
+    assert isinstance(items[0][0], np.ndarray)
 
 
 def test_archive_errors() -> None:
