@@ -161,6 +161,12 @@ def _tobytes(x: ArrayLike) -> bytes:
     return x.tobytes()  # type: ignore
 
 
+_ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
+              "work on archive.bytesdict.<keys,items>() directly and convert with "
+              "np.frombuffer if you can. You can also use archive.<keys,items>_as_arrays() "
+              "but it is less efficient.")
+
+
 class Archive:
     """A dict like object with numpy arrays as keys
     """
@@ -183,18 +189,29 @@ class Archive:
     def __len__(self) -> int:
         return len(self.bytesdict)
 
-    def keys(self) -> None:
-        raise RuntimeError("Generating numpy arrays from the bytes keys is inefficient, select the keys from "
-                           "bytesdict and convert it manually with np.frombuffer")
-
     def values(self) -> ValuesView[Value]:
         return self.bytesdict.values()
 
+    def keys(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
+    def items(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
     def items_as_array(self) -> Iterator[Tuple[np.ndarray, Value]]:
-        """Functions that iterates on key values but transforms keys
+        """Functions that iterates on key-values but transforms keys
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
         Prefer using self.bytesdict.items() directly, and convert the bytes
         to np.ndarray using np.frombuffer(b)
         """
         return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())
+
+    def keys_as_array(self) -> Iterator[np.ndarray]:
+        """Functions that iterates on keys but transforms them
+        to np.ndarray. This is to simplify interactions, but should not
+        be used in an algorithm since the conversion can be inefficient.
+        Prefer using self.bytesdict.keys() directly, and convert the bytes
+        to np.ndarray using np.frombuffer(b)
+        """
+        return (np.frombuffer(b) for b in self.bytesdict)

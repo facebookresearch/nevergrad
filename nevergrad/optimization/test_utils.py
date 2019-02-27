@@ -68,6 +68,8 @@ def test_archive() -> None:
     np.testing.assert_equal(y, data)
     items = list(archive.items_as_array())
     assert isinstance(items[0][0], np.ndarray)
+    items = list(archive.keys_as_array())
+    assert isinstance(items[0], np.ndarray)
 
 
 def test_archive_errors() -> None:
@@ -76,3 +78,4 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
     np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
     np.testing.assert_raises(RuntimeError, archive.keys)
+    np.testing.assert_raises(RuntimeError, archive.items)
