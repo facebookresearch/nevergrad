@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
-from typing import Tuple, Any, Callable, List, Optional
+from typing import Tuple, Any, Callable, List, Optional, Dict
 import numpy as np
 
 
@@ -151,3 +151,34 @@ class SequentialExecutor:
 
     def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
         return DelayedJob(function, *args, **kwargs)
+
+
+def _tobytes(x: np.ndarray) -> bytes:
+    x = np.array(x, copy=False)  # for compatibility
+    assert x.ndim == 1
+    assert x.dtype == np.float
+    return x.tobytes()  # type: ignore
+
+
+class Archive:
+    """A dict like object with numpy arrays as keys
+    """
+
+    def __init__(self) -> None:
+        self.bytesdict: Dict[bytes, Value] = {}
+
+    def __setitem__(self, x: np.ndarray, value: Value) -> None:
+        self.bytesdict[_tobytes(x)] = value
+
+    def __getitem__(self, x: np.ndarray) -> Value:
+        return self.bytesdict[_tobytes(x)]
+
+    def __contains__(self, x: np.ndarray) -> bool:
+        return _tobytes(x) in self.bytesdict
+
+    def get(self, x: np.ndarray, default: Optional[Value] = None) -> Optional[Value]:
+        return self.bytesdict.get(_tobytes(x), default)
+
+    def keys(self) -> None:
+        raise RuntimeError("Generating numpy arrays from the bytes keys is inefficient, select the keys from "
+                           "bytesdict and convert it manually with np.frombuffer")
