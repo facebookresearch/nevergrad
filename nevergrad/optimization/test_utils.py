@@ -71,6 +71,8 @@ def test_archive() -> None:
     assert isinstance(items[0][0], np.ndarray)
     items = list(archive.keys_as_array())
     assert isinstance(items[0], np.ndarray)
+    repr(archive)
+    str(archive)
 
 
 def test_archive_errors() -> None:
