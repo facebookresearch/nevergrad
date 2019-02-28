@@ -23,10 +23,9 @@ Still, this structure is not final, it is bound to evolve and you are welcome to
 All algorithms derive from a base class named `Optimizer` and are registered through a decorator. The implementation of the base class is [here](../nevergrad/optimization/base.py).
 This base class implements the `ask` and `tell` interface.
 
-It records all evaluated points through the `archive` attribute, which is of type:
-```
-Dict[Tuple[float,...], Value]
-```
+It records all evaluated points through the `archive` attribute of class `Archive`. It can be seen be used as if it was of type `Dict[np.ndarray, Value]`, but since `np.ndarray` are not hashable, the underlying implementation converts arrays into bytes and register them into the `archive.bytesdict` dictionary. `Archive` however does not implement `keys` and `items` methods because converting from bytes to array is not very efficient, one should therefore interate on `bytesdict` and the keys can then be transformed back to arrays using `np.frombuffer(key)`. See [OnePlusOne implementation](../nevergrad/optimization/optimizerlib.py) for an example.
+
+
 The key tuple if the point location, and `Value` is a class with attributes:
 - `count`: number of evaluations at this point.
 - `mean`: mean value of the evaluations at this point.
