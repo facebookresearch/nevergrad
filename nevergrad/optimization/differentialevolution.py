@@ -25,7 +25,6 @@ class _DE(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
-        self.archive = base.utils.Archive()
         self._llambda: Optional[int] = None
         self.population: List[Optional[ArrayLike]] = []
         self.candidates: List[Optional[ArrayLike]] = []
