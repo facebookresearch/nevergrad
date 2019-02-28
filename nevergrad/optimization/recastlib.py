@@ -62,7 +62,7 @@ class ScipyOptimizer(base.ParametrizedFamily):
     recast = True
     _optimizer_class = _ScipyMinimizeBase
 
-    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False):
+    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
         assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
@@ -95,7 +95,7 @@ class _BO(recaster.SequentialRecastOptimizer):
 
         def my_obj(**kwargs: Any) -> float:
             v = [stats.norm.ppf(kwargs[str(i)]) for i in range(self.dimension)]
-            v = [min(max(v_, -100), 100) for v_ in v]
+            v = [min(max(v_, -100.), 100.) for v_ in v]
             return -objective_function(v)   # We minimize!
 
         bounds = {}
@@ -132,7 +132,7 @@ class _BO(recaster.SequentialRecastOptimizer):
         bo.maximize(n_iter=budget - ip, init_points=ip)
         # print [bo.res['max']['max_params'][str(i)] for i in xrange(self.dimension)]
         v = [stats.norm.ppf(bo.res['max']['max_params'][str(i)]) for i in range(self.dimension)]
-        v = [min(max(v_, -100), 100) for v_ in v]
+        v = [min(max(v_, -100.), 100.) for v_ in v]
         return v
 
 
@@ -146,7 +146,7 @@ class ParametrizedBO(base.ParametrizedFamily):
     recast = True
     _optimizer_class = _BO
 
-    def __init__(self, *, qr: str = "none"):
+    def __init__(self, *, qr: str = "none") -> None:
         assert qr in ["r", "qr", "mqr", "lhs", "none"]
         self.qr = qr
         super().__init__()

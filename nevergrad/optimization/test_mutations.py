@@ -7,7 +7,7 @@ from unittest import TestCase
 from typing import Callable, Any
 import numpy as np
 import genty
-from .utils import Value
+from . import utils
 from . import mutations
 
 
@@ -43,11 +43,13 @@ class MutationTests(TestCase):
         np.testing.assert_equal(output1, output2)
 
     @genty.genty_dataset(  # type: ignore
-        only_2=(2, "b"),
-        all_4=(4, "a"),
+        only_2=(2, 1.5),
+        all_4=(4, 0.5),
     )
     def test_get_roulette(self, num: int, expected: str) -> None:
         np.random.seed(24)
-        archive = {"a": Value(0), "b": Value(1), "c": Value(2), "d": Value(3)}
+        archive = utils.Archive()
+        for k in range(4):
+            archive[np.array([k + .5])] = utils.Value(k)
         output = mutations.get_roulette(archive, num)
         np.testing.assert_equal(output, expected)

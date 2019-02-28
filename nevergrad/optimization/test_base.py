@@ -35,10 +35,10 @@ class LoggingOptimizer(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         self.logs.append(f"s{self._num_ask}")  # s for suggest
-        return np.array((self._num_ask,))
+        return np.array((float(self._num_ask),))
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.logs.append(f"u{x[0]}")  # u for update
+        self.logs.append(f"u{int(x[0])}")  # u for update
 
 
 @genty.genty
@@ -87,12 +87,12 @@ def test_base_optimizer() -> None:
     representation = repr(zeroptim)
     assert "dimension=2" in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask(), [0, 0])
-    zeroptim.tell([0, 0], 0)
-    zeroptim.tell([1, 1], 1)
+    zeroptim.tell([0., 0], 0)
+    zeroptim.tell([1., 1], 1)
     np.testing.assert_equal(zeroptim.provide_recommendation(), [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell([0, 0], 10)
-    zeroptim.tell([1, 1], 1)
+    zeroptim.tell([0., 0], 10)
+    zeroptim.tell([1., 1], 1)
     np.testing.assert_equal(zeroptim.provide_recommendation(), [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
 

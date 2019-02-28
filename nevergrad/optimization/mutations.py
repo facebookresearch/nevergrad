@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 import numpy as np
 from ..common.typetools import ArrayLike
+from . import utils
 
 
 def doerr_discrete_mutation(parent: ArrayLike) -> ArrayLike:
@@ -65,14 +66,14 @@ def crossover(parent: ArrayLike, donor: ArrayLike) -> ArrayLike:
     return discrete_mutation(mix)
 
 
-def get_roulette(archive: Dict[Any, Any], num: Optional[int] = None) -> Any:
+def get_roulette(archive: utils.Archive, num: Optional[int] = None) -> Any:
     """Apply a roulette tournament selection.
     """
     if num is None:
         num = int(.999 + np.sqrt(len(archive)))
     # the following sort makes the line deterministic, and function seedable, at the cost of complexity!
-    my_keys = sorted(archive.keys())
+    my_keys = sorted(archive.bytesdict.keys())
     my_keys_indices = np.random.choice(len(my_keys), size=min(num, len(my_keys)), replace=False)
     my_keys = [my_keys[i] for i in my_keys_indices]
     # best pessimistic value in a random set of keys
-    return min(my_keys, key=lambda x: archive[x].pessimistic_confidence_bound)
+    return np.frombuffer(min(my_keys, key=lambda x: archive.bytesdict[x].pessimistic_confidence_bound))

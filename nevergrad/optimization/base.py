@@ -69,7 +69,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.dimension = dimension
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: Union[utils.Archive, Dict[Tuple[float, ...], utils.Value]] = {}
+        self.archive = utils.Archive()
         self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # instance state
@@ -346,7 +346,7 @@ class ParametrizedFamily(OptimizerFamily):
     _optimizer_class: Optional[Type[Optimizer]] = None
 
     def __init__(self) -> None:
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()  # type: ignore
                     if x not in ["self", "__class__"]}
         diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
         if diff:  # this is to help durring development
