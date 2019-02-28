@@ -4,8 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
-from typing import Tuple, Any, Callable, List, Optional
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator
 import numpy as np
+from ..common.typetools import ArrayLike
 
 
 class Value:
@@ -151,3 +152,66 @@ class SequentialExecutor:
 
     def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
         return DelayedJob(function, *args, **kwargs)
+
+
+def _tobytes(x: ArrayLike) -> bytes:
+    x = np.array(x, copy=False)  # for compatibility
+    assert x.ndim == 1, f"Input shape: {x.shape}"
+    assert x.dtype == np.float
+    return x.tobytes()  # type: ignore
+
+
+_ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
+              "work on archive.bytesdict.<keys,items>() directly and convert with "
+              "np.frombuffer if you can. You can also use archive.<keys,items>_as_arrays() "
+              "but it is less efficient.")
+
+
+class Archive:
+    """A dict like object with numpy arrays as keys
+    """
+
+    def __init__(self) -> None:
+        self.bytesdict: Dict[bytes, Value] = {}
+
+    def __setitem__(self, x: np.ndarray, value: Value) -> None:
+        self.bytesdict[_tobytes(x)] = value
+
+    def __getitem__(self, x: np.ndarray) -> Value:
+        return self.bytesdict[_tobytes(x)]
+
+    def __contains__(self, x: np.ndarray) -> bool:
+        return _tobytes(x) in self.bytesdict
+
+    def get(self, x: np.ndarray, default: Optional[Value] = None) -> Optional[Value]:
+        return self.bytesdict.get(_tobytes(x), default)
+
+    def __len__(self) -> int:
+        return len(self.bytesdict)
+
+    def values(self) -> ValuesView[Value]:
+        return self.bytesdict.values()
+
+    def keys(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
+    def items(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
+    def items_as_array(self) -> Iterator[Tuple[np.ndarray, Value]]:
+        """Functions that iterates on key-values but transforms keys
+        to np.ndarray. This is to simplify interactions, but should not
+        be used in an algorithm since the conversion can be inefficient.
+        Prefer using self.bytesdict.items() directly, and convert the bytes
+        to np.ndarray using np.frombuffer(b)
+        """
+        return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())
+
+    def keys_as_array(self) -> Iterator[np.ndarray]:
+        """Functions that iterates on keys but transforms them
+        to np.ndarray. This is to simplify interactions, but should not
+        be used in an algorithm since the conversion can be inefficient.
+        Prefer using self.bytesdict.keys() directly, and convert the bytes
+        to np.ndarray using np.frombuffer(b)
+        """
+        return (np.frombuffer(b) for b in self.bytesdict)

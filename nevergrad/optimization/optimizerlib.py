@@ -42,6 +42,7 @@ class _OnePlusOne(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         # pylint: disable=too-many-return-statements, too-many-branches
+        assert isinstance(self.archive, dict)  # for typing, because following operations need changes for Archive
         noise_handling = self._parameters.noise_handling
         if not self._num_ask:
             return np.zeros(self.dimension)
@@ -523,6 +524,7 @@ class NoisyBandit(base.Optimizer):
         if np.random.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
             idx = np.random.choice(len(self.archive))
+            assert isinstance(self.archive, dict)  # for typing, because following operation need changes for Archive
             return list(self.archive.keys())[idx]
         return self.current_bests["optimistic"].x
 

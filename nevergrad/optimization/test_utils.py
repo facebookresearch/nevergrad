@@ -54,3 +54,28 @@ def test_get_nash() -> None:
     np.random.seed(12)
     output = utils.sample_nash(zeroptim)
     np.testing.assert_equal(output, (2,))
+
+
+def test_archive() -> None:
+    data = [1, 4.5, 12, 0]
+    archive = utils.Archive()
+    archive[np.array(data)] = utils.Value(12)
+    np.testing.assert_equal(archive[np.array(data)].mean, 12)
+    np.testing.assert_equal(archive.get(data).mean, 12)  # type: ignore
+    np.testing.assert_equal(archive.get([0, 12.]), None)
+    y = np.frombuffer(next(iter(archive.bytesdict.keys())))
+    assert data in archive
+    np.testing.assert_equal(y, data)
+    items = list(archive.items_as_array())
+    assert isinstance(items[0][0], np.ndarray)
+    items = list(archive.keys_as_array())
+    assert isinstance(items[0], np.ndarray)
+
+
+def test_archive_errors() -> None:
+    archive = utils.Archive()
+    archive[[12, 0.]] = utils.Value(12)
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
+    np.testing.assert_raises(RuntimeError, archive.keys)
+    np.testing.assert_raises(RuntimeError, archive.items)

@@ -69,7 +69,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.dimension = dimension
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: Dict[Tuple[float, ...], utils.Value] = {}
+        self.archive: Union[utils.Archive, Dict[Tuple[float, ...], utils.Value]] = {}
         self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # instance state
@@ -146,7 +146,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # this may have to be improved if we want to keep more kinds of best values
         for name in ["optimistic", "pessimistic", "average"]:
             if x == self.current_bests[name].x:   # reboot
-                y: Tuple[float, ...] = min(self.archive, key=lambda x, n=name: self.archive[x].get_estimation(n))
+                if isinstance(self.archive, utils.Archive):
+                    # currently, cast to tuple for compatibility reason (comparing tuples and np.ndarray fails)
+                    y: ArrayLike = tuple(np.frombuffer(
+                        min(self.archive.bytesdict, key=lambda x, n=name: self.archive.bytesdict[x].get_estimation(n))))
+                else:
+                    y = min(self.archive, key=lambda x, n=name: self.archive[x].get_estimation(n))
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = utils.Point(y, self.archive[y])
             else:
