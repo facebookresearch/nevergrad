@@ -218,8 +218,11 @@ class Archive:
         """
         return (np.frombuffer(b) for b in self.bytesdict)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Archive with bytesdict: {self.bytesdict!r}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Archive with bytesdict: {self.bytesdict}"
+
+    def __iter__(self) -> None:
+        raise RuntimeError(_ERROR_STR)

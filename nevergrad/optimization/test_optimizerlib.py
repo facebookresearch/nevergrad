@@ -138,5 +138,9 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")
     #
-    optimf = optimizerlib.RandomSearchMaker(cauchy=True)
-    np.testing.assert_equal(repr(optimf), "RandomSearchMaker(cauchy=True)")
+    optimrs = optimizerlib.RandomSearchMaker(cauchy=True)
+    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(cauchy=True)")
+    #
+    optimso = optimizerlib.ScipyOptimizer(method="COBYLA")
+    np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
+    assert optimso.no_parallelization
