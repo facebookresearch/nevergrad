@@ -140,3 +140,7 @@ def test_optimizer_families_repr() -> None:
     #
     optimf = optimizerlib.RandomSearchMaker(cauchy=True)
     np.testing.assert_equal(repr(optimf), "RandomSearchMaker(cauchy=True)")
+    #
+    optimf = optimizerlib.ScipyOptimizer(method="COBYLA")
+    np.testing.assert_equal(repr(optimf), "ScipyOptimizer(method='COBYLA')")
+    assert optimf.no_parallelization

@@ -35,15 +35,16 @@ class CallCounter(execution.PostponedObject):
         self.num_calls = 0
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        value = self.func(*args, **kwargs)  # compute *before* updating num calls
         self.num_calls += 1
-        return self.func(*args, **kwargs)
+        return value
 
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         """Propagate subfunction delay
         """
         if isinstance(self.func, execution.PostponedObject):
             return self.func.get_postponing_delay(arguments, value)
-        return 0
+        return 1.
 
 
 class OptimizerSettings:
@@ -220,7 +221,8 @@ class Experiment:
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
-        counter = CallCounter(self.function)
+        counter = CallCounter(self.function)  # probably useless now (= num_ask) but helps being 100% sure
+        counter.num_calls = self._optimizer.num_ask  # update in case we are resuming an optimization
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient

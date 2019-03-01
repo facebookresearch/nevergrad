@@ -60,6 +60,8 @@ class ScipyOptimizer(base.ParametrizedFamily):
     """
 
     recast = True
+    no_parallelization = True
+
     _optimizer_class = _ScipyMinimizeBase
 
     def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
