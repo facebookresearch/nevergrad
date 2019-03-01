@@ -110,7 +110,7 @@ def _get_nash(optimizer: Any) -> List[Tuple[Tuple[float, ...], int]]:
     if threshold <= np.power(sum_num_trial, .25):
         return [(optimizer.provide_recommendation(), 1)]
     # make deterministic at the price of sort complexity
-    return sorted(((k, p.count) for k, p in optimizer.archive.items() if p.count >= threshold),
+    return sorted(((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
                   key=operator.itemgetter(1))
 
 
@@ -168,7 +168,9 @@ _ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
 
 
 class Archive:
-    """A dict like object with numpy arrays as keys
+    """A dict-like object with numpy arrays as keys.
+    The underlying `bytesdict` dict stores the arrays as bytes since arrays are not hashable.
+    Keys can be converted back with np.frombuffer(key)
     """
 
     def __init__(self) -> None:
@@ -215,3 +217,9 @@ class Archive:
         to np.ndarray using np.frombuffer(b)
         """
         return (np.frombuffer(b) for b in self.bytesdict)
+
+    def __repr__(self):
+        return f"Archive with bytesdict: {self.bytesdict!r}"
+
+    def __str__(self):
+        return f"Archive with bytesdict: {self.bytesdict}"

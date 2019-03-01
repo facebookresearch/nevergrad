@@ -47,8 +47,9 @@ def test_sequential_executor() -> None:
 def test_get_nash() -> None:
     zeroptim = Zero(dimension=1, budget=4, num_workers=1)
     for k in range(4):
-        zeroptim.archive[(k,)] = utils.Value(k)
-        zeroptim.archive[(k,)].count += (4 - k)
+        array = (float(k),)
+        zeroptim.archive[array] = utils.Value(k)
+        zeroptim.archive[array].count += (4 - k)
     nash = utils._get_nash(zeroptim)
     testing.printed_assert_equal(nash, [((2,), 3), ((1,), 4), ((0,), 5)])
     np.random.seed(12)
@@ -70,6 +71,8 @@ def test_archive() -> None:
     assert isinstance(items[0][0], np.ndarray)
     items = list(archive.keys_as_array())
     assert isinstance(items[0], np.ndarray)
+    repr(archive)
+    str(archive)
 
 
 def test_archive_errors() -> None:

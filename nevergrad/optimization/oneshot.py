@@ -105,6 +105,7 @@ class _SamplingSearch(OneShotOptimizer):
                         "LHS": sequences.LHSSampler,
                         }
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled)
+            assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
                 self._sampler_instance.reinitialize()  # sampler was consumed by the scaler

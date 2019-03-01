@@ -29,16 +29,16 @@ class InefficientSettingsWarning(RuntimeWarning):
 
 class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
-    - suggest_exploration which provides points on which to evaluate the function to optimize
-    - update_with_fitness_value which lets you provide the values associated to points
-    - provide_recommendation which provides the best final value
-    Typically, one would call suggest_exploration num_workers times, evaluate the
+    - "ask()" which provides points on which to evaluate the function to optimize
+    - "tell(x, value)" which lets you provide the values associated to points
+    - "provide_recommendation()" which provides the best final value
+    Typically, one would call "ask()" num_workers times, evaluate the
     function on these num_workers points in parallel, update with the fitness value when the
     evaluations is finished, and iterate until the budget is over. At the very end,
     one would call provide_recommendation for the estimated optimum.
 
     This class is abstract, it provides _internal equivalents for the 3 main functions,
-    among which at least _internal_suggest_exploration must be overridden.
+    among which at least _internal_ask has to be overridden.
 
     Each optimizer instance should be used only once, with the initial provided budget
 
@@ -69,7 +69,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.dimension = dimension
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: Union[utils.Archive, Dict[Tuple[float, ...], utils.Value]] = {}
+        self.archive = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # instance state
@@ -346,7 +346,7 @@ class ParametrizedFamily(OptimizerFamily):
     _optimizer_class: Optional[Type[Optimizer]] = None
 
     def __init__(self) -> None:
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()  # type: ignore
                     if x not in ["self", "__class__"]}
         diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
         if diff:  # this is to help durring development
