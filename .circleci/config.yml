@@ -44,7 +44,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            nosetests nevergrad --verbose --with-timer --with-coverage --cover-package=nevergrad
+            pytest nevergrad --duration=20 --cov=nevergrad
 
       - run:
           name: run mypy
