@@ -71,11 +71,11 @@ def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[b
 
 class RecommendationKeeper:
 
-    def __init__(self) -> None:
-        self._RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
+    def __init__(self, filepath: Path) -> None:
+        self.filepath = filepath
         self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
-        if self._RECOM_FILE.exists():
-            self.recommendations = pd.read_csv(self._RECOM_FILE, index_col=0)
+        if filepath.exists():
+            self.recommendations = pd.read_csv(filepath, index_col=0)
 
     def save(self) -> None:
         # sort and remove unused names
@@ -83,12 +83,12 @@ class RecommendationKeeper:
         names = sorted(x for x in self.recommendations.index if x in registry)
         recom = self.recommendations.loc[names, :]
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
-        recom.to_csv(self._RECOM_FILE)
+        recom.to_csv(self.filepath)
 
 
 @pytest.fixture(scope="module")  # type: ignore
 def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
-    keeper = RecommendationKeeper()
+    keeper = RecommendationKeeper(filepath=Path(__file__).parent / "recorded_recommendations.csv")
     yield keeper
     keeper.save()
 
@@ -109,7 +109,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
                                          err_msg="Something has changed, if this is normal, delete the following "
-                                         f"file and rerun to update the values:\n{recomkeeper._RECOM_FILE}")
+                                         f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
 
 @testing.parametrized(
