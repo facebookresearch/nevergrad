@@ -88,11 +88,13 @@ class Point(Value):
         the value estimation instance
     """
 
-    def __init__(self, x: Tuple[float, ...], value: Value) -> None:
+    def __init__(self, x: np.ndarray, value: Value) -> None:
         assert isinstance(value, Value)
         super().__init__(value.mean)
         self.__dict__.update(value.__dict__)
-        self.x = x
+        assert not isinstance(x, (str, bytes))
+        self.x = np.array(x, copy=True)  # copy to avoid interfering with algorithms
+        self.x.flags.writeable = False  # make sure it is not modified!
 
     def __repr__(self) -> str:
         return "Point<x: {}, mean: {}, count: {}>".format(self.x, self.mean, self.count)

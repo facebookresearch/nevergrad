@@ -208,7 +208,7 @@ class RecastOptimizer(base.Optimizer):
     def _check_error(self) -> None:
         if self._messaging_thread is not None:
             if self._messaging_thread.error is not None:
-                raise RuntimeError("Recast optimizer raised an error") from self._messaging_thread.error
+                raise RuntimeError(f"Recast optimizer raised an error:\n{self._messaging_thread.error}") from self._messaging_thread.error
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         """Returns value for a point which was "asked"

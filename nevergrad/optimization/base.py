@@ -70,7 +70,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
-        self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
+        self.current_bests = {x: utils.Point(np.zeros(dimension, dtype=np.float), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # instance state
         self._num_ask = 0
@@ -125,11 +125,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        x: tuple/np.ndarray
+        x: np.ndarray
             point where the function was evaluated
         value: float
             value of the function
         """
+        x = np.array(x, copy=False)
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, x, value)
@@ -137,7 +138,6 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
             warnings.warn(f"Updating fitness with {value} value")
-        x = tuple(x)
         if x not in self.archive:
             self.archive[x] = utils.Value(value)  # better not to stock the position as a Point (memory)
         else:
@@ -145,20 +145,18 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # update current best records
         # this may have to be improved if we want to keep more kinds of best values
         for name in ["optimistic", "pessimistic", "average"]:
-            if x == self.current_bests[name].x:   # reboot
-                if isinstance(self.archive, utils.Archive):
-                    # currently, cast to tuple for compatibility reason (comparing tuples and np.ndarray fails)
-                    y: ArrayLike = tuple(np.frombuffer(
-                        min(self.archive.bytesdict, key=lambda x, n=name: self.archive.bytesdict[x].get_estimation(n))))
-                else:
-                    y = min(self.archive, key=lambda x, n=name: self.archive[x].get_estimation(n))
+            if np.array_equal(x, self.current_bests[name].x):   # reboot
+                y = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))
                 # rebuild best point may change, and which value did not track the updated value anyway
-                self.current_bests[name] = utils.Point(y, self.archive[y])
+                self.current_bests[name] = utils.Point(np.frombuffer(y), self.archive.bytesdict[y])
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = utils.Point(x, self.archive[x])
                 if not (np.isnan(value) or value == np.inf):
-                    assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
+                    if self.current_bests[name].x not in self.archive:
+                        y = np.frombuffer(
+                            min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n)))
+                        assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
         self._internal_tell(x, value)
         self._num_tell += 1
 
@@ -174,12 +172,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_ask += 1
         return suggestion
 
-    def provide_recommendation(self) -> Tuple[float, ...]:
+    def provide_recommendation(self) -> np.ndarray:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> Tuple[float, ...]:
+    def recommend(self) -> np.ndarray:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self._internal_provide_recommendation()
@@ -192,13 +190,13 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def _internal_ask(self) -> Tuple[float, ...]:
         raise NotImplementedError("Optimizer undefined.")
 
-    def _internal_provide_recommendation(self) -> Tuple[float, ...]:
+    def _internal_provide_recommendation(self) -> np.ndarray:
         return self.current_bests["pessimistic"].x
 
     def optimize(self, objective_function: Callable[[Any], float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
-                 verbosity: int = 0) -> Tuple[float, ...]:
+                 verbosity: int = 0) -> np.ndarray:
         """Optimization (minimization) procedure
 
         Parameters
