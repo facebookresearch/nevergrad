@@ -52,6 +52,13 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     archive = optimizer.archive
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
             min(v.pessimistic_confidence_bound for v in archive.values()))
+    # add a random point to test tell_not_asked
+    try:
+        optimizer.tell_not_asked(np.random.normal(0, 1, size=optimizer.dimension), 12.)
+    except Exception as e:  # pylint: disable=broad-except
+        if not isinstance(e, base.TellNotAskedNotSupportedError):
+            raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
+                                 "at tell_not_asked if they do not support it") from e
 
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",

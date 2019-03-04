@@ -52,6 +52,10 @@ The key string is either `optimistic` or `pessimistic`, and the `Point` value is
 
 If the algorithm is not able to handle parallelization (if `ask` cannot be called multiple times consecutively), the `no_parallelization` **class attribute** must be set to `True`.
 
+As an experimental feature, all optmizers have a `tell_not_asked` method for providing the fitness of points which have not been asked for.
+If you do not want to support this feature, make this method raise a `base.TellNotAskedNotSupportedError`.
+A unit test will make sure that the optimizer either accepts the point or raises this error.
+
 
 ### Seeding
 
