@@ -9,6 +9,9 @@ from setuptools import find_packages
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
+# assuming there is either "  # extra: " if it is an extra or nothing
+requirements_with_extra = [x.split("  # extra: ") for x in requirements]
+
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -30,5 +33,7 @@ setup(
     data_files=[('', ['LICENSE', 'requirements.txt']),
                 ('nevergrad', ["nevergrad/benchmark/additional/example.py",
                                "nevergrad/instrumentation/examples/script.py"])],
-    install_requires=requirements,
+    install_requires=[x[0] for x in requirements_with_extra if len(x) == 1],
+    extras_require={"all": [x[0] for x in requirements_with_extra if len(x) == 2],
+                    "benchmark": [x[0] for x in requirements_with_extra if len(x) == 2 and x[1] == "benchmark"]}
 )
