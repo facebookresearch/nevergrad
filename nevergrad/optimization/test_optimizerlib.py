@@ -7,9 +7,8 @@ import random
 import warnings
 from pathlib import Path
 from unittest import SkipTest
-from unittest import TestCase
 from typing import Type, Union
-import genty
+import pytest
 import numpy as np
 import pandas as pd
 from ..common.typetools import ArrayLike
@@ -70,43 +69,47 @@ def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[b
     check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
 
-@genty.genty
-class OptimizerTests(TestCase):
+class RecommendationKeeper:
 
-    recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
-    _RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
+    def __init__(self):
+        self._RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
+        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
+        if self._RECOM_FILE.exists():
+            self.recommendations = pd.read_csv(self._RECOM_FILE, index_col=0)
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        # load recorded recommendations
-        if cls._RECOM_FILE.exists():
-            cls.recommendations = pd.read_csv(cls._RECOM_FILE, index_col=0)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
+    def save(self):
         # sort and remove unused names
         # then update recommendation file
-        names = sorted(x for x in cls.recommendations.index if x in registry)
-        recom = cls.recommendations.loc[names, :]
+        names = sorted(x for x in self.recommendations.index if x in registry)
+        recom = self.recommendations.loc[names, :]
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
-        recom.to_csv(cls._RECOM_FILE)
+        recom.to_csv(self._RECOM_FILE)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
-    def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        if name in UNSEEDABLE:
-            raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
-        np.random.seed(12)
-        if optimizer_cls.recast:
-            random.seed(12)  # may depend on non numpy generator
-        optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
-        np.testing.assert_equal(optim.name, name)
-        output = optim.optimize(fitness)
-        if name not in self.recommendations.index:
-            self.recommendations.loc[name, :] = tuple(output)
-            raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-        np.testing.assert_array_almost_equal(output, self.recommendations.loc[name, :], decimal=10,
-                                             err_msg="Something has changed, if this is normal, delete the following "
-                                             f"file and rerun to update the values:\n{self._RECOM_FILE}")
+
+@pytest.fixture(scope="module")
+def recomkeeper():
+    keeper = RecommendationKeeper()
+    yield keeper
+    keeper.save()
+
+
+@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])
+def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+    optimizer_cls = registry[name]
+    if name in UNSEEDABLE:
+        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
+    np.random.seed(12)
+    if optimizer_cls.recast:
+        random.seed(12)  # may depend on non numpy generator
+    optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
+    np.testing.assert_equal(optim.name, name)
+    output = optim.optimize(fitness)
+    if name not in recomkeeper.recommendations.index:
+        recomkeeper.recommendations.loc[name, :] = tuple(output)
+        raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
+    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
+                                         err_msg="Something has changed, if this is normal, delete the following "
+                                         f"file and rerun to update the values:\n{recomkeeper._RECOM_FILE}")
 
 
 @testing.parametrized(
