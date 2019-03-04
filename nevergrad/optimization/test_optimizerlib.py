@@ -13,6 +13,7 @@ import genty
 import numpy as np
 import pandas as pd
 from ..common.typetools import ArrayLike
+from ..common import testing
 from . import base
 from .recaster import FinishedUnderlyingOptimizerWarning
 from . import optimizerlib
@@ -60,6 +61,15 @@ UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEth
               "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
 
+@testing.parametrized(**{name: (name, optimizer,) for name, optimizer in registry.items()})
+def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+    if isinstance(optimizer_cls, base.OptimizerFamily):
+        assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
+    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+    # BO is extremely slow, run it anyway but very low budget and no verification
+    check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
+
+
 @genty.genty
 class OptimizerTests(TestCase):
 
@@ -81,14 +91,6 @@ class OptimizerTests(TestCase):
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
         recom.to_csv(cls._RECOM_FILE)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
-    def test_optimizers(self, name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
-        if isinstance(optimizer_cls, base.OptimizerFamily):
-            assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
-        verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
-        # BO is extremely slow, run it anyway but very low budget and no verification
-        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
-
     @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
     def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
         if name in UNSEEDABLE:
@@ -106,19 +108,20 @@ class OptimizerTests(TestCase):
                                              err_msg="Something has changed, if this is normal, delete the following "
                                              f"file and rerun to update the values:\n{self._RECOM_FILE}")
 
-    @genty.genty_dataset(  # type: ignore
-        de=("DE", 10, 10, 30),
-        de_w=("DE", 50, 40, 40),
-        de1=("OnePointDE", 10, 10, 30),
-        de1_w=("OnePointDE", 50, 40, 40),
-        dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
-        dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
-        dim_d_rot=("RotationInvariantDE", 50, 40, 51),
-        large=("BPRotationInvariantDE", 10, 40, 70),
-    )
-    def test_differential_evolution_popsize(self, name: str, dimension: int, num_workers: int, expected: int) -> None:
-        optim = registry[name](dimension=dimension, budget=100, num_workers=num_workers)
-        np.testing.assert_equal(optim.llambda, expected)
+
+@testing.parametrized(
+    de=("DE", 10, 10, 30),
+    de_w=("DE", 50, 40, 40),
+    de1=("OnePointDE", 10, 10, 30),
+    de1_w=("OnePointDE", 50, 40, 40),
+    dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
+    dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
+    dim_d_rot=("RotationInvariantDE", 50, 40, 51),
+    large=("BPRotationInvariantDE", 10, 40, 70),
+)
+def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
+    optim = registry[name](dimension=dimension, budget=100, num_workers=num_workers)
+    np.testing.assert_equal(optim.llambda, expected)
 
 
 def test_pso_to_real() -> None:

@@ -15,7 +15,7 @@ from .xpbase import Experiment
 from . import experiments
 
 
-@testing.parametrized(**{name: (name, maker,) for name, maker in experiments.registry.items()})  # type: ignore
+@testing.parametrized(**{name: (name, maker,) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
     with patch("shutil.which", return_value="here"):  # do not check for missing packages
         with datasets.mocked_data():  # mock mlda data that should be downloaded
