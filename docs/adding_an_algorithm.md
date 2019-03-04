@@ -87,7 +87,7 @@ You are welcome to add tests if you want to make sure your implementation is cor
 
 To run these tests, you can use:
 ```
-nosetests nevergrad/optimization/test_optimizerlib.py
+pytest nevergrad/optimization/test_optimizerlib.py
 ```
 
 The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exist. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.
