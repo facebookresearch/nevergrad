@@ -36,5 +36,6 @@ setup(
                                "nevergrad/instrumentation/examples/script.py"])],
     install_requires=requirements["main"],
     extras_require={"all": [x for reqs in requirements.values() for x in reqs],
+                    "dev": requirements["main"] + requirements["dev"],
                     "benchmark": requirements["main"] + requirements["bench"]}
 )
