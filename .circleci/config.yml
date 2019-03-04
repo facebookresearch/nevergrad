@@ -20,12 +20,40 @@ jobs:
     steps:
       - checkout
 
-      # Download and cache dependencies
+      # Download and cache dependencies for "main"
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-main-
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -e .[dev]
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
+
+      - run:
+          name: optimizers dependency test
+          command: |
+            . venv/bin/activate
+            pytest nevergrad/optimization/test_optimizerlib.py ad
+
+      # Download and cache dependencies for "main"
+
+      - restore_cache:
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          # fallback to installing main requirements
+          - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
+          # fallback to using the latest cache if no exact match is found
+          - v2-dependencies-
 
       - run:
           name: install dependencies
@@ -37,7 +65,9 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      # Run all tests
       - run:
           name: run tests
           command: |
