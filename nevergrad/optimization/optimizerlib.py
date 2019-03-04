@@ -5,9 +5,9 @@
 
 from typing import Optional, List, Dict, Tuple, Deque, Any, Union, Callable
 from collections import defaultdict, deque
+import cma
 import numpy as np
 from scipy import stats
-import cma
 from . import base
 from . import mutations
 from .base import registry
@@ -284,6 +284,9 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 @registry.register
 class PCEDA(EDA):
@@ -501,6 +504,9 @@ class TBPSA(base.Optimizer):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 @registry.register
 class NaiveTBPSA(TBPSA):
@@ -619,6 +625,9 @@ class PSO(base.Optimizer):
         assert not any(x for x in np.isnan(output)), f"Encountered NaN value {output}"
         return output
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 @registry.register
 class SPSA(base.Optimizer):
@@ -717,6 +726,9 @@ class Portfolio(base.Optimizer):
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 @registry.register
 class ParaPortfolio(Portfolio):
@@ -736,7 +748,7 @@ class ParaPortfolio(Portfolio):
         nw1, nw2, nw3, nw4 = intshare(num_workers - 1, 4)
         self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
         assert len(self.which_optim) == num_workers
-        #b1, b2, b3, b4, b5 = intshare(budget, 5)
+        # b1, b2, b3, b4, b5 = intshare(budget, 5)
         self.optims = [CMA(dimension, num_workers=nw1),
                        TwoPointsDE(dimension, num_workers=nw2),
                        PSO(dimension, num_workers=nw3),

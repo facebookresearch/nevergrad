@@ -27,6 +27,11 @@ class InefficientSettingsWarning(RuntimeWarning):
     pass
 
 
+class TellNotAskedNotSupportedError(NotImplementedError):
+    """To be raised by optimizers which do not support the tell_not_asked interface.
+    """
+
+
 class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
     - "ask()" which provides points on which to evaluate the function to optimize
@@ -119,6 +124,20 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """Removes all registered callables
         """
         self._callbacks = {}
+
+    def tell_not_asked(self, x: ArrayLike, value: float) -> None:
+        """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
+
+        Parameters
+        ----------
+        x: np.ndarray
+            point where the function was evaluated
+        value: float
+            value of the function
+        """
+        # default to just a tell
+        # algorithms which do not support it should raise NotImplementedError
+        self.tell(x, value)
 
     def tell(self, x: ArrayLike, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point
