@@ -5,32 +5,27 @@
 
 from pathlib import Path
 from typing import Iterable
-from unittest import TestCase
-import genty
 import numpy as np
 from . import testing
 
 
-@genty.genty
-class UtilsTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        equal=([2, 3, 1], ""),
-        missing=((1, 2), ["  - missing element(s): {3}."]),
-        additional=((1, 4, 3, 2), ["  - additional element(s): {4}."]),
-        both=((1, 2, 4), ["  - additional element(s): {4}.", "  - missing element(s): {3}."]),
-    )
-    def test_assert_set_equal(self, estimate: Iterable[int], message: str) -> None:
-        reference = {1, 2, 3}
-        try:
-            testing.assert_set_equal(estimate, reference)
-        except AssertionError as error:
-            if not message:
-                raise AssertionError("An error has been raised while it should not.")
-            np.testing.assert_equal(error.args[0].split("\n")[1:], message)
-        else:
-            if message:
-                raise AssertionError("An error should have been raised.")
+@testing.parametrized(  # type: ignore
+    equal=([2, 3, 1], ""),
+    missing=((1, 2), ["  - missing element(s): {3}."]),
+    additional=((1, 4, 3, 2), ["  - additional element(s): {4}."]),
+    both=((1, 2, 4), ["  - additional element(s): {4}.", "  - missing element(s): {3}."]),
+)
+def test_assert_set_equal(estimate: Iterable[int], message: str) -> None:
+    reference = {1, 2, 3}
+    try:
+        testing.assert_set_equal(estimate, reference)
+    except AssertionError as error:
+        if not message:
+            raise AssertionError("An error has been raised while it should not.")
+        np.testing.assert_equal(error.args[0].split("\n")[1:], message)
+    else:
+        if message:
+            raise AssertionError("An error should have been raised.")
 
 
 def test_printed_assert_equal() -> None:
