@@ -49,19 +49,20 @@ class _DE(base.Optimizer):
         return self._llambda
 
     def match_population_size_to_lambda(self) -> None:
-        if len(self.population) < self.llambda:
-            self.candidates += [None] * (self.llambda - len(self.population))
-            self.population_fitnesses += [None] * (self.llambda - len(self.population))
-            self.population += [None] * (self.llambda - len(self.population))
+        current_pop = len(self.population)
+        if current_pop < self.llambda:
+            self.candidates.extend([None] * (self.llambda - current_pop))
+            self.population_fitnesses.extend([None] * (self.llambda - current_pop))
+            self.population.extend([None] * (self.llambda - current_pop))
 
-    def _internal_provide_recommendation(self) -> Tuple[float, ...]:  # This is NOT the naive version. We deal with noise.
+    def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
         med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
         good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([np.array(g) for g in good_guys]) / len(good_guys)  # type: ignore
+        return sum([np.array(g) for g in good_guys]) / len(good_guys)
 
     def _internal_ask(self) -> Tuple[float, ...]:
         init = self._parameters.initialization
