@@ -4,13 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Dict, List
 from setuptools import setup
 from setuptools import find_packages
 
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
-# assuming there is either "  # extra: " if it is an extra or nothing
-requirements_with_extra = [x.split("  # extra: ") for x in requirements]
+requirements: Dict[str, List[str]] = {}
+for name in ["dev", "bench", "main"]:
+    with open(f'requirements/{name}.txt') as f:
+        requirements[name] = f.read().splitlines()
 
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -33,7 +34,7 @@ setup(
     data_files=[('', ['LICENSE', 'requirements.txt']),
                 ('nevergrad', ["nevergrad/benchmark/additional/example.py",
                                "nevergrad/instrumentation/examples/script.py"])],
-    install_requires=[x[0] for x in requirements_with_extra if len(x) == 1],
-    extras_require={"all": [x[0] for x in requirements_with_extra if len(x) == 2],
-                    "benchmark": [x[0] for x in requirements_with_extra if len(x) == 2 and x[1] == "benchmark"]}
+    install_requires=requirements["main"],
+    extras_require={"all": [x for reqs in requirements.values() for x in reqs],
+                    "benchmark": requirements["main"] + requirements["bench"]}
 )
