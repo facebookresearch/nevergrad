@@ -109,7 +109,8 @@ class parametrized:
         assert all(isinstance(p, (tuple, list)) for p in self.params)
         assert all(self.num_params == len(p) for p in self.params[1:])
 
-    def __call__(self, func: Callable[..., None]) -> Any:
+    def __call__(self, func: Callable[..., None]) -> Any:  # type is lost here :(
         names = list(inspect.signature(func).parameters.keys())
         assert len(names) == self.num_params, f"Parameter names: {names}"
-        return pytest.mark.parametrize(",".join(names), self.params, ids=self.ids)(func)
+        return pytest.mark.parametrize(
+            ",".join(names), self.params if self.num_params > 1 else [p[0] for p in self.params], ids=self.ids)(func)
