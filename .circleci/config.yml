@@ -43,7 +43,7 @@ jobs:
           name: optimizers dependency test
           command: |
             . venv/bin/activate
-            pytest nevergrad/optimization/test_optimizerlib.py nevergrad/instrumentation
+            pytest nevergrad/optimization/test_optimizerlib.py nevergrad/instrumentation/test_core.py
 
       # Download and cache dependencies for "main"
 
