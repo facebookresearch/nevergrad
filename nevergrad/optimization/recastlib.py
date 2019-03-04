@@ -34,11 +34,11 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         best_res = np.inf
         best_x = np.zeros(self.dimension)
         if self.initial_guess is not None:
-            best_x = self.initial_guess
+            best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(objective_function, 0. + best_x if not self._parameters.random_restart else
+            res = scipyoptimize.minimize(objective_function, best_x if not self._parameters.random_restart else
                                          np.random.normal(0., 1., self.dimension), method=self._parameters.method, options=options, tol=0)
             if res.fun < best_res:
                 best_res = res.fun
