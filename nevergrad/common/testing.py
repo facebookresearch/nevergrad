@@ -4,8 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import inspect
 from pathlib import Path
-from typing import Iterable, Any, Union, List
+from typing import Iterable, Any, Union, List, Tuple, Callable
+import pytest
 import numpy as np
 
 
@@ -85,3 +87,30 @@ def _get_all_markdown_links(folder: Union[str, Path]) -> List[_MarkdownLink]:
         for match in pattern.finditer(text):
             links.append(_MarkdownLink(folder, rfilepath, match.group("string"), match.group("link")))
     return links
+
+
+class parametrized:
+    """Simplified decorator API for specifying named parametrized test with pytests
+    (like with old "genty" package)
+    See example of use in test_testing
+
+    Parameters
+    ----------
+    **kwargs:
+        name of the argument is converted as id of the experiments, and the provided tuple
+        contains a value for each of the arguments of the underlying function (in the definition order).
+    """
+
+    def __init__(self, **kwargs: Tuple[Any, ...]):
+        self.ids = sorted(kwargs)
+        self.params = tuple(kwargs[name] for name in self.ids)
+        assert self.params
+        self.num_params = len(self.params[0])
+        assert all(isinstance(p, (tuple, list)) for p in self.params)
+        assert all(self.num_params == len(p) for p in self.params[1:])
+
+    def __call__(self, func: Callable[..., None]) -> Any:  # type is lost here :(
+        names = list(inspect.signature(func).parameters.keys())
+        assert len(names) == self.num_params, f"Parameter names: {names}"
+        return pytest.mark.parametrize(
+            ",".join(names), self.params if self.num_params > 1 else [p[0] for p in self.params], ids=self.ids)(func)

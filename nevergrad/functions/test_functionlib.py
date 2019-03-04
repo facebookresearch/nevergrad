@@ -3,9 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from unittest import TestCase
 from typing import Any, Dict
-import genty
 import numpy as np
 from ..common import testing
 from . import functionlib
@@ -42,24 +40,21 @@ def test_testcase_function_value() -> None:
     np.testing.assert_almost_equal(value, 9.630, decimal=3)
 
 
-@genty.genty
-class TestcaseTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        random=(np.random.normal(0, 1, 12), False),
-        hashed=("abcdefghijkl", True),
-    )
-    def test_test_function(self, x: Any, hashing: bool) -> None:
-        config: Dict[str, Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": hashing}
-        outputs = []
-        for _ in range(2):
-            np.random.seed(12)
-            func = functionlib.ArtificialFunction(**config)
-            outputs.append(func(x))
-        np.testing.assert_equal(outputs[0], outputs[1])
-        # make sure it is properly random otherwise
-        outputs.append(functionlib.ArtificialFunction(**config)(x))
-        assert outputs[1] != outputs[2]
+@testing.parametrized(
+    random=(np.random.normal(0, 1, 12), False),
+    hashed=("abcdefghijkl", True),
+)
+def test_test_function(x: Any, hashing: bool) -> None:
+    config: Dict[str, Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": hashing}
+    outputs = []
+    for _ in range(2):
+        np.random.seed(12)
+        func = functionlib.ArtificialFunction(**config)
+        outputs.append(func(x))
+    np.testing.assert_equal(outputs[0], outputs[1])
+    # make sure it is properly random otherwise
+    outputs.append(functionlib.ArtificialFunction(**config)(x))
+    assert outputs[1] != outputs[2]
 
 
 def test_oracle() -> None:
