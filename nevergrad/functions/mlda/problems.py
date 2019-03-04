@@ -174,7 +174,7 @@ class SammonMapping(BaseFunction):
         - for "Employees", we use the online proximity matrix
         - for "Virus", we compute a proximity matrix from raw data (no normalization)
         """
-        assert name in ["Virus", "Employees"]
+        assert name in ["Virus", "Employees"], f'Unkwnown name {name}'
         raw_data = datasets.get_data(name)
         if name == "Employees":
             if rescale:

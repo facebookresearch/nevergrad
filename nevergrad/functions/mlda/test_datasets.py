@@ -6,11 +6,10 @@
 import tempfile
 from typing import List
 from pathlib import Path
-from unittest import TestCase
 from unittest.mock import patch
 import pandas as pd
 import numpy as np
-import genty
+from ...common import testing
 from . import datasets
 
 
@@ -36,35 +35,33 @@ def test_get_dataset_filepath() -> None:
     assert name not in datasets._NAMED_URLS  # make sure it is clean
 
 
-@genty.genty
-class DatasetTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        german_towns=("German towns", """#    Hey, this is a comment
+@testing.parametrized(
+    german_towns=("German towns", """#    Hey, this is a comment
 #
- 320.9  13024  346.5
- 320.9  13024  346.5
+320.9  13024  346.5
+320.9  13024  346.5
 """, [[320.9, 13024, 346.5], [320.9, 13024, 346.5]]),
-        ruspini=("Ruspini", """     5    74
-    11    59""", [[5, 74], [11, 59]])
-    )
-    def test_get_data(self, name: str, text: str, expected: List[List[float]]) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            # create an example file
-            filepath = Path(tmp) / "example.txt"
-            with filepath.open("w") as f:
-                f.write(text)
-            # get the output
-            with patch("nevergrad.functions.mlda.datasets.get_dataset_filepath") as path_getter:
-                path_getter.return_value = filepath
-                output = datasets.get_data(name)
-        np.testing.assert_array_equal(output, expected)
+    ruspini=("Ruspini", """     5    74
+11    59""", [[5, 74], [11, 59]])
+)
+def test_get_data(name: str, text: str, expected: List[List[float]]) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        # create an example file
+        filepath = Path(tmp) / "example.txt"
+        with filepath.open("w") as f:
+            f.write(text)
+        # get the output
+        with patch("nevergrad.functions.mlda.datasets.get_dataset_filepath") as path_getter:
+            path_getter.return_value = filepath
+            output = datasets.get_data(name)
+    np.testing.assert_array_equal(output, expected)
 
-    @genty.genty_dataset(**{name: (name,) for name in datasets._NAMED_URLS})  # type: ignore
-    def test_mocked_data(self, name: str) -> None:
-        with datasets.mocked_data():  # this test makes sure we are able to mock all data, so that xp tests can run
-            data = datasets.get_data(name)
-            assert isinstance(data, (np.ndarray, pd.DataFrame))
+
+@testing.parametrized(**{name: (name,) for name in datasets._NAMED_URLS})
+def test_mocked_data(name: str) -> None:
+    with datasets.mocked_data():  # this test makes sure we are able to mock all data, so that xp tests can run
+        data = datasets.get_data(name)
+        assert isinstance(data, (np.ndarray, pd.DataFrame))
 
 
 def test_make_perceptron_data() -> None:

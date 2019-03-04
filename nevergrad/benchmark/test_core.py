@@ -3,15 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# pylint: disable=wrong-import-position, wrong-import-order
+from .__main__ import repeated_launch
 import warnings
 import tempfile
 import itertools
-from unittest import TestCase
 from unittest.mock import patch
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import genty
 import matplotlib
 from ..optimization import optimizerlib
 from ..instrumentation.utils import CommandFunction
@@ -19,22 +19,17 @@ from ..common import testing
 from . import core
 from .test_xpbase import DESCRIPTION_KEYS
 matplotlib.use('Agg')
-# pylint: disable=wrong-import-position
-from .__main__ import repeated_launch
 
 
-@genty.genty
-class BenchmarkTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        val0=(0, False),
-        val1=(1, True),
-        val5=(5, False),
-        val6=(6, True),
-    )
-    def test_moduler(self, value: int, expected: bool) -> None:
-        moduler = core.Moduler(5, 1)
-        np.testing.assert_equal(moduler(value), expected)
+@testing.parametrized(
+    val0=(0, False),
+    val1=(1, True),
+    val5=(5, False),
+    val6=(6, True),
+)
+def test_moduler(value: int, expected: bool) -> None:
+    moduler = core.Moduler(5, 1)
+    np.testing.assert_equal(moduler(value), expected)
 
 
 def test_compute() -> None:

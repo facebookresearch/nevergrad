@@ -7,12 +7,12 @@ import random
 import warnings
 from pathlib import Path
 from unittest import SkipTest
-from unittest import TestCase
-from typing import Type, Union
-import genty
+from typing import Type, Union, Generator
+import pytest
 import numpy as np
 import pandas as pd
 from ..common.typetools import ArrayLike
+from ..common import testing
 from . import base
 from .recaster import FinishedUnderlyingOptimizerWarning
 from . import optimizerlib
@@ -60,65 +60,71 @@ UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEth
               "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
 
-@genty.genty
-class OptimizerTests(TestCase):
+@testing.parametrized(**{name: (name, optimizer,) for name, optimizer in registry.items()})
+def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+    if isinstance(optimizer_cls, base.OptimizerFamily):
+        assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
+    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+    # BO is extremely slow, run it anyway but very low budget and no verification
+    check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
-    recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
-    _RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        # load recorded recommendations
-        if cls._RECOM_FILE.exists():
-            cls.recommendations = pd.read_csv(cls._RECOM_FILE, index_col=0)
+class RecommendationKeeper:
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    def __init__(self, filepath: Path) -> None:
+        self.filepath = filepath
+        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
+        if filepath.exists():
+            self.recommendations = pd.read_csv(filepath, index_col=0)
+
+    def save(self) -> None:
         # sort and remove unused names
         # then update recommendation file
-        names = sorted(x for x in cls.recommendations.index if x in registry)
-        recom = cls.recommendations.loc[names, :]
+        names = sorted(x for x in self.recommendations.index if x in registry)
+        recom = self.recommendations.loc[names, :]
         recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
-        recom.to_csv(cls._RECOM_FILE)
+        recom.to_csv(self.filepath)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items()})  # type: ignore
-    def test_optimizers(self, name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
-        if isinstance(optimizer_cls, base.OptimizerFamily):
-            assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
-        verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
-        # BO is extremely slow, run it anyway but very low budget and no verification
-        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
-    @genty.genty_dataset(**{name: (name, optimizer,) for name, optimizer in registry.items() if "BO" not in name})  # type: ignore
-    def test_optimizers_recommendation(self, name: str, optimizer_cls: Type[base.Optimizer]) -> None:
-        if name in UNSEEDABLE:
-            raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
-        np.random.seed(12)
-        if optimizer_cls.recast:
-            random.seed(12)  # may depend on non numpy generator
-        optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
-        np.testing.assert_equal(optim.name, name)
-        output = optim.optimize(fitness)
-        if name not in self.recommendations.index:
-            self.recommendations.loc[name, :] = tuple(output)
-            raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-        np.testing.assert_array_almost_equal(output, self.recommendations.loc[name, :], decimal=10,
-                                             err_msg="Something has changed, if this is normal, delete the following "
-                                             f"file and rerun to update the values:\n{self._RECOM_FILE}")
+@pytest.fixture(scope="module")  # type: ignore
+def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
+    keeper = RecommendationKeeper(filepath=Path(__file__).parent / "recorded_recommendations.csv")
+    yield keeper
+    keeper.save()
 
-    @genty.genty_dataset(  # type: ignore
-        de=("DE", 10, 10, 30),
-        de_w=("DE", 50, 40, 40),
-        de1=("OnePointDE", 10, 10, 30),
-        de1_w=("OnePointDE", 50, 40, 40),
-        dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
-        dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
-        dim_d_rot=("RotationInvariantDE", 50, 40, 51),
-        large=("BPRotationInvariantDE", 10, 40, 70),
-    )
-    def test_differential_evolution_popsize(self, name: str, dimension: int, num_workers: int, expected: int) -> None:
-        optim = registry[name](dimension=dimension, budget=100, num_workers=num_workers)
-        np.testing.assert_equal(optim.llambda, expected)
+
+@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
+def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+    optimizer_cls = registry[name]
+    if name in UNSEEDABLE:
+        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
+    np.random.seed(12)
+    if optimizer_cls.recast:
+        random.seed(12)  # may depend on non numpy generator
+    optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
+    np.testing.assert_equal(optim.name, name)
+    output = optim.optimize(fitness)
+    if name not in recomkeeper.recommendations.index:
+        recomkeeper.recommendations.loc[name, :] = tuple(output)
+        raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
+    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
+                                         err_msg="Something has changed, if this is normal, delete the following "
+                                         f"file and rerun to update the values:\n{recomkeeper.filepath}")
+
+
+@testing.parametrized(
+    de=("DE", 10, 10, 30),
+    de_w=("DE", 50, 40, 40),
+    de1=("OnePointDE", 10, 10, 30),
+    de1_w=("OnePointDE", 50, 40, 40),
+    dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
+    dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
+    dim_d_rot=("RotationInvariantDE", 50, 40, 51),
+    large=("BPRotationInvariantDE", 10, 40, 70),
+)
+def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
+    optim = registry[name](dimension=dimension, budget=100, num_workers=num_workers)
+    np.testing.assert_equal(optim.llambda, expected)
 
 
 def test_pso_to_real() -> None:
