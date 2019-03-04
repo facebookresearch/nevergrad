@@ -7,7 +7,7 @@ import random
 import warnings
 from pathlib import Path
 from unittest import SkipTest
-from typing import Type, Union
+from typing import Type, Union, Generator
 import pytest
 import numpy as np
 import pandas as pd
@@ -71,13 +71,13 @@ def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[b
 
 class RecommendationKeeper:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._RECOM_FILE = Path(__file__).parent / "recorded_recommendations.csv"
         self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
         if self._RECOM_FILE.exists():
             self.recommendations = pd.read_csv(self._RECOM_FILE, index_col=0)
 
-    def save(self):
+    def save(self) -> None:
         # sort and remove unused names
         # then update recommendation file
         names = sorted(x for x in self.recommendations.index if x in registry)
@@ -86,14 +86,14 @@ class RecommendationKeeper:
         recom.to_csv(self._RECOM_FILE)
 
 
-@pytest.fixture(scope="module")
-def recomkeeper():
+@pytest.fixture(scope="module")  # type: ignore
+def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
     keeper = RecommendationKeeper()
     yield keeper
     keeper.save()
 
 
-@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])
+@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
