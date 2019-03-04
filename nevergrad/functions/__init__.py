@@ -5,3 +5,4 @@
 
 from .functionlib import ArtificialFunction
 from .base import BaseFunction
+from .arcoating import ARCoating
