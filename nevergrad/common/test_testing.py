@@ -9,7 +9,7 @@ import numpy as np
 from . import testing
 
 
-@testing.parametrized(  # type: ignore
+@testing.parametrized(
     equal=([2, 3, 1], ""),
     missing=((1, 2), ["  - missing element(s): {3}."]),
     additional=((1, 4, 3, 2), ["  - additional element(s): {4}."]),

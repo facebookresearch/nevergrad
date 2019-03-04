@@ -6,7 +6,7 @@
 import re
 import inspect
 from pathlib import Path
-from typing import Iterable, Any, Union, List, Dict, Tuple
+from typing import Iterable, Any, Union, List, Tuple, Callable
 import pytest
 import numpy as np
 
@@ -101,7 +101,7 @@ class parametrized:
         contains a value for each of the arguments of the underlying function (in the definition order).
     """
 
-    def __init__(self, **kwargs: Dict[str, Tuple[Any, ...]]):
+    def __init__(self, **kwargs: Tuple[Any, ...]):
         self.ids = sorted(kwargs)
         self.params = tuple(kwargs[name] for name in self.ids)
         assert self.params
@@ -109,7 +109,7 @@ class parametrized:
         assert all(isinstance(p, (tuple, list)) for p in self.params)
         assert all(self.num_params == len(p) for p in self.params[1:])
 
-    def __call__(self, func):
+    def __call__(self, func: Callable[..., None]) -> Any:
         names = list(inspect.signature(func).parameters.keys())
         assert len(names) == self.num_params, f"Parameter names: {names}"
         return pytest.mark.parametrize(",".join(names), self.params, ids=self.ids)(func)
