@@ -153,8 +153,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-        data = XpPlotter.make_data(subdf, xaxis=xpaxis)
-        xpplotter = XpPlotter(data, title=description, name_style=name_style)
+        data = XpPlotter.make_data(subdf)
+        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
         xpplotter.save(out_filepath)
     plt.close("all")
 
@@ -176,33 +176,33 @@ class XpPlotter:
     """
 
     def __init__(self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str,
-                 name_style: Optional[Dict[str, Any]] = None) -> None:
+                 name_style: Optional[Dict[str, Any]] = None, xaxis: str = "budget") -> None:
         if name_style is None:
             name_style = NameStyle()
-        upperbound = max(np.max(vals["y"]) for vals in optim_vals.values())
+        upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values())
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
-                upperbound = min(upperbound, 2 * np.max(vals["y"]))
+                upperbound = min(upperbound, 2 * np.max(vals["loss"]))
         # plot from best to worst
         lowerbound = np.inf
-        sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["y"][-1], reverse=True)
+        sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
-        self._ax.set_xlabel(optim_vals[sorted_optimizers[0]]["xaxis"])
+        self._ax.set_xlabel(xaxis)
         self._ax.set_ylabel("loss")
         self._ax.grid(True, which='both')
         self._texts: List[Any] = []
         for k, optim_name in enumerate(sorted_optimizers):
             vals = optim_vals[optim_name]
-            lowerbound = min(lowerbound, np.min(vals["y"]))
-            plt.loglog(vals["x"], vals["y"], name_style[optim_name], label=optim_name)
-            if vals["x"].size and vals["y"][-1] < upperbound:
+            lowerbound = min(lowerbound, np.min(vals["loss"]))
+            plt.loglog(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
+            if vals[xaxis].size and vals["loss"][-1] < upperbound:
                 angle = 30 - 60 * k / len(optim_vals)
-                self._texts.append(self._ax.text(vals["x"][-1], vals["y"][-1], "{} ({:.3g})".format(optim_name, vals["y"][-1]),
+                self._texts.append(self._ax.text(vals[xaxis][-1], vals["loss"][-1], "{} ({:.3g})".format(optim_name, vals["loss"][-1]),
                                                  {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
         if upperbound < np.inf:
             self._ax.set_ylim(lowerbound, upperbound)
-        all_x = [v for vals in optim_vals.values() for v in vals["x"]]
+        all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
         # global info
         self._legend = self._ax.legend(fontsize=7, ncol=2, handlelength=3,
@@ -212,7 +212,7 @@ class XpPlotter:
         self._fig.tight_layout()
 
     @staticmethod
-    def make_data(df: pd.DataFrame, xaxis: str = "budget") -> Dict[str, Dict[str, np.ndarray]]:
+    def make_data(df: pd.DataFrame) -> Dict[str, Dict[str, np.ndarray]]:
         """Process raw xp data and process it to extract relevant information for xp plots:
         regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
         which is filtered out for one set of input parameters)
@@ -224,19 +224,19 @@ class XpPlotter:
         xaxis: str
             name of the x-axis among "budget" and  "pseudotime"
         """
-        assert xaxis in ["budget", "pseudotime"]
-        df = tools.Selector(df.loc[:, ["optimizer_name", xaxis, "loss"]])
-        groupeddf = df.groupby(["optimizer_name", xaxis]).mean()
-        groupeddf_std = df.groupby(["optimizer_name", xaxis]).std().loc[groupeddf.index, :]  # std is currently unused
+        df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
+        groupeddf = df.groupby(["optimizer_name", "budget"])
+        means = groupeddf.mean()
+        stds = groupeddf.std()
         optim_vals: Dict[str, Dict[str, np.ndarray]] = {}
         # extract name and coordinates
         for optim in df.unique("optimizer_name"):
-            xvals = np.array(groupeddf.loc[optim, :].index)
-            yvals = np.maximum(1e-30, np.array(groupeddf.loc[optim, :].loc[:, "loss"]))  # avoid small vals for logplot
-            stds = groupeddf_std.loc[optim, :].loc[:, "loss"]
-            optim_name = optim.replace("Search", "").replace("oint", "t").replace("Optimizer", "")
-            optim_vals[optim_name] = {"x": xvals, "y": yvals, "std": stds, "xaxis": xaxis}
-        # lower upper bound to twice stupid/idiot at most
+            optim_vals[optim] = {}
+            optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
+            optim_vals[optim]["loss"] = np.maximum(1e-30, np.array(means.loc[optim, "loss"]))  # avoid very small values (for log plot)
+            optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            if "pseudotime" in means.columns:
+                optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
 
     def save(self, output_filepath: PathLike) -> None:
