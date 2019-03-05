@@ -96,7 +96,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1) -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget") -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -107,7 +107,10 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         path of the folder where the plots should be saved
     max_combsize: int
         maximum number of parameters to fix (combinations) when creating experiment plots
+    xpaxis: str
+        x-axis for xp plots (either budget or pseudotime)
     """
+    assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
@@ -150,75 +153,101 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-        make_xpresults_plot(subdf, description, out_filepath, name_style)
+        data = XpPlotter.make_data(subdf)
+        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+        xpplotter.save(out_filepath)
     plt.close("all")
 
 
-def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[PathLike] = None,
-                        name_style: Optional[Dict[str, Any]] = None) -> None:
+class XpPlotter:
     """Creates a xp result plot out of the given dataframe: regret with respect to budget for
     each optimizer after averaging on all experiments (it is good practice to use a df
     which is filtered out for one set of input parameters)
 
     Parameters
     ----------
-    df: pd.DataFrame
-        run data
+    optim_vals: dict
+        output of the make_data static method, containing all information necessary for plotting
     title: str
         title of the plot
-    output_filepath: Path
-        If present, saves the plot to the given path
     name_style: dict
         a dict or dict-like object providing a line style for each optimizer name.
         (can be helpful for consistency across plots)
     """
-    if name_style is None:
-        name_style = NameStyle()
-    df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"]])
-    groupeddf = df.groupby(["optimizer_name", "budget"]).mean()
-    groupeddf_std = df.groupby(["optimizer_name", "budget"]).std().loc[groupeddf.index, :]  # std is currently unused
-    plt.clf()
-    plt.xlabel("Budget")
-    plt.ylabel("Loss")
-    plt.grid(True, which='both')
-    optim_vals = {}
-    # extract name and coordinates
-    for optim in df.unique("optimizer_name"):
-        xvals = np.array(groupeddf.loc[optim, :].index)
-        yvals = np.maximum(1e-30, np.array(groupeddf.loc[optim, :].loc[:, "loss"]))  # avoid small vals for logplot
-        stds = groupeddf_std.loc[optim, :].loc[:, "loss"]
-        optim_name = optim.replace("Search", "").replace("oint", "t").replace("Optimizer", "")
-        optim_vals[optim_name] = {"x": xvals, "y": yvals, "std": stds}
-    # lower upper bound to twice stupid/idiot at most
-    upperbound = max(np.max(vals["y"]) for vals in optim_vals.values())
-    for optim, vals in optim_vals.items():
-        if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
-            upperbound = min(upperbound, 2 * np.max(vals["y"]))
-    # plot from best to worst
-    lowerbound = np.inf
-    handles = []
-    sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["y"][-1], reverse=True)
-    for k, optim_name in enumerate(sorted_optimizers):
-        vals = optim_vals[optim_name]
-        lowerbound = min(lowerbound, np.min(vals["y"]))
-        handles.append(plt.loglog(vals["x"], vals["y"], name_style[optim_name], label=optim_name))
-        texts = []
-        if vals["x"].size and vals["y"][-1] < upperbound:
-            angle = 30 - 60 * k / len(optim_vals)
-            texts.append(plt.text(vals["x"][-1], vals["y"][-1], "{} ({:.3g})".format(optim_name, vals["y"][-1]),
-                                  {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
-    if upperbound < np.inf:
-        plt.gca().set_ylim(lowerbound, upperbound)
-    # global info
-    legend = plt.legend(fontsize=7, ncol=2, handlelength=3,
-                        loc='upper center', bbox_to_anchor=(0.5, -0.15))
-    title = split_long_title(title)
-    plt.title(title)
-    # plt.tight_layout()
-    # plt.axis('tight')
-    # plt.tick_params(axis='both', which='both')
-    if output_filepath is not None:
-        plt.savefig(str(output_filepath), bbox_extra_artists=[legend] + texts, bbox_inches='tight', dpi=_DPI)
+
+    def __init__(self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str,
+                 name_style: Optional[Dict[str, Any]] = None, xaxis: str = "budget") -> None:
+        if name_style is None:
+            name_style = NameStyle()
+        upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values())
+        for optim, vals in optim_vals.items():
+            if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
+                upperbound = min(upperbound, 2 * np.max(vals["loss"]))
+        # plot from best to worst
+        lowerbound = np.inf
+        sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
+        self._fig = plt.figure()
+        self._ax = self._fig.add_subplot(111)
+        self._ax.set_xlabel(xaxis)
+        self._ax.set_ylabel("loss")
+        self._ax.grid(True, which='both')
+        self._texts: List[Any] = []
+        for k, optim_name in enumerate(sorted_optimizers):
+            vals = optim_vals[optim_name]
+            lowerbound = min(lowerbound, np.min(vals["loss"]))
+            plt.loglog(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
+            if vals[xaxis].size and vals["loss"][-1] < upperbound:
+                angle = 30 - 60 * k / len(optim_vals)
+                self._texts.append(self._ax.text(vals[xaxis][-1], vals["loss"][-1], "{} ({:.3g})".format(optim_name, vals["loss"][-1]),
+                                                 {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
+        if upperbound < np.inf:
+            self._ax.set_ylim(lowerbound, upperbound)
+        all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
+        self._ax.set_xlim([min(all_x), max(all_x)])
+        # global info
+        self._legend = self._ax.legend(fontsize=7, ncol=2, handlelength=3,
+                                       loc='upper center', bbox_to_anchor=(0.5, -0.2))
+        self._ax.set_title(split_long_title(title))
+        self._ax.tick_params(axis='both', which='both')
+        self._fig.tight_layout()
+
+    @staticmethod
+    def make_data(df: pd.DataFrame) -> Dict[str, Dict[str, np.ndarray]]:
+        """Process raw xp data and process it to extract relevant information for xp plots:
+        regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
+        which is filtered out for one set of input parameters)
+
+        Parameters
+        ----------
+        df: pd.DataFrame
+            run data
+        xaxis: str
+            name of the x-axis among "budget" and  "pseudotime"
+        """
+        df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
+        groupeddf = df.groupby(["optimizer_name", "budget"])
+        means = groupeddf.mean()
+        stds = groupeddf.std()
+        optim_vals: Dict[str, Dict[str, np.ndarray]] = {}
+        # extract name and coordinates
+        for optim in df.unique("optimizer_name"):
+            optim_vals[optim] = {}
+            optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
+            optim_vals[optim]["loss"] = np.maximum(1e-30, np.array(means.loc[optim, "loss"]))  # avoid very small values (for log plot)
+            optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            if "pseudotime" in means.columns:
+                optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
+        return optim_vals
+
+    def save(self, output_filepath: PathLike) -> None:
+        """Saves the xp plot
+
+        Parameters
+        ----------
+        output_filepath: Path or str
+            path where the figure must be saved
+        """
+        self._fig.savefig(str(output_filepath), bbox_extra_artists=[self._legend] + self._texts, bbox_inches='tight', dpi=_DPI)
 
 
 def split_long_title(title: str) -> str:
@@ -298,7 +327,7 @@ class FightPlotter:
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
         data = np.array(winrates.iloc[:num_rows, :])
         # pylint: disable=anomalous-backslash-in-string
-        best_names = [(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
+        best_names = [(f"{name} ({100 * val:2.1f}%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
@@ -315,14 +344,16 @@ def main() -> None:
     parser.add_argument('filepath', type=str, help='filepath containing the experiment data')
     parser.add_argument('--output', type=str, default=None,
                         help="Output path for the CSV file (default: a folder <filename>_plots next to the data file.")
-    parser.add_argument('--max_combsize', type=int, default=3,
+    parser.add_argument('--max_combsize', type=int, default=0,
                         help="maximum number of parameters to fix (combinations) when creating experiment plots")
+    parser.add_argument('--pseudotime', nargs="?", default=False, const=True,
+                        help="Plots with respect to pseudotime instead of budget")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize)
+    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget")
 
 
 if __name__ == '__main__':
