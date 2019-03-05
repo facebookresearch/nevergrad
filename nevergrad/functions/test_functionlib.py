@@ -17,9 +17,15 @@ DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensi
 
 def test_testcase_function_errors() -> None:
     config: Dict[str, Any] = {"name": "blublu", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}
-    np.testing.assert_raises(ValueError, functionlib.ArtificialFunction, **config)
-    config["num_blocks"] = 0
-    np.testing.assert_raises(AssertionError, functionlib.ArtificialFunction, **config)
+    np.testing.assert_raises(ValueError, functionlib.ArtificialFunction, **config)  # blublu does not exist
+    config.update(name="sphere")
+    functionlib.ArtificialFunction(**config)  # should wor
+    config.update(num_blocks=0)
+    np.testing.assert_raises(ValueError, functionlib.ArtificialFunction, **config)  # num blocks should be > 0
+    config.update(num_blocks=2.)
+    np.testing.assert_raises(TypeError, functionlib.ArtificialFunction, **config)  # num blocks should be > 0
+    config.update(num_blocks=2, rotation=1)
+    np.testing.assert_raises(TypeError, functionlib.ArtificialFunction, **config)  # num blocks should be > 0
 
 
 def test_artitificial_function_repr() -> None:
