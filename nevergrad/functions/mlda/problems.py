@@ -262,7 +262,7 @@ class Landscape(BaseFunction):
 
     def __init__(self, transform: Optional[str] = "square") -> None:
         self._image = datasets.get_data("Landscape")
-        self._max = float(np.max(self._image.ravel()))
+        self._max = float(self._image.max())
         super().__init__(dimension=2, transform=transform)
 
     def oracle_call(self, x: ArrayLike) -> float:
