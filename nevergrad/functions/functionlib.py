@@ -70,19 +70,19 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
-        # if not all(isinstance(x, bool) for x in [hashing, rotation]):
-        #     raise TypeError("hashing and rotation should be bools")
-        # for param, mini in [("block_dimension", 1), ("num_blocks", 1), ("useless_variables", 0)]:
-        #     value = self._parameters[param]
-        #     if not isinstance(value, int):
-        #         raise TypeError(f'"{param}" must be an int')
-        #     if value < mini:
-        #         raise ValueError(f'"{param}" must be greater or equal to {mini}')
-        # if not isinstance(translation_factor, (float, int)):
-        #     raise TypeError(f"Got non-float value {translation_factor}")
-        # if name not in corefuncs.registry:
-        #     available = ", ".join(self.list_sorted_function_names())
-        #     raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
+        if not all(isinstance(x, bool) for x in [hashing, rotation]):
+            raise TypeError("hashing and rotation should be bools")
+        for param, mini in [("block_dimension", 1), ("num_blocks", 1), ("useless_variables", 0)]:
+            value = self._parameters[param]
+            if not isinstance(value, int):
+                raise TypeError(f'"{param}" must be an int')
+            if value < mini:
+                raise ValueError(f'"{param}" must be greater or equal to {mini}')
+        if not isinstance(translation_factor, (float, int)):
+            raise TypeError(f"Got non-float value {translation_factor}")
+        if name not in corefuncs.registry:
+            available = ", ".join(self.list_sorted_function_names())
+            raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
         # record necessary info and prepare transforms
         dimension = block_dimension * num_blocks + useless_variables
         super().__init__(dimension, noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
