@@ -53,7 +53,7 @@ def test_make_sorted_winrates() -> None:
 def test_create_plots_from_csv() -> None:
     df = pd.read_csv(Path(__file__).parent / "sphere_perf_example.csv")
     with patch('matplotlib.pyplot.savefig'):
-        plotting.create_plots(df, "", max_combsize=2)
+        plotting.create_plots(df, "", max_combsize=1)
 
 
 def test_remove_errors() -> None:

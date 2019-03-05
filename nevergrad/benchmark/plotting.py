@@ -96,7 +96,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1) -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget") -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -107,7 +107,10 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         path of the folder where the plots should be saved
     max_combsize: int
         maximum number of parameters to fix (combinations) when creating experiment plots
+    xpaxis: str
+        x-axis for xp plots (either budget or pseudotime)
     """
+    assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
@@ -150,12 +153,12 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-        make_xpresults_plot(subdf, description, out_filepath, name_style)
+        make_xpresults_plot(subdf, description, out_filepath, name_style, xaxis=xpaxis)
     plt.close("all")
 
 
 def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[PathLike] = None,
-                        name_style: Optional[Dict[str, Any]] = None) -> None:
+                        name_style: Optional[Dict[str, Any]] = None, xaxis: str = "budget") -> None:
     """Creates a xp result plot out of the given dataframe: regret with respect to budget for
     each optimizer after averaging on all experiments (it is good practice to use a df
     which is filtered out for one set of input parameters)
@@ -172,14 +175,15 @@ def make_xpresults_plot(df: pd.DataFrame, title: str, output_filepath: Optional[
         a dict or dict-like object providing a line style for each optimizer name.
         (can be helpful for consistency across plots)
     """
+    assert xaxis in ["budget", "pseudotime"]
     if name_style is None:
         name_style = NameStyle()
-    df = tools.Selector(df.loc[:, ["optimizer_name", "budget", "loss"]])
-    groupeddf = df.groupby(["optimizer_name", "budget"]).mean()
-    groupeddf_std = df.groupby(["optimizer_name", "budget"]).std().loc[groupeddf.index, :]  # std is currently unused
+    df = tools.Selector(df.loc[:, ["optimizer_name", xaxis, "loss"]])
+    groupeddf = df.groupby(["optimizer_name", xaxis]).mean()
+    groupeddf_std = df.groupby(["optimizer_name", xaxis]).std().loc[groupeddf.index, :]  # std is currently unused
     plt.clf()
-    plt.xlabel("Budget")
-    plt.ylabel("Loss")
+    plt.xlabel(xaxis)
+    plt.ylabel("boss")
     plt.grid(True, which='both')
     optim_vals = {}
     # extract name and coordinates
@@ -298,7 +302,7 @@ class FightPlotter:
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
         data = np.array(winrates.iloc[:num_rows, :])
         # pylint: disable=anomalous-backslash-in-string
-        best_names = [(f"{name} ({100 * val:2.1f}\%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
+        best_names = [(f"{name} ({100 * val:2.1f}%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
@@ -315,14 +319,16 @@ def main() -> None:
     parser.add_argument('filepath', type=str, help='filepath containing the experiment data')
     parser.add_argument('--output', type=str, default=None,
                         help="Output path for the CSV file (default: a folder <filename>_plots next to the data file.")
-    parser.add_argument('--max_combsize', type=int, default=3,
+    parser.add_argument('--max_combsize', type=int, default=0,
                         help="maximum number of parameters to fix (combinations) when creating experiment plots")
+    parser.add_argument('--pseudotime', nargs="?", default=False, const=True,
+                        help="Plots with respect to pseudotime instead of budget")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize)
+    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget")
 
 
 if __name__ == '__main__':
