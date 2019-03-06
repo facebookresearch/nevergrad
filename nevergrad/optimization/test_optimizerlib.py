@@ -95,7 +95,7 @@ class RecommendationKeeper:
         # then update recommendation file
         names = sorted(x for x in self.recommendations.index if x in registry)
         recom = self.recommendations.loc[names, :]
-        recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 10)
+        recom.iloc[:, :] = np.round(recom, 10)
         recom.to_csv(self.filepath)
 
 
