@@ -552,6 +552,9 @@ class PSOParticule:
         speed = np.random.uniform(-1., 1., dimension)
         return cls(position, None, speed, position, float("inf"))
 
+    def __repr__(self) -> str:
+        return "PSOParticule<position: {self.position}>"
+
 
 @registry.register
 class PSO(base.Optimizer):
@@ -595,10 +598,10 @@ class PSO(base.Optimizer):
         for i in range(self.dimension):  # TODO update to vectorial
             rp = np.random.uniform(0., 1.)
             rg = np.random.uniform(0., 1.)
-            particule.speed[i] = (  # type: ignore
+            particule.speed[i] = (
                 self.omega * particule.speed[i]
                 + self.phip * rp * (particule.best_position[i]-particule.position[i])
-                + self.phig * rg * (self.pso_best[i] - particule.position[i])  # type: ignore
+                + self.phig * rg * (self.pso_best[i] - particule.position[i])
             )
         # Particle mutation.
         particule.position = np.clip(particule.speed + particule.position, self.eps, 1 - self.eps)
@@ -616,7 +619,7 @@ class PSO(base.Optimizer):
         location = self.locations[x][0]
         particule = self.population[location]
         point = tuple(self.to_real(particule.position))
-        assert x == point, str(x) + f"{x} vs {point}     {self.pop}"
+        assert x == point, str(x) + f"{x} vs {point}     {self.population}"
         particule.fitness = value
         if value < self.pso_best_fitness:
             assert max(particule.position) < 1., str(particule.position)
