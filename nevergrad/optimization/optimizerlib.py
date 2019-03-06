@@ -585,7 +585,7 @@ class PSO(base.Optimizer):
         self.population: List[PSOParticule] = []
         self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
         self.best_fitness = float("inf")
-        self.locations: Dict[Tuple[float, ...], int] = dict()
+        self.locations: Dict[bytes, int] = {}
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
@@ -601,14 +601,14 @@ class PSO(base.Optimizer):
         # First, the initialization.
         particule = self.population[location]
         if particule.fitness is None:  # This guy is not evaluated.
-            guy = tuple(particule.get_transformed_position())
-            self.locations[guy] = location
+            guy = particule.get_transformed_position()
+            self.locations[guy.tobytes()] = location
             self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
             return guy
         # We are in a standard case.: mutate
         particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
-        guy = tuple(particule.get_transformed_position())
-        self.locations[guy] = location
+        guy = particule.get_transformed_position()
+        self.locations[guy.tobytes()] = location
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
         return guy
 
@@ -616,22 +616,20 @@ class PSO(base.Optimizer):
         return PSOParticule.transform(self.best_position)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        x = tuple(x)
-        assert x in self.locations
-        location = self.locations[x]
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        location = self.locations[x_bytes]
         particule = self.population[location]
-        point = tuple(particule.get_transformed_position())
-        assert x == point, str(x) + f"{x} vs {point}     {self.population}"
+        point = particule.get_transformed_position()
+        assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particule.fitness = value
         if value < self.best_fitness:
-            assert max(particule.position) < 1., str(particule.position)
-            assert min(particule.position) > 0., str(particule.position)
             self.best_position = np.array(particule.position, copy=True)
             self.best_fitness = value
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        del self.locations[x]
+        del self.locations[x_bytes]
         self.queue.append(location)  # update when everything is well done (safer for checkpointing)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
