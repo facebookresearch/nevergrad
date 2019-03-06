@@ -601,7 +601,7 @@ class PSO(base.Optimizer):
             particule.speed[i] = (
                 self.omega * particule.speed[i]
                 + self.phip * rp * (particule.best_position[i]-particule.position[i])
-                + self.phig * rg * (self.pso_best[i] - particule.position[i])
+                + self.phig * rg * (self.pso_best[i] - particule.position[i])  # type: ignore
             )
         # Particle mutation.
         particule.position = np.clip(particule.speed + particule.position, self.eps, 1 - self.eps)
@@ -626,7 +626,7 @@ class PSO(base.Optimizer):
             assert min(particule.position) > 0., str(particule.position)
             self.pso_best = np.array(particule.position, copy=True)
             self.pso_best_fitness = value
-        if value < particule.best_fitness:  # type: ignore
+        if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
         del self.locations[x][0]
