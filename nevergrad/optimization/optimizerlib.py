@@ -555,6 +555,23 @@ class PSOParticule:
     def __repr__(self) -> str:
         return "PSOParticule<position: {self.position}>"
 
+    def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
+        dim = len(best_position)
+        rp = np.random.uniform(0., 1., size=dim)
+        rg = np.random.uniform(0., 1., size=dim)
+        self.speed = (omega * self.speed
+                      + phip * rp * (self.best_position - self.position)
+                      + phig * rg * (best_position - self.position))
+        eps = 1e-10
+        self.position = np.clip(self.speed + self.position, eps, 1 - eps)
+
+    def get_transformed_position(self) -> np.ndarray:
+        return self.transform(self.position)
+
+    @staticmethod
+    def transform(x: base.ArrayLike) -> np.ndarray:
+        return stats.norm.ppf(x)
+
 
 @registry.register
 class PSO(base.Optimizer):
@@ -566,21 +583,16 @@ class PSO(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
         self.population: List[PSOParticule] = []
-        self.pso_best: Optional[base.ArrayLike] = None
-        self.pso_best_fitness = float("inf")
-        self.locations: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        self.index = -1
+        self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
+        self.best_fitness = float("inf")
+        self.locations: Dict[bytes, int] = {}
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
-        self.eps = 1e-10
         self.queue = deque(range(self.llambda))
 
     def _internal_ask(self) -> base.ArrayLike:
-        self.index += 1
-        if self.index == 0:
-            self.pso_best = None
-            self.pso_best_fitness = float("inf")
+        if not self.population:
             self.population = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda)]
         # Focusing on the right guy in the population.
         if not self.queue:
@@ -588,52 +600,32 @@ class PSO(base.Optimizer):
         location = self.queue[0]  # don't remove just yet
         # First, the initialization.
         particule = self.population[location]
-        if particule.fitness is None:  # This guy is not evaluated.
-            guy = tuple(self.to_real(particule.position))
-            self.locations[guy] += [location]
-            self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
-            return guy
-        # We are in a standard case.
-        # Speed mutation.
-        rp = np.random.uniform(0., 1., size=self.dimension)
-        rg = np.random.uniform(0., 1., size=self.dimension)
-        particule.speed = (self.omega * particule.speed
-                           + self.phip * rp * (particule.best_position - particule.position)
-                           + self.phig * rg * (self.pso_best - particule.position))
-        # Particle mutation.
-        particule.position = np.clip(particule.speed + particule.position, self.eps, 1 - self.eps)
-        guy = tuple(self.to_real(particule.position))
-        self.locations[guy] += [location]
+        if particule.fitness is not None:  # particule was already initialized
+            particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
+        guy = particule.get_transformed_position()
+        self.locations[guy.tobytes()] = location
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
         return guy
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return tuple(self.to_real(self.pso_best))
+        return PSOParticule.transform(self.best_position)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        x = tuple(x)
-        assert self.locations[x]
-        location = self.locations[x][0]
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        location = self.locations[x_bytes]
         particule = self.population[location]
-        point = tuple(self.to_real(particule.position))
-        assert x == point, str(x) + f"{x} vs {point}     {self.population}"
+        point = particule.get_transformed_position()
+        assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particule.fitness = value
-        if value < self.pso_best_fitness:
-            assert max(particule.position) < 1., str(particule.position)
-            assert min(particule.position) > 0., str(particule.position)
-            self.pso_best = np.array(particule.position, copy=True)
-            self.pso_best_fitness = value
+        if value < self.best_fitness:
+            self.best_position = np.array(particule.position, copy=True)
+            self.best_fitness = value
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        del self.locations[x][0]
+        del self.locations[x_bytes]
         self.queue.append(location)  # update when everything is well done (safer for checkpointing)
-
-    @staticmethod
-    def to_real(x: base.ArrayLike) -> base.ArrayLike:
-        output = stats.norm.ppf(x)
-        assert not any(x for x in np.isnan(output)), f"Encountered NaN value {output}"
-        return output
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
