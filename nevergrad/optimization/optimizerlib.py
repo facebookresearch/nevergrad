@@ -565,6 +565,13 @@ class PSOParticule:
         eps = 1e-10
         self.position = np.clip(self.speed + self.position, eps, 1 - eps)
 
+    def get_transformed_position(self) -> np.ndarray:
+        return self.transform(self.position)
+
+    @staticmethod
+    def transform(x: base.ArrayLike) -> np.ndarray:
+        return stats.norm.ppf(x)
+
 
 @registry.register
 class PSO(base.Optimizer):
@@ -578,8 +585,7 @@ class PSO(base.Optimizer):
         self.population: List[PSOParticule] = []
         self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
         self.best_fitness = float("inf")
-        self.locations: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        self.index = -1
+        self.locations: Dict[Tuple[float, ...], int] = dict()
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
@@ -595,26 +601,26 @@ class PSO(base.Optimizer):
         # First, the initialization.
         particule = self.population[location]
         if particule.fitness is None:  # This guy is not evaluated.
-            guy = tuple(self.to_real(particule.position))
-            self.locations[guy] += [location]
+            guy = tuple(particule.get_transformed_position())
+            self.locations[guy] = location
             self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
             return guy
         # We are in a standard case.: mutate
         particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
-        guy = tuple(self.to_real(particule.position))
-        self.locations[guy] += [location]
+        guy = tuple(particule.get_transformed_position())
+        self.locations[guy] = location
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
         return guy
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return tuple(self.to_real(self.best_position))
+        return PSOParticule.transform(self.best_position)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         x = tuple(x)
-        assert self.locations[x]
-        location = self.locations[x][0]
+        assert x in self.locations
+        location = self.locations[x]
         particule = self.population[location]
-        point = tuple(self.to_real(particule.position))
+        point = tuple(particule.get_transformed_position())
         assert x == point, str(x) + f"{x} vs {point}     {self.population}"
         particule.fitness = value
         if value < self.best_fitness:
@@ -625,14 +631,8 @@ class PSO(base.Optimizer):
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        del self.locations[x][0]
+        del self.locations[x]
         self.queue.append(location)  # update when everything is well done (safer for checkpointing)
-
-    @staticmethod
-    def to_real(x: base.ArrayLike) -> base.ArrayLike:
-        output = stats.norm.ppf(x)
-        assert not any(x for x in np.isnan(output)), f"Encountered NaN value {output}"
-        return output
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         raise base.TellNotAskedNotSupportedError

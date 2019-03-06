@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -228,3 +228,12 @@ class Archive:
 
     def __iter__(self) -> None:
         raise RuntimeError(_ERROR_STR)
+
+
+X = TypeVar('X')
+
+
+class Population(Generic[X]):  # TODO develop this if it can fit somewhere
+
+    def __init__(self, particules: List[X]):
+        self.particules = particules
