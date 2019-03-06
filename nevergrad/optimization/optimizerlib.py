@@ -576,8 +576,8 @@ class PSO(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
         self.population: List[PSOParticule] = []
-        self.pso_best: Optional[base.ArrayLike] = None
-        self.pso_best_fitness = float("inf")
+        self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
+        self.best_fitness = float("inf")
         self.locations: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.index = -1
         self.omega = 0.5 / np.log(2.)
@@ -586,10 +586,7 @@ class PSO(base.Optimizer):
         self.queue = deque(range(self.llambda))
 
     def _internal_ask(self) -> base.ArrayLike:
-        self.index += 1
-        if self.index == 0:
-            self.pso_best = None
-            self.pso_best_fitness = float("inf")
+        if not self.population:
             self.population = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda)]
         # Focusing on the right guy in the population.
         if not self.queue:
@@ -603,14 +600,14 @@ class PSO(base.Optimizer):
             self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
             return guy
         # We are in a standard case.: mutate
-        particule.mutate(best_position=self.pso_best, omega=self.omega, phip=self.phip, phig=self.phig)
+        particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
         guy = tuple(self.to_real(particule.position))
         self.locations[guy] += [location]
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
         return guy
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return tuple(self.to_real(self.pso_best))
+        return tuple(self.to_real(self.best_position))
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         x = tuple(x)
@@ -620,11 +617,11 @@ class PSO(base.Optimizer):
         point = tuple(self.to_real(particule.position))
         assert x == point, str(x) + f"{x} vs {point}     {self.population}"
         particule.fitness = value
-        if value < self.pso_best_fitness:
+        if value < self.best_fitness:
             assert max(particule.position) < 1., str(particule.position)
             assert min(particule.position) > 0., str(particule.position)
-            self.pso_best = np.array(particule.position, copy=True)
-            self.pso_best_fitness = value
+            self.best_position = np.array(particule.position, copy=True)
+            self.best_fitness = value
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
