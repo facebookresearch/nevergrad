@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import uuid
 import operator
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic
+from collections import deque
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -230,10 +232,36 @@ class Archive:
         raise RuntimeError(_ERROR_STR)
 
 
-X = TypeVar('X')
+class Particule:
+
+    def __init__(self) -> None:
+        self.uuid = uuid.uuid4()
 
 
-class Population(Generic[X]):  # TODO develop this if it can fit somewhere
+class Population:  # TODO develop this if it can fit somewhere
 
-    def __init__(self, particules: List[X]):
+    def __init__(self, particules: List[Particule]) -> None:
         self.particules = particules
+        self._uuid_to_index = {p.uuid: k for k, p in enumerate(particules)}
+        self._queue = deque(range(len(particules)))
+        self._link: Dict[Any, int]
+
+    def get_link(self, key: Any) -> Particule:
+        return self.particules[self._link[key]]
+
+    def set_link(self, key: Any, particule: Particule) -> None:
+        self._link[key] = self._uuid_to_index[particule.uuid]
+
+    def del_link(self, key: Any) -> None:
+        del self._link[key]
+
+    def get_from_queue(self, pop: bool = False) -> Particule:
+        if not self._queue:
+            raise RuntimeError("Queue is empty, you tried to ask more than population size")
+        index = self._queue[0]
+        if pop:
+            index = self._queue.popleft()
+        return self.particules[index]
+
+    def add_to_queue(self, particule: Particule) -> None:
+        self._queue.append(self._uuid_to_index[particule.uuid])
