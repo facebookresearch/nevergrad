@@ -600,13 +600,8 @@ class PSO(base.Optimizer):
         location = self.queue[0]  # don't remove just yet
         # First, the initialization.
         particule = self.population[location]
-        if particule.fitness is None:  # This guy is not evaluated.
-            guy = particule.get_transformed_position()
-            self.locations[guy.tobytes()] = location
-            self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
-            return guy
-        # We are in a standard case.: mutate
-        particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
+        if particule.fitness is not None:  # particule was already initialized
+            particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
         guy = particule.get_transformed_position()
         self.locations[guy.tobytes()] = location
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
