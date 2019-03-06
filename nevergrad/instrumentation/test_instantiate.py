@@ -14,7 +14,8 @@ from .instantiate import Placeholder
 
 
 def test_symlink_folder_tree() -> None:
-    path = Path(__file__).parents[2]
+    path = Path(__file__).absolute().parents[1]
+    assert path.name == "nevergrad"
     with tempfile.TemporaryDirectory() as folder:
         instantiate.symlink_folder_tree(path, folder)
 
