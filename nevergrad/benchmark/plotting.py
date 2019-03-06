@@ -249,6 +249,9 @@ class XpPlotter:
         """
         self._fig.savefig(str(output_filepath), bbox_extra_artists=[self._legend] + self._texts, bbox_inches='tight', dpi=_DPI)
 
+    def __del__(self) -> None:
+        plt.close(self._fig)
+
 
 def split_long_title(title: str) -> str:
     """Splits a long title around the middle comma
