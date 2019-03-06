@@ -86,7 +86,7 @@ class RecommendationKeeper:
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
-        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(64)])  # up to 64 values
+        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(16)])  # up to 64 values
         if filepath.exists():
             self.recommendations = pd.read_csv(filepath, index_col=0)
 
@@ -119,7 +119,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # special cases
     if name == "PSO":
         budget = 100
-    dimension = max(4, int(np.sqrt(budget)))
+    dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
