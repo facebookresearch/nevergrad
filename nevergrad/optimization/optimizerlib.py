@@ -578,8 +578,7 @@ class PSO(base.Optimizer):
         if self.index == 0:
             self.pso_best = None
             self.pso_best_fitness = float("inf")
-            for i in range(self.llambda):
-                self.population.append(PSOParticule.random_initialization(self.dimension))
+            self.population = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda)]
         # Focusing on the right guy in the population.
         if not self.queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
@@ -625,7 +624,7 @@ class PSO(base.Optimizer):
             self.pso_best = np.array(particule.position, copy=True)
             self.pso_best_fitness = value
         if value < particule.best_fitness:  # type: ignore
-            particule.best_position = np.copy(particule.position)
+            particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
         del self.locations[x][0]
         self.queue.append(location)  # update when everything is well done (safer for checkpointing)
