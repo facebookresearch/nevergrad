@@ -533,6 +533,26 @@ class NoisyBandit(base.Optimizer):
         return self.current_bests["optimistic"].x
 
 
+class PSOParticule:
+    """Particule for the PSO algorithm, holding relevant information
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
+                 best_position: np.ndarray, best_fitness: float) -> None:
+        self.position = position
+        self.speed = speed
+        self.fitness = fitness
+        self.best_position = best_position
+        self.best_fitness = best_fitness
+
+    @classmethod
+    def random_initialization(cls, dimension: int) -> 'PSOParticule':
+        position = np.random.uniform(0., 1., dimension)
+        speed = np.random.uniform(-1., 1., dimension)
+        return cls(position, None, speed, position, float("inf"))
+
+
 @registry.register
 class PSO(base.Optimizer):
     """Partially following SPSO2011. However, no randomization of the population order.
@@ -542,11 +562,7 @@ class PSO(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
-        self.pop: List[base.ArrayLike] = []
-        self.pop_speed: List[base.ArrayLike] = []
-        self.pop_best: List[base.ArrayLike] = []
-        self.pop_best_fitness: List[Optional[float]] = []
-        self.pop_fitness: List[Optional[float]] = []
+        self.population: List[PSOParticule] = []
         self.pso_best: Optional[base.ArrayLike] = None
         self.pso_best_fitness = float("inf")
         self.locations: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
@@ -563,37 +579,31 @@ class PSO(base.Optimizer):
             self.pso_best = None
             self.pso_best_fitness = float("inf")
             for i in range(self.llambda):
-                guy = np.random.uniform(0., 1., self.dimension)
-                self.pop += [guy]
-                self.pop_best += [guy]
-                self.pop_speed += [np.random.uniform(-1., 1., self.dimension)]
-                self.pop_best_fitness += [float("inf")]
-                self.pop_fitness += [None]
+                self.population.append(PSOParticule.random_initialization(self.dimension))
         # Focusing on the right guy in the population.
         if not self.queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
         location = self.queue[0]  # don't remove just yet
         # First, the initialization.
-        if self.pop_fitness[location] is None:  # This guy is not evaluated.
-            assert self.pop[location] is not None
-            guy = tuple(self.to_real(self.pop[location]))
+        particule = self.population[location]
+        if particule.fitness is None:  # This guy is not evaluated.
+            guy = tuple(self.to_real(particule.position))
             self.locations[guy] += [location]
             self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
             return guy
         # We are in a standard case.
         # Speed mutation.
-        for i in range(self.dimension):
+        for i in range(self.dimension):  # TODO update to vectorial
             rp = np.random.uniform(0., 1.)
             rg = np.random.uniform(0., 1.)
-            self.pop_speed[location][i] = (  # type: ignore
-                self.omega * self.pop_speed[location][i]
-                + self.phip * rp * (self.pop_best[location][i]-self.pop[location][i])
-                + self.phig * rg * (self.pso_best[i] - self.pop[location][i])  # type: ignore
+            particule.speed[i] = (  # type: ignore
+                self.omega * particule.speed[i]
+                + self.phip * rp * (particule.best_position[i]-particule.position[i])
+                + self.phig * rg * (self.pso_best[i] - particule.position[i])  # type: ignore
             )
         # Particle mutation.
-        self.pop[location] += self.pop_speed[location]
-        self.pop[location] = [max(0.+self.eps, min(1.-self.eps, x_)) for x_ in self.pop[location]]
-        guy = tuple(self.to_real(self.pop[location]))
+        particule.position = np.clip(particule.speed + particule.position, self.eps, 1 - self.eps)
+        guy = tuple(self.to_real(particule.position))
         self.locations[guy] += [location]
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
         return guy
@@ -605,17 +615,18 @@ class PSO(base.Optimizer):
         x = tuple(x)
         assert self.locations[x]
         location = self.locations[x][0]
-        point = tuple(self.to_real(self.pop[location]))
+        particule = self.population[location]
+        point = tuple(self.to_real(particule.position))
         assert x == point, str(x) + f"{x} vs {point}     {self.pop}"
-        self.pop_fitness[location] = value
+        particule.fitness = value
         if value < self.pso_best_fitness:
-            assert max(self.pop[location]) < 1., str(self.pop[location])
-            assert min(self.pop[location]) > 0., str(self.pop[location])
-            self.pso_best = [s for s in self.pop[location]]
+            assert max(particule.position) < 1., str(particule.position)
+            assert min(particule.position) > 0., str(particule.position)
+            self.pso_best = np.array(particule.position, copy=True)
             self.pso_best_fitness = value
-        if value < self.pop_best_fitness[location]:  # type: ignore
-            self.pop_best[location] = [s for s in self.pop[location]]
-            self.pop_best_fitness[location] = value
+        if value < particule.best_fitness:  # type: ignore
+            particule.best_position = np.copy(particule.position)
+            particule.best_fitness = value
         del self.locations[x][0]
         self.queue.append(location)  # update when everything is well done (safer for checkpointing)
 
