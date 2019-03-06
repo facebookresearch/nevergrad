@@ -26,7 +26,7 @@ class Fitness:
     def __init__(self, x0: ArrayLike) -> None:
         self.x0 = np.array(x0, copy=True)
 
-    def __call__(self, x) -> float:
+    def __call__(self, x: ArrayLike) -> float:
         assert len(self.x0) == len(x)
         return float(np.sum((np.array(x, copy=False) - self.x0)**2))
 
