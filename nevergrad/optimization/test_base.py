@@ -125,7 +125,7 @@ def test_optimizer_family() -> None:
     for zero in [True, False]:
         optf = StupidFamily(zero=zero)
         opt = optf(dimension=2, budget=4, num_workers=1)
-        recom = opt.optimize(test_optimizerlib.fitness)
+        recom = opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom == np.zeros(2), zero)
 
 
