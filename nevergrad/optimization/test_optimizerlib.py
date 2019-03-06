@@ -95,7 +95,7 @@ class RecommendationKeeper:
         # then update recommendation file
         names = sorted(x for x in self.recommendations.index if x in registry)
         recom = self.recommendations.loc[names, :]
-        recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
+        recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 10)
         recom.to_csv(self.filepath)
 
 
@@ -126,7 +126,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :][:dimension], decimal=10,
+    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :][:dimension], decimal=9,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 

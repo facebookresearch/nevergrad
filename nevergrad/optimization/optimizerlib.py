@@ -555,6 +555,16 @@ class PSOParticule:
     def __repr__(self) -> str:
         return "PSOParticule<position: {self.position}>"
 
+    def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
+        dim = len(best_position)
+        rp = np.random.uniform(0., 1., size=dim)
+        rg = np.random.uniform(0., 1., size=dim)
+        self.speed = (omega * self.speed
+                      + phip * rp * (self.best_position - self.position)
+                      + phig * rg * (best_position - self.position))
+        eps = 1e-10
+        self.position = np.clip(self.speed + self.position, eps, 1 - eps)
+
 
 @registry.register
 class PSO(base.Optimizer):
@@ -573,7 +583,6 @@ class PSO(base.Optimizer):
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
-        self.eps = 1e-10
         self.queue = deque(range(self.llambda))
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -593,15 +602,8 @@ class PSO(base.Optimizer):
             self.locations[guy] += [location]
             self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
             return guy
-        # We are in a standard case.
-        # Speed mutation.
-        rp = np.random.uniform(0., 1., size=self.dimension)
-        rg = np.random.uniform(0., 1., size=self.dimension)
-        particule.speed = (self.omega * particule.speed
-                           + self.phip * rp * (particule.best_position - particule.position)
-                           + self.phig * rg * (self.pso_best - particule.position))
-        # Particle mutation.
-        particule.position = np.clip(particule.speed + particule.position, self.eps, 1 - self.eps)
+        # We are in a standard case.: mutate
+        particule.mutate(best_position=self.pso_best, omega=self.omega, phip=self.phip, phig=self.phig)
         guy = tuple(self.to_real(particule.position))
         self.locations[guy] += [location]
         self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
