@@ -595,9 +595,8 @@ class PSO(base.Optimizer):
             return guy
         # We are in a standard case.
         # Speed mutation.
-        rpg = np.random.uniform(0., 1., size=2 * self.dimension)
-        # this is legacy: just to keep the exact same random number generation order as before (-> rpg should disappear)
-        rp, rg = rpg[::2], rpg[1::2]
+        rp = np.random.uniform(0., 1., size=self.dimension)
+        rg = np.random.uniform(0., 1., size=self.dimension)
         particule.speed = (self.omega * particule.speed
                            + self.phip * rp * (particule.best_position - particule.position)
                            + self.phig * rg * (self.pso_best - particule.position))
