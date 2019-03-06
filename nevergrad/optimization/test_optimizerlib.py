@@ -108,18 +108,20 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
 
 @pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+    # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
     np.random.seed(12)
     if optimizer_cls.recast:
         random.seed(12)  # may depend on non numpy generator
-    optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
-    np.testing.assert_equal(optim.name, name)
+    # set up problem
     fitness = Fitness([.5, -.8, 0, 4])
+    optim = optimizer_cls(dimension=len(fitness.x0), budget=6, num_workers=1)
+    np.testing.assert_equal(optim.name, name)
     output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :] = tuple(output)
+        recomkeeper.recommendations.loc[name, :len(tuple)] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
                                          err_msg="Something has changed, if this is normal, delete the following "
