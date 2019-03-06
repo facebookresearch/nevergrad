@@ -19,17 +19,23 @@ from . import optimizerlib
 from .optimizerlib import registry
 
 
-def fitness(x: ArrayLike) -> float:
+class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4
     """
-    x0 = [0.5, -0.8, 0, 4][:len(x)]
-    return float(np.sum((np.array(x, copy=False) - x0)**2))
+
+    def __init__(self, x0: ArrayLike) -> None:
+        self.x0 = np.array(x0, copy=True)
+
+    def __call__(self, x: ArrayLike) -> float:
+        assert len(self.x0) == len(x)
+        return float(np.sum((np.array(x, copy=False) - self.x0)**2))
 
 
 def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]], budget: int = 300, verify_value: bool = True) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
+    fitness = Fitness([.5, -.8])
     for k in range(1, num_attempts + 1):
         optimizer = optimizer_cls(dimension=2, budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
@@ -80,7 +86,7 @@ class RecommendationKeeper:
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
-        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
+        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(16)])  # up to 64 values
         if filepath.exists():
             self.recommendations = pd.read_csv(filepath, index_col=0)
 
@@ -102,19 +108,25 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
 
 @pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+    # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
     np.random.seed(12)
     if optimizer_cls.recast:
         random.seed(12)  # may depend on non numpy generator
-    optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
+    # budget=6 by default, larger for special cases needing more
+    budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
+    dimension = min(16, max(4, int(np.sqrt(budget))))
+    # set up problem
+    fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
+    optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
     output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :] = tuple(output)
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
+    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :][:dimension], decimal=10,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
