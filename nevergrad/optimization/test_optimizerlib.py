@@ -86,7 +86,7 @@ class RecommendationKeeper:
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
-        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
+        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(64)])  # up to 64 values
         if filepath.exists():
             self.recommendations = pd.read_csv(filepath, index_col=0)
 
@@ -121,9 +121,9 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     np.testing.assert_equal(optim.name, name)
     output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :len(tuple)] = tuple(output)
+        recomkeeper.recommendations.loc[name, :len(output)] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
+    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :][:len(output)], decimal=10,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
