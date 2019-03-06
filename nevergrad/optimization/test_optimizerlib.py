@@ -115,10 +115,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     np.random.seed(12)
     if optimizer_cls.recast:
         random.seed(12)  # may depend on non numpy generator
-    budget = 6
-    # special cases
-    if name == "PSO":
-        budget = 100
+    # budget=6 by default, larger for special cases needing more
+    budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
