@@ -595,14 +595,12 @@ class PSO(base.Optimizer):
             return guy
         # We are in a standard case.
         # Speed mutation.
-        for i in range(self.dimension):  # TODO update to vectorial
-            rp = np.random.uniform(0., 1.)
-            rg = np.random.uniform(0., 1.)
-            particule.speed[i] = (
-                self.omega * particule.speed[i]
-                + self.phip * rp * (particule.best_position[i]-particule.position[i])
-                + self.phig * rg * (self.pso_best[i] - particule.position[i])  # type: ignore
-            )
+        rpg = np.random.uniform(0., 1., size=2 * self.dimension)
+        # this is legacy: just to keep the exact same random number generation order as before (-> rpg should disappear)
+        rp, rg = rpg[::2], rpg[1::2]
+        particule.speed = (self.omega * particule.speed
+                           + self.phip * rp * (particule.best_position - particule.position)
+                           + self.phig * rg * (self.pso_best - particule.position))
         # Particle mutation.
         particule.position = np.clip(particule.speed + particule.position, self.eps, 1 - self.eps)
         guy = tuple(self.to_real(particule.position))
