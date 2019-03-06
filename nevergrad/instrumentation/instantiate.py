@@ -90,7 +90,7 @@ def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str
     for fp in folder.glob("**/*"):
         shadow_fp = shadow_folder / fp.relative_to(folder)
         if fp.is_file() and not shadow_fp.exists():
-            os.makedirs(str(shadow_fp.parent), exist_ok=True)
+            shadow_fp.parent.mkdir(parents=True, exist_ok=True)
             shadow_fp.symlink_to(fp)
 
 
