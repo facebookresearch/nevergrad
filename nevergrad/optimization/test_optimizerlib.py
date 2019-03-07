@@ -149,6 +149,7 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
 def test_pso_to_real() -> None:
     output = optimizerlib.PSOParticule.transform([.3, .5, .9])
     np.testing.assert_almost_equal(output, [-.52, 0, 1.28], decimal=2)
+    np.testing.assert_almost_equal(optimizerlib.PSOParticule.transform(output, inverse=True), [.3, .5, .9], decimal=2)
 
 
 def test_portfolio_budget() -> None:
@@ -168,3 +169,19 @@ def test_optimizer_families_repr() -> None:
     optimso = optimizerlib.ScipyOptimizer(method="COBYLA")
     np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
     assert optimso.no_parallelization
+
+
+def test_pso_tell_not_asked() -> None:
+    best = [.5, -.8, 0, 4]
+    dim = len(best)
+    fitness = Fitness(best)
+    opt = optimizerlib.PSO(dimension=dim, budget=2, num_workers=2)
+    opt.llambda = 2
+    zeros = [0] * dim
+    opt.tell_not_asked(zeros, fitness(zeros))
+    asked = [opt.ask(), opt.ask()]
+    opt.tell_not_asked(best, fitness(best))
+    opt.tell(asked[0], fitness(asked[0]))
+    opt.tell(asked[1], fitness(asked[1]))
+    assert opt.num_tell == 4
+    assert opt.num_ask == 2
