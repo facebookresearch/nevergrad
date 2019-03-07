@@ -14,7 +14,11 @@ You can also install the master branch instead of the latest release with:
 pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
 ```
 
-Alternatively, you can clone the repository and run `python3 setup.py develop` from inside the repository folder.
+Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
+
+By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interesting in the benchmarking part,
+you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
+the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
 
