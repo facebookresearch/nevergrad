@@ -82,3 +82,36 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
     np.testing.assert_raises(RuntimeError, archive.keys)
     np.testing.assert_raises(RuntimeError, archive.items)
+
+
+class Partitest(utils.Particule):
+
+    def __init__(self, number: int) -> None:
+        super().__init__()
+        self.number = number
+
+
+def test_population_queue() -> None:
+    particules = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particules)
+    p = pop.get_queued()
+    assert p.number == 0
+    nums = [pop.get_queued(remove=True).number for _ in range(4)]
+    np.testing.assert_equal(nums, list(range(4)))
+    np.testing.assert_raises(RuntimeError, pop.get_queued)  # nothing more in queue
+    pop.set_queued(particules[1])
+    p = pop.get_queued()
+    assert p.number == 1
+    np.testing.assert_raises(ValueError, pop.set_queued, Partitest(5))  # not in pop
+
+
+def test_population_link() -> None:
+    particules = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particules)
+    np.testing.assert_raises(ValueError, pop.set_linked, "blublu", Partitest(5))  # not in pop
+    p = particules[0]
+    pop.set_linked(12, p)
+    p2 = pop.get_linked(12)
+    assert p2.uuid == p.uuid
+    pop.del_link(12)
+    np.testing.assert_raises(KeyError, pop.get_linked, 12)  # removed

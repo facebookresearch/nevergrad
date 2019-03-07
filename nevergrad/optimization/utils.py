@@ -6,7 +6,7 @@
 import uuid
 import operator
 from collections import deque
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -235,33 +235,43 @@ class Archive:
 class Particule:
 
     def __init__(self) -> None:
-        self.uuid = uuid.uuid4()
+        self.uuid = uuid.uuid4().hex
 
 
-class Population:  # TODO develop this if it can fit somewhere
+X = TypeVar('X', bound=Particule)
 
-    def __init__(self, particules: List[Particule]) -> None:
+
+class Population(Generic[X]):
+    """Handle a population
+    This could have a nicer interface... but it is already good enough
+    """
+
+    def __init__(self, particules: List[X]) -> None:
         self.particules = particules
         self._uuid_to_index = {p.uuid: k for k, p in enumerate(particules)}
         self._queue = deque(range(len(particules)))
-        self._link: Dict[Any, int]
+        self._link: Dict[Union[str, bytes, int], int] = {}
 
-    def get_link(self, key: Any) -> Particule:
+    def get_linked(self, key: Union[str, bytes, int]) -> X:
         return self.particules[self._link[key]]
 
-    def set_link(self, key: Any, particule: Particule) -> None:
+    def set_linked(self, key: Union[str, bytes, int], particule: X) -> None:
+        if particule.uuid not in self._uuid_to_index:
+            raise ValueError("Particule is not part of the population")
         self._link[key] = self._uuid_to_index[particule.uuid]
 
-    def del_link(self, key: Any) -> None:
+    def del_link(self, key: Union[str, bytes, int]) -> None:
         del self._link[key]
 
-    def get_from_queue(self, pop: bool = False) -> Particule:
+    def get_queued(self, remove: bool = False) -> X:
         if not self._queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
         index = self._queue[0]
-        if pop:
+        if remove:
             index = self._queue.popleft()
         return self.particules[index]
 
-    def add_to_queue(self, particule: Particule) -> None:
+    def set_queued(self, particule: X) -> None:
+        if particule.uuid not in self._uuid_to_index:
+            raise ValueError("Particule is not part of the population")
         self._queue.append(self._uuid_to_index[particule.uuid])
