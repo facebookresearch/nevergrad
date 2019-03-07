@@ -11,6 +11,14 @@ from . import base
 from . import sequences
 
 
+class DEParticule(base.utils.Particule):
+
+    def __init__(self, position: Optional[np.ndarray] = None, fitness: Optional[float] = None):
+        super().__init__()
+        self.position = position
+        self.fitness = fitness
+
+
 class _DE(base.Optimizer):
     """Differential evolution.
 
