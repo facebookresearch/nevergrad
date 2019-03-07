@@ -260,7 +260,7 @@ class Population(Generic[X]):
         The new particules are queued left (first out of queue)
         """
         self._particules.update({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
-        self._queue.extendleft(p.uuid for p in reversed(particules))
+        self._queue.extendleft(p.uuid for p in particules)
 
     def __len__(self) -> int:
         return len(self._particules)
