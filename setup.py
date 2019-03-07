@@ -31,7 +31,7 @@ setup(
                  'Intended Audience :: Science/Research',
                  'Topic :: Scientific/Engineering',
                  'Programming Language :: Python'],
-    data_files=[('', ['LICENSE', 'requirements.txt']),
+    data_files=[('', ['LICENSE', 'requirements/main.txt', 'requirements/dev.txt', 'requirements/bench.txt']),
                 ('nevergrad', ["nevergrad/benchmark/additional/example.py",
                                "nevergrad/instrumentation/examples/script.py"])],
     install_requires=requirements["main"],
