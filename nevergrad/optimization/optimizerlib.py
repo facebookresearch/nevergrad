@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Any, Union, Callable
+from typing import Optional, List, Dict, Tuple, Deque, Any, Union, Callable, Set
 from collections import defaultdict, deque
 import cma
 import numpy as np
 from scipy import stats
+from . import utils
 from . import base
 from . import mutations
 from .base import registry
@@ -533,13 +534,14 @@ class NoisyBandit(base.Optimizer):
         return self.current_bests["optimistic"].x
 
 
-class PSOParticule:
+class PSOParticule(utils.Particule):
     """Particule for the PSO algorithm, holding relevant information
     """
 
     # pylint: disable=too-many-arguments
     def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
                  best_position: np.ndarray, best_fitness: float) -> None:
+        super().__init__()
         self.position = position
         self.speed = speed
         self.fitness = fitness
@@ -553,7 +555,7 @@ class PSOParticule:
         return cls(position, None, speed, position, float("inf"))
 
     def __repr__(self) -> str:
-        return "PSOParticule<position: {self.position}>"
+        return f"PSOParticule<position: {self.get_transformed_position()}, fitness: {self.fitness}, best: {self.best_fitness}>"
 
     def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
         dim = len(best_position)
@@ -569,8 +571,11 @@ class PSOParticule:
         return self.transform(self.position)
 
     @staticmethod
-    def transform(x: base.ArrayLike) -> np.ndarray:
-        return stats.norm.ppf(x)
+    def transform(x: base.ArrayLike, inverse: bool = False) -> np.ndarray:
+        if inverse:
+            return stats.norm.cdf(x)
+        else:
+            return stats.norm.ppf(x)
 
 
 @registry.register
@@ -582,29 +587,26 @@ class PSO(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
-        self.population: List[PSOParticule] = []
+        self.population: utils.Population[PSOParticule] = utils.Population([])
+        self._replaced: Set[bytes] = set()
         self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
         self.best_fitness = float("inf")
-        self.locations: Dict[bytes, int] = {}
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
-        self.queue = deque(range(self.llambda))
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self.population:
-            self.population = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda)]
-        # Focusing on the right guy in the population.
-        if not self.queue:
-            raise RuntimeError("Queue is empty, you tried to ask more than population size")
-        location = self.queue[0]  # don't remove just yet
-        # First, the initialization.
-        particule = self.population[location]
+        # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
+        if self.population.is_queue_empty() and len(self.population) < self.llambda:
+            additional = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
+            self.population.extend(additional)
+        particule = self.population.get_queued(remove=False)
         if particule.fitness is not None:  # particule was already initialized
             particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
         guy = particule.get_transformed_position()
-        self.locations[guy.tobytes()] = location
-        self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
+        self.population.set_linked(guy.tobytes(), particule)
+        self.population.get_queued(remove=True)
+        # only remove at the last minute (safer for checkpointing)
         return guy
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
@@ -613,8 +615,11 @@ class PSO(base.Optimizer):
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
-        location = self.locations[x_bytes]
-        particule = self.population[location]
+        if x_bytes in self._replaced:
+            self._replaced.remove(x_bytes)
+            self.tell_not_asked(x, value)
+            return
+        particule = self.population.get_linked(x_bytes)
         point = particule.get_transformed_position()
         assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particule.fitness = value
@@ -624,11 +629,27 @@ class PSO(base.Optimizer):
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        del self.locations[x_bytes]
-        self.queue.append(location)  # update when everything is well done (safer for checkpointing)
+        self.population.del_link(x_bytes)
+        self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        if len(self.population) < self.llambda:
+            particule = PSOParticule.random_initialization(self.dimension)
+            particule.position = PSOParticule.transform(x, inverse=True)
+            self.population.extend([particule])
+        else:
+            worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
+            if worst_part.best_fitness < value:
+                return  # no need to update
+            particule = PSOParticule.random_initialization(self.dimension)
+            particule.position = PSOParticule.transform(x, inverse=True)
+            replaced = self.population.replace(worst_part, particule)
+            if replaced is not None:
+                assert isinstance(replaced, bytes)
+                self._replaced.add(replaced)
+        # go through standard pipeline
+        x2 = self._internal_ask()
+        self.tell(x2, value)
 
 
 @registry.register

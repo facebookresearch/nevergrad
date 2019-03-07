@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import uuid
 import operator
-from collections import deque
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union
+from uuid import uuid4
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -235,7 +234,8 @@ class Archive:
 class Particule:
 
     def __init__(self) -> None:
-        self.uuid = uuid.uuid4().hex
+        self.uuid = uuid4().hex
+        self._waiting_for_removal = False
 
 
 X = TypeVar('X', bound=Particule)
@@ -247,31 +247,73 @@ class Population(Generic[X]):
     """
 
     def __init__(self, particules: List[X]) -> None:
-        self.particules = particules
-        self._uuid_to_index = {p.uuid: k for k, p in enumerate(particules)}
-        self._queue = deque(range(len(particules)))
-        self._link: Dict[Union[str, bytes, int], int] = {}
+        self._particules = {p.uuid: p for p in particules}  # dont modify manually (needs updated uuid to index)
+        self._link: Dict[Union[str, bytes, int], str] = {}
+        self._queue = Deque[str]()
+        self.extend(particules)
+
+    def __iter__(self) -> Iterator[X]:
+        return iter(self._particules.values())
+
+    def extend(self, particules: List[X]) -> None:
+        """Adds new particules
+        The new particules are queued left (first out of queue)
+        """
+        self._particules.update({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
+        self._queue.extendleft(p.uuid for p in particules)
+
+    def __len__(self) -> int:
+        return len(self._particules)
 
     def get_linked(self, key: Union[str, bytes, int]) -> X:
-        return self.particules[self._link[key]]
+        return self._particules[self._link[key]]
 
     def set_linked(self, key: Union[str, bytes, int], particule: X) -> None:
-        if particule.uuid not in self._uuid_to_index:
+        if particule.uuid not in self._particules:
             raise ValueError("Particule is not part of the population")
-        self._link[key] = self._uuid_to_index[particule.uuid]
+        self._link[key] = particule.uuid
 
     def del_link(self, key: Union[str, bytes, int]) -> None:
         del self._link[key]
 
+    def is_queue_empty(self) -> bool:
+        return not self._queue
+
     def get_queued(self, remove: bool = False) -> X:
         if not self._queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
-        index = self._queue[0]
+        uuid = self._queue[0]  # pylint: disable=unsubscriptable-object
         if remove:
-            index = self._queue.popleft()
-        return self.particules[index]
+            self._queue.popleft()
+        return self._particules[uuid]
 
     def set_queued(self, particule: X) -> None:
-        if particule.uuid not in self._uuid_to_index:
+        if particule.uuid not in self._particules:
             raise ValueError("Particule is not part of the population")
-        self._queue.append(self._uuid_to_index[particule.uuid])
+        self._queue.append(particule.uuid)
+
+    def replace(self, oldie: X, newbie: X) -> Optional[Union[str, bytes, int]]:
+        """Replaces an old particule by a new particule.
+        The new particule is queue left (first out of queue)
+        If the old particule was linked, the key will be returned
+        """
+        if oldie.uuid not in self._particules:
+            raise ValueError("Particule is not part of the population")
+        if newbie.uuid in self._particules:
+            raise ValueError("Particule is already in the population")
+        del self._particules[oldie.uuid]
+        self._particules[newbie.uuid] = newbie
+        # update queue
+        try:
+            self._queue.remove(oldie.uuid)
+        except ValueError:
+            pass
+        self._queue.appendleft(newbie.uuid)
+        # update dict
+        links = [key for key, uuid in self._link.items() if uuid == oldie.uuid]
+        assert len(links) <= 1
+        if not links:
+            return None
+        else:
+            del self._link[links[0]]
+            return links[0]

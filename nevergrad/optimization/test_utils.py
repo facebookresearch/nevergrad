@@ -93,11 +93,12 @@ class Partitest(utils.Particule):
 
 def test_population_queue() -> None:
     particules = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particules)
+    pop = utils.Population(particules[2:])
+    pop.extend(particules[:2][::-1])  # should append queue on the left
     p = pop.get_queued()
     assert p.number == 0
     nums = [pop.get_queued(remove=True).number for _ in range(4)]
-    np.testing.assert_equal(nums, list(range(4)))
+    np.testing.assert_equal(nums, [0, 1, 3, 2])  # adds in queue in reverse order
     np.testing.assert_raises(RuntimeError, pop.get_queued)  # nothing more in queue
     pop.set_queued(particules[1])
     p = pop.get_queued()
@@ -115,3 +116,12 @@ def test_population_link() -> None:
     assert p2.uuid == p.uuid
     pop.del_link(12)
     np.testing.assert_raises(KeyError, pop.get_linked, 12)  # removed
+
+
+def test_population_replace() -> None:
+    particules = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particules)
+    pop.set_linked(12, particules[2])
+    key = pop.replace(particules[2], Partitest(5))
+    assert key == 12
+    assert pop.get_queued().number == 5
