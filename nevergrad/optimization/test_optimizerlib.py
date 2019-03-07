@@ -75,8 +75,6 @@ UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEth
 
 @testing.parametrized(**{name: (name, optimizer,) for name, optimizer in registry.items()})
 def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
-    if name != "PSO":
-        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
     if isinstance(optimizer_cls, base.OptimizerFamily):
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
@@ -113,8 +111,6 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
-        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
-    if name != "PSO":
         raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
     np.random.seed(12)
     if optimizer_cls.recast:
