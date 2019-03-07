@@ -22,25 +22,27 @@ jobs:
 
       # Download and cache dependencies for "main"
       - restore_cache:
+          name: [no-extra] Restore cache
           keys:
           - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-
           # fallback to using the latest cache if no exact match is found
           - v2-dependencies-main-
 
       - run:
-          name: install dependencies
+          name: [no-extra] Install dependencies
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install -e .[dev]
 
       - save_cache:
+          name: [no-extra] Save cache
           paths:
             - ./venv
           key: v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
 
       - run:
-          name: No-extra dependency install test
+          name: [no-extra] Run basic tests (checking dependencies)
           command: |
             . venv/bin/activate
             pytest nevergrad/optimization/test_optimizerlib.py::test_optimizers_recommendation nevergrad/instrumentation/test_core.py
@@ -48,6 +50,7 @@ jobs:
       # Download and cache dependencies for "main"
 
       - restore_cache:
+          name: [all] Restore cache
           keys:
           - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
@@ -56,26 +59,27 @@ jobs:
           - v2-dependencies-
 
       - run:
-          name: install dependencies
+          name: [all] Install dependencies
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install -e .[all]
 
       - save_cache:
+          name: [all] Save cache
           paths:
             - ./venv
           key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       # Run all tests
       - run:
-          name: run tests
+          name: [all] Run pytest
           command: |
             . venv/bin/activate
             pytest nevergrad --duration=20 --cov=nevergrad
 
       - run:
-          name: run mypy
+          name: [all] Run mypy
           command: |
             . venv/bin/activate
             mypy --ignore-missing-imports nevergrad
