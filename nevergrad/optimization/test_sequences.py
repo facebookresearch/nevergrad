@@ -33,6 +33,10 @@ def test_samplers(name: str, sampler_cls: Type[sequences.Sampler]) -> None:
     np.testing.assert_equal(len(output), 144)
     assert min(output) > 0
     assert max(output) < 1
+
+
+def test_sampler_draw() -> None:
+    sampler = sequences.RandomSampler(5, 4)
     sampler.draw()
 
 

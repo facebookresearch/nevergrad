@@ -60,8 +60,9 @@ def get_data(name: str) -> Union[np.ndarray, pd.DataFrame]:
 
 
 def _make_fake_get_data(name: str) -> Union[np.ndarray, pd.DataFrame]:
-    sizes = {"Ruspini": (75, 2), "Virus": (38, 18), "Employees": (80, 81), "Landscape": (2160, 4320), "German towns": (89, 3)}
-    data = np.random.normal(0, 1, size=sizes[name])
+    # Landscape is actually supposed to be exactly 10 times bigger (2160, 4320)
+    sizes = {"Ruspini": (75, 2), "Virus": (38, 18), "Employees": (80, 81), "Landscape": (216, 432), "German towns": (89, 3)}
+    data = np.zeros(sizes[name])
     return data if name != "Employees" else pd.DataFrame(data)
 
 

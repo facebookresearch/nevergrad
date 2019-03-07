@@ -7,7 +7,7 @@ To install `nevergrad` in development mode (if you wish to contribute to it), cl
 
 Most of the code is covered by unit tests. You can run them with:
 ```
-nosetests nevergrad --with-coverage --cover-package=nevergrad
+pytest nevergrad --cov=nevergrad
 ```
 
 You can also run type checking with:

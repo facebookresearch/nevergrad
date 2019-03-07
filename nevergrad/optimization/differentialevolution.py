@@ -170,6 +170,9 @@ class _DE(base.Optimizer):
             self.population_fitnesses[idx] = value
         self.candidates[idx] = None
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class DifferentialEvolution(base.ParametrizedFamily):

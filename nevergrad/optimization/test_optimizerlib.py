@@ -19,17 +19,23 @@ from . import optimizerlib
 from .optimizerlib import registry
 
 
-def fitness(x: ArrayLike) -> float:
+class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4
     """
-    x0 = [0.5, -0.8, 0, 4][:len(x)]
-    return float(np.sum((np.array(x, copy=False) - x0)**2))
+
+    def __init__(self, x0: ArrayLike) -> None:
+        self.x0 = np.array(x0, copy=True)
+
+    def __call__(self, x: ArrayLike) -> float:
+        assert len(self.x0) == len(x)
+        return float(np.sum((np.array(x, copy=False) - self.x0)**2))
 
 
 def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]], budget: int = 300, verify_value: bool = True) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
+    fitness = Fitness([.5, -.8])
     for k in range(1, num_attempts + 1):
         optimizer = optimizer_cls(dimension=2, budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
@@ -52,6 +58,13 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     archive = optimizer.archive
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
             min(v.pessimistic_confidence_bound for v in archive.values()))
+    # add a random point to test tell_not_asked
+    try:
+        optimizer.tell_not_asked(np.random.normal(0, 1, size=optimizer.dimension), 12.)
+    except Exception as e:  # pylint: disable=broad-except
+        if not isinstance(e, base.TellNotAskedNotSupportedError):
+            raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
+                                 "at tell_not_asked if they do not support it") from e
 
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
@@ -62,6 +75,8 @@ UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEth
 
 @testing.parametrized(**{name: (name, optimizer,) for name, optimizer in registry.items()})
 def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+    if name != "PSO":
+        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
     if isinstance(optimizer_cls, base.OptimizerFamily):
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
@@ -73,7 +88,7 @@ class RecommendationKeeper:
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
-        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(4)])
+        self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(16)])  # up to 64 values
         if filepath.exists():
             self.recommendations = pd.read_csv(filepath, index_col=0)
 
@@ -82,7 +97,7 @@ class RecommendationKeeper:
         # then update recommendation file
         names = sorted(x for x in self.recommendations.index if x in registry)
         recom = self.recommendations.loc[names, :]
-        recom.iloc[:, 1:] = np.round(recom.iloc[:, 1:], 12)
+        recom.iloc[:, :] = np.round(recom, 10)
         recom.to_csv(self.filepath)
 
 
@@ -95,19 +110,27 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
 
 @pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+    # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
+        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
+    if name != "PSO":
         raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
     np.random.seed(12)
     if optimizer_cls.recast:
         random.seed(12)  # may depend on non numpy generator
-    optim = optimizer_cls(dimension=4, budget=6, num_workers=1)
+    # budget=6 by default, larger for special cases needing more
+    budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
+    dimension = min(16, max(4, int(np.sqrt(budget))))
+    # set up problem
+    fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
+    optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
     output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :] = tuple(output)
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :], decimal=10,
+    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :][:dimension], decimal=9,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
@@ -128,9 +151,8 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
 
 
 def test_pso_to_real() -> None:
-    output = optimizerlib.PSO.to_real([.3, .5, .9])
+    output = optimizerlib.PSOParticule.transform([.3, .5, .9])
     np.testing.assert_almost_equal(output, [-.52, 0, 1.28], decimal=2)
-    np.testing.assert_raises(AssertionError, optimizerlib.PSO.to_real, [.3, .5, 1.2])
 
 
 def test_portfolio_budget() -> None:

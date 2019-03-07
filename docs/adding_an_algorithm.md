@@ -52,6 +52,10 @@ The key string is either `optimistic` or `pessimistic`, and the `Point` value is
 
 If the algorithm is not able to handle parallelization (if `ask` cannot be called multiple times consecutively), the `no_parallelization` **class attribute** must be set to `True`.
 
+As an experimental feature, all optmizers have a `tell_not_asked` method for providing the fitness of points which have not been asked for.
+If you do not want to support this feature, make this method raise a `base.TellNotAskedNotSupportedError`.
+A unit test will make sure that the optimizer either accepts the point or raises this error.
+
 
 ### Seeding
 
@@ -87,7 +91,7 @@ You are welcome to add tests if you want to make sure your implementation is cor
 
 To run these tests, you can use:
 ```
-nosetests nevergrad/optimization/test_optimizerlib.py
+pytest nevergrad/optimization/test_optimizerlib.py
 ```
 
 The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exist. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.
