@@ -40,10 +40,10 @@ jobs:
           key: v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
 
       - run:
-          name: optimizers dependency test
+          name: No-extra dependency install test
           command: |
             . venv/bin/activate
-            pytest nevergrad/optimization/test_optimizerlib.py nevergrad/instrumentation/test_core.py
+            pytest nevergrad/optimization/test_optimizerlib.py::test_optimizers_recommendation nevergrad/instrumentation/test_core.py
 
       # Download and cache dependencies for "main"
 
