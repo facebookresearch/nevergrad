@@ -2,12 +2,18 @@
 
 ## master
 
+N/A
+
+## v0.1.5
+
+- provided different install procedures for optimization, benchmark and dev (requirements differ).
 - added an experimental `tell_not_asked` method to optimizers.
-- switched to `pytest` for testing, and removed dependency to `nosetests` and `genty`
+- switched to `pytest` for testing, and removed dependency to `nosetests` and `genty`.
 - made archive more memory efficient by using bytes as key instead of tuple of floats.
 - started rewritting some optimizers as instance of a family of optimizers (experimental).
 - added pseudotime in benchmarks for both steady mode and batch mode.
 - made the whole chain from `Optimizer` to `BenchmarkChunk` stateful and able to restart from where it was stopped.
+- started introducing `tell_not_asked` method (experimental).
 
 ## v0.1.4
 
