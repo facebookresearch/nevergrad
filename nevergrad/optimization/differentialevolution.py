@@ -165,17 +165,18 @@ class _DE(base.Optimizer):
         self.population.set_queued(particule)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
         self.match_population_size_to_lambda()
-        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)  # or fitness?
-        if worst_part.best_fitness < value:
+        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
+        if worst_part.fitness is not None and worst_part.fitness < value:
             return  # no need to update
         particule = DEParticule()
-        particule.position = x
-        particule.fitness = value
         replaced = self.population.replace(worst_part, particule)
+        self.population.set_linked(x.tobytes(), particule)
         if replaced is not None:
             assert isinstance(replaced, bytes)
             self._replaced.add(replaced)
+        self.tell(x, value)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
