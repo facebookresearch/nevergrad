@@ -7,7 +7,7 @@ import random
 import warnings
 from pathlib import Path
 from unittest import SkipTest
-from typing import Type, Union, Generator
+from typing import Type, Union, Generator, List
 import pytest
 import numpy as np
 import pandas as pd
@@ -69,7 +69,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
         "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
-UNSEEDABLE = []
+UNSEEDABLE: List[str] = []
 
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
