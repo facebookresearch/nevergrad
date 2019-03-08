@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Set
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
@@ -27,7 +27,7 @@ class _DE(base.Optimizer):
     CR =.5, F1=.8, F2=.8, curr-to-best.
     Initial population: pure random.
     """
-    # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-instance-attributes
+    # pylint: disable=too-many-locals, too-many-nested-blocks
     # pylint: disable=too-many-branches, too-many-statements
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -37,6 +37,7 @@ class _DE(base.Optimizer):
         self.population = base.utils.Population[DEParticule]([])
         self.sampler: Optional[sequences.Sampler] = None
         self.NF = False  # This is not a noise-free variant of DE.
+        self._replaced: Set[bytes] = set()
 
     @property
     def scale(self) -> float:
@@ -149,9 +150,14 @@ class _DE(base.Optimizer):
         return donor  # type: ignore
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        if x_bytes in self._replaced:
+            self._replaced.remove(x_bytes)
+            self.tell_not_asked(x, value)
+            return
         self.match_population_size_to_lambda()
-        x = tuple(x)
-        particule = self.population.get_linked(np.array(x).tobytes())
+        particule = self.population.get_linked(x_bytes)
         self.population.del_link(np.array(x).tobytes())
         if particule.fitness is None or value <= particule.fitness:
             particule.position = np.array(x)
@@ -159,7 +165,17 @@ class _DE(base.Optimizer):
         self.population.set_queued(particule)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        self.match_population_size_to_lambda()
+        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)  # or fitness?
+        if worst_part.best_fitness < value:
+            return  # no need to update
+        particule = DEParticule()
+        particule.position = x
+        particule.fitness = value
+        replaced = self.population.replace(worst_part, particule)
+        if replaced is not None:
+            assert isinstance(replaced, bytes)
+            self._replaced.add(replaced)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
