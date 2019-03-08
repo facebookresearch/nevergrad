@@ -587,7 +587,7 @@ class PSO(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
-        self.population: utils.Population[PSOParticule] = utils.Population([])
+        self.population = utils.Population[PSOParticule]([])
         self._replaced: Set[bytes] = set()
         self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
         self.best_fitness = float("inf")
@@ -629,7 +629,7 @@ class PSO(base.Optimizer):
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        self.population.del_link(x_bytes)
+        self.population.del_link(x_bytes, particule)
         self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:

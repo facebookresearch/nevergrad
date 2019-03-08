@@ -73,8 +73,9 @@ UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEth
               "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
 
 
-@testing.parametrized(**{name: (name, optimizer,) for name, optimizer in registry.items()})
-def test_optimizers(name: str, optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]]) -> None:
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+def test_optimizers(name: str) -> None:
+    optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.OptimizerFamily):
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
@@ -117,6 +118,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
     budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
+    if isinstance(optimizer_cls, optimizerlib.DifferentialEvolution):
+        budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
@@ -185,3 +188,8 @@ def test_pso_tell_not_asked() -> None:
     opt.tell(asked[1], fitness(asked[1]))
     assert opt.num_tell == 4
     assert opt.num_ask == 2
+
+
+def test_pso_double_eval_error() -> None:
+    np.random.seed(1)
+    test_optimizers("PSO")

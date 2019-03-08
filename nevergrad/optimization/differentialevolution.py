@@ -3,12 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, Union, Set
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
 from . import base
 from . import sequences
+
+
+class DEParticule(base.utils.Particule):
+
+    def __init__(self, position: Optional[np.ndarray] = None, fitness: Optional[float] = None):
+        super().__init__()
+        self.position = position
+        self.fitness = fitness
 
 
 class _DE(base.Optimizer):
@@ -19,18 +27,17 @@ class _DE(base.Optimizer):
     CR =.5, F1=.8, F2=.8, curr-to-best.
     Initial population: pure random.
     """
-    # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-instance-attributes
+    # pylint: disable=too-many-locals, too-many-nested-blocks
     # pylint: disable=too-many-branches, too-many-statements
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
-        self.population: List[Optional[ArrayLike]] = []
-        self.candidates: List[Optional[ArrayLike]] = []
-        self.population_fitnesses: List[Optional[float]] = []
+        self.population = base.utils.Population[DEParticule]([])
         self.sampler: Optional[sequences.Sampler] = None
         self.NF = False  # This is not a noise-free variant of DE.
+        self._replaced: Set[bytes] = set()
 
     @property
     def scale(self) -> float:
@@ -51,18 +58,16 @@ class _DE(base.Optimizer):
     def match_population_size_to_lambda(self) -> None:
         current_pop = len(self.population)
         if current_pop < self.llambda:
-            self.candidates.extend([None] * (self.llambda - current_pop))
-            self.population_fitnesses.extend([None] * (self.llambda - current_pop))
-            self.population.extend([None] * (self.llambda - current_pop))
+            self.population.extend(DEParticule() for _ in range(self.llambda - current_pop))
 
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
-        med_fitness = np.median([f for f in self.population_fitnesses if f is not None])
-        good_guys = [p for p, f in zip(self.population, self.population_fitnesses) if f is not None and f < med_fitness]
+        med_fitness = np.median([p.fitness for p in self.population if p.fitness is not None])
+        good_guys = [p for p in self.population if p.fitness is not None and p.position is not None and p.fitness < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([np.array(g) for g in good_guys]) / len(good_guys)
+        return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask(self) -> Tuple[float, ...]:
         init = self._parameters.initialization
@@ -71,15 +76,16 @@ class _DE(base.Optimizer):
             sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
             self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR")
         self.match_population_size_to_lambda()
-        location = self._num_ask % self.llambda
-        i = (self.population[location])
-        a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
+        particule = self.population.get_queued(remove=True)
+        i = particule.position
+        a, b, c = (self.population[self.population.uuids[np.random.randint(self.llambda)]].position for _ in range(3))
 
         CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
         if self._parameters.por_DE:
             CR = np.random.uniform(0., 1.)
 
         if any(x is None for x in [i, a, b, c]):
+            location = self._num_ask % self.llambda
             if self._parameters.inoculation:
                 inoc = float(location) / float(self.llambda)
             else:
@@ -93,10 +99,9 @@ class _DE(base.Optimizer):
                 new_guy = tuple(inoc * self.scale * (np.random.normal(0, 1, self.dimension)
                                                      if init is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
-            self.population[location] = new_guy
-            self.population_fitnesses[location] = None
-            assert self.candidates[location] is None
-            self.candidates[location] = tuple(new_guy)
+            particule.position = np.array(new_guy)  #
+            particule.fitness = None  #
+            self.population.set_linked(particule.position.tobytes(), particule)
             return new_guy
         i = np.array(i)
         a = np.array(a)
@@ -141,37 +146,37 @@ class _DE(base.Optimizer):
                     if (idx - Ra) * (idx - Rb) <= 0:
                         donor[idx] = i[idx]
         donor = tuple(donor)
-        if self.candidates[location] is not None:
-            for idx in range(self.llambda):
-                if self.candidates[idx] is None:
-                    location = idx
-                    break
-        assert self.candidates[location] is None
-        self.candidates[location] = tuple(donor)
+        self.population.set_linked(np.array(donor).tobytes(), particule)
         return donor  # type: ignore
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        if x_bytes in self._replaced:
+            self._replaced.remove(x_bytes)
+            self.tell_not_asked(x, value)
+            return
         self.match_population_size_to_lambda()
-        x = tuple(x)
-        if x in self.candidates:
-            idx = self.candidates.index(x)
-        else:
-            # If the point is not in candidates, either find an empty spot or choose randomly
-            empty_indexes = [idx for idx, cand in enumerate(self.population) if cand is None]
-            if empty_indexes:
-                # We found an empty spot
-                idx = empty_indexes[0]
-            else:
-                # No empty spot, choose randomly
-                # TODO: There might be a more efficient approach than choosing at random
-                idx = np.random.randint(len(self.candidates))
-        if self.population_fitnesses[idx] is None or value <= self.population_fitnesses[idx]:  # type: ignore
-            self.population[idx] = x
-            self.population_fitnesses[idx] = value
-        self.candidates[idx] = None
+        particule = self.population.get_linked(x_bytes)
+        self.population.del_link(np.array(x).tobytes(), particule)
+        if particule.fitness is None or value <= particule.fitness:
+            particule.position = np.array(x)
+            particule.fitness = value
+        self.population.set_queued(particule)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        self.match_population_size_to_lambda()
+        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
+        if worst_part.fitness is not None and worst_part.fitness < value:
+            return  # no need to update
+        particule = DEParticule()
+        replaced = self.population.replace(worst_part, particule)
+        x = np.array(x, copy=False)
+        self.population.set_linked(x.tobytes(), particule)
+        if replaced is not None:
+            assert isinstance(replaced, bytes)
+            self._replaced.add(replaced)
+        self.tell(x, value)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
