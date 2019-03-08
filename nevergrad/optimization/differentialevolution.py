@@ -63,10 +63,10 @@ class _DE(base.Optimizer):
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
         med_fitness = np.median([p.fitness for p in self.population if p.fitness is not None])
-        good_guys = [p for p in self.population if p.fitness is not None and p.fitness < med_fitness]
+        good_guys = [p for p in self.population if p.fitness is not None and p.position is not None and p.fitness < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([g.position for g in good_guys]) / len(good_guys)
+        return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask(self) -> Tuple[float, ...]:
         init = self._parameters.initialization
@@ -153,7 +153,7 @@ class _DE(base.Optimizer):
         x = tuple(x)
         particule = self.population.get_linked(np.array(x).tobytes())
         self.population.del_link(np.array(x).tobytes())
-        if particule.fitness is None or value <= particule.fitness:  # type: ignore
+        if particule.fitness is None or value <= particule.fitness:
             particule.position = np.array(x)
             particule.fitness = value
         self.population.set_queued(particule)
