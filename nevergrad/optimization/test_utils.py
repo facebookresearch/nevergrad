@@ -114,7 +114,7 @@ def test_population_link() -> None:
     pop.set_linked(12, p)
     p2 = pop.get_linked(12)
     assert p2.uuid == p.uuid
-    pop.del_link(12)
+    pop.del_link(12, p)
     np.testing.assert_raises(KeyError, pop.get_linked, 12)  # removed
 
 

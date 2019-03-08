@@ -190,6 +190,6 @@ def test_pso_tell_not_asked() -> None:
     assert opt.num_ask == 2
 
 
-def test_pso_random_error():
-    np.random.seed(0)
+def test_pso_double_eval_error():
+    np.random.seed(1)
     test_optimizers("PSO")

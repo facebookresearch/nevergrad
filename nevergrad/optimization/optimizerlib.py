@@ -629,7 +629,7 @@ class PSO(base.Optimizer):
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        self.population.del_link(x_bytes)
+        self.population.del_link(x_bytes, particule)
         self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:

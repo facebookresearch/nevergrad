@@ -5,7 +5,7 @@
 
 import operator
 from uuid import uuid4
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque, Iterable
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -249,7 +249,7 @@ class Population(Generic[X]):
 
     def __init__(self, particules: Iterable[X]) -> None:
         self._particules = OrderedDict({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
-        self._link: Dict[Union[str, bytes, int], str] = {}
+        self._link: Dict[Union[str, bytes, int], List[str]] = defaultdict(list)  # several particules can be linked to a same point
         self._queue = Deque[str]()
         self._uuids: List[str] = []
         self.extend(self._particules.values())
@@ -282,15 +282,20 @@ class Population(Generic[X]):
         return len(self._particules)
 
     def get_linked(self, key: Union[str, bytes, int]) -> X:
-        return self._particules[self._link[key]]
+        uuids = self._link[key]
+        if not uuids:
+            raise KeyError("No link available")
+        return self._particules[uuids[0]]
 
     def set_linked(self, key: Union[str, bytes, int], particule: X) -> None:
         if particule.uuid not in self._particules:
             raise ValueError("Particule is not part of the population")
-        self._link[key] = particule.uuid
+        self._link[key].append(particule.uuid)
 
-    def del_link(self, key: Union[str, bytes, int]) -> None:
-        del self._link[key]
+    def del_link(self, key: Union[str, bytes, int], particule: X) -> None:
+        self._link[key].remove(particule.uuid)
+        if not self._link[key]:
+            del self._link[key]
 
     def is_queue_empty(self) -> bool:
         return not self._queue
@@ -327,7 +332,7 @@ class Population(Generic[X]):
             pass
         self._queue.appendleft(newbie.uuid)
         # update dict
-        links = [key for key, uuid in self._link.items() if uuid == oldie.uuid]
+        links = [key for key, uuids in self._link.items() if oldie.uuid in uuids]
         assert len(links) <= 1
         if not links:
             return None
