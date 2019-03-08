@@ -431,8 +431,8 @@ class ParticuleTBPSA:
 
     def __init__(self, position: np.array, sigma: float, loss: Optional[float] = None) -> None:
         self.position = np.array(position, copy=False)
-        self.loss = loss
         self.sigma = sigma
+        self.loss = loss
 
 
 @registry.register
