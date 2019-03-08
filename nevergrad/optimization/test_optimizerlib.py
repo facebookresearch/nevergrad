@@ -69,8 +69,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
         "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
-UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "DiagonalCMA",
-              "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
+UNSEEDABLE = []
 
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
@@ -112,7 +111,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
-        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
+        raise SkipTest("Not playing nicely with the tests (unseedable)")
     np.random.seed(12)
     if optimizer_cls.recast:
         random.seed(12)  # may depend on non numpy generator
@@ -126,6 +125,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
     output = optim.optimize(fitness)
+    print(output)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')

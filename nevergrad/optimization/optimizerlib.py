@@ -168,7 +168,7 @@ class CMA(base.Optimizer):
         self.es: Optional[cma.CMAEvolutionStrategy] = None
         popsize = max(num_workers, 4 + int(3 * np.log(dimension)))
         # delay initialization to ease implementation of variants
-        self._cma_init: Dict[str, Any] = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize}}
+        self._cma_init: Dict[str, Any] = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize, "seed": np.nan}}
         self.listx: List[base.ArrayLike] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
@@ -197,6 +197,8 @@ class CMA(base.Optimizer):
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         if self.es is None:
             return RuntimeError("Either ask or tell method should have been called before")
+        if self.es.result.xbest is None:
+            return self.current_bests["pessimistic"].x
         return self.es.result.xbest
 
 
