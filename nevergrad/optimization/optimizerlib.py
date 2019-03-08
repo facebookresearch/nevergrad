@@ -427,16 +427,12 @@ class MEDA(EDA):
             self.evaluated_population_fitness = []
 
 
-class ParticuleTBPSA(base.utils.Particule):
+class ParticuleTBPSA:
 
     def __init__(self, position: np.array, sigma: float, fitness: Optional[float] = None) -> None:
-        super().__init__()
         self.position = np.array(position, copy=False)
         self.fitness = fitness
         self.sigma = sigma
-
-    def __repr__(self) -> str:
-        return f'ParticuleTBPSA({self.position}, {self.sigma}, {self.fitness})'
 
 
 @registry.register
@@ -475,13 +471,11 @@ class TBPSA(base.Optimizer):
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
-            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
-            mean1 = sum(first_fifth) / float(self.llambda)
-            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
-            mean2 = sum(last_fifth) / float(self.llambda)
-            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
-            z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+            first_fifth = self.archive_fitness[: self.llambda]
+            last_fifth = self.archive_fitness[-self.llambda:]
+            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
+            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
+            z = (means[0] - means[1]) / (np.sqrt(stds[0]**2 + stds[1]**2))
             if z < 2.:
                 self.mu *= 2
             else:

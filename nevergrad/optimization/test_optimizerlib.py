@@ -193,3 +193,14 @@ def test_pso_tell_not_asked() -> None:
 def test_pso_double_eval_error() -> None:
     np.random.seed(1)
     test_optimizers("PSO")
+
+
+def test_tbpsa_recom_with_update() -> None:
+    np.random.seed(12)
+    budget = 20
+    # set up problem
+    fitness = Fitness([.5, -.8, 0, 4])
+    optim = optimizerlib.TBPSA(dimension=4, budget=budget, num_workers=1)
+    optim.llambda = 3
+    output = optim.optimize(fitness)
+    np.testing.assert_almost_equal(output, [.037964, .0433031, -.4688667, .3633273])
