@@ -211,7 +211,10 @@ class ParametrizedCMA(base.ParametrizedFamily):
 
     Parameters
     ----------
-
+    scale: float
+        scale of the search
+    diagonal: bool
+        use the diagonal version of CMA (advised in big dimension)
     """
 
     _optimizer_class = _CMA
