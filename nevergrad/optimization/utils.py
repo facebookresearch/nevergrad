@@ -5,7 +5,7 @@
 
 import operator
 from uuid import uuid4
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque
+from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque, Iterable
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -255,10 +255,11 @@ class Population(Generic[X]):
     def __iter__(self) -> Iterator[X]:
         return iter(self._particules.values())
 
-    def extend(self, particules: List[X]) -> None:
+    def extend(self, particules: Iterable[X]) -> None:
         """Adds new particules
         The new particules are queued left (first out of queue)
         """
+        particules = list(particules)
         self._particules.update({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
         self._queue.extendleft(p.uuid for p in particules)
 

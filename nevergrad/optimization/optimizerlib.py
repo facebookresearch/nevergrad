@@ -587,7 +587,7 @@ class PSO(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
-        self.population: utils.Population[PSOParticule] = utils.Population([])
+        self.population = utils.Population[PSOParticule]([])
         self._replaced: Set[bytes] = set()
         self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
         self.best_fitness = float("inf")

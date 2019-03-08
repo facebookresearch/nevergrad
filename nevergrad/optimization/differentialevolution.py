@@ -34,6 +34,7 @@ class _DE(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
+        self.population2 = base.utils.Population[DEParticule]([])
         self.population: List[Optional[ArrayLike]] = []
         self.candidates: List[Optional[ArrayLike]] = []
         self.population_fitnesses: List[Optional[float]] = []
@@ -62,6 +63,7 @@ class _DE(base.Optimizer):
             self.candidates.extend([None] * (self.llambda - current_pop))
             self.population_fitnesses.extend([None] * (self.llambda - current_pop))
             self.population.extend([None] * (self.llambda - current_pop))
+            self.population2.extend(DEParticule() for _ in range(self.llambda - current_pop))
 
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
@@ -80,7 +82,9 @@ class _DE(base.Optimizer):
             self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR")
         self.match_population_size_to_lambda()
         location = self._num_ask % self.llambda
+        particule = self.population2.get_queued(remove=True)
         i = (self.population[location])
+        i = particule.position
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
 
         CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
@@ -102,9 +106,12 @@ class _DE(base.Optimizer):
                                                      if init is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             self.population[location] = new_guy
+            particule.position = np.array(new_guy)  #
+            particule.fitness = None  #
             self.population_fitnesses[location] = None
             assert self.candidates[location] is None
             self.candidates[location] = tuple(new_guy)
+            self.population2.set_linked(particule.position.tobytes(), particule)
             return new_guy
         i = np.array(i)
         a = np.array(a)
@@ -156,26 +163,23 @@ class _DE(base.Optimizer):
                     break
         assert self.candidates[location] is None
         self.candidates[location] = tuple(donor)
+        self.population2.set_linked(np.array(donor).tobytes(), particule)
         return donor  # type: ignore
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.match_population_size_to_lambda()
         x = tuple(x)
-        if x in self.candidates:
-            idx = self.candidates.index(x)
-        else:
-            # If the point is not in candidates, either find an empty spot or choose randomly
-            empty_indexes = [idx for idx, cand in enumerate(self.population) if cand is None]
-            if empty_indexes:
-                # We found an empty spot
-                idx = empty_indexes[0]
-            else:
-                # No empty spot, choose randomly
-                # TODO: There might be a more efficient approach than choosing at random
-                idx = np.random.randint(len(self.candidates))
-        if self.population_fitnesses[idx] is None or value <= self.population_fitnesses[idx]:  # type: ignore
+        idx = self.candidates.index(x)
+        particule = self.population2.get_linked(np.array(x).tobytes())
+        self.population2.del_link(np.array(x).tobytes())
+        assert particule.fitness == self.population_fitnesses[idx]
+        assert np.array_equal(self.population[idx], particule.position)
+        if particule.fitness is None or value <= particule.fitness:  # type: ignore
             self.population[idx] = x
             self.population_fitnesses[idx] = value
+            particule.position = np.array(x)
+            particule.fitness = value
+        self.population2.set_queued(particule)
         self.candidates[idx] = None
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
