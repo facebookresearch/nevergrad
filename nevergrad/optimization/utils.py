@@ -5,6 +5,7 @@
 
 import operator
 from uuid import uuid4
+from collections import OrderedDict
 from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque, Iterable
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -246,11 +247,24 @@ class Population(Generic[X]):
     This could have a nicer interface... but it is already good enough
     """
 
-    def __init__(self, particules: List[X]) -> None:
-        self._particules = {p.uuid: p for p in particules}  # dont modify manually (needs updated uuid to index)
+    def __init__(self, particules: Iterable[X]) -> None:
+        self._particules = OrderedDict({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
         self._link: Dict[Union[str, bytes, int], str] = {}
         self._queue = Deque[str]()
-        self.extend(particules)
+        self._uuids: List[str] = []
+        self.extend(self._particules.values())
+
+    @property
+    def uuids(self) -> List[str]:
+        """Don't modify manually
+        """
+        return self._uuids
+
+    def __getitem__(self, uuid: str) -> X:
+        parti = self._particules[uuid]
+        if parti.uuid != uuid:
+            raise RuntimeError("Something went horribly wrong in the Population structure")
+        return parti
 
     def __iter__(self) -> Iterator[X]:
         return iter(self._particules.values())
@@ -260,8 +274,9 @@ class Population(Generic[X]):
         The new particules are queued left (first out of queue)
         """
         particules = list(particules)
+        self._uuids.extend(p.uuid for p in particules)
         self._particules.update({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
-        self._queue.extendleft(p.uuid for p in particules)
+        self._queue.extendleft(p.uuid for p in reversed(particules))
 
     def __len__(self) -> int:
         return len(self._particules)
@@ -304,6 +319,7 @@ class Population(Generic[X]):
             raise ValueError("Particule is already in the population")
         del self._particules[oldie.uuid]
         self._particules[newbie.uuid] = newbie
+        self._uuids = [newbie.uuid if u == oldie.uuid else u for u in self._uuids]
         # update queue
         try:
             self._queue.remove(oldie.uuid)

@@ -84,8 +84,9 @@ class _DE(base.Optimizer):
         location = self._num_ask % self.llambda
         particule = self.population2.get_queued(remove=True)
         i = (self.population[location])
-        i = particule.position
+        # i = particule.position
         a, b, c = (self.population[np.random.randint(self.llambda)] for _ in range(3))
+        # a, b, c = (self.population2[self.population2.uuids[np.random.randint(self.llambda)]].position for _ in range(3))
 
         CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
         if self._parameters.por_DE:
