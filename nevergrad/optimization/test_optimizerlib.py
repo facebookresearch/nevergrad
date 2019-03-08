@@ -125,7 +125,6 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
     output = optim.optimize(fitness)
-    print(output)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')

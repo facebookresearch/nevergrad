@@ -620,6 +620,7 @@ class PSO(base.Optimizer):
         if x_bytes in self._replaced:
             self._replaced.remove(x_bytes)
             self.tell_not_asked(x, value)
+            self._num_tell -= 1  # correction so that it is not counted twice
             return
         particule = self.population.get_linked(x_bytes)
         point = particule.get_transformed_position()
@@ -642,6 +643,7 @@ class PSO(base.Optimizer):
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
             if worst_part.best_fitness < value:
+                self._num_tell += 1  # make sure it is always counted as tell
                 return  # no need to update
             particule = PSOParticule.random_initialization(self.dimension)
             particule.position = PSOParticule.transform(x, inverse=True)
