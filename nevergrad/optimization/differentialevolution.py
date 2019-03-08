@@ -171,6 +171,7 @@ class _DE(base.Optimizer):
             return  # no need to update
         particule = DEParticule()
         replaced = self.population.replace(worst_part, particule)
+        x = np.array(x, copy=False)
         self.population.set_linked(x.tobytes(), particule)
         if replaced is not None:
             assert isinstance(replaced, bytes)
