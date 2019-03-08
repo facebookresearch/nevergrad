@@ -431,11 +431,11 @@ class ParticuleTBPSA(base.utils.Particule):
 
     def __init__(self, position: np.array, sigma: float, fitness: Optional[float] = None) -> None:
         super().__init__()
-        self.position = position
+        self.position = np.array(position, copy=False)
         self.fitness = fitness
         self.sigma = sigma
 
-    def __repr__(self) -> None:
+    def __repr__(self) -> str:
         return f'ParticuleTBPSA({self.position}, {self.sigma}, {self.fitness})'
 
 
@@ -457,10 +457,7 @@ class TBPSA(base.Optimizer):
             self.llambda = max(self.llambda, num_workers)
         self.current_center = np.zeros(dimension)
         # Evaluated population
-        self.evaluated_population2: List[ParticuleTBPSA] = []
-        self.evaluated_population: List[base.ArrayLike] = []
-        self.evaluated_population_sigma: List[float] = []
-        self.evaluated_population_fitness: List[float] = []
+        self.evaluated_population: List[ParticuleTBPSA] = []
         # Unevaluated population
         self.unevaluated_population: Dict[bytes, ParticuleTBPSA] = {}
         # Archive
@@ -500,29 +497,21 @@ class TBPSA(base.Optimizer):
         x_bytes = x.tobytes()
         particule = self.unevaluated_population[x_bytes]
         particule.fitness = value
-        self.evaluated_population += [particule.position]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [particule.sigma]
-        self.evaluated_population2.append(particule)
+        self.evaluated_population.append(particule)
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
-                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
-            self.evaluated_population2.sort(key=lambda p: p.fitness)
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population.sort(key=lambda p: p.fitness)
             # Computing the new parent.
-            self.current_center = sum(p.position for p in self.evaluated_population2[:self.mu]) / self.mu
-            self.sigma = np.exp(np.sum(np.log([p.sigma for p in self.evaluated_population2[:self.mu]])) / self.mu)
+            self.current_center = sum(p.position for p in self.evaluated_population[:self.mu]) / self.mu
+            self.sigma = np.exp(np.sum(np.log([p.sigma for p in self.evaluated_population[:self.mu]])) / self.mu)
             self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
-            self.evaluated_population2 = []
         del self.unevaluated_population[x_bytes]
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        x = np.array(x, copy=False)
+        self.unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=self.sigma)
+        # go through standard pipeline so as to update the archive
+        self.tell(x, value)
 
 
 @registry.register
