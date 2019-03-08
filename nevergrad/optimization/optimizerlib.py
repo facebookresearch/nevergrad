@@ -427,6 +427,18 @@ class MEDA(EDA):
             self.evaluated_population_fitness = []
 
 
+class ParticuleTBPSA(base.utils.Particule):
+
+    def __init__(self, position: np.array, sigma: float, fitness: Optional[float] = None) -> None:
+        super().__init__()
+        self.position = position
+        self.fitness = fitness
+        self.sigma = sigma
+
+    def __repr__(self) -> None:
+        return f'ParticuleTBPSA({self.position}, {self.sigma}, {self.fitness})'
+
+
 @registry.register
 class TBPSA(base.Optimizer):
     """Test-based population-size adaptation.
@@ -445,12 +457,12 @@ class TBPSA(base.Optimizer):
             self.llambda = max(self.llambda, num_workers)
         self.current_center = np.zeros(dimension)
         # Evaluated population
+        self.evaluated_population2: List[ParticuleTBPSA] = []
         self.evaluated_population: List[base.ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
         self.evaluated_population_fitness: List[float] = []
         # Unevaluated population
-        self.unevaluated_population: List[base.ArrayLike] = []
-        self.unevaluated_population_sigma: List[float] = []
+        self.unevaluated_population: Dict[bytes, ParticuleTBPSA] = {}
         # Archive
         self.archive_fitness: List[float] = []
 
@@ -459,9 +471,8 @@ class TBPSA(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.dimension))
-        individual = tuple(self.current_center + mutated_sigma * np.random.normal(0, 1, self.dimension))
-        self.unevaluated_population_sigma += [mutated_sigma]
-        self.unevaluated_population += [tuple(individual)]
+        individual = self.current_center + mutated_sigma * np.random.normal(0, 1, self.dimension)
+        self.unevaluated_population[individual.tobytes()] = ParticuleTBPSA(individual, sigma=mutated_sigma)
         return individual
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
@@ -485,25 +496,30 @@ class TBPSA(base.Optimizer):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        particule = self.unevaluated_population[x_bytes]
+        particule.fitness = value
+        self.evaluated_population += [particule.position]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [particule.sigma]
+        self.evaluated_population2.append(particule)
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
                 zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population2.sort(key=lambda p: p.fitness)
             self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
+            self.current_center = sum(p.position for p in self.evaluated_population2[:self.mu]) / self.mu
+            self.sigma = np.exp(np.sum(np.log([p.sigma for p in self.evaluated_population2[:self.mu]])) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
+            self.evaluated_population2 = []
+        del self.unevaluated_population[x_bytes]
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
