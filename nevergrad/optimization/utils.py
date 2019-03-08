@@ -154,8 +154,8 @@ class SequentialExecutor:
     (just calls the function and returns a FinishedJob)
     """
 
-    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
-        return DelayedJob(function, *args, **kwargs)
+    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
+        return DelayedJob(fn, *args, **kwargs)
 
 
 def _tobytes(x: ArrayLike) -> bytes:

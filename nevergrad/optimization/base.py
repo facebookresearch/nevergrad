@@ -247,6 +247,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
+        assert executor is not None
         tmp_runnings: List[Tuple[ArrayLike, JobLike]] = []
         tmp_finished: Deque[Tuple[ArrayLike, JobLike]] = deque()
         # go
