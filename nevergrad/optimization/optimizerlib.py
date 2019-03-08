@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Any, Union, Callable, Set
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Set
 from collections import defaultdict, deque
 import cma
 import numpy as np
@@ -161,28 +161,32 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
         "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
-@registry.register
-class CMA(base.Optimizer):
+class _CMA(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es: Optional[cma.CMAEvolutionStrategy] = None
-        popsize = max(num_workers, 4 + int(3 * np.log(dimension)))
+        self._parameters = ParametrizedCMA()
+        self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
-        self._cma_init: Dict[str, Any] = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize, "seed": np.nan}}
         self.listx: List[base.ArrayLike] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
 
+    @property
+    def es(self) -> cma.CMAEvolutionStrategy:
+        if self._es is None:
+            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+            diag = self._parameters.diagonal
+            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
+                                                sigma0=self._parameters.scale,
+                                                inopts={"popsize": popsize, "seed": np.nan, "CMA_diagonal": diag})
+        return self._es
+
     def _internal_ask(self) -> base.ArrayLike:
-        if self.es is None:
-            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         if not self.to_be_asked:
             self.to_be_asked.extend(self.es.ask())
         return self.to_be_asked.popleft()
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        if self.es is None:
-            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         self.listx += [x]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
@@ -195,35 +199,36 @@ class CMA(base.Optimizer):
                 self.listy = []
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        if self.es is None:
+        if self._es is None:
             return RuntimeError("Either ask or tell method should have been called before")
         if self.es.result.xbest is None:
             return self.current_bests["pessimistic"].x
         return self.es.result.xbest
 
 
-@registry.register
-class MicroCMA(CMA):
+class ParametrizedCMA(base.ParametrizedFamily):
+    """TODO
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._cma_init["sigma0"] = 1e-6
+    Parameters
+    ----------
+    scale: float
+        scale of the search
+    diagonal: bool
+        use the diagonal version of CMA (advised in big dimension)
+    """
+
+    _optimizer_class = _CMA
+
+    def __init__(self, *, scale: float = 1., diagonal: bool = False) -> None:
+        self.scale = scale
+        self.diagonal = diagonal
+        super().__init__()
 
 
-@registry.register
-class MilliCMA(CMA):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._cma_init["sigma0"] = 1e-3
-
-
-@registry.register
-class DiagonalCMA(CMA):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._cma_init["inopts"]['CMA_diagonal'] = True
+CMA = ParametrizedCMA().with_name("CMA", register=True)
+DiagonalCMA = ParametrizedCMA(diagonal=True).with_name("DiagonalCMA", register=True)
+MilliCMA = ParametrizedCMA(scale=1e-3).with_name("MilliCMA", register=True)
+MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
 
 
 @registry.register
