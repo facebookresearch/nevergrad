@@ -7,7 +7,7 @@ import random
 import warnings
 from pathlib import Path
 from unittest import SkipTest
-from typing import Type, Union, Generator
+from typing import Type, Union, Generator, List
 import pytest
 import numpy as np
 import pandas as pd
@@ -69,8 +69,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
         "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
-UNSEEDABLE = ["CMA", "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "DiagonalCMA",
-              "CMandAS", "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA", "MilliCMA", "MicroCMA"]
+UNSEEDABLE: List[str] = []
 
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
@@ -112,7 +111,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
-        raise SkipTest("Not playing nicely with the tests (unseedable)")  # due to CMA not seedable.
+        raise SkipTest("Not playing nicely with the tests (unseedable)")
     np.random.seed(12)
     if optimizer_cls.recast:
         random.seed(12)  # may depend on non numpy generator
