@@ -19,7 +19,7 @@ class Instrumentation:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.names: Tuple[Optional[str], ...] = ()
-        self.instruments: List[utils.Variable] = []
+        self.instruments: List[utils.Variable[Any]] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
 
@@ -37,7 +37,7 @@ class Instrumentation:
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
-        self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        self.instruments: List[utils.Variable[Any]] = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.instruments))
         assert len(self.instruments) == num_instru, "All instruments must be different (sharing is not supported)"
 
@@ -46,13 +46,13 @@ class Instrumentation:
         return sum(i.dimension for i in self.instruments)
 
     @property
-    def args(self) -> Tuple[utils.Variable, ...]:
+    def args(self) -> Tuple[utils.Variable[Any], ...]:
         """List of instruments passed as positional arguments
         """
         return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
 
     @property
-    def kwargs(self) -> Dict[str, utils.Variable]:
+    def kwargs(self) -> Dict[str, utils.Variable[Any]]:
         """Dictionary of instruments passed as named arguments
         """
         return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}

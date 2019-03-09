@@ -218,7 +218,7 @@ class SammonMapping(BaseFunction):
 
 def _normalized(func: "Landscape", x: np.ndarray) -> np.ndarray:
     "Normalization function for Landscape"
-    return (np.array(x, copy=False) + 1) * (np.array(func._image.shape) - 1) / 2
+    return (np.array(x, copy=False) + 1.) * (np.array(func._image.shape) - 1.) / 2.  # type: ignore
 
 
 class _GaussianNorm:
@@ -226,7 +226,7 @@ class _GaussianNorm:
     """
 
     def __init__(self) -> None:
-        self._variables: Optional[Tuple[OrderedDiscrete, ...]] = None
+        self._variables: Optional[Tuple[OrderedDiscrete[int], ...]] = None
 
     def __call__(self, func: "Landscape", x: np.ndarray) -> np.ndarray:
         if self._variables is None:

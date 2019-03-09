@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Match, Optional, TypeVar, Union
+from typing import List, Optional, TypeVar, Union
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
@@ -107,10 +106,6 @@ class Gaussian(utils.Variable[Y]):
         self.mean = mean
         self.std = std
         self.shape = shape
-
-    @classmethod
-    def from_regex(cls, regex: Match[str]) -> utils.Variable:
-        return cls(float(regex.group("mean")), float(regex.group("std")))
 
     @property
     def dimension(self) -> int:
