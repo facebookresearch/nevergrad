@@ -179,7 +179,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._internal_tell(x, value)
         self._num_tell += 1
 
-    def ask(self) -> Tuple[float, ...]:
+    def ask(self) -> ArrayLike:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
         """
@@ -191,12 +191,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_ask += 1
         return suggestion
 
-    def provide_recommendation(self) -> np.ndarray:
+    def provide_recommendation(self) -> ArrayLike:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> np.ndarray:
+    def recommend(self) -> ArrayLike:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self._internal_provide_recommendation()
@@ -206,7 +206,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         pass
 
     @abc.abstractmethod
-    def _internal_ask(self) -> Tuple[float, ...]:
+    def _internal_ask(self) -> ArrayLike:
         raise NotImplementedError("Optimizer undefined.")
 
     def _internal_provide_recommendation(self) -> np.ndarray:

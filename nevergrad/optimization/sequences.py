@@ -175,6 +175,7 @@ class Rescaler:
         self.epsilon = min([x for x in self.sample_mins] + [1 - s for s in self.sample_maxs] + [1e-15])
         assert self.epsilon > 0., f'Non-positive epsilon={self.epsilon} from mins {self.sample_mins} and maxs {self.sample_maxs}'
 
-    def apply(self, point: np.ndarray) -> np.ndarray:
+    def apply(self, point: ArrayLike) -> np.ndarray:
+        point = np.array(point, copy=False)
         factor = (1 - 2 * self.epsilon) / (self.sample_maxs - self.sample_mins)
         return self.epsilon + factor * (point - self.sample_mins)

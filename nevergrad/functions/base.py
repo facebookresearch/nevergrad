@@ -64,7 +64,6 @@ class BaseFunction(abc.ABC):
     def transform(self, x: ArrayLike) -> np.ndarray:
         """Transform the input to another function specific domain.
         """
-        x = np.ndarray(x, copy=False)
         if self._transform is not None:
             x = self._TRANSFORMS[self._transform](self, x)
         return x

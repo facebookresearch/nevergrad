@@ -179,7 +179,7 @@ def test_pso_tell_not_asked() -> None:
     fitness = Fitness(best)
     opt = optimizerlib.PSO(dimension=dim, budget=2, num_workers=2)
     opt.llambda = 2
-    zeros = [0] * dim
+    zeros = [0.] * dim
     opt.tell_not_asked(zeros, fitness(zeros))
     asked = [opt.ask(), opt.ask()]
     opt.tell_not_asked(best, fitness(best))

@@ -6,7 +6,8 @@
 import operator
 from uuid import uuid4
 from collections import OrderedDict, defaultdict
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque, Iterable
+from typing import (Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator,
+                    TypeVar, Generic, Union, Deque, Iterable)
 import numpy as np
 from ..common.typetools import ArrayLike
 
