@@ -6,6 +6,7 @@
 import abc
 from typing import Dict, Any, Callable, Optional, Tuple
 import numpy as np
+from ..common.typetools import ArrayLike
 
 
 class BaseFunction(abc.ABC):
@@ -60,14 +61,15 @@ class BaseFunction(abc.ABC):
         """
         return dict(self._descriptors)  # Avoid external modification
 
-    def transform(self, x: np.ndarray) -> np.ndarray:
+    def transform(self, x: ArrayLike) -> np.ndarray:
         """Transform the input to another function specific domain.
         """
+        x = np.ndarray(x, copy=False)
         if self._transform is not None:
             x = self._TRANSFORMS[self._transform](self, x)
         return x
 
-    def __call__(self, x: np.ndarray) -> float:
+    def __call__(self, x: ArrayLike) -> float:
         """Returns the output of the function,
         after transforming the data and adding noise through _add_noise
         (by default, _add_noise does not add any noise).

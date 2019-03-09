@@ -6,13 +6,13 @@
 """Definitions of some convenient types.
 If you know better practices, feel free to submit it ;)
 """
-from typing import Union, Tuple, Any, Callable, TypeVar
+from typing import Union, Tuple, List, Any, Callable, TypeVar
 from pathlib import Path
 from typing_extensions import Protocol
 import numpy as np
 
 
-ArrayLike = Union[Tuple[float, ...], np.ndarray]
+ArrayLike = Union[Tuple[float, ...], List[float], np.ndarray]
 PathLike = Union[str, Path]
 
 

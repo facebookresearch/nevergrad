@@ -180,16 +180,16 @@ class Archive:
     def __init__(self) -> None:
         self.bytesdict: Dict[bytes, Value] = {}
 
-    def __setitem__(self, x: np.ndarray, value: Value) -> None:
+    def __setitem__(self, x: ArrayLike, value: Value) -> None:
         self.bytesdict[_tobytes(x)] = value
 
-    def __getitem__(self, x: np.ndarray) -> Value:
+    def __getitem__(self, x: ArrayLike) -> Value:
         return self.bytesdict[_tobytes(x)]
 
-    def __contains__(self, x: np.ndarray) -> bool:
+    def __contains__(self, x: ArrayLike) -> bool:
         return _tobytes(x) in self.bytesdict
 
-    def get(self, x: np.ndarray, default: Optional[Value] = None) -> Optional[Value]:
+    def get(self, x: ArrayLike, default: Optional[Value] = None) -> Optional[Value]:
         return self.bytesdict.get(_tobytes(x), default)
 
     def __len__(self) -> int:

@@ -137,7 +137,7 @@ class Perceptron(BaseFunction):
         assert parameters.shape == (10,)
         output = np.tanh(self._x[:, None] * parameters[None, :3] + parameters[None, 3: 6])
         output *= parameters[None, 6: 9]
-        output = np.sum(output, axis=1) + parameters[-1]
+        output: np.ndarray = np.sum(output, axis=1) + parameters[-1]
         return output
 
     def oracle_call(self, x: ArrayLike) -> float:

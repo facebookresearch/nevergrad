@@ -76,7 +76,7 @@ def test_oracle() -> None:
 
 def test_function_transform() -> None:
     func = functionlib.ArtificialFunction("sphere", 2, num_blocks=1, noise_level=.1)
-    output = func.transform([0, 0])
+    output = func.transform([0., 0])
     np.testing.assert_equal(output.shape, (1, 2))
     np.testing.assert_equal(len([x for x in output]), 1)
 
