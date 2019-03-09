@@ -82,8 +82,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[ArrayLike, JobLike]] = []
-        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike]] = deque()
+        self._running_jobs: List[Tuple[ArrayLike, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
 
     @property
     def num_ask(self) -> int:
@@ -248,8 +248,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: List[Tuple[ArrayLike, JobLike]] = []
-        tmp_finished: Deque[Tuple[ArrayLike, JobLike]] = deque()
+        tmp_runnings: List[Tuple[ArrayLike, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
