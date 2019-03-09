@@ -32,7 +32,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
-        best_x = np.zeros(self.dimension)
+        best_x: np.ndarray = np.zeros(self.dimension)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask

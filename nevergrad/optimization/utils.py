@@ -163,7 +163,7 @@ def _tobytes(x: ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
     assert x.dtype == np.float
-    return x.tobytes()  # type: ignore
+    return x.tobytes()
 
 
 _ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
