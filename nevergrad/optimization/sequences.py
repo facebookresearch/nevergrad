@@ -165,7 +165,7 @@ class HammersleySampler(HaltonSampler):
 
 class Rescaler:
 
-    def __init__(self, points: Iterable[np.ndarray]) -> None:
+    def __init__(self, points: Iterable[ArrayLike]) -> None:
         iterp = iter(points)
         self.sample_mins = next(iterp)
         self.sample_maxs = self.sample_mins
