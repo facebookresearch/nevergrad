@@ -91,7 +91,7 @@ class Point(Value):
         the value estimation instance
     """
 
-    def __init__(self, x: np.ndarray, value: Value) -> None:
+    def __init__(self, x: ArrayLike, value: Value) -> None:
         assert isinstance(value, Value)
         super().__init__(value.mean)
         self.__dict__.update(value.__dict__)

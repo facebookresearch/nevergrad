@@ -209,13 +209,13 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def _internal_ask(self) -> ArrayLike:
         raise NotImplementedError("Optimizer undefined.")
 
-    def _internal_provide_recommendation(self) -> np.ndarray:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def optimize(self, objective_function: Callable[[Any], float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
-                 verbosity: int = 0) -> np.ndarray:
+                 verbosity: int = 0) -> ArrayLike:
         """Optimization (minimization) procedure
 
         Parameters
