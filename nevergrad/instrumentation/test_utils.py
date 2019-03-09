@@ -23,8 +23,8 @@ def test_split_data(tokens: List[utils.Variable], data: List[float], expected: L
 
 
 def test_process_instruments() -> None:
-    tokens = [variables.SoftmaxCategorical(list(range(5))),
-              variables.Gaussian(3, 4)]
+    tokens: List[utils.Variable] = [variables.SoftmaxCategorical(list(range(5))),
+                                    variables.Gaussian(3, 4)]
     values = utils.process_instruments(tokens, [0, 200, 0, 0, 0, 2])
     np.testing.assert_equal(values, [1, 11])
     np.testing.assert_raises(AssertionError, utils.process_instruments, tokens, [0, 200, 0, 0, 0, 2, 3])
