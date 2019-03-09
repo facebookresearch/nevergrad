@@ -120,8 +120,9 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
             self.initialize()
         if self._parameters["hashing"]:
             state = np.random.get_state()
-            np.random.seed(int(int(hashlib.md5(str(x).encode()).hexdigest(), 16) % 500000))
-            x = np.random.normal(0., 1., len(x))
+            y = str(x)
+            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))
+            x = np.random.normal(0., 1., len(y))
             np.random.set_state(state)
         x = np.array(x, copy=False)
         data = []
