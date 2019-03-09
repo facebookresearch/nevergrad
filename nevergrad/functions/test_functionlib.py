@@ -65,7 +65,7 @@ def test_test_function(x: Any, hashing: bool) -> None:
 
 def test_oracle() -> None:
     func = functionlib.ArtificialFunction("sphere", 5, noise_level=.1)
-    x = [1, 2, 1, 0, .5]
+    x = np.array([1, 2, 1, 0, .5])
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns a different float since the function is noisy
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
@@ -76,7 +76,7 @@ def test_oracle() -> None:
 
 def test_function_transform() -> None:
     func = functionlib.ArtificialFunction("sphere", 2, num_blocks=1, noise_level=.1)
-    output = func.transform([0., 0])
+    output = func.transform(np.array([0., 0]))
     np.testing.assert_equal(output.shape, (1, 2))
     np.testing.assert_equal(len([x for x in output]), 1)
 
@@ -103,7 +103,8 @@ def test_artifificial_function_with_jump() -> None:
 
 
 def test_get_posptoning_delay() -> None:
+    x = np.array([2., 2])
     func = functionlib.ArtificialFunction("sphere", 2)
-    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 1.)
+    np.testing.assert_equal(func.get_postponing_delay(((x,), {}), 3), 1.)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_equal(func.get_postponing_delay((([2, 2],), {}), 3), 0.0005)
+    np.testing.assert_equal(func.get_postponing_delay(((x,), {}), 3), 0.0005)

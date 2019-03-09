@@ -50,7 +50,7 @@ class SoftmaxCategorical(utils.Variable[X]):
 
     def get_summary(self, data: ArrayLike) -> str:
         output = self.process(data, deterministic=True)
-        probas = discretization.softmax_probas(data)
+        probas = discretization.softmax_probas(np.array(data, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
 

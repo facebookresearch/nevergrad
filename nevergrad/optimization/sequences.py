@@ -167,7 +167,7 @@ class Rescaler:
 
     def __init__(self, points: Iterable[ArrayLike]) -> None:
         iterp = iter(points)
-        self.sample_mins = next(iterp)
+        self.sample_mins = np.array(next(iterp), copy=False)
         self.sample_maxs = self.sample_mins
         for point in iterp:
             self.sample_mins = np.minimum(self.sample_mins, point)

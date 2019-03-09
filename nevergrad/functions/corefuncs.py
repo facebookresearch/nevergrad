@@ -4,29 +4,28 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 import numpy as np
 from .base import PostponedObject
 from ..instrumentation import discretization
 from ..common.decorators import Registry
-from ..common.typetools import ArrayLike
 
 
 registry = Registry()
 
 
-def _onemax(x: ArrayLike) -> float:
+def _onemax(x: List[int]) -> float:
     return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
-def _leadingones(x: ArrayLike) -> float:
+def _leadingones(x: List[int]) -> float:
     for i, x_ in enumerate(list(x)):
         if int(round(x_)) != 1:
             return len(x) - i
     return 0
 
 
-def _jump(x: ArrayLike) -> float:  # TODO: docstring?
+def _jump(x: List[int]) -> float:  # TODO: docstring?
     n = len(x)
     m = n // 4
     o = n - _onemax(x)

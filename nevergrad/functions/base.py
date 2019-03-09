@@ -64,6 +64,7 @@ class BaseFunction(abc.ABC):
     def transform(self, x: ArrayLike) -> np.ndarray:
         """Transform the input to another function specific domain.
         """
+        x = np.array(x, copy=False)
         if self._transform is not None:
             x = self._TRANSFORMS[self._transform](self, x)
         return x
@@ -75,6 +76,7 @@ class BaseFunction(abc.ABC):
         It is preferable to avoid overloading this function in order to avoid issues
         with transformations and noise. Override _add_noise and oracle_call instead.
         """
+        x = np.array(x, copy=False)
         x_transf = self.transform(x)
         fx = self.oracle_call(x_transf)
         noisy_fx = self._add_noise(x, x_transf, fx)

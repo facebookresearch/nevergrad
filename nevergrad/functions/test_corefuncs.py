@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Callable, Any
+from typing import Callable, Any, List
 import numpy as np
 from ..common import testing
 from . import corefuncs
@@ -20,10 +20,10 @@ def test_core_function(name: str, func: Callable[..., Any]) -> None:
 
 
 @testing.parametrized(
-    expe1=([.6, .4, .2, .1, .9], 3, 4, 2),  # jump was assumed correct (verify?)
-    expe2=([.6, .6, .7, .1, .9], 1, 2, 0),
+    expe1=([6, 4, 2, 1, 9], 4, 5, 3),  # jump was assumed correct (verify?)
+    expe2=([6, 6, 7, 1, 9], 4, 5, 3),
 )
-def test_base_functions(x: np.ndarray, onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
+def test_base_functions(x: List[int], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
     np.testing.assert_equal(corefuncs._onemax(x), onemax_expected, err_msg="Wrong output for onemax")
     np.testing.assert_equal(corefuncs._leadingones(x), leadingones_expected, err_msg="Wrong output for leadingones")
     np.testing.assert_equal(corefuncs._jump(x), jump_expected, err_msg="Wrong output for jump")

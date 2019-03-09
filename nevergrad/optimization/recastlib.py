@@ -126,7 +126,7 @@ class _BO(recaster.SequentialRecastOptimizer):
                     s = list(sampler())
                 assert len(s) == self.dimension
                 for j in range(self.dimension):
-                    points_dict[str(j)].append(s[j])
+                    points_dict[str(j)].append(s[j])  # type: ignore
             bo.explore(points_dict)
         assert self.budget is not None
         budget = self.budget - (budget if self._parameters.qr != "none" else 0)

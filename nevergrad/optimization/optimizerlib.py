@@ -200,7 +200,7 @@ class _CMA(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         if self._es is None:
-            return RuntimeError("Either ask or tell method should have been called before")
+            raise RuntimeError("Either ask or tell method should have been called before")
         if self.es.result.xbest is None:
             return self.current_bests["pessimistic"].x
         return self.es.result.xbest
@@ -596,7 +596,7 @@ class PSO(base.Optimizer):
         self.llambda = max(40, num_workers)
         self.population = utils.Population[PSOParticule]([])
         self._replaced: Set[bytes] = set()
-        self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
+        self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
         self.best_fitness = float("inf")
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)

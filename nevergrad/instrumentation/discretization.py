@@ -42,7 +42,7 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> Arra
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))
 
 
-def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = False) -> List[float]:
+def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = False) -> List[int]:
     """Discretize a list of floats to a list of ints based on softmax probabilities.
     For arity n, a softmax is applied to the first n values, and the result
     serves as probability for the first output integer. The same process it
@@ -68,7 +68,7 @@ def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = F
         warnings.warn("Encountered NaN values for discretization")
         data[np.isnan(data)] = -np.inf
     if deterministic:
-        output: List[float] = np.argmax(data, axis=1).tolist()
+        output = np.argmax(data, axis=1).tolist()
         return output
     return [np.random.choice(arity, p=softmax_probas(d)) for d in data]
 
