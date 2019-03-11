@@ -249,10 +249,6 @@ class EDA(base.Optimizer):
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(dimension)
-        try:
-            reveal_type(self.current_center)
-        except:
-            pass
         # Evaluated population
         self.evaluated_population: List[base.ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
