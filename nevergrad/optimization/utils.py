@@ -289,7 +289,6 @@ class Pruning:
         min_len = 3 * num_workers
         max_len = 10 * 3 * min_len  # len after pruning can be up to 3 min_len, amortize with an order of magnitude
         max_len_1gb = 1024**3 // (dimension * 8)
-        print(max_len, max_len_1gb)
         return cls(min_len, max(max_len, max_len_1gb))
 
 
