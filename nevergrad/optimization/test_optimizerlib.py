@@ -65,6 +65,8 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
         if not isinstance(e, base.TellNotAskedNotSupportedError):
             raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
                                  "at tell_not_asked if they do not support it") from e
+    else:
+        assert optimizer.num_tell == budget + 1
 
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
@@ -173,22 +175,24 @@ def test_optimizer_families_repr() -> None:
     assert optimso.no_parallelization
 
 
-def test_pso_tell_not_asked() -> None:
+@pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
+def test_tell_not_asked(name: str) -> None:
     best = [.5, -.8, 0, 4]
     dim = len(best)
     fitness = Fitness(best)
-    opt = optimizerlib.PSO(dimension=dim, budget=2, num_workers=2)
-    opt.llambda = 2
+    opt = optimizerlib.registry[name](dimension=dim, budget=2, num_workers=2)
+    if name == "PSO":
+        opt.llambda = 2
+    else:
+        opt._llambda = 2
     zeros = [0.] * dim
     opt.tell_not_asked(zeros, fitness(zeros))
     asked = [opt.ask(), opt.ask()]
     opt.tell_not_asked(best, fitness(best))
     opt.tell(asked[0], fitness(asked[0]))
     opt.tell(asked[1], fitness(asked[1]))
-    assert opt.num_tell == 4
+    assert opt.num_tell == 4, opt.num_tell
     assert opt.num_ask == 2
-
-
-def test_pso_double_eval_error() -> None:
-    np.random.seed(1)
-    test_optimizers("PSO")
+    if (0, 0, 0, 0) not in [tuple(x) for x in asked]:
+        for value in opt.archive.values():
+            assert value.count == 1

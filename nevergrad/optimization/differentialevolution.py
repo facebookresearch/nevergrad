@@ -153,9 +153,7 @@ class _DE(base.Optimizer):
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
-            self._replaced.remove(x_bytes)
             self.tell_not_asked(x, value)
-            self._num_tell -= 1  # correction so that it is not counted twice
             return
         self.match_population_size_to_lambda()
         particule = self.population.get_linked(x_bytes)
@@ -166,10 +164,16 @@ class _DE(base.Optimizer):
         self.population.set_queued(particule)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        if x_bytes in self._replaced:
+            self._replaced.remove(x_bytes)
+        else:
+            self._update_archive_and_bests(x, value)
+            self._num_tell += 1
         self.match_population_size_to_lambda()
         worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
         if worst_part.fitness is not None and worst_part.fitness < value:
-            self._num_tell += 1  # make sure it is always counted as tell
             return  # no need to update
         particule = DEParticule()
         replaced = self.population.replace(worst_part, particule)
@@ -178,7 +182,7 @@ class _DE(base.Optimizer):
         if replaced is not None:
             assert isinstance(replaced, bytes)
             self._replaced.add(replaced)
-        self.tell(x, value)
+        self._internal_tell(x, value)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
