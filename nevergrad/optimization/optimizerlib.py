@@ -63,7 +63,7 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)  # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)
         elif mutation == "cauchy":
             return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
