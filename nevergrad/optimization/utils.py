@@ -239,6 +239,21 @@ class Archive(Generic[Y]):
 
 
 class Pruning:
+    """Callable for pruning archives in the optimizer class.
+    See Optimizer.pruning attribute, called at each "tell".
+
+    Parameters
+    ----------
+    min_len: int
+        minimum length of the pruned archive.
+    max_len: int
+        length at which pruning is activated (maximum allowed length for the archive).
+
+    Note
+    ----
+    For each of the 3 criteria (optimistic, pessimistic and average), the min_len best (lowest)
+    points will be kept, which can lead to at most 3 * min_len points.
+    """
 
     def __init__(self, min_len: int, max_len: int):
         self.min_len = min_len
@@ -262,6 +277,13 @@ class Pruning:
         """ Very conservative pruning
         - keep at least min_len 3 times num_workers
         - keep at most 30 times min_len or up to 1GB of array memory (whatever is biggest)
+
+        Parameters
+        ----------
+        num_workers: int
+            number of evaluations which will be run in parallel at once
+        dimension: int
+            dimension of the optimization space
         """
         # safer to keep at least 3 time the workers
         min_len = 3 * num_workers

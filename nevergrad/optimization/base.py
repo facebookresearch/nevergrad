@@ -76,6 +76,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {x: utils.Point(np.zeros(dimension, dtype=np.float), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
+        # pruning function, called at each "tell"
+        # this can be desactivated or modified by each implementation
         self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
         self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=dimension)
         # instance state
