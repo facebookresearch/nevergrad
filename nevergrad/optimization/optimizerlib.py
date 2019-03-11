@@ -508,7 +508,8 @@ class TBPSA(base.Optimizer):
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         x = np.array(x, copy=False)
-        self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=self.sigma)
+        sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
+        self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=sigma)
         # go through standard pipeline so as to update the archive
         self.tell(x, value)
 
