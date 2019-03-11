@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pytest
 import numpy as np
 from ..common import testing
 from .test_base import CounterFunction
@@ -59,10 +60,10 @@ def test_get_nash() -> None:
 
 def test_archive() -> None:
     data = [1, 4.5, 12, 0]
-    archive = utils.Archive()
-    archive[np.array(data)] = utils.Value(12)
-    np.testing.assert_equal(archive[np.array(data)].mean, 12)
-    np.testing.assert_equal(archive.get(data).mean, 12)  # type: ignore
+    archive = utils.Archive[int]()
+    archive[np.array(data)] = 12
+    np.testing.assert_equal(archive[np.array(data)], 12)
+    np.testing.assert_equal(archive.get(data), 12)
     np.testing.assert_equal(archive.get([0, 12.]), None)
     y = np.frombuffer(next(iter(archive.bytesdict.keys())))
     assert data in archive
@@ -76,8 +77,8 @@ def test_archive() -> None:
 
 
 def test_archive_errors() -> None:
-    archive = utils.Archive()
-    archive[[12, 0.]] = utils.Value(12)
+    archive = utils.Archive[float]()
+    archive[[12, 0.]] = 12.
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
     np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
     np.testing.assert_raises(RuntimeError, archive.keys)
@@ -128,3 +129,26 @@ def test_population_replace() -> None:
     for uuid in pop.uuids:
         # checks that it exists and correctly linked
         pop[uuid]  # pylint: disable= pointless-statement
+
+
+def test_pruning() -> None:
+    archive = utils.Archive[utils.Value]()
+    for k in range(3):
+        value = utils.Value(float(k))
+        archive[(float(k),)] = value
+    value = utils.Value(1.)
+    value.add_evaluation(1.)
+    archive[(3.,)] = value
+    # pruning
+    pruning = utils.Pruning(min_len=1, max_len=3)
+    # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
+    for k in range(2):
+        archive = pruning(archive)
+        testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+
+
+@pytest.mark.parametrize("dimension,expected_max", [(100, 1342177), (10000, 13421), (1000000, 1080)])  # type: ignore
+def test_pruning_sensible_default(dimension, expected_max) -> None:
+    pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
+    assert pruning.min_len == 36
+    assert pruning.max_len == expected_max

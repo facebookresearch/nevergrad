@@ -31,9 +31,10 @@ The key tuple if the point location, and `Value` is a class with attributes:
 - `mean`: mean value of the evaluations at this point.
 - `variance`: variance of the evaluations at this point.
 
-For more detauls, see the implementation in [utils.py](../nevergrad/optimization/utils.py).
+For more details, see the implementation in [utils.py](../nevergrad/optimization/utils.py).
 
-Through the archive, you can therefore access most useful information about past evaluations.
+Through the archive, you can therefore access most useful information about past evaluations. A pruning mechanism makes sure this archive does
+not grow too much. This pruning can be tuned through the `pruning` attribute of the optimizer (the default is very conservative).
 
 The base `Optimizer` class also tracks the best optimistic and pessimistic points through the `current_bests` attribute which is of type:
 ```

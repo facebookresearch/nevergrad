@@ -19,7 +19,6 @@ from . import utils
 
 
 registry = Registry()
-
 _OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
 
 
@@ -74,9 +73,13 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.dimension = dimension
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {x: utils.Point(np.zeros(dimension, dtype=np.float), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
+        # pruning function, called at each "tell"
+        # this can be desactivated or modified by each implementation
+        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
+        self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=dimension)
         # instance state
         self._num_ask = 0
         self._num_tell = 0
@@ -181,6 +184,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                         y = np.frombuffer(
                             min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n)))
                         assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
+        if self.pruning is not None:
+            self.archive = self.pruning(self.archive)
 
     def ask(self) -> ArrayLike:
         """Provides a point to explore.

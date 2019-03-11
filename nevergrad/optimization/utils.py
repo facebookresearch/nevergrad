@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import operator
 from uuid import uuid4
 from collections import OrderedDict, defaultdict
@@ -44,6 +45,7 @@ class Value:
         return float(self.mean + .1 * np.sqrt((self.variance) / (1 + self.count)))
 
     def get_estimation(self, name: str) -> float:
+        # Note: pruning below relies on the fact than only 3 modes exist. If a new mode is added, update pruning
         if name == "optimistic":
             return self.optimistic_confidence_bound
         elif name == "pessimistic":
@@ -172,31 +174,34 @@ _ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
               "but it is less efficient.")
 
 
-class Archive:
+Y = TypeVar("Y")
+
+
+class Archive(Generic[Y]):
     """A dict-like object with numpy arrays as keys.
     The underlying `bytesdict` dict stores the arrays as bytes since arrays are not hashable.
     Keys can be converted back with np.frombuffer(key)
     """
 
     def __init__(self) -> None:
-        self.bytesdict: Dict[bytes, Value] = {}
+        self.bytesdict: Dict[bytes, Y] = {}
 
-    def __setitem__(self, x: ArrayLike, value: Value) -> None:
+    def __setitem__(self, x: ArrayLike, value: Y) -> None:
         self.bytesdict[_tobytes(x)] = value
 
-    def __getitem__(self, x: ArrayLike) -> Value:
+    def __getitem__(self, x: ArrayLike) -> Y:
         return self.bytesdict[_tobytes(x)]
 
     def __contains__(self, x: ArrayLike) -> bool:
         return _tobytes(x) in self.bytesdict
 
-    def get(self, x: ArrayLike, default: Optional[Value] = None) -> Optional[Value]:
+    def get(self, x: ArrayLike, default: Optional[Y] = None) -> Optional[Y]:
         return self.bytesdict.get(_tobytes(x), default)
 
     def __len__(self) -> int:
         return len(self.bytesdict)
 
-    def values(self) -> ValuesView[Value]:
+    def values(self) -> ValuesView[Y]:
         return self.bytesdict.values()
 
     def keys(self) -> None:
@@ -205,7 +210,7 @@ class Archive:
     def items(self) -> None:
         raise RuntimeError(_ERROR_STR)
 
-    def items_as_array(self) -> Iterator[Tuple[np.ndarray, Value]]:
+    def items_as_array(self) -> Iterator[Tuple[np.ndarray, Y]]:
         """Functions that iterates on key-values but transforms keys
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
@@ -231,6 +236,61 @@ class Archive:
 
     def __iter__(self) -> None:
         raise RuntimeError(_ERROR_STR)
+
+
+class Pruning:
+    """Callable for pruning archives in the optimizer class.
+    See Optimizer.pruning attribute, called at each "tell".
+
+    Parameters
+    ----------
+    min_len: int
+        minimum length of the pruned archive.
+    max_len: int
+        length at which pruning is activated (maximum allowed length for the archive).
+
+    Note
+    ----
+    For each of the 3 criteria (optimistic, pessimistic and average), the min_len best (lowest)
+    points will be kept, which can lead to at most 3 * min_len points.
+    """
+
+    def __init__(self, min_len: int, max_len: int):
+        self.min_len = min_len
+        self.max_len = max_len
+
+    def __call__(self, archive: Archive[Value]) -> Archive[Value]:
+        if len(archive) < self.max_len:
+            return archive
+        warnings.warn("Pruning archive to save memory")
+        quantiles: Dict[str, float] = {}
+        threshold = float(self.min_len) / len(archive)
+        names = ["optimistic", "pessimistic", "average"]
+        for name in names:
+            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold)
+        new_archive = Archive[Value]()
+        new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
+        return new_archive
+
+    @classmethod
+    def sensible_default(cls, num_workers: int, dimension: int) -> 'Pruning':
+        """ Very conservative pruning
+        - keep at least min_len 3 times num_workers
+        - keep at most 30 times min_len or up to 1GB of array memory (whatever is biggest)
+
+        Parameters
+        ----------
+        num_workers: int
+            number of evaluations which will be run in parallel at once
+        dimension: int
+            dimension of the optimization space
+        """
+        # safer to keep at least 3 time the workers
+        min_len = 3 * num_workers
+        max_len = 10 * 3 * min_len  # len after pruning can be up to 3 min_len, amortize with an order of magnitude
+        max_len_1gb = 1024**3 // (dimension * 8)
+        print(max_len, max_len_1gb)
+        return cls(min_len, max(max_len, max_len_1gb))
 
 
 class Particule:
