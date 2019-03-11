@@ -51,7 +51,7 @@ class Variable(Generic[X]):
         return repr(self)
 
 
-def split_data(data: ArrayLike, instruments: Iterable[Variable]) -> List[ArrayLike]:
+def split_data(data: ArrayLike, instruments: Iterable[Variable[Any]]) -> List[ArrayLike]:
     """Splits data according to the data requirements of the instruments
     """
     # this functions should be tested

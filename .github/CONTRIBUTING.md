@@ -10,12 +10,15 @@ Most of the code is covered by unit tests. You can run them with:
 pytest nevergrad --cov=nevergrad
 ```
 
-You can also run type checking with:
+For type checking, please install `numpy-stubs` (git clone it then `pip install .`). You can then run `mypy` on `nevergrad` with:
 ```
 mypy --ignore-missing-imports --strict nevergrad
 ```
+You can however omit the `--strict` mode and/or the installation of the `numpy` stubs for a simplified version of the checks.
+Indeed, if you are not familiar with type checking, we do not want it to be an annoyance and you can can even ignore errors by adding `# type: ignore` at the end of lines flagged as incorrect.
+If we consider it useful to have correct typing, we will update the code after your pull request is merged.
 
-Unit tests and type checks (in non-strict mode) will be automatically run every time a pull request is submitted/updated. If you are not familiar with type checking, we do not want it to be an annoyance and you can therefore ignore errors by adding `# type: ignore` at the end of lines flagged as incorrect. If we consider it useful to have correct typing, we will update the code after your pull request is merged.
+Unit tests and type checks (in non-strict mode) will be automatically run every time a pull request is submitted/updated.
 
 Finally, we use pre-commit hooks to make sure the code follows the same coding style. We currently use  `autpep8` and `pylint`. To install them, just run `pre-commit install` once, and they will be activated for all your commits on this repository.
 

@@ -10,7 +10,7 @@ from . import core
 def test_impedence_pix() -> None:
     ep0 = 1
     epf = 9
-    x = [3, 5, 1, 9]
+    x = np.array([3., 5, 1, 9])
     dpix = 37
     lam = 400
     output = core.impedance_pix(x, dpix, lam, ep0, epf)

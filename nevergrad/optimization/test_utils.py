@@ -23,7 +23,7 @@ def test_value_and_point() -> None:
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
     # now test point based on this value
-    p = utils.Point((0, 0), v)
+    p = utils.Point(np.array([0., 0]), v)
     np.testing.assert_equal(p.mean, 3.5)
     np.testing.assert_almost_equal(p.variance, 0.3536, decimal=4)
     repr(p)
@@ -69,8 +69,8 @@ def test_archive() -> None:
     np.testing.assert_equal(y, data)
     items = list(archive.items_as_array())
     assert isinstance(items[0][0], np.ndarray)
-    items = list(archive.keys_as_array())
-    assert isinstance(items[0], np.ndarray)
+    keys = list(archive.keys_as_array())
+    assert isinstance(keys[0], np.ndarray)
     repr(archive)
     str(archive)
 

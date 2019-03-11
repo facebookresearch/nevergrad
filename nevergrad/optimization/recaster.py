@@ -200,10 +200,10 @@ class RecastOptimizer(base.Optimizer):
             warnings.warn("Underlying optimizer has already converged, returning random points",
                           FinishedUnderlyingOptimizerWarning)
             self._check_error()
-            return np.random.normal(0, 1, self.dimension)
+            return np.random.normal(0, 1, self.dimension)  # type: ignore
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
-        return message.args[0]
+        return message.args[0]  # type: ignore
 
     def _check_error(self) -> None:
         if self._messaging_thread is not None:
@@ -233,7 +233,7 @@ class RecastOptimizer(base.Optimizer):
         """
         assert self._messaging_thread is not None, 'Optimization was not even started'
         if self._messaging_thread.output is not None:
-            return self._messaging_thread.output
+            return self._messaging_thread.output  # type: ignore
         return self.current_bests["pessimistic"].x
 
     def __del__(self) -> None:

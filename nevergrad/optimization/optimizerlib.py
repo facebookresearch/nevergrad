@@ -45,7 +45,7 @@ class _OnePlusOne(base.Optimizer):
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self._parameters.noise_handling
         if not self._num_ask:
-            return np.zeros(self.dimension)
+            return np.zeros(self.dimension)  # type: ignore
         # for noisy version
         if noise_handling is not None:
             limit = (.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
@@ -53,7 +53,7 @@ class _OnePlusOne(base.Optimizer):
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
                     idx = np.random.choice(len(self.archive))
-                    return np.frombuffer(list(self.archive.bytesdict.keys())[idx])
+                    return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
                 elif strategy == "optimistic":
                     return self.current_bests["optimistic"].x
         # crossover
@@ -63,9 +63,9 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
-            return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
                 return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
@@ -200,10 +200,10 @@ class _CMA(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         if self._es is None:
-            return RuntimeError("Either ask or tell method should have been called before")
+            raise RuntimeError("Either ask or tell method should have been called before")
         if self.es.result.xbest is None:
             return self.current_bests["pessimistic"].x
-        return self.es.result.xbest
+        return self.es.result.xbest  # type: ignore
 
 
 class ParametrizedCMA(base.ParametrizedFamily):
@@ -248,7 +248,7 @@ class EDA(base.Optimizer):
         self.llambda = 4 * dimension
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
-        self.current_center = np.zeros(dimension)
+        self.current_center: np.ndarray = np.zeros(dimension)
         # Evaluated population
         self.evaluated_population: List[base.ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
@@ -286,7 +286,7 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -341,7 +341,7 @@ class PCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -394,7 +394,7 @@ class MPCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -427,7 +427,7 @@ class MEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -450,7 +450,7 @@ class TBPSA(base.Optimizer):
         self.llambda = 4 * dimension
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
-        self.current_center = np.zeros(dimension)
+        self.current_center: np.ndarray = np.zeros(dimension)
         # Evaluated population
         self.evaluated_population: List[base.ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
@@ -506,7 +506,7 @@ class TBPSA(base.Optimizer):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -533,11 +533,11 @@ class NoisyBandit(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
-            return np.random.normal(0, 1, self.dimension)
+            return np.random.normal(0, 1, self.dimension)  # type: ignore
         if np.random.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
             idx = np.random.choice(len(self.archive))
-            return np.frombuffer(list(self.archive.bytesdict.keys())[idx])
+            return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
         return self.current_bests["optimistic"].x
 
 
@@ -579,10 +579,7 @@ class PSOParticule(utils.Particule):
 
     @staticmethod
     def transform(x: base.ArrayLike, inverse: bool = False) -> np.ndarray:
-        if inverse:
-            return stats.norm.cdf(x)
-        else:
-            return stats.norm.ppf(x)
+        return (stats.norm.cdf if inverse else stats.norm.ppf)(x)  # type: ignore
 
 
 @registry.register
@@ -596,7 +593,7 @@ class PSO(base.Optimizer):
         self.llambda = max(40, num_workers)
         self.population = utils.Population[PSOParticule]([])
         self._replaced: Set[bytes] = set()
-        self.best_position: Optional[base.ArrayLike] = None  # TODO: use current best instead?
+        self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
         self.best_fitness = float("inf")
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
@@ -685,8 +682,8 @@ class SPSA(base.Optimizer):
         self.delta = float('nan')
         self.ym: Optional[np.ndarray] = None
         self.yp: Optional[np.ndarray] = None
-        self.t = np.zeros(self.dimension)
-        self.avg = np.zeros(self.dimension)
+        self.t: np.ndarray = np.zeros(self.dimension)
+        self.avg: np.ndarray = np.zeros(self.dimension)
         # Set A, a, c according to the practical implementation
         # guidelines in the ISSO book.
         self.A = (10 if budget is None else max(10, budget // 20))
@@ -716,8 +713,8 @@ class SPSA(base.Optimizer):
                 self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
             self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
-            return self.t - self.ck(k) * self.delta
-        return self.t + self.ck(k) * self.delta
+            return self.t - self.ck(k) * self.delta  # type:ignore
+        return self.t + self.ck(k) * self.delta  # type: ignore
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         setattr(self, ('ym' if self.idx % 2 == 0 else 'yp'), np.array(value, copy=True))

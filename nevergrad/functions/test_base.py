@@ -10,7 +10,7 @@ from ..common import testing
 
 class DummyFunction(ArtificiallyNoisyBaseFunction):
 
-    _TRANSFORMS = {"tanh": lambda s, x: np.tanh(x)}
+    _TRANSFORMS = {"tanh": lambda s, x: np.tanh(x)}  # type:ignore
 
     def oracle_call(self, x: np.ndarray) -> float:
         return float(np.arctanh(x)[0])

@@ -29,7 +29,7 @@ from ...instrumentation.utils import CommandFunction
 
 
 def tanh_crop(x: ArrayLike, min_val: float, max_val: float) -> np.ndarray:
-    return .5 * (max_val + min_val) + .5 * (max_val - min_val) * np.tanh(x)
+    return .5 * (max_val + min_val) + .5 * (max_val - min_val) * np.tanh(x)  # type: ignore
 
 
 def photonics_transform(func: "Photonics", x: ArrayLike) -> np.ndarray:
