@@ -63,7 +63,7 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
             return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
@@ -249,6 +249,10 @@ class EDA(base.Optimizer):
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(dimension)
+        try:
+            reveal_type(self.current_center)
+        except:
+            pass
         # Evaluated population
         self.evaluated_population: List[base.ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []

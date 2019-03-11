@@ -34,9 +34,6 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -e .[dev]
-            git clone https://github.com/numpy/numpy-stubs.git || (cd numpy-stubs; git pull)
-            pip install ./numpy-stubs
-
 
       - save_cache:
           name: "[no-extra] Save cache"
