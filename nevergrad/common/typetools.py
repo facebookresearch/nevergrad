@@ -6,30 +6,33 @@
 """Definitions of some convenient types.
 If you know better practices, feel free to submit it ;)
 """
-from typing import Union, Tuple, Any, Callable
+from typing import Union, Tuple, List, Any, Callable, TypeVar
 from pathlib import Path
 from typing_extensions import Protocol
 import numpy as np
 
 
-ArrayLike = Union[Tuple[float, ...], np.ndarray]
+ArrayLike = Union[Tuple[float, ...], List[float], np.ndarray]
 PathLike = Union[str, Path]
 
 
 # %% Protocol definitions for executor typing
 
-class JobLike(Protocol):
+X = TypeVar('X', covariant=True)
+
+
+class JobLike(Protocol[X]):
     # pylint: disable=pointless-statement
 
     def done(self) -> bool:
         ...
 
-    def result(self) -> Any:
+    def result(self) -> X:
         ...
 
 
 class ExecutorLike(Protocol):
     # pylint: disable=pointless-statement, unused-argument
 
-    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> JobLike:
+    def submit(self, fn: Callable[..., X], *args: Any, **kwargs: Any) -> JobLike[X]:
         ...

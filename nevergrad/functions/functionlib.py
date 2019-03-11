@@ -11,6 +11,7 @@ from . import corefuncs
 from .base import ArtificiallyNoisyBaseFunction
 from .base import PostponedObject
 from ..common import tools
+from ..common.typetools import ArrayLike
 
 
 class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
@@ -114,15 +115,16 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         for transform_inds in tools.grouper(indices, n=self._parameters["block_dimension"]):
             self._transforms.append(utils.Transform(transform_inds, **{x: self._parameters[x] for x in ["translation_factor", "rotation"]}))
 
-    def transform(self, x: np.ndarray) -> np.ndarray:
+    def transform(self, x: ArrayLike) -> np.ndarray:
         if not self._transforms:
             self.initialize()
         if self._parameters["hashing"]:
             state = np.random.get_state()
-            np.random.seed(int(int(hashlib.md5(str(x).encode()).hexdigest(), 16) % 500000))
-            x = np.random.normal(0., 1., len(x))
+            y = str(x)
+            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))
+            x = np.random.normal(0., 1., len(y))
             np.random.set_state(state)
-        x = np.asarray(x)
+        x = np.array(x, copy=False)
         data = []
         for transform in self._transforms:
             data.append(x[transform.indices] if self._only_index_transform else transform(x))

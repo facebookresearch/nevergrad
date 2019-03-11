@@ -6,7 +6,8 @@
 import operator
 from uuid import uuid4
 from collections import OrderedDict, defaultdict
-from typing import Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator, TypeVar, Generic, Union, Deque, Iterable
+from typing import (Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator,
+                    TypeVar, Generic, Union, Deque, Iterable)
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -90,7 +91,7 @@ class Point(Value):
         the value estimation instance
     """
 
-    def __init__(self, x: np.ndarray, value: Value) -> None:
+    def __init__(self, x: ArrayLike, value: Value) -> None:
         assert isinstance(value, Value)
         super().__init__(value.mean)
         self.__dict__.update(value.__dict__)
@@ -154,15 +155,15 @@ class SequentialExecutor:
     (just calls the function and returns a FinishedJob)
     """
 
-    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
-        return DelayedJob(function, *args, **kwargs)
+    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
+        return DelayedJob(fn, *args, **kwargs)
 
 
 def _tobytes(x: ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
     assert x.dtype == np.float
-    return x.tobytes()  # type: ignore
+    return x.tobytes()
 
 
 _ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
@@ -180,16 +181,16 @@ class Archive:
     def __init__(self) -> None:
         self.bytesdict: Dict[bytes, Value] = {}
 
-    def __setitem__(self, x: np.ndarray, value: Value) -> None:
+    def __setitem__(self, x: ArrayLike, value: Value) -> None:
         self.bytesdict[_tobytes(x)] = value
 
-    def __getitem__(self, x: np.ndarray) -> Value:
+    def __getitem__(self, x: ArrayLike) -> Value:
         return self.bytesdict[_tobytes(x)]
 
-    def __contains__(self, x: np.ndarray) -> bool:
+    def __contains__(self, x: ArrayLike) -> bool:
         return _tobytes(x) in self.bytesdict
 
-    def get(self, x: np.ndarray, default: Optional[Value] = None) -> Optional[Value]:
+    def get(self, x: ArrayLike, default: Optional[Value] = None) -> Optional[Value]:
         return self.bytesdict.get(_tobytes(x), default)
 
     def __len__(self) -> int:

@@ -135,9 +135,9 @@ class Perceptron(BaseFunction):
         """
         parameters = np.array(parameters, copy=False)
         assert parameters.shape == (10,)
-        output = np.tanh(self._x[:, None] * parameters[None, :3] + parameters[None, 3: 6])
-        output *= parameters[None, 6: 9]
-        output = np.sum(output, axis=1) + parameters[-1]
+        tmp = np.tanh(self._x[:, None] * parameters[None, :3] + parameters[None, 3: 6])
+        tmp *= parameters[None, 6: 9]
+        output: np.ndarray = np.sum(tmp, axis=1) + parameters[-1]
         return output
 
     def oracle_call(self, x: ArrayLike) -> float:
@@ -218,7 +218,7 @@ class SammonMapping(BaseFunction):
 
 def _normalized(func: "Landscape", x: np.ndarray) -> np.ndarray:
     "Normalization function for Landscape"
-    return (np.array(x, copy=False) + 1) * (np.array(func._image.shape) - 1) / 2
+    return (np.array(x, copy=False) + 1.) * (np.array(func._image.shape) - 1.) / 2.  # type: ignore
 
 
 class _GaussianNorm:
@@ -226,7 +226,7 @@ class _GaussianNorm:
     """
 
     def __init__(self) -> None:
-        self._variables: Optional[Tuple[OrderedDiscrete, ...]] = None
+        self._variables: Optional[Tuple[OrderedDiscrete[int], ...]] = None
 
     def __call__(self, func: "Landscape", x: np.ndarray) -> np.ndarray:
         if self._variables is None:

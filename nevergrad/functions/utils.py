@@ -16,13 +16,13 @@ class Transform:
         dim = len(indices)
         assert dim
         self.indices = np.asarray(indices)
-        self.translation = np.random.normal(0, 1, dim) * translation_factor
+        self.translation: np.ndarray = np.random.normal(0, 1, dim) * translation_factor
         self.rotation_matrix: Optional[np.ndarray] = None
         if rotation:
             self.rotation_matrix = np.linalg.qr(np.random.normal(0, 1, size=(dim, dim)))[0]
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
-        y = x[self.indices] - self.translation
+        y: np.ndarray = x[self.indices] - self.translation
         if self.rotation_matrix is not None:
             y = self.rotation_matrix.dot(y)
         return y

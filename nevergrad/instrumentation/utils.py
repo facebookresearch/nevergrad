@@ -8,25 +8,28 @@ import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
+from typing import List, Any, Iterable, Tuple, Union, Optional, Dict, Generic, TypeVar
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
 
 
-class Variable:
+X = TypeVar("X")
+
+
+class Variable(Generic[X]):
 
     @property
     def dimension(self) -> int:
         raise NotImplementedError
 
-    def process_arg(self, arg: Any) -> ArrayLike:
+    def process_arg(self, arg: X) -> ArrayLike:
         raise NotImplementedError
 
-    def process(self, data: List[float], deterministic: bool = False) -> Any:
+    def process(self, data: ArrayLike, deterministic: bool = False) -> X:
         raise NotImplementedError
 
-    def get_summary(self, data: np.ndarray) -> str:
+    def get_summary(self, data: ArrayLike) -> str:
         raise NotImplementedError
 
     def __eq__(self, other: Any) -> bool:
@@ -48,7 +51,7 @@ class Variable:
         return repr(self)
 
 
-def split_data(data: List[float], instruments: Iterable[Variable]) -> List[List[float]]:
+def split_data(data: ArrayLike, instruments: Iterable[Variable[Any]]) -> List[ArrayLike]:
     """Splits data according to the data requirements of the instruments
     """
     # this functions should be tested
@@ -66,7 +69,7 @@ def split_data(data: List[float], instruments: Iterable[Variable]) -> List[List[
     return splitted_data
 
 
-def process_instruments(instruments: Iterable[Variable], data: List[float],
+def process_instruments(instruments: Iterable[Variable[Any]], data: ArrayLike,
                         deterministic: bool = False) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
@@ -112,7 +115,6 @@ class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
 class FailedJobError(RuntimeError):
     """Job failed during processing
     """
-    pass
 
 
 class CommandFunction:

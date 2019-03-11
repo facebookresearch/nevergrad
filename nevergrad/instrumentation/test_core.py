@@ -55,8 +55,8 @@ def test_instrumented_function() -> None:
                                       variables.Gaussian(0, 1, [2, 2]), constkwarg="blublu",
                                       plop=variables.SoftmaxCategorical([3, 4]))
     np.testing.assert_equal(ifunc.dimension, 8)
-    data = [-100, 100, 1, 2, 3, 4, 100, -100]
-    args, kwargs = ifunc(data)
+    data = [-100., 100, 1, 2, 3, 4, 100, -100]
+    args, kwargs = ifunc(np.array(data))
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     testing.printed_assert_equal(ifunc.descriptors, {
@@ -69,7 +69,7 @@ def test_instrumented_function_kwarg_order() -> None:
     ifunc = core.InstrumentedFunction(_arg_return, kw4=variables.SoftmaxCategorical([1, 0]), kw2="constant",
                                       kw3=variables.Gaussian(0, 1, [2, 2]), kw1=variables.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.dimension, 7)
-    data = [-1, 1, 2, 3, 4, 100, -100]
+    data = np.array([-1, 1, 2, 3, 4, 100, -100])
     _, kwargs = ifunc(data)
     testing.printed_assert_equal(kwargs, {"kw1": 0, "kw2": "constant", "kw3": [[1, 2], [3, 4]], "kw4": 1})
 

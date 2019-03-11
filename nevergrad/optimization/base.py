@@ -82,8 +82,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[ArrayLike, JobLike]] = []
-        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike]] = deque()
+        self._running_jobs: List[Tuple[ArrayLike, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
 
     @property
     def num_ask(self) -> int:
@@ -153,6 +153,11 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, x, value)
+        self._update_archive_and_bests(x, value)
+        self._internal_tell(x, value)
+        self._num_tell += 1
+
+    def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
         if not isinstance(value, Real):
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
@@ -176,10 +181,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                         y = np.frombuffer(
                             min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n)))
                         assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
-        self._internal_tell(x, value)
-        self._num_tell += 1
 
-    def ask(self) -> Tuple[float, ...]:
+    def ask(self) -> ArrayLike:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
         """
@@ -191,12 +194,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_ask += 1
         return suggestion
 
-    def provide_recommendation(self) -> np.ndarray:
+    def provide_recommendation(self) -> ArrayLike:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> np.ndarray:
+    def recommend(self) -> ArrayLike:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self._internal_provide_recommendation()
@@ -206,16 +209,16 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         pass
 
     @abc.abstractmethod
-    def _internal_ask(self) -> Tuple[float, ...]:
+    def _internal_ask(self) -> ArrayLike:
         raise NotImplementedError("Optimizer undefined.")
 
-    def _internal_provide_recommendation(self) -> np.ndarray:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def optimize(self, objective_function: Callable[[Any], float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
-                 verbosity: int = 0) -> np.ndarray:
+                 verbosity: int = 0) -> ArrayLike:
         """Optimization (minimization) procedure
 
         Parameters
@@ -247,8 +250,9 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
-        tmp_runnings: List[Tuple[ArrayLike, JobLike]] = []
-        tmp_finished: Deque[Tuple[ArrayLike, JobLike]] = deque()
+        assert executor is not None
+        tmp_runnings: List[Tuple[ArrayLike, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask

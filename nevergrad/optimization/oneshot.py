@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Optional, Union
-from scipy import stats
 import numpy as np
+from scipy import stats
 from ..common.typetools import ArrayLike
 from . import sequences
 from . import base
@@ -29,12 +29,12 @@ class _RandomSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)
+            return np.zeros(self.dimension)  # type: ignore
         scale = self._parameters.scale
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(np.random.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = np.random.standard_cauchy(self.dimension) if self._parameters.cauchy else np.random.normal(0, 1, self.dimension)
-        return scale * point
+        return scale * point  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
@@ -114,11 +114,11 @@ class _SamplingSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)
+            return np.zeros(self.dimension)  # type: ignore
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)
+        return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
 
 
 class SamplingSearch(base.ParametrizedFamily):

@@ -31,7 +31,7 @@ def _get_first_primes(num: int) -> np.ndarray:
     primes = np.where(is_prime)[0]
     if len(primes) < num:
         raise RuntimeError(f"There is an error on the upper bound of the primes for num={num}")
-    return primes[:num]
+    return primes[:num]  # type: ignore
 
 
 class Sampler:
@@ -97,14 +97,14 @@ class LHSSampler(Sampler):
     def _internal_sampler(self) -> ArrayLike:
         x = self.permutations[:, self.index].tolist()
         assert self.budget is not None
-        return (x + self.randg.uniform(size=self.dimension)) / float(self.budget)
+        return (x + self.randg.uniform(size=self.dimension)) / float(self.budget)  # type: ignore
 
 
 @samplers.register
 class RandomSampler(Sampler):
 
     def _internal_sampler(self) -> ArrayLike:
-        return np.random.uniform(0, 1, self.dimension)
+        return np.random.uniform(0, 1, self.dimension)  # type: ignore
 
 
 class HaltonPermutationGenerator:
@@ -160,14 +160,14 @@ class HammersleySampler(HaltonSampler):
 
     def _internal_sampler(self) -> ArrayLike:
         assert self.budget is not None
-        return np.concatenate(([(self.index + .5) / float(self.budget)], super()._internal_sampler()))
+        return np.concatenate(([(self.index + .5) / float(self.budget)], super()._internal_sampler()))  # type: ignore
 
 
 class Rescaler:
 
-    def __init__(self, points: Iterable[np.ndarray]) -> None:
+    def __init__(self, points: Iterable[ArrayLike]) -> None:
         iterp = iter(points)
-        self.sample_mins = next(iterp)
+        self.sample_mins = np.array(next(iterp), copy=False)
         self.sample_maxs = self.sample_mins
         for point in iterp:
             self.sample_mins = np.minimum(self.sample_mins, point)
@@ -175,6 +175,7 @@ class Rescaler:
         self.epsilon = min([x for x in self.sample_mins] + [1 - s for s in self.sample_maxs] + [1e-15])
         assert self.epsilon > 0., f'Non-positive epsilon={self.epsilon} from mins {self.sample_mins} and maxs {self.sample_maxs}'
 
-    def apply(self, point: np.ndarray) -> np.ndarray:
+    def apply(self, point: ArrayLike) -> np.ndarray:
+        point = np.array(point, copy=False)
         factor = (1 - 2 * self.epsilon) / (self.sample_maxs - self.sample_mins)
-        return self.epsilon + factor * (point - self.sample_mins)
+        return self.epsilon + factor * (point - self.sample_mins)  # type: ignore

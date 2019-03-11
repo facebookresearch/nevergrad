@@ -19,7 +19,7 @@ class Instrumentation:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.names: Tuple[Optional[str], ...] = ()
-        self.instruments: List[utils.Variable] = []
+        self.instruments: List[utils.Variable[Any]] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
 
@@ -37,7 +37,7 @@ class Instrumentation:
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
-        self.instruments: List[utils.Variable] = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        self.instruments: List[utils.Variable[Any]] = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.instruments))
         assert len(self.instruments) == num_instru, "All instruments must be different (sharing is not supported)"
 
@@ -46,13 +46,13 @@ class Instrumentation:
         return sum(i.dimension for i in self.instruments)
 
     @property
-    def args(self) -> Tuple[utils.Variable, ...]:
+    def args(self) -> Tuple[utils.Variable[Any], ...]:
         """List of instruments passed as positional arguments
         """
         return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
 
     @property
-    def kwargs(self) -> Dict[str, utils.Variable]:
+    def kwargs(self) -> Dict[str, utils.Variable[Any]]:
         """Dictionary of instruments passed as named arguments
         """
         return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
@@ -70,7 +70,7 @@ class Instrumentation:
         arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
         return names, arguments
 
-    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    def data_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Converts data to arguments
         """
         arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
@@ -78,7 +78,7 @@ class Instrumentation:
         kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
         return args, kwargs
 
-    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
         """Converts arguments to data
 
         Note
@@ -108,7 +108,7 @@ class Instrumentation:
     def __repr__(self) -> str:
         return f"{self:display}"
 
-    def get_summary(self, data: np.ndarray) -> Any:
+    def get_summary(self, data: ArrayLike) -> Any:
         """Provides the summary string corresponding to the provided data
 
         Note
@@ -157,7 +157,7 @@ class InstrumentedFunction(base.BaseFunction):
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
 
-    def data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    def data_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Get the arguments and keyword arguments corresponding to the data
 
         Parameters
@@ -177,19 +177,19 @@ class InstrumentedFunction(base.BaseFunction):
         self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
         return self._function(*self.last_call_args, **self.last_call_kwargs)
 
-    def __call__(self, x: np.ndarray) -> Any:
+    def __call__(self, x: ArrayLike) -> Any:
         # BaseFunction __call__ method should generally not be overriden,
         # but here that would mess up with typing, and I would rather not constrain
         # user to return only floats.
         x = self.transform(x)
         return self.oracle_call(x)
 
-    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
+    def get_summary(self, data: ArrayLike) -> Any:  # probably impractical for large arrays
         """Provides the summary corresponding to the provided data
         """
         return self.instrumentation.get_summary(data)
 
-    def convert_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    def convert_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         warnings.warn("convert_to_arguments is deprecated, please use data_to_arguments instead")
         return self.data_to_arguments(data, deterministic=deterministic)
 

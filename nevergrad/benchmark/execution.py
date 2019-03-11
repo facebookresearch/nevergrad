@@ -88,8 +88,8 @@ class MockedTimedExecutor:
     def time(self) -> float:
         return self._time
 
-    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> MockedTimedJob:
-        job = MockedTimedJob(function, args, kwargs, self)
+    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> MockedTimedJob:
+        job = MockedTimedJob(fn, args, kwargs, self)
         self._to_be_processed.append(job)  # save for later processing
         return job
 
