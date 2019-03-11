@@ -66,7 +66,7 @@ def crossover(parent: ArrayLike, donor: ArrayLike) -> ArrayLike:
     return discrete_mutation(mix)
 
 
-def get_roulette(archive: utils.Archive, num: Optional[int] = None) -> Any:
+def get_roulette(archive: utils.Archive[utils.Value], num: Optional[int] = None) -> Any:
     """Apply a roulette tournament selection.
     """
     if num is None:

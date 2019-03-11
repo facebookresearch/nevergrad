@@ -45,7 +45,7 @@ def test_run_with_array(func: Callable[..., Any]) -> None:
 )
 def test_get_roulette(num: int, expected: str) -> None:
     np.random.seed(24)
-    archive = utils.Archive()
+    archive = utils.Archive[utils.Value]()
     for k in range(4):
         archive[np.array([k + .5])] = utils.Value(k)
     output = mutations.get_roulette(archive, num)
