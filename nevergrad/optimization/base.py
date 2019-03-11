@@ -153,6 +153,11 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, x, value)
+        self._update_archive_and_bests(x, value)
+        self._internal_tell(x, value)
+        self._num_tell += 1
+
+    def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
         if not isinstance(value, Real):
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
@@ -176,8 +181,6 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                         y = np.frombuffer(
                             min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n)))
                         assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
-        self._internal_tell(x, value)
-        self._num_tell += 1
 
     def ask(self) -> ArrayLike:
         """Provides a point to explore.
