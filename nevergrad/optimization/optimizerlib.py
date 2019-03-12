@@ -456,6 +456,7 @@ class CTBPSA(base.Optimizer):
         self.num_repeat = 0
         self.repeator = {}
         self.listor = {}
+        self.nbc = 0
 
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
@@ -470,6 +471,8 @@ class CTBPSA(base.Optimizer):
         self.repeator[x] -= 1
         self.listor[self.current_point] += [value]
         if self.repeator[x] == 0:
+            def mean(x):
+                return sum(x) / len(x)
             self.tbpsa.tell(x, mean(self.listor[self.current_point]))
             del self.repeator[x]
             del self.listor[x]
@@ -482,7 +485,9 @@ class RCTBPSA(CTBPSA):
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
             self.current_point = self.tbpsa.ask()
-            self.num_repeat = int(max(1, self.tbpsa.num_ask**.1))
+            self.nbc += 1
+            #self.num_repeat = int(max(1, 1.01**self.tbpsa.num_ask))
+            self.num_repeat = int(max(1, 1.01**self.nbc))
             self.repeator[self.current_point] = self.num_repeat
         self.num_repeat -= 1
         return self.current_point
