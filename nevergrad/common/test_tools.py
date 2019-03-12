@@ -5,51 +5,47 @@
 
 import itertools
 from typing import Iterable, List, Any, Tuple
-from unittest import TestCase
-import genty
 import numpy as np
 from . import tools
 from . import testing
 
 
-@genty.genty
-class ToolsTests(TestCase):
+@testing.parametrized(
+    void=([], []),
+    one=(["a"], []),
+    two=([1, 2], [(1, 2)]),
+    three=([1, 2, 3], [(1, 2), (2, 3)]),
+)
+def test_pairwise(iterator: Iterable[Any], expected: List[Tuple[Any, ...]]) -> None:
+    output = list(tools.pairwise(iterator))
+    testing.printed_assert_equal(output, expected)
 
-    @genty.genty_dataset(  # type: ignore
-        void=([], []),
-        one=(["a"], []),
-        two=([1, 2], [(1, 2)]),
-        three=([1, 2, 3], [(1, 2), (2, 3)]),
-    )
-    def test_pairwise(self, iterator: Iterable[Any], expected: List[Tuple[Any, ...]]) -> None:
-        output = list(tools.pairwise(iterator))
-        testing.printed_assert_equal(output, expected)
 
-    @genty.genty_dataset(  # type: ignore
-        void=({}, ["i1", "i2", "i3"]),
-        value=({"c1": "i2-c1"}, ["i2"]),
-        function=({"c1": lambda x: x == "i2-c1"}, ["i2"]),
-        values=({"c1": ["i3-c1", "i2-c1"]}, ["i2", "i3"]),
-        conditions=({"c1": ["i3-c1", "i2-c1"], "c2": "i3-c2"}, ["i3"]),
-    )
-    def test_selector(self, criteria: Any, expected: List[str]) -> None:
-        df = tools.Selector(index=["i1", "i2", "i3"], columns=["c1", "c2"])
-        for i, c in itertools.product(df.index, df.columns):
-            df.loc[i, c] = f"{i}-{c}"
-        df_select = df.select(**criteria)
-        df_drop = df.select_and_drop(**criteria)
-        # indices
-        testing.assert_set_equal(df_select.index, expected)
-        testing.assert_set_equal(df_drop.index, expected)
-        # columns
-        testing.assert_set_equal(df_select.columns, df)
-        testing.assert_set_equal(df_drop.columns, set(df_select.columns) - set(criteria))
-        # values
-        for i, c in itertools.product(df_select.index, df_select.columns):
-            assert df.loc[i, c] == f"{i}-{c}", "Erroneous values"
-        # instance
-        assert isinstance(df_select, tools.Selector)
-        assert isinstance(df_drop, tools.Selector)
+@testing.parametrized(
+    void=({}, ["i1", "i2", "i3"]),
+    value=({"c1": "i2-c1"}, ["i2"]),
+    function=({"c1": lambda x: x == "i2-c1"}, ["i2"]),
+    values=({"c1": ["i3-c1", "i2-c1"]}, ["i2", "i3"]),
+    conditions=({"c1": ["i3-c1", "i2-c1"], "c2": "i3-c2"}, ["i3"]),
+)
+def test_selector(criteria: Any, expected: List[str]) -> None:
+    df = tools.Selector(index=["i1", "i2", "i3"], columns=["c1", "c2"])
+    for i, c in itertools.product(df.index, df.columns):
+        df.loc[i, c] = f"{i}-{c}"
+    df_select = df.select(**criteria)
+    df_drop = df.select_and_drop(**criteria)
+    # indices
+    testing.assert_set_equal(df_select.index, expected)
+    testing.assert_set_equal(df_drop.index, expected)
+    # columns
+    testing.assert_set_equal(df_select.columns, df)
+    testing.assert_set_equal(df_drop.columns, set(df_select.columns) - set(criteria))
+    # values
+    for i, c in itertools.product(df_select.index, df_select.columns):
+        assert df.loc[i, c] == f"{i}-{c}", "Erroneous values"
+    # instance
+    assert isinstance(df_select, tools.Selector)
+    assert isinstance(df_drop, tools.Selector)
 
 
 def test_roundrobin() -> None:

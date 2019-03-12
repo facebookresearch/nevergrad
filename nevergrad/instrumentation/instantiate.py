@@ -86,11 +86,13 @@ def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str
     This can help creating lightweight copies of a project, for instantiating several
     copies with different parameters.
     """
-    folder, shadow_folder = (Path(x).expanduser().absolute() for x in (folder, shadow_folder))
-    for fp in folder.glob("**/*"):
-        shadow_fp = shadow_folder / fp.relative_to(folder)
-        if fp.is_file() and not shadow_fp.exists():
-            os.makedirs(str(shadow_fp.parent), exist_ok=True)
+    folder, shadow_folder = (Path(x).expanduser().resolve().absolute() for x in (folder, shadow_folder))
+    shadow_folder.mkdir(parents=True, exist_ok=True)
+    for fp in folder.iterdir():  # iterating is more efficient than globbing here
+        shadow_fp = shadow_folder / fp.name
+        if fp.is_dir():
+            symlink_folder_tree(fp, shadow_fp)
+        elif not shadow_fp.exists():
             shadow_fp.symlink_to(fp)
 
 

@@ -20,34 +20,68 @@ jobs:
     steps:
       - checkout
 
-      # Download and cache dependencies
+      # Download and cache dependencies for "main"
       - restore_cache:
+          name: "[no-extra] Restore cache"
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
+          - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-main-
 
       - run:
-          name: install dependencies
+          name: "[no-extra] Install dependencies"
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -r requirements.txt
-            python setup.py develop
+            pip install -e .[dev]
 
       - save_cache:
+          name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
 
       - run:
-          name: run tests
+          name: "[no-extra] Run basic tests (checking dependencies)"
           command: |
             . venv/bin/activate
-            nosetests nevergrad --verbose --with-timer --with-coverage --cover-package=nevergrad
+            pytest nevergrad/optimization/test_optimizerlib.py::test_optimizers_recommendation nevergrad/instrumentation/test_core.py
+
+      # Download and cache dependencies for "main"
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          # fallback to installing main requirements
+          - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
+          # fallback to using the latest cache if no exact match is found
+          - v2-dependencies-
 
       - run:
-          name: run mypy
+          name: "[all] Install dependencies"
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -e .[all]
+            git clone https://github.com/numpy/numpy-stubs.git || (cd numpy-stubs; git pull)
+            pip install ./numpy-stubs
+
+      - save_cache:
+          name: "[all] Save cache"
+          paths:
+            - ./venv
+          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      # Run all tests
+      - run:
+          name: "[all] Run pytest"
+          command: |
+            . venv/bin/activate
+            pytest nevergrad --duration=20 --cov=nevergrad
+
+      - run:
+          name: "[all] Run mypy"
           command: |
             . venv/bin/activate
             mypy --ignore-missing-imports nevergrad

@@ -12,7 +12,7 @@ from nevergrad.functions import BaseFunction
 from nevergrad.common.typetools import ArrayLike
 
 
-def impedance_pix(x: np.ndarray, dpix: float, lam: float, ep0: float, epf: float) -> float:
+def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
     """Normalized impedance Z/Z0
     ep0, epf:  epsilons in et out
     lam: lambda in nanometers
@@ -30,7 +30,8 @@ def impedance_pix(x: np.ndarray, dpix: float, lam: float, ep0: float, epf: float
 def _transform(func: 'ARCoating', x: np.ndarray) -> np.ndarray:
     """Transform to domain [epmin, epf]^dim
     """
-    return (func.epf - func.epmin) * .5 * (1 + np.tanh(np.array(x))) + func.epmin
+    output: np.ndarray = (func.epf - func.epmin) * .5 * (1 + np.tanh(np.array(x))) + func.epmin  # TODO: why?
+    return output
 
 
 class ARCoating(BaseFunction):

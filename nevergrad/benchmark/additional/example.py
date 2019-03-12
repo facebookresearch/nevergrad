@@ -34,7 +34,7 @@ class CustomFunction(BaseFunction):
 
 
 @optimregistry.register  # register optimizers in the optimization registry
-class NewOptimizer(optimregistry["OnePlusOne"]):
+class NewOptimizer(optimregistry["NoisyBandit"]):
     pass
 
 

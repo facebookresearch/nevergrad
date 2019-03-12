@@ -4,11 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
-from unittest import TestCase
 from typing import Callable, Optional, Any
-import genty
 import numpy as np
 from ..common.typetools import ArrayLike
+from ..common import testing
 from . import recaster
 from . import optimizerlib
 
@@ -30,22 +29,19 @@ def fake_caller(func: Callable[[int], int]) -> int:
     return output
 
 
-@genty.genty
-class DirtyOptimizerTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        finished=(10, 30),
-        unfinished=(2, None),  # should not hang at deletion!
-    )
-    def test_messaging_thread(self, num_iter: int, output: Optional[int]) -> None:
-        thread = recaster.MessagingThread(fake_caller)
-        num_answers = 0
-        while num_answers < num_iter:
-            if thread.messages and not thread.messages[0].done:
-                thread.messages[0].result = 3
-                num_answers += 1
-            time.sleep(0.001)
-        np.testing.assert_equal(thread.output, output)
+@testing.parametrized(
+    finished=(10, 30),
+    unfinished=(2, None),  # should not hang at deletion!
+)
+def test_messaging_thread(num_iter: int, output: Optional[int]) -> None:
+    thread = recaster.MessagingThread(fake_caller)
+    num_answers = 0
+    while num_answers < num_iter:
+        if thread.messages and not thread.messages[0].done:
+            thread.messages[0].result = 3
+            num_answers += 1
+        time.sleep(0.001)
+    np.testing.assert_equal(thread.output, output)
 
 
 def test_automatic_thread_deletion() -> None:

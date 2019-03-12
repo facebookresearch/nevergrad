@@ -4,9 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-from unittest import TestCase
 from typing import List, Tuple, Any, Optional
-import genty
 import numpy as np
 from ..common import testing
 from ..instrumentation import Instrumentation
@@ -35,51 +33,49 @@ class LoggingOptimizer(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         self.logs.append(f"s{self._num_ask}")  # s for suggest
-        return np.array((self._num_ask,))
+        return np.array((float(self._num_ask),))
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.logs.append(f"u{x[0]}")  # u for update
+        self.logs.append(f"u{int(x[0])}")  # u for update
 
 
-@genty.genty
-class OptimizationTests(TestCase):
+@testing.parametrized(
+    w1_batch=(1, True, ['s0', 'u0', 's1', 'u1', 's2', 'u2', 's3', 'u3', 's4', 'u4']),
+    w1_steady=(1, False, ['s0', 'u0', 's1', 'u1', 's2', 'u2', 's3', 'u3', 's4', 'u4']),  # no difference (normal, since worker=1)
+    w3_batch=(3, True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
+    w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),  # not really steady TODO change this behavior
+    # w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 's3', 'u1', 's4', 'u2', 'u3', 'u4']),  # This is what we would like
+)
+def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expected: List[Tuple[str, float]]) -> None:
+    # tests the suggestion (s) and update (u) patterns
+    # the w3_steady is unexpected. It is designed to be efficient with a non-sequential executor, but because
+    # of it, it is acting like batch mode when sequential...
+    optim = LoggingOptimizer(num_workers=num_workers)
+    func = CounterFunction()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        optim.optimize(func, verbosity=2, batch_mode=batch_mode)
+    testing.printed_assert_equal(optim.logs, expected)
 
-    @genty.genty_dataset(  # type: ignore
-        w1_batch=(1, True, ['s0', 'u0', 's1', 'u1', 's2', 'u2', 's3', 'u3', 's4', 'u4']),
-        w1_steady=(1, False, ['s0', 'u0', 's1', 'u1', 's2', 'u2', 's3', 'u3', 's4', 'u4']),  # no difference (normal, since worker=1)
-        w3_batch=(3, True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
-        w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),  # not really steady TODO change this behavior
-        # w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 's3', 'u1', 's4', 'u2', 'u3', 'u4']),  # This is what we would like
-    )
-    def test_batch_and_steady_optimization(self, num_workers: int, batch_mode: bool, expected: List[Tuple[str, float]]) -> None:
-        # tests the suggestion (s) and update (u) patterns
-        # the w3_steady is unexpected. It is designed to be efficient with a non-sequential executor, but because
-        # of it, it is acting like batch mode when sequential...
-        optim = LoggingOptimizer(num_workers=num_workers)
-        func = CounterFunction()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            optim.optimize(func, verbosity=2, batch_mode=batch_mode)
-        testing.printed_assert_equal(optim.logs, expected)
 
-    @genty.genty_dataset(  # type: ignore
-        int_val=(3, False),
-        bool_val=(True, False),
-        int32_val=(np.int32(3), False),
-        int64_val=(np.int64(3), False),
-        float64_val=(np.float64(3), False),
-        float32_val=(np.float32(3), False),
-        list_val=([3, 5], True),
-        complex_val=(1j, True),
-        object_val=(object(), True),
-    )
-    def test_tell_types(self, value: Any, error: bool) -> None:
-        optim = LoggingOptimizer(num_workers=1)
-        x = optim.ask()
-        if error:
-            np.testing.assert_raises(TypeError, optim.tell, x, value)
-        else:
-            optim.tell(x, value)
+@testing.parametrized(
+    int_val=(3, False),
+    bool_val=(True, False),
+    int32_val=(np.int32(3), False),
+    int64_val=(np.int64(3), False),
+    float64_val=(np.float64(3), False),
+    float32_val=(np.float32(3), False),
+    list_val=([3, 5], True),
+    complex_val=(1j, True),
+    object_val=(object(), True),
+)
+def test_tell_types(value: Any, error: bool) -> None:
+    optim = LoggingOptimizer(num_workers=1)
+    x = optim.ask()
+    if error:
+        np.testing.assert_raises(TypeError, optim.tell, x, value)
+    else:
+        optim.tell(x, value)
 
 
 def test_base_optimizer() -> None:
@@ -87,12 +83,12 @@ def test_base_optimizer() -> None:
     representation = repr(zeroptim)
     assert "dimension=2" in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask(), [0, 0])
-    zeroptim.tell([0, 0], 0)
-    zeroptim.tell([1, 1], 1)
+    zeroptim.tell([0., 0], 0)
+    zeroptim.tell([1., 1], 1)
     np.testing.assert_equal(zeroptim.provide_recommendation(), [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell([0, 0], 10)
-    zeroptim.tell([1, 1], 1)
+    zeroptim.tell([0., 0], 10)
+    zeroptim.tell([1., 1], 1)
     np.testing.assert_equal(zeroptim.provide_recommendation(), [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
 
@@ -121,7 +117,7 @@ class StupidFamily(base.OptimizerFamily):
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
         run = class_(dimension=dimension, budget=budget, num_workers=num_workers)
-        run.name = self.name
+        run.name = self._repr
         return run  # type: ignore
 
 
@@ -129,7 +125,7 @@ def test_optimizer_family() -> None:
     for zero in [True, False]:
         optf = StupidFamily(zero=zero)
         opt = optf(dimension=2, budget=4, num_workers=1)
-        recom = opt.optimize(test_optimizerlib.fitness)
+        recom = opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom == np.zeros(2), zero)
 
 

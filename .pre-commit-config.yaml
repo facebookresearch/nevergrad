@@ -8,7 +8,7 @@ repos:
     -   id: autopep8-wrapper
         args: ['-i', '--max-line-length=140']
 -   repo: https://github.com/pre-commit/mirrors-pylint
-    sha: v2.1.1
+    sha: v2.3.0
     hooks:
     -   id: pylint
         exclude: ^scripts/

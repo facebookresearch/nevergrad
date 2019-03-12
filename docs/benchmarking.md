@@ -2,6 +2,8 @@
 
 The benchmark tools aim at providing a way to evaluate optimizers on a large range of settings. They provide a way to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.
 
+By default, `nevergrad` does not come with all the requirements for the benchmarks to run. Make sure you have installed/updated it with either the the `benchmark` or the `all` flag (example: `pip install 'nevergrad[benchmark]'`) or you will miss some packages.
+
 ## Creating data from experiments
 
 Experiment plans are described in `nevergrad.benchmark.experiments`. Each experiment plan is a generator yielding different `Experiment` instances (defining function and optimizer settings).

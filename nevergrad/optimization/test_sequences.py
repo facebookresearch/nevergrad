@@ -4,8 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Type, List
-from unittest import TestCase
-import genty
 import numpy as np
 from ..common import testing
 from . import sequences
@@ -26,35 +24,37 @@ def test_get_first_primes() -> None:
             assert value % k, f"Value {value} obtained with num={num} can be divided by {k}"
 
 
-@genty.genty
-class SequencesTests(TestCase):
+@testing.parametrized(**{name: (name, sampler,) for name, sampler in samplers.items()})
+def test_samplers(name: str, sampler_cls: Type[sequences.Sampler]) -> None:
+    sampler = sampler_cls(144, 4)
+    np.testing.assert_equal(sampler.index, 0)
+    output = sampler()
+    np.testing.assert_equal(sampler.index, 1)
+    np.testing.assert_equal(len(output), 144)
+    assert min(output) > 0
+    assert max(output) < 1
 
-    @genty.genty_dataset(**{name: (name, sampler,) for name, sampler in samplers.items()})  # type: ignore
-    def test_samplers(self, name: str, sampler_cls: Type[sequences.Sampler]) -> None:
-        sampler = sampler_cls(144, 4)
-        np.testing.assert_equal(sampler.index, 0)
-        output = sampler()
-        np.testing.assert_equal(sampler.index, 1)
-        np.testing.assert_equal(len(output), 144)
-        assert min(output) > 0
-        assert max(output) < 1
-        sampler.draw()
 
-    @genty.genty_dataset(  # type: ignore
-        lhs=("LHSSampler", [0.069, 0.106, 0.384], [0.282, 0.857, 0.688]),
-        halton=("HaltonSampler", [0.5, 0.333, 0.2], [0.25, 0.667, 0.4]),
-    )
-    def test_sampler_values(self, name: str, seq1: List[float], seq2: List[float]) -> None:
-        budget = 4
-        np.random.seed(12)
-        sampler = samplers[name](3, budget)
-        samples = list(sampler)
-        for k, expected in enumerate([seq1, seq2]):
-            np.testing.assert_almost_equal(samples[k], expected, decimal=3)
-        np.testing.assert_raises(AssertionError, sampler)  # budget is over
-        sampler.reinitialize()
-        samples2 = list(sampler)
-        testing.printed_assert_equal(samples2, samples)
+def test_sampler_draw() -> None:
+    sampler = sequences.RandomSampler(5, 4)
+    sampler.draw()
+
+
+@testing.parametrized(
+    lhs=("LHSSampler", [0.069, 0.106, 0.384], [0.282, 0.857, 0.688]),
+    halton=("HaltonSampler", [0.5, 0.333, 0.2], [0.25, 0.667, 0.4]),
+)
+def test_sampler_values(name: str, seq1: List[float], seq2: List[float]) -> None:
+    budget = 4
+    np.random.seed(12)
+    sampler = samplers[name](3, budget)
+    samples = list(sampler)
+    for k, expected in enumerate([seq1, seq2]):
+        np.testing.assert_almost_equal(samples[k], expected, decimal=3)
+    np.testing.assert_raises(AssertionError, sampler)  # budget is over
+    sampler.reinitialize()
+    samples2 = list(sampler)
+    testing.printed_assert_equal(samples2, samples)
 
 
 def test_permutation_generator() -> None:
@@ -75,7 +75,7 @@ def test_permutation_generator() -> None:
 
 def test_rescaler_on_hammersley() -> None:
     np.random.seed(12)
-    sampler = sequences.ScrHammersleySampler(dimension=3, budget=4)
+    sampler = sequences.HammersleySampler(dimension=3, budget=4, scrambling=True)
     samples = list(sampler)
     sampler.reinitialize()
     samples2 = list(sampler)

@@ -192,8 +192,10 @@ class BenchmarkChunk:
 
 
 # pylint: disable=too-many-arguments
-def _submit_jobs(experiment_name: str, num_workers: int = 1, seed: Optional[int] = None, executor: Optional[ExecutorLike] = None,
-                 print_function: Optional[Callable[[Experiment], None]] = None, cap_index: Optional[int] = None) -> List[JobLike]:
+def _submit_jobs(experiment_name: str, num_workers: int = 1,
+                 seed: Optional[int] = None, executor: Optional[ExecutorLike] = None,
+                 print_function: Optional[Callable[[Experiment], None]] = None,
+                 cap_index: Optional[int] = None) -> List[JobLike[tools.Selector]]:
     """Submits a job for computation
 
     Parameters
@@ -221,7 +223,7 @@ def _submit_jobs(experiment_name: str, num_workers: int = 1, seed: Optional[int]
         if num_workers > 1:
             raise ValueError("An executor must be provided to run multiple jobs in parallel")
         executor = SequentialExecutor()
-    jobs: List[JobLike] = []
+    jobs: List[JobLike[tools.Selector]] = []
     bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
     # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
     next(registry[experiment_name]())

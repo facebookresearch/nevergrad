@@ -200,15 +200,15 @@ class RecastOptimizer(base.Optimizer):
             warnings.warn("Underlying optimizer has already converged, returning random points",
                           FinishedUnderlyingOptimizerWarning)
             self._check_error()
-            return np.random.normal(0, 1, self.dimension)
+            return np.random.normal(0, 1, self.dimension)  # type: ignore
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
-        return message.args[0]
+        return message.args[0]  # type: ignore
 
     def _check_error(self) -> None:
         if self._messaging_thread is not None:
             if self._messaging_thread.error is not None:
-                raise RuntimeError("Recast optimizer raised an error") from self._messaging_thread.error
+                raise RuntimeError(f"Recast optimizer raised an error:\n{self._messaging_thread.error}") from self._messaging_thread.error
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         """Returns value for a point which was "asked"
@@ -224,13 +224,16 @@ class RecastOptimizer(base.Optimizer):
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
         messages[0].result = value  # post the value, and the thread will deal with it
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
         else the best pessimistic point.
         """
         assert self._messaging_thread is not None, 'Optimization was not even started'
         if self._messaging_thread.output is not None:
-            return self._messaging_thread.output
+            return self._messaging_thread.output  # type: ignore
         return self.current_bests["pessimistic"].x
 
     def __del__(self) -> None:

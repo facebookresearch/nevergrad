@@ -6,30 +6,25 @@
 import sys
 import time
 import contextlib
-from unittest import TestCase
 from pathlib import Path
 from typing import List, Any
 import numpy as np
-import genty
 from ..common import testing
 from . import variables
 from . import utils
 
 
-@genty.genty
-class UtilsTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        empty=([], [], [])
-    )
-    def test_split_data(self, tokens: List[utils.Variable], data: List[float], expected: List[List[float]]) -> None:
-        output = utils.split_data(data, tokens)
-        testing.printed_assert_equal(output, expected)
+@testing.parametrized(
+    empty=([], [], [])
+)
+def test_split_data(tokens: List[utils.Variable[Any]], data: List[float], expected: List[List[float]]) -> None:
+    output = utils.split_data(data, tokens)
+    testing.printed_assert_equal(output, expected)
 
 
 def test_process_instruments() -> None:
-    tokens = [variables.SoftmaxCategorical(list(range(5))),
-              variables.Gaussian(3, 4)]
+    tokens: List[utils.Variable[Any]] = [variables.SoftmaxCategorical(list(range(5))),  # TODO: why casting?
+                                         variables.Gaussian(3, 4)]
     values = utils.process_instruments(tokens, [0, 200, 0, 0, 0, 2])
     np.testing.assert_equal(values, [1, 11])
     np.testing.assert_raises(AssertionError, utils.process_instruments, tokens, [0, 200, 0, 0, 0, 2, 3])

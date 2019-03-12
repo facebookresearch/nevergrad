@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from operator import add
-from unittest import TestCase
 from typing import List, Tuple, Dict, Any, Optional, Callable
-import genty
 import numpy as np
+from ..common import testing
 from . import execution
 
 
@@ -20,25 +19,22 @@ class Function(execution.PostponedObject):
         return 5 - value
 
 
-@genty.genty
-class ExecutorTest(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        simple=(add, list(range(10))),
-        delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
-    )
-    def test_mocked_steady_executor(self, func: Callable[..., Any], expected: List[int]) -> None:
-        executor = execution.MockedTimedExecutor(batch_mode=False)
-        jobs: List[execution.MockedTimedJob] = []
-        for k in range(10):
-            jobs.append(executor.submit(func, k, 0))
-        results: List[float] = []
-        while jobs:
-            finished = [j for j in jobs if j.done()]
-            np.testing.assert_equal(len(finished), 1)
-            results.append(finished[0].result())
-            jobs.remove(finished[0])
-        np.testing.assert_array_equal(results, expected)
+@testing.parametrized(
+    simple=(add, list(range(10))),
+    delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
+)
+def test_mocked_steady_executor(func: Callable[..., Any], expected: List[int]) -> None:
+    executor = execution.MockedTimedExecutor(batch_mode=False)
+    jobs: List[execution.MockedTimedJob] = []
+    for k in range(10):
+        jobs.append(executor.submit(func, k, 0))
+    results: List[float] = []
+    while jobs:
+        finished = [j for j in jobs if j.done()]
+        np.testing.assert_equal(len(finished), 1)
+        results.append(finished[0].result())
+        jobs.remove(finished[0])
+    np.testing.assert_array_equal(results, expected)
 
 
 def test_mocked_steady_executor_time() -> None:

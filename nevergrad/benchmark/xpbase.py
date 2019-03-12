@@ -35,15 +35,16 @@ class CallCounter(execution.PostponedObject):
         self.num_calls = 0
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        value = self.func(*args, **kwargs)  # compute *before* updating num calls
         self.num_calls += 1
-        return self.func(*args, **kwargs)
+        return value
 
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         """Propagate subfunction delay
         """
         if isinstance(self.func, execution.PostponedObject):
             return self.func.get_postponing_delay(arguments, value)
-        return 0
+        return 1.
 
 
 class OptimizerSettings:
@@ -66,7 +67,7 @@ class OptimizerSettings:
 
     @property
     def name(self) -> str:
-        return self.optimizer if isinstance(self.optimizer, str) else self.optimizer.name
+        return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
 
     @property
     def batch_mode(self) -> bool:
@@ -96,7 +97,7 @@ class OptimizerSettings:
         """Returns a dictionary describing the optimizer settings
         """
         descr = {x: getattr(self, x) for x in self._setting_names if x != "optimizer"}
-        descr["optimizer_name"] = self.optimizer if isinstance(self.optimizer, str) else self.optimizer.name
+        descr["optimizer_name"] = self.name
         return descr
 
     def __eq__(self, other: Any) -> bool:
@@ -193,6 +194,7 @@ class Experiment:
         self.result["elapsed_time"] = time.time() - t0
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
+        assert self.recommendation is not None
         t_recommendation = self.function.transform(self.recommendation)
         self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
@@ -220,7 +222,8 @@ class Experiment:
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
-        counter = CallCounter(self.function)
+        counter = CallCounter(self.function)  # probably useless now (= num_ask) but helps being 100% sure
+        counter.num_calls = self._optimizer.num_ask  # update in case we are resuming an optimization
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient

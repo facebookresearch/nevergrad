@@ -1,9 +1,10 @@
 # Benchmark examples
 
 
-The following figures are examples of algorithm benchmarks which can be generated very easily from the platform.
+The following figures are examples of algorithm benchmarks which can be generated very easily from the platform
 In all examples, we use independent experiments for the different x-values; so that consistent rankings between methods, over several x-values, have a statistical meaning.
 
+If you want to run the examples yourself, please make sure you have installed `nevergrad` with the `benchmark` flag (see [here](benchmarking.md)).
 
 ## Noisy optimization
 
@@ -90,6 +91,3 @@ The platform can also deal with discrete objective functions! We can both consid
 We note that [FastGA](https://arxiv.org/abs/1703.03334) performs best. DoubleFastGA corresponds to a mutation rate ranging between 1/dim and (dim-1)/dim instead of 1/dim and 1/2; this is because the original range corresponds to a binary domain whereas we consider arbitrary domains. The simple uniform mixing of mutation rates (https://arxiv.org/abs/1606.05551) performs well in several cases.
 ![discrete_leadingones](resources/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png)
 ![discrete_hardonemax](resources/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png)
-
-
-

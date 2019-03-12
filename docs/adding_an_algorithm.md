@@ -23,18 +23,18 @@ Still, this structure is not final, it is bound to evolve and you are welcome to
 All algorithms derive from a base class named `Optimizer` and are registered through a decorator. The implementation of the base class is [here](../nevergrad/optimization/base.py).
 This base class implements the `ask` and `tell` interface.
 
-It records all evaluated points through the `archive` attribute, which is of type:
-```
-Dict[Tuple[float,...], Value]
-```
+It records all evaluated points through the `archive` attribute of class `Archive`. It can be seen be used as if it was of type `Dict[np.ndarray, Value]`, but since `np.ndarray` are not hashable, the underlying implementation converts arrays into bytes and register them into the `archive.bytesdict` dictionary. `Archive` however does not implement `keys` and `items` methods because converting from bytes to array is not very efficient, one should therefore interate on `bytesdict` and the keys can then be transformed back to arrays using `np.frombuffer(key)`. See [OnePlusOne implementation](../nevergrad/optimization/optimizerlib.py) for an example.
+
+
 The key tuple if the point location, and `Value` is a class with attributes:
 - `count`: number of evaluations at this point.
 - `mean`: mean value of the evaluations at this point.
 - `variance`: variance of the evaluations at this point.
 
-For more detauls, see the implementation in [utils.py](../nevergrad/optimization/utils.py).
+For more details, see the implementation in [utils.py](../nevergrad/optimization/utils.py).
 
-Through the archive, you can therefore access most useful information about past evaluations.
+Through the archive, you can therefore access most useful information about past evaluations. A pruning mechanism makes sure this archive does
+not grow too much. This pruning can be tuned through the `pruning` attribute of the optimizer (the default is very conservative).
 
 The base `Optimizer` class also tracks the best optimistic and pessimistic points through the `current_bests` attribute which is of type:
 ```
@@ -52,6 +52,10 @@ The key string is either `optimistic` or `pessimistic`, and the `Point` value is
 - `_internal_provide_recommendation`: to provide the final recommendation. By default, the recommendation is the pessimistic best point.
 
 If the algorithm is not able to handle parallelization (if `ask` cannot be called multiple times consecutively), the `no_parallelization` **class attribute** must be set to `True`.
+
+As an experimental feature, all optmizers have a `tell_not_asked` method for providing the fitness of points which have not been asked for.
+If you do not want to support this feature, make this method raise a `base.TellNotAskedNotSupportedError`.
+A unit test will make sure that the optimizer either accepts the point or raises this error.
 
 
 ### Seeding
@@ -88,7 +92,7 @@ You are welcome to add tests if you want to make sure your implementation is cor
 
 To run these tests, you can use:
 ```
-nosetests nevergrad/optimization/test_optimizerlib.py
+pytest nevergrad/optimization/test_optimizerlib.py
 ```
 
 The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exist. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.

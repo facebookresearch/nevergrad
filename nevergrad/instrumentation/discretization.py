@@ -39,10 +39,10 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> Arra
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
-    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))
+    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
 
 
-def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = False) -> List[float]:
+def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = False) -> List[int]:
     """Discretize a list of floats to a list of ints based on softmax probabilities.
     For arity n, a softmax is applied to the first n values, and the result
     serves as probability for the first output integer. The same process it
@@ -68,8 +68,8 @@ def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = F
         warnings.warn("Encountered NaN values for discretization")
         data[np.isnan(data)] = -np.inf
     if deterministic:
-        output: List[float] = np.argmax(data, axis=1).tolist()
-        return output
+        output = np.argmax(data, axis=1).tolist()
+        return output  # type: ignore
     return [np.random.choice(arity, p=softmax_probas(d)) for d in data]
 
 
@@ -84,12 +84,12 @@ def softmax_probas(data: np.ndarray) -> np.ndarray:
         data = np.array([int(x == np.inf) for x in data])
     if not sum(data):
         data = np.ones(len(data))
-    return data / np.sum(data)
+    return data / np.sum(data)  # type: ignore
 
 
 def inverse_softmax_discretization(index: int, arity: int) -> ArrayLike:
     # p is an arbitrary probability that the provided arg will be sampled with the returned point
     p = (1 / arity) * 1.5
-    x = np.zeros(arity)
+    x: np.ndarray = np.zeros(arity)
     x[index] = np.log((p * (arity - 1)) / (1 - p))
     return x

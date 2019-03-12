@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Any
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Set
 from collections import defaultdict, deque
+import cma
 import numpy as np
 from scipy import stats
-import cma
+from . import utils
 from . import base
 from . import mutations
 from .base import registry
@@ -21,8 +22,7 @@ from .recastlib import *
 # # # # # optimizers # # # # #
 
 
-@registry.register
-class OnePlusOne(base.Optimizer):
+class _OnePlusOne(base.Optimizer):
     """Simple but sometimes powerful optimization algorithm.
 
     We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
@@ -33,101 +33,160 @@ class OnePlusOne(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sigma: float = 1
+        self._parameters = ParametrizedOnePlusOne()
+        self._mutations: Dict[str, Callable[[base.ArrayLike], base.ArrayLike]] = {
+            "discrete": mutations.discrete_mutation,
+            "fastga": mutations.doerr_discrete_mutation,
+            "doublefastga": mutations.doubledoerr_discrete_mutation,
+            "portfolio": mutations.portfolio_discrete_mutation}
+        self._sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
+        # pylint: disable=too-many-return-statements, too-many-branches
+        noise_handling = self._parameters.noise_handling
         if not self._num_ask:
-            return np.zeros(self.dimension)
+            return np.zeros(self.dimension)  # type: ignore
+        # for noisy version
+        if noise_handling is not None:
+            limit = (.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
+            strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
+            if self._num_ask <= limit:
+                if strategy in ["cubic", "random"]:
+                    idx = np.random.choice(len(self.archive))
+                    return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
+                elif strategy == "optimistic":
+                    return self.current_bests["optimistic"].x
+        # crossover
+        if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
+            return mutations.crossover(self.current_bests["pessimistic"].x,
+                                       mutations.get_roulette(self.archive, num=2))
+        # mutating
+        mutation = self._parameters.mutation
+        if mutation == "gaussian":  # standard case
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)  # type: ignore
+        elif mutation == "cauchy":
+            return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)  # type: ignore
+        elif mutation == "crossover":
+            if self._num_ask % 2 == 0 or len(self.archive) < 3:
+                return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+            else:
+                return mutations.crossover(self.current_bests["pessimistic"].x,
+                                           mutations.get_roulette(self.archive, num=2))
         else:
-            return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+            return self._mutations[mutation](self.current_bests["pessimistic"].x)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        if value <= self.current_bests["pessimistic"].mean:
-            self.sigma = 2. * self.sigma
-        else:
-            self.sigma = .84 * self.sigma
+        # only used for cauchy and gaussian
+        self._sigma *= 2. if value <= self.current_bests["pessimistic"].mean else .84
 
 
-@registry.register
-class NoisyOnePlusOne(OnePlusOne):
-    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
-
-    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
-    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
+class ParametrizedOnePlusOne(base.ParametrizedFamily):
+    """Simple but sometimes powerfull class of optimization algorithm.
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
-    Includes progressive widening.
-    """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        else:
-            if 20 * self._num_ask <= len(self.archive) ** 3:
-                idx = np.random.choice(len(self.archive))
-                return list(self.archive.keys())[idx]
-        return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+    Parameters
+    ----------
+    noise_handling: str or Tuple[str, float]
+        method for handling the noise. The name can be either "random" (a random point
+        is reevaluated regularly) or "optimistic" (the best optimistic point is reevaluated
+        regularly, optimism in front of uncertainty). A coefficient can also be provided
+        to tune the regularity of these reevaluations (default .05)
+    mutation: str
+        One of the available mutations from:
+        - "gaussian": standard mutation by adding a Gaussian random variable (with progressive
+        widening) to the best pessimistic point
+        - "cauchy": same as Gaussian but with a Cauchy distribution.
+        - "discrete": TODO
+        - "fastga": FastGA mutations from the current best
+        - "doublefastga": double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - "portfolio": Random number of mutated bits (called niform mixing in
+           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
+    crossover: bool
+        whether to add a genetic crossover step every other iteration.
 
-
-@registry.register
-class OptimisticNoisyOnePlusOne(OnePlusOne):
-    """Simple but sometimes powerfull optimization algorithm, for the noisy case.
-
-    We use the one-fifth adaptation rule, going back to Schumer and Steiglitz (1968).
+    Notes
+    -----
+    For the noisy case, we use the one-fifth adaptation rule,
+    going back to Schumer and Steiglitz (1968).
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
-    We use asynchronous updates, so that the 1+1 can actually be parallel and even
-    performs quite well in such a context - this is naturally close to 1+lambda.
-    Includes progressive widening.
-    Includes optimism against uncertainty.
     """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        else:
-            if 20 * self._num_ask <= len(self.archive) ** 3:
-                return self.current_bests["optimistic"].x
-        return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+    _optimizer_class = _OnePlusOne
+
+    def __init__(self, *, noise_handling: Optional[Union[str, Tuple[str, float]]] = None,
+                 mutation: str = "gaussian", crossover: bool = False) -> None:
+        if noise_handling is not None:
+            if isinstance(noise_handling, str):
+                assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+            else:
+                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert noise_handling[1] > 0., "the factor must be a float greater than 0"
+                assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
+        self.noise_handling = noise_handling
+        self.mutation = mutation
+        self.crossover = crossover
+        super().__init__()
 
 
-@registry.register
-class CauchyOnePlusOne(OnePlusOne):
-    """Version of the OnePlusOne optimization algorithm with Cauchy mutations.
+OnePlusOne = ParametrizedOnePlusOne().with_name("OnePlusOne", register=True)
+NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").with_name("NoisyOnePlusOne", register=True)
+OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
+DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("DiscreteOnePlusOne", register=True)
+OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="discrete").with_name("OptimisticDiscreteOnePlusOne", register=True)
+NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling=("random", 1.), mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
+DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
+FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
+DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="doublefastga").with_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="fastga").with_name("FastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="random", mutation="fastga").with_name("FastGANoisyDiscreteOnePlusOne", register=True)
+PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
+PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="portfolio").with_name("PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
+PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="random", mutation="portfolio").with_name("PortfolioNoisyDiscreteOnePlusOne", register=True)
+CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").with_name("CauchyOnePlusOne", register=True)
+RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="discrete", noise_handling="optimistic").with_name(
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
+RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="portfolio", noise_handling="optimistic").with_name(
+        "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
-    Many papers use Cauchy mutations, maybe the first one was
-    X. Yao, Y. Liu and G. Lin, Evolutionary Programing Made Faster, IEEE
-    Transactions on Evolutionary Computation, vol. 3, 82-102, July 1999.
-    """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        else:
-            return self.current_bests["pessimistic"].x + self.sigma * np.random.standard_cauchy(self.dimension)
-
-
-@registry.register
-class CMA(base.Optimizer):
+class _CMA(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.es: Optional[cma.CMAEvolutionStrategy] = None
-        popsize = max(num_workers, 4 + int(3 * np.log(dimension)))
+        self._parameters = ParametrizedCMA()
+        self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
-        self._cma_init: Dict[str, Any] = {"x0": [0.] * dimension, "sigma0": 1., "inopts": {"popsize": popsize}}
         self.listx: List[base.ArrayLike] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
 
+    @property
+    def es(self) -> cma.CMAEvolutionStrategy:
+        if self._es is None:
+            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+            diag = self._parameters.diagonal
+            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
+                                                sigma0=self._parameters.scale,
+                                                inopts={"popsize": popsize, "seed": np.nan, "CMA_diagonal": diag})
+        return self._es
+
     def _internal_ask(self) -> base.ArrayLike:
-        if self.es is None:
-            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         if not self.to_be_asked:
             self.to_be_asked.extend(self.es.ask())
         return self.to_be_asked.popleft()
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        if self.es is None:
-            self.es = cma.CMAEvolutionStrategy(**self._cma_init)
         self.listx += [x]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
@@ -140,33 +199,36 @@ class CMA(base.Optimizer):
                 self.listy = []
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        if self.es is None:
-            return RuntimeError("Either ask or tell method should have been called before")
-        return self.es.result.xbest
+        if self._es is None:
+            raise RuntimeError("Either ask or tell method should have been called before")
+        if self.es.result.xbest is None:
+            return self.current_bests["pessimistic"].x
+        return self.es.result.xbest  # type: ignore
 
 
-@registry.register
-class MicroCMA(CMA):
+class ParametrizedCMA(base.ParametrizedFamily):
+    """TODO
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._cma_init["sigma0"] = 1e-6
+    Parameters
+    ----------
+    scale: float
+        scale of the search
+    diagonal: bool
+        use the diagonal version of CMA (advised in big dimension)
+    """
+
+    _optimizer_class = _CMA
+
+    def __init__(self, *, scale: float = 1., diagonal: bool = False) -> None:
+        self.scale = scale
+        self.diagonal = diagonal
+        super().__init__()
 
 
-@registry.register
-class MilliCMA(CMA):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._cma_init["sigma0"] = 1e-3
-
-
-@registry.register
-class DiagonalCMA(CMA):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._cma_init["inopts"]['CMA_diagonal'] = True
+CMA = ParametrizedCMA().with_name("CMA", register=True)
+DiagonalCMA = ParametrizedCMA(diagonal=True).with_name("DiagonalCMA", register=True)
+MilliCMA = ParametrizedCMA(scale=1e-3).with_name("MilliCMA", register=True)
+MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
 
 
 @registry.register
@@ -186,7 +248,7 @@ class EDA(base.Optimizer):
         self.llambda = 4 * dimension
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
-        self.current_center = np.zeros(dimension)
+        self.current_center: np.ndarray = np.zeros(dimension)
         # Evaluated population
         self.evaluated_population: List[base.ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
@@ -224,11 +286,14 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
+
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
 
 
 @registry.register
@@ -276,7 +341,7 @@ class PCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -329,7 +394,7 @@ class MPCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -362,11 +427,19 @@ class MEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
+
+
+class ParticuleTBPSA:
+
+    def __init__(self, position: np.ndarray, sigma: float, loss: Optional[float] = None) -> None:
+        self.position = np.array(position, copy=False)
+        self.sigma = sigma
+        self.loss = loss
 
 
 @registry.register
@@ -385,37 +458,29 @@ class TBPSA(base.Optimizer):
         self.llambda = 4 * dimension
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
-        self.current_center = np.zeros(dimension)
-        # Evaluated population
-        self.evaluated_population: List[base.ArrayLike] = []
-        self.evaluated_population_sigma: List[float] = []
-        self.evaluated_population_fitness: List[float] = []
-        # Unevaluated population
-        self.unevaluated_population: List[base.ArrayLike] = []
-        self.unevaluated_population_sigma: List[float] = []
-        # Archive
-        self.archive_fitness: List[float] = []
+        self.current_center: np.ndarray = np.zeros(dimension)
+        self._loss_record: List[float] = []
+        # population
+        self._evaluated_population: List[ParticuleTBPSA] = []
+        self._unevaluated_population: Dict[bytes, ParticuleTBPSA] = {}
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
         mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.dimension))
-        individual = tuple(self.current_center + mutated_sigma * np.random.normal(0, 1, self.dimension))
-        self.unevaluated_population_sigma += [mutated_sigma]
-        self.unevaluated_population += [tuple(individual)]
-        return individual
+        individual = self.current_center + mutated_sigma * np.random.normal(0, 1, self.dimension)
+        self._unevaluated_population[individual.tobytes()] = ParticuleTBPSA(individual, sigma=mutated_sigma)
+        return individual  # type: ignore
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.archive_fitness += [value]
-        if len(self.archive_fitness) >= 5 * self.llambda:
-            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
-            mean1 = sum(first_fifth) / float(self.llambda)
-            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
-            mean2 = sum(last_fifth) / float(self.llambda)
-            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
-            z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+        self._loss_record += [value]
+        if len(self._loss_record) >= 5 * self.llambda:
+            first_fifth = self._loss_record[: self.llambda]
+            last_fifth = self._loss_record[-self.llambda:]
+            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
+            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
+            z = (means[0] - means[1]) / (np.sqrt(stds[0]**2 + stds[1]**2))
             if z < 2.:
                 self.mu *= 2
             else:
@@ -426,26 +491,27 @@ class TBPSA(base.Optimizer):
             if self.num_workers > 1:
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
-            self.archive_fitness = []
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
-        if len(self.evaluated_population) >= self.llambda:
+            self._loss_record = []
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        particule = self._unevaluated_population[x_bytes]
+        particule.loss = value
+        self._evaluated_population.append(particule)
+        if len(self._evaluated_population) >= self.llambda:
             # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
-                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            self._evaluated_population.sort(key=lambda p: p.loss)
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
+            self.current_center = sum(p.position for p in self._evaluated_population[:self.mu]) / self.mu  # type: ignore
+            self.sigma = np.exp(np.sum(np.log([p.sigma for p in self._evaluated_population[:self.mu]])) / self.mu)
+            self._evaluated_population = []
+        del self._unevaluated_population[x_bytes]
+
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
+        sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
+        self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=sigma)
+        # go through standard pipeline so as to update the archive
+        self.tell(x, value)
 
 
 @registry.register
@@ -510,202 +576,53 @@ class NoisyBandit(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
-            return np.random.normal(0, 1, self.dimension)
+            return np.random.normal(0, 1, self.dimension)  # type: ignore
         if np.random.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
             idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
+            return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
         return self.current_bests["optimistic"].x
 
 
-@registry.register
-class OptimisticDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB, but new arms are chosen by discrete mutations from the best.
-
-    This combines the discrete 1+1 algorithm and bandits."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class RecombiningOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Combining the discrete 1+1, noise management a la bandit, and genetic crossovers.
-
-    Close to UCB, but new arms are chosen by discrete mutations from the current best and
-    we crossover with the best every two new arms.
-    This combines the discrete 1+1, bandits and genetic crossovers.
+class PSOParticule(utils.Particule):
+    """Particule for the PSO algorithm, holding relevant information
     """
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        elif 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        elif self._num_ask % 2 == 0 or len(self.archive) < 3:
-            return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-        else:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
+    # pylint: disable=too-many-arguments
+    def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
+                 best_position: np.ndarray, best_fitness: float) -> None:
+        super().__init__()
+        self.position = position
+        self.speed = speed
+        self.fitness = fitness
+        self.best_position = best_position
+        self.best_fitness = best_fitness
 
+    @classmethod
+    def random_initialization(cls, dimension: int) -> 'PSOParticule':
+        position = np.random.uniform(0., 1., dimension)
+        speed = np.random.uniform(-1., 1., dimension)
+        return cls(position, None, speed, position, float("inf"))
 
-@registry.register
-class DoubleFastGADiscreteOnePlusOne(base.Optimizer):
-    """Close to discrete 1+1, but new arms are chosen by double-FastGA mutations from the current best.
-    Doerr et al, Fast Genetic Algorithms, 2017
-    """
+    def __repr__(self) -> str:
+        return f"PSOParticule<position: {self.get_transformed_position()}, fitness: {self.fitness}, best: {self.best_fitness}>"
 
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
+    def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
+        dim = len(best_position)
+        rp = np.random.uniform(0., 1., size=dim)
+        rg = np.random.uniform(0., 1., size=dim)
+        self.speed = (omega * self.speed
+                      + phip * rp * (self.best_position - self.position)
+                      + phig * rg * (best_position - self.position))
+        eps = 1e-10
+        self.position = np.clip(self.speed + self.position, eps, 1 - eps)
 
+    def get_transformed_position(self) -> np.ndarray:
+        return self.transform(self.position)
 
-@registry.register
-class FastGAOptimisticDiscreteOnePlusOne(base.Optimizer):
-    """Close to discrete 1+1, but new arms are chosen by FastGA mutations from the current best.
-
-    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB and discrete 1+1, but new arms are chosen by double-FastGA mutations from the current best.
-    Doerr et al, Fast Genetic Algorithms, 2017
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.doubledoerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class FastGAOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB, but new arms are chosen by FastGA mutations from the current best.
-
-    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class FastGANoisyDiscreteOnePlusOne(base.Optimizer):
-    """Close to UCB, but new arms are chosen by FastGA mutations from the current best.
-
-    This is close to DoubleFastGA variants, but assumes that each variable has 2 possible values."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
-        return mutations.doerr_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class PortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Random number of mutated bits + bandit noise management + discrete 1+1 algorithm.
-
-    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
-    in Non-elitist Population", 2016."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class PortfolioNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Random number of mutated bits + bandit noise management + discrete 1+1 algorithm.
-
-    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
-    in Non-elitist Population", 2016."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
-        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(base.Optimizer):
-    """Adding crossover to PortfolioOptimisticNoisyDiscreteOnePlusOneOptimizer."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if 20 * self._num_ask <= len(self.archive) ** 3:
-            return self.current_bests["optimistic"].x
-        if self._num_ask % 2 == 0 or len(self.archive) < 3:
-            return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-        else:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
-
-
-@registry.register
-class NoisyDiscreteOnePlusOne(base.Optimizer):
-    """Bandit + discrete mutations from current LCB-best."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        if self._num_ask <= len(self.archive) ** 3:
-            # numpy does not accept choice on list of tuples, must choose index instead
-            idx = np.random.choice(len(self.archive))
-            return list(self.archive.keys())[idx]
-        return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class DiscreteOnePlusOne(base.Optimizer):
-    """Discrete 1+1 optimization algorithm."""
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.discrete_mutation(self.current_bests["pessimistic"].x)
-
-
-@registry.register
-class PortfolioDiscreteOnePlusOne(base.Optimizer):
-    """Discrete 1+1 optimization algorithm with random number of mutated bits.
-
-    The random number of bits is called uniform mixing in Dang & Lehre "Self-adaptation of Mutation Rates
-    in Non-elitist Population", 2016.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_ask:
-            return np.zeros(self.dimension)
-        return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+    @staticmethod
+    def transform(x: base.ArrayLike, inverse: bool = False) -> np.ndarray:
+        return (stats.norm.cdf if inverse else stats.norm.ppf)(x)  # type: ignore
 
 
 @registry.register
@@ -717,88 +634,75 @@ class PSO(base.Optimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
-        self.pop: List[base.ArrayLike] = []
-        self.pop_speed: List[base.ArrayLike] = []
-        self.pop_best: List[base.ArrayLike] = []
-        self.pop_best_fitness: List[Optional[float]] = []
-        self.pop_fitness: List[Optional[float]] = []
-        self.pso_best: Optional[base.ArrayLike] = None
-        self.pso_best_fitness = float("inf")
-        self.locations: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        self.index = -1
+        self.population = utils.Population[PSOParticule]([])
+        self._replaced: Set[bytes] = set()
+        self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
+        self.best_fitness = float("inf")
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
-        self.eps = 1e-10
-        self.queue = deque(range(self.llambda))
 
     def _internal_ask(self) -> base.ArrayLike:
-        self.index += 1
-        if self.index == 0:
-            self.pso_best = None
-            self.pso_best_fitness = float("inf")
-            for i in range(self.llambda):
-                guy = np.random.uniform(0., 1., self.dimension)
-                self.pop += [guy]
-                self.pop_best += [guy]
-                self.pop_speed += [np.random.uniform(-1., 1., self.dimension)]
-                self.pop_best_fitness += [float("inf")]
-                self.pop_fitness += [None]
-        # Focusing on the right guy in the population.
-        if not self.queue:
-            raise RuntimeError("Queue is empty, you tried to ask more than population size")
-        location = self.queue[0]  # don't remove just yet
-        # First, the initialization.
-        if self.pop_fitness[location] is None:  # This guy is not evaluated.
-            assert self.pop[location] is not None
-            guy = tuple(self.to_real(self.pop[location]))
-            self.locations[guy] += [location]
-            self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
-            return guy
-        # We are in a standard case.
-        # Speed mutation.
-        for i in range(self.dimension):
-            rp = np.random.uniform(0., 1.)
-            rg = np.random.uniform(0., 1.)
-            self.pop_speed[location][i] = (  # type: ignore
-                self.omega * self.pop_speed[location][i]
-                + self.phip * rp * (self.pop_best[location][i]-self.pop[location][i])
-                + self.phig * rg * (self.pso_best[i] - self.pop[location][i])  # type: ignore
-            )
-        # Particle mutation.
-        self.pop[location] += self.pop_speed[location]
-        self.pop[location] = [max(0.+self.eps, min(1.-self.eps, x_)) for x_ in self.pop[location]]
-        guy = tuple(self.to_real(self.pop[location]))
-        self.locations[guy] += [location]
-        self.queue.popleft()  # only remove at the last minute (safer for checkpointing)
+        # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
+        if self.population.is_queue_empty() and len(self.population) < self.llambda:
+            additional = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
+            self.population.extend(additional)
+        particule = self.population.get_queued(remove=False)
+        if particule.fitness is not None:  # particule was already initialized
+            particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
+        guy = particule.get_transformed_position()
+        self.population.set_linked(guy.tobytes(), particule)
+        self.population.get_queued(remove=True)
+        # only remove at the last minute (safer for checkpointing)
         return guy
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return tuple(self.to_real(self.pso_best))
+        return PSOParticule.transform(self.best_position)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        x = tuple(x)
-        assert self.locations[x]
-        location = self.locations[x][0]
-        point = tuple(self.to_real(self.pop[location]))
-        assert x == point, str(x) + f"{x} vs {point}     {self.pop}"
-        self.pop_fitness[location] = value
-        if value < self.pso_best_fitness:
-            assert max(self.pop[location]) < 1., str(self.pop[location])
-            assert min(self.pop[location]) > 0., str(self.pop[location])
-            self.pso_best = [s for s in self.pop[location]]
-            self.pso_best_fitness = value
-        if value < self.pop_best_fitness[location]:  # type: ignore
-            self.pop_best[location] = [s for s in self.pop[location]]
-            self.pop_best_fitness[location] = value
-        del self.locations[x][0]
-        self.queue.append(location)  # update when everything is well done (safer for checkpointing)
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        if x_bytes in self._replaced:
+            self.tell_not_asked(x, value)
+            return
+        particule = self.population.get_linked(x_bytes)
+        point = particule.get_transformed_position()
+        assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
+        particule.fitness = value
+        if value < self.best_fitness:
+            self.best_position = np.array(particule.position, copy=True)
+            self.best_fitness = value
+        if value < particule.best_fitness:
+            particule.best_position = np.array(particule.position, copy=False)
+            particule.best_fitness = value
+        self.population.del_link(x_bytes, particule)
+        self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
-    @staticmethod
-    def to_real(x: base.ArrayLike) -> base.ArrayLike:
-        output = stats.norm.ppf(x)
-        assert not any(x for x in np.isnan(output)), f"Encountered NaN value {output}"
-        return output
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        if x_bytes in self._replaced:
+            self._replaced.remove(x_bytes)
+        else:
+            self._update_archive_and_bests(x, value)
+            self._num_tell += 1
+        if len(self.population) < self.llambda:
+            particule = PSOParticule.random_initialization(self.dimension)
+            particule.position = PSOParticule.transform(x, inverse=True)
+            self.population.extend([particule])
+        else:
+            worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
+            if worst_part.best_fitness < value:
+                return  # no need to update
+            particule = PSOParticule.random_initialization(self.dimension)
+            particule.position = PSOParticule.transform(x, inverse=True)
+            replaced = self.population.replace(worst_part, particule)
+            if replaced is not None:
+                assert isinstance(replaced, bytes)
+                self._replaced.add(replaced)
+        # go through standard pipeline
+        x2 = self._internal_ask()
+        self._internal_tell(x2, value)
 
 
 @registry.register
@@ -825,8 +729,8 @@ class SPSA(base.Optimizer):
         self.delta = float('nan')
         self.ym: Optional[np.ndarray] = None
         self.yp: Optional[np.ndarray] = None
-        self.t = np.zeros(self.dimension)
-        self.avg = np.zeros(self.dimension)
+        self.t: np.ndarray = np.zeros(self.dimension)
+        self.avg: np.ndarray = np.zeros(self.dimension)
         # Set A, a, c according to the practical implementation
         # guidelines in the ISSO book.
         self.A = (10 if budget is None else max(10, budget // 20))
@@ -856,8 +760,8 @@ class SPSA(base.Optimizer):
                 self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
             self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
-            return self.t - self.ck(k) * self.delta
-        return self.t + self.ck(k) * self.delta
+            return self.t - self.ck(k) * self.delta  # type:ignore
+        return self.t + self.ck(k) * self.delta  # type: ignore
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         setattr(self, ('ym' if self.idx % 2 == 0 else 'yp'), np.array(value, copy=True))
@@ -898,6 +802,9 @@ class Portfolio(base.Optimizer):
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 @registry.register
 class ParaPortfolio(Portfolio):
@@ -917,7 +824,7 @@ class ParaPortfolio(Portfolio):
         nw1, nw2, nw3, nw4 = intshare(num_workers - 1, 4)
         self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
         assert len(self.which_optim) == num_workers
-        #b1, b2, b3, b4, b5 = intshare(budget, 5)
+        # b1, b2, b3, b4, b5 = intshare(budget, 5)
         self.optims = [CMA(dimension, num_workers=nw1),
                        TwoPointsDE(dimension, num_workers=nw2),
                        PSO(dimension, num_workers=nw3),

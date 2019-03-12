@@ -5,10 +5,11 @@
 
 import abc
 import time
+import inspect
 import warnings
 from numbers import Real
 from collections import deque
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple, Deque
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple, Deque, Type
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -18,7 +19,6 @@ from . import utils
 
 
 registry = Registry()
-
 _OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
 
 
@@ -26,18 +26,23 @@ class InefficientSettingsWarning(RuntimeWarning):
     pass
 
 
+class TellNotAskedNotSupportedError(NotImplementedError):
+    """To be raised by optimizers which do not support the tell_not_asked interface.
+    """
+
+
 class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
-    - suggest_exploration which provides points on which to evaluate the function to optimize
-    - update_with_fitness_value which lets you provide the values associated to points
-    - provide_recommendation which provides the best final value
-    Typically, one would call suggest_exploration num_workers times, evaluate the
+    - "ask()" which provides points on which to evaluate the function to optimize
+    - "tell(x, value)" which lets you provide the values associated to points
+    - "provide_recommendation()" which provides the best final value
+    Typically, one would call "ask()" num_workers times, evaluate the
     function on these num_workers points in parallel, update with the fitness value when the
     evaluations is finished, and iterate until the budget is over. At the very end,
     one would call provide_recommendation for the estimated optimum.
 
     This class is abstract, it provides _internal equivalents for the 3 main functions,
-    among which at least _internal_suggest_exploration must be overridden.
+    among which at least _internal_ask has to be overridden.
 
     Each optimizer instance should be used only once, with the initial provided budget
 
@@ -68,16 +73,20 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.dimension = dimension
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: Dict[Tuple[float, ...], utils.Value] = {}
-        self.current_bests = {x: utils.Point(tuple(0. for _ in range(dimension)), utils.Value(np.inf))
+        self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
+        self.current_bests = {x: utils.Point(np.zeros(dimension, dtype=np.float), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
+        # pruning function, called at each "tell"
+        # this can be desactivated or modified by each implementation
+        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
+        self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=dimension)
         # instance state
         self._num_ask = 0
         self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[ArrayLike, JobLike]] = []
-        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike]] = deque()
+        self._running_jobs: List[Tuple[ArrayLike, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
 
     @property
     def num_ask(self) -> int:
@@ -119,24 +128,43 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
+    def tell_not_asked(self, x: ArrayLike, value: float) -> None:
+        """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
+
+        Parameters
+        ----------
+        x: np.ndarray
+            point where the function was evaluated
+        value: float
+            value of the function
+        """
+        # default to just a tell
+        # algorithms which do not support it should raise NotImplementedError
+        self.tell(x, value)
+
     def tell(self, x: ArrayLike, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point
 
         Parameters
         ----------
-        x: tuple/np.ndarray
+        x: np.ndarray
             point where the function was evaluated
         value: float
             value of the function
         """
+        x = np.array(x, copy=False)
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, x, value)
+        self._update_archive_and_bests(x, value)
+        self._internal_tell(x, value)
+        self._num_tell += 1
+
+    def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
         if not isinstance(value, Real):
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
             warnings.warn(f"Updating fitness with {value} value")
-        x = tuple(x)
         if x not in self.archive:
             self.archive[x] = utils.Value(value)  # better not to stock the position as a Point (memory)
         else:
@@ -144,19 +172,22 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # update current best records
         # this may have to be improved if we want to keep more kinds of best values
         for name in ["optimistic", "pessimistic", "average"]:
-            if x == self.current_bests[name].x:   # reboot
-                y: Tuple[float, ...] = min(self.archive, key=lambda x, n=name: self.archive[x].get_estimation(n))
+            if np.array_equal(x, self.current_bests[name].x):   # reboot
+                y = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))
                 # rebuild best point may change, and which value did not track the updated value anyway
-                self.current_bests[name] = utils.Point(y, self.archive[y])
+                self.current_bests[name] = utils.Point(np.frombuffer(y), self.archive.bytesdict[y])
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = utils.Point(x, self.archive[x])
                 if not (np.isnan(value) or value == np.inf):
-                    assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
-        self._internal_tell(x, value)
-        self._num_tell += 1
+                    if self.current_bests[name].x not in self.archive:
+                        y = np.frombuffer(
+                            min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n)))
+                        assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
+        if self.pruning is not None:
+            self.archive = self.pruning(self.archive)
 
-    def ask(self) -> Tuple[float, ...]:
+    def ask(self) -> ArrayLike:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
         """
@@ -168,12 +199,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_ask += 1
         return suggestion
 
-    def provide_recommendation(self) -> Tuple[float, ...]:
+    def provide_recommendation(self) -> ArrayLike:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> Tuple[float, ...]:
+    def recommend(self) -> ArrayLike:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self._internal_provide_recommendation()
@@ -183,16 +214,16 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         pass
 
     @abc.abstractmethod
-    def _internal_ask(self) -> Tuple[float, ...]:
+    def _internal_ask(self) -> ArrayLike:
         raise NotImplementedError("Optimizer undefined.")
 
-    def _internal_provide_recommendation(self) -> Tuple[float, ...]:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def optimize(self, objective_function: Callable[[Any], float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
-                 verbosity: int = 0) -> Tuple[float, ...]:
+                 verbosity: int = 0) -> ArrayLike:
         """Optimization (minimization) procedure
 
         Parameters
@@ -224,8 +255,9 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
-        tmp_runnings: List[Tuple[ArrayLike, JobLike]] = []
-        tmp_finished: Deque[Tuple[ArrayLike, JobLike]] = deque()
+        assert executor is not None
+        tmp_runnings: List[Tuple[ArrayLike, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
@@ -315,19 +347,48 @@ class OptimizerFamily:
     def __init__(self, **kwargs: Any) -> None:  # keyword only, to be as explicit as possible
         self._kwargs = kwargs
         params = ", ".join(f"{x}={y!r}" for x, y in sorted(kwargs.items()))
-        self.name = f"{self.__class__.__name__}({params})"  # ugly hack
+        self._repr = f"{self.__class__.__name__}({params})"  # ugly hack
 
     def __repr__(self) -> str:
-        return self.name
+        return self._repr
 
     def with_name(self, name: str, register: bool = False) -> 'OptimizerFamily':
-        self.name = name
+        self._repr = name
         if register:
             registry.register_name(name, self)
         return self
 
     def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
         raise NotImplementedError
+
+
+class ParametrizedFamily(OptimizerFamily):
+    """This is a special case of an optimizer family for which the family instance serves to*
+    hold the parameters.
+    This class assumes that the attributes are set to the init parameters.
+    See oneshot.py for examples
+    """
+
+    _optimizer_class: Optional[Type[Optimizer]] = None
+
+    def __init__(self) -> None:
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()  # type: ignore
+                    if x not in ["self", "__class__"]}
+        diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
+        if diff:  # this is to help durring development
+            raise RuntimeError(f"Mismatch between attributes and arguments of ParametrizedFamily: {diff}")
+        # only print non defaults
+        different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x] and not x.startswith("_")}
+        super().__init__(**different)
+
+    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+        assert self._optimizer_class is not None
+        run = self._optimizer_class(dimension=dimension, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
+        assert hasattr(run, "_parameters")
+        assert isinstance(run._parameters, self.__class__)  # type: ignore
+        run._parameters = self  # type: ignore
+        run.name = repr(self)
+        return run
 
 
 class ArgPoint(NamedTuple):

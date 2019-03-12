@@ -5,9 +5,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest import TestCase
 from typing import Tuple, List, Optional
-import genty
 import numpy as np
 from ..common import testing
 from . import instantiate
@@ -16,7 +14,8 @@ from .instantiate import Placeholder
 
 
 def test_symlink_folder_tree() -> None:
-    path = Path(__file__).parents[2]
+    path = Path(__file__).absolute().parents[1]
+    assert path.name == "nevergrad"
     with tempfile.TemporaryDirectory() as folder:
         instantiate.symlink_folder_tree(path, folder)
 
@@ -24,70 +23,72 @@ def test_symlink_folder_tree() -> None:
 _EXPECTED = [Placeholder(*x) for x in [("value1", "this is a comment"), ("value2", None), ("string", None)]]
 
 
-@genty.genty
-class InstantiationTests(TestCase):
-
-    def _test_uncomment_line(self, line: str, ext: str, expected: str) -> None:
-        if isinstance(expected, str):
-            output = instantiate.uncomment_line(line, ext)
-            np.testing.assert_equal(output, expected)
-        else:
-            np.testing.assert_raises(expected, instantiate.uncomment_line, line, ext)
-
-    # CAREFUL: avoid triggering errors if the module parses itself...
-    # Note: 'bidule' is French for dummy widget
-    @genty.genty_dataset(  # type: ignore
-        nothing=("    bidule", ".py", "    bidule"),
-        python=(f"    # {LINETOKEN} bidule", ".py", "    bidule"),
-        not_starting_python=(f"x    # {LINETOKEN} bidule", ".py", RuntimeError),
-        bad_python=("    // @" + "nevergrad@ bidule", ".py", RuntimeError),
-        cpp=(f"  //{LINETOKEN}bidule", ".cpp", "  bidule"),
-        matlab=(f"%{LINETOKEN}bidule", ".m", "bidule"),
-        unknown=(f"// {LINETOKEN} bidule", ".unknown", RuntimeError),
-    )
-    def test_uncomment_line(self, line: str, ext: str, expected: str) -> None:
-        self._test_uncomment_line(line, ext, expected)
-
-    @genty.genty_dataset(  # type: ignore
-        custom=(f"// {LINETOKEN} bidule", ".custom", "//", "bidule"),
-        wrong_comment_chars=(f"// {LINETOKEN} bidule", ".custom", "#", RuntimeError),
-    )
-    def test_uncomment_line_custom_file_type(self, line: str, ext: str, comment: str, expected: str) -> None:
-        instantiate.FolderFunction.register_file_type(ext, comment)
-        self._test_uncomment_line(line, ext, expected)
-        del instantiate.COMMENT_CHARS[ext]
-
-    @genty.genty_dataset(  # type: ignore
-        with_clean_copy=(True,),
-        without_clean_copy=(False,),
-    )
-    def test_folder_instantiator(self, clean_copy: bool) -> None:
-        path = Path(__file__).parent / "examples"
-        ifolder = instantiate.FolderInstantiator(path, clean_copy=clean_copy)
-        testing.printed_assert_equal(ifolder.placeholders, _EXPECTED)
-        np.testing.assert_equal(len(ifolder.file_functions), 1)
-        with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
-            with (tmp / "script.py").open("r") as f:
-                lines = f.readlines()
-        np.testing.assert_equal(lines[10], "value2 = 110.0\n")
-
-    @genty.genty_dataset(  # type: ignore
-        void=("bvcebsl\nsoefn", []),
-        unique_no_comment=("bfseibf\nbsfei NG_ARG{machin}", [("machin", None)]),
-        several=("bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}", [("truc", "blublu"), ("bidule", None)]),
-    )
-    def test_placeholder(self, text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
-        placeholders = Placeholder.finditer(text)
-        testing.printed_assert_equal(placeholders, [Placeholder(*x) for x in name_comments])
-
-    @genty.genty_dataset(  # type: ignore
-        python=(".py", "[[1, 2], [3, 4]]"),
-        cpp=(".cpp", "{{1, 2}, {3, 4}}"),
-    )
-    def test_placeholder_for_array(self, extension: str, expected: str) -> None:
-        text = "NG_ARG{bidule}"
-        output = Placeholder.sub(text, extension, {"bidule": np.array([[1, 2], [3, 4]])})
+def _check_uncomment_line(line: str, ext: str, expected: str) -> None:
+    if isinstance(expected, str):
+        output = instantiate.uncomment_line(line, ext)
         np.testing.assert_equal(output, expected)
+    else:
+        np.testing.assert_raises(expected, instantiate.uncomment_line, line, ext)
+
+
+# CAREFUL: avoid triggering errors if the module parses itself...
+# Note: 'bidule' is French for dummy widget
+@testing.parametrized(
+    nothing=("    bidule", ".py", "    bidule"),
+    python=(f"    # {LINETOKEN} bidule", ".py", "    bidule"),
+    not_starting_python=(f"x    # {LINETOKEN} bidule", ".py", RuntimeError),
+    bad_python=("    // @" + "nevergrad@ bidule", ".py", RuntimeError),
+    cpp=(f"  //{LINETOKEN}bidule", ".cpp", "  bidule"),
+    matlab=(f"%{LINETOKEN}bidule", ".m", "bidule"),
+    unknown=(f"// {LINETOKEN} bidule", ".unknown", RuntimeError),
+)
+def test_uncomment_line(line: str, ext: str, expected: str) -> None:
+    _check_uncomment_line(line, ext, expected)
+
+
+@testing.parametrized(
+    custom=(f"// {LINETOKEN} bidule", ".custom", "//", "bidule"),
+    wrong_comment_chars=(f"// {LINETOKEN} bidule", ".custom", "#", RuntimeError),
+)
+def test_uncomment_line_custom_file_type(line: str, ext: str, comment: str, expected: str) -> None:
+    instantiate.FolderFunction.register_file_type(ext, comment)
+    _check_uncomment_line(line, ext, expected)
+    del instantiate.COMMENT_CHARS[ext]
+
+
+@testing.parametrized(
+    with_clean_copy=(True,),
+    without_clean_copy=(False,),
+)
+def test_folder_instantiator(clean_copy: bool) -> None:
+    path = Path(__file__).parent / "examples"
+    ifolder = instantiate.FolderInstantiator(path, clean_copy=clean_copy)
+    testing.printed_assert_equal(ifolder.placeholders, _EXPECTED)
+    np.testing.assert_equal(len(ifolder.file_functions), 1)
+    with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
+        with (tmp / "script.py").open("r") as f:
+            lines = f.readlines()
+    np.testing.assert_equal(lines[10], "value2 = 110.0\n")
+
+
+@testing.parametrized(
+    void=("bvcebsl\nsoefn", []),
+    unique_no_comment=("bfseibf\nbsfei NG_ARG{machin}", [("machin", None)]),
+    several=("bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}", [("truc", "blublu"), ("bidule", None)]),
+)
+def test_placeholder(text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
+    placeholders = Placeholder.finditer(text)
+    testing.printed_assert_equal(placeholders, [Placeholder(*x) for x in name_comments])
+
+
+@testing.parametrized(
+    python=(".py", "[[1, 2], [3, 4]]"),
+    cpp=(".cpp", "{{1, 2}, {3, 4}}"),
+)
+def test_placeholder_for_array(extension: str, expected: str) -> None:
+    text = "NG_ARG{bidule}"
+    output = Placeholder.sub(text, extension, {"bidule": np.array([[1, 2], [3, 4]])})
+    np.testing.assert_equal(output, expected)
 
 
 def test_placeholder_substitution() -> None:
