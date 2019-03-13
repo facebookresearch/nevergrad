@@ -520,31 +520,26 @@ class CTBPSA(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self.tbpsa = TBPSA(dimension, budget=budget, num_workers=num_workers)
         self.num_repeat = 0
-        self.repeator = {}
-        self.listor = {}
-        self.nbc = 0
-        self.current_point: Optional[np.ndarray] = None
+        self.repetitions: Dict[bytes, Tuple[int, List[float]]] = {}
+        self.current_point: np.ndarray = np.zeros(dimension)
 
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
-            self.current_point = self.tbpsa.ask()
+            self.current_point = np.array(self.tbpsa.ask(), copy=False)
             xbytes = self.current_point.tobytes()
             self.num_repeat = max(1, int(self.tbpsa.llambda**.1))
-            self.repeator[xbytes] = self.num_repeat
-            self.listor[xbytes] = []
+            self.repetitions[xbytes] = (self.num_repeat, [])
         self.num_repeat -= 1
         return self.current_point
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        x = np.array(x, copy=False)
         xbytes = x.tobytes()
-        self.repeator[xbytes] -= 1
-        self.listor[xbytes] += [value]
-        if self.repeator[xbytes] == 0:
-            def mean(x):
-                return sum(x) / len(x)
-            self.tbpsa.tell(x, mean(self.listor[xbytes]))
-            del self.repeator[xbytes]
-            del self.listor[xbytes]
+        total, values = self.repetitions[xbytes]
+        values.append(value)
+        if len(values) == total:
+            self.tbpsa.tell(x, np.mean(values))
+            del self.repetitions[xbytes]
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.tbpsa.provide_recommendation()
@@ -557,12 +552,10 @@ class CTBPSA(base.Optimizer):
 class RCTBPSA(CTBPSA):
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
-            self.current_point = self.tbpsa.ask()
+            self.current_point = np.array(self.tbpsa.ask(), copy=False)
             xbytes = self.current_point.tobytes()
-            self.nbc += 1
-            self.num_repeat = int(max(1, 1.01**self.nbc))
-            self.repeator[xbytes] = self.num_repeat
-            self.listor[xbytes] = []
+            self.num_repeat = int(max(1, 1.01**self.tbpsa.num_ask))
+            self.repetitions[xbytes] = (self.num_repeat, [])
         self.num_repeat -= 1
         return self.current_point
 

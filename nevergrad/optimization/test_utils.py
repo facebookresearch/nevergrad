@@ -148,7 +148,7 @@ def test_pruning() -> None:
 
 
 @pytest.mark.parametrize("dimension,expected_max", [(100, 1342177), (10000, 13421), (1000000, 1080)])  # type: ignore
-def test_pruning_sensible_default(dimension, expected_max) -> None:
+def test_pruning_sensible_default(dimension: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
     assert pruning.min_len == 36
     assert pruning.max_len == expected_max
