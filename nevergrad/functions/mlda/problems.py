@@ -244,6 +244,7 @@ class Landscape(instrumentation.InstrumentedFunction):
 
     def __init__(self, transform: Optional[str] = None) -> None:
         super().__init__(self._oracle_call, instrumentation.var.Gaussian(0, 1), instrumentation.variables.Gaussian(0, 1))
+        self.instrumentation.with_name("standard")
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
             variables = list(instrumentation.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)
