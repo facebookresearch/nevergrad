@@ -69,7 +69,7 @@ class Clustering(inst.InstrumentedFunction):
         pb._descriptors.update(name=name)
         return pb
 
-    def _compute_distance(self, centers: ArrayLike) -> float:
+    def _compute_distance(self, centers: np.ndarray) -> float:
         """Sum of minimum squared distances to closest centroid
         centers must be of size num_clusters x n
         """
