@@ -251,8 +251,8 @@ class Landscape(instrumentation.InstrumentedFunction):
             self.instrumentation = instrumentation.Instrumentation(*variables).with_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.
-            variables = list(instrumentation.var.Gaussian(s, s) for s in stds)
-            self.instrumentation = instrumentation.Instrumentation(*variables).with_name("square")  # maybe buggy, try again?
+            variables2 = list(instrumentation.var.Gaussian(s, s) for s in stds)
+            self.instrumentation = instrumentation.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
         elif transform is not None:
             raise ValueError(f"Unknown transform {transform}")
         self._max = float(self._image.max())
