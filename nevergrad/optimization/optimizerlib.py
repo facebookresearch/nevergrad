@@ -523,38 +523,46 @@ class CTBPSA(base.Optimizer):
         self.repeator = {}
         self.listor = {}
         self.nbc = 0
+        self.current_point: Optional[np.ndarray] = None
 
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
             self.current_point = self.tbpsa.ask()
+            xbytes = self.current_point.tobytes()
             self.num_repeat = max(1, int(self.tbpsa.llambda**.1))
-            self.repeator[self.current_point] = self.num_repeat
-            self.listor[self.current_point] = []
+            self.repeator[xbytes] = self.num_repeat
+            self.listor[xbytes] = []
         self.num_repeat -= 1
         return self.current_point
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        self.repeator[x] -= 1
-        self.listor[self.current_point] += [value]
-        if self.repeator[x] == 0:
+        xbytes = x.tobytes()
+        self.repeator[xbytes] -= 1
+        self.listor[xbytes] += [value]
+        if self.repeator[xbytes] == 0:
             def mean(x):
                 return sum(x) / len(x)
-            self.tbpsa.tell(x, mean(self.listor[self.current_point]))
-            del self.repeator[x]
-            del self.listor[x]
+            self.tbpsa.tell(x, mean(self.listor[xbytes]))
+            del self.repeator[xbytes]
+            del self.listor[xbytes]
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.tbpsa.provide_recommendation()
+
+    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
 
 @registry.register
 class RCTBPSA(CTBPSA):
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
             self.current_point = self.tbpsa.ask()
+            xbytes = self.current_point.tobytes()
             self.nbc += 1
-            #self.num_repeat = int(max(1, 1.01**self.tbpsa.num_ask))
             self.num_repeat = int(max(1, 1.01**self.nbc))
-            self.repeator[self.current_point] = self.num_repeat
+            self.repeator[xbytes] = self.num_repeat
+            self.listor[xbytes] = []
         self.num_repeat -= 1
         return self.current_point
 
