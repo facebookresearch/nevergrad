@@ -161,7 +161,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_tell += 1
 
     def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
-        if not isinstance(value, Real):
+        if not isinstance(value, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
             warnings.warn(f"Updating fitness with {value} value")
@@ -173,17 +173,14 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # this may have to be improved if we want to keep more kinds of best values
         for name in ["optimistic", "pessimistic", "average"]:
             if np.array_equal(x, self.current_bests[name].x):   # reboot
-                y = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))
+                y: bytes = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))  # type: ignore
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = utils.Point(np.frombuffer(y), self.archive.bytesdict[y])
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = utils.Point(x, self.archive[x])
                 if not (np.isnan(value) or value == np.inf):
-                    if self.current_bests[name].x not in self.archive:
-                        y = np.frombuffer(
-                            min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n)))
-                        assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
+                    assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
