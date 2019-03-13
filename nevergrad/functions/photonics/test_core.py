@@ -18,8 +18,8 @@ from . import core
 def test_photonics_transforms(pb: str, expected: List[float]) -> None:
     np.random.seed(24)
     with patch("shutil.which", return_value="here"):
-        func = core.Photonics(pb, 16)  # should be 8... but it is actually not allowed. Nevermind here
-    func.instrumentation.args[0]._dimension = 8  # hack it
+        func = core.Photonics(pb, 16)  # should be 8... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
+    func.instrumentation.args[0]._dimension = 8  # type: ignore
     x = np.random.normal(0, 1, size=8)
     (output,), _ = func.instrumentation.data_to_arguments(x)
     np.testing.assert_almost_equal(output, expected, decimal=2)
