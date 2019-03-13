@@ -120,7 +120,7 @@ class BaseFunction(abc.ABC):
         return self._dimension
 
     @abc.abstractmethod
-    def oracle_call(self, *args: Any, **kwargs: Any) -> float:
+    def oracle_call(self, x: np.ndarray) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + applies the instrumentation and add some noise if need be.
 

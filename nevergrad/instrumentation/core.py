@@ -8,7 +8,6 @@ import itertools
 from typing import List, Any, Tuple, Dict, Optional, Callable
 import numpy as np
 from ..common.typetools import ArrayLike
-from ..functions import base
 from . import utils
 from . import variables
 
@@ -125,7 +124,7 @@ class Instrumentation:
         return " - " + "\n - ".join(strings)
 
 
-class InstrumentedFunction(base.BaseFunction):
+class InstrumentedFunction:
     """Converts a multi-argument function into a mono-argument multidimensional continuous function
     which can be optimized.
 
@@ -148,14 +147,26 @@ class InstrumentedFunction(base.BaseFunction):
 
     def __init__(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         assert callable(function)
-        self.instrumentation = Instrumentation(*args, **kwargs)
-        super().__init__(dimension=self.instrumentation.dimension)
-        # keep track of what is instrumented (but "how" is probably too long/complex)
         name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
-        self._descriptors.update(name=name, instrumentation=self.instrumentation.name)
-        self._function = function
+        self._descriptors: Dict[str, Any] = {"function_class": self.__class__.__name__, "name": name}
+        self._instrumentation = Instrumentation()  # dummy
+        self.instrumentation = Instrumentation(*args, **kwargs)  # sets descriptors
+        self.function = function
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
+
+    @property
+    def instrumentation(self) -> Instrumentation:
+        return self._instrumentation
+
+    @instrumentation.setter
+    def instrumentation(self, instrum: Instrumentation) -> None:
+        self._instrumentation = instrum
+        self._descriptors.update(instrumentation=instrum.name, dimension=instrum.dimension)
+
+    @property
+    def dimension(self) -> int:
+        return self.instrumentation.dimension
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Get the arguments and keyword arguments corresponding to the data
@@ -173,16 +184,14 @@ class InstrumentedFunction(base.BaseFunction):
     def arguments_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
         return self.instrumentation.arguments_to_data(*args, **kwargs)
 
-    def oracle_call(self, x: np.ndarray) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
-        return self._function(*self.last_call_args, **self.last_call_kwargs)
-
     def __call__(self, x: ArrayLike) -> Any:
         # BaseFunction __call__ method should generally not be overriden,
         # but here that would mess up with typing, and I would rather not constrain
         # user to return only floats.
-        x = self.transform(x)
-        return self.oracle_call(x)
+        self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
+        print(self.instrumentation)
+        print(x, self.last_call_args, self.last_call_kwargs)
+        return self.function(*self.last_call_args, **self.last_call_kwargs)
 
     def get_summary(self, data: ArrayLike) -> Any:  # probably impractical for large arrays
         """Provides the summary corresponding to the provided data
@@ -196,3 +205,10 @@ class InstrumentedFunction(base.BaseFunction):
     def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
         warnings.warn("convert_to_data is deprecated, please use arguments_to_data instead")
         return self.arguments_to_data(*args, **kwargs)
+
+    @property
+    def descriptors(self) -> Dict[str, Any]:
+        """Description of the function parameterization, as a dict. This base class implementation provides function_class,
+            noise_level, transform and dimension
+        """
+        return dict(self._descriptors)  # Avoid external modification

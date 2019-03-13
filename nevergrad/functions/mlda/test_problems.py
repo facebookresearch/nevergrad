@@ -74,14 +74,18 @@ def test_landscape() -> None:
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
         func = problems.Landscape(transform=None)
-        sfunc = problems.Landscape(transform="square")
+        sfunc = problems.Landscape(transform="square")  # TODO reactivate
     np.testing.assert_equal(func([0, 0]), 5)
     np.testing.assert_equal(func([-.2, -0.2]), 5)
     np.testing.assert_equal(func([-.6, -0.2]), float("inf"))
     np.testing.assert_equal(func([2, 1]), 0)
     np.testing.assert_equal(func([2.6, 1]), float("inf"))
     # with square
+    args, _ = sfunc.data_to_arguments([-1, -1])  # bottom left
+    np.testing.assert_equal(args, [0, 0])
     np.testing.assert_equal(sfunc([-1, -1]), 5)
+    args, _ = sfunc.data_to_arguments([1, 1])  # upper right
+    np.testing.assert_equal(args, [2, 1])
     np.testing.assert_equal(sfunc([1, 1]), 0)
     np.testing.assert_equal(sfunc([1.6, 1]), np.inf)
 
@@ -93,5 +97,6 @@ def test_landscape_gaussian() -> None:
         func = problems.Landscape(transform="gaussian")
     output = func([-144, -144])
     np.testing.assert_equal(output, 5)  # should be mapped to 0, 0
-    output2 = func.transform([144, 144])
+    #output2 = func.transform([144, 144])
+    output2, _ = func.data_to_arguments([144, 144])
     np.testing.assert_array_equal(output2, [2, 1])  # last element

@@ -8,12 +8,12 @@
 # - Marcus Gallagher, University of Queensland
 # - Mike Preuss, LIACS, Leiden University
 
-from typing import Tuple, Optional
+from typing import Optional
 import numpy as np
 import scipy.spatial
-from nevergrad.functions import BaseFunction
-from nevergrad.common.typetools import ArrayLike
-from nevergrad.instrumentation.variables import OrderedDiscrete
+from ...functions import BaseFunction
+from ...common.typetools import ArrayLike
+from ... import instrumentation
 from . import datasets
 
 
@@ -216,27 +216,13 @@ class SammonMapping(BaseFunction):
         return float(np.sum(norm_prox.ravel()))
 
 
-def _normalized(func: "Landscape", x: np.ndarray) -> np.ndarray:
-    "Normalization function for Landscape"
-    return (np.array(x, copy=False) + 1.) * (np.array(func._image.shape) - 1.) / 2.  # type: ignore
+# TODO: if square not buggy, then delete
+# def _normalized(func: "Landscape", x: np.ndarray) -> np.ndarray:
+#    "Normalization function for Landscape"
+#    return (np.array(x, copy=False) + 1.) * (np.array(func._image.shape) - 1.) / 2.  # type: ignore
 
 
-class _GaussianNorm:
-    """Gaussian normalization function, as a class to avoid resinstanciation of the OrderedDiscrete variables
-    """
-
-    def __init__(self) -> None:
-        self._variables: Optional[Tuple[OrderedDiscrete[int], ...]] = None
-
-    def __call__(self, func: "Landscape", x: np.ndarray) -> np.ndarray:
-        if self._variables is None:
-            shape = func._image.shape
-            self._variables = tuple(OrderedDiscrete(list(range(x))) for x in shape)
-        assert self._variables is not None
-        return np.array([v.process([y]) for v, y in zip(self._variables, x)])
-
-
-class Landscape(BaseFunction):
+class Landscape(instrumentation.InstrumentedFunction):
     """Planet Earth Landscape problem defined in
     Machine Learning and Data Analysis (MLDA) Problem Set v1.0, Gallagher et al., 2018, PPSN
     https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view
@@ -245,8 +231,7 @@ class Landscape(BaseFunction):
     Parameters
     ----------
     transform: None, "gaussian" or "square"
-        whether use the image [0, 4319]x[0, 2159] (None) to normalize to [-1, 1]x[-1, 1] domain (square),
-        or to use a Gaussian transform.
+        whether use the image [0, 4319]x[0, 2159] (None) or to use a Gaussian transform.
 
     Note
     ----
@@ -257,16 +242,22 @@ class Landscape(BaseFunction):
       since it is an artificial rescaling to greyscale of a color image.
     """
 
-    # the syntax with typing seems a bit complex to make work, since this is no more a BaseFunction
-    _TRANSFORMS = {"square": _normalized, "gaussian": _GaussianNorm()}
-
-    def __init__(self, transform: Optional[str] = "square") -> None:
+    def __init__(self, transform: Optional[str] = None) -> None:
+        super().__init__(self._oracle_call, instrumentation.var.Gaussian(0, 1), instrumentation.variables.Gaussian(0, 1))
         self._image = datasets.get_data("Landscape")
+        if transform == "gaussian":
+            variables = list(instrumentation.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)
+            self.instrumentation = instrumentation.Instrumentation(*variables).with_name("gaussian")
+        elif transform == "square":
+            stds = (np.array(self._image.shape) - 1.) / 2.
+            variables = list(instrumentation.var.Gaussian(s, s) for s in stds)
+            self.instrumentation = instrumentation.Instrumentation(*variables).with_name("square")  # maybe buggy, try again?
+        elif transform is not None:
+            raise ValueError(f"Unknown transform {transform}")
         self._max = float(self._image.max())
-        super().__init__(dimension=2, transform=transform)
 
-    def oracle_call(self, x: ArrayLike) -> float:
-        x = np.round(x)
-        if np.min(x) < 0 or x[0] >= self._image.shape[0] or x[1] >= self._image.shape[1]:
+    def _oracle_call(self, x: float, y: float) -> float:
+        z = np.round([x, y])
+        if np.min(z) < 0 or z[0] >= self._image.shape[0] or z[1] >= self._image.shape[1]:
             return float("inf")  # could propose other limit conditions
-        return float(self._max - self._image[int(x[0]), int(x[1])])
+        return float(self._max - self._image[int(z[0]), int(z[1])])

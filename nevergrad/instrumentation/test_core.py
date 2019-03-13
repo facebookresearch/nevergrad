@@ -60,7 +60,7 @@ def test_instrumented_function() -> None:
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     testing.printed_assert_equal(ifunc.descriptors, {
-        "dimension": 8, "name": "_arg_return", "function_class": "InstrumentedFunction", "transform": None,
+        "dimension": 8, "name": "_arg_return", "function_class": "InstrumentedFunction",
         "instrumentation": "SC(1,12|0),constant,G(0,1),constkwarg=blublu,plop=SC(3,4|0)"})
     print(ifunc.get_summary(data))
 
