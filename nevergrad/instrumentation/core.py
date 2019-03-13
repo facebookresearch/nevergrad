@@ -185,12 +185,7 @@ class InstrumentedFunction:
         return self.instrumentation.arguments_to_data(*args, **kwargs)
 
     def __call__(self, x: ArrayLike) -> Any:
-        # BaseFunction __call__ method should generally not be overriden,
-        # but here that would mess up with typing, and I would rather not constrain
-        # user to return only floats.
         self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
-        print(self.instrumentation)
-        print(x, self.last_call_args, self.last_call_kwargs)
         return self.function(*self.last_call_args, **self.last_call_kwargs)
 
     def get_summary(self, data: ArrayLike) -> Any:  # probably impractical for large arrays

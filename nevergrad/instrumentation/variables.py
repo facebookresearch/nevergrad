@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional, TypeVar, Union
+from typing import List, Optional, TypeVar, Union, Sequence
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
@@ -102,7 +102,7 @@ class Gaussian(utils.Variable[Y]):
     The output will simply be mean + std * data
     """
 
-    def __init__(self, mean: float, std: float, shape: Optional[List[int]] = None) -> None:
+    def __init__(self, mean: float, std: float, shape: Optional[Sequence[int]] = None) -> None:
         self.mean = mean
         self.std = std
         self.shape = shape

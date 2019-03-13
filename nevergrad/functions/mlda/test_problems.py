@@ -25,7 +25,7 @@ def test_clustering() -> None:
         np.testing.assert_equal(func.dimension, 10)
     func([k for k in range(10)])
     testing.printed_assert_equal(func.descriptors,
-                                 {"transform": None, "function_class": "Clustering", "dimension": 10,
+                                 {"instrumentation": "G(0,1)", "function_class": "Clustering", "dimension": 10,
                                   "name": "Ruspini", "num_clusters": 5, "rescale": True})
 
 
@@ -74,7 +74,7 @@ def test_landscape() -> None:
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
         func = problems.Landscape(transform=None)
-        sfunc = problems.Landscape(transform="square")  # TODO reactivate
+        sfunc = problems.Landscape(transform="square")
     np.testing.assert_equal(func([0, 0]), 5)
     np.testing.assert_equal(func([-.2, -0.2]), 5)
     np.testing.assert_equal(func([-.6, -0.2]), float("inf"))
