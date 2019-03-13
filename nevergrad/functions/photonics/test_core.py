@@ -19,8 +19,9 @@ def test_photonics_transforms(pb: str, expected: List[float]) -> None:
     np.random.seed(24)
     with patch("shutil.which", return_value="here"):
         func = core.Photonics(pb, 16)  # should be 8... but it is actually not allowed. Nevermind here
+    func.instrumentation.args[0]._dimension = 8  # hack it
     x = np.random.normal(0, 1, size=8)
-    output = func.transform(x)
+    (output,), _ = func.instrumentation.data_to_arguments(x)
     np.testing.assert_almost_equal(output, expected, decimal=2)
     np.random.seed(24)
     x2 = np.random.normal(0, 1, size=8)
@@ -36,7 +37,7 @@ def test_morpho_transform_constraints() -> None:
     with patch("shutil.which", return_value="here"):
         func = core.Photonics("morpho", 60)
     x = np.random.normal(0, 5, size=60)  # std 5 to play with boundaries
-    output = func.transform(x)
+    (output,), _ = func.instrumentation.data_to_arguments(x)
     assert np.all(output >= 0)
     q = len(x) // 4
     assert np.all(output[:q] <= 300)

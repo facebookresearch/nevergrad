@@ -97,6 +97,5 @@ def test_landscape_gaussian() -> None:
         func = problems.Landscape(transform="gaussian")
     output = func([-144, -144])
     np.testing.assert_equal(output, 5)  # should be mapped to 0, 0
-    #output2 = func.transform([144, 144])
     output2, _ = func.data_to_arguments([144, 144])
     np.testing.assert_array_equal(output2, [2, 1])  # last element
