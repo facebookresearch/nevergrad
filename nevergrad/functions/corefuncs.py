@@ -6,7 +6,7 @@
 import time
 from typing import Dict, Any, Tuple, List
 import numpy as np
-from .base import PostponedObject
+from .utils import PostponedObject
 from ..instrumentation import discretization
 from ..common.decorators import Registry
 

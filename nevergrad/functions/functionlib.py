@@ -8,7 +8,6 @@ from typing import List, Tuple, Any, Dict, Callable
 import numpy as np
 from . import utils
 from . import corefuncs
-from .base import PostponedObject
 from .. import instrumentation as inst
 from ..common import tools
 from ..common.typetools import ArrayLike
@@ -62,7 +61,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         return "Photonics"
 
 
-class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
+class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -188,7 +187,7 @@ class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
-        if isinstance(self._func, PostponedObject):
+        if isinstance(self._func, utils.PostponedObject):
             return self._func.get_postponing_delay(arguments, value)
         return 1.
 
