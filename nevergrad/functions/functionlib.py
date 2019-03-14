@@ -8,7 +8,7 @@ from typing import List, Tuple, Any, Dict
 import numpy as np
 from . import utils
 from . import corefuncs
-from .base import ArtificiallyNoisyBaseFunction, BaseFunction
+from .base import BaseFunction
 from .base import PostponedObject
 from .. import instrumentation as inst
 from ..common import tools
@@ -31,7 +31,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
 
     @property
     def dimension(self) -> int:
-        return self._dimension
+        return self._dimension if not self.hashing else 1
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -39,7 +39,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         This functions creates the random transform used upon each block (translation + optional rotation).
         """
         # use random indices for blocks
-        indices = np.random.choice(self.dimension, self.block_dimension * self.num_blocks, replace=False).tolist()
+        indices = np.random.choice(self._dimension, self.block_dimension * self.num_blocks, replace=False).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
             self._transforms.append(utils.Transform(transform_inds, translation_factor=self.translation_factor, rotation=self.rotation))
@@ -49,15 +49,15 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
             self._initialize()
         if self.hashing:
             state = np.random.get_state()
-            y = str(data)
-            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))
-            x = np.random.normal(0., 1., len(y))
+            y = data[0]  # should be a string... or something...
+            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))  # type: ignore
+            data = np.random.normal(0., 1., len(y))  # type: ignore
             np.random.set_state(state)
         data = np.array(data, copy=False)
-        data2 = []
+        output = []
         for transform in self._transforms:
-            data2.append(x[transform.indices] if self.only_index_transform else transform(x))
-        return np.array(data)
+            output.append(data[transform.indices] if self.only_index_transform else transform(data))
+        return np.array(output)
 
     def _short_repr(self) -> str:
         return "Photonics"
@@ -121,7 +121,8 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
-        if not all(isinstance(x, bool) for x in [hashing, rotation]):
+        assert noise_level >= 0, "Noise level must be greater or equal to 0"
+        if not all(isinstance(x, bool) for x in [noise_dissymmetry, hashing, rotation]):
             raise TypeError("hashing and rotation should be bools")
         for param, mini in [("block_dimension", 1), ("num_blocks", 1), ("useless_variables", 0)]:
             value = self._parameters[param]
@@ -142,7 +143,9 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         only_index_transform = info.get("no_transfrom", False)
         # variable
         var = ArtificialVariable(dimension=dimension, num_blocks=num_blocks, block_dimension=block_dimension,
-                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing, only_index_transform=only_index_transform)
+                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
+                                 only_index_transform=only_index_transform)
+        self.instru = inst.Instrumentation(var)
         super().__init__(dimension)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         self._transforms: List[utils.Transform] = []
@@ -159,30 +162,8 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         """
         return sorted(corefuncs.registry)
 
-    def initialize(self) -> None:
-        """Delayed initialization of the transforms to avoid slowing down the instance creation
-        (makes unit testing much faster).
-        This functions creates the random transform used upon each block (translation + optional rotation).
-        """
-        # use random indices for blocks
-        indices = np.random.choice(self.dimension, self.dimension - self._parameters["useless_variables"], replace=False).tolist()
-        indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
-        for transform_inds in tools.grouper(indices, n=self._parameters["block_dimension"]):
-            self._transforms.append(utils.Transform(transform_inds, **{x: self._parameters[x] for x in ["translation_factor", "rotation"]}))
-
     def transform(self, x: ArrayLike) -> np.ndarray:
-        if not self._transforms:
-            self.initialize()
-        if self._parameters["hashing"]:
-            state = np.random.get_state()
-            y = str(x)
-            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))
-            x = np.random.normal(0., 1., len(y))
-            np.random.set_state(state)
-        x = np.array(x, copy=False)
-        data = []
-        for transform in self._transforms:
-            data.append(x[transform.indices] if self._only_index_transform else transform(x))
+        (data,), _ = self.instru.data_to_arguments(x)
         return np.array(data)
 
     def oracle_call(self, x: np.ndarray) -> float:
