@@ -163,7 +163,7 @@ class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
         """
         return sorted(corefuncs.registry)
 
-    def transform(self, x: ArrayLike) -> np.ndarray:
+    def _transform(self, x: ArrayLike) -> np.ndarray:
         (data,), _ = self.instrumentation.data_to_arguments(x)
         return np.array(data)
 
@@ -176,8 +176,8 @@ class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def __call__(self, x: ArrayLike) -> float:
-        return _noisy_call(x=np.array(x, copy=False), transf=self.transform, func=self.function,
+    def __call__(self, x: ArrayLike) -> float:  # completely bypass base function __call__... for simplicity  # TODO: refactor
+        return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
     def duplicate(self) -> "ArtificialFunction":
