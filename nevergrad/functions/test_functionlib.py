@@ -35,15 +35,21 @@ def test_artitificial_function_repr() -> None:
     assert "sphere" in output, f"Unexpected representation: {output}"
 
 
-def test_testcase_function_value() -> None:
+@testing.parametrized(
+    sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
+    cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
+    cigar_rot=({"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 5239413.576),
+    no_transform=({"name": "leadingones5", "block_dimension": 50, "useless_variables": 10}, 9.0),
+    hashed=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True}, 12.44),
+)
+def test_testcase_function_value(config: Dict[str, Any], expected: float) -> None:
     # make sure no change is made to the computation
-    config: Dict[str, Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}
-    np.random.seed(2)
-    x = np.random.normal(0, 1, 12)
-    np.random.seed(12)
     func = functionlib.ArtificialFunction(**config)
+    np.random.seed(2)
+    x = np.random.normal(0, 1, func.dimension)
+    np.random.seed(12)  # function randomness comes at first call
     value = func(x)
-    np.testing.assert_almost_equal(value, 9.630, decimal=3)
+    np.testing.assert_almost_equal(value, expected, decimal=3)
 
 
 @testing.parametrized(

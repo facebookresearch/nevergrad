@@ -135,11 +135,16 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
             raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
         # record necessary info and prepare transforms
         dimension = block_dimension * num_blocks + useless_variables
-        super().__init__(dimension, noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
         self._func = corefuncs.registry[name]
+        # special case
+        info = corefuncs.registry.get_info(self._parameters["name"])
+        only_index_transform = info.get("no_transfrom", False)
+        # variable
+        var = ArtificialVariable(dimension=dimension, num_blocks=num_blocks, block_dimension=block_dimension,
+                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing, only_index_transform=only_index_transform)
+        super().__init__(dimension, noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         self._transforms: List[utils.Transform] = []
-        # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
         self._only_index_transform = info.get("no_transfrom", False)
         # add descriptors
