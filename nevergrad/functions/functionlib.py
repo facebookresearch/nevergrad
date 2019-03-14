@@ -10,8 +10,57 @@ from . import utils
 from . import corefuncs
 from .base import ArtificiallyNoisyBaseFunction
 from .base import PostponedObject
+from .. import instrumentation as inst
 from ..common import tools
 from ..common.typetools import ArrayLike
+
+
+class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
+    # pylint: disable=too-many-instance-attributes,too-many-arguments
+
+    def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
+                 translation_factor: float, rotation: bool, hashing: bool, only_index_transform: bool) -> None:
+        self._dimension = dimension
+        self._transforms: List[utils.Transform] = []
+        self.rotation = rotation
+        self.translation_factor = translation_factor
+        self.num_blocks = num_blocks
+        self.block_dimension = block_dimension
+        self.only_index_transform = only_index_transform
+        self.hashing = hashing
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    def _initialize(self) -> None:
+        """Delayed initialization of the transforms to avoid slowing down the instance creation
+        (makes unit testing much faster).
+        This functions creates the random transform used upon each block (translation + optional rotation).
+        """
+        # use random indices for blocks
+        indices = np.random.choice(self.dimension, self.block_dimension * self.num_blocks, replace=False).tolist()
+        indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
+        for transform_inds in tools.grouper(indices, n=self.block_dimension):
+            self._transforms.append(utils.Transform(transform_inds, translation_factor=self.translation_factor, rotation=self.rotation))
+
+    def process(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+        if not self._transforms:
+            self._initialize()
+        if self.hashing:
+            state = np.random.get_state()
+            y = str(data)
+            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))
+            x = np.random.normal(0., 1., len(y))
+            np.random.set_state(state)
+        data = np.array(data, copy=False)
+        data2 = []
+        for transform in self._transforms:
+            data2.append(x[transform.indices] if self.only_index_transform else transform(x))
+        return np.array(data)
+
+    def _short_repr(self) -> str:
+        return "Photonics"
 
 
 class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
