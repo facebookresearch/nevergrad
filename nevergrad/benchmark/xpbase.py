@@ -196,7 +196,7 @@ class Experiment:
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
-        args, kwargs = self.function.instrumentation.data_to_arguments(self.recommendation)
+        args, kwargs = self.function.instrumentation.data_to_arguments(self.recommendation, deterministic=True)
         self.result["loss"] = sum(self.function.function(*args, **kwargs) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:

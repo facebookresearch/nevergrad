@@ -142,7 +142,7 @@ class InstrumentedFunction:
       - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
       - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
     - This function can then be directly used in benchmarks *if it returns a float*.
-
+    - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """
 
     def __init__(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
