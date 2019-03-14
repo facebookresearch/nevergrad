@@ -109,8 +109,8 @@ def test_duplicate() -> None:
 def test_artifificial_function_with_jump() -> None:
     func1 = functionlib.ArtificialFunction("sphere", 5)
     func2 = functionlib.ArtificialFunction("jump5", 5)
-    np.testing.assert_equal(func1.instrumentation.args[0].only_index_transform, False)
-    np.testing.assert_equal(func2.instrumentation.args[0].only_index_transform, True)
+    np.testing.assert_equal(func1.instrumentation.args[0].only_index_transform, False)  # type: ignore
+    np.testing.assert_equal(func2.instrumentation.args[0].only_index_transform, True)  # type: ignore
 
 
 def test_get_posptoning_delay() -> None:
@@ -119,3 +119,23 @@ def test_get_posptoning_delay() -> None:
     np.testing.assert_equal(func.get_postponing_delay(((x,), {}), 3), 1.)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
     np.testing.assert_equal(func.get_postponing_delay(((x,), {}), 3), 0.0005)
+
+
+@testing.parametrized(
+    no_noise=(2, False, False, False),
+    noise=(2, True, False, True),
+    noise_dissymmetry_pos=(2, True, True, False),  # no noise on right side
+    noise_dissymmetry_neg=(-2, True, True, True),
+    no_noise_with_dissymmetry_neg=(-2, False, True, False),
+)
+def test_noisy_call(x: int, noise: bool, noise_dissymmetry: bool, expect_noisy: bool) -> None:
+    fx = functionlib._noisy_call(x=np.array([x]),
+                                 transf=np.tanh,
+                                 func=lambda y: np.arctanh(y)[0],  # type: ignore
+                                 noise_level=float(noise),
+                                 noise_dissymmetry=noise_dissymmetry)
+    assert not np.isnan(fx)  # noise addition should not get out of function domain
+    if expect_noisy:
+        np.testing.assert_raises(AssertionError, np.testing.assert_almost_equal, fx, x, decimal=8)
+    else:
+        np.testing.assert_almost_equal(fx, x, decimal=8)

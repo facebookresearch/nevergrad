@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
-from typing import List, Tuple, Any, Dict
+from typing import List, Tuple, Any, Dict, Callable
 import numpy as np
 from . import utils
 from . import corefuncs
@@ -154,8 +154,8 @@ class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
         # transforms are initialized at runtime to avoid slow init
 
     @property
-    def dimension(self):
-        return self._dimension  # bypass the instrumentation one (because of "hashing" case)  # TODO: remove
+    def dimension(self) -> int:
+        return self._dimension  # bypass the instrumentation one (because of the "hashing" case)  # TODO: remove
 
     @staticmethod
     def list_sorted_function_names() -> List[str]:
@@ -176,11 +176,9 @@ class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def __call__(self, x: ArrayLike) -> Any:
-        (x_transf,), _ = self.instrumentation.data_to_arguments(x)
-        fx = self.oracle_call(x_transf)
-        noisy_fx = self._add_noise(np.array(x, copy=False), x_transf, fx)
-        return noisy_fx
+    def __call__(self, x: ArrayLike) -> float:
+        return _noisy_call(x=np.array(x, copy=False), transf=self.transform, func=self.function,
+                           noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
     def duplicate(self) -> "ArtificialFunction":
         """Create an equivalent instance, initialized with the same settings
@@ -194,14 +192,16 @@ class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
             return self._func.get_postponing_delay(arguments, value)
         return 1.
 
-    def _add_noise(self, x_input: np.ndarray, x_transf: np.ndarray, fx: float) -> float:  # pylint: disable=unused-argument
-        noise = 0
-        noise_level = self._parameters["noise_level"]
-        noise_dissymmetry = self._parameters["noise_dissymmetry"]
-        if noise_level:
-            if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
-                side_point = self.transform(x_input + np.random.normal(0, 1, size=self.dimension))
-                if noise_dissymmetry:
-                    noise_level *= (1. + x_transf.ravel()[0]*100.)
-                noise = noise_level * np.random.normal(0, 1) * (self.oracle_call(side_point) - fx)
-        return fx + noise
+
+def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func: Callable[[np.ndarray], float],
+                noise_level: float, noise_dissymmetry: bool) -> float:  # pylint: disable=unused-argument
+    x_transf = transf(x)
+    fx = func(x_transf)
+    noise = 0
+    if noise_level:
+        if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
+            side_point = transf(x + np.random.normal(0, 1, size=len(x)))
+            if noise_dissymmetry:
+                noise_level *= (1. + x_transf.ravel()[0]*100.)
+            noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
+    return fx + noise
