@@ -4,7 +4,3 @@
 # LICENSE file in the root directory of this source tree.
 
 from .functionlib import ArtificialFunction
-from .base import BaseFunction
-# this module is used by instrumentation for "BaseFunction"
-# this init must therefore not import submodules which could
-# require more dependencies that the "main" configuration.
