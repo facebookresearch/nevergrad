@@ -22,7 +22,7 @@ def basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
     np.random.seed(seed)  # seed before initializing the function!
     # initialization uses randomness
-    function.instru.args[0]._initialize()   # type: ignore
+    function.instrumentation.args[0]._initialize()   # type: ignore
     return iter([Experiment(function, optimizer="OnePlusOne", num_workers=2, budget=4, seed=next(seedg))])
 
 

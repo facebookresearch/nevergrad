@@ -8,7 +8,6 @@ from typing import List, Tuple, Any, Dict
 import numpy as np
 from . import utils
 from . import corefuncs
-from .base import BaseFunction
 from .base import PostponedObject
 from .. import instrumentation as inst
 from ..common import tools
@@ -63,7 +62,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         return "Photonics"
 
 
-class ArtificialFunction(BaseFunction, PostponedObject):
+class ArtificialFunction(inst.InstrumentedFunction, PostponedObject):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -136,23 +135,27 @@ class ArtificialFunction(BaseFunction, PostponedObject):
             available = ", ".join(self.list_sorted_function_names())
             raise ValueError(f'Unknown core function "{name}". Available names are:\n-----\n{available}')
         # record necessary info and prepare transforms
-        dimension = block_dimension * num_blocks + useless_variables
+        self._dimension = block_dimension * num_blocks + useless_variables
         self._func = corefuncs.registry[name]
         # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transfrom", False)
         # variable
-        var = ArtificialVariable(dimension=dimension, num_blocks=num_blocks, block_dimension=block_dimension,
+        var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                  translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                  only_index_transform=only_index_transform)
-        self.instrumentation = inst.Instrumentation(var)
-        super().__init__(dimension)
+        super().__init__(self.oracle_call, var)
+        self.instrumentation = self.instrumentation.with_name("")
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
         self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
                                  discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
         # transforms are initialized at runtime to avoid slow init
+
+    @property
+    def dimension(self):
+        return self._dimension  # bypass the instrumentation one (because of "hashing" case)  # TODO: remove
 
     @staticmethod
     def list_sorted_function_names() -> List[str]:

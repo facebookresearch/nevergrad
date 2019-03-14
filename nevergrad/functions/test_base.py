@@ -28,7 +28,6 @@ def test_noise_addition(x: int, noise: bool, noise_dissymmetry: bool, expect_noi
     fx = func([x])
     assert not np.isnan(fx)  # noise addition should not get out of function domain
     if expect_noisy:
-        print(x, fx)
         np.testing.assert_raises(AssertionError, np.testing.assert_almost_equal, fx, x, decimal=8)
     else:
         np.testing.assert_almost_equal(fx, x, decimal=8)
