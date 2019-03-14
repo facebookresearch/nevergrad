@@ -148,9 +148,7 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         self.instrumentation = inst.Instrumentation(var)
         super().__init__(dimension)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
-        self._transforms: List[utils.Transform] = []
         info = corefuncs.registry.get_info(self._parameters["name"])
-        self._only_index_transform = info.get("no_transfrom", False)
         # add descriptors
         self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
                                  discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))

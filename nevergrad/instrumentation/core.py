@@ -207,3 +207,19 @@ class InstrumentedFunction:
             noise_level, transform and dimension
         """
         return dict(self._descriptors)  # Avoid external modification
+
+    def __repr__(self) -> str:
+        """Shows the function name and its summary
+        """
+        params = [f"{x}={repr(y)}" for x, y in sorted(self._descriptors.items())]
+        return "Instance of {}({})".format(self.__class__.__name__, ", ".join(params))
+
+    def __eq__(self, other: Any) -> bool:
+        """Check that two instances where initialized with same settings.
+        This is not meant to be used to check if functions are exactly equal (initialization may hold some randomness)
+        This is only useful for unit testing.
+        (may need to be overloaded to make faster if tests are getting slow)
+        """
+        if other.__class__ != self.__class__:
+            return False
+        return bool(self._descriptors == other._descriptors)

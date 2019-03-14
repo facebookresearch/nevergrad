@@ -110,8 +110,8 @@ def test_duplicate() -> None:
 def test_artifificial_function_with_jump() -> None:
     func1 = functionlib.ArtificialFunction("sphere", 5)
     func2 = functionlib.ArtificialFunction("jump5", 5)
-    np.testing.assert_equal(func1._only_index_transform, False)
-    np.testing.assert_equal(func2._only_index_transform, True)
+    np.testing.assert_equal(func1.instrumentation.args[0].only_index_transform, False)
+    np.testing.assert_equal(func2.instrumentation.args[0].only_index_transform, True)
 
 
 def test_get_posptoning_delay() -> None:
