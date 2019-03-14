@@ -101,7 +101,7 @@ def test_duplicate() -> None:
     func = functionlib.ArtificialFunction("sphere", 5, noise_level=.2, num_blocks=4)
     func2 = func.duplicate()
     assert func == func2
-    assert func._noise_level == func2._noise_level
+    assert func._parameters["noise_level"] == func2._parameters["noise_level"]
     assert func is not func2
 
 

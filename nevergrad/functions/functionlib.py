@@ -8,7 +8,7 @@ from typing import List, Tuple, Any, Dict
 import numpy as np
 from . import utils
 from . import corefuncs
-from .base import ArtificiallyNoisyBaseFunction
+from .base import ArtificiallyNoisyBaseFunction, BaseFunction
 from .base import PostponedObject
 from .. import instrumentation as inst
 from ..common import tools
@@ -63,7 +63,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         return "Photonics"
 
 
-class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
+class ArtificialFunction(BaseFunction, PostponedObject):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -110,6 +110,7 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
     - A random translation is always applied to the function at initialization, so that
       instantiating twice the functions will give 2 different functions (unless you use
       seeding)
+    - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
     """
 
     def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
@@ -142,7 +143,7 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         # variable
         var = ArtificialVariable(dimension=dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                  translation_factor=translation_factor, rotation=rotation, hashing=hashing, only_index_transform=only_index_transform)
-        super().__init__(dimension, noise_level=noise_level, noise_dissymmetry=noise_dissymmetry)
+        super().__init__(dimension)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         self._transforms: List[utils.Transform] = []
         info = corefuncs.registry.get_info(self._parameters["name"])
@@ -204,3 +205,15 @@ class ArtificialFunction(ArtificiallyNoisyBaseFunction, PostponedObject):
         if isinstance(self._func, PostponedObject):
             return self._func.get_postponing_delay(arguments, value)
         return 1.
+
+    def _add_noise(self, x_input: np.ndarray, x_transf: np.ndarray, fx: float) -> float:  # pylint: disable=unused-argument
+        noise = 0
+        noise_level = self._parameters["noise_level"]
+        noise_dissymmetry = self._parameters["noise_dissymmetry"]
+        if noise_level:
+            if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
+                side_point = self.transform(x_input + np.random.normal(0, 1, size=self.dimension))
+                if noise_dissymmetry:
+                    noise_level *= (1. + x_transf.ravel()[0]*100.)
+                noise = noise_level * np.random.normal(0, 1) * (self.oracle_call(side_point) - fx)
+        return fx + noise
