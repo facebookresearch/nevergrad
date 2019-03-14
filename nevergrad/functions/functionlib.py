@@ -145,7 +145,7 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         var = ArtificialVariable(dimension=dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                  translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                  only_index_transform=only_index_transform)
-        self.instru = inst.Instrumentation(var)
+        self.instrumentation = inst.Instrumentation(var)
         super().__init__(dimension)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         self._transforms: List[utils.Transform] = []
@@ -163,7 +163,7 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         return sorted(corefuncs.registry)
 
     def transform(self, x: ArrayLike) -> np.ndarray:
-        (data,), _ = self.instru.data_to_arguments(x)
+        (data,), _ = self.instrumentation.data_to_arguments(x)
         return np.array(data)
 
     def oracle_call(self, x: np.ndarray) -> float:
@@ -174,6 +174,12 @@ class ArtificialFunction(BaseFunction, PostponedObject):
         for block in x:
             results.append(self._func(block))
         return float(self._aggregator(results))
+
+    def __call__(self, x: ArrayLike) -> Any:
+        (x_transf,), _ = self.instrumentation.data_to_arguments(x)
+        fx = self.oracle_call(x_transf)
+        noisy_fx = self._add_noise(np.array(x, copy=False), x_transf, fx)
+        return noisy_fx
 
     def duplicate(self) -> "ArtificialFunction":
         """Create an equivalent instance, initialized with the same settings
