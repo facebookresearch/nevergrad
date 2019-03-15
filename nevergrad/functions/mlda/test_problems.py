@@ -99,3 +99,4 @@ def test_landscape_gaussian() -> None:
     np.testing.assert_equal(output, 5)  # should be mapped to 0, 0
     output2, _ = func.data_to_arguments([144, 144])
     np.testing.assert_array_equal(output2, [2, 1])  # last element
+    testing.printed_assert_equal(func.descriptors, {"instrumentation": "gaussian", "function_class": "Landscape", "dimension": 2})

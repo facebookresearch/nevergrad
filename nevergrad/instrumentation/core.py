@@ -147,13 +147,16 @@ class InstrumentedFunction:
 
     def __init__(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         assert callable(function)
-        name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
-        self._descriptors: Dict[str, Any] = {"function_class": self.__class__.__name__, "name": name}
+        self._descriptors: Dict[str, Any] = {"function_class": self.__class__.__name__}
         self._instrumentation = Instrumentation()  # dummy
         self.instrumentation = Instrumentation(*args, **kwargs)  # sets descriptors
         self.function = function
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
+        # if this is not a function bound to this very instance, add the function/callable name to the descriptors
+        if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
+            name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
+            self._descriptors.update(name=name)
 
     @property
     def instrumentation(self) -> Instrumentation:
