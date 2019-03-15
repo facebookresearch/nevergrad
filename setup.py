@@ -20,7 +20,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='nevergrad',
-    version='0.1.5',
+    version='0.1.6',
     license='MIT',
     description='A Python toolbox for performing gradient-free optimization',
     long_description=long_description,
@@ -35,7 +35,7 @@ setup(
                 ('nevergrad', ["nevergrad/benchmark/additional/example.py",
                                "nevergrad/instrumentation/examples/script.py"])],
     install_requires=requirements["main"],
-    extras_require={"all": [x for reqs in requirements.values() for x in reqs],
-                    "dev": requirements["main"] + requirements["dev"],
-                    "benchmark": requirements["main"] + requirements["bench"]}
+    extras_require={"all": requirements["dev"] + requirements["bench"],
+                    "dev": requirements["dev"],
+                    "benchmark": requirements["bench"]}
 )
