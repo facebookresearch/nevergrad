@@ -151,8 +151,22 @@ class _Constant(utils.Variable[X]):
 
 
 class Array(utils.Variable[Y]):
-    """Fake variable so that constant variables can fit into the
-    pipeline.
+    """Array variable of a given shape, on which several transforms can be applied.
+
+    Parameters
+    ----------
+    *dims: int
+        dimensions of the array (elements of shape)
+
+    Note
+    ----
+    Interesting methods (which can be chained):
+    - asfloat(): converts the array into a float (only for arrays with 1 element)
+    - with_transform(transform): apply a transform to the array
+    - affined(a, b): applies a*x+b
+    - bounded(min_val, max_val, transform="tanh"): applies a transform ("tanh" or "arctan")
+      so that output values are in range [min_val, max_val]
+    - exponentiated(base, coeff): applies base**(coeff * x)
     """
 
     def __init__(self, *dims: int) -> None:
@@ -199,12 +213,38 @@ class Array(utils.Variable[Y]):
         return self
 
     def exponentiated(self, base: float, coeff: float) -> 'Array':
+        """Exponentiation transform base ** (coeff * x)
+        This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
+
+        Parameters
+        ----------
+        base: float
+        coeff: float
+        """
         return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))
 
     def affined(self, a: float, b: float = 0.) -> 'Array':
+        """Affine transform a * x + b
+
+        Parameters
+        ----------
+        a: float
+        b: float
+        """
         return self.with_transform(transforms.Affine(a=a, b=b))
 
     def bounded(self, min_val: float, max_val: float, transform: str = "tanh") -> 'Array':
+        """Bounds all real values into [min_val, max_val] using a tanh transform.
+        Beware, tanh goes very fast to its limits.
+
+        Parameters
+        ----------
+        min_val: float
+        max_val: float
+        transform: str
+            either "tanh" or "arctan" (note that "tanh" reaches the boundaries really quickly,
+            while "arctan" is much softer)
+        """
         if transform not in ["tanh", "arctan"]:
             raise ValueError("Only 'tanh' and 'arctan' are allowed as transform")
         Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound

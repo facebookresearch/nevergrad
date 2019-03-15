@@ -1,7 +1,13 @@
 import numpy as np
+from scipy import stats
 
 
 class Transform:
+    """Base class for transforms implementing a forward and a backward (inverse)
+    method.
+    This provide a default representation, and a short representation should be implemented
+    for each transform.
+    """
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         raise NotImplementedError
@@ -9,8 +15,8 @@ class Transform:
     def backward(self, y: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
-    def revert(self) -> 'Transform':
-        return Revert(self)
+    def reverted(self) -> 'Transform':
+        return Reverted(self)
 
     def _short_repr(self) -> str:
         raise NotImplementedError
@@ -25,7 +31,13 @@ class Transform:
         return repr(self)
 
 
-class Revert(Transform):
+class Reverted(Transform):
+    """Inverse of a transform.
+
+    Parameters
+    ----------
+    transform: Transform
+    """
 
     def __init__(self, transform: Transform) -> None:
         self.transform = transform
@@ -37,10 +49,17 @@ class Revert(Transform):
         return self.transform.forward(y)
 
     def _short_repr(self) -> str:
-        return f'Rv({self.transform})'
+        return f'Rv({self.transform:short})'
 
 
 class Affine(Transform):
+    """Affine transform a * x + b
+
+    Parameters
+    ----------
+    a: float
+    b: float
+    """
 
     def __init__(self, a: float, b: float) -> None:
         self.a = a
@@ -57,6 +76,14 @@ class Affine(Transform):
 
 
 class Exponentiate(Transform):
+    """Exponentiation transform base ** (coeff * x)
+    This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
+
+    Parameters
+    ----------
+    base: float
+    coeff: float
+    """
 
     def __init__(self, base: float = 10., coeff: float = 1.) -> None:
         self.base = base
@@ -73,8 +100,17 @@ class Exponentiate(Transform):
 
 
 class TanhBound(Transform):
+    """Bounds all real values into [min_val, max_val] using a tanh transform.
+    Beware, tanh goes very fast to its limits.
+
+    Parameters
+    ----------
+    min_val: float
+    max_val: float
+    """
 
     def __init__(self, min_val: float, max_val: float) -> None:
+        assert min_val < max_val
         self.min_val = min_val
         self.max_val = max_val
         self._b = .5 * (self.max_val + self.min_val)
@@ -91,8 +127,17 @@ class TanhBound(Transform):
 
 
 class ArctanBound(Transform):
+    """Bounds all real values into [min_val, max_val] using an arctan transform.
+    This is a much softer approach compared to tanh.
+
+    Parameters
+    ----------
+    min_val: float
+    max_val: float
+    """
 
     def __init__(self, min_val: float, max_val: float) -> None:
+        assert min_val < max_val
         self.min_val = min_val
         self.max_val = max_val
         self._b = .5 * (self.max_val + self.min_val)
@@ -106,3 +151,18 @@ class ArctanBound(Transform):
 
     def _short_repr(self) -> str:
         return f"At({self.min_val},{self.max_val})"
+
+
+class CumulativeDensity(Transform):
+    """Bounds all real values into [0, 1] using a gaussian cumulative density function (cdf)
+    Beware, cdf goes very fast to its limits.
+    """
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return stats.norm.cdf(x)  # type: ignore
+
+    def backward(self, y: np.ndarray) -> np.ndarray:
+        return stats.norm.ppf(y)  # type: ignore
+
+    def _short_repr(self) -> str:
+        return f"Cd()"

@@ -12,10 +12,12 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 
 ## Variables
 
-3 types of variables are currently provided:
+4 types of variables are currently provided:
 - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
 - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
+- `Array`: casts the data into a np.ndarray of any shape, to which some transforms can be applied (see `asfloat`, `affined`, `exponentiated`, `bounded`), for instance,
+  one can use it for a logarithmicly distrubuted value between 0.001 and 1.: `Array(1).asfloat().bounded(0, 3).exponentiated(base=10, coeff=-1)`
 
 
 ## Instrumentation
