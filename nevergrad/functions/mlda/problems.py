@@ -43,7 +43,7 @@ class Clustering(inst.InstrumentedFunction):
         if rescale:
             self._points -= np.mean(self._points, axis=0, keepdims=True)
             self._points /= np.std(self._points, axis=0, keepdims=True)
-        super().__init__(self._compute_distance, inst.var.Gaussian(0, 1, shape=(num_clusters, points.shape[1])))
+        super().__init__(self._compute_distance, inst.var.Array(num_clusters, points.shape[1]))
         self._descriptors.update(num_clusters=num_clusters, rescale=rescale)
 
     @classmethod
@@ -92,7 +92,7 @@ class Perceptron(inst.InstrumentedFunction):
         assert y.ndim == 1
         self._x = x
         self._y = y
-        super().__init__(self._compute_loss, inst.var.Gaussian(0, 1, shape=(10,)))
+        super().__init__(self._compute_loss, inst.var.Array(10))
 
     @classmethod
     def from_mlda(cls, name: str) -> "Perceptron":
@@ -149,7 +149,7 @@ class SammonMapping(inst.InstrumentedFunction):
         self._proximity = proximity_array
         self._proximity_2 = self._proximity**2
         self._proximity_2[self._proximity_2 == 0] = 1  # avoid ZeroDivision (for diagonal terms, or identical points)
-        super().__init__(self._compute_distance, inst.var.Gaussian(0, 1, shape=(self._proximity.shape[0], 2)))
+        super().__init__(self._compute_distance, inst.var.Array(self._proximity.shape[0], 2))
 
     @classmethod
     def from_mlda(cls, name: str, rescale: bool = False) -> "SammonMapping":
@@ -225,8 +225,8 @@ class Landscape(inst.InstrumentedFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.var.Gaussian(0, 1), inst.var.Gaussian(0, 1))
-        self.instrumentation.with_name("standard")
+        super().__init__(self._get_pixel_value, inst.var.Array(1).asfloat(), inst.var.Array(1).asfloat())
+        self.instrumentation = self.instrumentation.with_name("standard")  # force descriptor update
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
             variables = list(inst.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)

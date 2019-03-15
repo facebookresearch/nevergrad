@@ -25,7 +25,7 @@ def test_clustering() -> None:
         np.testing.assert_equal(func.dimension, 10)
     func([k for k in range(10)])
     testing.printed_assert_equal(func.descriptors,
-                                 {"instrumentation": "G(0,1)", "function_class": "Clustering", "dimension": 10,
+                                 {"instrumentation": "A(5,2)", "function_class": "Clustering", "dimension": 10,
                                   "name": "Ruspini", "num_clusters": 5, "rescale": True})
 
 

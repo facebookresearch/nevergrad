@@ -41,7 +41,7 @@ def test_array_float() -> None:
 
 
 def test_array() -> None:
-    var = variables.Array(4).affined(1000000).reshaped(2, 2).bounded(3, 5, transform="arctan")
+    var = variables.Array(2, 2).affined(1000000).bounded(3, 5, transform="arctan")
     data = np.array([-10, 10, 0, 0])
     output = var.process(data)
     np.testing.assert_almost_equal(output, [[3., 5], [4, 4]])

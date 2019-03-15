@@ -67,7 +67,7 @@ def test_instrumented_function() -> None:
 
 def test_instrumented_function_kwarg_order() -> None:
     ifunc = core.InstrumentedFunction(_arg_return, kw4=variables.SoftmaxCategorical([1, 0]), kw2="constant",
-                                      kw3=variables.Gaussian(0, 1, [2, 2]), kw1=variables.Gaussian(2, 2))
+                                      kw3=variables.Array(2, 2), kw1=variables.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.dimension, 7)
     data = np.array([-1, 1, 2, 3, 4, 100, -100])
     _, kwargs = ifunc(data)

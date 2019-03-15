@@ -155,14 +155,14 @@ class Array(utils.Variable[Y]):
     pipeline.
     """
 
-    def __init__(self, numel: int) -> None:
-        self.numel = numel
+    def __init__(self, *dims: int) -> None:
         self.transforms: List[Any] = []
+        self.shape = tuple(dims)
         self._asfloat = False
 
     @property
     def dimension(self) -> int:
-        return self.numel
+        return int(np.prod(self.shape))
 
     def process(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
         array = np.array(data, copy=False)
@@ -170,24 +170,25 @@ class Array(utils.Variable[Y]):
             array = transf.forward(array)
         if self._asfloat:
             return float(array[0])
-        return array
+        return array.reshape(self.shape)
 
     def process_arg(self, arg: Y) -> np.ndarray:
         if self._asfloat:
             output = np.array([arg])
         else:
-            output = np.array(arg, copy=False)
+            output = np.array(arg, copy=False).ravel()
         for transf in reversed(self.transforms):
             output = transf.backward(output)
         return output
 
     def _short_repr(self) -> str:
-        transf = "" if not self.transforms else (",[" + ",".join("{t}" for t in self.transforms))
+        dims = ",".join(str(d) for d in self.shape)
+        transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
         fl = "" if not self._asfloat else "f"
-        return f"A({self.numel}{transf}){fl}"
+        return f"A({dims}{transf}){fl}"
 
     def asfloat(self) -> 'Array':
-        if not self.numel == 1:
+        if self.dimension != 1:
             raise RuntimeError("Only Arrays with 1 element can be cast to float")
         self._asfloat = True
         return self
@@ -195,9 +196,6 @@ class Array(utils.Variable[Y]):
     def with_transform(self, transform: transforms.Transform) -> 'Array':
         self.transforms.append(transform)
         return self
-
-    def reshaped(self, *dims: int) -> 'Array':
-        return self.with_transform(transforms.Reshape(*dims))
 
     def exponentiated(self, base: float, coeff: float) -> 'Array':
         return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))

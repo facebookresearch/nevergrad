@@ -20,7 +20,7 @@ class CustomFunction(inst.InstrumentedFunction):
     """
 
     def __init__(self, offset):
-        super().__init__(self.oracle_call, inst.var.Gaussian(0, 1))
+        super().__init__(self.oracle_call, inst.var.Array(1).asfloat())
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks

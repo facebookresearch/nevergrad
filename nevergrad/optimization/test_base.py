@@ -105,7 +105,7 @@ def test_optimize() -> None:
 
 
 def test_instrumented_optimizer() -> None:
-    instru = Instrumentation(var.Gaussian(0, 1), var.SoftmaxCategorical([0, 1]))
+    instru = Instrumentation(var.Array(1), var.SoftmaxCategorical([0, 1]))
     opt = optimizerlib.registry["RandomSearch"](dimension=instru.dimension, budget=10)
     iopt = base.IntrumentedOptimizer(opt, instru)
     output = iopt.optimize(lambda x, y: x**2 + y)  # type: ignore
