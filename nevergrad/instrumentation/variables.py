@@ -165,6 +165,7 @@ class Array(utils.Variable[Y]):
         return int(np.prod(self.shape))
 
     def process(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
+        assert len(data) == self.dimension
         array = np.array(data, copy=False)
         for transf in self.transforms:
             array = transf.forward(array)
