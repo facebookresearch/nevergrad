@@ -56,22 +56,6 @@ class Affine(Transform):
         return f"Af({self.a},{self.b})"
 
 
-class Reshape(Transform):
-
-    def __init__(self, *args: int) -> None:
-        self.shape = tuple(args)
-
-    def forward(self, x: np.ndarray) -> np.ndarray:
-        return x.reshape(self.shape)
-
-    def backward(self, y: np.ndarray) -> np.ndarray:
-        return y.ravel()
-
-    def _short_repr(self) -> str:
-        short = ','.join(str(i) for i in self.shape)
-        return f"Rs({short})"
-
-
 class Exponentiate(Transform):
 
     def __init__(self, base: float = 10., coeff: float = 1.) -> None:
