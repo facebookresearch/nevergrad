@@ -25,10 +25,7 @@ from pathlib import Path
 import numpy as np
 from ...common.typetools import ArrayLike
 from ... import instrumentation as inst
-
-
-def tanh_crop(x: ArrayLike, min_val: float, max_val: float) -> np.ndarray:
-    return .5 * (max_val + min_val) + .5 * (max_val - min_val) * np.tanh(x)  # type: ignore
+from ...instrumentation.transforms import TanhBound
 
 
 class PhotonicsVariable(inst.var.utils.Variable[np.ndarray]):
@@ -48,16 +45,16 @@ class PhotonicsVariable(inst.var.utils.Variable[np.ndarray]):
             # n multiple of 2, from 16 to 80
             # domain (n=60): [2,3]^30 x [0,300]^30
             y = np.array(data, copy=True)
-            y[:n // 2] = tanh_crop(y[:n // 2], 2, 3)
-            y[n // 2:] = tanh_crop(y[n // 2:], 0, 300)
+            y[:n // 2] = TanhBound(2, 3).forward(y[:n // 2])
+            y[n // 2:] = TanhBound(0, 300).forward(y[n // 2:])
         elif self.name == "chirped":
             # n multiple of 2, from 10 to 80
             # domain (n=60): [0,300]^60
-            y = tanh_crop(data, 0, 300)
+            y = TanhBound(0, 300).forward(data)
         elif self.name == "morpho":
             # n multiple of 4, from 16 to 60
             # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-            y = tanh_crop(data, 0, 1)
+            y = TanhBound(0, 1).forward(data)
             q = n // 4
             y[:q] *= 300
             y[q: 2 * q] *= 600

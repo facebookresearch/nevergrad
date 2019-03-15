@@ -28,11 +28,6 @@ def test_photonics_transforms(pb: str, expected: List[float]) -> None:
     np.testing.assert_almost_equal(x, x2, decimal=2, err_msg="x was modified in the process")
 
 
-def test_tanh_crop() -> None:
-    output = core.tanh_crop([-1e9, 1e9, 0], -12, 16)
-    np.testing.assert_almost_equal(output, [-12, 16, 2])
-
-
 def test_morpho_transform_constraints() -> None:
     with patch("shutil.which", return_value="here"):
         func = core.Photonics("morpho", 60)
