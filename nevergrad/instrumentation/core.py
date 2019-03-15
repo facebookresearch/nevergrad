@@ -14,6 +14,24 @@ from . import variables
 
 class Instrumentation:
     """Class handling arguments instrumentation, and providing conversion to and from data.
+
+    Parameters
+    ----------
+    *args, **kwargs: Any
+        Any argument. Arguments of type Variable (see note) will serve for instrumentation
+        and others will be kept constant.
+
+    Note
+    ----
+    Variable classes are:
+      - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned
+         element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic
+         and makes the function evaluation noisy.
+      - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will
+         depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
+      - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
+      - `Array`: casts the data from the optimizaton space into a np.ndarray of any shape, to which some transforms can be applied
+        (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -125,7 +143,7 @@ class Instrumentation:
 
 
 class InstrumentedFunction:
-    """Converts a multi-argument function into a mono-argument multidimensional continuous function
+    """Converts a multi-argument function into a single-argument multidimensional continuous function
     which can be optimized.
 
     Parameters
@@ -133,14 +151,20 @@ class InstrumentedFunction:
     function: callable
         the callable to convert
     *args, **kwargs: Any
-        Any argument. Arguments of type variables.SoftmaxCategorical or variables.Gaussian will be instrumented
+        Any argument. Arguments of type Variable (see notes) will be instrumented,
         and others will be kept constant.
 
-    Note
-    ----
-    - Tokens can be:
-      - DiscreteToken(list_of_n_possible_values): converted into a n-dim array, corresponding to proba for each value
-      - GaussianToken(mean, std, shape=None): a Gaussian variable (shape=None) or array.
+    Notes
+    -----
+    - Variable classes are:
+        - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned
+           element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic
+           and makes the function evaluation noisy.
+        - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will
+           depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
+        - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
+        - `Array`: casts the data from the optimizaton space into a np.ndarray of any shape, to which some transforms can be applied
+          (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
     - This function can then be directly used in benchmarks *if it returns a float*.
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """
