@@ -40,6 +40,7 @@ class PhotonicsVariable(inst.var.utils.Variable[np.ndarray]):
 
     def process(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
         n = len(data)
+        data = np.array(data, copy=False)
         assert not n % 4, f"points length should be a multiple of 4, got {n}"
         if self.name == "bragg":
             # n multiple of 2, from 16 to 80
