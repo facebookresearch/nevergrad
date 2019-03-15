@@ -4,6 +4,14 @@
 
 N/A
 
+
+## v0.1.6
+
+- corrected a bug introduced by v0.1.5 for `PSO`.
+- activated `tell_not_ask` for `PSO`, `TBPSA` and differential evolution algorithms.
+- added a pruning mechanisms for optimizers archive in order to avoid using a huge amount of memory.
+- corrected typing after activating `numpy-stubs`.
+
 ## v0.1.5
 
 - provided different install procedures for optimization, benchmark and dev (requirements differ).
