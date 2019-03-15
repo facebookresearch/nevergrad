@@ -30,13 +30,15 @@ class Variable(Generic[X]):
         raise NotImplementedError
 
     def get_summary(self, data: ArrayLike) -> str:
-        raise NotImplementedError
+        output = self.process(data, deterministic=True)
+        d = data if len(data) > 1 else data[0]
+        return f"Value {output}, from data: {d}"
 
     def __eq__(self, other: Any) -> bool:
         return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
 
     def __repr__(self) -> str:
-        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
+        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()) if not x.startswith("_"))
         return f"{self.__class__.__name__}({args})"
 
     def _short_repr(self) -> str:

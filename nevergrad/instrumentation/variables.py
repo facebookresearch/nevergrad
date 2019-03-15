@@ -2,10 +2,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional, TypeVar, Union, Sequence
+from typing import List, Optional, TypeVar, Union, Sequence, Any
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
+from . import transforms
 from . import utils
 
 
@@ -85,10 +86,6 @@ class OrderedDiscrete(SoftmaxCategorical[X]):
         index = self.possibilities.index(arg)
         return discretization.inverse_threshold_discretization([index], len(self.possibilities))
 
-    def get_summary(self, data: ArrayLike) -> str:
-        output = self.process(data, deterministic=True)
-        return f"Value {output}, from data: {data[0]}"
-
     def _short_repr(self) -> str:
         return "OD({})".format(",".join([str(x) for x in self.possibilities]))
 
@@ -118,10 +115,6 @@ class Gaussian(utils.Variable[Y]):
 
     def process_arg(self, arg: Y) -> ArrayLike:
         return [(arg - self.mean) / self.std]
-
-    def get_summary(self, data: ArrayLike) -> str:
-        output = self.process(data)
-        return f"Value {output}, from data: {data}"
 
     def _short_repr(self) -> str:
         return f"G({self.mean},{self.std})"
@@ -155,3 +148,65 @@ class _Constant(utils.Variable[X]):
 
     def _short_repr(self) -> str:
         return f"{self.value}"
+
+
+class Array(utils.Variable[Y]):
+    """Fake variable so that constant variables can fit into the
+    pipeline.
+    """
+
+    def __init__(self, numel: int) -> None:
+        self.numel = numel
+        self.transforms: List[Any] = []
+        self._asfloat = False
+
+    @property
+    def dimension(self) -> int:
+        return self.numel
+
+    def process(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
+        array = np.array(data, copy=False)
+        for transf in self.transforms:
+            array = transf.forward(array)
+        if self._asfloat:
+            return float(array[0])
+        return array
+
+    def process_arg(self, arg: Y) -> np.ndarray:
+        if self._asfloat:
+            output = np.array([arg])
+        else:
+            output = np.array(arg, copy=False)
+        for transf in reversed(self.transforms):
+            output = transf.backward(output)
+        return output
+
+    def _short_repr(self) -> str:
+        transf = "" if not self.transforms else (",[" + ",".join("{t}" for t in self.transforms))
+        fl = "" if not self._asfloat else "f"
+        return f"A({self.numel}{transf}){fl}"
+
+    def asfloat(self) -> 'Array':
+        if not self.numel == 1:
+            raise RuntimeError("Only Arrays with 1 element can be cast to float")
+        self._asfloat = True
+        return self
+
+    def with_transform(self, transform: transforms.Transform) -> 'Array':
+        self.transforms.append(transform)
+        return self
+
+    def reshaped(self, *dims: int) -> 'Array':
+        return self.with_transform(transforms.Reshape(*dims))
+
+    def exponentiated(self, base: float, coeff: float) -> 'Array':
+        return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))
+
+    def affined(self, a: float, b: float = 0.) -> 'Array':
+        return self.with_transform(transforms.Affine(a=a, b=b))
+
+    def bounded(self, min_val: float, max_val: float, transform: str = "tanh") -> 'Array':
+        if transform not in ["tanh", "arctan"]:
+            raise ValueError("Only 'tanh' and 'arctan' are allowed as transform")
+        Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound
+        return self.with_transform(Transf(min_val=min_val, max_val=max_val))
