@@ -215,10 +215,10 @@ def test_bo_bo2() -> None:
     budget = 4
     # set up problem
     fitness = Fitness([.5, -.8, 4])
-    lbo = optimizerlib.ParametrizedBO(qr="lhs", seed=12)
+    lbo = optimizerlib.ParametrizedBO(qr="lhs")
     optim = lbo(dimension=3, budget=budget, num_workers=1)
     output = optim.optimize(fitness)  # type: ignore
-    np.testing.assert_almost_equal(output, [-0.8886612, -1.1727564, 0.6989967])
+    np.testing.assert_almost_equal(output, [.7789093, -0.0325044, 0.8766994])
 
 
 def test_bo_mqr2():
@@ -227,10 +227,10 @@ def test_bo_mqr2():
     budget = 4
     # set up problem
     fitness = Fitness([.5, -.8, 4])
-    lbo = optimizerlib.ParametrizedBO(qr="qr", middle_point=True, seed=12)
+    lbo = optimizerlib.ParametrizedBO(qr="qr", middle_point=True)
     optim = lbo(dimension=3, budget=budget, num_workers=1)
     output = optim.optimize(fitness)  # type: ignore
-    np.testing.assert_almost_equal(output, [0, 0, 0.4307273])
+    np.testing.assert_almost_equal(output, [-0.849667, 0.0316103, 1.1900196])
 
 
 def test_bo_qr2():
@@ -239,7 +239,7 @@ def test_bo_qr2():
     budget = 4
     # set up problem
     fitness = Fitness([.5, -.8, 4])
-    lbo = optimizerlib.ParametrizedBO(qr="qr", seed=12)
+    lbo = optimizerlib.ParametrizedBO(qr="qr")
     optim = lbo(dimension=3, budget=budget, num_workers=1)
     output = optim.optimize(fitness)  # type: ignore
-    np.testing.assert_almost_equal(output, [-0.7025914, -0.0140895, 0.456445])
+    np.testing.assert_almost_equal(output, [-0.7928807, 0.0327085, 1.0461512])

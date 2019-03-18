@@ -998,7 +998,8 @@ class _BO(base.Optimizer):
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._parameters.seed)
+            rng = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))  # make sure it is seedable from outside
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=rng)
             # init
             midpoint = self._parameters.middle_point
             if midpoint:
@@ -1045,11 +1046,10 @@ class ParametrizedBO(base.ParametrizedFamily):
     no_parallelization = True
     _optimizer_class = _BO
 
-    def __init__(self, *, qr: str = "none", middle_point: bool = False, seed: Optional[int] = None) -> None:
+    def __init__(self, *, qr: str = "none", middle_point: bool = False) -> None:
         assert qr in ["r", "qr", "lhs", "none"]
         self.qr = qr
         self.middle_point = middle_point
-        self.seed = seed  # to be removed
         super().__init__()
 
 
