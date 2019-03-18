@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict, List, Any
+from typing import Optional, Callable, Dict, Any
 import numpy as np
 from bayes_opt import BayesianOptimization
 from scipy import optimize as scipyoptimize
-from scipy import stats
+from ..instrumentation.transforms import CumulativeDensity
 from . import base
 from . import recaster
 from . import sequences
@@ -85,6 +85,7 @@ class _BO(recaster.SequentialRecastOptimizer):
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedBO()
+        self._transform = CumulativeDensity()
 
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
@@ -96,45 +97,28 @@ class _BO(recaster.SequentialRecastOptimizer):
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
 
         def my_obj(**kwargs: Any) -> float:
-            v = [stats.norm.ppf(kwargs[str(i)]) for i in range(self.dimension)]
-            v = [min(max(v_, -100.), 100.) for v_ in v]
+            v = self._transform.backward(np.array([kwargs[str(i)] for i in range(self.dimension)]))
+            v = np.clip(v, -100, 100)
             return -objective_function(v)   # We minimize!
 
-        bounds = {}
-        for i in range(self.dimension):
-            bounds[str(i)] = (0., 1.)
-        bo = BayesianOptimization(my_obj, bounds)
+        bounds = {str(i): (0., 1.) for i in range(self.dimension)}
+        bo = BayesianOptimization(my_obj, bounds, random_state=self._parameters.seed)
+        if self._parameters.middle_point:
+            bo.probe({f"{k}": .5 for k in range(self.dimension)}, lazy=True)
         if self._parameters.qr != "none":
-            points_dict: Dict[str, List[base.ArrayLike]] = {}
-            for i in range(self.dimension):
-                points_dict[str(i)] = []
-            budget = int(np.sqrt(self.budget))
-            sampler: Optional[sequences.Sampler] = None
-            if self._parameters.qr == "qr":
-                sampler = sequences.HammersleySampler(self.dimension, budget=budget, scrambling=True)
-            elif self._parameters.qr == "mqr":
-                sampler = sequences.HammersleySampler(self.dimension, budget=budget - 1, scrambling=True)
-            elif self._parameters.qr == "lhs":
-                sampler = sequences.LHSSampler(self.dimension, budget=budget)
-            elif self._parameters.qr == "r":
-                sampler = sequences.RandomSampler(self.dimension, budget=budget)
-            assert sampler is not None
-            for i in range(budget):
-                if self._parameters.qr == "mqr" and not i:
-                    s = [0.5] * self.dimension
-                else:
-                    s = list(sampler())
-                assert len(s) == self.dimension
-                for j in range(self.dimension):
-                    points_dict[str(j)].append(s[j])  # type: ignore
-            bo.explore(points_dict)
+            init_budget = int(np.sqrt(self.budget)) - self._parameters.middle_point
+            if init_budget > 0:
+                name = self._parameters.qr
+                sampler = {"qr": sequences.HammersleySampler,
+                           "lhs": sequences.LHSSampler,
+                           "r": sequences.RandomSampler}[name](self.dimension, budget=init_budget, scrambling=(name == "qr"))
+                for point in sampler:
+                    bo.probe({f"{k}": val for k, val in enumerate(point)}, lazy=True)
         assert self.budget is not None
-        budget = self.budget - (budget if self._parameters.qr != "none" else 0)
         ip = 1 if self._parameters.qr == "none" else 0
-        bo.maximize(n_iter=budget - ip, init_points=ip)
-        # print [bo.res['max']['max_params'][str(i)] for i in xrange(self.dimension)]
-        v = [stats.norm.ppf(bo.res['max']['max_params'][str(i)]) for i in range(self.dimension)]
-        v = [min(max(v_, -100.), 100.) for v_ in v]
+        bo.maximize(n_iter=self.budget - len(bo._queue) - ip, init_points=ip)
+        v = self._transform.backward(np.array([bo.max['params'][str(i)] for i in range(self.dimension)]))
+        v = np.clip(v, -100, 100)
         return v
 
 
@@ -148,14 +132,16 @@ class ParametrizedBO(base.ParametrizedFamily):
     recast = True
     _optimizer_class = _BO
 
-    def __init__(self, *, qr: str = "none") -> None:
-        assert qr in ["r", "qr", "mqr", "lhs", "none"]
+    def __init__(self, *, qr: str = "none", middle_point: bool = False, seed: Optional[int] = None) -> None:
+        assert qr in ["r", "qr", "lhs", "none"]
         self.qr = qr
+        self.middle_point = middle_point
+        self.seed = seed  # to be removed
         super().__init__()
 
 
 BO = ParametrizedBO().with_name("BO", register=True)
 RBO = ParametrizedBO(qr="r").with_name("RBO", register=True)
 QRBO = ParametrizedBO(qr="qr").with_name("QRBO", register=True)
-MidQRBO = ParametrizedBO(qr="mqr").with_name("MidQRBO", register=True)
+MidQRBO = ParametrizedBO(qr="qr", middle_point=True).with_name("MidQRBO", register=True)
 LBO = ParametrizedBO(qr="lhs").with_name("LBO", register=True)

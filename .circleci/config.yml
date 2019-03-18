@@ -26,7 +26,6 @@ jobs:
           keys:
           - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-
           # fallback to using the latest cache if no exact match is found
-          - v2-dependencies-main-
 
       - run:
           name: "[no-extra] Install dependencies"
