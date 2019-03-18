@@ -103,6 +103,11 @@ class LHSSampler(Sampler):
 @samplers.register
 class RandomSampler(Sampler):
 
+    def __init__(self, dimension: int, budget: int, scrambling: bool = False) -> None:
+        if scrambling:
+            raise ValueError("RandomSampler does not support scrambling")
+        super().__init__(dimension, budget)
+
     def _internal_sampler(self) -> ArrayLike:
         return np.random.uniform(0, 1, self.dimension)  # type: ignore
 
