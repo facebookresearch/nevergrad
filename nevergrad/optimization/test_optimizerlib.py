@@ -14,7 +14,6 @@ import pandas as pd
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
-from . import recastlib
 from . import optimizerlib
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
@@ -210,73 +209,37 @@ def test_tbpsa_recom_with_update() -> None:
     np.testing.assert_almost_equal(output, [.037964, .0433031, -.4688667, .3633273])
 
 
-def test_bo_bo() -> None:
+def test_bo_bo2() -> None:
     # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-    # TODO: remove when BO is removed from recastlib
     np.random.seed(12)
     budget = 4
     # set up problem
     fitness = Fitness([.5, -.8, 4])
-    lbo = recastlib.ParametrizedBO(qr="lhs", seed=12)
+    lbo = optimizerlib.ParametrizedBO(qr="lhs", seed=12)
     optim = lbo(dimension=3, budget=budget, num_workers=1)
-    output = optim._optimization_function(fitness)  # type: ignore
+    output = optim.optimize(fitness)  # type: ignore
     np.testing.assert_almost_equal(output, [-0.8886612, -1.1727564, 0.6989967])
 
 
-# def test_bo_bo2() -> None:
-#    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-#    np.random.seed(12)
-#    budget = 4
-#    # set up problem
-#    fitness = Fitness([.5, -.8, 4])
-#    lbo = optimizerlib.ParametrizedBO2(qr="lhs", seed=12)
-#    optim = lbo(dimension=3, budget=budget, num_workers=1)
-#    output = optim.optimize(fitness)  # type: ignore
-#    np.testing.assert_almost_equal(output, [-0.8886612, -1.1727564, 0.6989967])
+def test_bo_mqr2():
+    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
+    np.random.seed(12)
+    budget = 4
+    # set up problem
+    fitness = Fitness([.5, -.8, 4])
+    lbo = optimizerlib.ParametrizedBO(qr="qr", middle_point=True, seed=12)
+    optim = lbo(dimension=3, budget=budget, num_workers=1)
+    output = optim.optimize(fitness)  # type: ignore
+    np.testing.assert_almost_equal(output, [0, 0, 0.4307273])
 
-# TODO: remove when BO is removed from recastlib
-# def test_bo_mqr():
-#    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-#    np.random.seed(12)
-#    budget = 4
-#    # set up problem
-#    fitness = Fitness([.5, -.8, 4])
-#    lbo = recastlib.ParametrizedBO(qr="qr", seed=12, middle_point=True)
-#    optim = lbo(dimension=3, budget=budget, num_workers=1)
-#    output = optim._optimization_function(fitness)
-#    np.testing.assert_almost_equal(output, [0, 0, 0.4307273])
-#
-# def test_bo_mqr2():
-#    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-#    np.random.seed(12)
-#    budget = 4
-#    # set up problem
-#    fitness = Fitness([.5, -.8, 4])
-#    lbo = optimizerlib.ParametrizedBO2(qr="qr", middle_point=True, seed=12)
-#    optim = lbo(dimension=3, budget=budget, num_workers=1)
-#    output = optim.optimize(fitness)  # type: ignore
-#    np.testing.assert_almost_equal(output, [0, 0, 0.4307273])
 
-#
-#
-# def test_bo_qr():
-#    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-#    np.random.seed(12)
-#    budget = 4
-#    # set up problem
-#    fitness = Fitness([.5, -.8, 4])
-#    lbo = recastlib.ParametrizedBO(qr="qr", seed=12)
-#    optim = lbo(dimension=3, budget=budget, num_workers=1)
-#    output = optim._optimization_function(fitness)
-#    np.testing.assert_almost_equal(output, [-0.7025914, -0.0140895, 0.456445])
-#
-# def test_bo_qr2():
-#    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-#    np.random.seed(12)
-#    budget = 4
-#    # set up problem
-#    fitness = Fitness([.5, -.8, 4])
-#    lbo = optimizerlib.ParametrizedBO2(qr="qr", seed=12)
-#    optim = lbo(dimension=3, budget=budget, num_workers=1)
-#    output = optim.optimize(fitness)  # type: ignore
-#    np.testing.assert_almost_equal(output, [-0.7025914, -0.0140895, 0.456445])
+def test_bo_qr2():
+    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
+    np.random.seed(12)
+    budget = 4
+    # set up problem
+    fitness = Fitness([.5, -.8, 4])
+    lbo = optimizerlib.ParametrizedBO(qr="qr", seed=12)
+    optim = lbo(dimension=3, budget=budget, num_workers=1)
+    output = optim.optimize(fitness)  # type: ignore
+    np.testing.assert_almost_equal(output, [-0.7025914, -0.0140895, 0.456445])

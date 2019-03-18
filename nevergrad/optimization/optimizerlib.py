@@ -3,19 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from . import sequences
-from ..instrumentation.transforms import CumulativeDensity
-from bayes_opt import UtilityFunction
-from bayes_opt import BayesianOptimization
 from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Set
 from collections import defaultdict, deque
 import cma
 import numpy as np
 from scipy import stats
+from bayes_opt import UtilityFunction
+from bayes_opt import BayesianOptimization
+from ..instrumentation.transforms import CumulativeDensity
 from . import utils
 from . import base
 from . import mutations
 from .base import registry
+from . import sequences
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *
@@ -985,11 +985,11 @@ class FakeFunction:
         return value
 
 
-class _BO2(base.Optimizer):
+class _BO(base.Optimizer):
 
     def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedBO2()
+        self._parameters = ParametrizedBO()
         self._transform = CumulativeDensity()
         self._bo: Optional[BayesianOptimization] = None
         self._fake_function = FakeFunction()
@@ -1028,7 +1028,6 @@ class _BO2(base.Optimizer):
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         y = self._transform.forward(np.array(x, copy=False))
         self._fake_function.register(y, -value)  # minimizing
-        print("telling", y, value)
         self.bo.probe(y, lazy=False)
 
     def provide_recommendation(self) -> base.ArrayLike:
@@ -1036,7 +1035,7 @@ class _BO2(base.Optimizer):
         return np.clip(v, -100, 100)  # type: ignore
 
 
-class ParametrizedBO2(base.ParametrizedFamily):
+class ParametrizedBO(base.ParametrizedFamily):
     """Bayesian optimization
 
     qr: str
@@ -1044,7 +1043,7 @@ class ParametrizedBO2(base.ParametrizedFamily):
     """
 
     no_parallelization = True
-    _optimizer_class = _BO2
+    _optimizer_class = _BO
 
     def __init__(self, *, qr: str = "none", middle_point: bool = False, seed: Optional[int] = None) -> None:
         assert qr in ["r", "qr", "lhs", "none"]
@@ -1052,3 +1051,10 @@ class ParametrizedBO2(base.ParametrizedFamily):
         self.middle_point = middle_point
         self.seed = seed  # to be removed
         super().__init__()
+
+
+BO = ParametrizedBO().with_name("BO", register=True)
+RBO = ParametrizedBO(qr="r").with_name("RBO", register=True)
+QRBO = ParametrizedBO(qr="qr").with_name("QRBO", register=True)
+MidQRBO = ParametrizedBO(qr="qr", middle_point=True).with_name("MidQRBO", register=True)
+LBO = ParametrizedBO(qr="lhs").with_name("LBO", register=True)

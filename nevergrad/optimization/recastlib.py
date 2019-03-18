@@ -3,14 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict, Any
+from typing import Optional, Callable, Dict
 import numpy as np
-from bayes_opt import BayesianOptimization
 from scipy import optimize as scipyoptimize
-from ..instrumentation.transforms import CumulativeDensity
 from . import base
 from . import recaster
-from . import sequences
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -78,70 +75,3 @@ Cobyla = ScipyOptimizer(method="COBYLA").with_name("Cobyla", register=True)
 RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).with_name("RCobyla", register=True)
 SQP = ScipyOptimizer(method="SLSQP").with_name("SQP", register=True)
 RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).with_name("RSQP", register=True)
-
-
-class _BO(recaster.SequentialRecastOptimizer):
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedBO()
-        self._transform = CumulativeDensity()
-
-    def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
-        subinstance._parameters = self._parameters
-        return subinstance._optimization_function
-
-    def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
-
-        def my_obj(**kwargs: Any) -> float:
-            v = self._transform.backward(np.array([kwargs[str(i)] for i in range(self.dimension)]))
-            v = np.clip(v, -100, 100)
-            return -objective_function(v)   # We minimize!
-
-        bounds = {str(i): (0., 1.) for i in range(self.dimension)}
-        bo = BayesianOptimization(my_obj, bounds, random_state=self._parameters.seed)
-        if self._parameters.middle_point:
-            bo.probe({f"{k}": .5 for k in range(self.dimension)}, lazy=True)
-        if self._parameters.qr != "none":
-            init_budget = int(np.sqrt(self.budget)) - self._parameters.middle_point
-            if init_budget > 0:
-                name = self._parameters.qr
-                sampler = {"qr": sequences.HammersleySampler,
-                           "lhs": sequences.LHSSampler,
-                           "r": sequences.RandomSampler}[name](self.dimension, budget=init_budget, scrambling=(name == "qr"))
-                for point in sampler:
-                    bo.probe({f"{k}": val for k, val in enumerate(point)}, lazy=True)
-        assert self.budget is not None
-        ip = 1 if self._parameters.qr == "none" else 0
-        bo.maximize(n_iter=self.budget - len(bo._queue) - ip, init_points=ip)
-        v = self._transform.backward(np.array([bo.max['params'][str(i)] for i in range(self.dimension)]))
-        v = np.clip(v, -100, 100)
-        return v
-
-
-class ParametrizedBO(base.ParametrizedFamily):
-    """Bayesian optimization
-
-    qr: str
-        TODO
-    """
-
-    recast = True
-    _optimizer_class = _BO
-
-    def __init__(self, *, qr: str = "none", middle_point: bool = False, seed: Optional[int] = None) -> None:
-        assert qr in ["r", "qr", "lhs", "none"]
-        self.qr = qr
-        self.middle_point = middle_point
-        self.seed = seed  # to be removed
-        super().__init__()
-
-
-BO = ParametrizedBO().with_name("BO", register=True)
-RBO = ParametrizedBO(qr="r").with_name("RBO", register=True)
-QRBO = ParametrizedBO(qr="qr").with_name("QRBO", register=True)
-MidQRBO = ParametrizedBO(qr="qr", middle_point=True).with_name("MidQRBO", register=True)
-LBO = ParametrizedBO(qr="lhs").with_name("LBO", register=True)
