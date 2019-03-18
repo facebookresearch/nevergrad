@@ -2,8 +2,8 @@
 
 ## master
 
-N/A
-
+- Removed `BaseFunction` in favor of `InstrumentedFunction` and use instrumentation instead of
+  defining specific transforms (breaking change for benchmark function implementation).
 
 ## v0.1.6
 
