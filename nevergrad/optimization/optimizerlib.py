@@ -3,6 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from . import sequences
+from ..instrumentation.transforms import CumulativeDensity
+from bayes_opt import UtilityFunction
+from bayes_opt import BayesianOptimization
 from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Set
 from collections import defaultdict, deque
 import cma
@@ -958,3 +962,93 @@ class MultiScaleCMA(CM):
                        MicroCMA(dimension, budget=None, num_workers=num_workers)]
         assert budget is not None
         self.budget_before_choosing = budget // 3
+
+
+class FakeFunction:
+
+    def __init__(self) -> None:
+        self._registered: List[Tuple[np.ndarray, float]] = []
+
+    def register(self, x: np.ndarray, value: float) -> None:
+        if self._registered:
+            raise RuntimeError("Only one call can be registered at a time")
+        self._registered.append((x, value))
+
+    def __call__(self, **kwargs: float) -> float:
+        if not self._registered:
+            raise RuntimeError("Call must be registered first")
+        x = [kwargs[f'x{i}'] for i in range(len(kwargs))]
+        xr, value = self._registered[0]
+        if not np.array_equal(x, xr):
+            raise ValueError("Call does not match registered")
+        self._registered.clear()
+        return value
+
+
+class _BO2(base.Optimizer):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._parameters = ParametrizedBO2()
+        self._transform = CumulativeDensity()
+        self._bo: Optional[BayesianOptimization] = None
+        self._fake_function = FakeFunction()
+
+    @property
+    def bo(self) -> BayesianOptimization:
+        if self._bo is None:
+            bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._parameters.seed)
+            # init
+            midpoint = self._parameters.middle_point
+            if midpoint:
+                self._bo.probe([.5] * self.dimension, lazy=True)
+            elif self._parameters.qr == "none":
+                self._bo._queue.add(self._bo._space.random_sample())
+            if self._parameters.qr != "none":
+                init_budget = int(np.sqrt(self.budget)) - midpoint
+                if init_budget > 0:
+                    name = self._parameters.qr
+                    sampler = {"qr": sequences.HammersleySampler,
+                               "lhs": sequences.LHSSampler,
+                               "r": sequences.RandomSampler}[name](self.dimension, budget=init_budget, scrambling=(name == "qr"))
+                    for point in sampler:
+                        self._bo.probe(point, lazy=True)
+        return self._bo
+
+    def _internal_ask(self) -> base.ArrayLike:
+        util = UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)  # bayes_opt default
+        try:
+            x_probe = next(self.bo._queue)
+        except StopIteration:
+            x_probe = self.bo.suggest(util)  # this is time consuming
+            x_probe = [x_probe[f'x{i}'] for i in range(len(x_probe))]
+        return np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)  # type: ignore
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        y = self._transform.forward(np.array(x, copy=False))
+        self._fake_function.register(y, -value)  # minimizing
+        print("telling", y, value)
+        self.bo.probe(y, lazy=False)
+
+    def provide_recommendation(self) -> base.ArrayLike:
+        v = self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
+        return np.clip(v, -100, 100)  # type: ignore
+
+
+class ParametrizedBO2(base.ParametrizedFamily):
+    """Bayesian optimization
+
+    qr: str
+        TODO
+    """
+
+    no_parallelization = True
+    _optimizer_class = _BO2
+
+    def __init__(self, *, qr: str = "none", middle_point: bool = False, seed: Optional[int] = None) -> None:
+        assert qr in ["r", "qr", "lhs", "none"]
+        self.qr = qr
+        self.middle_point = middle_point
+        self.seed = seed  # to be removed
+        super().__init__()
