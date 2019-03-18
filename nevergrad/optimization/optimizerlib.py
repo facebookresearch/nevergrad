@@ -964,7 +964,10 @@ class MultiScaleCMA(CM):
         self.budget_before_choosing = budget // 3
 
 
-class FakeFunction:
+class _FakeFunction:
+    """Simple function that returns the value which was registerd just before.
+    This is a hack for BO.
+    """
 
     def __init__(self) -> None:
         self._registered: List[Tuple[np.ndarray, float]] = []
@@ -992,7 +995,7 @@ class _BO(base.Optimizer):
         self._parameters = ParametrizedBO()
         self._transform = CumulativeDensity()
         self._bo: Optional[BayesianOptimization] = None
-        self._fake_function = FakeFunction()
+        self._fake_function = _FakeFunction()
 
     @property
     def bo(self) -> BayesianOptimization:
@@ -1002,17 +1005,18 @@ class _BO(base.Optimizer):
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=rng)
             # init
             midpoint = self._parameters.middle_point
+            init = self._parameters.initialization
             if midpoint:
                 self._bo.probe([.5] * self.dimension, lazy=True)
-            elif self._parameters.qr == "none":
+            elif init is None:
                 self._bo._queue.add(self._bo._space.random_sample())
-            if self._parameters.qr != "none":
+            if init is not None:
                 init_budget = int(np.sqrt(self.budget)) - midpoint
                 if init_budget > 0:
-                    name = self._parameters.qr
-                    sampler = {"qr": sequences.HammersleySampler,
-                               "lhs": sequences.LHSSampler,
-                               "r": sequences.RandomSampler}[name](self.dimension, budget=init_budget, scrambling=(name == "qr"))
+                    sampler = {"Hammersley": sequences.HammersleySampler,
+                               "LHS": sequences.LHSSampler,
+                               "random": sequences.RandomSampler}[init](self.dimension, budget=init_budget,
+                                                                        scrambling=(init == "Hammersley"))
                     for point in sampler:
                         self._bo.probe(point, lazy=True)
         return self._bo
@@ -1039,22 +1043,24 @@ class _BO(base.Optimizer):
 class ParametrizedBO(base.ParametrizedFamily):
     """Bayesian optimization
 
-    qr: str
-        TODO
+    initialization: str
+        Initialization algorithms (None, "Hammersley", "random" or "LHS")
+    middle_point: bool
+        whether to sample the 0 point first
     """
 
     no_parallelization = True
     _optimizer_class = _BO
 
-    def __init__(self, *, qr: str = "none", middle_point: bool = False) -> None:
-        assert qr in ["r", "qr", "lhs", "none"]
-        self.qr = qr
+    def __init__(self, *, initialization: Optional[str] = None, middle_point: bool = False) -> None:
+        assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f'Unknown init {initialization}'
+        self.initialization = initialization
         self.middle_point = middle_point
         super().__init__()
 
 
 BO = ParametrizedBO().with_name("BO", register=True)
-RBO = ParametrizedBO(qr="r").with_name("RBO", register=True)
-QRBO = ParametrizedBO(qr="qr").with_name("QRBO", register=True)
-MidQRBO = ParametrizedBO(qr="qr", middle_point=True).with_name("MidQRBO", register=True)
-LBO = ParametrizedBO(qr="lhs").with_name("LBO", register=True)
+RBO = ParametrizedBO(initialization="random").with_name("RBO", register=True)
+QRBO = ParametrizedBO(initialization="Hammersley").with_name("QRBO", register=True)
+MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).with_name("MidQRBO", register=True)
+LBO = ParametrizedBO(initialization="LHS").with_name("LBO", register=True)
