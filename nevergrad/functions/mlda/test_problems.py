@@ -25,7 +25,7 @@ def test_clustering() -> None:
         np.testing.assert_equal(func.dimension, 10)
     func([k for k in range(10)])
     testing.printed_assert_equal(func.descriptors,
-                                 {"transform": None, "function_class": "Clustering", "dimension": 10,
+                                 {"instrumentation": "A(5,2)", "function_class": "Clustering", "dimension": 10,
                                   "name": "Ruspini", "num_clusters": 5, "rescale": True})
 
 
@@ -81,7 +81,11 @@ def test_landscape() -> None:
     np.testing.assert_equal(func([2, 1]), 0)
     np.testing.assert_equal(func([2.6, 1]), float("inf"))
     # with square
+    args, _ = sfunc.data_to_arguments([-1, -1])  # bottom left
+    np.testing.assert_equal(args, [0, 0])
     np.testing.assert_equal(sfunc([-1, -1]), 5)
+    args, _ = sfunc.data_to_arguments([1, 1])  # upper right
+    np.testing.assert_equal(args, [2, 1])
     np.testing.assert_equal(sfunc([1, 1]), 0)
     np.testing.assert_equal(sfunc([1.6, 1]), np.inf)
 
@@ -93,5 +97,6 @@ def test_landscape_gaussian() -> None:
         func = problems.Landscape(transform="gaussian")
     output = func([-144, -144])
     np.testing.assert_equal(output, 5)  # should be mapped to 0, 0
-    output2 = func.transform([144, 144])
+    output2, _ = func.data_to_arguments([144, 144])
     np.testing.assert_array_equal(output2, [2, 1])  # last element
+    testing.printed_assert_equal(func.descriptors, {"instrumentation": "gaussian", "function_class": "Landscape", "dimension": 2})

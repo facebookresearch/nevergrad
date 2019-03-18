@@ -60,14 +60,14 @@ def test_instrumented_function() -> None:
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     testing.printed_assert_equal(ifunc.descriptors, {
-        "dimension": 8, "name": "_arg_return", "function_class": "InstrumentedFunction", "transform": None,
+        "dimension": 8, "name": "_arg_return", "function_class": "InstrumentedFunction",
         "instrumentation": "SC(1,12|0),constant,G(0,1),constkwarg=blublu,plop=SC(3,4|0)"})
     print(ifunc.get_summary(data))
 
 
 def test_instrumented_function_kwarg_order() -> None:
     ifunc = core.InstrumentedFunction(_arg_return, kw4=variables.SoftmaxCategorical([1, 0]), kw2="constant",
-                                      kw3=variables.Gaussian(0, 1, [2, 2]), kw1=variables.Gaussian(2, 2))
+                                      kw3=variables.Array(2, 2), kw1=variables.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.dimension, 7)
     data = np.array([-1, 1, 2, 3, 4, 100, -100])
     _, kwargs = ifunc(data)

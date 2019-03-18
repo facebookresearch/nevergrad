@@ -2,10 +2,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional, TypeVar, Union
+from typing import List, Optional, TypeVar, Union, Sequence, Any
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
+from . import transforms
 from . import utils
 
 
@@ -85,10 +86,6 @@ class OrderedDiscrete(SoftmaxCategorical[X]):
         index = self.possibilities.index(arg)
         return discretization.inverse_threshold_discretization([index], len(self.possibilities))
 
-    def get_summary(self, data: ArrayLike) -> str:
-        output = self.process(data, deterministic=True)
-        return f"Value {output}, from data: {data[0]}"
-
     def _short_repr(self) -> str:
         return "OD({})".format(",".join([str(x) for x in self.possibilities]))
 
@@ -102,7 +99,7 @@ class Gaussian(utils.Variable[Y]):
     The output will simply be mean + std * data
     """
 
-    def __init__(self, mean: float, std: float, shape: Optional[List[int]] = None) -> None:
+    def __init__(self, mean: float, std: float, shape: Optional[Sequence[int]] = None) -> None:
         self.mean = mean
         self.std = std
         self.shape = shape
@@ -118,10 +115,6 @@ class Gaussian(utils.Variable[Y]):
 
     def process_arg(self, arg: Y) -> ArrayLike:
         return [(arg - self.mean) / self.std]
-
-    def get_summary(self, data: ArrayLike) -> str:
-        output = self.process(data)
-        return f"Value {output}, from data: {data}"
 
     def _short_repr(self) -> str:
         return f"G({self.mean},{self.std})"
@@ -155,3 +148,104 @@ class _Constant(utils.Variable[X]):
 
     def _short_repr(self) -> str:
         return f"{self.value}"
+
+
+class Array(utils.Variable[Y]):
+    """Array variable of a given shape, on which several transforms can be applied.
+
+    Parameters
+    ----------
+    *dims: int
+        dimensions of the array (elements of shape)
+
+    Note
+    ----
+    Interesting methods (which can be chained):
+    - asfloat(): converts the array into a float (only for arrays with 1 element)
+    - with_transform(transform): apply a transform to the array
+    - affined(a, b): applies a*x+b
+    - bounded(min_val, max_val, transform="tanh"): applies a transform ("tanh" or "arctan")
+      so that output values are in range [min_val, max_val]
+    - exponentiated(base, coeff): applies base**(coeff * x)
+    """
+
+    def __init__(self, *dims: int) -> None:
+        self.transforms: List[Any] = []
+        self.shape = tuple(dims)
+        self._asfloat = False
+
+    @property
+    def dimension(self) -> int:
+        return int(np.prod(self.shape))
+
+    def process(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
+        assert len(data) == self.dimension
+        array = np.array(data, copy=False)
+        for transf in self.transforms:
+            array = transf.forward(array)
+        if self._asfloat:
+            return float(array[0])
+        return array.reshape(self.shape)
+
+    def process_arg(self, arg: Y) -> np.ndarray:
+        if self._asfloat:
+            output = np.array([arg])
+        else:
+            output = np.array(arg, copy=False).ravel()
+        for transf in reversed(self.transforms):
+            output = transf.backward(output)
+        return output
+
+    def _short_repr(self) -> str:
+        dims = ",".join(str(d) for d in self.shape)
+        transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
+        fl = "" if not self._asfloat else "f"
+        return f"A({dims}{transf}){fl}"
+
+    def asfloat(self) -> 'Array':
+        if self.dimension != 1:
+            raise RuntimeError("Only Arrays with 1 element can be cast to float")
+        self._asfloat = True
+        return self
+
+    def with_transform(self, transform: transforms.Transform) -> 'Array':
+        self.transforms.append(transform)
+        return self
+
+    def exponentiated(self, base: float, coeff: float) -> 'Array':
+        """Exponentiation transform base ** (coeff * x)
+        This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
+
+        Parameters
+        ----------
+        base: float
+        coeff: float
+        """
+        return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))
+
+    def affined(self, a: float, b: float = 0.) -> 'Array':
+        """Affine transform a * x + b
+
+        Parameters
+        ----------
+        a: float
+        b: float
+        """
+        return self.with_transform(transforms.Affine(a=a, b=b))
+
+    def bounded(self, min_val: float, max_val: float, transform: str = "tanh") -> 'Array':
+        """Bounds all real values into [min_val, max_val] using a tanh transform.
+        Beware, tanh goes very fast to its limits.
+
+        Parameters
+        ----------
+        min_val: float
+        max_val: float
+        transform: str
+            either "tanh" or "arctan" (note that "tanh" reaches the boundaries really quickly,
+            while "arctan" is much softer)
+        """
+        if transform not in ["tanh", "arctan"]:
+            raise ValueError("Only 'tanh' and 'arctan' are allowed as transform")
+        Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound
+        return self.with_transform(Transf(min_val=min_val, max_val=max_val))

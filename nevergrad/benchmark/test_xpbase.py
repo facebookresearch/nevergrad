@@ -10,9 +10,9 @@ from typing import Optional, List, Tuple, Any, Dict
 import numpy as np
 from ..common import testing
 from ..optimization import test_base
-from ..functions.base import BaseFunction
 from ..functions import ArtificialFunction
 from ..functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
+from .. import instrumentation as inst
 from . import execution
 from . import xpbase
 
@@ -21,7 +21,10 @@ DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer
                     "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
 
 
-class Function(BaseFunction, execution.PostponedObject):
+class Function(inst.InstrumentedFunction, execution.PostponedObject):
+
+    def __init__(self, dimension: int):
+        super().__init__(self.oracle_call, inst.var.Gaussian(0, 1, shape=[dimension]))
 
     def oracle_call(self, x: np.ndarray) -> float:
         return float(x[0])

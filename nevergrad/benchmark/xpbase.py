@@ -11,7 +11,7 @@ import traceback
 from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple, Type
 import numpy as np
 from ..common import decorators
-from ..functions import BaseFunction
+from ..instrumentation import InstrumentedFunction
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
@@ -130,8 +130,8 @@ class Experiment:
 
     Parameters
     ----------
-    function: BaseFunction
-        the function to run the experiment on. It must inherit from BaseFunction to implement
+    function: InstrumentedFunction
+        the function to run the experiment on. It must inherit from InstrumentedFunction to implement
         descriptors for the function.
 
     Note
@@ -142,9 +142,10 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: BaseFunction, optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
+    def __init__(self, function: InstrumentedFunction,
+                 optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None) -> None:
-        assert isinstance(function, BaseFunction), "All experiment functions should derive from BaseFunction"
+        assert isinstance(function, InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
@@ -195,8 +196,8 @@ class Experiment:
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
-        t_recommendation = self.function.transform(self.recommendation)
-        self.result["loss"] = sum(self.function.oracle_call(t_recommendation) for _ in range(num_eval)) / num_eval
+        args, kwargs = self.function.instrumentation.data_to_arguments(self.recommendation, deterministic=True)
+        self.result["loss"] = sum(self.function.function(*args, **kwargs) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")

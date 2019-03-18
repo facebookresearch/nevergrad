@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from nevergrad.functions import ArtificialFunction
-from nevergrad.functions import BaseFunction
+from nevergrad import instrumentation as inst
 from nevergrad.optimization import registry as optimregistry
 from nevergrad.benchmark import registry as xpregistry
 from nevergrad.benchmark import Experiment
@@ -15,12 +15,12 @@ from nevergrad.benchmark import Experiment
 # it can be used with the --imports parameters if nevergrad.benchmark commandline function
 
 
-class CustomFunction(BaseFunction):
+class CustomFunction(inst.InstrumentedFunction):
     """Example of a new test function
     """
 
     def __init__(self, offset):
-        super().__init__(dimension=1)
+        super().__init__(self.oracle_call, inst.var.Array(1).asfloat())
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks
@@ -30,7 +30,7 @@ class CustomFunction(BaseFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        return (x[0] - self.offset)**2
+        return (x - self.offset)**2
 
 
 @optimregistry.register  # register optimizers in the optimization registry
