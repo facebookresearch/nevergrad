@@ -107,12 +107,13 @@ class _BO(recaster.SequentialRecastOptimizer):
             bo.probe({f"{k}": .5 for k in range(self.dimension)}, lazy=True)
         if self._parameters.qr != "none":
             init_budget = int(np.sqrt(self.budget)) - self._parameters.middle_point
-            name = self._parameters.qr
-            sampler = {"qr": sequences.HammersleySampler,
-                       "lhs": sequences.LHSSampler,
-                       "r": sequences.RandomSampler}[name](self.dimension, budget=init_budget, scrambling=(name == "qr"))
-            for point in sampler:
-                bo.probe({f"{k}": val for k, val in enumerate(point)}, lazy=True)
+            if init_budget > 0:
+                name = self._parameters.qr
+                sampler = {"qr": sequences.HammersleySampler,
+                           "lhs": sequences.LHSSampler,
+                           "r": sequences.RandomSampler}[name](self.dimension, budget=init_budget, scrambling=(name == "qr"))
+                for point in sampler:
+                    bo.probe({f"{k}": val for k, val in enumerate(point)}, lazy=True)
         assert self.budget is not None
         ip = 1 if self._parameters.qr == "none" else 0
         bo.maximize(n_iter=self.budget - len(bo._queue) - ip, init_points=ip)
