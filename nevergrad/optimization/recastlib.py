@@ -97,7 +97,7 @@ class _BO(recaster.SequentialRecastOptimizer):
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
 
         def my_obj(**kwargs: Any) -> float:
-            v = self._transform.backward([kwargs[str(i)] for i in range(self.dimension)])
+            v = self._transform.backward(np.array([kwargs[str(i)] for i in range(self.dimension)]))
             v = np.clip(v, -100, 100)
             return -objective_function(v)   # We minimize!
 
@@ -116,7 +116,7 @@ class _BO(recaster.SequentialRecastOptimizer):
         assert self.budget is not None
         ip = 1 if self._parameters.qr == "none" else 0
         bo.maximize(n_iter=self.budget - len(bo._queue) - ip, init_points=ip)
-        v = self._transform.backward([bo.max['params'][str(i)] for i in range(self.dimension)])
+        v = self._transform.backward(np.array([bo.max['params'][str(i)] for i in range(self.dimension)]))
         v = np.clip(v, -100, 100)
         return v
 

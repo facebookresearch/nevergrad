@@ -210,7 +210,7 @@ def test_tbpsa_recom_with_update() -> None:
     np.testing.assert_almost_equal(output, [.037964, .0433031, -.4688667, .3633273])
 
 
-def test_bo_bo():
+def test_bo_bo() -> None:
     # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
     np.random.seed(12)
     budget = 4
@@ -218,7 +218,7 @@ def test_bo_bo():
     fitness = Fitness([.5, -.8, 4])
     lbo = recastlib.ParametrizedBO(qr="lhs", seed=12)
     optim = lbo(dimension=3, budget=budget, num_workers=1)
-    output = optim._optimization_function(fitness)
+    output = optim._optimization_function(fitness)  # type: ignore
     np.testing.assert_almost_equal(output, [-0.8886612, -1.1727564, 0.6989967])
 
 
