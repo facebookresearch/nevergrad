@@ -1002,9 +1002,7 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
             seed = np.random.randint(2**32, dtype=np.uint32)
-            print("seed", seed)
-            rng = np.random.RandomState(seed)  # make sure it is seedable from outside
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=rng)
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=np.random.RandomState(seed))
             # init
             midpoint = self._parameters.middle_point
             init = self._parameters.initialization

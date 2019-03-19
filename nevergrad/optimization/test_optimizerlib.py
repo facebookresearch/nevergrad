@@ -6,11 +6,14 @@
 import random
 import warnings
 from pathlib import Path
+from functools import partial
 from unittest import SkipTest
+from unittest.mock import patch
 from typing import Type, Union, Generator, List
 import pytest
 import numpy as np
 import pandas as pd
+from bayes_opt.util import acq_max
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
@@ -27,7 +30,6 @@ class Fitness:
         self.x0 = np.array(x0, copy=True)
 
     def __call__(self, x: ArrayLike) -> float:
-        print("eval", x)
         assert len(self.x0) == len(x)
         return float(np.sum((np.array(x, copy=False) - self.x0)**2))
 
@@ -82,7 +84,9 @@ def test_optimizers(name: str) -> None:
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # BO is extremely slow, run it anyway but very low budget and no verification
-    check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
+    patched = partial(acq_max, n_warmup=1000, n_iter=5)
+    with patch('bayes_opt.bayesian_optimization.acq_max', patched):
+        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
 
 
 class RecommendationKeeper:
@@ -109,7 +113,7 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
     keeper.save()
 
 
-@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
     # set up environment
     optimizer_cls = registry[name]
@@ -127,7 +131,9 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
-    output = optim.optimize(fitness)
+    patched = partial(acq_max, n_warmup=100, n_iter=4)
+    with patch('bayes_opt.bayesian_optimization.acq_max', patched):  # speed up BO tests
+        output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
@@ -208,40 +214,3 @@ def test_tbpsa_recom_with_update() -> None:
     optim.llambda = 3
     output = optim.optimize(fitness)
     np.testing.assert_almost_equal(output, [.037964, .0433031, -.4688667, .3633273])
-
-
-def test_bo_bo2() -> None:
-    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-    np.random.seed(12)
-    budget = 4
-    # set up problem
-    fitness = Fitness([.5, -.8, 4])
-    lbo = optimizerlib.ParametrizedBO(initialization="LHS")
-    optim = lbo(dimension=3, budget=budget, num_workers=1)
-    output = optim.optimize(fitness)  # type: ignore
-    np.testing.assert_almost_equal(output, [.7789093, -0.0325044, 0.8766994])
-
-
-def test_bo_mqr2():
-    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-    np.random.seed(12)
-    budget = 4
-    # set up problem
-    fitness = Fitness([.5, -.8, 4])
-    lbo = optimizerlib.ParametrizedBO(initialization="Hammersley", middle_point=True)
-    optim = lbo(dimension=3, budget=budget, num_workers=1)
-    output = optim.optimize(fitness)  # type: ignore
-    np.testing.assert_almost_equal(output, [-0.849667, 0.0316103, 1.1900196])
-    raise Exception("All good")
-
-
-def test_bo_qr2():
-    # testing the optimization function for regression. This is temporary and will serve for updating the BO optimizers
-    np.random.seed(12)
-    budget = 4
-    # set up problem
-    fitness = Fitness([.5, -.8, 4])
-    lbo = optimizerlib.ParametrizedBO(initialization="Hammersley")
-    optim = lbo(dimension=3, budget=budget, num_workers=1)
-    output = optim.optimize(fitness)  # type: ignore
-    np.testing.assert_almost_equal(output, [-0.7928807, 0.0327085, 1.0461512])
