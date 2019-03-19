@@ -32,6 +32,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
             pip install -e .[dev]
 
       - save_cache:
@@ -62,6 +63,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
             pip install -e .[all]
             git clone https://github.com/numpy/numpy-stubs.git || (cd numpy-stubs; git pull)
             pip install ./numpy-stubs
