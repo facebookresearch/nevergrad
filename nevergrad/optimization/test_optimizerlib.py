@@ -27,6 +27,7 @@ class Fitness:
         self.x0 = np.array(x0, copy=True)
 
     def __call__(self, x: ArrayLike) -> float:
+        print("eval", x)
         assert len(self.x0) == len(x)
         return float(np.sum((np.array(x, copy=False) - self.x0)**2))
 
@@ -231,6 +232,7 @@ def test_bo_mqr2():
     optim = lbo(dimension=3, budget=budget, num_workers=1)
     output = optim.optimize(fitness)  # type: ignore
     np.testing.assert_almost_equal(output, [-0.849667, 0.0316103, 1.1900196])
+    raise Exception("All good")
 
 
 def test_bo_qr2():
