@@ -8,10 +8,14 @@ from collections import defaultdict, deque
 import cma
 import numpy as np
 from scipy import stats
+from bayes_opt import UtilityFunction
+from bayes_opt import BayesianOptimization
+from ..instrumentation.transforms import CumulativeDensity
 from . import utils
 from . import base
 from . import mutations
 from .base import registry
+from . import sequences
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *
@@ -958,3 +962,105 @@ class MultiScaleCMA(CM):
                        MicroCMA(dimension, budget=None, num_workers=num_workers)]
         assert budget is not None
         self.budget_before_choosing = budget // 3
+
+
+class _FakeFunction:
+    """Simple function that returns the value which was registerd just before.
+    This is a hack for BO.
+    """
+
+    def __init__(self) -> None:
+        self._registered: List[Tuple[np.ndarray, float]] = []
+
+    def register(self, x: np.ndarray, value: float) -> None:
+        if self._registered:
+            raise RuntimeError("Only one call can be registered at a time")
+        self._registered.append((x, value))
+
+    def __call__(self, **kwargs: float) -> float:
+        if not self._registered:
+            raise RuntimeError("Call must be registered first")
+        x = [kwargs[f'x{i}'] for i in range(len(kwargs))]
+        xr, value = self._registered[0]
+        if not np.array_equal(x, xr):
+            raise ValueError("Call does not match registered")
+        self._registered.clear()
+        return value
+
+
+class _BO(base.Optimizer):
+
+    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(dimension, budget=budget, num_workers=num_workers)
+        self._parameters = ParametrizedBO()
+        self._transform = CumulativeDensity()
+        self._bo: Optional[BayesianOptimization] = None
+        self._fake_function = _FakeFunction()
+
+    @property
+    def bo(self) -> BayesianOptimization:
+        if self._bo is None:
+            bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
+            seed = np.random.randint(2**32, dtype=np.uint32)
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=np.random.RandomState(seed))
+            # init
+            midpoint = self._parameters.middle_point
+            init = self._parameters.initialization
+            if midpoint:
+                self._bo.probe([.5] * self.dimension, lazy=True)
+            elif init is None:
+                self._bo._queue.add(self._bo._space.random_sample())
+            if init is not None:
+                init_budget = int(np.sqrt(self.budget)) - midpoint
+                if init_budget > 0:
+                    sampler = {"Hammersley": sequences.HammersleySampler,
+                               "LHS": sequences.LHSSampler,
+                               "random": sequences.RandomSampler}[init](self.dimension, budget=init_budget,
+                                                                        scrambling=(init == "Hammersley"))
+                    for point in sampler:
+                        self._bo.probe(point, lazy=True)
+        return self._bo
+
+    def _internal_ask(self) -> base.ArrayLike:
+        util = UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)  # bayes_opt default
+        try:
+            x_probe = next(self.bo._queue)
+        except StopIteration:
+            x_probe = self.bo.suggest(util)  # this is time consuming
+            x_probe = [x_probe[f'x{i}'] for i in range(len(x_probe))]
+        return np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)  # type: ignore
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        y = self._transform.forward(np.array(x, copy=False))
+        self._fake_function.register(y, -value)  # minimizing
+        self.bo.probe(y, lazy=False)
+
+    def provide_recommendation(self) -> base.ArrayLike:
+        v = self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
+        return np.clip(v, -100, 100)  # type: ignore
+
+
+class ParametrizedBO(base.ParametrizedFamily):
+    """Bayesian optimization
+
+    initialization: str
+        Initialization algorithms (None, "Hammersley", "random" or "LHS")
+    middle_point: bool
+        whether to sample the 0 point first
+    """
+
+    no_parallelization = True
+    _optimizer_class = _BO
+
+    def __init__(self, *, initialization: Optional[str] = None, middle_point: bool = False) -> None:
+        assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f'Unknown init {initialization}'
+        self.initialization = initialization
+        self.middle_point = middle_point
+        super().__init__()
+
+
+BO = ParametrizedBO().with_name("BO", register=True)
+RBO = ParametrizedBO(initialization="random").with_name("RBO", register=True)
+QRBO = ParametrizedBO(initialization="Hammersley").with_name("QRBO", register=True)
+MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).with_name("MidQRBO", register=True)
+LBO = ParametrizedBO(initialization="LHS").with_name("LBO", register=True)
