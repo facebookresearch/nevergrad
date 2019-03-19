@@ -82,7 +82,7 @@ def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.OptimizerFamily):
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
-    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+    verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
     # BO is extremely slow, run it anyway but very low budget and no verification
     check_optimizer(optimizer_cls, budget=300, verify_value=verify)
 
@@ -129,8 +129,11 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
+    # the following context manager speeds up BO tests
+    # BEWARE: BO tests are deterministic but can get different results from a computer to another.
+    # Reducing the precision could help in this regard.
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
-    with patch('bayes_opt.bayesian_optimization.acq_max', patched):  # speed up BO tests
+    with patch('bayes_opt.bayesian_optimization.acq_max', patched):
         output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
