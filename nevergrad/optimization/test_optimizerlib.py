@@ -129,7 +129,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
-    patched = partial(acq_max, n_warmup=1000, n_iter=3)
+    patched = partial(acq_max, n_warmup=12, n_iter=3)
     with patch('bayes_opt.bayesian_optimization.acq_max', patched):  # speed up BO tests
         output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
