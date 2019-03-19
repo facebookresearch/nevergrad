@@ -77,14 +77,16 @@ SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOne
 UNSEEDABLE: List[str] = []
 
 
-@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.OptimizerFamily):
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
-    verify = not optimizer_cls.one_shot and name not in SLOW and "Discrete" not in name
-    # BO is extremely slow, run it anyway but very low budget and no verification
-    check_optimizer(optimizer_cls, budget=300, verify_value=verify)
+    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+    # the following context manager speeds up BO tests
+    patched = partial(acq_max, n_warmup=10000, n_iter=2)
+    with patch('bayes_opt.bayesian_optimization.acq_max', patched):
+        check_optimizer(optimizer_cls, budget=300, verify_value=verify)
 
 
 class RecommendationKeeper:
