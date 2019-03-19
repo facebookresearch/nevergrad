@@ -77,16 +77,14 @@ SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOne
 UNSEEDABLE: List[str] = []
 
 
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", [name for name in registry if "BO" not in name])  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.OptimizerFamily):
         assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # BO is extremely slow, run it anyway but very low budget and no verification
-    patched = partial(acq_max, n_warmup=1000, n_iter=5)
-    with patch('bayes_opt.bayesian_optimization.acq_max', patched):
-        check_optimizer(optimizer_cls, budget=2 if "BO" in name else 300, verify_value=verify)
+    check_optimizer(optimizer_cls, budget=300, verify_value=verify)
 
 
 class RecommendationKeeper:
@@ -131,7 +129,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
     optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
-    patched = partial(acq_max, n_warmup=100, n_iter=4)
+    patched = partial(acq_max, n_warmup=1000, n_iter=3)
     with patch('bayes_opt.bayesian_optimization.acq_max', patched):  # speed up BO tests
         output = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
