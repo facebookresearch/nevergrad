@@ -7,6 +7,7 @@ from typing import Optional, Tuple, Union, Set
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
+from ..instrumentation import Instrumentation
 from . import base
 from . import sequences
 
@@ -30,8 +31,8 @@ class _DE(base.Optimizer):
     # pylint: disable=too-many-locals, too-many-nested-blocks
     # pylint: disable=too-many-branches, too-many-statements
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
         self.population = base.utils.Population[DEParticule]([])
@@ -152,9 +153,9 @@ class _DE(base.Optimizer):
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self.tell_not_asked(x, value)
-            return
+        # if x_bytes in self._replaced:
+        #    self.tell_not_asked(x, value)
+        #    return
         self.match_population_size_to_lambda()
         particule = self.population.get_linked(x_bytes)
         self.population.del_link(np.array(x).tobytes(), particule)
@@ -163,26 +164,26 @@ class _DE(base.Optimizer):
             particule.fitness = value
         self.population.set_queued(particule)
 
-    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self._replaced.remove(x_bytes)
-        else:
-            self._update_archive_and_bests(x, value)
-            self._num_tell += 1
-        self.match_population_size_to_lambda()
-        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
-        if worst_part.fitness is not None and worst_part.fitness < value:
-            return  # no need to update
-        particule = DEParticule()
-        replaced = self.population.replace(worst_part, particule)
-        x = np.array(x, copy=False)
-        self.population.set_linked(x.tobytes(), particule)
-        if replaced is not None:
-            assert isinstance(replaced, bytes)
-            self._replaced.add(replaced)
-        self._internal_tell(x, value)
+    # def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+    #    x = np.array(x, copy=False)
+    #    x_bytes = x.tobytes()
+    #    if x_bytes in self._replaced:
+    #        self._replaced.remove(x_bytes)
+    #    else:
+    #        self._update_archive_and_bests(x, value)
+    #        self._num_tell += 1
+    #    self.match_population_size_to_lambda()
+    #    worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
+    #    if worst_part.fitness is not None and worst_part.fitness < value:
+    #        return  # no need to update
+    #    particule = DEParticule()
+    #    replaced = self.population.replace(worst_part, particule)
+    #    x = np.array(x, copy=False)
+    #    self.population.set_linked(x.tobytes(), particule)
+    #    if replaced is not None:
+    #        assert isinstance(replaced, bytes)
+    #        self._replaced.add(replaced)
+    #    self._internal_tell(x, value)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes

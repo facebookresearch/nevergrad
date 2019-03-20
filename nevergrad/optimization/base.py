@@ -9,7 +9,7 @@ import inspect
 import warnings
 from numbers import Real
 from collections import deque
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, NamedTuple, Deque, Type
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -31,6 +31,27 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """
 
 
+class ArgPoint:
+    """Handle for args and kwargs arguments, keeping
+    the initial data in memory.
+    """
+
+    def __init__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike):
+        self.args = args
+        self.kwargs = kwargs
+        self.data = np.array(data, copy=False)
+        self._meta: Dict[str, Any] = {}
+
+    def __getitem__(self, ind: int) -> None:
+        raise RuntimeError('Return type of "ask" is now an ArgPoint, use argpoint.data for unchanged behavior')
+
+    def __array__(self) -> None:
+        raise RuntimeError('Return type of "ask" is now an ArgPoint, use argpoint.data for unchanged behavior')
+
+    def __repr__(self) -> str:
+        return f"ArgPoint(args={self.args}, kwargs={self.kwargs}, data={self.data})"
+
+
 class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
     - "ask()" which provides points on which to evaluate the function to optimize
@@ -48,8 +69,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
 
     Parameters
     ----------
-    dimension: int
-        dimension of the optimization space
+    instrumentation: int or Instrumentation
+        either the dimension of the optimization space, or its instrumentation
     budget: int/None
         number of allowed evaluations
     num_workers: int
@@ -63,30 +84,34 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Union[instru.Instrumentation, int],
+                 budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         self.num_workers = int(num_workers)
         self.budget = budget
-        np.testing.assert_equal(dimension, int(dimension), f"Dimension must be an int")
-        dimension = int(dimension)
-        self.dimension = dimension
+        self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
+                                instru.Instrumentation(instru.var.Array(instrumentation)))
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
-        self.current_bests = {x: utils.Point(np.zeros(dimension, dtype=np.float), utils.Value(np.inf))
+        self.current_bests = {x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
         self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
-        self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=dimension)
+        self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
         self._num_ask = 0
         self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[ArrayLike, JobLike[float]]] = []
-        self._finished_jobs: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
+        self._running_jobs: List[Tuple[ArgPoint, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[ArgPoint, JobLike[float]]] = deque()
+
+    @property
+    def dimension(self) -> int:
+        return self.instrumentation.dimension
 
     @property
     def num_ask(self) -> int:
@@ -95,16 +120,6 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     @property
     def num_tell(self) -> int:
         return self._num_tell
-
-    @property
-    def num_suggestions(self) -> int:
-        warnings.warn("Use num_ask property instead", DeprecationWarning)
-        return self.num_ask
-
-    @property
-    def num_evaluations(self) -> int:
-        warnings.warn("Use num_tell property instead", DeprecationWarning)
-        return self.num_tell
 
     def __repr__(self) -> str:
         return f"Instance of {self.name}(dimension={self.dimension}, budget={self.budget}, num_workers={self.num_workers})"
@@ -128,21 +143,25 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def tell_not_asked(self, x: ArrayLike, value: float) -> None:
-        """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
+    def _data_to_argpoint(self, data: ArrayLike) -> ArgPoint:
+        args, kwargs = self.instrumentation.data_to_arguments(np.array(data, copy=True))
+        return ArgPoint(args=args, kwargs=kwargs, data=data)
 
-        Parameters
-        ----------
-        x: np.ndarray
-            point where the function was evaluated
-        value: float
-            value of the function
-        """
-        # default to just a tell
-        # algorithms which do not support it should raise NotImplementedError
-        self.tell(x, value)
+    # def tell_not_asked(self, x: ArrayLike, value: float) -> None:
+    #    """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
 
-    def tell(self, x: ArrayLike, value: float) -> None:
+    #    Parameters
+    #    ----------
+    #    x: np.ndarray
+    #        point where the function was evaluated
+    #    value: float
+    #        value of the function
+    #    """
+    #    # default to just a tell
+    #    # algorithms which do not support it should raise NotImplementedError
+    #    # self.tell(x, value)  # TODO REACTIVATE
+
+    def tell(self, args: ArgPoint, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point
 
         Parameters
@@ -152,7 +171,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         value: float
             value of the function
         """
-        x = np.array(x, copy=False)
+        assert isinstance(args, ArgPoint), "'tell' must be provided with the argpoint that 'ask' provided"
+        x = args.data
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, x, value)
@@ -184,7 +204,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self) -> ArrayLike:
+    def ask(self) -> ArgPoint:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
         """
@@ -194,17 +214,17 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         suggestion = self._internal_ask()
         assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        return suggestion
+        return self._data_to_argpoint(suggestion)
 
-    def provide_recommendation(self) -> ArrayLike:
+    def provide_recommendation(self) -> ArgPoint:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> ArrayLike:
+    def recommend(self) -> ArgPoint:
         """Provides the best point to use as a minimum, given the budget that was used
         """
-        return self._internal_provide_recommendation()
+        return self._data_to_argpoint(self._internal_provide_recommendation())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
@@ -220,7 +240,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def optimize(self, objective_function: Callable[[Any], float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
-                 verbosity: int = 0) -> ArrayLike:
+                 verbosity: int = 0) -> ArgPoint:
         """Optimization (minimization) procedure
 
         Parameters
@@ -253,8 +273,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: List[Tuple[ArrayLike, JobLike[float]]] = []
-        tmp_finished: Deque[Tuple[ArrayLike, JobLike[float]]] = deque()
+        tmp_runnings: List[Tuple[ArgPoint, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[ArgPoint, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
@@ -286,8 +306,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
-                    x = self.ask()
-                    self._running_jobs.append((x, executor.submit(objective_function, x)))
+                    args = self.ask()
+                    self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                 if new_sugg:
                     sleeper.start_timer()
             remaining_budget = self.budget - self.num_ask
@@ -323,8 +343,7 @@ class OptimizationPrinter:
             self._last_time = time.time()
         if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_tell % self._num_eval):
             x = optimizer.provide_recommendation()
-            point = x if x not in optimizer.archive else utils.Point(x, optimizer.archive[x])
-            print(f"After {optimizer.num_tell}, recommendation is {point}")
+            print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
 
 class OptimizerFamily:
@@ -355,7 +374,8 @@ class OptimizerFamily:
             registry.register_name(name, self)
         return self
 
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+    def __call__(self, instrumentation: Union[int, instru.Instrumentation],
+                 budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
         raise NotImplementedError
 
 
@@ -369,7 +389,7 @@ class ParametrizedFamily(OptimizerFamily):
     _optimizer_class: Optional[Type[Optimizer]] = None
 
     def __init__(self) -> None:
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()  # type: ignore
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
                     if x not in ["self", "__class__"]}
         diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
         if diff:  # this is to help durring development
@@ -378,58 +398,12 @@ class ParametrizedFamily(OptimizerFamily):
         different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x] and not x.startswith("_")}
         super().__init__(**different)
 
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+    def __call__(self, instrumentation: Union[int, instru.Instrumentation],
+                 budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
         assert self._optimizer_class is not None
-        run = self._optimizer_class(dimension=dimension, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
+        run = self._optimizer_class(instrumentation=instrumentation, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
         assert hasattr(run, "_parameters")
         assert isinstance(run._parameters, self.__class__)  # type: ignore
         run._parameters = self  # type: ignore
         run.name = repr(self)
         return run
-
-
-class ArgPoint(NamedTuple):
-    """Handle for args and kwargs arguments, keeping
-    the initial data in memory.
-    """
-    args: Tuple[Any, ...]
-    kwargs: Dict[str, Any]
-    data: ArrayLike
-
-
-class IntrumentedOptimizer:
-    """Optimizer which yields "ArgPoint"s instead of data points (np.ndarray).
-    ArgPoint structure directly provides args and kwargs to input to the function you
-    mean to optimize.
-    """
-
-    def __init__(self, optimizer: Optimizer, instrumentation: instru.Instrumentation) -> None:
-        assert optimizer.dimension == instrumentation.dimension
-        self._optimizer = optimizer
-        self.instrumentation = instrumentation
-
-    def ask(self) -> ArgPoint:
-        x = self._optimizer.ask()
-        args, kwargs = self.instrumentation.data_to_arguments(x)
-        return ArgPoint(args, kwargs, x)
-
-    def provide_recommendation(self) -> ArgPoint:
-        x = self._optimizer.provide_recommendation()
-        args, kwargs = self.instrumentation.data_to_arguments(x)
-        return ArgPoint(args, kwargs, x)
-
-    def tell(self, point: ArgPoint, value: float) -> None:
-        assert isinstance(point, ArgPoint), '"tell" can only receive an ArgPoint'
-        self._optimizer.tell(point.data, value)
-
-    def optimize(self, objective_function: Callable[..., float],
-                 executor: Optional[ExecutorLike] = None,
-                 batch_mode: bool = False,
-                 verbosity: int = 0) -> ArgPoint:
-        # for now, instrument the function and optimize
-        # this should be updated eventually to take benefit of the information
-        # provided by the instumentation
-        ifunc = instru.InstrumentedFunction(objective_function, *self.instrumentation.args,
-                                            **self.instrumentation.kwargs)
-        self._optimizer.optimize(ifunc, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
-        return self.provide_recommendation()

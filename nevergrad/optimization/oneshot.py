@@ -7,6 +7,7 @@ from typing import Optional, Union
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
+from ..instrumentation import Instrumentation
 from . import sequences
 from . import base
 
@@ -22,8 +23,8 @@ class OneShotOptimizer(base.Optimizer):
 
 class _RandomSearch(OneShotOptimizer):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = RandomSearchMaker()  # updated by the parametrized family
 
     def _internal_ask(self) -> ArrayLike:
@@ -90,8 +91,8 @@ RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
 
 class _SamplingSearch(OneShotOptimizer):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = SamplingSearch()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None
