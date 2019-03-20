@@ -257,11 +257,9 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield xp
 
 
-# def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
-def arcoating() -> Iterator[Experiment]:
+def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
     func = ARCoating()
-    seed = 12
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
              "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
