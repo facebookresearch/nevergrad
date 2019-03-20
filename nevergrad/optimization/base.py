@@ -52,6 +52,23 @@ class ArgPoint:
         return f"ArgPoint(args={self.args}, kwargs={self.kwargs}, data={self.data})"
 
 
+class ArgPointMaker:
+
+    def __init__(self, instrumentation: instru.Instrumentation) -> None:
+        self._instrumentation = instrumentation
+
+    def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> ArgPoint:
+        return ArgPoint(args, kwargs, data)
+
+    def from_call(self, *args: Any, kwargs: Any) -> ArgPoint:
+        data = self._instrumentation.arguments_to_data(*args, **kwargs)
+        return ArgPoint(args, kwargs, data)
+
+    def from_data(self, data: ArrayLike) -> ArgPoint:
+        args, kwargs = self._instrumentation.data_to_arguments(data)
+        return ArgPoint(args, kwargs, data)
+
+
 class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
     - "ask()" which provides points on which to evaluate the function to optimize
@@ -92,6 +109,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.budget = budget
         self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
                                 instru.Instrumentation(instru.var.Array(instrumentation)))
+        self.argpoint = ArgPointMaker(self.instrumentation)
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
@@ -144,23 +162,19 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def _data_to_argpoint(self, data: ArrayLike) -> ArgPoint:
-        args, kwargs = self.instrumentation.data_to_arguments(np.array(data, copy=True))
-        return ArgPoint(args=args, kwargs=kwargs, data=data)
+    def tell_not_asked(self, x: ArgPoint, value: float) -> None:
+        """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
 
-    # def tell_not_asked(self, x: ArrayLike, value: float) -> None:
-    #    """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
-
-    #    Parameters
-    #    ----------
-    #    x: np.ndarray
-    #        point where the function was evaluated
-    #    value: float
-    #        value of the function
-    #    """
-    #    # default to just a tell
-    #    # algorithms which do not support it should raise NotImplementedError
-    #    # self.tell(x, value)  # TODO REACTIVATE
+        Parameters
+        ----------
+        x: np.ndarray
+            point where the function was evaluated
+        value: float
+            value of the function
+        """
+        # default to just a tell
+        # algorithms which do not support it should raise NotImplementedError
+        self.tell(x, value)
 
     def tell(self, args: ArgPoint, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point
@@ -172,7 +186,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         value: float
             value of the function
         """
-        assert isinstance(args, ArgPoint), "'tell' must be provided with the argpoint that 'ask' provided"
+        if not isinstance(args, ArgPoint):
+            raise TypeError("'tell' must be provided with the argpoint that 'ask' provided")
         x = args.data
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
@@ -215,7 +230,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         suggestion = self._internal_ask()
         assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        return self._data_to_argpoint(suggestion)
+        return self.argpoint.from_data(suggestion)
 
     def provide_recommendation(self) -> ArgPoint:
         """Provides the best point to use as a minimum, given the budget that was used
@@ -225,7 +240,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def recommend(self) -> ArgPoint:
         """Provides the best point to use as a minimum, given the budget that was used
         """
-        return self._data_to_argpoint(self._internal_provide_recommendation())
+        return self.argpoint.from_data(self._internal_provide_recommendation())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:

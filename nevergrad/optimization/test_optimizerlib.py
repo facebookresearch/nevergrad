@@ -63,14 +63,15 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
             min(v.pessimistic_confidence_bound for v in archive.values()))
     # add a random point to test tell_not_asked
-    # try:
-    #    optimizer.tell_not_asked(np.random.normal(0, 1, size=optimizer.dimension), 12.)
-    # except Exception as e:  # pylint: disable=broad-except
-    #    if not isinstance(e, base.TellNotAskedNotSupportedError):
-    #        raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
-    #                             "at tell_not_asked if they do not support it") from e
-    # else:
-    #    assert optimizer.num_tell == budget + 1
+    try:
+        argpoint = optimizer.argpoint.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+        optimizer.tell_not_asked(argpoint, 12.)
+    except Exception as e:  # pylint: disable=broad-except
+        if not isinstance(e, base.TellNotAskedNotSupportedError):
+            raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
+                                 "at tell_not_asked if they do not support it") from e
+    else:
+        assert optimizer.num_tell == budget + 1
 
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
@@ -186,27 +187,27 @@ def test_optimizer_families_repr() -> None:
     assert optimso.no_parallelization
 
 
-# @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
-# def test_tell_not_asked(name: str) -> None:
-#    best = [.5, -.8, 0, 4]
-#    dim = len(best)
-#    fitness = Fitness(best)
-#    opt = optimizerlib.registry[name](dimension=dim, budget=2, num_workers=2)
-#    if name == "PSO":
-#        opt.llambda = 2
-#    else:
-#        opt._llambda = 2
-#    zeros = [0.] * dim
-#    opt.tell_not_asked(zeros, fitness(zeros))
-#    asked = [opt.ask(), opt.ask()]
-#    opt.tell_not_asked(best, fitness(best))
-#    opt.tell(asked[0], fitness(asked[0]))
-#    opt.tell(asked[1], fitness(asked[1]))
-#    assert opt.num_tell == 4, opt.num_tell
-#    assert opt.num_ask == 2
-#    if (0, 0, 0, 0) not in [tuple(x) for x in asked]:
-#        for value in opt.archive.values():
-#            assert value.count == 1
+@pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
+def test_tell_not_asked(name: str) -> None:
+    best = [.5, -.8, 0, 4]
+    dim = len(best)
+    fitness = Fitness(best)
+    opt = optimizerlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
+    if name == "PSO":
+        opt.llambda = 2
+    else:
+        opt._llambda = 2
+    zeros = [0.] * dim
+    opt.tell_not_asked(opt.argpoint.from_data(zeros), fitness(zeros))
+    asked = [opt.ask(), opt.ask()]
+    opt.tell_not_asked(opt.argpoint.from_data(best), fitness(best))
+    opt.tell(asked[0], fitness(*asked[0].args))
+    opt.tell(asked[1], fitness(*asked[1].args))
+    assert opt.num_tell == 4, opt.num_tell
+    assert opt.num_ask == 2
+    if (0, 0, 0, 0) not in [tuple(x.data) for x in asked]:
+        for value in opt.archive.values():
+            assert value.count == 1
 
 
 def test_tbpsa_recom_with_update() -> None:
