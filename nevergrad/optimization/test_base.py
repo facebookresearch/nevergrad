@@ -118,7 +118,7 @@ class StupidFamily(base.OptimizerFamily):
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
         run = class_(dimension=dimension, budget=budget, num_workers=num_workers)
         run.name = self._repr
-        return run  # type: ignore
+        return run
 
 
 def test_optimizer_family() -> None:
