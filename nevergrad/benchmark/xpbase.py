@@ -91,7 +91,7 @@ class OptimizerSettings:
     def instanciate(self, dimension: int) -> base.Optimizer:
         """Instanciate an optimizer, providing the optimization space dimension
         """
-        return self._get_factory()(dimension=dimension, budget=self.budget, num_workers=self.num_workers)
+        return self._get_factory()(instrumentation=dimension, budget=self.budget, num_workers=self.num_workers)
 
     def get_description(self) -> Dict[str, Any]:
         """Returns a dictionary describing the optimizer settings
@@ -229,9 +229,9 @@ class Experiment:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
-                self.recommendation = self._optimizer.optimize(counter, batch_mode=executor.batch_mode, executor=executor)
+                self.recommendation = self._optimizer.optimize(counter, batch_mode=executor.batch_mode, executor=executor).data
             except Exception as e:  # pylint: disable=broad-except
-                self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
+                self.recommendation = self._optimizer.provide_recommendation().data  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
                 raise e
         self._log_results(t0, counter.num_calls)
