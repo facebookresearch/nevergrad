@@ -23,12 +23,12 @@ class Registry(Dict[str, X], UserDict):  # type: ignore
         super().__init__()
         self._information: Dict[str, Dict[Any, Any]] = {}
 
-    def register(self, obj: X, info: Optional[Dict[Any, Any]] = None) -> Any:
+    def register(self, obj: X, info: Optional[Dict[Any, Any]] = None) -> X:
         """Decorator method for registering functions/classes
         The info variable can be filled up using the register_with_info
         decorator instead of this one.
         """
-        name = obj.__name__ if hasattr(obj, "__name__") else obj.__class__.__name__  # type: ignore
+        name = getattr(obj, "__name__", obj.__class__.__name__)
         self.register_name(name, obj, info)
         return obj
 
