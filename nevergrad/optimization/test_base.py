@@ -80,8 +80,8 @@ def test_tell_types(value: Any, error: bool) -> None:
 def test_base_optimizer() -> None:
     zeroptim = optimizerlib.Zero(instrumentation=2, budget=4, num_workers=1)
     representation = repr(zeroptim)
-    assert "instrumentation=2" in representation, f"Unexpected representation: {representation}"
-    np.testing.assert_equal(zeroptim.ask(), [0, 0])
+    assert "instrumentation=A(2)" in representation, f"Unexpected representation: {representation}"
+    np.testing.assert_equal(zeroptim.ask().data, [0, 0])
     zeroptim.tell(zeroptim._data_to_argpoint([0., 0]), 0)
     zeroptim.tell(zeroptim._data_to_argpoint([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
@@ -99,7 +99,7 @@ def test_optimize() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         result = optimizer.optimize(func, verbosity=2)
-    np.testing.assert_almost_equal(result[0], 1, decimal=2)
+    np.testing.assert_almost_equal(result.data[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
 
 
@@ -117,7 +117,7 @@ def test_optimizer_family() -> None:
         optf = StupidFamily(zero=zero)
         opt = optf(instrumentation=2, budget=4, num_workers=1)
         recom = opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
-        np.testing.assert_equal(recom == np.zeros(2), zero)
+        np.testing.assert_equal(recom.data == np.zeros(2), zero)
 
 
 def test_naming() -> None:
