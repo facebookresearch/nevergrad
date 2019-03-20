@@ -56,7 +56,8 @@ def fake_cost_function(x: ArrayLike) -> float:
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
 
     def get_optimization_function(self) -> Callable[[Callable[..., Any]], ArrayLike]:
-        return self._optim_function
+        # create a new instance to avoid deadlock
+        return self.__class__(self.instrumentation, self.budget, self.num_workers)._optim_function
 
     def _optim_function(self, func: Callable[..., Any]) -> ArrayLike:
         suboptim = optimizerlib.OnePlusOne(instrumentation=2, budget=self.budget)
