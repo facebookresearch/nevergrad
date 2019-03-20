@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from collections import UserDict
 from typing import Any, Callable, Optional, Dict, TypeVar
 import functools
 
@@ -10,7 +11,11 @@ import functools
 X = TypeVar("X")
 
 
-class Registry(dict, Dict[str, X]):
+# pylint does not understand Dict, and mypy needs Dict to be generic...
+# the following is (very) hacky but solves both issues for now
+# It can be safely reverted to Registry(dict) though...
+# pylint: disable=too-many-ancestors
+class Registry(Dict[str, X], UserDict):  # type: ignore
     """Registers function or classes as a dict.
     """
 
