@@ -216,5 +216,5 @@ def test_tbpsa_recom_with_update() -> None:
     fitness = Fitness([.5, -.8, 0, 4])
     optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
     optim.llambda = 3
-    output = optim.optimize(fitness)
-    np.testing.assert_almost_equal(output, [.037964, .0433031, -.4688667, .3633273])
+    argpoint = optim.optimize(fitness)
+    np.testing.assert_almost_equal(argpoint.data, [.037964, .0433031, -.4688667, .3633273])
