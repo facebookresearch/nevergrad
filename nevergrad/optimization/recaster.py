@@ -6,9 +6,10 @@
 import time
 import warnings
 import threading
-from typing import Any, Callable, Dict, Optional, List
+from typing import Any, Callable, Dict, Optional, List, Union
 import numpy as np
 from ..common.typetools import ArrayLike
+from ..instrumentation import Instrumentation
 from . import base
 
 
@@ -165,8 +166,8 @@ class RecastOptimizer(base.Optimizer):
 
     recast = True
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget, num_workers=num_workers)
         self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 

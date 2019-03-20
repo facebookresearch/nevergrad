@@ -4,11 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-from typing import List, Tuple, Any, Optional
+from typing import List, Tuple, Any, Optional, Union
 import numpy as np
 from ..common import testing
 from ..instrumentation import Instrumentation
-from ..instrumentation import variables as var
 from . import optimizerlib
 from . import test_optimizerlib
 from . import base
@@ -28,7 +27,7 @@ class CounterFunction:
 class LoggingOptimizer(base.Optimizer):
 
     def __init__(self, num_workers: int = 1) -> None:
-        super().__init__(dimension=1, budget=5, num_workers=num_workers)
+        super().__init__(instrumentation=1, budget=5, num_workers=num_workers)
         self.logs: List[str] = []
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -79,22 +78,22 @@ def test_tell_types(value: Any, error: bool) -> None:
 
 
 def test_base_optimizer() -> None:
-    zeroptim = optimizerlib.Zero(dimension=2, budget=4, num_workers=1)
+    zeroptim = optimizerlib.Zero(instrumentation=2, budget=4, num_workers=1)
     representation = repr(zeroptim)
-    assert "dimension=2" in representation, f"Unexpected representation: {representation}"
+    assert "instrumentation=2" in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask(), [0, 0])
-    zeroptim.tell([0., 0], 0)
-    zeroptim.tell([1., 1], 1)
-    np.testing.assert_equal(zeroptim.provide_recommendation(), [0, 0])
+    zeroptim.tell(zeroptim._data_to_argpoint([0., 0]), 0)
+    zeroptim.tell(zeroptim._data_to_argpoint([1., 1]), 1)
+    np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell([0., 0], 10)
-    zeroptim.tell([1., 1], 1)
-    np.testing.assert_equal(zeroptim.provide_recommendation(), [1, 1])
+    zeroptim.tell(zeroptim._data_to_argpoint([0., 0]), 10)
+    zeroptim.tell(zeroptim._data_to_argpoint([1., 1]), 1)
+    np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
 
 
 def test_optimize() -> None:
-    optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100, num_workers=5)
+    optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
     optimizer.register_callback("tell", base.OptimizationPrinter(num_eval=10, num_sec=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
@@ -104,19 +103,11 @@ def test_optimize() -> None:
     np.testing.assert_equal(func.count, 100)
 
 
-def test_instrumented_optimizer() -> None:
-    instru = Instrumentation(var.Array(1).asfloat(), var.SoftmaxCategorical([0, 1]))
-    opt = optimizerlib.registry["RandomSearch"](dimension=instru.dimension, budget=10)
-    iopt = base.IntrumentedOptimizer(opt, instru)
-    output = iopt.optimize(lambda x, y: x**2 + y)  # type: ignore
-    assert isinstance(output, base.ArgPoint)
-
-
 class StupidFamily(base.OptimizerFamily):
 
-    def __call__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+    def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
-        run = class_(dimension=dimension, budget=budget, num_workers=num_workers)
+        run = class_(instrumentation=instrumentation, budget=budget, num_workers=num_workers)
         run.name = self._repr
         return run  # type: ignore
 
@@ -124,15 +115,15 @@ class StupidFamily(base.OptimizerFamily):
 def test_optimizer_family() -> None:
     for zero in [True, False]:
         optf = StupidFamily(zero=zero)
-        opt = optf(dimension=2, budget=4, num_workers=1)
+        opt = optf(instrumentation=2, budget=4, num_workers=1)
         recom = opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom == np.zeros(2), zero)
 
 
 def test_naming() -> None:
     optf = StupidFamily(zero=True)
-    opt = optf(dimension=2, budget=4, num_workers=1)
-    np.testing.assert_equal(repr(opt), "Instance of StupidFamily(zero=True)(dimension=2, budget=4, num_workers=1)")
+    opt = optf(instrumentation=2, budget=4, num_workers=1)
+    np.testing.assert_equal(repr(opt), "Instance of StupidFamily(zero=True)(instrumentation=A(2), budget=4, num_workers=1)")
     optf.with_name("BlubluOptimizer", register=True)
-    opt = base.registry["BlubluOptimizer"](dimension=2, budget=4, num_workers=1)
-    np.testing.assert_equal(repr(opt), "Instance of BlubluOptimizer(dimension=2, budget=4, num_workers=1)")
+    opt = base.registry["BlubluOptimizer"](instrumentation=2, budget=4, num_workers=1)
+    np.testing.assert_equal(repr(opt), "Instance of BlubluOptimizer(instrumentation=A(2), budget=4, num_workers=1)")

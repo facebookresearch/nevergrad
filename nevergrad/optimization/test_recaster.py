@@ -56,23 +56,27 @@ def fake_cost_function(x: ArrayLike) -> float:
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
 
     def get_optimization_function(self) -> Callable[[Callable[..., Any]], ArrayLike]:
-        suboptim = optimizerlib.OnePlusOne(dimension=2, budget=self.budget)
-        return suboptim.optimize
+        return self._optim_function
+
+    def _optim_function(self, func: Callable[..., Any]) -> ArrayLike:
+        suboptim = optimizerlib.OnePlusOne(instrumentation=2, budget=self.budget)
+        recom = suboptim.optimize(func)
+        return recom.data
 
 
 def test_recast_optimizer() -> None:
-    optimizer = FakeOptimizer(dimension=2, budget=100)
+    optimizer = FakeOptimizer(instrumentation=2, budget=100)
     optimizer.optimize(fake_cost_function)
     assert optimizer._messaging_thread is not None
     np.testing.assert_equal(optimizer._messaging_thread._thread.call_count, 100)
 
 
 def test_recast_optimizer_with_error() -> None:
-    optimizer = FakeOptimizer(dimension=2, budget=100)
+    optimizer = FakeOptimizer(instrumentation=2, budget=100)
     np.testing.assert_raises(TypeError, optimizer.optimize)  # did hang in some versions
 
 
 def test_recast_optimizer_and_stop() -> None:
-    optimizer = FakeOptimizer(dimension=2, budget=100)
+    optimizer = FakeOptimizer(instrumentation=2, budget=100)
     optimizer.ask()
     # thread is not finished... but should not hang!

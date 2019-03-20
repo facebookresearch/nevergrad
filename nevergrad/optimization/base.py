@@ -122,7 +122,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         return self._num_tell
 
     def __repr__(self) -> str:
-        return f"Instance of {self.name}(dimension={self.dimension}, budget={self.budget}, num_workers={self.num_workers})"
+        inststr = f'{self.instrumentation:short}'
+        return f"Instance of {self.name}(instrumentation={inststr}, budget={self.budget}, num_workers={self.num_workers})"
 
     def register_callback(self, name: str, callback: _OptimCallBack) -> None:
         """Add a callback method called either when "tell" or "ask" are called, with the same
