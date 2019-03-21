@@ -8,7 +8,7 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Any, Optional, Iterator, Tuple, Type
+from typing import Dict, Union, Any, Optional, Iterator, Tuple, Type, Callable
 import numpy as np
 from ..common import decorators
 from .. import instrumentation as instru
@@ -16,8 +16,7 @@ from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
 
-
-registry = decorators.Registry()
+registry = decorators.Registry[Callable[..., Iterator['Experiment']]]()
 
 
 class CallCounter(execution.PostponedObject):

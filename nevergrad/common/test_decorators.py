@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Callable, Any
 from unittest import TestCase
 import numpy as np
 from . import decorators
@@ -11,8 +12,8 @@ from . import decorators
 class DecoratorTests(TestCase):
 
     def test_registry(self) -> None:
-        functions = decorators.Registry()
-        other = decorators.Registry()
+        functions = decorators.Registry[Callable[[], int]]()
+        other = decorators.Registry[Callable[[], int]]()
 
         @functions.register
         def dummy() -> int:
@@ -26,7 +27,7 @@ class DecoratorTests(TestCase):
         np.testing.assert_array_equal(list(functions.keys()), [])
 
     def test_info_registry(self) -> None:
-        functions = decorators.Registry()
+        functions = decorators.Registry[Callable[[], int]]()
 
         @functions.register_with_info(tag="info")
         def dummy_info() -> int:
@@ -37,7 +38,7 @@ class DecoratorTests(TestCase):
         np.testing.assert_raises(ValueError, functions.get_info, "no_dummy")
 
     def test_registry_error(self) -> None:
-        functions = decorators.Registry()
+        functions = decorators.Registry[Any]()
 
         @functions.register
         def dummy() -> int:

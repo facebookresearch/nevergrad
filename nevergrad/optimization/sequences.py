@@ -5,14 +5,14 @@
 
 """Samplers in [0,1]^d.
 """
-from typing import Optional, List, Iterator, Iterable
+from typing import Optional, List, Iterator, Iterable, Type
 
 import numpy as np
 from ..common.decorators import Registry
 from ..common.typetools import ArrayLike
 
 
-samplers = Registry()
+samplers = Registry[Type['Sampler']]()
 
 
 def _get_first_primes(num: int) -> np.ndarray:

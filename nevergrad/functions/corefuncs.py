@@ -4,14 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Callable
 import numpy as np
 from .utils import PostponedObject
 from ..instrumentation import discretization
 from ..common.decorators import Registry
 
 
-registry = Registry()
+registry = Registry[Callable[[np.ndarray], float]]()
 
 
 def _onemax(x: List[int]) -> float:

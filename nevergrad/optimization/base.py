@@ -18,7 +18,7 @@ from ..common.decorators import Registry
 from . import utils
 
 
-registry = Registry()
+registry = Registry[Union['OptimizerFamily', Type['Optimizer']]]()
 _OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
 
 

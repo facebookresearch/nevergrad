@@ -159,7 +159,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
 )
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
     optim = registry[name](instrumentation=dimension, budget=100, num_workers=num_workers)
-    np.testing.assert_equal(optim.llambda, expected)
+    np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
 
 def test_pso_to_real() -> None:
@@ -194,9 +194,9 @@ def test_tell_not_asked(name: str) -> None:
     fitness = Fitness(best)
     opt = optimizerlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
     if name == "PSO":
-        opt.llambda = 2
+        opt.llambda = 2  # type: ignore
     else:
-        opt._llambda = 2
+        opt._llambda = 2  # type: ignore
     zeros = [0.] * dim
     opt.tell_not_asked(opt.create_candidate.from_data(zeros), fitness(zeros))
     asked = [opt.ask(), opt.ask()]
