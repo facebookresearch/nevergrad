@@ -3,24 +3,22 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from collections import UserDict
-from typing import Any, Callable, Optional, Dict, TypeVar
+from typing import Any, Callable, Optional, Dict, TypeVar, MutableMapping, Iterator
 import functools
 
 
 X = TypeVar("X")
 
 
-# pylint does not understand Dict, and mypy needs Dict to be generic...
-# the following is (very) hacky but solves both issues for now
-# It can be safely reverted to Registry(dict) though...
-# pylint: disable=too-many-ancestors
-class Registry(Dict[str, X], UserDict):  # type: ignore
+# pylint does not understand Dict[str, X],
+# so we reimplement the MutableMapping interface
+class Registry(MutableMapping[str, X]):
     """Registers function or classes as a dict.
     """
 
     def __init__(self) -> None:
         super().__init__()
+        self.data: Dict[str, X] = {}
         self._information: Dict[str, Dict[Any, Any]] = {}
 
     def register(self, obj: X, info: Optional[Dict[Any, Any]] = None) -> X:
@@ -58,3 +56,18 @@ class Registry(Dict[str, X], UserDict):  # type: ignore
         if name not in self:
             raise ValueError(f'"{name}" is not registered.')
         return self._information.setdefault(name, {})
+
+    def __getitem__(self, key: str) -> X:
+        return self.data[key]
+
+    def __setitem__(self, key: str, value: X) -> None:
+        self.data[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.data[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.data)
+
+    def __len__(self) -> int:
+        return len(self.data)
