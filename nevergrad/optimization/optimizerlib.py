@@ -297,7 +297,7 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
-    def tell_not_asked(self, x: base.ArgPoint, value: float) -> None:
+    def tell_not_asked(self, x: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -511,7 +511,7 @@ class TBPSA(base.Optimizer):
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
-    def tell_not_asked(self, y: base.ArgPoint, value: float) -> None:
+    def tell_not_asked(self, y: base.Candidate, value: float) -> None:
         x = np.array(y.data, copy=False)
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=sigma)
@@ -623,7 +623,7 @@ class PSO(base.Optimizer):
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
-            self.tell_not_asked(self.argpoint.from_data(x), value)  # TODO: inefficient
+            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
             return
         particule = self.population.get_linked(x_bytes)
         point = particule.get_transformed_position()
@@ -638,7 +638,7 @@ class PSO(base.Optimizer):
         self.population.del_link(x_bytes, particule)
         self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
-    def tell_not_asked(self, y: base.ArgPoint, value: float) -> None:
+    def tell_not_asked(self, y: base.Candidate, value: float) -> None:
         x = np.array(y.data, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
@@ -757,13 +757,13 @@ class Portfolio(base.Optimizer):
         tx = tuple(x)
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
-        argpoint = self.argpoint.from_data(x)
-        self.optims[optim_index].tell(argpoint, value)
+        candidate = self.create_candidate.from_data(x)
+        self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def tell_not_asked(self, x: base.ArgPoint, value: float) -> None:
+    def tell_not_asked(self, x: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -1037,7 +1037,7 @@ class _BO(base.Optimizer):
         self._fake_function.register(y, -value)  # minimizing
         self.bo.probe(y, lazy=False)
 
-    def provide_recommendation(self) -> base.ArgPoint:
+    def provide_recommendation(self) -> base.Candidate:
         v = self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
         return np.clip(v, -100, 100)  # type: ignore
 

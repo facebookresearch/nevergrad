@@ -48,12 +48,12 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
-            argpoint = optimizer.optimize(fitness)
+            candidate = optimizer.optimize(fitness)
         if verify_value:
             try:
-                np.testing.assert_array_almost_equal(argpoint.data, [0.5, -0.8], decimal=1)
+                np.testing.assert_array_almost_equal(candidate.data, [0.5, -0.8], decimal=1)
             except AssertionError as e:
-                print(f"Attemp #{k}: failed with best point {tuple(argpoint.data)}")
+                print(f"Attemp #{k}: failed with best point {tuple(candidate.data)}")
                 if k == num_attempts:
                     raise e
             else:
@@ -64,8 +64,8 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             min(v.pessimistic_confidence_bound for v in archive.values()))
     # add a random point to test tell_not_asked
     try:
-        argpoint = optimizer.argpoint.from_data(np.random.normal(0, 1, size=optimizer.dimension))
-        optimizer.tell_not_asked(argpoint, 12.)
+        candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+        optimizer.tell_not_asked(candidate, 12.)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
             raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
@@ -138,11 +138,11 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # Reducing the precision could help in this regard.
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch('bayes_opt.bayesian_optimization.acq_max', patched):
-        argpoint = optim.optimize(fitness)
+        candidate = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(argpoint.data)
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(argpoint.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=9,
+    np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=9,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
@@ -198,9 +198,9 @@ def test_tell_not_asked(name: str) -> None:
     else:
         opt._llambda = 2
     zeros = [0.] * dim
-    opt.tell_not_asked(opt.argpoint.from_data(zeros), fitness(zeros))
+    opt.tell_not_asked(opt.create_candidate.from_data(zeros), fitness(zeros))
     asked = [opt.ask(), opt.ask()]
-    opt.tell_not_asked(opt.argpoint.from_data(best), fitness(best))
+    opt.tell_not_asked(opt.create_candidate.from_data(best), fitness(best))
     opt.tell(asked[0], fitness(*asked[0].args))
     opt.tell(asked[1], fitness(*asked[1].args))
     assert opt.num_tell == 4, opt.num_tell
@@ -217,5 +217,5 @@ def test_tbpsa_recom_with_update() -> None:
     fitness = Fitness([.5, -.8, 0, 4])
     optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
     optim.llambda = 3
-    argpoint = optim.optimize(fitness)
-    np.testing.assert_almost_equal(argpoint.data, [.037964, .0433031, -.4688667, .3633273])
+    candidate = optim.optimize(fitness)
+    np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])

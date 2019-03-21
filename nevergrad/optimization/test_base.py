@@ -82,12 +82,12 @@ def test_base_optimizer() -> None:
     representation = repr(zeroptim)
     assert "instrumentation=A(2)" in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().data, [0, 0])
-    zeroptim.tell(zeroptim.argpoint.from_data([0., 0]), 0)
-    zeroptim.tell(zeroptim.argpoint.from_data([1., 1]), 1)
+    zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 0)
+    zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell(zeroptim.argpoint.from_data([0., 0]), 10)
-    zeroptim.tell(zeroptim.argpoint.from_data([1., 1]), 1)
+    zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 10)
+    zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
 

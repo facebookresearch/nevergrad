@@ -31,7 +31,7 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """
 
 
-class ArgPoint:
+class Candidate:
     """Handle for args and kwargs arguments, keeping
     the initial data in memory.
     """
@@ -43,30 +43,30 @@ class ArgPoint:
         self._meta: Dict[str, Any] = {}
 
     def __getitem__(self, ind: int) -> None:
-        raise RuntimeError('Return type of "ask" is now an ArgPoint, use argpoint.data for unchanged behavior')
+        raise RuntimeError('Return type of "ask" is now an Candidate, use candidate.data for unchanged behavior')
 
     def __array__(self) -> None:
-        raise RuntimeError('Return type of "ask" is now an ArgPoint, use argpoint.data for unchanged behavior')
+        raise RuntimeError('Return type of "ask" is now an Candidate, use candidate.data for unchanged behavior')
 
     def __repr__(self) -> str:
-        return f"ArgPoint(args={self.args}, kwargs={self.kwargs}, data={self.data})"
+        return f"Candidate(args={self.args}, kwargs={self.kwargs}, data={self.data})"
 
 
-class ArgPointMaker:
+class CandidateMaker:
 
     def __init__(self, instrumentation: instru.Instrumentation) -> None:
         self._instrumentation = instrumentation
 
-    def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> ArgPoint:
-        return ArgPoint(args, kwargs, data)
+    def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> Candidate:
+        return Candidate(args, kwargs, data)
 
-    def from_call(self, *args: Any, kwargs: Any) -> ArgPoint:
+    def from_call(self, *args: Any, kwargs: Any) -> Candidate:
         data = self._instrumentation.arguments_to_data(*args, **kwargs)
-        return ArgPoint(args, kwargs, data)
+        return Candidate(args, kwargs, data)
 
-    def from_data(self, data: ArrayLike) -> ArgPoint:
+    def from_data(self, data: ArrayLike) -> Candidate:
         args, kwargs = self._instrumentation.data_to_arguments(data)
-        return ArgPoint(args, kwargs, data)
+        return Candidate(args, kwargs, data)
 
 
 class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
@@ -109,7 +109,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self.budget = budget
         self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
                                 instru.Instrumentation(instru.var.Array(instrumentation)))
-        self.argpoint = ArgPointMaker(self.instrumentation)
+        self.create_candidate = CandidateMaker(self.instrumentation)
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
@@ -124,8 +124,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         self._num_tell = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[ArgPoint, JobLike[float]]] = []
-        self._finished_jobs: Deque[Tuple[ArgPoint, JobLike[float]]] = deque()
+        self._running_jobs: List[Tuple[Candidate, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[Candidate, JobLike[float]]] = deque()
 
     @property
     def dimension(self) -> int:
@@ -162,7 +162,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def tell_not_asked(self, x: ArgPoint, value: float) -> None:
+    def tell_not_asked(self, x: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
 
         Parameters
@@ -176,7 +176,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # algorithms which do not support it should raise NotImplementedError
         self.tell(x, value)
 
-    def tell(self, args: ArgPoint, value: float) -> None:
+    def tell(self, args: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point
 
         Parameters
@@ -186,8 +186,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         value: float
             value of the function
         """
-        if not isinstance(args, ArgPoint):
-            raise TypeError("'tell' must be provided with the argpoint that 'ask' provided")
+        if not isinstance(args, Candidate):
+            raise TypeError("'tell' must be provided with the candidate that 'ask' provided")
         x = args.data
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
@@ -220,7 +220,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self) -> ArgPoint:
+    def ask(self) -> Candidate:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
         """
@@ -230,17 +230,17 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         suggestion = self._internal_ask()
         assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        return self.argpoint.from_data(suggestion)
+        return self.create_candidate.from_data(suggestion)
 
-    def provide_recommendation(self) -> ArgPoint:
+    def provide_recommendation(self) -> Candidate:
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> ArgPoint:
+    def recommend(self) -> Candidate:
         """Provides the best point to use as a minimum, given the budget that was used
         """
-        return self.argpoint.from_data(self._internal_provide_recommendation())
+        return self.create_candidate.from_data(self._internal_provide_recommendation())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
@@ -256,7 +256,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def optimize(self, objective_function: Callable[[Any], float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
-                 verbosity: int = 0) -> ArgPoint:
+                 verbosity: int = 0) -> Candidate:
         """Optimization (minimization) procedure
 
         Parameters
@@ -289,8 +289,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: List[Tuple[ArgPoint, JobLike[float]]] = []
-        tmp_finished: Deque[Tuple[ArgPoint, JobLike[float]]] = deque()
+        tmp_runnings: List[Tuple[Candidate, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[Candidate, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask

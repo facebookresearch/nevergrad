@@ -154,7 +154,7 @@ class _DE(base.Optimizer):
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
-            self.tell_not_asked(self.argpoint.from_data(x), value)  # TODO: inefficient
+            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
             return
         self.match_population_size_to_lambda()
         particule = self.population.get_linked(x_bytes)
@@ -164,7 +164,7 @@ class _DE(base.Optimizer):
             particule.fitness = value
         self.population.set_queued(particule)
 
-    def tell_not_asked(self, y: base.ArgPoint, value: float) -> None:
+    def tell_not_asked(self, y: base.Candidate, value: float) -> None:
         x = np.array(y.data, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
