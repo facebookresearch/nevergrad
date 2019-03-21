@@ -43,10 +43,10 @@ class Candidate:
         self._meta: Dict[str, Any] = {}
 
     def __getitem__(self, ind: int) -> None:
-        raise RuntimeError('Return type of "ask" is now an Candidate, use candidate.data for unchanged behavior')
+        raise RuntimeError('Return type of "ask" is now an Candidate, use candidate.args[0] for unchanged behavior')
 
     def __array__(self) -> None:
-        raise RuntimeError('Return type of "ask" is now an Candidate, use candidate.data for unchanged behavior')
+        raise RuntimeError('Return type of "ask" is now an Candidate, use candidate.args[0] for unchanged behavior')
 
     def __repr__(self) -> str:
         return f"Candidate(args={self.args}, kwargs={self.kwargs}, data={self.data})"
