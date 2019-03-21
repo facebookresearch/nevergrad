@@ -64,8 +64,8 @@ class CandidateMaker:
         data = self._instrumentation.arguments_to_data(*args, **kwargs)
         return Candidate(args, kwargs, data)
 
-    def from_data(self, data: ArrayLike) -> Candidate:
-        args, kwargs = self._instrumentation.data_to_arguments(data)
+    def from_data(self, data: ArrayLike, deterministic: bool = False) -> Candidate:
+        args, kwargs = self._instrumentation.data_to_arguments(data, deterministic=deterministic)
         return Candidate(args, kwargs, data)
 
 
@@ -240,7 +240,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def recommend(self) -> Candidate:
         """Provides the best point to use as a minimum, given the budget that was used
         """
-        return self.create_candidate.from_data(self._internal_provide_recommendation())
+        return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:

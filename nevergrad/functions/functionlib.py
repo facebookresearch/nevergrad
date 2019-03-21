@@ -170,12 +170,14 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
+        print("x", x)
         results = []
         for block in x:
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def __call__(self, x: ArrayLike) -> float:  # completely bypass base function __call__... for simplicity  # TODO: refactor
+    def __call__(self, x: ArrayLike) -> float:  # completely bypass base function __call__... for simplicity
+        # TODO: refactor + use args and kwargs directly in benchmarks
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 

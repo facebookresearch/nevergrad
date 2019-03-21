@@ -33,8 +33,8 @@ class CallCounter(execution.PostponedObject):
         self.func = func
         self.num_calls = 0
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        value = self.func.function(*args, **kwargs)  # compute *before* updating num calls
+    def __call__(self, x: Any) -> Any:
+        value = self.func(x)  # compute *before* updating num calls
         self.num_calls += 1
         return value
 
@@ -87,7 +87,7 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instanciate(self, instrumentation: instru.Instrumentation) -> base.Optimizer:
+    def instanciate(self, instrumentation: Union[int, instru.Instrumentation]) -> base.Optimizer:
         """Instanciate an optimizer, providing the optimization space dimension
         """
         return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
@@ -195,8 +195,10 @@ class Experiment:
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
-        recom = self.recommendation
-        self.result["loss"] = sum(self.function.function(*recom.args, **recom.kwargs) for _ in range(num_eval)) / num_eval
+        args, kwargs = self.function.instrumentation.data_to_arguments(self.recommendation.args[0], deterministic=True)
+        self.result["loss"] = sum(self.function.function(*args, **kwargs) for _ in range(num_eval)) / num_eval
+        # TODO reactivate the following line instead (use instrumentation during optimization)
+        # self.result["loss"] = sum(self.function.function(*recom.args, **recom.kwargs) for _ in range(num_eval)) / num_eval
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
@@ -216,7 +218,9 @@ class Experiment:
             random.seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)
+            self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.dimension)
+            # TODO: use the following line instead (but this is incompatible with the noise system of ArtificialFunction for now)
+            # self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
