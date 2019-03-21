@@ -18,7 +18,7 @@ from ..common.decorators import Registry
 from . import utils
 
 
-registry = Registry()
+registry = Registry[Union['OptimizerFamily', Type['Optimizer']]]()
 _OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
 
 
@@ -369,7 +369,7 @@ class ParametrizedFamily(OptimizerFamily):
     _optimizer_class: Optional[Type[Optimizer]] = None
 
     def __init__(self) -> None:
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()  # type: ignore
+        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
                     if x not in ["self", "__class__"]}
         diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
         if diff:  # this is to help durring development

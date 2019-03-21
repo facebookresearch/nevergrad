@@ -16,8 +16,7 @@ from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
 
-
-registry = decorators.Registry()
+registry = decorators.Registry[Callable[..., Iterator['Experiment']]]()
 
 
 class CallCounter(execution.PostponedObject):
