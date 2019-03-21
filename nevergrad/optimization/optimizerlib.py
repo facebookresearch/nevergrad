@@ -512,7 +512,7 @@ class TBPSA(base.Optimizer):
         del self._unevaluated_population[x_bytes]
 
     def tell_not_asked(self, y: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
-        x = np.array(y.args[0], copy=False)
+        x = y.data
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=sigma)
         # go through standard pipeline so as to update the archive
@@ -639,7 +639,7 @@ class PSO(base.Optimizer):
         self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
     def tell_not_asked(self, y: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
-        x = np.array(y.args[0], copy=False)
+        x = y.data
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
             self._replaced.remove(x_bytes)
@@ -749,7 +749,7 @@ class Portfolio(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         optim_index = self._num_ask % len(self.optims)
-        individual = self.optims[optim_index].ask().args[0]
+        individual = self.optims[optim_index].ask().data
         self.who_asked[tuple(individual)] += [optim_index]
         return individual
 
@@ -796,7 +796,7 @@ class ParaPortfolio(Portfolio):
 
     def _internal_ask(self) -> base.ArrayLike:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
-        individual = self.optims[optim_index].ask().args[0]
+        individual = self.optims[optim_index].ask().data
         self.who_asked[tuple(individual)] += [optim_index]
         return individual
 
@@ -850,7 +850,7 @@ class ASCMADEthird(Portfolio):
                         best_value = val
                 self.best_optim = optim_index
             optim_index = self.best_optim
-        individual = self.optims[optim_index].ask().args[0]
+        individual = self.optims[optim_index].ask().data
         self.who_asked[tuple(individual)] += [optim_index]
         return individual
 
