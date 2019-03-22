@@ -170,7 +170,6 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        print("x", x)
         results = []
         for block in x:
             results.append(self._func(block))

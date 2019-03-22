@@ -67,10 +67,16 @@ from nevergrad.optimization import optimizerlib
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100)
+optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
 recommendation = optimizer.optimize(square)
+print(recommendation.args[0])  # optimal x value
 ```
+`recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
+Since `instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
+the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
+
 
 You can print the full list of optimizers with:
 ```

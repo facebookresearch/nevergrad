@@ -12,7 +12,7 @@ from nevergrad.optimization import optimizerlib
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100)
+optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
 recommendation = optimizer.optimize(square)
 ```
@@ -31,16 +31,19 @@ with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
 ## Ask and tell interface
 
 An *ask and tell* interface is also available. The 3 key methods for this interface are respectively:
-- `ask`: suggest a point on which to evaluate the function to optimize.
-- `tell`: for updated the optimizer with the value of the function at a given point.
-- `provide_recommendation`: returns the point the algorithms considers the best.
+- `ask`: suggest a candidate on which to evaluate the function to optimize.
+- `tell`: for updated the optimizer with the value of the function for a candidate.
+- `provide_recommendation`: returns the candidate the algorithms considers the best.
 For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute `no_parallelization=True` however do not support this.
+
+The `Candidate` class holds attributes `args` and `kwargs` corresponding to the `args` and `kwargs` of the function you optimize,
+given its [instrumentation](instrumentation.md). It also holds a `data` attribute corresponding to the data point in the optimization space.
 
 Here is a simpler example in the sequential case (this is what happens in the `optimize` method for `num_workers=1`):
 ```python
 for _ in range(optimizer.budget):
     x = optimizer.ask()
-    value = square(x)
+    value = square(*x.args, **x.kwargs)
     optimizer.tell(x, value)
 recommendation = optimizer.provide_recommendation()
 ```
