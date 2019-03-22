@@ -70,11 +70,14 @@ def square(x):
 optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
 recommendation = optimizer.optimize(square)
-print(recommendation.args[0])  # optimal x value
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
 ```
+
 `recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
-Since `instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
-the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+
+`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
 See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
 
 

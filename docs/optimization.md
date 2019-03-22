@@ -9,13 +9,29 @@ Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can b
 ```python
 from nevergrad.optimization import optimizerlib
 
-def square(x):
-    return sum((x - .5)**2)
+def square(x, y=12):
+    return sum((x - .5)**2) + abs(y)
 
 optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
 recommendation = optimizer.optimize(square)
+print(recommendation)
+>>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
 ```
+`recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
+In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+
+`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
+Defining the following instrumentation instead will optimize on both `x` and `y`.
+```python
+from nevergrad import instrumentation as inst
+instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
+optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
+recommendation = optimizer.optimize(square)
+print(recommendation)
+>>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
+```
+See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
 
 
 ## Using several workers

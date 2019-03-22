@@ -51,6 +51,9 @@ class Candidate:
     def __repr__(self) -> str:
         return f"Candidate(args={self.args}, kwargs={self.kwargs}, data={self.data})"
 
+    def __str__(self) -> str:
+        return f"Candidate(args={self.args}, kwargs={self.kwargs})"
+
 
 class CandidateMaker:
 
