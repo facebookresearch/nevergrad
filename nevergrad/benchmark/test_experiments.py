@@ -56,8 +56,6 @@ def check_seedable(maker: Any) -> None:
         xps = list(itertools.islice(maker(seed), 0, 8))
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed)
                       for xp in xps]
-        for xp in simplified:
-            xp.final_averaging_repetitions = 1  # no need to average here, we only check reproducibility
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed"]]))  # elapsed_time can vary...
