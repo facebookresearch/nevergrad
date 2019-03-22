@@ -219,8 +219,6 @@ class Experiment:
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)
-            # TODO: use the following line instead (but this is incompatible with the noise system of ArtificialFunction for now)
-            # self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
