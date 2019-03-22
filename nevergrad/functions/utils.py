@@ -42,3 +42,15 @@ class PostponedObject(abc.ABC):
     @abc.abstractmethod
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         raise NotImplementedError
+
+
+class NoisyBenchmarkFunction(abc.ABC):
+    """Mixin for use on noisy function for benchmarks.
+    The noisefree_function is called at the end of benchmarks in replacement of the actual function in order
+    to evaluate the final estimation. It should implement a noisefree result, or average several calls so
+    that the result is as precise as possible.
+    """
+
+    @abc.abstractmethod
+    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+        raise NotImplementedError

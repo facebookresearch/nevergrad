@@ -80,8 +80,8 @@ def test_oracle() -> None:
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns a different float since the function is noisy
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
-    y3 = func.oracle_call(x)   # returns a float
-    y4 = func.oracle_call(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
+    y3 = func.noisefree_function(x)   # returns a float
+    y4 = func.noisefree_function(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
     np.testing.assert_array_almost_equal(y3, y4)  # should be different
 
 
@@ -109,8 +109,8 @@ def test_duplicate() -> None:
 def test_artifificial_function_with_jump() -> None:
     func1 = functionlib.ArtificialFunction("sphere", 5)
     func2 = functionlib.ArtificialFunction("jump5", 5)
-    np.testing.assert_equal(func1.instrumentation.args[0].only_index_transform, False)  # type: ignore
-    np.testing.assert_equal(func2.instrumentation.args[0].only_index_transform, True)  # type: ignore
+    np.testing.assert_equal(func1.transform_var.only_index_transform, False)
+    np.testing.assert_equal(func2.transform_var.only_index_transform, True)
 
 
 def test_get_posptoning_delay() -> None:
