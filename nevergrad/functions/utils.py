@@ -46,8 +46,10 @@ class PostponedObject(abc.ABC):
 
 class NoisyBenchmarkFunction(abc.ABC):
     """Mixin for use on noisy function for benchmarks.
+    The noisefree_function is called at the end of benchmarks in replacement of the actual function in order
+    to evaluate the final estimation. It should implement a noisefree result, or average several calls so
+    that the result is as precise as possible.
     """
-    repetitions = 1
 
     @abc.abstractmethod
     def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
