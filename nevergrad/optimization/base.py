@@ -165,7 +165,7 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def tell_not_asked(self, x: Candidate, value: float) -> None:
+    def tell_not_asked(self, candidate: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
 
         Parameters
@@ -177,9 +177,9 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """
         # default to just a tell
         # algorithms which do not support it should raise NotImplementedError
-        self.tell(x, value)
+        self.tell(candidate, value)
 
-    def tell(self, args: Candidate, value: float) -> None:
+    def tell(self, candidate: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value at a point
 
         Parameters
@@ -189,14 +189,13 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         value: float
             value of the function
         """
-        if not isinstance(args, Candidate):
+        if not isinstance(candidate, Candidate):
             raise TypeError("'tell' must be provided with the candidate that 'ask' provided")
-        x = args.data
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
-            callback(self, x, value)
-        self._update_archive_and_bests(x, value)
-        self._internal_tell(x, value)
+            callback(self, candidate, value)
+        self._update_archive_and_bests(candidate.data, value)
+        self._internal_tell_candidate(candidate, value)
         self._num_tell += 1
 
     def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
@@ -230,10 +229,10 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        suggestion = self._internal_ask()
-        assert suggestion is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        candidate = self._internal_ask_candidate()
+        assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        return self.create_candidate.from_data(suggestion)
+        return candidate
 
     def provide_recommendation(self) -> Candidate:
         """Provides the best point to use as a minimum, given the budget that was used
@@ -244,6 +243,12 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
+
+    def _internal_tell_candidate(self, candidate: Candidate, value: float) -> None:
+        self._internal_tell(candidate.data, value)
+
+    def _internal_ask_candidate(self) -> Candidate:
+        return self.create_candidate.from_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:

@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Tuple, Union, Set
+from typing import Optional, Union, Set
 import numpy as np
 from scipy import stats
-from ..common.typetools import ArrayLike
 from ..instrumentation import Instrumentation
 from . import base
 from . import sequences
@@ -70,7 +69,10 @@ class _DE(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
-    def _internal_ask(self) -> Tuple[float, ...]:
+    def _internal_ask(self) -> np.ndarray:
+        raise RuntimeError  # should not be called
+
+    def _internal_ask_candidate(self) -> base.Candidate:
         init = self._parameters.initialization
         if self.sampler is None and init is not None:
             assert init in ["LHS", "QR"]
@@ -103,7 +105,7 @@ class _DE(base.Optimizer):
             particule.position = np.array(new_guy)  #
             particule.fitness = None  #
             self.population.set_linked(particule.position.tobytes(), particule)
-            return new_guy
+            return self.create_candidate.from_data(new_guy)
         i = np.array(i)
         a = np.array(a)
         b = np.array(b)
@@ -148,10 +150,10 @@ class _DE(base.Optimizer):
                         donor[idx] = i[idx]
         donor = tuple(donor)
         self.population.set_linked(np.array(donor).tobytes(), particule)
-        return donor  # type: ignore
+        return self.create_candidate.from_data(donor)
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        x = np.array(x, copy=False)
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        x = candidate.data
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
             self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
@@ -164,8 +166,8 @@ class _DE(base.Optimizer):
             particule.fitness = value
         self.population.set_queued(particule)
 
-    def tell_not_asked(self, y: base.Candidate, value: float) -> None:
-        x = np.array(y.data, copy=False)
+    def tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        x = candidate.data
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
             self._replaced.remove(x_bytes)
