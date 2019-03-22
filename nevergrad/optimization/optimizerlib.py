@@ -747,17 +747,16 @@ class Portfolio(base.Optimizer):
             self.optims = [ScrHammersleySearch(instrumentation, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
-        individual = self.optims[optim_index].ask().data
-        self.who_asked[tuple(individual)] += [optim_index]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
         return individual
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        tx = tuple(x)
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        tx = tuple(candidate.data)
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
-        candidate = self.create_candidate.from_data(x)
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
@@ -794,10 +793,10 @@ class ParaPortfolio(Portfolio):
                        ]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
-        individual = self.optims[optim_index].ask().data
-        self.who_asked[tuple(individual)] += [optim_index]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
         return individual
 
 
@@ -835,7 +834,7 @@ class ASCMADEthird(Portfolio):
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         if self.budget_before_choosing > 0:
             self.budget_before_choosing -= 1
             optim_index = self._num_ask % len(self.optims)
@@ -850,8 +849,8 @@ class ASCMADEthird(Portfolio):
                         best_value = val
                 self.best_optim = optim_index
             optim_index = self.best_optim
-        individual = self.optims[optim_index].ask().data
-        self.who_asked[tuple(individual)] += [optim_index]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
         return individual
 
 

@@ -17,6 +17,7 @@ class DEParticule(base.utils.Particule):
         super().__init__()
         self.position = position
         self.fitness = fitness
+        self.active = True
 
 
 class _DE(base.Optimizer):
@@ -102,7 +103,9 @@ class _DE(base.Optimizer):
             particule.position = np.array(new_guy)  #
             particule.fitness = None  #
             self.population.set_linked(particule.position.tobytes(), particule)
-            return self.create_candidate.from_data(new_guy)
+            candidate = self.create_candidate.from_data(new_guy)
+            candidate._meta["particule"] = particule
+            return candidate
         i = np.array(i)
         a = np.array(a)
         b = np.array(b)
@@ -147,7 +150,9 @@ class _DE(base.Optimizer):
                         donor[idx] = i[idx]
         donor = tuple(donor)
         self.population.set_linked(np.array(donor).tobytes(), particule)
-        return self.create_candidate.from_data(donor)
+        candidate = self.create_candidate.from_data(donor)
+        candidate._meta["particule"] = particule
+        return candidate
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
@@ -156,7 +161,7 @@ class _DE(base.Optimizer):
             self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
             return
         self.match_population_size_to_lambda()
-        particule = self.population.get_linked(x_bytes)
+        particule: DEParticule = candidate._meta["particule"]
         self.population.del_link(np.array(x).tobytes(), particule)
         if particule.fitness is None or value <= particule.fitness:
             particule.position = np.array(x)
