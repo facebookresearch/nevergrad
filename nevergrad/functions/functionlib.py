@@ -15,6 +15,8 @@ from ..common.typetools import ArrayLike
 
 class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
     # pylint: disable=too-many-instance-attributes,too-many-arguments
+    # TODO: refactor, this is not more used for instrumentation, so using the
+    # Variable framework is not necessary
 
     def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
                  translation_factor: float, rotation: bool, hashing: bool, only_index_transform: bool) -> None:
