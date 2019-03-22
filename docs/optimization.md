@@ -31,7 +31,7 @@ recommendation = optimizer.optimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
 ```
-See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
+See the [instrumentation tutorial](instrumentation.md) for more complex instrumentations.
 
 
 ## Using several workers

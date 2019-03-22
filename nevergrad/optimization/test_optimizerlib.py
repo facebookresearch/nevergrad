@@ -221,11 +221,11 @@ def test_tbpsa_recom_with_update() -> None:
     np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
 
 
-def _square(x, y=12):
+def _square(x: np.ndarray, y: float = 12) -> float:
     return sum((x - .5)**2) + abs(y)
 
 
-def test_optimization_doc_instrumentation_example():
+def test_optimization_doc_instrumentation_example() -> None:
     optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
     # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
     instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
