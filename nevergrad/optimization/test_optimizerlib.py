@@ -14,7 +14,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
-# from ..instrumentation import Instrumentation
+from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
@@ -219,3 +219,19 @@ def test_tbpsa_recom_with_update() -> None:
     optim.llambda = 3
     candidate = optim.optimize(fitness)
     np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
+
+
+def _square(x, y=12):
+    return sum((x - .5)**2) + abs(y)
+
+
+def test_optimization_doc_instrumentation_example():
+    optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
+    # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
+    instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
+    optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
+    recom = optimizer.optimize(_square)
+    assert len(recom.args) == 1
+    testing.assert_set_equal(recom.kwargs, ['y'])
+    value = _square(*recom.args, **recom.kwargs)
+    assert value < .2  # should be large enough by an order of magnitude
