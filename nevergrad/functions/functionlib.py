@@ -15,6 +15,8 @@ from ..common.typetools import ArrayLike
 
 class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
     # pylint: disable=too-many-instance-attributes,too-many-arguments
+    # TODO: refactor, this is not more used for instrumentation, so using the
+    # Variable framework is not necessary
 
     def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
                  translation_factor: float, rotation: bool, hashing: bool, only_index_transform: bool) -> None:
@@ -61,7 +63,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         return "Photonics"
 
 
-class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
+class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils.NoisyBenchmarkFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -140,10 +142,10 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transfrom", False)
         # variable
-        var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
-                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
-                                 only_index_transform=only_index_transform)
-        super().__init__(self.oracle_call, var)
+        self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
+                                                translation_factor=translation_factor, rotation=rotation, hashing=hashing,
+                                                only_index_transform=only_index_transform)
+        super().__init__(self.noisy_function, inst.var.Array(1 if hashing else self._dimension))
         self.instrumentation = self.instrumentation.with_name("")
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
@@ -163,10 +165,10 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
         return sorted(corefuncs.registry)
 
     def _transform(self, x: ArrayLike) -> np.ndarray:
-        (data,), _ = self.instrumentation.data_to_arguments(x)
+        data = self.transform_var.process(x)
         return np.array(data)
 
-    def oracle_call(self, x: np.ndarray) -> float:
+    def function_from_transform(self, x: np.ndarray) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -175,8 +177,16 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def __call__(self, x: ArrayLike) -> float:  # completely bypass base function __call__... for simplicity  # TODO: refactor
-        return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function,
+    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+        """Implements the call of the function.
+        Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
+        """
+        assert len(args) == 1 and not kwargs
+        data = self._transform(args[0])
+        return self.function_from_transform(data)
+
+    def noisy_function(self, x: ArrayLike) -> float:
+        return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
     def duplicate(self) -> "ArtificialFunction":

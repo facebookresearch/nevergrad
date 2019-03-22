@@ -12,6 +12,7 @@ from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple, Type
 import numpy as np
 from ..common import decorators
 from ..instrumentation import InstrumentedFunction
+from ..functions import utils as futils
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
@@ -150,7 +151,6 @@ class Experiment:
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.ArrayLike] = None
-        self.final_averaging_repetitions = 100
         self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
 
     def __repr__(self) -> str:
@@ -190,13 +190,15 @@ class Experiment:
     def _log_results(self, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
-        num_eval = self.final_averaging_repetitions  # evaluations of the cost function on the recommendation
         self.result["elapsed_time"] = time.time() - t0
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         args, kwargs = self.function.instrumentation.data_to_arguments(self.recommendation, deterministic=True)
-        self.result["loss"] = sum(self.function.function(*args, **kwargs) for _ in range(num_eval)) / num_eval
+        if isinstance(self.function, futils.NoisyBenchmarkFunction):
+            self.result["loss"] = self.function.noisefree_function(*args, **kwargs)
+        else:
+            self.result["loss"] = self.function.function(*args, **kwargs)
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")

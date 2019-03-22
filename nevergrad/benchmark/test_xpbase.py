@@ -45,6 +45,16 @@ def test_run_artificial_function() -> None:
     np.testing.assert_equal(summary["pseudotime"], 150.)  # defaults to 1 unit per eval ( /2 because 2 workers)
 
 
+def test_noisy_arificial_function_loss() -> None:
+    func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=.3)
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5)
+    xp.run()
+    loss_ref = xp.result["loss"]
+    xp._log_results(0., 0)
+    loss = xp.result["loss"]
+    np.testing.assert_equal(loss, loss_ref)
+
+
 def test_run_with_error() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=1)
