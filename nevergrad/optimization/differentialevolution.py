@@ -69,9 +69,6 @@ class _DE(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
-    def _internal_ask(self) -> np.ndarray:
-        raise RuntimeError  # should not be called
-
     def _internal_ask_candidate(self) -> base.Candidate:
         init = self._parameters.initialization
         if self.sampler is None and init is not None:

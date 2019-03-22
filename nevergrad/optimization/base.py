@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import abc
 import time
 import inspect
 import warnings
@@ -72,7 +71,7 @@ class CandidateMaker:
         return Candidate(args, kwargs, data)
 
 
-class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
+class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
     - "ask()" which provides points on which to evaluate the function to optimize
     - "tell(x, value)" which lets you provide the values associated to points
@@ -254,9 +253,8 @@ class Optimizer(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         pass
 
-    @abc.abstractmethod
     def _internal_ask(self) -> ArrayLike:
-        raise NotImplementedError("Optimizer undefined.")
+        raise RuntimeError("Not implemented, should not be called.")
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
