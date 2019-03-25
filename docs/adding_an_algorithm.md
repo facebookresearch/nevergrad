@@ -42,14 +42,17 @@ Dict[str, Point]
 ```
 The key string is either `optimistic` or `pessimistic`, and the `Point` value is a `Value` with an additional `x` attribute, recording the location of the point.
 
-
 ### Methods and attributes
 
 4 methods are designed to be overriden:
 - `__init__`: for the initialization of your algorithm
-- `_internal_ask__`: to fetch the next point to be evaluated. This function is the only one that is absolutely required to be overriden. The default `ask` method calls this method (please do not override the default `ask`).
-- `_internal_tell`: to update your algorithm with the new point. The default `tell` method calls this internal method after updating the archive (see paragraph above), please do not override it.
+- `_internal_ask_candidate`: to fetch the next point to be evaluated. This function is the only one that is absolutely required to be overriden. The default `ask` method calls this method (please do not override the default `ask`).
+- `_internal_tell_candidate`: to update your algorithm with the new point. The default `tell` method calls this internal method after updating the archive (see paragraph above), please do not override it.
 - `_internal_provide_recommendation`: to provide the final recommendation. By default, the recommendation is the pessimistic best point.
+
+These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initilization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
+
+
 
 If the algorithm is not able to handle parallelization (if `ask` cannot be called multiple times consecutively), the `no_parallelization` **class attribute** must be set to `True`.
 
