@@ -155,39 +155,25 @@ class _DE(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
+        particule: DEParticule = candidate._meta["particule"]  # all asked candidate should have this field
+        if not particule.active:
+            self._internal_tell_not_asked(candidate, value)
             return
         self.match_population_size_to_lambda()
-        particule: DEParticule = candidate._meta["particule"]
-        self.population.del_link(np.array(x).tobytes(), particule)
+        self.population.del_link(np.array(candidate.data).tobytes(), particule)
         if particule.fitness is None or value <= particule.fitness:
-            particule.position = np.array(x)
+            particule.position = candidate.data
             particule.fitness = value
         self.population.set_queued(particule)
 
-    def tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self._replaced.remove(x_bytes)
-        else:
-            self._update_archive_and_bests(x, value)
-            self._num_tell += 1
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         self.match_population_size_to_lambda()
         worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
         if worst_part.fitness is not None and worst_part.fitness < value:
             return  # no need to update
         particule = DEParticule()
-        replaced = self.population.replace(worst_part, particule)
-        x = np.array(x, copy=False)
-        self.population.set_linked(x.tobytes(), particule)
-        if replaced is not None:
-            assert isinstance(replaced, bytes)
-            self._replaced.add(replaced)
-        self._internal_tell(x, value)
+        self.population.replace(worst_part, particule)
+        worst_part.active = False
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes

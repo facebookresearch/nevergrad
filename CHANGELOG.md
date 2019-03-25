@@ -4,6 +4,9 @@
 
 - Removed `BaseFunction` in favor of `InstrumentedFunction` and use instrumentation instead of
   defining specific transforms (breaking change for benchmark function implementation).
+- Added an `_asked` private attribute to register uuid of particuels that were asked for.
+- Removed `tell_not_asked` in favor of `tell`. A new `num_tell_not_asked` attribute has
+  been added to be able to check how many of the `tell` were not asked for.
 
 ## v0.1.6
 

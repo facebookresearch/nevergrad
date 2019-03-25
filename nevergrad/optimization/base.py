@@ -3,12 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import uuid
 import time
 import inspect
 import warnings
 from numbers import Real
 from collections import deque
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -39,6 +40,7 @@ class Candidate:
         self.args = args
         self.kwargs = kwargs
         self.data = np.array(data, copy=False)
+        self.uuid = uuid.uuid4().hex
         self._meta: Dict[str, Any] = {}
 
     def __getitem__(self, ind: int) -> None:
@@ -122,8 +124,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
         self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
+        self._asked: Set[str] = set()
         self._num_ask = 0
         self._num_tell = 0
+        self._num_tell_not_asked = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[Candidate, JobLike[float]]] = []
@@ -140,6 +144,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     @property
     def num_tell(self) -> int:
         return self._num_tell
+
+    @property
+    def num_tell_not_asked(self) -> int:
+        return self._num_tell_not_asked
 
     def __repr__(self) -> str:
         inststr = f'{self.instrumentation:short}'
@@ -194,7 +202,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
         self._update_archive_and_bests(candidate.data, value)
-        self._internal_tell_candidate(candidate, value)
+        if candidate.uuid in self._asked:
+            self._internal_tell_candidate(candidate, value)
+            self._asked.remove(candidate.uuid)
+        else:
+            self._internal_tell_not_asked(candidate, value)
+            self._num_tell_not_asked += 1
         self._num_tell += 1
 
     def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
@@ -231,6 +244,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         candidate = self._internal_ask_candidate()
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
+        self._asked.add(candidate.uuid)
         return candidate
 
     def provide_recommendation(self) -> Candidate:
@@ -242,6 +256,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """Provides the best point to use as a minimum, given the budget that was used
         """
         return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
+
+    def _internal_tell_not_asked(self, candidate: Candidate, value: float) -> None:
+        self._internal_tell_candidate(candidate, value)
 
     def _internal_tell_candidate(self, candidate: Candidate, value: float) -> None:
         self._internal_tell(candidate.data, value)

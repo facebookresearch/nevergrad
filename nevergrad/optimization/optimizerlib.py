@@ -297,7 +297,7 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
-    def tell_not_asked(self, x: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -511,12 +511,11 @@ class TBPSA(base.Optimizer):
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
-    def tell_not_asked(self, y: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
-        x = y.data
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
+        x = candidate.data
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=sigma)
-        # go through standard pipeline so as to update the archive
-        self.tell(y, value)
+        self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
 @registry.register
@@ -762,7 +761,7 @@ class Portfolio(base.Optimizer):
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def tell_not_asked(self, x: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
