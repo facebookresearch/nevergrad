@@ -601,7 +601,7 @@ class PSO(base.Optimizer):
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
 
-    def _internal_ask_candidate(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
             additional = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
