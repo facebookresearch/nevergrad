@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Set
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable
 from collections import defaultdict, deque
 import cma
 import numpy as np
@@ -511,7 +511,7 @@ class TBPSA(base.Optimizer):
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         self._unevaluated_population[x.tobytes()] = ParticuleTBPSA(x, sigma=sigma)
@@ -556,6 +556,7 @@ class PSOParticule(utils.Particule):
         self.fitness = fitness
         self.best_position = best_position
         self.best_fitness = best_fitness
+        self.active = True
 
     @classmethod
     def random_initialization(cls, dimension: int) -> 'PSOParticule':
@@ -594,14 +595,13 @@ class PSO(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
         self.population = utils.Population[PSOParticule]([])
-        self._replaced: Set[bytes] = set()
         self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
         self.best_fitness = float("inf")
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.ArrayLike:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
             additional = [PSOParticule.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
@@ -609,22 +609,21 @@ class PSO(base.Optimizer):
         particule = self.population.get_queued(remove=False)
         if particule.fitness is not None:  # particule was already initialized
             particule.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
-        guy = particule.get_transformed_position()
-        self.population.set_linked(guy.tobytes(), particule)
+        candidate = self.create_candidate.from_data(particule.get_transformed_position())
+        candidate._meta["particule"] = particule
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
-        return guy
+        return candidate
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return PSOParticule.transform(self.best_position)
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        particule: PSOParticule = candidate._meta["particule"]
+        if not particule.active:
+            self._internal_tell_not_asked(candidate, value)
             return
-        particule = self.population.get_linked(x_bytes)
+        x = candidate.data
         point = particule.get_transformed_position()
         assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particule.fitness = value
@@ -634,17 +633,10 @@ class PSO(base.Optimizer):
         if value < particule.best_fitness:
             particule.best_position = np.array(particule.position, copy=False)
             particule.best_fitness = value
-        self.population.del_link(x_bytes, particule)
         self.population.set_queued(particule)  # update when everything is well done (safer for checkpointing)
 
-    def tell_not_asked(self, y: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
-        x = y.data
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self._replaced.remove(x_bytes)
-        else:
-            self._update_archive_and_bests(x, value)
-            self._num_tell += 1
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        x = candidate.data
         if len(self.population) < self.llambda:
             particule = PSOParticule.random_initialization(self.dimension)
             particule.position = PSOParticule.transform(x, inverse=True)
@@ -655,13 +647,11 @@ class PSO(base.Optimizer):
                 return  # no need to update
             particule = PSOParticule.random_initialization(self.dimension)
             particule.position = PSOParticule.transform(x, inverse=True)
-            replaced = self.population.replace(worst_part, particule)
-            if replaced is not None:
-                assert isinstance(replaced, bytes)
-                self._replaced.add(replaced)
+            worst_part.active = False
+            self.population.replace(worst_part, particule)
         # go through standard pipeline
-        x2 = self._internal_ask()
-        self._internal_tell(x2, value)
+        c2 = self._internal_ask_candidate()
+        self._internal_tell_candidate(c2, value)
 
 
 @registry.register

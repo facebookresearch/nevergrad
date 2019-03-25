@@ -119,6 +119,8 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+    if name != "PSO":
+        raise SkipTest
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
