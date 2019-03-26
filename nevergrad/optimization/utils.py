@@ -292,14 +292,14 @@ class Pruning:
         return cls(min_len, max(max_len, max_len_1gb))
 
 
-class Particule:
+class Particle:
 
     def __init__(self) -> None:
         self.uuid = uuid4().hex
         self._waiting_for_removal = False
 
 
-X = TypeVar('X', bound=Particule)
+X = TypeVar('X', bound=Particle)
 
 
 class Population(Generic[X]):
@@ -307,12 +307,12 @@ class Population(Generic[X]):
     This could have a nicer interface... but it is already good enough
     """
 
-    def __init__(self, particules: Iterable[X]) -> None:
-        self._particules = OrderedDict({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
-        self._link: Dict[Union[str, bytes, int], List[str]] = defaultdict(list)  # several particules can be linked to a same point
+    def __init__(self, particles: Iterable[X]) -> None:
+        self._particles = OrderedDict({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
+        self._link: Dict[Union[str, bytes, int], List[str]] = defaultdict(list)  # several particles can be linked to a same point
         self._queue = Deque[str]()
         self._uuids: List[str] = []
-        self.extend(self._particules.values())
+        self.extend(self._particles.values())
 
     @property
     def uuids(self) -> List[str]:
@@ -321,39 +321,39 @@ class Population(Generic[X]):
         return self._uuids
 
     def __getitem__(self, uuid: str) -> X:
-        parti = self._particules[uuid]
+        parti = self._particles[uuid]
         if parti.uuid != uuid:
             raise RuntimeError("Something went horribly wrong in the Population structure")
         return parti
 
     def __iter__(self) -> Iterator[X]:
-        return iter(self._particules.values())
+        return iter(self._particles.values())
 
-    def extend(self, particules: Iterable[X]) -> None:
-        """Adds new particules
-        The new particules are queued left (first out of queue)
+    def extend(self, particles: Iterable[X]) -> None:
+        """Adds new particles
+        The new particles are queued left (first out of queue)
         """
-        particules = list(particules)
-        self._uuids.extend(p.uuid for p in particules)
-        self._particules.update({p.uuid: p for p in particules})  # dont modify manually (needs updated uuid to index)
-        self._queue.extendleft(p.uuid for p in reversed(particules))
+        particles = list(particles)
+        self._uuids.extend(p.uuid for p in particles)
+        self._particles.update({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
+        self._queue.extendleft(p.uuid for p in reversed(particles))
 
     def __len__(self) -> int:
-        return len(self._particules)
+        return len(self._particles)
 
     def get_linked(self, key: Union[str, bytes, int]) -> X:
         uuids = self._link[key]
         if not uuids:
             raise KeyError("No link available")
-        return self._particules[uuids[0]]
+        return self._particles[uuids[0]]
 
-    def set_linked(self, key: Union[str, bytes, int], particule: X) -> None:
-        if particule.uuid not in self._particules:
-            raise ValueError("Particule is not part of the population")
-        self._link[key].append(particule.uuid)
+    def set_linked(self, key: Union[str, bytes, int], particle: X) -> None:
+        if particle.uuid not in self._particles:
+            raise ValueError("Particle is not part of the population")
+        self._link[key].append(particle.uuid)
 
-    def del_link(self, key: Union[str, bytes, int], particule: X) -> None:
-        self._link[key].remove(particule.uuid)
+    def del_link(self, key: Union[str, bytes, int], particle: X) -> None:
+        self._link[key].remove(particle.uuid)
         if not self._link[key]:
             del self._link[key]
 
@@ -366,24 +366,24 @@ class Population(Generic[X]):
         uuid = self._queue[0]  # pylint: disable=unsubscriptable-object
         if remove:
             self._queue.popleft()
-        return self._particules[uuid]
+        return self._particles[uuid]
 
-    def set_queued(self, particule: X) -> None:
-        if particule.uuid not in self._particules:
-            raise ValueError("Particule is not part of the population")
-        self._queue.append(particule.uuid)
+    def set_queued(self, particle: X) -> None:
+        if particle.uuid not in self._particles:
+            raise ValueError("Particle is not part of the population")
+        self._queue.append(particle.uuid)
 
     def replace(self, oldie: X, newbie: X) -> Optional[Union[str, bytes, int]]:
-        """Replaces an old particule by a new particule.
-        The new particule is queue left (first out of queue)
-        If the old particule was linked, the key will be returned
+        """Replaces an old particle by a new particle.
+        The new particle is queue left (first out of queue)
+        If the old particle was linked, the key will be returned
         """
-        if oldie.uuid not in self._particules:
-            raise ValueError("Particule is not part of the population")
-        if newbie.uuid in self._particules:
-            raise ValueError("Particule is already in the population")
-        del self._particules[oldie.uuid]
-        self._particules[newbie.uuid] = newbie
+        if oldie.uuid not in self._particles:
+            raise ValueError("Particle is not part of the population")
+        if newbie.uuid in self._particles:
+            raise ValueError("Particle is already in the population")
+        del self._particles[oldie.uuid]
+        self._particles[newbie.uuid] = newbie
         self._uuids = [newbie.uuid if u == oldie.uuid else u for u in self._uuids]
         # update queue
         try:

@@ -11,7 +11,7 @@ from . import base
 from . import sequences
 
 
-class DEParticule(base.utils.Particule):
+class DEParticle(base.utils.Particle):
 
     def __init__(self, position: Optional[np.ndarray] = None, fitness: Optional[float] = None):
         super().__init__()
@@ -34,7 +34,7 @@ class _DE(base.Optimizer):
         super().__init__(dimension, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
-        self.population = base.utils.Population[DEParticule]([])
+        self.population = base.utils.Population[DEParticle]([])
         self.sampler: Optional[sequences.Sampler] = None
         self.NF = False  # This is not a noise-free variant of DE.
         self._replaced: Set[bytes] = set()
@@ -58,7 +58,7 @@ class _DE(base.Optimizer):
     def match_population_size_to_lambda(self) -> None:
         current_pop = len(self.population)
         if current_pop < self.llambda:
-            self.population.extend(DEParticule() for _ in range(self.llambda - current_pop))
+            self.population.extend(DEParticle() for _ in range(self.llambda - current_pop))
 
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
@@ -76,8 +76,8 @@ class _DE(base.Optimizer):
             sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
             self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR")
         self.match_population_size_to_lambda()
-        particule = self.population.get_queued(remove=True)
-        i = particule.position
+        particle = self.population.get_queued(remove=True)
+        i = particle.position
         a, b, c = (self.population[self.population.uuids[np.random.randint(self.llambda)]].position for _ in range(3))
 
         CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
@@ -99,9 +99,9 @@ class _DE(base.Optimizer):
                 new_guy = tuple(inoc * self.scale * (np.random.normal(0, 1, self.dimension)
                                                      if init is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
-            particule.position = np.array(new_guy)  #
-            particule.fitness = None  #
-            self.population.set_linked(particule.position.tobytes(), particule)
+            particle.position = np.array(new_guy)  #
+            particle.fitness = None  #
+            self.population.set_linked(particle.position.tobytes(), particle)
             return new_guy
         i = np.array(i)
         a = np.array(a)
@@ -146,7 +146,7 @@ class _DE(base.Optimizer):
                     if (idx - Ra) * (idx - Rb) <= 0:
                         donor[idx] = i[idx]
         donor = tuple(donor)
-        self.population.set_linked(np.array(donor).tobytes(), particule)
+        self.population.set_linked(np.array(donor).tobytes(), particle)
         return donor  # type: ignore
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
@@ -156,12 +156,12 @@ class _DE(base.Optimizer):
             self.tell_not_asked(x, value)
             return
         self.match_population_size_to_lambda()
-        particule = self.population.get_linked(x_bytes)
-        self.population.del_link(np.array(x).tobytes(), particule)
-        if particule.fitness is None or value <= particule.fitness:
-            particule.position = np.array(x)
-            particule.fitness = value
-        self.population.set_queued(particule)
+        particle = self.population.get_linked(x_bytes)
+        self.population.del_link(np.array(x).tobytes(), particle)
+        if particle.fitness is None or value <= particle.fitness:
+            particle.position = np.array(x)
+            particle.fitness = value
+        self.population.set_queued(particle)
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         x = np.array(x, copy=False)
@@ -175,10 +175,10 @@ class _DE(base.Optimizer):
         worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
         if worst_part.fitness is not None and worst_part.fitness < value:
             return  # no need to update
-        particule = DEParticule()
-        replaced = self.population.replace(worst_part, particule)
+        particle = DEParticle()
+        replaced = self.population.replace(worst_part, particle)
         x = np.array(x, copy=False)
-        self.population.set_linked(x.tobytes(), particule)
+        self.population.set_linked(x.tobytes(), particle)
         if replaced is not None:
             assert isinstance(replaced, bytes)
             self._replaced.add(replaced)
