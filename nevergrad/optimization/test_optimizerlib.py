@@ -226,8 +226,6 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 
 
 def test_optimization_doc_instrumentation_example() -> None:
-    optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
-    # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
     instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
     recom = optimizer.optimize(_square)
