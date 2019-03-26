@@ -85,7 +85,7 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(RuntimeError, archive.items)
 
 
-class Partitest(utils.Particule):
+class Partitest(utils.Particle):
 
     def __init__(self, number: int) -> None:
         super().__init__()
@@ -93,25 +93,25 @@ class Partitest(utils.Particule):
 
 
 def test_population_queue() -> None:
-    particules = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particules[2:])
-    pop.extend(particules[:2])  # should append queue on the left
+    particles = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particles[2:])
+    pop.extend(particles[:2])  # should append queue on the left
     p = pop.get_queued()
     assert p.number == 0
     nums = [pop.get_queued(remove=True).number for _ in range(4)]
     np.testing.assert_equal(nums, [0, 1, 2, 3])
     np.testing.assert_raises(RuntimeError, pop.get_queued)  # nothing more in queue
-    pop.set_queued(particules[1])
+    pop.set_queued(particles[1])
     p = pop.get_queued()
     assert p.number == 1
     np.testing.assert_raises(ValueError, pop.set_queued, Partitest(5))  # not in pop
 
 
 def test_population_link() -> None:
-    particules = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particules)
+    particles = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particles)
     np.testing.assert_raises(ValueError, pop.set_linked, "blublu", Partitest(5))  # not in pop
-    p = particules[0]
+    p = particles[0]
     pop.set_linked(12, p)
     p2 = pop.get_linked(12)
     assert p2.uuid == p.uuid
@@ -120,10 +120,10 @@ def test_population_link() -> None:
 
 
 def test_population_replace() -> None:
-    particules = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particules)
-    pop.set_linked(12, particules[2])
-    key = pop.replace(particules[2], Partitest(5))
+    particles = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particles)
+    pop.set_linked(12, particles[2])
+    key = pop.replace(particles[2], Partitest(5))
     assert key == 12
     assert pop.get_queued().number == 5
     for uuid in pop.uuids:
