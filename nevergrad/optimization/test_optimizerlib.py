@@ -167,9 +167,9 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
 
 
 def test_pso_to_real() -> None:
-    output = optimizerlib.PSOParticule.transform([.3, .5, .9])
+    output = optimizerlib.PSOParticle.transform([.3, .5, .9])
     np.testing.assert_almost_equal(output, [-.52, 0, 1.28], decimal=2)
-    np.testing.assert_almost_equal(optimizerlib.PSOParticule.transform(output, inverse=True), [.3, .5, .9], decimal=2)
+    np.testing.assert_almost_equal(optimizerlib.PSOParticle.transform(output, inverse=True), [.3, .5, .9], decimal=2)
 
 
 def test_portfolio_budget() -> None:
@@ -230,8 +230,6 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 
 
 def test_optimization_doc_instrumentation_example() -> None:
-    optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
-    # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
     instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
     recom = optimizer.optimize(_square)
