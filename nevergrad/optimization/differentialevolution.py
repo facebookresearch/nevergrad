@@ -102,7 +102,6 @@ class _DE(base.Optimizer):
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             particle.position = np.array(new_guy)  #
             particle.fitness = None  #
-            self.population.set_linked(particle.position.tobytes(), particle)
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
@@ -149,7 +148,6 @@ class _DE(base.Optimizer):
                     if (idx - Ra) * (idx - Rb) <= 0:
                         donor[idx] = i[idx]
         donor = tuple(donor)
-        self.population.set_linked(np.array(donor).tobytes(), particle)
         candidate = self.create_candidate.from_data(donor)
         candidate._meta["particle"] = particle
         return candidate
@@ -160,7 +158,6 @@ class _DE(base.Optimizer):
             self._internal_tell_not_asked(candidate, value)
             return
         self.match_population_size_to_lambda()
-        self.population.del_link(np.array(candidate.data).tobytes(), particle)
         if particle.fitness is None or value <= particle.fitness:
             particle.position = candidate.data
             particle.fitness = value
