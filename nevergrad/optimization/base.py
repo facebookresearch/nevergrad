@@ -79,9 +79,9 @@ class CandidateMaker:
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
-    - "ask()" which provides points on which to evaluate the function to optimize
-    - "tell(x, value)" which lets you provide the values associated to points
-    - "provide_recommendation()" which provides the best final value
+    - "ask()" which provides a candidate on which to evaluate the function to optimize
+    - "tell(candidate, value)" which lets you provide the values associated to points
+    - "provide_recommendation()" which provides the best final candidate
     Typically, one would call "ask()" num_workers times, evaluate the
     function on these num_workers points in parallel, update with the fitness value when the
     evaluations is finished, and iterate until the budget is over. At the very end,
@@ -176,22 +176,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def tell_not_asked(self, candidate: Candidate, value: float) -> None:
-        """Provides the optimizer with the evaluation of a fitness value at a point it did not ask
-
-        Parameters
-        ----------
-        x: np.ndarray
-            point where the function was evaluated
-        value: float
-            value of the function
-        """
-        # default to just a tell
-        # algorithms which do not support it should raise NotImplementedError
-        self.tell(candidate, value)
-
     def tell(self, candidate: Candidate, value: float) -> None:
-        """Provides the optimizer with the evaluation of a fitness value at a point
+        """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
         ----------
@@ -199,9 +185,16 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             point where the function was evaluated
         value: float
             value of the function
+
+        Note
+        ----
+        The candidate should generally be one provided by ask(), but can be also
+        a non-asked candidate. To create a Candidate instance from args and kwargs,
+        you can use optimizer.create_candidate.from_arguments(*args, **kwargs)
         """
         if not isinstance(candidate, Candidate):
-            raise TypeError("'tell' must be provided with the candidate that 'ask' provided")
+            raise TypeError("'tell' must be provided with the candidate (use optimizer.create_candidate.from_arguments(*args, **kwargs)) "
+                            "if you want to inoculate a point that as not been asked for")
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
@@ -241,6 +234,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def ask(self) -> Candidate:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
+
+        Returns
+        -------
+        Candidate:
+            The candidate to try on the objective function. Candidates have field "args" and "kwargs" which can be directly used
+            on the function (objective_function(*candidate.args, **candidate.kwargs)).
         """
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
@@ -253,18 +252,35 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def provide_recommendation(self) -> Candidate:
         """Provides the best point to use as a minimum, given the budget that was used
+
+        Returns
+        -------
+        Candidate
+            The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
+            on the function (objective_function(*candidate.args, **candidate.kwargs)).
         """
         return self.recommend()  # duplicate method
 
     def recommend(self) -> Candidate:
-        """Provides the best point to use as a minimum, given the budget that was used
+        """Provides the best candidate to use as a minimum, given the budget that was used.
+
+        Returns
+        -------
+        Candidate
+            The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
+            on the function (objective_function(*candidate.args, **candidate.kwargs)).
         """
         return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: Candidate, value: float) -> None:
+        """Called whenever calling "tell" on a candidate that was not "asked".
+        Defaults to the standard tell pipeline.
+        """
         self._internal_tell_candidate(candidate, value)
 
     def _internal_tell_candidate(self, candidate: Candidate, value: float) -> None:
+        """Called whenever calling "tell" on a candidate that was "asked".
+        """
         self._internal_tell(candidate.data, value)
 
     def _internal_ask_candidate(self) -> Candidate:
@@ -303,6 +319,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)
         callback: callable
             callable called on the optimizer (self) at the end of each iteration (for user specific logging, etc)
+
+        Returns
+        -------
+        Candidate
+            The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
+            on the function (objective_function(*candidate.args, **candidate.kwargs)).
 
         Note
         ----
