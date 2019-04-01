@@ -7,10 +7,9 @@ from typing import Optional, List, Dict, Tuple, Deque, Union, Callable
 from collections import defaultdict, deque
 import cma
 import numpy as np
-from scipy import stats
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
-from ..instrumentation.transforms import CumulativeDensity
+from ..instrumentation import transforms
 from ..instrumentation import Instrumentation
 from . import utils
 from . import base
@@ -547,6 +546,8 @@ class PSOParticle(utils.Particle):
     """Particle for the PSO algorithm, holding relevant information
     """
 
+    transform = transforms.CumulativeDensity().reverted()
+
     # pylint: disable=too-many-arguments
     def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
                  best_position: np.ndarray, best_fitness: float) -> None:
@@ -578,11 +579,7 @@ class PSOParticle(utils.Particle):
         self.position = np.clip(self.speed + self.position, eps, 1 - eps)
 
     def get_transformed_position(self) -> np.ndarray:
-        return self.transform(self.position)
-
-    @staticmethod
-    def transform(x: base.ArrayLike, inverse: bool = False) -> np.ndarray:
-        return (stats.norm.cdf if inverse else stats.norm.ppf)(x)  # type: ignore
+        return self.transform.forward(self.position)
 
 
 @registry.register
@@ -616,7 +613,7 @@ class PSO(base.Optimizer):
         return candidate
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return PSOParticle.transform(self.best_position)
+        return PSOParticle.transform.forward(self.best_position)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
@@ -639,14 +636,14 @@ class PSO(base.Optimizer):
         x = candidate.data
         if len(self.population) < self.llambda:
             particle = PSOParticle.random_initialization(self.dimension)
-            particle.position = PSOParticle.transform(x, inverse=True)
+            particle.position = PSOParticle.transform.backward(x)
             self.population.extend([particle])
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
             if worst_part.best_fitness < value:
                 return  # no need to update
             particle = PSOParticle.random_initialization(self.dimension)
-            particle.position = PSOParticle.transform(x, inverse=True)
+            particle.position = PSOParticle.transform.backward(x)
             worst_part.active = False
             self.population.replace(worst_part, particle)
         # go through standard pipeline
@@ -983,7 +980,7 @@ class _BO(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedBO()
-        self._transform = CumulativeDensity()
+        self._transform = transforms.CumulativeDensity()
         self._bo: Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction()
 
