@@ -547,6 +547,7 @@ class PSOParticle(utils.Particle):
     """
 
     transform = transforms.CumulativeDensity().reverted()
+    _eps = 1e-10  # to clip to [eps, 1 - eps] for transform not defined on borders
 
     # pylint: disable=too-many-arguments
     def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
@@ -558,6 +559,7 @@ class PSOParticle(utils.Particle):
         self.best_position = best_position
         self.best_fitness = best_fitness
         self.active = True
+        self.eps = 1e-10
 
     @classmethod
     def random_initialization(cls, dimension: int) -> 'PSOParticle':
@@ -566,7 +568,7 @@ class PSOParticle(utils.Particle):
         return cls(position, None, speed, position, float("inf"))
 
     def __repr__(self) -> str:
-        return f"PSOParticle<position: {self.get_transformed_position()}, fitness: {self.fitness}, best: {self.best_fitness}>"
+        return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.fitness}, best: {self.best_fitness}>"
 
     def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
         dim = len(best_position)
@@ -575,8 +577,7 @@ class PSOParticle(utils.Particle):
         self.speed = (omega * self.speed
                       + phip * rp * (self.best_position - self.position)
                       + phig * rg * (best_position - self.position))
-        eps = 1e-10
-        self.position = np.clip(self.speed + self.position, eps, 1 - eps)
+        self.position = np.clip(self.speed + self.position, self._eps, 1 - self._eps)
 
     def get_transformed_position(self) -> np.ndarray:
         return self.transform.forward(self.position)
@@ -587,6 +588,8 @@ class PSO(base.Optimizer):
     """Partially following SPSO2011. However, no randomization of the population order.
     """
     # pylint: disable=too-many-instance-attributes
+
+    _PARTICULE = PSOParticle
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
@@ -601,7 +604,7 @@ class PSO(base.Optimizer):
     def _internal_ask_candidate(self) -> base.Candidate:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
-            additional = [PSOParticle.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
+            additional = [self._PARTICULE.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
             self.population.extend(additional)
         particle = self.population.get_queued(remove=False)
         if particle.fitness is not None:  # particle was already initialized
@@ -613,7 +616,7 @@ class PSO(base.Optimizer):
         return candidate
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return PSOParticle.transform.forward(self.best_position)
+        return self._PARTICULE.transform.forward(self.best_position)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
@@ -635,15 +638,15 @@ class PSO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         if len(self.population) < self.llambda:
-            particle = PSOParticle.random_initialization(self.dimension)
-            particle.position = PSOParticle.transform.backward(x)
+            particle = self._PARTICULE.random_initialization(self.dimension)
+            particle.position = self._PARTICULE.transform.backward(x)
             self.population.extend([particle])
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
             if worst_part.best_fitness < value:
                 return  # no need to update
-            particle = PSOParticle.random_initialization(self.dimension)
-            particle.position = PSOParticle.transform.backward(x)
+            particle = self._PARTICULE.random_initialization(self.dimension)
+            particle.position = self._PARTICULE.transform.backward(x)
             worst_part.active = False
             self.population.replace(worst_part, particle)
         # go through standard pipeline
