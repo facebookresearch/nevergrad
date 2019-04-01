@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable, Dict, Union
 import numpy as np
 from scipy import optimize as scipyoptimize
 from . import base
@@ -12,8 +12,9 @@ from . import recaster
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, base.instru.Instrumentation],
+                 budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ScipyOptimizer()
         self.multirun = 1  # work in progress
         self.initial_guess: Optional[base.ArrayLike] = None
@@ -21,7 +22,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(dimension=self.dimension, budget=self.budget, num_workers=self.num_workers)
+        subinstance = self.__class__(instrumentation=self.instrumentation, budget=self.budget, num_workers=self.num_workers)
         subinstance._parameters = self._parameters
         return subinstance._optimization_function
 

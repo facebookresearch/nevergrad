@@ -58,41 +58,29 @@ print(instrum.data_to_arguments([1, -80, -80, 80, 3]))
 
 For convenience and until a better way is implemented (see future notice), we provide an `InstrumentedFunction` class converting a function of any parameter space into the data space. Here is a basic example of its use:
 
-**Future notice**: `InstrumentedFunction` may come to disappear (or at least we will discourage its use) when a new API for instrumenting on the optimizer side is ready.
+**Future notice**: `InstrumentedFunction` may come to disappear (or at least we discourage its use) since a new API for instrumenting on the optimizer side has been added in v0.2.0.
 
+You can then directly perform optimization on a function given its instrumentation:
 ```python
-
 def myfunction(arg1, arg2, arg3, value=3):
     print(arg1, arg2, arg3)
     return value**2
 
-# create the instrumented function using the "Instrumentation" instance above
-ifunc = instrum.instrument(myfunction)
-print(ifunc.dimension)  # 5 dimensional space as above
-# you can still access the instrumentation instance will ifunc.instrumentation
-
-ifunc([1, -80, -80, 80, 3])  # will print "b e blublu" and return 49 = 7**2
-# check the instrumentation output explanation above if this is not clear
-```
-
-You can then directly perform optimization on this object:
-```python
 from nevergrad.optimization import optimizerlib
-optimizer = optimizerlib.OnePlusOne(dimension=ifunc.dimension, budget=100)
+optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.optimize(ifunc)
 ```
 
 When you have performed optimization on this function and want to trace back to what should your values be, use:
 ```python
-recommendation = [1, -80, -80, 80, -.5]  # example of recommendation
-# recover the arguments this way (don't forget deteriministic=True)
-args, kwargs = ifunc.data_to_arguments(recommendation, deterministic=True)
-print(args)    # should print ["b", "e", "blublu"]
-print(kwargs)  # should print {"value": 0} because -.5 * std + mean = 0
+# let us instantiate a fake recommendation for the sake of this tutorial
+recommendation = optimizer.create_candidate.from_data([1, -80, -80, 80, -.5], deterministic=True)
+print(recommendation.args)    # should print ["b", "e", "blublu"]
+print(recommendation.kwargs)  # should print {"value": 0} because -.5 * std + mean = 0
 
 # but be careful, since some variables are stochastic (SoftmaxCategorical ones are), setting deterministic=False may yield different results
 # The following will print more information on the conversion to your arguments:
-print(ifunc.get_summary(recommendation))
+print(instrum.get_summary(recommendation.data))
 ```
 
 

@@ -7,6 +7,7 @@ from typing import Optional, Tuple, Union, Set
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
+from ..instrumentation import Instrumentation
 from . import base
 from . import sequences
 
@@ -30,8 +31,8 @@ class _DE(base.Optimizer):
     # pylint: disable=too-many-locals, too-many-nested-blocks
     # pylint: disable=too-many-branches, too-many-statements
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
         self.population = base.utils.Population[DEParticle]([])
@@ -153,7 +154,7 @@ class _DE(base.Optimizer):
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
-            self.tell_not_asked(x, value)
+            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
             return
         self.match_population_size_to_lambda()
         particle = self.population.get_linked(x_bytes)
@@ -163,8 +164,8 @@ class _DE(base.Optimizer):
             particle.fitness = value
         self.population.set_queued(particle)
 
-    def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-        x = np.array(x, copy=False)
+    def tell_not_asked(self, y: base.Candidate, value: float) -> None:
+        x = np.array(y.data, copy=False)
         x_bytes = x.tobytes()
         if x_bytes in self._replaced:
             self._replaced.remove(x_bytes)

@@ -8,10 +8,10 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Callable, Any, Optional, Iterator, Tuple, Type
+from typing import Dict, Union, Any, Optional, Iterator, Tuple, Type, Callable
 import numpy as np
 from ..common import decorators
-from ..instrumentation import InstrumentedFunction
+from .. import instrumentation as instru
 from ..functions import utils as futils
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
@@ -30,12 +30,12 @@ class CallCounter(execution.PostponedObject):
         the callable to wrap
     """
 
-    def __init__(self, func: Callable[..., Any]) -> None:
+    def __init__(self, func: instru.InstrumentedFunction) -> None:
         self.func = func
         self.num_calls = 0
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        value = self.func(*args, **kwargs)  # compute *before* updating num calls
+        value = self.func.function(*args, **kwargs)  # compute *before* updating num calls
         self.num_calls += 1
         return value
 
@@ -88,10 +88,10 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instanciate(self, dimension: int) -> base.Optimizer:
+    def instanciate(self, instrumentation: instru.Instrumentation) -> base.Optimizer:
         """Instanciate an optimizer, providing the optimization space dimension
         """
-        return self._get_factory()(dimension=dimension, budget=self.budget, num_workers=self.num_workers)
+        return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
 
     def get_description(self) -> Dict[str, Any]:
         """Returns a dictionary describing the optimizer settings
@@ -142,15 +142,15 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: InstrumentedFunction,
+    def __init__(self, function: instru.InstrumentedFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None) -> None:
-        assert isinstance(function, InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
+        assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self.recommendation: Optional[base.ArrayLike] = None
+        self.recommendation: Optional[base.Candidate] = None
         self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
 
     def __repr__(self) -> str:
@@ -194,11 +194,11 @@ class Experiment:
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
-        args, kwargs = self.function.instrumentation.data_to_arguments(self.recommendation, deterministic=True)
+        reco = self.recommendation
         if isinstance(self.function, futils.NoisyBenchmarkFunction):
-            self.result["loss"] = self.function.noisefree_function(*args, **kwargs)
+            self.result["loss"] = self.function.noisefree_function(*reco.args, **reco.kwargs)
         else:
-            self.result["loss"] = self.function.function(*args, **kwargs)
+            self.result["loss"] = self.function.function(*reco.args, **reco.kwargs)
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
@@ -218,7 +218,7 @@ class Experiment:
             random.seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instanciate(dimension=self.function.dimension)
+            self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

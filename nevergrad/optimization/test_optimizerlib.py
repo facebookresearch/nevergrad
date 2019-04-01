@@ -14,6 +14,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
+from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
@@ -40,19 +41,19 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
     fitness = Fitness([.5, -.8])
     for k in range(1, num_attempts + 1):
-        optimizer = optimizer_cls(dimension=2, budget=budget, num_workers=num_workers)
+        optimizer = optimizer_cls(instrumentation=2, budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
             # benchmark do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
-            output = optimizer.optimize(fitness)
+            candidate = optimizer.optimize(fitness)
         if verify_value:
             try:
-                np.testing.assert_array_almost_equal(output, [0.5, -0.8], decimal=1)
+                np.testing.assert_array_almost_equal(candidate.data, [0.5, -0.8], decimal=1)
             except AssertionError as e:
-                print(f"Attemp #{k}: failed with value {tuple(output)}")
+                print(f"Attemp #{k}: failed with best point {tuple(candidate.data)}")
                 if k == num_attempts:
                     raise e
             else:
@@ -63,7 +64,8 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             min(v.pessimistic_confidence_bound for v in archive.values()))
     # add a random point to test tell_not_asked
     try:
-        optimizer.tell_not_asked(np.random.normal(0, 1, size=optimizer.dimension), 12.)
+        candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+        optimizer.tell_not_asked(candidate, 12.)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
             raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
@@ -129,18 +131,18 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
-    optim = optimizer_cls(dimension=dimension, budget=budget, num_workers=1)
+    optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
     # the following context manager speeds up BO tests
     # BEWARE: BO tests are deterministic but can get different results from a computer to another.
     # Reducing the precision could help in this regard.
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch('bayes_opt.bayesian_optimization.acq_max', patched):
-        output = optim.optimize(fitness)
+        candidate = optim.optimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(output)
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(output, recomkeeper.recommendations.loc[name, :][:dimension], decimal=9,
+    np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=9,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
@@ -156,7 +158,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     large=("BPRotationInvariantDE", 10, 40, 70),
 )
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
-    optim = registry[name](dimension=dimension, budget=100, num_workers=num_workers)
+    optim = registry[name](instrumentation=dimension, budget=100, num_workers=num_workers)
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
 
@@ -168,7 +170,7 @@ def test_pso_to_real() -> None:
 
 def test_portfolio_budget() -> None:
     for k in range(3, 13):
-        optimizer = optimizerlib.Portfolio(dimension=2, budget=k)
+        optimizer = optimizerlib.Portfolio(instrumentation=2, budget=k)
         np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
@@ -190,20 +192,20 @@ def test_tell_not_asked(name: str) -> None:
     best = [.5, -.8, 0, 4]
     dim = len(best)
     fitness = Fitness(best)
-    opt = optimizerlib.registry[name](dimension=dim, budget=2, num_workers=2)
+    opt = optimizerlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
     if name == "PSO":
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
     zeros = [0.] * dim
-    opt.tell_not_asked(zeros, fitness(zeros))
+    opt.tell_not_asked(opt.create_candidate.from_data(zeros), fitness(zeros))
     asked = [opt.ask(), opt.ask()]
-    opt.tell_not_asked(best, fitness(best))
-    opt.tell(asked[0], fitness(asked[0]))
-    opt.tell(asked[1], fitness(asked[1]))
+    opt.tell_not_asked(opt.create_candidate.from_data(best), fitness(best))
+    opt.tell(asked[0], fitness(*asked[0].args))
+    opt.tell(asked[1], fitness(*asked[1].args))
     assert opt.num_tell == 4, opt.num_tell
     assert opt.num_ask == 2
-    if (0, 0, 0, 0) not in [tuple(x) for x in asked]:
+    if (0, 0, 0, 0) not in [tuple(x.data) for x in asked]:
         for value in opt.archive.values():
             assert value.count == 1
 
@@ -213,7 +215,21 @@ def test_tbpsa_recom_with_update() -> None:
     budget = 20
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4])
-    optim = optimizerlib.TBPSA(dimension=4, budget=budget, num_workers=1)
+    optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
     optim.llambda = 3
-    output = optim.optimize(fitness)
-    np.testing.assert_almost_equal(output, [.037964, .0433031, -.4688667, .3633273])
+    candidate = optim.optimize(fitness)
+    np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
+
+
+def _square(x: np.ndarray, y: float = 12) -> float:
+    return sum((x - .5)**2) + abs(y)
+
+
+def test_optimization_doc_instrumentation_example() -> None:
+    instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
+    optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
+    recom = optimizer.optimize(_square)
+    assert len(recom.args) == 1
+    testing.assert_set_equal(recom.kwargs, ['y'])
+    value = _square(*recom.args, **recom.kwargs)
+    assert value < .2  # should be large enough by an order of magnitude

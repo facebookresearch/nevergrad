@@ -21,6 +21,8 @@ you should install with the `[benchmark]` flag (example: `pip install 'nevergrad
 the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
+*Caution*: this README is for `master`, which holds breaking changes compared to the latest release (`v0.1.6`). See `CHANGELOG.md` for a summary of the changes.
+
 
 ## Goals and structure
 
@@ -67,10 +69,19 @@ from nevergrad.optimization import optimizerlib
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100)
+optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
 recommendation = optimizer.optimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
 ```
+
+`recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
+In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+
+`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
+See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
+
 
 You can print the full list of optimizers with:
 ```
