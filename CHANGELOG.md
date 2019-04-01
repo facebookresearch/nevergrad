@@ -2,9 +2,10 @@
 
 ## master
 
-- Removed `BaseFunction` in favor of `InstrumentedFunction` and use instrumentation instead of
+- updated `bayesion-optimization` version to 1.0.1.
+- removed `BaseFunction` in favor of `InstrumentedFunction` and use instrumentation instead of
   defining specific transforms (breaking change for benchmark function implementation).
-- First parameter of optimizers is now `instrumentation` instead of `dimension`. This allows the optimizer
+- first parameter of optimizers is now `instrumentation` instead of `dimension`. This allows the optimizer
   to have information on the underlying structure. `int`s are still allowed as before and will set the instrumentation
   to the `Instrumentation(var.Array(n))` (which is basically the identity).
 - `ask()` and `provide_recommendation()` now return a `Candidate` with attributes `args`, `kwargs` (depending on the instrumentation)
@@ -12,8 +13,8 @@
   the array.
 - from now on, optimizers should preferably implement `_internal_ask_candidate` and `_internal_tell_candidate` instead of `_internal_ask`
   and `_internal_tell`. This should take at most one more line: `x = candidate.data`.
-- Added an `_asked` private attribute to register uuid of particuels that were asked for.
-- Removed `tell_not_asked` in favor of `tell`. A new `num_tell_not_asked` attribute is added to check the number of `tell` calls with non-asked points.
+- added an `_asked` private attribute to register uuid of particuels that were asked for.
+- removed `tell_not_asked` in favor of `tell`. A new `num_tell_not_asked` attribute is added to check the number of `tell` calls with non-asked points.
 
 ## v0.1.6
 
