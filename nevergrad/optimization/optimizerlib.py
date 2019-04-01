@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Set
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable
 from collections import defaultdict, deque
 import cma
 import numpy as np
@@ -297,7 +297,7 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
-    def tell_not_asked(self, x: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -511,12 +511,11 @@ class TBPSA(base.Optimizer):
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
-    def tell_not_asked(self, y: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
-        x = y.data
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        x = candidate.data
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         self._unevaluated_population[x.tobytes()] = ParticleTBPSA(x, sigma=sigma)
-        # go through standard pipeline so as to update the archive
-        self.tell(y, value)
+        self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
 @registry.register
@@ -557,6 +556,7 @@ class PSOParticle(utils.Particle):
         self.fitness = fitness
         self.best_position = best_position
         self.best_fitness = best_fitness
+        self.active = True
 
     @classmethod
     def random_initialization(cls, dimension: int) -> 'PSOParticle':
@@ -595,14 +595,13 @@ class PSO(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
         self.population = utils.Population[PSOParticle]([])
-        self._replaced: Set[bytes] = set()
         self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
         self.best_fitness = float("inf")
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
             additional = [PSOParticle.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
@@ -610,22 +609,21 @@ class PSO(base.Optimizer):
         particle = self.population.get_queued(remove=False)
         if particle.fitness is not None:  # particle was already initialized
             particle.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
-        guy = particle.get_transformed_position()
-        self.population.set_linked(guy.tobytes(), particle)
+        candidate = self.create_candidate.from_data(particle.get_transformed_position())
+        candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
-        return guy
+        return candidate
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return PSOParticle.transform(self.best_position)
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        particle: PSOParticle = candidate._meta["particle"]
+        if not particle.active:
+            self._internal_tell_not_asked(candidate, value)
             return
-        particle = self.population.get_linked(x_bytes)
+        x = candidate.data
         point = particle.get_transformed_position()
         assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particle.fitness = value
@@ -635,17 +633,10 @@ class PSO(base.Optimizer):
         if value < particle.best_fitness:
             particle.best_position = np.array(particle.position, copy=False)
             particle.best_fitness = value
-        self.population.del_link(x_bytes, particle)
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
-    def tell_not_asked(self, y: base.Candidate, value: float) -> None:  # pylint: disable=arguments-differ
-        x = y.data
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self._replaced.remove(x_bytes)
-        else:
-            self._update_archive_and_bests(x, value)
-            self._num_tell += 1
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        x = candidate.data
         if len(self.population) < self.llambda:
             particle = PSOParticle.random_initialization(self.dimension)
             particle.position = PSOParticle.transform(x, inverse=True)
@@ -656,13 +647,11 @@ class PSO(base.Optimizer):
                 return  # no need to update
             particle = PSOParticle.random_initialization(self.dimension)
             particle.position = PSOParticle.transform(x, inverse=True)
-            replaced = self.population.replace(worst_part, particle)
-            if replaced is not None:
-                assert isinstance(replaced, bytes)
-                self._replaced.add(replaced)
+            worst_part.active = False
+            self.population.replace(worst_part, particle)
         # go through standard pipeline
-        x2 = self._internal_ask()
-        self._internal_tell(x2, value)
+        c2 = self._internal_ask_candidate()
+        self._internal_tell_candidate(c2, value)
 
 
 @registry.register
@@ -747,23 +736,22 @@ class Portfolio(base.Optimizer):
             self.optims = [ScrHammersleySearch(instrumentation, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
-        individual = self.optims[optim_index].ask().data
-        self.who_asked[tuple(individual)] += [optim_index]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
         return individual
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        tx = tuple(x)
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        tx = tuple(candidate.data)
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
-        candidate = self.create_candidate.from_data(x)
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def tell_not_asked(self, x: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -794,10 +782,10 @@ class ParaPortfolio(Portfolio):
                        ]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
-        individual = self.optims[optim_index].ask().data
-        self.who_asked[tuple(individual)] += [optim_index]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
         return individual
 
 
@@ -835,7 +823,7 @@ class ASCMADEthird(Portfolio):
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         if self.budget_before_choosing > 0:
             self.budget_before_choosing -= 1
             optim_index = self._num_ask % len(self.optims)
@@ -850,8 +838,8 @@ class ASCMADEthird(Portfolio):
                         best_value = val
                 self.best_optim = optim_index
             optim_index = self.best_optim
-        individual = self.optims[optim_index].ask().data
-        self.who_asked[tuple(individual)] += [optim_index]
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
         return individual
 
 

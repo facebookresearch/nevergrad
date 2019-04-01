@@ -63,15 +63,17 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
             min(v.pessimistic_confidence_bound for v in archive.values()))
     # add a random point to test tell_not_asked
+    assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
-        optimizer.tell_not_asked(candidate, 12.)
+        optimizer.tell(candidate, 12.)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
             raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
-                                 "at tell_not_asked if they do not support it") from e
+                                 "at when telling unasked points if they do not support it") from e
     else:
         assert optimizer.num_tell == budget + 1
+        assert optimizer.num_tell_not_asked == 1
 
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
@@ -198,9 +200,9 @@ def test_tell_not_asked(name: str) -> None:
     else:
         opt._llambda = 2  # type: ignore
     zeros = [0.] * dim
-    opt.tell_not_asked(opt.create_candidate.from_data(zeros), fitness(zeros))
+    opt.tell(opt.create_candidate.from_data(zeros), fitness(zeros))  # not asked
     asked = [opt.ask(), opt.ask()]
-    opt.tell_not_asked(opt.create_candidate.from_data(best), fitness(best))
+    opt.tell(opt.create_candidate.from_data(best), fitness(best))  # not asked
     opt.tell(asked[0], fitness(*asked[0].args))
     opt.tell(asked[1], fitness(*asked[1].args))
     assert opt.num_tell == 4, opt.num_tell

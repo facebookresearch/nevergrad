@@ -12,6 +12,8 @@
   the array.
 - from now on, optimizers should preferably implement `_internal_ask_candidate` and `_internal_tell_candidate` instead of `_internal_ask`
   and `_internal_tell`. This should take at most one more line: `x = candidate.data`.
+- Added an `_asked` private attribute to register uuid of particuels that were asked for.
+- Removed `tell_not_asked` in favor of `tell`. A new `num_tell_not_asked` attribute is added to check the number of `tell` calls with non-asked points.
 
 ## v0.1.6
 

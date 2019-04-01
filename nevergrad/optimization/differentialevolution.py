@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Tuple, Union, Set
+from typing import Optional, Union, Set
 import numpy as np
 from scipy import stats
-from ..common.typetools import ArrayLike
 from ..instrumentation import Instrumentation
 from . import base
 from . import sequences
@@ -18,6 +17,7 @@ class DEParticle(base.utils.Particle):
         super().__init__()
         self.position = position
         self.fitness = fitness
+        self.active = True
 
 
 class _DE(base.Optimizer):
@@ -70,7 +70,7 @@ class _DE(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
-    def _internal_ask(self) -> Tuple[float, ...]:
+    def _internal_ask_candidate(self) -> base.Candidate:
         init = self._parameters.initialization
         if self.sampler is None and init is not None:
             assert init in ["LHS", "QR"]
@@ -102,8 +102,9 @@ class _DE(base.Optimizer):
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             particle.position = np.array(new_guy)  #
             particle.fitness = None  #
-            self.population.set_linked(particle.position.tobytes(), particle)
-            return new_guy
+            candidate = self.create_candidate.from_data(new_guy)
+            candidate._meta["particle"] = particle
+            return candidate
         i = np.array(i)
         a = np.array(a)
         b = np.array(b)
@@ -147,43 +148,29 @@ class _DE(base.Optimizer):
                     if (idx - Ra) * (idx - Rb) <= 0:
                         donor[idx] = i[idx]
         donor = tuple(donor)
-        self.population.set_linked(np.array(donor).tobytes(), particle)
-        return donor  # type: ignore
+        candidate = self.create_candidate.from_data(donor)
+        candidate._meta["particle"] = particle
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self.tell_not_asked(self.create_candidate.from_data(x), value)  # TODO: inefficient
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        particle: DEParticle = candidate._meta["particle"]  # all asked candidate should have this field
+        if not particle.active:
+            self._internal_tell_not_asked(candidate, value)
             return
         self.match_population_size_to_lambda()
-        particle = self.population.get_linked(x_bytes)
-        self.population.del_link(np.array(x).tobytes(), particle)
         if particle.fitness is None or value <= particle.fitness:
-            particle.position = np.array(x)
+            particle.position = candidate.data
             particle.fitness = value
         self.population.set_queued(particle)
 
-    def tell_not_asked(self, y: base.Candidate, value: float) -> None:
-        x = np.array(y.data, copy=False)
-        x_bytes = x.tobytes()
-        if x_bytes in self._replaced:
-            self._replaced.remove(x_bytes)
-        else:
-            self._update_archive_and_bests(x, value)
-            self._num_tell += 1
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         self.match_population_size_to_lambda()
         worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
         if worst_part.fitness is not None and worst_part.fitness < value:
             return  # no need to update
         particle = DEParticle()
-        replaced = self.population.replace(worst_part, particle)
-        x = np.array(x, copy=False)
-        self.population.set_linked(x.tobytes(), particle)
-        if replaced is not None:
-            assert isinstance(replaced, bytes)
-            self._replaced.add(replaced)
-        self._internal_tell(x, value)
+        self.population.replace(worst_part, particle)
+        worst_part.active = False
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
