@@ -164,12 +164,6 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
 
-def test_pso_to_real() -> None:
-    output = optimizerlib.PSOParticle.transform.forward([.3, .5, .9])
-    np.testing.assert_almost_equal(output, [-.52, 0, 1.28], decimal=2)
-    np.testing.assert_almost_equal(optimizerlib.PSOParticle.transform.backward(output), [.3, .5, .9], decimal=2)
-
-
 def test_portfolio_budget() -> None:
     for k in range(3, 13):
         optimizer = optimizerlib.Portfolio(instrumentation=2, budget=k)
