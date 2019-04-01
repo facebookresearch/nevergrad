@@ -231,10 +231,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         The candidate should generally be one provided by ask(), but can be also
         a non-asked candidate. To create a Candidate instance from args and kwargs,
-        you can use optimizer.create_candidate.from_arguments(*args, **kwargs)
+        you can use optimizer.create_candidate.from_call(*args, **kwargs)
         """
         if not isinstance(candidate, Candidate):
-            raise TypeError("'tell' must be provided with the candidate (use optimizer.create_candidate.from_arguments(*args, **kwargs)) "
+            raise TypeError("'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
                             "if you want to inoculate a point that as not been asked for")
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
