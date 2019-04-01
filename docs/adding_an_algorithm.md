@@ -58,6 +58,10 @@ These functions work with `Candidate` instances, which hold the data point, and 
 
 
 
+These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initilization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
+
+
+
 If the algorithm is not able to handle parallelization (if `ask` cannot be called multiple times consecutively), the `no_parallelization` **class attribute** must be set to `True`.
 
 
