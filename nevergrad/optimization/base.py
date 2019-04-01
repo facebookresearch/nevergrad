@@ -61,6 +61,19 @@ class Candidate:
 
 
 class CandidateMaker:
+    """Handle for creating Candidate instances easily
+
+    Parameter
+    ---------
+    instrumentation: Instrumentation
+        The instrumentation for converting from data space to arguments space.
+
+    Note
+    ----
+    An instance of this class is linked to each optimizer (optimizer.create_candidate).
+    Candidates can then easily be created through: optimizer.create_candidate.from_data(data)
+    and/or optimizer.create_candidate.from_call(*args, **kwargs).
+    """
 
     def __init__(self, instrumentation: instru.Instrumentation) -> None:
         self._instrumentation = instrumentation
@@ -69,10 +82,38 @@ class CandidateMaker:
         return Candidate(args, kwargs, data)
 
     def from_call(self, *args: Any, kwargs: Any) -> Candidate:
+        """
+        Parameters
+        ----------
+        *args, **kwargs: Any
+            any arguments which match the instrumentation pattern.
+
+        Returns
+        -------
+        Candidate:
+            The corresponding candidate. Candidates have field "args" and "kwargs" which can be directly used
+            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+        """
         data = self._instrumentation.arguments_to_data(*args, **kwargs)
         return Candidate(args, kwargs, data)
 
     def from_data(self, data: ArrayLike, deterministic: bool = False) -> Candidate:
+        """Creates a Candidate, given a data from the optimization space
+
+        Parameters
+        ----------
+        data: np.ndarray, List[float]...
+            data from the optimization space
+        deterministic: bool
+            whether to sample arguments and kwargs from the distribution (when applicable) or
+            create the most likely individual.
+
+        Returns
+        -------
+        Candidate:
+            The corresponding candidate. Candidates have field "args" and "kwargs" which can be directly used
+            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+        """
         args, kwargs = self._instrumentation.data_to_arguments(data, deterministic=deterministic)
         return Candidate(args, kwargs, data)
 
