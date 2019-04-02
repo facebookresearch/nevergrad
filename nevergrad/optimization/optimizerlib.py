@@ -546,8 +546,8 @@ class PSOParticle(utils.Particle):
     """Particle for the PSO algorithm, holding relevant information
     """
 
-    transform = transforms.CumulativeDensity().reverted()
-    _eps = 1e-10  # to clip to [eps, 1 - eps] for transform not defined on borders
+    transform = transforms.ArctanBound(0, 1).reverted()
+    _eps = 0.  # to clip to [eps, 1 - eps] for transform not defined on borders
 
     # pylint: disable=too-many-arguments
     def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
