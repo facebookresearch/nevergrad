@@ -81,7 +81,7 @@ class CandidateMaker:
     def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> Candidate:
         return Candidate(args, kwargs, data)
 
-    def from_call(self, *args: Any, kwargs: Any) -> Candidate:
+    def from_call(self, *args: Any, **kwargs: Any) -> Candidate:
         """
         Parameters
         ----------
