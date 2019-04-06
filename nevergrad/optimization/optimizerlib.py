@@ -548,7 +548,7 @@ class CTBPSA(base.Optimizer):
             del self.repetitions[xbytes]
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
-        return self.tbpsa.provide_recommendation()
+        return self.tbpsa.provide_recommendation().data
 
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
