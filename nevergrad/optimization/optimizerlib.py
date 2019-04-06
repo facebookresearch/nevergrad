@@ -531,12 +531,12 @@ class CTBPSA(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         if self.num_repeat == 0:
-            self.current_point = self.tbpsa.ask() #.data, copy=False)
-            xbytes = np.array(self.current_point.data, copy=False).tobytes()
+            self.current_point = self.tbpsa.ask().data  #, copy=False)
+            xbytes = np.array(self.current_point, copy=False).tobytes()
             self.num_repeat = max(1, int(self.tbpsa.llambda**.1))
             self.repetitions[xbytes] = (self.num_repeat, [])
         self.num_repeat -= 1
-        return self.current_point.data
+        return self.current_point
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         x = np.array(x, copy=False)
