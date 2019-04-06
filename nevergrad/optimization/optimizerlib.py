@@ -544,7 +544,7 @@ class CTBPSA(base.Optimizer):
         total, values = self.repetitions[xbytes]
         values.append(value)
         if len(values) == total:
-            self.tbpsa.tell(x, np.mean(values))
+            self.tbpsa._internal_tell(x, np.mean(values))
             del self.repetitions[xbytes]
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
