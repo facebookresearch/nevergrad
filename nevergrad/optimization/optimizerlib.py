@@ -520,8 +520,8 @@ class TBPSA(base.Optimizer):
 
 @registry.register
 class CTBPSA(base.Optimizer):
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.tbpsa = TBPSA(dimension, budget=budget, num_workers=num_workers)
         self.num_repeat = 0
         self.never_decrease = True
