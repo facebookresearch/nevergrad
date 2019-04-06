@@ -553,6 +553,8 @@ class CTBPSA(base.Optimizer):
     def tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
 
 @registry.register
 class NaiveTBPSA(TBPSA):
