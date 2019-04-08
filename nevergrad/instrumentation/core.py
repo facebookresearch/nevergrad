@@ -108,7 +108,7 @@ class Instrumentation:
         names, arguments = self._make_argument_names_and_list(args, kwargs)
         assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
                                      f"but expected:\n{self.names}")
-        data = list(itertools.chain.from_iterable([instrument.process_arg(arg) for instrument, arg in zip(self.instruments, arguments)]))
+        data = list(itertools.chain.from_iterable([instrument.argument_to_data(arg) for instrument, arg in zip(self.instruments, arguments)]))
         return np.array(data)
 
     def instrument(self, function: Callable[..., Any]) -> "InstrumentedFunction":

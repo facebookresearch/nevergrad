@@ -38,7 +38,7 @@ class PhotonicsVariable(inst.var.utils.Variable[np.ndarray]):
     def dimension(self) -> int:
         return self._dimension
 
-    def process(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
         n = len(data)
         data = np.array(data, copy=False)
         assert not n % 4, f"points length should be a multiple of 4, got {n}"
