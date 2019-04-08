@@ -38,7 +38,7 @@ class ARCoatingVariable(inst.var.utils.Variable[np.ndarray]):
     def dimension(self) -> int:
         return self._dimension
 
-    def process(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
         return (self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin  # type: ignore
 
     def _short_repr(self) -> str:

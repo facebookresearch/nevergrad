@@ -23,14 +23,14 @@ class Variable(Generic[X]):
     def dimension(self) -> int:
         raise NotImplementedError
 
-    def process_arg(self, arg: X) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         raise NotImplementedError
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> X:
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:
         raise NotImplementedError
 
     def get_summary(self, data: ArrayLike) -> str:
-        output = self.process(data, deterministic=True)
+        output = self.data_to_argument(data, deterministic=True)
         d = data if len(data) > 1 else data[0]
         return f"Value {output}, from data: {d}"
 
@@ -77,7 +77,7 @@ def process_instruments(instruments: Iterable[Variable[Any]], data: ArrayLike,
     # made through this function)
     instruments = list(instruments)
     splitted_data = split_data(data, instruments)
-    return tuple([instrument.process(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
+    return tuple([instrument.data_to_argument(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore

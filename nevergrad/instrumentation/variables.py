@@ -38,18 +38,18 @@ class SoftmaxCategorical(utils.Variable[X]):
     def dimension(self) -> int:
         return len(self.possibilities)
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> X:
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:
         assert len(data) == len(self.possibilities)
         deterministic = deterministic | self.deterministic
         index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
         return self.possibilities[index]
 
-    def process_arg(self, arg: X) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
 
     def get_summary(self, data: ArrayLike) -> str:
-        output = self.process(data, deterministic=True)
+        output = self.data_to_argument(data, deterministic=True)
         probas = discretization.softmax_probas(np.array(data, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
@@ -76,12 +76,12 @@ class OrderedDiscrete(SoftmaxCategorical[X]):
     def dimension(self) -> int:
         return 1
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> X:  # pylint: disable=arguments-differ, unused-argument
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:  # pylint: disable=arguments-differ, unused-argument
         assert len(data) == 1
         index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
         return self.possibilities[index]
 
-    def process_arg(self, arg: X) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         index = self.possibilities.index(arg)
         return discretization.inverse_threshold_discretization([index], len(self.possibilities))
@@ -108,12 +108,12 @@ class Gaussian(utils.Variable[Y]):
     def dimension(self) -> int:
         return 1 if self.shape is None else int(np.prod(self.shape))
 
-    def process(self, data: ArrayLike, deterministic: bool = True) -> Y:
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> Y:
         assert len(data) == self.dimension
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
 
-    def process_arg(self, arg: Y) -> ArrayLike:
+    def argument_to_data(self, arg: Y) -> ArrayLike:
         return [(arg - self.mean) / self.std]
 
     def _short_repr(self) -> str:
@@ -136,10 +136,10 @@ class _Constant(utils.Variable[X]):
     def dimension(self) -> int:
         return 0
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> X:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:  # pylint: disable=unused-argument
         return self.value
 
-    def process_arg(self, arg: X) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         assert arg == self.value, f'{arg} != {self.value}'
         return []
 
@@ -178,7 +178,7 @@ class Array(utils.Variable[Y]):
     def dimension(self) -> int:
         return int(np.prod(self.shape))
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension
         array = np.array(data, copy=False)
         for transf in self.transforms:
@@ -187,7 +187,7 @@ class Array(utils.Variable[Y]):
             return float(array[0])
         return array.reshape(self.shape)
 
-    def process_arg(self, arg: Y) -> np.ndarray:
+    def argument_to_data(self, arg: Y) -> np.ndarray:
         if self._asfloat:
             output = np.array([arg])
         else:
