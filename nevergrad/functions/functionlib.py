@@ -197,8 +197,12 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
     def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
+        data = self._transform(arguments[0][0])
         if isinstance(self._func, utils.PostponedObject):
-            return self._func.get_postponing_delay(arguments, value)
+            total = 0.
+            for block in data:
+                total += self._func.get_postponing_delay(((block,), {}), value)
+            return total
         return 1.
 
 
