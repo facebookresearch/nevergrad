@@ -39,11 +39,11 @@ class CallCounter(execution.PostponedObject):
         self.num_calls += 1
         return value
 
-    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         """Propagate subfunction delay
         """
         if isinstance(self.func, execution.PostponedObject):
-            return self.func.get_postponing_delay(arguments, value)
+            return self.func.get_postponing_delay(args, kwargs, value)
         return 1.
 
 

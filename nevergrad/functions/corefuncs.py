@@ -53,8 +53,8 @@ class DelayedSphere(PostponedObject):
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x**2))
 
-    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
-        x = arguments[0][0]
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
+        x = args[0]
         return float(abs(1./x[0]) / 1000.) if x[0] != 0. else 0.
 
 

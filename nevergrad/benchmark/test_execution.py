@@ -6,6 +6,7 @@ from operator import add
 from typing import List, Tuple, Dict, Any, Optional, Callable
 import numpy as np
 from ..common import testing
+from ..functions import ArtificialFunction
 from . import execution
 
 
@@ -15,7 +16,7 @@ class Function(execution.PostponedObject):
         return x + y
 
     # pylint: disable=unused-argument
-    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         return 5 - value
 
 
@@ -76,3 +77,15 @@ def test_batch_executor_time() -> None:
     np.testing.assert_equal(executor.time, 5)
     job = executor.submit(func, 0, 0)
     np.testing.assert_equal(job.release_time, 10)
+
+
+def test_functionlib_delayed_job() -> None:
+    np.random.seed(None)
+    func = ArtificialFunction("DelayedSphere", 2)
+    func([0, 0])  # trigger init
+    executor = execution.MockedTimedExecutor(batch_mode=False)
+    x0 = func.transform_var._transforms[0].translation  # optimal value
+    job0 = executor.submit(func, x0)
+    job1 = executor.submit(func, x0 + 1.)
+    assert job0.release_time == 0
+    assert job1.release_time > 0

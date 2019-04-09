@@ -30,7 +30,7 @@ class Function(inst.InstrumentedFunction, execution.PostponedObject):
         return float(x[0])
 
     # pylint: disable=unused-argument
-    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         return 5 - value
 
 
