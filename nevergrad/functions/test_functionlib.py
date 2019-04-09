@@ -113,20 +113,20 @@ def test_artifificial_function_with_jump() -> None:
     np.testing.assert_equal(func2.transform_var.only_index_transform, True)
 
 
-def test_get_posptoning_delay() -> None:
+def test_get_postponing_delay() -> None:
     x = np.array([2., 2])
     func = functionlib.ArtificialFunction("sphere", 2)
-    np.testing.assert_equal(func.get_postponing_delay(((x,), {}), 3), 1.)
+    np.testing.assert_equal(func.get_postponing_delay((x,), {}, 3), 1.)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.get_postponing_delay(((x,), {}), 3), 0.0010534)
+    np.testing.assert_almost_equal(func.get_postponing_delay((x,), {}, 3), 0.0010534)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
     func([0, 0])  # trigger init
     x = func.transform_var._transforms[0].translation
     np.testing.assert_equal(func(x), 0)
-    np.testing.assert_equal(func.get_postponing_delay(((x,), {}), 0), 0)
+    np.testing.assert_equal(func.get_postponing_delay((x,), {}, 0), 0)
 
 
 @testing.parametrized(

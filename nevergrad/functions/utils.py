@@ -40,7 +40,7 @@ class PostponedObject(abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         raise NotImplementedError
 
 
