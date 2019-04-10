@@ -55,7 +55,7 @@ def softmax_discretization(x: ArrayLike, arity: int = 2, deterministic: bool = F
     arity: int
         the number of possible integer values (arity 2 will lead to values in {0, 1})
     deterministic: bool
-        removes all randomness by returning the last mast probable output (highest values)
+        removes all randomness by returning the last most probable output (highest values)
 
     Notes
     -----

@@ -30,7 +30,7 @@ class Instrumentation:
       - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will
          depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
       - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-      - `Array`: casts the data from the optimizaton space into a np.ndarray of any shape, to which some transforms can be applied
+      - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
         (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
     """
 
@@ -163,7 +163,7 @@ class InstrumentedFunction:
         - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will
            depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
         - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-        - `Array`: casts the data from the optimizaton space into a np.ndarray of any shape, to which some transforms can be applied
+        - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
           (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
     - This function can then be directly used in benchmarks *if it returns a float*.
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
