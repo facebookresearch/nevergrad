@@ -33,7 +33,7 @@ def _convert_to_string(data: Any, extension: str) -> str:
 
 
 class Placeholder:
-    """Placeholder tokend to for external code instrumentation
+    """Placeholder tokens to for external code instrumentation
     """
 
     pattern = r'NG_ARG' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
