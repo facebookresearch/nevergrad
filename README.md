@@ -21,9 +21,6 @@ you should install with the `[benchmark]` flag (example: `pip install 'nevergrad
 the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
-*Caution*: this README is for `master`, which holds breaking changes compared to the latest release (`v0.1.6`). See `CHANGELOG.md` for a summary of the changes.
-
-
 ## Goals and structure
 
 The goals of this package are to provide:
@@ -39,7 +36,7 @@ The structure of the package follows its goal, you will therefore find subpackag
 - `benchmark`: for running experiments comparing the algorithms on benchmark functions
 - `common`: a set of tools used throughout the package
 
-![Example of benchmark result](TwoPointsDE.gif)
+![Example of optimization](TwoPointsDE.gif)
 
 *Convergence of a population of points to the minima with two-points DE.*
 
