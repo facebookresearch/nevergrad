@@ -6,7 +6,7 @@ N/A
 
 ## v0.2.0
 
-**Breaking changes**
+### Breaking changes
 
 - first parameter of optimizers is now `instrumentation` instead of `dimension`. This allows the optimizer
   to have information on the underlying structure. `int`s are still allowed as before and will set the instrumentation
@@ -18,7 +18,7 @@ N/A
   the array.
 - removed `tell_not_asked` in favor of `tell`. A new `num_tell_not_asked` attribute is added to check the number of `tell` calls with non-asked points.
 
-**Other changes**
+### Other changes
 
 - updated `bayesion-optimization` version to 1.0.1.
 - from now on, optimizers should preferably implement `_internal_ask_candidate` and `_internal_tell_candidate` instead of `_internal_ask`
