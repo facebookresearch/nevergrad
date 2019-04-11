@@ -21,9 +21,6 @@ you should install with the `[benchmark]` flag (example: `pip install 'nevergrad
 the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
-*Caution*: this README is for `master`, which holds breaking changes compared to the latest release (`v0.1.6`). See `CHANGELOG.md` for a summary of the changes.
-
-
 ## Goals and structure
 
 The goals of this package are to provide:
