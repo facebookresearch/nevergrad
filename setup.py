@@ -30,6 +30,7 @@ def _replace_relative_links(regex: Match[str]) -> str:
     name = regex.group("name")
     if not link.startswith("http") and Path(link).exists():
         string = f"[{name}](https://github.com/facebookresearch/nevergrad/blob/master/{link})"
+        print(string)
     return string
 
 
