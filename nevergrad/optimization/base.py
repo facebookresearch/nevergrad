@@ -158,6 +158,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.budget = budget
         self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
                                 instru.Instrumentation(instru.var.Array(instrumentation)))
+        if not self.dimension:
+            raise ValueError("No variable to optimize in this instrumentation.")
         self.create_candidate = CandidateMaker(self.instrumentation)
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation

@@ -229,3 +229,8 @@ def test_optimization_doc_instrumentation_example() -> None:
     testing.assert_set_equal(recom.kwargs, ['y'])
     value = _square(*recom.args, **recom.kwargs)
     assert value < .2  # should be large enough by an order of magnitude
+
+
+def test_optimization_discrete_with_one_sample() -> None:
+    optimizer = optimizerlib.PortfolioDiscreteOnePlusOne(instrumentation=1, budget=10)
+    optimizer.optimize(_square)
