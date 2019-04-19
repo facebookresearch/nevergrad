@@ -1024,8 +1024,12 @@ class _BO(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        y = np.array(candidate._meta["x_probe"], copy=False)
+        if "x_probe" in candidate._meta:
+            y = self._transform.forward(np.array(candidate.data, copy=False))  # tell not asked
+        else:
+            y = self._transform.forward(np.array(candidate.data, copy=False))  # tell not asked
         self._fake_function.register(y, -value)  # minimizing
+
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
         # but since it keeps a cache of the values, the registered value is not used
