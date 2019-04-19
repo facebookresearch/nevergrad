@@ -27,7 +27,7 @@ Defining the following instrumentation instead will optimize on both `x` and `y`
 ```python
 from nevergrad import instrumentation as inst
 instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
-optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=1)
+optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.optimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
