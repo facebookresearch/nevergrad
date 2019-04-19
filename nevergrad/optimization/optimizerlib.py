@@ -1011,21 +1011,28 @@ class _BO(base.Optimizer):
                         self._bo.probe(point, lazy=True)
         return self._bo
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         util = UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)  # bayes_opt default
         try:
             x_probe = next(self.bo._queue)
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[f'x{i}'] for i in range(len(x_probe))]
-        return np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)  # type: ignore
+        data = np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)  # type: ignore
+        candidate = self.create_candidate.from_data(data)
+        candidate._meta["x_probe"] = x_probe
+        return candidate
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
-        y = self._transform.forward(np.array(x, copy=False))
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        y = np.array(candidate._meta["x_probe"], copy=False)
         self._fake_function.register(y, -value)  # minimizing
         self.bo.probe(y, lazy=False)
+        # for some unknown reasons, BO wants to evaluate twice the same point,
+        # but since it keeps a cache of the values, the registered value is not used
+        # so we should clean the "fake" function
+        self._fake_function._registered.clear()
 
-    def provide_recommendation(self) -> base.Candidate:
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
         v = self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
         return np.clip(v, -100, 100)  # type: ignore
 
