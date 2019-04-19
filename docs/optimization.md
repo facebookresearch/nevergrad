@@ -37,13 +37,14 @@ See the [instrumentation tutorial](instrumentation.md) for more complex instrume
 
 ## Using several workers
 
-Running the funciton evaluation in parallel with several workers is as easy as provided an executor:
+Running the function evaluation in parallel with several workers is as easy as provided an executor:
 ```python
 from concurrent import futures
+optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
 with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
-    recommendation = optimizer.optimize(square, executor=executor, batch_mode=False, num_workers=5)
+    recommendation = optimizer.optimize(square, executor=executor, batch_mode=False)
 ```
-`num_workers=5` with `batch_mode=True` will ask the optimizer for 5 points to evaluate, run the evaluations, then update the optimizer with the 5 function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. `num_workers > 1` with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism). `batch_mode=False` (steady state mode) will ask for a new evaluation whenever a worker is ready.
+With `batch_mode=True` it will ask the optimizer for `num_workers` points to evaluate, run the evaluations, then update the optimizer with the `num_workers` function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. `num_workers > 1` with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism). `batch_mode=False` (steady state mode) will ask for a new evaluation whenever a worker is ready.
 
 ## Ask and tell interface
 
