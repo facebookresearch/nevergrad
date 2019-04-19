@@ -27,7 +27,7 @@ Defining the following instrumentation instead will optimize on both `x` and `y`
 ```python
 from nevergrad import instrumentation as inst
 instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
-optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
+optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=1)
 recommendation = optimizer.optimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
@@ -40,6 +40,7 @@ See the [instrumentation tutorial](instrumentation.md) for more complex instrume
 Running the function evaluation in parallel with several workers is as easy as provided an executor:
 ```python
 from concurrent import futures
+optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
 with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
     recommendation = optimizer.optimize(square, executor=executor, batch_mode=False)
 ```
