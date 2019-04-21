@@ -411,7 +411,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 sleeper.sleep()
             # # # # # Start new jobs # # # # #
             if not batch_mode or not self._running_jobs:
-                new_sugg = min(0, remaining_budget, self.num_workers - len(self._running_jobs))
+                new_sugg = max(0, min(remaining_budget, self.num_workers - len(self._running_jobs)))
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
