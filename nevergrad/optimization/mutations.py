@@ -46,9 +46,9 @@ def portfolio_discrete_mutation(parent: ArrayLike, u: Optional[int] = None) -> A
     """
     dimension = len(parent)
     if u is None:
-        u = int(np.random.randint(1, dimension))
+        u = 1 if dimension == 1 else int(np.random.randint(1, dimension))
     boolean_vector = [True for _ in parent]
-    while all(boolean_vector):
+    while all(boolean_vector) and dimension != 1:
         boolean_vector = [np.random.rand() > (float(u) / dimension) for _ in parent]
     return [s if b else np.random.normal(0., 1.) for (b, s) in zip(boolean_vector, parent)]
 
