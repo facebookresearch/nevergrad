@@ -1,10 +1,10 @@
 # Nevergrad for machine learning: which optimizer should I use ?
 
-Let us assume that you have defined an objective function as in
+Let us assume that you have defined an objective function as in:
 ```python
 def myfunction(lr, num_layers, arg3, arg4, other_anything):
     ...
-    return -accuracy
+    return -accuracy  # something to minimize
 ```
 
 You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete` for all discrete variables (yes, even if they are not ordered), `Array` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne` as optimizer.
@@ -25,14 +25,13 @@ print(args, kwargs)
 
 The fact that you use ordered discrete variables is not a big deal because by nature `PortfolioDiscreteOnePlusOne` will ignore the order. This algorithm is quite stable.
 
-If you have more budget, a cool possibility is to use `CategoricalSoftmax` for all discrete variables and then apply `TwoPointsDE`. You might also compare this to DE (classical differential evolution). This might need a budget in the hundreds.
+If you have more budget, a cool possibility is to use `CategoricalSoftmax` for all discrete variables and then apply `TwoPointsDE`. You might also compare this to `DE` (classical differential evolution). This might need a budget in the hundreds.
 
 If you want to double-check that you are not worse than random search, you might use `RandomSearch`.
 
-If you want something fully parallel (the number of workers can be equal to the budget), then you might use `ScrHammersleySearch`. Yes, this includes the discrete case. Then, you should use `OrderedDiscrete` rather than `CategoricalSoftmax`. This does not have the traditional drawback of grid search and should still be more uniform than random. By nature `ScrHammersleySearch` will deal correctly with `OrderedDiscrete` type for `CategoricalSoftmax`.
+If you want something fully parallel (the number of workers can be equal to the budget), then you might use `ScrHammersleySearch`, which includes the discrete case. Then, you should use `OrderedDiscrete` rather than `CategoricalSoftmax`. This does not have the traditional drawback of grid search and should still be more uniform than random. By nature `ScrHammersleySearch` will deal correctly with `OrderedDiscrete` type for discrete variables.
 
 If you are optimizing weights in reinforcement learning, you might use `TBPSA` (high noise) or `CMA` (low noise).
-
 
 
 # Nevergrad applied to Machine Learning: 3 examples.
@@ -40,7 +39,7 @@ If you are optimizing weights in reinforcement learning, you might use `TBPSA` (
 The first example is simply the optimization of continuous hyperparameters.
 It is also presented in an asynchronous setting. All other examples are based on the ask and tell interface, which can be synchronous or not but relies on the user for setting up asynchronicity.
 
-The second example is the optimization of mixed (continuous and discrete) hyperparameters. A second, more complicated, objective function is proposed (just uncomment).
+The second example is the optimization of mixed (continuous and discrete) hyperparameters.
 
 The third example is the optimization of parameters in a noisy setting, typically as in reinforcement learning.
 
@@ -70,7 +69,7 @@ names = ["RandomSearch", "TwoPointsDE", "CMA", "PSO", "ScrHammersleySearch"]
 We will compare several algorithms (defined in `names`).
 `RandomSearch` is well known, `ScrHammersleySearch` is a quasirandom; these two methods
 are fully parallel, i.e. we can perform the 1200 trainings in parallel.
-`CMA` and \PSO` are classical optimization algorithms, and `TwoPointsDE`
+`CMA` and `PSO` are classical optimization algorithms, and `TwoPointsDE`
 is Differential Evolution equipped with a 2-points crossover.
 A complete list is available in `nevergrad.optimization.registry`.
 
@@ -114,6 +113,7 @@ for name in names:
           train_and_return_test_error(recommendation))
 
 ```
+
 ## Second example: optimization of mixed (continuous and discrete) hyperparameters.
 
 
