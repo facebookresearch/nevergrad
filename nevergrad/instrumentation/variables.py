@@ -58,7 +58,7 @@ class SoftmaxCategorical(utils.Variable[X]):
         return "SC({}|{})".format(",".join([str(x) for x in self.possibilities]), int(self.deterministic))
 
 
-class OrderedDiscrete(SoftmaxCategorical[X]):
+class OrderedDiscrete(utils.Variable[X]):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
 
@@ -71,6 +71,9 @@ class OrderedDiscrete(SoftmaxCategorical[X]):
     ----
     The variables are assumed to be ordered.
     """
+
+    def __init__(self, possibilities: List[X]) -> None:
+        self.possibilities = list(possibilities)
 
     @property
     def dimension(self) -> int:
@@ -108,7 +111,7 @@ class Gaussian(utils.Variable[Y]):
     def dimension(self) -> int:
         return 1 if self.shape is None else int(np.prod(self.shape))
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> Y:
+    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
