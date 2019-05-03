@@ -17,9 +17,9 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
 - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
 - `Array`: casts the data from the optimizaton space into a `np.ndarray` of any shape, to which some transforms can be applied
-  (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
-  For instance, one can use it for a logarithmicly distributed value between 0.001 and 1.: `Array(1).asfloat().bounded(0, 3).exponentiated(base=10, coeff=-1)`.
-  Also, note that `Gaussian(a, b)` is equivalent to `Array(1).asfloat().affined(a, b)`.
+  (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
+  For instance, one can use it for a logarithmicly distributed value between 0.001 and 1.: `Array(1).asscalar().bounded(0, 3).exponentiated(base=10, coeff=-1)`.
+  Also, note that `Gaussian(a, b)` is equivalent to `Array(1).asscalar().affined(a, b)`.
 
 
 ## Instrumentation

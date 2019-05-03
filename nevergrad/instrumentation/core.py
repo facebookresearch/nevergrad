@@ -31,7 +31,7 @@ class Instrumentation:
          depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
       - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
       - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
-        (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
+        (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -108,7 +108,8 @@ class Instrumentation:
         names, arguments = self._make_argument_names_and_list(args, kwargs)
         assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
                                      f"but expected:\n{self.names}")
-        data = list(itertools.chain.from_iterable([instrument.argument_to_data(arg) for instrument, arg in zip(self.instruments, arguments)]))
+        data = list(itertools.chain.from_iterable([instrument.argument_to_data(arg)
+                                                   for instrument, arg in zip(self.instruments, arguments)]))
         return np.array(data)
 
     def instrument(self, function: Callable[..., Any]) -> "InstrumentedFunction":
@@ -164,7 +165,7 @@ class InstrumentedFunction:
            depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
         - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
         - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
-          (see `asfloat`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
+          (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
     - This function can then be directly used in benchmarks *if it returns a float*.
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """

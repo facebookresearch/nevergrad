@@ -2,7 +2,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional, TypeVar, Union, Sequence, Any
+from typing import List, Optional, TypeVar, Union, Sequence, Any, Type
+import warnings
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
@@ -93,7 +94,7 @@ class OrderedDiscrete(utils.Variable[X]):
         return "OD({})".format(",".join([str(x) for x in self.possibilities]))
 
 
-Y = Union[float, np.ndarray]
+Y = Union[int, float, np.ndarray]
 
 
 class Gaussian(utils.Variable[Y]):
@@ -164,7 +165,7 @@ class Array(utils.Variable[Y]):
     Note
     ----
     Interesting methods (which can be chained):
-    - asfloat(): converts the array into a float (only for arrays with 1 element)
+    - asscalar(): converts the array into a float or int (only for arrays with 1 element)
     - with_transform(transform): apply a transform to the array
     - affined(a, b): applies a*x+b
     - bounded(min_val, max_val, transform="tanh"): applies a transform ("tanh" or "arctan")
@@ -175,7 +176,7 @@ class Array(utils.Variable[Y]):
     def __init__(self, *dims: int) -> None:
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
-        self._asfloat = False
+        self._scalar_type: Optional[Type[Union[float, int]]] = None
 
     @property
     def dimension(self) -> int:
@@ -186,13 +187,13 @@ class Array(utils.Variable[Y]):
         array = np.array(data, copy=False)
         for transf in self.transforms:
             array = transf.forward(array)
-        if self._asfloat:
-            return float(array[0])
+        if self._scalar_type is not None:
+            return self._scalar_type(array[0] if self._scalar_type != int else round(array[0]))
         return array.reshape(self.shape)
 
     def argument_to_data(self, arg: Y) -> np.ndarray:
-        if self._asfloat:
-            output = np.array([arg])
+        if self._scalar_type is not None:
+            output = np.array([arg], dtype=float)
         else:
             output = np.array(arg, copy=False).ravel()
         for transf in reversed(self.transforms):
@@ -202,13 +203,32 @@ class Array(utils.Variable[Y]):
     def _short_repr(self) -> str:
         dims = ",".join(str(d) for d in self.shape)
         transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
-        fl = "" if not self._asfloat else "f"
+        fl = {None: "", int: "i", float: "f"}[self._scalar_type]
         return f"A({dims}{transf}){fl}"
 
     def asfloat(self) -> 'Array':
+        warnings.warn('Please use "asscalar" instead of "asfloat"', DeprecationWarning)
+        return self.asscalar()
+
+    def asscalar(self, scalar_type: Type[Union[float, int]] = float) -> 'Array':
+        """Converts the array into a scalar
+
+        Parameter
+        ---------
+        scalar_type: type
+            either int or float
+
+        Note
+        ----
+        This method can only be called on size 1 arrays
+        """
+        if self._scalar_type is not None:
+            raise RuntimeError('"asscalar" must only be called once')
         if self.dimension != 1:
             raise RuntimeError("Only Arrays with 1 element can be cast to float")
-        self._asfloat = True
+        if scalar_type not in [float, int]:
+            raise ValueError('"scalar_type" should be either float or int')
+        self._scalar_type = scalar_type
         return self
 
     def with_transform(self, transform: transforms.Transform) -> 'Array':

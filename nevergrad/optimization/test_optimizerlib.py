@@ -222,7 +222,7 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 
 
 def test_optimization_doc_instrumentation_example() -> None:
-    instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
+    instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asscalar())
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
     recom = optimizer.optimize(_square)
     assert len(recom.args) == 1

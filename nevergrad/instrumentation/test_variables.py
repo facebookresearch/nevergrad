@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pytest
 import numpy as np
 from . import variables
 
@@ -32,12 +33,26 @@ def test_gaussian() -> None:
     np.testing.assert_equal(token.data_to_argument(token.argument_to_data(12)), 12)
 
 
-def test_array_float() -> None:
-    var = variables.Array(1).exponentiated(10, -1).asfloat()
+def test_array_as_ascalar() -> None:
+    var = variables.Array(1).exponentiated(10, -1).asscalar()
     data = np.array([2])
     output = var.data_to_argument(data)
     np.testing.assert_equal(output, 0.01)
     np.testing.assert_almost_equal(var.argument_to_data(output), data)
+    #  int
+    var = variables.Array(1).asscalar(int)
+    np.testing.assert_equal(var.data_to_argument(np.array([.4])), 0)
+    np.testing.assert_equal(var.data_to_argument(np.array([-.4])), 0)
+    output = var.data_to_argument(np.array([.6]))
+    np.testing.assert_equal(output, 1)
+    assert type(output) == int  # pylint: disable=unidiomatic-typecheck
+    # errors
+    with pytest.raises(RuntimeError):
+        variables.Array(1).asscalar(int).asscalar(float)
+    with pytest.raises(RuntimeError):
+        variables.Array(2).asscalar(int)
+    with pytest.raises(ValueError):
+        variables.Array(1).asscalar(np.int64)  # type: ignore
 
 
 def test_array() -> None:

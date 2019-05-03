@@ -2,7 +2,7 @@
 
 ## master
 
-N/A
+- renamed `Array.asfloat` method to `Array.asscalar` and allow casting to `int` as well through an argument.
 
 ## v0.2.0
 

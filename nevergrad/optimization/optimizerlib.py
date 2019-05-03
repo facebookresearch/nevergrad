@@ -1018,7 +1018,7 @@ class _BO(base.Optimizer):
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[f'x{i}'] for i in range(len(x_probe))]
-        data = np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)  # type: ignore
+        data = np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)
         candidate = self.create_candidate.from_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
