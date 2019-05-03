@@ -171,3 +171,21 @@ class CumulativeDensity(Transform):
 
     def _short_repr(self) -> str:
         return f"Cd()"
+
+
+class Round(Transform):
+    """Rounds data to ints
+
+    Note
+    ----
+    - this is not a bijection
+    """
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return np.round(x)  # type: ignore
+
+    def backward(self, y: np.ndarray) -> np.ndarray:
+        return y
+
+    def _short_repr(self) -> str:
+        return f"R()"

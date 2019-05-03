@@ -23,7 +23,6 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     x2 = transform.backward(y)
     np.testing.assert_array_almost_equal(x2, x)
     np.testing.assert_equal(f"{transform:short}", string)
-    print(f"{transform}")
 
 
 @testing.parametrized(
@@ -37,3 +36,12 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
 def test_vals(transform: transforms.Transform, x: List[float], expected: List[float]) -> None:
     y = transform.forward(np.array(x))
     np.testing.assert_almost_equal(y, expected, decimal=5)
+
+
+def test_round():
+    transform = transforms.Round()
+    x = [.4, 5, .6]
+    y = transform.forward(np.array(x))
+    np.testing.assert_almost_equal(y, [0, 5, 1])
+    np.testing.assert_almost_equal(transform.backward(y), y)
+    np.testing.assert_equal(f"{transform:short}", "R()")

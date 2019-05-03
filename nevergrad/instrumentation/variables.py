@@ -236,6 +236,15 @@ class Array(utils.Variable[Y]):
         """
         return self.with_transform(transforms.Affine(a=a, b=b))
 
+    def rounded(self) -> 'Array':
+        """Rounds data to ints
+
+        Note
+        ----
+        - this is not a bijection
+        """
+        return self.with_transform(transforms.Round())
+
     def bounded(self, min_val: float, max_val: float, transform: str = "tanh") -> 'Array':
         """Bounds all real values into [min_val, max_val] using a tanh transform.
         Beware, tanh goes very fast to its limits.
