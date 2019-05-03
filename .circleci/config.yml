@@ -24,7 +24,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -32,20 +32,19 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip
-            pip install -e .[dev]
+            pip install -e .
 
       - save_cache:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
+          key: v2-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
           command: |
             . venv/bin/activate
-            pytest nevergrad/optimization/test_optimizerlib.py::test_optimizers_recommendation nevergrad/instrumentation/test_core.py
+            python -m nevergrad.optimization.requirements_check  # calls a bit of everything
 
       # Download and cache dependencies for "main"
 
