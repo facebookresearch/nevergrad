@@ -38,7 +38,7 @@ def test_vals(transform: transforms.Transform, x: List[float], expected: List[fl
     np.testing.assert_almost_equal(y, expected, decimal=5)
 
 
-def test_round():
+def test_round() -> None:
     transform = transforms.Round()
     x = [.4, 5, .6]
     y = transform.forward(np.array(x))
