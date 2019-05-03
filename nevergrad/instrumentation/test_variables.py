@@ -47,6 +47,6 @@ def test_array() -> None:
     np.testing.assert_almost_equal(output, [[3., 5], [4, 4]])
     np.testing.assert_almost_equal(var.argument_to_data(output), data)
     # Also test round
-    var = variables.Array(2).rounded()
+    var = variables.Array(3).rounded()
     output = var.data_to_argument(np.array([-10, .4, .6]))
     np.testing.assert_almost_equal(output, [-10, 0, 1])
