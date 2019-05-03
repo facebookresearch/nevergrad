@@ -7,7 +7,10 @@ import re
 import inspect
 from pathlib import Path
 from typing import Iterable, Any, Union, List, Tuple, Callable
-import pytest
+try:
+    import pytest
+except ImportError:
+    pass  # makes most of this module usable without pytest
 import numpy as np
 
 
