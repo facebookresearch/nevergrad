@@ -26,7 +26,7 @@ In this example, the optimal value will be found in `recommendation.args[0]` and
 Defining the following instrumentation instead will optimize on both `x` and `y`.
 ```python
 from nevergrad import instrumentation as inst
-instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asfloat())
+instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asscalar())
 optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.optimize(square)
 print(recommendation)

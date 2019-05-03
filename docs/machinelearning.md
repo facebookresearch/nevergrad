@@ -12,7 +12,7 @@ You should define how it must be instrumented, i.e. what are the arguments you w
 ```python
 from nevergrad import instrumentation as inst
 # instrument learning rate and number of layers, keep arg3 to 3 and arg4 to 4
-lr = inst.var.Array(1).asfloat().bounded(0, 3).exponentiated(base=10, coeff=-1)  # log distributed between 0.001 and 1
+lr = inst.var.Array(1).asscalar().bounded(0, 3).exponentiated(base=10, coeff=-1)  # log distributed between 0.001 and 1
 num_layers = inst.var.OrderedDiscrete([4, 5, 6])
 instrumentation = inst.Instrumentation(lr, num_layers, 3., arg4=4)
 ```

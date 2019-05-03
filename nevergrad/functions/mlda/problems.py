@@ -225,7 +225,7 @@ class Landscape(inst.InstrumentedFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.var.Array(1).asfloat(), inst.var.Array(1).asfloat())
+        super().__init__(self._get_pixel_value, inst.var.Array(1).asscalar(), inst.var.Array(1).asscalar())
         self.instrumentation = self.instrumentation.with_name("standard")  # force descriptor update
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
