@@ -323,6 +323,9 @@ def leadingones5(y: np.ndarray) -> float:
 
 @registry.register_with_info(no_transfrom=True)
 def genzcornerpeak(y: np.ndarray) -> float:
+    """One of the Genz functions, originally used in integration,
+    
+    tested in optim because why not."""
     value = float(1 + np.mean(np.tanh(y)))
     if value == 0:
         return float("inf")
@@ -331,16 +334,25 @@ def genzcornerpeak(y: np.ndarray) -> float:
 
 @registry.register_with_info(no_transfrom=True)
 def minusgenzcornerpeak(y: np.ndarray) -> float:
+    """One of the Genz functions, originally used in integration,
+    
+    tested in optim because why not."""
     return -float(genzcornerpeak(y))
 
 
 @registry.register
 def genzgaussianpeakintegral(x: np.ndarray) -> float:
+    """One of the Genz functions, originally used in integration,
+    
+    tested in optim because why not."""
     return float(np.exp(-np.sum(x**2 / 4.)))
 
 
 @registry.register
 def minusgenzgaussianpeakintegral(x: np.ndarray) -> float:
+    """One of the Genz functions, originally used in integration,
+    
+    tested in optim because why not."""
     return -float(np.exp(-sum(x**2 / 4.)))
 
 
@@ -356,19 +368,23 @@ def linear(x: np.ndarray) -> float:
 
 @registry.register
 def st0(x: np.ndarray) -> float:
+    """Styblinksitang function with 0 noise."""
     return _styblinksitang(x, 0)
 
 
 @registry.register
 def st1(x: np.ndarray) -> float:
+    """Styblinksitang function with noise 1."""
     return _styblinksitang(x, 1)
 
 
 @registry.register
 def st10(x: np.ndarray) -> float:
+    """Styblinksitang function with noise 10."""
     return _styblinksitang(x, 10)
 
 
 @registry.register
 def st100(x: np.ndarray) -> float:
+    """Styblinksitang function with noise 100."""
     return _styblinksitang(x, 100)
