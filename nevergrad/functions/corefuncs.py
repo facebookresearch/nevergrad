@@ -15,10 +15,24 @@ registry = Registry[Callable[[np.ndarray], float]]()
 
 
 def _onemax(x: List[int]) -> float:
+    """onemax(x) is the most classical case of discrete functions, adapted to minimization.
+
+    It is originally designed for lists of bits. It just counts the number of 1, 
+    and returns len(x) - number of ones..
+    It also works in the continuous case but in that cases discretizes the
+    input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
+    """
     return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
 def _leadingones(x: List[int]) -> float:
+    """leadingones is the second most classical discrete function, adapted for minimization.
+
+    Returns len(x) - number of initial 1. I.e. 
+    leadingones([0 1 1 1]) = 4,
+    leadingones([1 1 1 1]) = 0,
+    leadingones([1 0 0 0]) = 1.
+    """
     for i, x_ in enumerate(list(x)):
         if int(round(x_)) != 1:
             return len(x) - i
@@ -26,6 +40,11 @@ def _leadingones(x: List[int]) -> float:
 
 
 def _jump(x: List[int]) -> float:  # TODO: docstring?
+    """There exists variants of jump functions; we are in minimization.
+
+    The principle of a jump function is that local descent does not succeed.
+    Jumps are necessary.
+    """
     n = len(x)
     m = n // 4
     o = n - _onemax(x)
@@ -35,6 +54,7 @@ def _jump(x: List[int]) -> float:  # TODO: docstring?
 
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
+    """Classical function for testing noisy optimization."""
     x = np.asarray(x)
     val = np.sum(np.power(x, 4) - 16 * np.power(x, 2) + 5 * x)
     # return a positive value for maximization
@@ -63,21 +83,27 @@ registry.register(DelayedSphere())
 
 @registry.register
 def sphere(x: np.ndarray) -> float:
+    """The most classical continuous optimization testbed.
+    
+    If you do not solve that one then you have a bug."""
     return float(np.sum(x**2))
 
 
 @registry.register
 def sphere1(x: np.ndarray) -> float:
+    """Translated sphere function."""
     return float(np.sum((x - 1.)**2))
 
 
 @registry.register
 def sphere2(x: np.ndarray) -> float:
+    """A bit more translated sphere function."""
     return float(np.sum((x - 2.)**2))
 
 
 @registry.register
 def sphere4(x: np.ndarray) -> float:
+    """Even more translated sphere function."""
     return float(np.sum((x - 4.)**2))
 
 
