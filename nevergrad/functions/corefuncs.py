@@ -121,33 +121,49 @@ def sumdeceptive(x: np.ndarray) -> float:
 
 @registry.register
 def altcigar(x: np.ndarray) -> float:
+    """Similar to cigar, but variables in inverse order.
+    
+    E.g. for pointing out algorithms not invariant to the order of variables."""
     return float(x[-1]**2 + 1000000. * np.sum(x[:-1]**2))
 
 
 @registry.register
 def cigar(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function.
+
+    The other classical example is ellipsoid.
+    """
     return float(x[0]**2 + 1000000. * np.sum(x[1:]**2))
 
 
 @registry.register
 def altellipsoid(y: np.ndarray) -> float:
+    """Similar to Ellipsoid, but variables in inverse order.
+    
+    E.g. for pointing out algorithms not invariant to the order of variables."""
     x = y[::-1]
     return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
 
 
 @registry.register
 def ellipsoid(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function.
+
+    The other classical example is cigar.
+    """
     return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
 
 
 @registry.register
 def rastrigin(x: np.ndarray) -> float:
+    """Classical multimodal function."""
     cosi = float(np.sum(np.cos(2 * np.pi * x)))
     return float(10 * (len(x) - cosi) + sphere(x))
 
 
 @registry.register
 def hm(x: np.ndarray) -> float:
+    """New multimodal function (proposed for Nevergrad)."""
     return float(np.sum((x**2) * (1.1 + np.cos(1. / x))))
 
 
@@ -158,6 +174,7 @@ def rosenbrock(x: np.ndarray) -> float:
 
 @registry.register
 def griewank(x: np.ndarray) -> float:
+    """Multimodal function, often used in Bayesian optimization."""
     part1 = np.sum(x**2)
     part2 = np.prod(np.cos(x / np.sqrt(1 + np.arange(len(x)))))
     return 1 + (float(part1)/4000.0) - float(part2)
@@ -165,6 +182,9 @@ def griewank(x: np.ndarray) -> float:
 
 @registry.register
 def deceptiveillcond(x: np.ndarray) -> float:
+    """An extreme ill conditioned functions. Most algorithms fail on this.
+    
+    The condition number increases to infinity as we get closer to the optimum."""
     assert len(x) >= 2
     return float(max(np.abs(np.arctan(x[1]/x[0])),
                      np.sqrt(x[0]**2. + x[1]**2.),
@@ -173,6 +193,9 @@ def deceptiveillcond(x: np.ndarray) -> float:
 
 @registry.register
 def deceptivepath(x: np.ndarray) -> float:
+    """A function which needs following a long path. Most algorithms fail on this.
+    
+    The path becomes thiner as we get closer to the optimum."""
     assert len(x) >= 2
     distance = np.sqrt(x[0]**2 + x[1]**2)
     if distance == 0.:
@@ -186,6 +209,7 @@ def deceptivepath(x: np.ndarray) -> float:
 
 @registry.register
 def deceptivemultimodal(x: np.ndarray) -> float:
+    """Infinitely many local optima, as we get closer to the optimum."""
     assert len(x) >= 2
     distance = np.sqrt(x[0]**2 + x[1]**2)
     if distance == 0.:
@@ -199,7 +223,9 @@ def deceptivemultimodal(x: np.ndarray) -> float:
 
 @registry.register
 def lunacek(x: np.ndarray) -> float:
-    """ Based on https://www.cs.unm.edu/~neal.holts/dga/benchmarkFunction/lunacek.html."""
+    """Multimodal function.
+    
+    Based on https://www.cs.unm.edu/~neal.holts/dga/benchmarkFunction/lunacek.html."""
     problemDimensions = len(x)
     s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
     mu1 = 2.5
@@ -219,61 +245,79 @@ def lunacek(x: np.ndarray) -> float:
 
 @registry.register_with_info(no_transfrom=True)
 def hardonemax(y: np.ndarray) -> float:
+    """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
     return _onemax(discretization.threshold_discretization(y))
 
 
 @registry.register_with_info(no_transfrom=True)
 def hardjump(y: np.ndarray) -> float:
+    """Hardjump, with a discretization in 2 by threshold 0 (>0 or <0)."""
     return _jump(discretization.threshold_discretization(y))
 
 
 @registry.register_with_info(no_transfrom=True)
 def hardleadingones(y: np.ndarray) -> float:
+    """Leading ones, with a discretization in 2 by threshold 0 (>0 or <0)."""
     return _leadingones(discretization.threshold_discretization(y))
 
 
 @registry.register_with_info(no_transfrom=True)
 def hardonemax5(y: np.ndarray) -> float:
+    """Hardonemax, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
     return _onemax(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transfrom=True)
 def hardjump5(y: np.ndarray) -> float:
+    """Jump, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
     return _jump(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transfrom=True)
 def hardleadingones5(y: np.ndarray) -> float:
+    """Leadingones, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
     return _leadingones(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transfrom=True)
 def onemax(y: np.ndarray) -> float:
+    """Softmax discretization of onemax (This multiplies the dimension by 2)."""
     return _onemax(discretization.softmax_discretization(y))
 
 
 @registry.register_with_info(no_transfrom=True)
 def jump(y: np.ndarray) -> float:
+    """Softmax discretization of jump (This multiplies the dimension by 2)."""
     return _jump(discretization.softmax_discretization(y))
 
 
 @registry.register_with_info(no_transfrom=True)
 def leadingones(y: np.ndarray) -> float:
+    """Softmax discretization of leadingones (This multiplies the dimension by 2)."""
     return _leadingones(discretization.softmax_discretization(y))
 
 
 @registry.register_with_info(no_transfrom=True)
 def onemax5(y: np.ndarray) -> float:
+    """Softmax discretization of onemax with 5 possibles values.
+    
+    This multiplies the dimension by 5."""
     return _onemax(discretization.softmax_discretization(y, 5))
 
 
 @registry.register_with_info(no_transfrom=True)
 def jump5(y: np.ndarray) -> float:
+    """Softmax discretization of jump with 5 possibles values.
+    
+    This multiplies the dimension by 5."""
     return _jump(discretization.softmax_discretization(y, 5))
 
 
 @registry.register_with_info(no_transfrom=True)
 def leadingones5(y: np.ndarray) -> float:
+    """Softmax discretization of leadingones with 5 possibles values.
+    
+    This multiplies the dimension by 5."""
     return _leadingones(discretization.softmax_discretization(y, 5))
 
 
