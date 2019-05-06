@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List
+from typing import List, Optional, Type
+import pytest
 import numpy as np
 from ..common import testing
 from . import transforms
@@ -37,3 +38,17 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
 def test_vals(transform: transforms.Transform, x: List[float], expected: List[float]) -> None:
     y = transform.forward(np.array(x))
     np.testing.assert_almost_equal(y, expected, decimal=5)
+
+
+@testing.parametrized(
+    tanh=(transforms.TanhBound(0, 5), [2, 4, 5], ValueError),
+    arctan_border=(transforms.ArctanBound(0, 5), [2, 4, 5], None),
+    arctan=(transforms.ArctanBound(0, 5), [-1, 4, 5], ValueError),
+    cumdensity=(transforms.CumulativeDensity(), [0, .5], ValueError),
+)
+def test_out_of_bound(transform: transforms.Transform, x: List[float], expected: Optional[Type[Exception]]) -> None:
+    if expected is None:
+        transform.backward(np.array(x))
+    else:
+        with pytest.raises(expected):
+            transform.backward(np.array(x))
