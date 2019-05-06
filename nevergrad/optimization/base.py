@@ -168,6 +168,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                  budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
+        # "seedable" random state: externally setting the seed will provide deterministic behavior
+        # you can also replace or reinitialize this random state
+        self.random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
         self.num_workers = int(num_workers)
         self.budget = budget
         self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
@@ -182,8 +185,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                               for x in ["optimistic", "pessimistic", "average"]}
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
-        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
-        self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
+        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = \
+            utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
         self._asked: Set[str] = set()
         self._num_ask = 0
