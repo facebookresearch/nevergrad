@@ -168,7 +168,7 @@ class _DE(base.Optimizer):
         worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
         if worst_part.fitness is not None and worst_part.fitness < value:
             return  # no need to update
-        particle = DEParticle()
+        particle = DEParticle(position=candidate.data, fitness=value)
         self.population.replace(worst_part, particle)
         worst_part.active = False
 
