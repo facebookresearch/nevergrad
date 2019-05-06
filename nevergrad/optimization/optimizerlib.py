@@ -990,20 +990,22 @@ class _BO(base.Optimizer):
     @property
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
+            params = self._parameters
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
             seed = np.random.randint(2**32, dtype=np.uint32)
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=np.random.RandomState(seed))
             if self._parameters.gp_parameters is not None:
                 self._bo.set_gp_parameters(**self._parameters.gp_parameters)
             # init
-            midpoint = self._parameters.middle_point
-            init = self._parameters.initialization
+            midpoint = params.middle_point
+            init = params.initialization
             if midpoint:
                 self._bo.probe([.5] * self.dimension, lazy=True)
             elif init is None:
                 self._bo._queue.add(self._bo._space.random_sample())
             if init is not None:
-                init_budget = int(np.sqrt(self.budget)) - midpoint
+                init_budget = int(np.sqrt(self.budget) if params.init_budget is None else params.init_budget)
+                init_budget -= midpoint
                 if init_budget > 0:
                     sampler = {"Hammersley": sequences.HammersleySampler,
                                "LHS": sequences.LHSSampler,
@@ -1049,6 +1051,8 @@ class ParametrizedBO(base.ParametrizedFamily):
 
     initialization: str
         Initialization algorithms (None, "Hammersley", "random" or "LHS")
+    init_budget: int or None
+        Number of initialization algorithm steps
     middle_point: bool
         whether to sample the 0 point first
     utility_kind: str
@@ -1066,6 +1070,7 @@ class ParametrizedBO(base.ParametrizedFamily):
 
     def __init__(self, *,
                  initialization: Optional[str] = None,
+                 init_budget: Optional[int] = None,
                  middle_point: bool = False,
                  utility_kind: str = "ucb",  # bayes_opt default
                  utility_kappa: float = 2.576,
@@ -1073,6 +1078,7 @@ class ParametrizedBO(base.ParametrizedFamily):
                  gp_parameters: Optional[Dict[str, Any]] = None) -> None:
         assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f'Unknown init {initialization}'
         self.initialization = initialization
+        self.init_budget = init_budget
         self.middle_point = middle_point
         self.utility_kind = utility_kind
         self.utility_kappa = utility_kappa
