@@ -997,15 +997,14 @@ class _BO(base.Optimizer):
             if self._parameters.gp_parameters is not None:
                 self._bo.set_gp_parameters(**self._parameters.gp_parameters)
             # init
-            midpoint = params.middle_point
             init = params.initialization
-            if midpoint:
+            if params.middle_point:
                 self._bo.probe([.5] * self.dimension, lazy=True)
             elif init is None:
                 self._bo._queue.add(self._bo._space.random_sample())
             if init is not None:
                 init_budget = int(np.sqrt(self.budget) if params.init_budget is None else params.init_budget)
-                init_budget -= midpoint
+                init_budget -= params.middle_point
                 if init_budget > 0:
                     sampler = {"Hammersley": sequences.HammersleySampler,
                                "LHS": sequences.LHSSampler,
