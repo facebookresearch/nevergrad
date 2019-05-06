@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
+import tempfile
 import warnings
 from pathlib import Path
 from functools import partial
@@ -234,3 +235,15 @@ def test_optimization_doc_instrumentation_example() -> None:
 def test_optimization_discrete_with_one_sample() -> None:
     optimizer = optimizerlib.PortfolioDiscreteOnePlusOne(instrumentation=1, budget=10)
     optimizer.optimize(_square)
+
+
+@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
+def test_population_pickle(name: str):  # this test is added because some generic class (like Population) can fail to be pickled
+    # example of work around:
+    # "self.population = base.utils.Population[DEParticle]([])"
+    # becomes:
+    # "self.population: base.utils.Population[DEParticle] = base.utils.Population([])""
+    optim = registry[name](instrumentation=12, budget=100, num_workers=2)
+    with tempfile.TemporaryDirectory() as folder:
+        filepath = Path(folder) / "dump_test.pkl"
+        optim.dump(filepath)

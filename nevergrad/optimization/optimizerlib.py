@@ -594,7 +594,7 @@ class PSO(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.llambda = max(40, num_workers)
-        self.population = utils.Population[PSOParticle]([])
+        self.population: utils.Population[PSOParticle] = utils.Population([])
         self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
         self.best_fitness = float("inf")
         self.omega = 0.5 / np.log(2.)

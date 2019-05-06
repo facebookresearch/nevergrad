@@ -3,7 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import tempfile
 import warnings
+from pathlib import Path
 from typing import List, Tuple, Any, Optional, Union
 import numpy as np
 from ..common import testing
@@ -92,7 +94,7 @@ def test_base_optimizer() -> None:
     np.testing.assert_equal(zeroptim._num_ask, 1)
 
 
-def test_optimize() -> None:
+def test_optimize_and_dump() -> None:
     optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
     optimizer.register_callback("tell", base.OptimizationPrinter(num_eval=10, num_sec=.1))
     func = CounterFunction()
@@ -101,6 +103,12 @@ def test_optimize() -> None:
         result = optimizer.optimize(func, verbosity=2)
     np.testing.assert_almost_equal(result.data[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
+    # pickling
+    with tempfile.TemporaryDirectory() as folder:
+        filepath = Path(folder) / "dump_test.pkl"
+        optimizer.dump(filepath)
+        optimizer2 = optimizerlib.OnePlusOne.load(filepath)
+        np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
 
 
 class StupidFamily(base.OptimizerFamily):

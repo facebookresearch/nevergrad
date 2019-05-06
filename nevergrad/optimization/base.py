@@ -5,11 +5,13 @@
 
 import uuid
 import time
+import pickle
 import inspect
 import warnings
+from pathlib import Path
 from numbers import Real
 from collections import deque
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
 import numpy as np
 from ..common.typetools import ArrayLike, JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -20,6 +22,18 @@ from . import utils
 
 registry = Registry[Union['OptimizerFamily', Type['Optimizer']]]()
 _OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
+X = TypeVar("X", bound="Optimizer")
+
+
+def load(cls: Type[X], filepath: Union[str, Path]) -> X:
+    """Loads a pickle file and checks that it contains an optimizer.
+    The optimizer class is not always fully reliable though (e.g.: optimizer families) so the user is responsible for it.
+    """
+    filepath = Path(filepath)
+    with filepath.open("rb") as f:
+        opt = pickle.load(f)
+    assert isinstance(opt, cls), f"You should only load {cls} with this method (found {type(opt)})"
+    return opt
 
 
 class InefficientSettingsWarning(RuntimeWarning):
@@ -163,7 +177,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.create_candidate = CandidateMaker(self.instrumentation)
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive = utils.Archive[utils.Value]()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf))
                               for x in ["optimistic", "pessimistic", "average"]}
         # pruning function, called at each "tell"
@@ -195,6 +209,19 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     @property
     def num_tell_not_asked(self) -> int:
         return self._num_tell_not_asked
+
+    def dump(self, filepath: Union[str, Path]) -> None:
+        """Pickles the optimizer into a file.
+        """
+        filepath = Path(filepath)
+        with filepath.open("wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls: Type[X], filepath: Union[str, Path]) -> X:
+        """Loads a pickle and checks that the class is correct.
+        """
+        return load(cls, filepath)
 
     def __repr__(self) -> str:
         inststr = f'{self.instrumentation:short}'
@@ -489,6 +516,11 @@ class OptimizerFamily:
                  budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
         raise NotImplementedError
 
+    def load(self, filepath: Union[str, Path]) -> 'Optimizer':
+        """Loads a pickle and checks that it is an Optimizer.
+        """
+        return load(Optimizer, filepath)
+
 
 class ParametrizedFamily(OptimizerFamily):
     """This is a special case of an optimizer family for which the family instance serves to*
@@ -518,3 +550,9 @@ class ParametrizedFamily(OptimizerFamily):
         run._parameters = self  # type: ignore
         run.name = repr(self)
         return run
+
+    def load(self, filepath: Union[str, Path]) -> 'Optimizer':
+        """Loads a pickle and checks that it corresponds to the correct family of optimizer
+        """
+        assert self._optimizer_class is not None
+        return load(self._optimizer_class, filepath)

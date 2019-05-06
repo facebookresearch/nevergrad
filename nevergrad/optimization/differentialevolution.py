@@ -35,7 +35,7 @@ class _DE(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
-        self.population = base.utils.Population[DEParticle]([])
+        self.population: base.utils.Population[DEParticle] = base.utils.Population([])
         self.sampler: Optional[sequences.Sampler] = None
         self.NF = False  # This is not a noise-free variant of DE.
         self._replaced: Set[bytes] = set()
