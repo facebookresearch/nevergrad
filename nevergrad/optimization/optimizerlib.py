@@ -184,7 +184,7 @@ class _CMA(base.Optimizer):
             diag = self._parameters.diagonal
             self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
                                                 sigma0=self._parameters.scale,
-                                                inopts={"popsize": popsize, "seed": np.nan, "CMA_diagonal": diag})
+                                                inopts={"popsize": popsize, "randn": self.random_state.randn, "CMA_diagonal": diag})
         return self._es
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -999,8 +999,7 @@ class _BO(base.Optimizer):
         if self._bo is None:
             params = self._parameters
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
-            seed = self.random_state.randint(2**32, dtype=np.uint32)
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self.random_state.RandomState(seed))
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self.random_state)
             if self._parameters.gp_parameters is not None:
                 self._bo.set_gp_params(**self._parameters.gp_parameters)
             # init
