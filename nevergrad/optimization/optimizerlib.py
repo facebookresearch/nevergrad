@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, List, Dict, Tuple, Deque, Union, Callable
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any
 from collections import defaultdict, deque
 import cma
 import numpy as np
@@ -990,18 +990,21 @@ class _BO(base.Optimizer):
     @property
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
+            params = self._parameters
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
             seed = np.random.randint(2**32, dtype=np.uint32)
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=np.random.RandomState(seed))
+            if self._parameters.gp_parameters is not None:
+                self._bo.set_gp_parameters(**self._parameters.gp_parameters)
             # init
-            midpoint = self._parameters.middle_point
-            init = self._parameters.initialization
-            if midpoint:
+            init = params.initialization
+            if params.middle_point:
                 self._bo.probe([.5] * self.dimension, lazy=True)
             elif init is None:
                 self._bo._queue.add(self._bo._space.random_sample())
             if init is not None:
-                init_budget = int(np.sqrt(self.budget)) - midpoint
+                init_budget = int(np.sqrt(self.budget) if params.init_budget is None else params.init_budget)
+                init_budget -= params.middle_point
                 if init_budget > 0:
                     sampler = {"Hammersley": sequences.HammersleySampler,
                                "LHS": sequences.LHSSampler,
@@ -1012,7 +1015,8 @@ class _BO(base.Optimizer):
         return self._bo
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        util = UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)  # bayes_opt default
+        p = self._parameters
+        util = UtilityFunction(kind=p.utility_kind, kappa=p.utility_kappa, xi=p.utility_xi)
         try:
             x_probe = next(self.bo._queue)
         except StopIteration:
@@ -1046,17 +1050,39 @@ class ParametrizedBO(base.ParametrizedFamily):
 
     initialization: str
         Initialization algorithms (None, "Hammersley", "random" or "LHS")
+    init_budget: int or None
+        Number of initialization algorithm steps
     middle_point: bool
         whether to sample the 0 point first
+    utility_kind: str
+        Type of utility function to use among "ucb", "ei" and "poi"
+    utility_kappa: float
+        Kappa parameter for the utility function
+    utility_xi: float
+        Xi parameter for the utility function
+    gp_parameters: dict
+        dictionnary of parameters for the gaussian process
     """
 
     no_parallelization = True
     _optimizer_class = _BO
 
-    def __init__(self, *, initialization: Optional[str] = None, middle_point: bool = False) -> None:
+    def __init__(self, *,
+                 initialization: Optional[str] = None,
+                 init_budget: Optional[int] = None,
+                 middle_point: bool = False,
+                 utility_kind: str = "ucb",  # bayes_opt default
+                 utility_kappa: float = 2.576,
+                 utility_xi: float = 0.0,
+                 gp_parameters: Optional[Dict[str, Any]] = None) -> None:
         assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f'Unknown init {initialization}'
         self.initialization = initialization
+        self.init_budget = init_budget
         self.middle_point = middle_point
+        self.utility_kind = utility_kind
+        self.utility_kappa = utility_kappa
+        self.utility_xi = utility_xi
+        self.gp_parameters = gp_parameters
         super().__init__()
 
 
