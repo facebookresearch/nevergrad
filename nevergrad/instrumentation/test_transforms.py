@@ -41,10 +41,12 @@ def test_vals(transform: transforms.Transform, x: List[float], expected: List[fl
 
 
 @testing.parametrized(
-    tanh=(transforms.TanhBound(0, 5), [2, 4, 5], ValueError),
-    arctan_border=(transforms.ArctanBound(0, 5), [2, 4, 5], None),
-    arctan=(transforms.ArctanBound(0, 5), [-1, 4, 5], ValueError),
-    cumdensity=(transforms.CumulativeDensity(), [0, .5], ValueError),
+    tanh=(transforms.TanhBound(0, 5), [2, 4], None),
+    tanh_err=(transforms.TanhBound(0, 5), [2, 4, 6], ValueError),
+    arctan=(transforms.ArctanBound(0, 5), [2, 4, 5], None),
+    arctan_err=(transforms.ArctanBound(0, 5), [-1, 4, 5], ValueError),
+    cumdensity=(transforms.CumulativeDensity(), [0, .5], None),
+    cumdensity_err=(transforms.CumulativeDensity(), [-0.1, .5], ValueError),
 )
 def test_out_of_bound(transform: transforms.Transform, x: List[float], expected: Optional[Type[Exception]]) -> None:
     if expected is None:

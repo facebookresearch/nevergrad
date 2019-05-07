@@ -125,8 +125,9 @@ class TanhBound(Transform):
         return self._b + self._a * np.tanh(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) >= self.max_val or np.min(y) <= self.min_val:
-            raise ValueError(f"Only data strictly between {self.min_val} and {self.max_val} can be transformed back")
+        if np.max(y) > self.max_val or np.min(y) < self.min_val:
+            raise ValueError(f"Only data strictly between {self.min_val} and {self.max_val} "
+                             "can be transformed back (bounds lead to infinity).")
         return np.arctanh((y - self._b) / self._a)  # type: ignore
 
     def _short_repr(self) -> str:
@@ -155,7 +156,7 @@ class ArctanBound(Transform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if np.max(y) > self.max_val or np.min(y) < self.min_val:
-            raise ValueError(f"Only data between {self.min_val} and {self.max_val} can be transformed back")
+            raise ValueError(f"Only data between {self.min_val} and {self.max_val} can be transformed back.")
         return np.tan((y - self._b) / self._a)  # type: ignore
 
     def _short_repr(self) -> str:
@@ -171,8 +172,8 @@ class CumulativeDensity(Transform):
         return stats.norm.cdf(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) >= 1 or np.min(y) <= 0:
-            raise ValueError("Only data strictly between 0 and 1 can be transformed back")
+        if np.max(y) > 1 or np.min(y) < 0:
+            raise ValueError("Only data between 0 and 1 can be transformed back (bounds lead to infinity).")
         return stats.norm.ppf(y)  # type: ignore
 
     def _short_repr(self) -> str:
