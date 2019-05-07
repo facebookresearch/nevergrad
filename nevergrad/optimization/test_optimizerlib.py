@@ -238,7 +238,7 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
-def test_population_pickle(name: str):  # this test is added because some generic class (like Population) can fail to be pickled
+def test_population_pickle(name: str) -> None:  # this test is added because some generic class (like Population) can fail to be pickled
     # example of work around:
     # "self.population = base.utils.Population[DEParticle]([])"
     # becomes:
