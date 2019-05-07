@@ -126,7 +126,7 @@ class TanhBound(Transform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if np.max(y) > self.max_val or np.min(y) < self.min_val:
-            raise ValueError(f"Only data strictly between {self.min_val} and {self.max_val} "
+            raise ValueError(f"Only data between {self.min_val} and {self.max_val} "
                              "can be transformed back (bounds lead to infinity).")
         return np.arctanh((y - self._b) / self._a)  # type: ignore
 
