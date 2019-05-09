@@ -249,7 +249,7 @@ def test_population_pickle(name: str) -> None:  # this test is added because som
         optim.dump(filepath)
 
 
-def test_bo_instrumentation():
+def test_bo_instrumentation() -> None:
     instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
     with pytest.raises(ValueError):
         optimizerlib.QRBO(instrumentation, budget=10)
