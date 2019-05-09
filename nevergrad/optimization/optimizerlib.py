@@ -1086,7 +1086,7 @@ class ParametrizedBO(base.ParametrizedFamily):
         super().__init__()
 
     def __call__(self, instrumentation: Union[int, Instrumentation],
-                 budget: Optional[int] = None, num_workers: int = 1) -> _BO:
+                 budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         gp_params = {} if self.gp_parameters is None else self.gp_parameters
         if isinstance(instrumentation, Instrumentation) and gp_params.get("alpha", 0) == 0:
             noisy = instrumentation.noisy
