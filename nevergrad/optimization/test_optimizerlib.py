@@ -145,7 +145,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=7,
+    decimal = 2 if isinstance(optimizer_cls, optimizerlib.ParametrizedBO) else 7  # BO slightly differs from a computer to another
+    np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=decimal,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
 
