@@ -559,7 +559,6 @@ class PSOParticle(utils.Particle):
         self.best_position = best_position
         self.best_fitness = best_fitness
         self.active = True
-        self.eps = 1e-10
 
     @classmethod
     def random_initialization(cls, dimension: int) -> 'PSOParticle':
@@ -983,7 +982,7 @@ class _BO(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedBO()
-        self._transform = transforms.CumulativeDensity()
+        self._transform = transforms.ArctanBound(0, 1)
         self._bo: Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction()
 
@@ -1022,7 +1021,7 @@ class _BO(base.Optimizer):
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[f'x{i}'] for i in range(len(x_probe))]
-        data = np.clip(self._transform.backward(np.array(x_probe, copy=False)), -100, 100)
+        data = self._transform.backward(np.array(x_probe, copy=False))
         candidate = self.create_candidate.from_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -1041,8 +1040,7 @@ class _BO(base.Optimizer):
         self._fake_function._registered.clear()
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        v = self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
-        return np.clip(v, -100, 100)  # type: ignore
+        return self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
 
 
 class ParametrizedBO(base.ParametrizedFamily):

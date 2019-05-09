@@ -276,7 +276,7 @@ class Array(utils.Variable[Y]):
         """
         return self.with_transform(transforms.Affine(a=a, b=b))
 
-    def bounded(self, min_val: float, max_val: float, transform: str = "tanh") -> 'Array':
+    def bounded(self, min_val: float, max_val: float, transform: str = "arctan") -> 'Array':
         """Bounds all real values into [min_val, max_val] using a tanh transform.
         Beware, tanh goes very fast to its limits.
 

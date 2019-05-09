@@ -5,6 +5,8 @@
 - renamed `Array.asfloat` method to `Array.asscalar` and allow casting to `int` as well through an argument.
 - fixed `tell_not_asked` for `DE` family of optimizers.
 - added `dump` and `load` method to `Optimizer`.
+- changed `tanh` to `arctan` as default for bounded variables (much wider range)
+- changed cumulative Gaussian density to `arctan` for rescaling in `BO` (much wider range)
 - `BO` algorithms can no longer be used with dis-continuous or noisy instrumentations without appropriate parametrization.
 
 ## v0.2.0
