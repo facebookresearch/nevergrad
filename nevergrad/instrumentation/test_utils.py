@@ -22,12 +22,12 @@ def test_split_data(tokens: List[utils.Variable[Any]], data: List[float], expect
     testing.printed_assert_equal(output, expected)
 
 
-def test_process_instruments() -> None:
+def test_process_variables() -> None:
     tokens: List[utils.Variable[Any]] = [variables.SoftmaxCategorical(list(range(5))),  # TODO: why casting?
                                          variables.Gaussian(3, 4)]
-    values = utils.process_instruments(tokens, [0, 200, 0, 0, 0, 2])
+    values = utils.process_variables(tokens, [0, 200, 0, 0, 0, 2])
     np.testing.assert_equal(values, [1, 11])
-    np.testing.assert_raises(AssertionError, utils.process_instruments, tokens, [0, 200, 0, 0, 0, 2, 3])
+    np.testing.assert_raises(AssertionError, utils.process_variables, tokens, [0, 200, 0, 0, 0, 2, 3])
 
 
 def test_temporary_directory_copy() -> None:

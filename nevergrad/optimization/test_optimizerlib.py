@@ -247,3 +247,10 @@ def test_population_pickle(name: str) -> None:  # this test is added because som
     with tempfile.TemporaryDirectory() as folder:
         filepath = Path(folder) / "dump_test.pkl"
         optim.dump(filepath)
+
+
+def test_bo_instrumentation():
+    instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
+    with pytest.raises(ValueError):
+        optimizerlib.QRBO(instrumentation, budget=10)
+    optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)

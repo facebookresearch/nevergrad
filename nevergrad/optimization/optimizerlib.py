@@ -1085,6 +1085,19 @@ class ParametrizedBO(base.ParametrizedFamily):
         self.gp_parameters = gp_parameters
         super().__init__()
 
+    def __call__(self, instrumentation: Union[int, Instrumentation],
+                 budget: Optional[int] = None, num_workers: int = 1) -> _BO:
+        gp_params = {} if self.gp_parameters is None else self.gp_parameters
+        if isinstance(instrumentation, Instrumentation) and gp_params.get("alpha", 0) == 0:
+            noisy = instrumentation.noisy
+            cont = instrumentation.continuous
+            if noisy or not cont:
+                raise ValueError("Dis-continuous and noisy instrumentation require gp_parameters['alpha'] > 0 "
+                                 "(for your instrumentation, continuity={cont} and noisy={noisy}).\n"
+                                 "Find more information on BayesianOptimization's github.\n"
+                                 "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.")
+        return super().__call__(instrumentation, budget, num_workers)
+
 
 BO = ParametrizedBO().with_name("BO", register=True)
 RBO = ParametrizedBO(initialization="random").with_name("RBO", register=True)

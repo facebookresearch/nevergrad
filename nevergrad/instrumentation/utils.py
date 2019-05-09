@@ -23,6 +23,14 @@ class Variable(Generic[X]):
     def dimension(self) -> int:
         raise NotImplementedError
 
+    @property
+    def continuous(self) -> bool:
+        return True
+
+    @property
+    def noisy(self) -> bool:
+        return False
+
     def argument_to_data(self, arg: X) -> ArrayLike:
         raise NotImplementedError
 
@@ -53,31 +61,31 @@ class Variable(Generic[X]):
         return repr(self)
 
 
-def split_data(data: ArrayLike, instruments: Iterable[Variable[Any]]) -> List[ArrayLike]:
-    """Splits data according to the data requirements of the instruments
+def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[ArrayLike]:
+    """Splits data according to the data requirements of the variables
     """
     # this functions should be tested
     data = np.array(data).ravel()
-    instruments = list(instruments)  # make sure it is not an iterator
-    total = sum(t.dimension for t in instruments)
+    variables = list(variables)  # make sure it is not an iterator
+    total = sum(t.dimension for t in variables)
     assert len(data) == total, f"Expected {total} values but got {len(data)}"
     splitted_data = []
     start, end = 0, 0
-    for instrument in instruments:
-        end = start + instrument.dimension
+    for variable in variables:
+        end = start + variable.dimension
         splitted_data.append(data[start: end])
         start = end
     assert end == len(data), f"Finished at {end} but expected {len(data)}"
     return splitted_data
 
 
-def process_instruments(instruments: Iterable[Variable[Any]], data: ArrayLike,
-                        deterministic: bool = False) -> Tuple[Any, ...]:
+def process_variables(variables: Iterable[Variable[Any]], data: ArrayLike,
+                      deterministic: bool = False) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
-    instruments = list(instruments)
-    splitted_data = split_data(data, instruments)
-    return tuple([instrument.data_to_argument(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
+    variables = list(variables)
+    splitted_data = split_data(data, variables)
+    return tuple([variable.data_to_argument(d, deterministic=deterministic) for variable, d in zip(variables, splitted_data)])
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
