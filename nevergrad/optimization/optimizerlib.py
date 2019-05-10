@@ -5,6 +5,7 @@
 
 from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any
 from collections import defaultdict, deque
+import warnings
 import cma
 import numpy as np
 from bayes_opt import UtilityFunction
@@ -1028,11 +1029,10 @@ class _BO(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         if "x_probe" in candidate._meta:
-            y = self._transform.forward(np.array(candidate.data, copy=False))  # tell not asked
+            y = candidate._meta["x_probe"]
         else:
             y = self._transform.forward(np.array(candidate.data, copy=False))  # tell not asked
         self._fake_function.register(y, -value)  # minimizing
-
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
         # but since it keeps a cache of the values, the registered value is not used
@@ -1082,6 +1082,20 @@ class ParametrizedBO(base.ParametrizedFamily):
         self.utility_xi = utility_xi
         self.gp_parameters = gp_parameters
         super().__init__()
+
+    def __call__(self, instrumentation: Union[int, Instrumentation],
+                 budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+        gp_params = {} if self.gp_parameters is None else self.gp_parameters
+        if isinstance(instrumentation, Instrumentation) and gp_params.get("alpha", 0) == 0:
+            noisy = instrumentation.noisy
+            cont = instrumentation.continuous
+            if noisy or not cont:
+                warnings.warn("Dis-continuous and noisy instrumentation require gp_parameters['alpha'] > 0 "
+                              "(for your instrumentation, continuity={cont} and noisy={noisy}).\n"
+                              "Find more information on BayesianOptimization's github.\n"
+                              "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
+                              base.InefficientSettingsWarning)
+        return super().__call__(instrumentation, budget, num_workers)
 
 
 BO = ParametrizedBO().with_name("BO", register=True)

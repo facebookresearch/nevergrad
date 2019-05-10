@@ -7,6 +7,7 @@
 - added `dump` and `load` method to `Optimizer`.
 - changed `tanh` to `arctan` as default for bounded variables (much wider range)
 - changed cumulative Gaussian density to `arctan` for rescaling in `BO` (much wider range)
+- `BO` algorithms can no longer be used with dis-continuous or noisy instrumentations without appropriate parametrization.
 
 ## v0.2.0
 

@@ -34,6 +34,16 @@ class SoftmaxCategorical(utils.Variable[X]):
     def __init__(self, possibilities: List[X], deterministic: bool = False) -> None:
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
+        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
+                                        "for the Instrumentation intialization")
+
+    @property
+    def continuous(self) -> bool:
+        return not self.deterministic
+
+    @property
+    def noisy(self) -> bool:
+        return not self.deterministic
 
     @property
     def dimension(self) -> int:
@@ -75,6 +85,12 @@ class OrderedDiscrete(utils.Variable[X]):
 
     def __init__(self, possibilities: List[X]) -> None:
         self.possibilities = list(possibilities)
+        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
+                                        "for the Instrumentation intialization")
+
+    @property
+    def continuous(self) -> bool:
+        return False
 
     @property
     def dimension(self) -> int:
@@ -181,6 +197,10 @@ class Array(utils.Variable[Y]):
     @property
     def dimension(self) -> int:
         return int(np.prod(self.shape))
+
+    @property
+    def continuous(self) -> bool:
+        return self._scalar_type != int
 
     def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension

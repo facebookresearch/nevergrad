@@ -6,15 +6,15 @@
 from typing import Any, Tuple, Dict
 import numpy as np
 from ..common import testing
-from . import variables
+from . import variables as var
 from . import core
 
 
 def test_instrumentation() -> None:
-    instru = core.Instrumentation(variables.Gaussian(0, 1),
+    instru = core.Instrumentation(var.Gaussian(0, 1),
                                   3,
-                                  b=variables.SoftmaxCategorical([0, 1, 2, 3]),
-                                  a=variables.OrderedDiscrete([0, 1, 2, 3]))
+                                  b=var.SoftmaxCategorical([0, 1, 2, 3]),
+                                  a=var.OrderedDiscrete([0, 1, 2, 3]))
     np.testing.assert_equal(instru.dimension, 6)
     data = instru.arguments_to_data(4, 3, a=0, b=3)
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, .5878], decimal=4)
@@ -42,7 +42,7 @@ def test_instrumentation() -> None:
 
 
 def test_instrumentation_init_error() -> None:
-    variable = variables.Gaussian(0, 1)
+    variable = var.Gaussian(0, 1)
     np.testing.assert_raises(AssertionError, core.Instrumentation, variable, variable)
 
 
@@ -51,9 +51,9 @@ def _arg_return(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, A
 
 
 def test_instrumented_function() -> None:
-    ifunc = core.InstrumentedFunction(_arg_return, variables.SoftmaxCategorical([1, 12]), "constant",
-                                      variables.Gaussian(0, 1, [2, 2]), constkwarg="blublu",
-                                      plop=variables.SoftmaxCategorical([3, 4]))
+    ifunc = core.InstrumentedFunction(_arg_return, var.SoftmaxCategorical([1, 12]), "constant",
+                                      var.Gaussian(0, 1, [2, 2]), constkwarg="blublu",
+                                      plop=var.SoftmaxCategorical([3, 4]))
     np.testing.assert_equal(ifunc.dimension, 8)
     data = [-100., 100, 1, 2, 3, 4, 100, -100]
     args, kwargs = ifunc(np.array(data))
@@ -66,8 +66,8 @@ def test_instrumented_function() -> None:
 
 
 def test_instrumented_function_kwarg_order() -> None:
-    ifunc = core.InstrumentedFunction(_arg_return, kw4=variables.SoftmaxCategorical([1, 0]), kw2="constant",
-                                      kw3=variables.Array(2, 2), kw1=variables.Gaussian(2, 2))
+    ifunc = core.InstrumentedFunction(_arg_return, kw4=var.SoftmaxCategorical([1, 0]), kw2="constant",
+                                      kw3=var.Array(2, 2), kw1=var.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.dimension, 7)
     data = np.array([-1, 1, 2, 3, 4, 100, -100])
     _, kwargs = ifunc(data)
@@ -81,15 +81,15 @@ class _Callable:
 
 
 def test_callable_instrumentation() -> None:
-    ifunc = core.InstrumentedFunction(lambda x: x**2, variables.Gaussian(2, 2))
+    ifunc = core.InstrumentedFunction(lambda x: x**2, var.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
-    ifunc = core.InstrumentedFunction(_Callable(), variables.Gaussian(2, 2))
+    ifunc = core.InstrumentedFunction(_Callable(), var.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
 
 
 def test_deterministic_data_to_arguments() -> None:
-    ifunc = core.InstrumentedFunction(_Callable(), variables.SoftmaxCategorical([0, 1, 2, 3]),
-                                      y=variables.SoftmaxCategorical([0, 1, 2, 3]))
+    ifunc = core.InstrumentedFunction(_Callable(), var.SoftmaxCategorical([0, 1, 2, 3]),
+                                      y=var.SoftmaxCategorical([0, 1, 2, 3]))
     data = [.01, 0, 0, 0, .01, 0, 0, 0]
     for _ in range(20):
         args, kwargs = ifunc.data_to_arguments(data, deterministic=True)
@@ -102,3 +102,16 @@ def test_deterministic_data_to_arguments() -> None:
         kwarg_sum += kwargs["y"]
     assert arg_sum != 0
     assert kwarg_sum != 0
+
+
+@testing.parametrized(
+    floats=((var.Gaussian(0, 1), var.Array(1).asscalar()), True, False),
+    array_int=((var.Gaussian(0, 1), var.Array(1).asscalar(int)), False, False),
+    softmax_noisy=((var.SoftmaxCategorical(["blue", "red"]), var.Array(1)), True, True),
+    softmax_deterministic=((var.SoftmaxCategorical(["blue", "red"], deterministic=True), var.Array(1)), False, False),
+    ordered_discrete=((var.OrderedDiscrete([True, False]), var.Array(1)), False, False),
+)
+def test_instrumentation_continuous_noisy(variables: Tuple[var.utils.Variable[Any], ...], continuous: bool, noisy: bool) -> None:
+    instru = core.Instrumentation(*variables)
+    assert instru.continuous == continuous
+    assert instru.noisy == noisy

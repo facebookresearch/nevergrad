@@ -23,7 +23,7 @@ class Instrumentation:
 
     Note
     ----
-    Variable classes are:
+    * Variable classes are:
       - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned
          element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic
          and makes the function evaluation noisy.
@@ -32,11 +32,14 @@ class Instrumentation:
       - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
       - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
         (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
+    * Depending on the variables, Instrumentation can be noisy (SoftmaxCategorical in non-deterministic mode), and not continuous
+      (SoftmaxCategorical in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
+      to deal with these cases properly.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.names: Tuple[Optional[str], ...] = ()
-        self.instruments: List[utils.Variable[Any]] = []
+        self.variables: List[utils.Variable[Any]] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
 
@@ -46,6 +49,18 @@ class Instrumentation:
             return self._name
         return format(self, "short")
 
+    @property
+    def continuous(self) -> bool:
+        """Wether the instrumentation is continuous, i.e. all underlying variables are continuous.
+        """
+        return all(v.continuous for v in self.variables)
+
+    @property
+    def noisy(self) -> bool:
+        """Wether the instrumentation is noisy, i.e. at least one of the underlying variable is noisy.
+        """
+        return any(v.noisy for v in self.variables)
+
     def with_name(self, name: str) -> "Instrumentation":
         """Sets a name and return the current instrumentation (for chaining)
         """
@@ -54,25 +69,25 @@ class Instrumentation:
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
-        self.instruments: List[utils.Variable[Any]] = [variables._Constant.convert_non_instrument(a) for a in arguments]
-        num_instru = len(set(id(i) for i in self.instruments))
-        assert len(self.instruments) == num_instru, "All instruments must be different (sharing is not supported)"
+        self.variables: List[utils.Variable[Any]] = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        num_instru = len(set(id(i) for i in self.variables))
+        assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
 
     @property
     def dimension(self) -> int:
-        return sum(i.dimension for i in self.instruments)
+        return sum(i.dimension for i in self.variables)
 
     @property
     def args(self) -> Tuple[utils.Variable[Any], ...]:
-        """List of instruments passed as positional arguments
+        """List of variables passed as positional arguments
         """
-        return tuple(arg for name, arg in zip(self.names, self.instruments) if name is None)
+        return tuple(arg for name, arg in zip(self.names, self.variables) if name is None)
 
     @property
     def kwargs(self) -> Dict[str, utils.Variable[Any]]:
-        """Dictionary of instruments passed as named arguments
+        """Dictionary of variables passed as named arguments
         """
-        return {name: arg for name, arg in zip(self.names, self.instruments) if name is not None}
+        return {name: arg for name, arg in zip(self.names, self.variables) if name is not None}
 
     @staticmethod
     def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
@@ -90,7 +105,7 @@ class Instrumentation:
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Converts data to arguments
         """
-        arguments = utils.process_instruments(self.instruments, data, deterministic=deterministic)
+        arguments = utils.process_variables(self.variables, data, deterministic=deterministic)
         args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
         kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
         return args, kwargs
@@ -109,7 +124,7 @@ class Instrumentation:
         assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
                                      f"but expected:\n{self.names}")
         data = list(itertools.chain.from_iterable([instrument.argument_to_data(arg)
-                                                   for instrument, arg in zip(self.instruments, arguments)]))
+                                                   for instrument, arg in zip(self.variables, arguments)]))
         return np.array(data)
 
     def instrument(self, function: Callable[..., Any]) -> "InstrumentedFunction":
@@ -134,8 +149,8 @@ class Instrumentation:
         This is impractical for large arrays
         """
         strings = []
-        splitted_data = utils.split_data(data, self.instruments)
-        for k, (name, var, d) in enumerate(zip(self.names, self.instruments, splitted_data)):
+        splitted_data = utils.split_data(data, self.variables)
+        for k, (name, var, d) in enumerate(zip(self.names, self.variables, splitted_data)):
             if not isinstance(var, variables._Constant):
                 explanation = var.get_summary(d)
                 sname = f"arg #{k + 1}" if name is None else f'kwarg "{name}"'
