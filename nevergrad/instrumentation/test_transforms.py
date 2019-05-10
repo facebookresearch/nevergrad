@@ -63,6 +63,6 @@ def test_out_of_bound(transform: transforms.Transform, x: List[float], expected:
     both_sides=(transforms.Clipping(0, 1), [0, 1.]),
     one_side=(transforms.Clipping(a_max=1), [-3, 1.]),
 )
-def test_clipping(transform: transforms.Transform, expected: List[float]):
+def test_clipping(transform: transforms.Transform, expected: List[float]) -> None:
     y = transform.forward(np.array([-3, 5]))
     np.testing.assert_array_equal(y, expected)
