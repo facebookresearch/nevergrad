@@ -44,7 +44,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     for k in range(1, num_attempts + 1):
         optimizer = optimizer_cls(instrumentation=2, budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
-            # benchmark do not need to be efficient
+            # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
@@ -134,7 +134,10 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
-    optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
     np.testing.assert_equal(optim.name, name)
     # the following context manager speeds up BO tests
     # BEWARE: BO tests are deterministic but can get different results from a computer to another.
@@ -167,9 +170,12 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
 
 
 def test_portfolio_budget() -> None:
-    for k in range(3, 13):
-        optimizer = optimizerlib.Portfolio(instrumentation=2, budget=k)
-        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        for k in range(3, 13):
+            optimizer = optimizerlib.Portfolio(instrumentation=2, budget=k)
+            np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
 def test_optimizer_families_repr() -> None:
@@ -190,7 +196,10 @@ def test_tell_not_asked(name: str) -> None:
     best = [.5, -.8, 0, 4]
     dim = len(best)
     fitness = Fitness(best)
-    opt = optimizerlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        opt = optimizerlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
     if name == "PSO":
         opt.llambda = 2  # type: ignore
     else:

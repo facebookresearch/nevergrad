@@ -16,6 +16,7 @@ from . import utils
 from . import base
 from . import mutations
 from .base import registry
+from .base import InefficientSettingsWarning
 from . import sequences
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
@@ -593,6 +594,8 @@ class PSO(base.Optimizer):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if budget is not None and budget < 60:
+            warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
         self.population: utils.Population[PSOParticle] = utils.Population([])
         self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
@@ -1094,7 +1097,7 @@ class ParametrizedBO(base.ParametrizedFamily):
                               "(for your instrumentation, continuity={cont} and noisy={noisy}).\n"
                               "Find more information on BayesianOptimization's github.\n"
                               "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                              base.InefficientSettingsWarning)
+                              InefficientSettingsWarning)
         return super().__call__(instrumentation, budget, num_workers)
 
 
