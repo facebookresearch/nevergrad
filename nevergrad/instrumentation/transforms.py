@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Optional
 import numpy as np
 from scipy import stats
 
@@ -105,62 +106,91 @@ class Exponentiate(Transform):
 
 
 class TanhBound(Transform):
-    """Bounds all real values into [min_val, max_val] using a tanh transform.
+    """Bounds all real values into [a_min, a_max] using a tanh transform.
     Beware, tanh goes very fast to its limits.
 
     Parameters
     ----------
-    min_val: float
-    max_val: float
+    a_min: float
+    a_max: float
     """
 
-    def __init__(self, min_val: float, max_val: float) -> None:
-        assert min_val < max_val
-        self.min_val = min_val
-        self.max_val = max_val
-        self._b = .5 * (self.max_val + self.min_val)
-        self._a = .5 * (self.max_val - self.min_val)
+    def __init__(self, a_min: float, a_max: float) -> None:
+        assert a_min < a_max
+        self.a_min = a_min
+        self.a_max = a_max
+        self._b = .5 * (self.a_max + self.a_min)
+        self._a = .5 * (self.a_max - self.a_min)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         return self._b + self._a * np.tanh(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) > self.max_val or np.min(y) < self.min_val:
-            raise ValueError(f"Only data between {self.min_val} and {self.max_val} "
+        if np.max(y) > self.a_max or np.min(y) < self.a_min:
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} "
                              "can be transformed back (bounds lead to infinity).")
         return np.arctanh((y - self._b) / self._a)  # type: ignore
 
     def _short_repr(self) -> str:
-        return f"Th({self.min_val},{self.max_val})"
+        return f"Th({self.a_min},{self.a_max})"
+
+
+class Clipping(Transform):
+    """Bounds all real values into [a_min, a_max] using clipping (not bijective).
+
+    Parameters
+    ----------
+    a_min: float or None
+    a_max: float or None
+    """
+
+    def __init__(self, a_min: Optional[float] = None, a_max: Optional[float] = None) -> None:
+        if a_min is not None and a_max is not None:
+            assert a_min < a_max
+        assert not (a_min is None and a_max is None), "At least one side should be clipped"
+        self.a_min = a_min
+        self.a_max = a_max
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return np.clip(x, self.a_min, self.a_max)  # type: ignore
+
+    def backward(self, y: np.ndarray) -> np.ndarray:
+        if (self.a_max is not None and np.max(y) > self.a_max) or (self.a_min is not None and np.min(y) < self.a_min):
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} "
+                             "can be transformed back.")
+        return y
+
+    def _short_repr(self) -> str:
+        return f"Cl({self.a_min},{self.a_max})"
 
 
 class ArctanBound(Transform):
-    """Bounds all real values into [min_val, max_val] using an arctan transform.
+    """Bounds all real values into [a_min, a_max] using an arctan transform.
     This is a much softer approach compared to tanh.
 
     Parameters
     ----------
-    min_val: float
-    max_val: float
+    a_min: float
+    a_max: float
     """
 
-    def __init__(self, min_val: float, max_val: float) -> None:
-        assert min_val < max_val
-        self.min_val = min_val
-        self.max_val = max_val
-        self._b = .5 * (self.max_val + self.min_val)
-        self._a = (self.max_val - self.min_val) / np.pi
+    def __init__(self, a_min: float, a_max: float) -> None:
+        assert a_min < a_max
+        self.a_min = a_min
+        self.a_max = a_max
+        self._b = .5 * (self.a_max + self.a_min)
+        self._a = (self.a_max - self.a_min) / np.pi
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         return self._b + self._a * np.arctan(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) > self.max_val or np.min(y) < self.min_val:
-            raise ValueError(f"Only data between {self.min_val} and {self.max_val} can be transformed back.")
+        if np.max(y) > self.a_max or np.min(y) < self.a_min:
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
         return np.tan((y - self._b) / self._a)  # type: ignore
 
     def _short_repr(self) -> str:
-        return f"At({self.min_val},{self.max_val})"
+        return f"At({self.a_min},{self.a_max})"
 
 
 class CumulativeDensity(Transform):

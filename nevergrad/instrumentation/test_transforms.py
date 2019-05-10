@@ -17,6 +17,7 @@ from . import transforms
     tanh=(transforms.TanhBound(3, 4), "Th(3,4)"),
     arctan=(transforms.ArctanBound(3, 4), "At(3,4)"),
     cumdensity=(transforms.CumulativeDensity(), "Cd()"),
+    clipping=(transforms.Clipping(None, 1e12), "Cl(None,1000000000000.0)"),
 )
 def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     x = np.random.normal(0, 1, size=12)
@@ -43,6 +44,8 @@ def test_vals(transform: transforms.Transform, x: List[float], expected: List[fl
 @testing.parametrized(
     tanh=(transforms.TanhBound(0, 5), [2, 4], None),
     tanh_err=(transforms.TanhBound(0, 5), [2, 4, 6], ValueError),
+    clipping=(transforms.Clipping(0), [2, 4, 6], None),
+    clipping_err=(transforms.Clipping(0), [-2, 4, 6], ValueError),
     arctan=(transforms.ArctanBound(0, 5), [2, 4, 5], None),
     arctan_err=(transforms.ArctanBound(0, 5), [-1, 4, 5], ValueError),
     cumdensity=(transforms.CumulativeDensity(), [0, .5], None),
@@ -54,3 +57,12 @@ def test_out_of_bound(transform: transforms.Transform, x: List[float], expected:
     else:
         with pytest.raises(expected):
             transform.backward(np.array(x))
+
+
+@testing.parametrized(
+    both_sides=(transforms.Clipping(0, 1), [0, 1.]),
+    one_side=(transforms.Clipping(a_max=1), [-3, 1.]),
+)
+def test_clipping(transform: transforms.Transform, expected: List[float]):
+    y = transform.forward(np.array([-3, 5]))
+    np.testing.assert_array_equal(y, expected)
