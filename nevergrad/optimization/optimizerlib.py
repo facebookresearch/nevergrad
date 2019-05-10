@@ -5,6 +5,7 @@
 
 from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any
 from collections import defaultdict, deque
+import warnings
 import cma
 import numpy as np
 from bayes_opt import UtilityFunction
@@ -1089,10 +1090,11 @@ class ParametrizedBO(base.ParametrizedFamily):
             noisy = instrumentation.noisy
             cont = instrumentation.continuous
             if noisy or not cont:
-                raise ValueError("Dis-continuous and noisy instrumentation require gp_parameters['alpha'] > 0 "
-                                 "(for your instrumentation, continuity={cont} and noisy={noisy}).\n"
-                                 "Find more information on BayesianOptimization's github.\n"
-                                 "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.")
+                warnings.warn("Dis-continuous and noisy instrumentation require gp_parameters['alpha'] > 0 "
+                              "(for your instrumentation, continuity={cont} and noisy={noisy}).\n"
+                              "Find more information on BayesianOptimization's github.\n"
+                              "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
+                              base.InefficientSettingsWarning)
         return super().__call__(instrumentation, budget, num_workers)
 
 

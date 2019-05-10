@@ -252,6 +252,8 @@ def test_population_pickle(name: str) -> None:  # this test is added because som
 
 def test_bo_instrumentation() -> None:
     instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
-    with pytest.raises(ValueError):
+    with pytest.warns(base.InefficientSettingsWarning):
         optimizerlib.QRBO(instrumentation, budget=10)
-    optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
+    with pytest.warns(None) as record:
+        optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
+    assert not record, record.list  # no warning
