@@ -259,5 +259,5 @@ def test_bo_instrumentation_and_parameters() -> None:
         opt = optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
     assert not record, record.list  # no warning
     # parameters
-    # make sure it gets instantiated correctly
-    opt.bo  # pylint: disable=pointless-statement
+    # make sure underlying BO optimizer gets instantiated correctly
+    opt.tell(opt.create_candidate.from_call(True), 0.)
