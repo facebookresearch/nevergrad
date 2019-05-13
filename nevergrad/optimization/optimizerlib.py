@@ -995,7 +995,7 @@ class _BO(base.Optimizer):
             seed = np.random.randint(2**32, dtype=np.uint32)
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=np.random.RandomState(seed))
             if self._parameters.gp_parameters is not None:
-                self._bo.set_gp_parameters(**self._parameters.gp_parameters)
+                self._bo.set_gp_params(**self._parameters.gp_parameters)
             # init
             init = params.initialization
             if params.middle_point:
