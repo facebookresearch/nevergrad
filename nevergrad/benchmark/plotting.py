@@ -11,6 +11,7 @@ from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.legend import Legend
 from matplotlib import cm
 from ..common import tools
 from ..common.typetools import PathLike
@@ -195,6 +196,8 @@ class XpPlotter:
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
+        self._ax.set_xscale('log')
+        self._ax.set_yscale('log')
         self._ax.set_xlabel(xaxis)
         self._ax.set_ylabel("loss")
         self._ax.grid(True, which='both')
@@ -203,7 +206,7 @@ class XpPlotter:
         for optim_name in sorted_optimizers:
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
-            line = plt.loglog(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
+            line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
             if vals[xaxis].size and vals["loss"][-1] < upperbound:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
@@ -218,12 +221,26 @@ class XpPlotter:
         self._fig.tight_layout()
 
     def add_legend(self, legend_infos: List[LegendInfo]) -> None:
-        self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
-                                              loc='upper center', bbox_to_anchor=(0.5, -0.2)))
-        for k, info in enumerate(legend_infos):
-            angle = 30 - 60 * k / len(legend_infos)
-            self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
-                                                rotation=angle))
+        # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
+        #                                      loc='upper center', bbox_to_anchor=(0.5, -0.2)))
+        # for k, info in enumerate(legend_infos):
+        #    angle = 30 - 60 * k / len(legend_infos)
+        #    self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
+        #                                        rotation=angle))
+        ax = self._ax
+        trans = ax.transScale + ax.transLimits  # trans = ax.transData + ax.transAxes.inverted()
+        legends = []
+        fontsize = 7
+        display_y = (ax.transAxes.transform((1, 1)) - ax.transAxes.transform((0, 0)))[1]
+        shift = (1 + fontsize) / display_y
+        legend_infos = legend_infos[::-1]
+        values = [trans.transform((0, i.y))[1] for i in legend_infos]
+        placements = compute_best_placements(values, min_diff=shift)
+        for placement, info in zip(placements, legend_infos):
+            legends.append(Legend(ax, info.line, [info.text], loc="center left",
+                                  bbox_to_anchor=(1, placement), frameon=False, fontsize=fontsize))
+            ax.add_artist(legends[-1])
+        self._overlays.extend(legends)
 
     @staticmethod
     def make_data(df: pd.DataFrame) -> Dict[str, Dict[str, np.ndarray]]:
@@ -261,6 +278,7 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
+        print(self._overlays)
         self._fig.savefig(str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches='tight', dpi=_DPI)
 
     def __del__(self) -> None:
@@ -361,7 +379,6 @@ class FightPlotter:
 class LegendGroup:
 
     def __init__(self, indices: List[int], init_positions: List[float], min_diff: float):
-        print(indices, init_positions)
         assert all(x2 - x1 == 1 for x2, x1 in zip(indices[1:], indices[:-1]))
         assert all(v2 >= v1 for v2, v1 in zip(init_positions[1:], init_positions[:-1]))
         assert len(indices) == len(init_positions)
