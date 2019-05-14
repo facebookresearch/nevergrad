@@ -196,6 +196,7 @@ class XpPlotter:
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
+        self._ax.autoscale(enable=False)
         self._ax.set_xscale('log')
         self._ax.set_yscale('log')
         self._ax.set_xlabel(xaxis)
@@ -218,21 +219,23 @@ class XpPlotter:
         # global info
         self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis='both', which='both')
-        self._fig.tight_layout()
+        # self._fig.tight_layout()
 
     def add_legend(self, legend_infos: List[LegendInfo]) -> None:
+        # # old way
         # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
         #                                      loc='upper center', bbox_to_anchor=(0.5, -0.2)))
         # for k, info in enumerate(legend_infos):
         #    angle = 30 - 60 * k / len(legend_infos)
         #    self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
         #                                        rotation=angle))
+        # new way
         ax = self._ax
-        trans = ax.transScale + ax.transLimits  # trans = ax.transData + ax.transAxes.inverted()
+        trans = ax.transScale + ax.transLimits
         legends = []
-        fontsize = 7
+        fontsize = 11
         display_y = (ax.transAxes.transform((1, 1)) - ax.transAxes.transform((0, 0)))[1]
-        shift = (1 + fontsize) / display_y
+        shift = (2 + fontsize) / display_y
         legend_infos = legend_infos[::-1]
         values = [trans.transform((0, i.y))[1] for i in legend_infos]
         placements = compute_best_placements(values, min_diff=shift)
@@ -278,7 +281,6 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
-        print(self._overlays)
         self._fig.savefig(str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches='tight', dpi=_DPI)
 
     def __del__(self) -> None:
