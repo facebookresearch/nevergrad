@@ -7,7 +7,7 @@ import os
 import argparse
 import itertools
 from pathlib import Path
-from typing import Iterator, List, Optional, Any, Dict
+from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -159,6 +159,13 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     plt.close("all")
 
 
+class LegendInfo(NamedTuple):
+    x: float
+    y: float
+    line: Any
+    text: str
+
+
 class XpPlotter:
     """Creates a xp result plot out of the given dataframe: regret with respect to budget for
     each optimizer after averaging on all experiments (it is good practice to use a df
@@ -191,25 +198,32 @@ class XpPlotter:
         self._ax.set_xlabel(xaxis)
         self._ax.set_ylabel("loss")
         self._ax.grid(True, which='both')
-        self._texts: List[Any] = []
-        for k, optim_name in enumerate(sorted_optimizers):
+        self._overlays: List[Any] = []
+        legend_infos: List[LegendInfo] = []
+        for optim_name in sorted_optimizers:
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
-            plt.loglog(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
+            line = plt.loglog(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
+            text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
             if vals[xaxis].size and vals["loss"][-1] < upperbound:
-                angle = 30 - 60 * k / len(optim_vals)
-                self._texts.append(self._ax.text(vals[xaxis][-1], vals["loss"][-1], "{} ({:.3g})".format(optim_name, vals["loss"][-1]),
-                                                 {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'}, rotation=angle))
+                legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if upperbound < np.inf:
             self._ax.set_ylim(lowerbound, upperbound)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
+        self.add_legend(legend_infos)
         # global info
-        self._legend = self._ax.legend(fontsize=7, ncol=2, handlelength=3,
-                                       loc='upper center', bbox_to_anchor=(0.5, -0.2))
         self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis='both', which='both')
         self._fig.tight_layout()
+
+    def add_legend(self, legend_infos: List[LegendInfo]) -> None:
+        self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
+                                              loc='upper center', bbox_to_anchor=(0.5, -0.2)))
+        for k, info in enumerate(legend_infos):
+            angle = 30 - 60 * k / len(legend_infos)
+            self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
+                                                rotation=angle))
 
     @staticmethod
     def make_data(df: pd.DataFrame) -> Dict[str, Dict[str, np.ndarray]]:
@@ -247,7 +261,7 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
-        self._fig.savefig(str(output_filepath), bbox_extra_artists=[self._legend] + self._texts, bbox_inches='tight', dpi=_DPI)
+        self._fig.savefig(str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches='tight', dpi=_DPI)
 
     def __del__(self) -> None:
         plt.close(self._fig)
@@ -340,6 +354,60 @@ class FightPlotter:
 
     def __del__(self) -> None:
         plt.close(self._fig)
+
+
+# %% positionning legends
+
+class LegendGroup:
+
+    def __init__(self, indices: List[int], init_positions: List[float], min_diff: float):
+        print(indices, init_positions)
+        assert all(x2 - x1 == 1 for x2, x1 in zip(indices[1:], indices[:-1]))
+        assert all(v2 >= v1 for v2, v1 in zip(init_positions[1:], init_positions[:-1]))
+        assert len(indices) == len(init_positions)
+        self.indices = indices
+        self.init_positions = init_positions
+        self.min_diff = min_diff
+        self.position = float(np.mean(init_positions))
+
+    def combine_with(self, other: 'LegendGroup') -> 'LegendGroup':
+        assert self.min_diff == other.min_diff
+        return LegendGroup(self.indices + other.indices, self.init_positions + other.init_positions, self.min_diff)
+
+    def get_positions(self) -> List[float]:
+        first_position = self.bounds[0] + self.min_diff / 2.
+        return [first_position + k * self.min_diff for k in range(len(self.indices))]
+
+    @property
+    def bounds(self) -> Tuple[float, float]:
+        half_span = len(self.indices) * self.min_diff / 2.
+        return (self.position - half_span, self.position + half_span)
+
+    def __repr__(self) -> str:
+        return f"LegendGroup({self.indices}, {self.init_positions}, {self.min_diff})"
+
+
+def compute_best_placements(positions: List[float], min_diff: float) -> List[float]:
+    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))
+    groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
+    new_groups: List[LegendGroup] = []
+    ready = False
+    while not ready:
+        ready = True
+        for k in range(len(groups)):  # pylint: disable=consider-using-enumerate
+            if k < len(groups) - 1 and groups[k + 1].bounds[0] < groups[k].bounds[1]:
+                new_groups.append(groups[k].combine_with(groups[k + 1]))
+                new_groups.extend(groups[k + 2:])
+                groups = new_groups
+                new_groups = []
+                ready = False
+                break
+            else:
+                new_groups.append(groups[k])
+    new_positions = np.array(positions, copy=True)
+    for group in groups:
+        new_positions[group.indices] = group.get_positions()
+    return new_positions.tolist()
 
 
 def main() -> None:
