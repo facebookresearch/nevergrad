@@ -161,6 +161,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
 
 
 class LegendInfo(NamedTuple):
+    """Handle for information used to create a legend.
+    """
     x: float
     y: float
     line: Any
@@ -215,13 +217,15 @@ class XpPlotter:
             self._ax.set_ylim(lowerbound, upperbound)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
-        self.add_legend(legend_infos)
+        self.add_legends(legend_infos)
         # global info
         self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis='both', which='both')
         # self._fig.tight_layout()
 
-    def add_legend(self, legend_infos: List[LegendInfo]) -> None:
+    def add_legends(self, legend_infos: List[LegendInfo]) -> None:
+        """Adds the legends
+        """
         # # old way
         # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
         #                                      loc='upper center', bbox_to_anchor=(0.5, -0.2)))
@@ -232,18 +236,16 @@ class XpPlotter:
         # new way
         ax = self._ax
         trans = ax.transScale + ax.transLimits
-        legends = []
-        fontsize = 11
-        display_y = (ax.transAxes.transform((1, 1)) - ax.transAxes.transform((0, 0)))[1]
-        shift = (2 + fontsize) / display_y
+        fontsize = 10.
+        display_y = (ax.transAxes.transform((1, 1)) - ax.transAxes.transform((0, 0)))[1]  # height in points
+        shift = (2. + fontsize) / display_y
         legend_infos = legend_infos[::-1]
         values = [trans.transform((0, i.y))[1] for i in legend_infos]
         placements = compute_best_placements(values, min_diff=shift)
         for placement, info in zip(placements, legend_infos):
-            legends.append(Legend(ax, info.line, [info.text], loc="center left",
-                                  bbox_to_anchor=(1, placement), frameon=False, fontsize=fontsize))
-            ax.add_artist(legends[-1])
-        self._overlays.extend(legends)
+            self._overlays.append(Legend(ax, info.line, [info.text], loc="center left",
+                                         bbox_to_anchor=(1, placement), frameon=False, fontsize=fontsize))
+            ax.add_artist(self._overlays[-1])
 
     @staticmethod
     def make_data(df: pd.DataFrame) -> Dict[str, Dict[str, np.ndarray]]:
@@ -379,6 +381,20 @@ class FightPlotter:
 # %% positionning legends
 
 class LegendGroup:
+    """Class used to compute legend best placements.
+    Each group contains at least one legend, and has a position and span (with bounds). LegendGroup are then
+    responsible for providing each of its legends' position (non-overlapping)
+
+
+    Parameters
+    ----------
+    indices: List[int]
+        identifying index of each of the legends
+    init_position: List[float]
+        best position for each of the legends (if there was no overlapping)
+    min_diff: float
+        minimal distance between two legends so that they do not overlap
+    """
 
     def __init__(self, indices: List[int], init_positions: List[float], min_diff: float):
         assert all(x2 - x1 == 1 for x2, x1 in zip(indices[1:], indices[:-1]))
@@ -407,6 +423,25 @@ class LegendGroup:
 
 
 def compute_best_placements(positions: List[float], min_diff: float) -> List[float]:
+    """Provides a list of new positions from a list of initial position, with a minimal
+    distance between each position.
+
+    Parameters
+    ----------
+    positions: List[float]
+        best positions if minimal distance were 0.
+    min_diff: float
+        minimal distance allowed between two positions
+
+    Returns
+    -------
+    new_positions: List[float]
+        positions after taking into account the minimal distance constraint
+
+    Note
+    ----
+    This function is probably not optimal, but seems a very good heuristic
+    """
     assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: List[LegendGroup] = []
@@ -415,7 +450,10 @@ def compute_best_placements(positions: List[float], min_diff: float) -> List[flo
         ready = True
         for k in range(len(groups)):  # pylint: disable=consider-using-enumerate
             if k < len(groups) - 1 and groups[k + 1].bounds[0] < groups[k].bounds[1]:
+                # groups are overlapping: create a new combined group
+                # which will provide new non-overlapping positions around the mean of initial positions
                 new_groups.append(groups[k].combine_with(groups[k + 1]))
+                # copy the rest of the groups and start over from the first group
                 new_groups.extend(groups[k + 2:])
                 groups = new_groups
                 new_groups = []
