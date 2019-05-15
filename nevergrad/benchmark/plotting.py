@@ -229,12 +229,13 @@ class XpPlotter:
         # # old way (keep it for fast hacking of plots if need be)
         # # this creates a legend box on the bottom, and algorithm names on the right with some angle to avoid overlapping
         # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
-        #                                      loc='upper center', bbox_to_anchor=(0.5, -0.2)))
-        # filtered_legend_infos = [i for i in legend_infos if i.y <= ]
+        #                                       loc='upper center', bbox_to_anchor=(0.5, -0.2)))
+        # upperbound = self._ax.get_ylim()[1]
+        # filtered_legend_infos = [i for i in legend_infos if i.y <= upperbound]
         # for k, info in enumerate(filtered_legend_infos):
-        #    angle = 30 - 60 * k / len(legend_infos)
-        #    self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
-        #                                        rotation=angle))
+        #     angle = 30 - 60 * k / len(legend_infos)
+        #     self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
+        #                                         rotation=angle))
         # new way
         ax = self._ax
         trans = ax.transScale + ax.transLimits
