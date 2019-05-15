@@ -226,7 +226,8 @@ class XpPlotter:
     def add_legends(self, legend_infos: List[LegendInfo]) -> None:
         """Adds the legends
         """
-        # # old way
+        # # old way (keep it for fast hacking of plots if need be)
+        # # this creates a legend box on the bottom, and algorithm names on the right with some angle to avoid overlapping
         # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
         #                                      loc='upper center', bbox_to_anchor=(0.5, -0.2)))
         # for k, info in enumerate(legend_infos):
