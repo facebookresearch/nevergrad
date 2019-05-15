@@ -259,10 +259,14 @@ def test_population_pickle(name: str) -> None:  # this test is added because som
         optim.dump(filepath)
 
 
-def test_bo_instrumentation() -> None:
+def test_bo_instrumentation_and_parameters() -> None:
+    # instrumentation
     instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
         optimizerlib.QRBO(instrumentation, budget=10)
     with pytest.warns(None) as record:
-        optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
+        opt = optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
     assert not record, record.list  # no warning
+    # parameters
+    # make sure underlying BO optimizer gets instantiated correctly
+    opt.tell(opt.create_candidate.from_call(True), 0.)

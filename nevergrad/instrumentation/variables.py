@@ -184,8 +184,8 @@ class Array(utils.Variable[Y]):
     - asscalar(): converts the array into a float or int (only for arrays with 1 element)
     - with_transform(transform): apply a transform to the array
     - affined(a, b): applies a*x+b
-    - bounded(min_val, max_val, transform="tanh"): applies a transform ("tanh" or "arctan")
-      so that output values are in range [min_val, max_val]
+    - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
+      so that output values are in range [a_min, a_max]
     - exponentiated(base, coeff): applies base**(coeff * x)
     """
 
@@ -276,19 +276,27 @@ class Array(utils.Variable[Y]):
         """
         return self.with_transform(transforms.Affine(a=a, b=b))
 
-    def bounded(self, min_val: float, max_val: float, transform: str = "arctan") -> 'Array':
-        """Bounds all real values into [min_val, max_val] using a tanh transform.
+    def bounded(self, a_min: Optional[float] = None, a_max: Optional[float] = None, transform: str = "arctan") -> 'Array':
+        """Bounds all real values into [a_min, a_max] using a tanh transform.
         Beware, tanh goes very fast to its limits.
 
         Parameters
         ----------
-        min_val: float
-        max_val: float
+        a_min: float or None
+        a_max: float or None
         transform: str
-            either "tanh" or "arctan" (note that "tanh" reaches the boundaries really quickly,
-            while "arctan" is much softer)
+            "clipping", "tanh" or "arctan
+
+        Notes
+        -----
+        - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
+        - only "clipping" accepts partial bounds (None values)
         """
-        if transform not in ["tanh", "arctan"]:
-            raise ValueError("Only 'tanh' and 'arctan' are allowed as transform")
-        Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound
-        return self.with_transform(Transf(min_val=min_val, max_val=max_val))
+        if transform not in ["tanh", "arctan", "clipping"]:
+            raise ValueError("Only 'tanh', 'clipping' and 'arctan' are allowed as transform")
+        if transform in ["arctan", "tanh"]:
+            Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound
+            assert a_min is not None and a_max is not None, "Only 'clipping' can be used for partial bounds"
+            return self.with_transform(Transf(a_min=a_min, a_max=a_max))
+        else:
+            return self.with_transform(transforms.Clipping(a_min, a_max))

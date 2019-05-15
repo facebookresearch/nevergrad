@@ -6,6 +6,7 @@
 from . import plotting  # pylint: disable=wrong-import-position, wrong-import-order
 from unittest.mock import patch
 from pathlib import Path
+from typing import List
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -129,3 +130,19 @@ def test_split_long_title() -> None:
     np.testing.assert_equal(plotting.split_long_title(title), title[:52] + "\n" + title[52:])
     title = "a" * 70
     np.testing.assert_equal(plotting.split_long_title(title), title)
+
+
+@testing.parametrized(
+    nothing=([1, 2, 10.], [1, 2, 10.]),
+    identic=([1, 1, 10., 10.], [.5, 1.5, 9.5, 10.5]),
+)
+def test_compute_best_placements(positions: List[float], expected: List[float]) -> None:
+    new_positions = plotting.compute_best_placements(positions, min_diff=1.)
+    np.testing.assert_array_equal(new_positions, expected)
+
+
+if __name__ == "__main__":
+    # simple example which can be run with:
+    # python -m nevergrad.benchmark.test_plotting
+    df_test = pd.read_csv(Path(__file__).parent / "sphere_perf_example.csv")
+    plotting.create_plots(df_test, output_folder="", max_combsize=0)
