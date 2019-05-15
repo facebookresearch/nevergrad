@@ -211,7 +211,7 @@ class XpPlotter:
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
-            if vals[xaxis].size and vals["loss"][-1] < upperbound:
+            if vals[xaxis].size and vals["loss"][-1] <= upperbound:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if upperbound < np.inf:
             self._ax.set_ylim(lowerbound, upperbound)
