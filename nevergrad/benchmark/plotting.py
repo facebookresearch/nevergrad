@@ -211,7 +211,7 @@ class XpPlotter:
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
-            if vals[xaxis].size and vals["loss"][-1] <= upperbound:
+            if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if upperbound < np.inf:
             self._ax.set_ylim(lowerbound, upperbound)
@@ -230,7 +230,8 @@ class XpPlotter:
         # # this creates a legend box on the bottom, and algorithm names on the right with some angle to avoid overlapping
         # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
         #                                      loc='upper center', bbox_to_anchor=(0.5, -0.2)))
-        # for k, info in enumerate(legend_infos):
+        # filtered_legend_infos = [i for i in legend_infos if i.y <= ]
+        # for k, info in enumerate(filtered_legend_infos):
         #    angle = 30 - 60 * k / len(legend_infos)
         #    self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
         #                                        rotation=angle))
@@ -240,8 +241,8 @@ class XpPlotter:
         fontsize = 10.
         display_y = (ax.transAxes.transform((1, 1)) - ax.transAxes.transform((0, 0)))[1]  # height in points
         shift = (2. + fontsize) / display_y
-        legend_infos = legend_infos[::-1]
-        values = [trans.transform((0, i.y))[1] for i in legend_infos]
+        legend_infos = legend_infos[::-1]  # revert order for use in compute_best_placements
+        values = [float(np.clip(trans.transform((0, i.y))[1], -.01, 1.01)) for i in legend_infos]
         placements = compute_best_placements(values, min_diff=shift)
         for placement, info in zip(placements, legend_infos):
             self._overlays.append(Legend(ax, info.line, [info.text], loc="center left",
