@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Optional, Union, Set
+import warnings
 import numpy as np
 from scipy import stats
 from ..instrumentation import Instrumentation
@@ -241,6 +242,12 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.NF = NF
         self.hashed = hashed
         super().__init__()
+
+    def __call__(self, instrumentation: Union[int, Instrumentation],
+                 budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+        if budget is not None and budget < 60:
+            warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+        return super().__call__(instrumentation, budget, num_workers)
 
 
 DE = DifferentialEvolution().with_name("DE", register=True)
