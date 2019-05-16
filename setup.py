@@ -10,10 +10,12 @@ from typing import Dict, List, Match
 from setuptools import setup
 from setuptools import find_packages
 
+
+# read requirements
+
 requirements: Dict[str, List[str]] = {}
 for extra in ["dev", "bench", "main"]:
-    with open(f"requirements/{extra}.txt") as f:
-        requirements[extra] = f.read().splitlines()
+    requirements[extra] = Path(f"requirements/{extra}.txt").read_text().splitlines()
 
 
 # build long description
@@ -29,8 +31,9 @@ def _replace_relative_links(regex: Match[str]) -> str:
     link = regex.group("link")
     name = regex.group("name")
     if not link.startswith("http") and Path(link).exists():
-        string = f"[{name}](https://github.com/facebookresearch/nevergrad/blob/master/{link})"
-        print(string)
+        githuburl = ("github.com/facebookresearch/nevergrad/blob/master" if not link.endswith(".gif") else
+                     "raw.githubusercontent.com/facebookresearch/nevergrad/master")
+        string = f"[{name}](https://{githuburl}/{link})"
     return string
 
 
@@ -39,12 +42,14 @@ long_description = re.sub(pattern, _replace_relative_links, long_description)
 
 
 # find version
-with open("nevergrad/__init__.py", "r", encoding="utf-8") as fh:
-    init_str = fh.read()
+
+init_str = Path("nevergrad/__init__.py").read_text()
 match = re.search(r"^__version__ = \"(?P<version>[\w\.]+?)\"$", init_str, re.MULTILINE)
 assert match is not None, "Could not find version in nevergrad/__init__.py"
 version = match.group("version")
 
+
+# setup
 
 setup(
     name="nevergrad",
