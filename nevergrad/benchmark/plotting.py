@@ -83,13 +83,13 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
         return df  # type: ignore
     # errors with no recommendation
     errordf = df.select(error=lambda x: isinstance(x, str) and x, loss=np.isnan)
-    for _, row in errordf.iterrows():
-        print(f'Removing "{row["optimizer_name"]}" with dimension {row["dimension"]}: got error "{row["error"]}".')
+    for row in errordf.itertuples():
+        print(f'Removing "{row.optimizer_name}" with dimension {row.dimension}: got error "{row.error}".')
     # error with recoreded recommendation
     handlederrordf = df.select(error=lambda x: isinstance(x, str) and x, loss=lambda x: not np.isnan(x))
-    for _, row in handlederrordf.iterrows():
-        print(f'Keeping non-optimal recommendation of "{row["optimizer_name"]}" '
-              f'with dimension {row["dimension"]} which raised "{row["error"]}".')
+    for row in handlederrordf.itertuples():
+        print(f'Keeping non-optimal recommendation of "{row.optimizer_name}" '
+              f'with dimension {row.dimension} which raised "{row.error}".')
     err_inds = set(errordf.index)
     output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
     assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
@@ -128,6 +128,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     df = tools.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
     print(f"Descriptors: {descriptors}")
+    print("# Fight plots")
     #
     # fight plot
     # choice of the combination variables to fix
@@ -149,8 +150,10 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     #
     # xp plots
     # plot mean loss / budget for each optimizer for 1 context
+    print("# Xp plots")
     name_style = NameStyle()  # keep the same style for each algorithm
-    for case in df.unique(descriptors):
+    cases = df.unique(descriptors)
+    for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
@@ -189,7 +192,7 @@ class XpPlotter:
                  name_style: Optional[Dict[str, Any]] = None, xaxis: str = "budget") -> None:
         if name_style is None:
             name_style = NameStyle()
-        upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values())
+        upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf)
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
                 upperbound = min(upperbound, np.max(vals["loss"]))
@@ -198,7 +201,7 @@ class XpPlotter:
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
-        # use log plot? if no negative value
+        # use log plot? yes, if no negative value
         logplot = not any(x < 0 for ov in optim_vals.values() for x in ov["loss"] if x < np.inf)
         if logplot:
             self._ax.set_yscale('log')
@@ -221,7 +224,10 @@ class XpPlotter:
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if upperbound < np.inf:
-            self._ax.set_ylim(lowerbound, upperbound)
+            upperbound_up = upperbound + 0.02 * (upperbound - lowerbound)
+            if logplot:
+                upperbound_up = 10**(np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound)))
+            self._ax.set_ylim(lowerbound, upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)
