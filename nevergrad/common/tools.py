@@ -110,7 +110,7 @@ class Selector(pd.DataFrame):  # type: ignore
             testing.assert_set_equal(set(column_s) - set(self.columns), {}, err_msg="Unknown column(s)")
             df = self.loc[:, column_s]
             assert not df.isnull().values.any(), "Cannot work with NaN values"
-            return set(tuple(row) for _, row in df.iterrows())
+            return set(tuple(row) for row in df.itertuples(index=False))
         else:
             raise NotImplementedError("Only strings, lists and tuples are allowed")
 
@@ -130,7 +130,7 @@ class Selector(pd.DataFrame):  # type: ignore
         other_df = other.loc[:, self.columns]
         df_rows: List[List[Tuple[Any, ...]]] = [[], []]
         for k, df in enumerate([self, other_df]):
-            for _, row in df.iterrows():
+            for row in df.itertuples(index=False):
                 df_rows[k].append(tuple(row))
             df_rows[k].sort()
         for row1, row2 in zip(*df_rows):
