@@ -192,15 +192,22 @@ class XpPlotter:
         upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values())
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
-                upperbound = min(upperbound, 2 * np.max(vals["loss"]))
+                upperbound = min(upperbound, np.max(vals["loss"]))
         # plot from best to worst
         lowerbound = np.inf
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
+        # use log plot? if no negative value
+        logplot = not any(x < 0 for ov in optim_vals.values() for x in ov["loss"] if x < np.inf)
+        if logplot:
+            self._ax.set_yscale('log')
+            for ov in optim_vals.values():
+                if ov["loss"].size:
+                    ov["loss"] = np.maximum(1e-30, ov["loss"])
+        # other setups
         self._ax.autoscale(enable=False)
         self._ax.set_xscale('log')
-        self._ax.set_yscale('log')
         self._ax.set_xlabel(xaxis)
         self._ax.set_ylabel("loss")
         self._ax.grid(True, which='both')
@@ -272,7 +279,7 @@ class XpPlotter:
         for optim in df.unique("optimizer_name"):
             optim_vals[optim] = {}
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
-            optim_vals[optim]["loss"] = np.maximum(1e-30, np.array(means.loc[optim, "loss"]))  # avoid very small values (for log plot)
+            optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
