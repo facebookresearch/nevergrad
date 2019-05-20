@@ -321,7 +321,8 @@ class Population(Generic[X]):
         return self._uuids
 
     def __repr__(self) -> str:
-        return f"Population({[p for p in self._particlues.values]})"
+        particles = [p for p in self._particles.values()]
+        return f"Population({particles})"
 
     def __getitem__(self, uuid: str) -> X:
         parti = self._particles[uuid]
