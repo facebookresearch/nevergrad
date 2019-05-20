@@ -68,6 +68,8 @@ class Affine(Transform):
     """
 
     def __init__(self, a: float, b: float) -> None:
+        if not a:
+            raise ValueError('"a" parameter should be non-zero to prevent information loss.')
         self.a = a
         self.b = b
 
