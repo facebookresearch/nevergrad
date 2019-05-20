@@ -20,6 +20,9 @@ class DEParticle(base.utils.Particle):
         self.fitness = fitness
         self.active = True
 
+    def __repr__(self) -> str:
+        return f"Part<{self.position}, {self.fitness}, {self.active}>"
+
 
 class _DE(base.Optimizer):
     """Differential evolution.

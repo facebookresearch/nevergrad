@@ -95,6 +95,7 @@ class Partitest(utils.Particle):
 def test_population_queue() -> None:
     particles = [Partitest(k) for k in range(4)]
     pop = utils.Population(particles[2:])
+    _ = repr(pop)
     pop.extend(particles[:2])  # should append queue on the left
     p = pop.get_queued()
     assert p.number == 0
@@ -142,9 +143,12 @@ def test_pruning() -> None:
     # pruning
     pruning = utils.Pruning(min_len=1, max_len=3)
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
-    for k in range(2):
+    with pytest.warns(UserWarning):
         archive = pruning(archive)
-        testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+    testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+    # should not change anything this time
+    archive = pruning(archive)
+    testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
 @pytest.mark.parametrize("dimension,expected_max", [(100, 1342177), (10000, 13421), (1000000, 1080)])  # type: ignore
