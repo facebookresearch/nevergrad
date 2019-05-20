@@ -447,6 +447,9 @@ class ParticleTBPSA:
         self.sigma = sigma
         self.loss = loss
 
+    def __repr__(self) -> str:
+        return f"Part<{self.position}, {self.sigma}, {self.loss}>"
+
 
 @registry.register
 class TBPSA(base.Optimizer):
