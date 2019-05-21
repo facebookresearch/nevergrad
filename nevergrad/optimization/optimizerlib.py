@@ -742,6 +742,8 @@ class Portfolio(base.Optimizer):
         if budget < 12 * num_workers:
             self.optims = [ScrHammersleySearch(instrumentation, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
@@ -787,6 +789,8 @@ class ParaPortfolio(Portfolio):
                        SQP(instrumentation, 1),
                        ScrHammersleySearch(instrumentation, budget=(budget // len(self.which_optim)) * nw4)
                        ]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask_candidate(self) -> base.Candidate:
@@ -815,6 +819,8 @@ class ParaSQPCMA(ParaPortfolio):
             if i > 0:
                 self.optims[-1].initial_guess = self.random_state.normal(0, 1, self.dimension)  # type: ignore
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -826,6 +832,8 @@ class ASCMADEthird(Portfolio):
         assert budget is not None
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        LhsDE(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
@@ -859,6 +867,8 @@ class ASCMADEQRthird(ASCMADEthird):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        LhsDE(instrumentation, budget=None, num_workers=num_workers),
                        ScrHaltonSearch(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -869,6 +879,8 @@ class ASCMA2PDEthird(ASCMADEQRthird):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -887,6 +899,8 @@ class CMandAS2(ASCMADEthird):
                            CMA(instrumentation, budget=None, num_workers=num_workers),
                            CMA(instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -905,6 +919,8 @@ class CMandAS(CMandAS2):
             self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                            CMA(instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 3
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -920,6 +936,8 @@ class CM(CMandAS2):
             self.optims = [OnePlusOne(instrumentation, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension:
             self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -932,6 +950,8 @@ class MultiCMA(CM):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
         self.budget_before_choosing = budget // 10
 
 
@@ -945,6 +965,8 @@ class TripleCMA(CM):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
         self.budget_before_choosing = budget // 3
 
 
@@ -957,6 +979,8 @@ class MultiScaleCMA(CM):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        MilliCMA(instrumentation, budget=None, num_workers=num_workers),
                        MicroCMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim.random_state = self.random_state  # share the state
         assert budget is not None
         self.budget_before_choosing = budget // 3
 
