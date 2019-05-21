@@ -463,7 +463,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                  batch_mode: bool = False,
                  verbosity: int = 0) -> Candidate:
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
-        self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
+        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
 
 
 class OptimizationPrinter:
