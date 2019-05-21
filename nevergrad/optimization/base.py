@@ -186,6 +186,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
         self._asked: Set[str] = set()
+        self._requests: Deque[Candidate] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
@@ -245,6 +246,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """Removes all registered callables
         """
         self._callbacks = {}
+
+    def request(self, *args: Any, **kwargs) -> None:
+        """Requests a new point to ask.
+        It will be ask at the next call (last in first out).
+        """
+        self._requests.append(self.create_candidate.from_call(*args, **kwargs))
 
     def tell(self, candidate: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
@@ -314,7 +321,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        candidate = self._internal_ask_candidate()
+        if self._requests:
+            candidate = self._requests.pop()
+        else:
+            candidate = self._internal_ask_candidate()
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
         if candidate.uuid in self._asked:
