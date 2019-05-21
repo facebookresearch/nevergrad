@@ -330,12 +330,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             candidate = self._requests.pop()
         else:
             candidate = self._internal_ask_candidate()
+            # only register actual asked points
+            if candidate.uuid in self._asked:
+                raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
+                                   "This is to make sure that stochastic instrumentations are resampled.")
+            self._asked.add(candidate.uuid)
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        if candidate.uuid in self._asked:
-            raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                               "This is to make sure that stochastic instrumentations are resampled.")
-        self._asked.add(candidate.uuid)
         return candidate
 
     def provide_recommendation(self) -> Candidate:
