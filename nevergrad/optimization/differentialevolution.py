@@ -79,7 +79,7 @@ class _DE(base.Optimizer):
         if self.sampler is None and init is not None:
             assert init in ["LHS", "QR"]
             sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR")
+            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
         self.match_population_size_to_lambda()
         particle = self.population.get_queued(remove=True)
         i = particle.position

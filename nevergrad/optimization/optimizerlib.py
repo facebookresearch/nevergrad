@@ -1015,7 +1015,8 @@ class _BO(base.Optimizer):
                     sampler = {"Hammersley": sequences.HammersleySampler,
                                "LHS": sequences.LHSSampler,
                                "random": sequences.RandomSampler}[init](self.dimension, budget=init_budget,
-                                                                        scrambling=(init == "Hammersley"))
+                                                                        scrambling=(init == "Hammersley"),
+                                                                        random_state=self.random_state)
                     for point in sampler:
                         self._bo.probe(point, lazy=True)
         return self._bo
