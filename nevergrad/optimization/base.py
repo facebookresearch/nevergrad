@@ -462,6 +462,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
                  verbosity: int = 0) -> Candidate:
+        """This function is deprecated and renamed "minimize".
+        """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
         return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
 
