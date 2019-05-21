@@ -259,7 +259,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Note
         ----
         This relies on optmizers implementing a way to deal with unasked candidate.
-        Some optimizers may not support it and will raise a TellNotAskedNotSupportedError.
+        Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
+        at "tell" time.
         """
         self._requests.append(self.create_candidate.from_call(*args, **kwargs))
 
