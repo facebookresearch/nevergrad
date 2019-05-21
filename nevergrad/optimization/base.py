@@ -255,6 +255,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----------
         *args, **kwargs: Any
             any arguments which match the instrumentation pattern.
+
+        Note
+        ----
+        This relies on optmizers implementing a way to deal with unasked candidate.
+        Some optimizers may not support it and will raise a TellNotAskedNotSupportedError.
         """
         self._requests.append(self.create_candidate.from_call(*args, **kwargs))
 
