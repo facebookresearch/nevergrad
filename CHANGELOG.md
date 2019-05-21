@@ -2,7 +2,7 @@
 
 ## master
 
-N/A
+- add a way to request a given `Candidate` from the `ask` method.
 
 ## v0.2.1
 

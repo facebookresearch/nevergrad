@@ -247,9 +247,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def request(self, *args: Any, **kwargs) -> None:
+    def request(self, *args: Any, **kwargs: Any) -> None:
         """Requests a new point to ask.
         It will be ask at the next call (last in first out).
+
+        Parameters
+        ----------
+        *args, **kwargs: Any
+            any arguments which match the instrumentation pattern.
         """
         self._requests.append(self.create_candidate.from_call(*args, **kwargs))
 
