@@ -369,7 +369,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def optimize(self, objective_function: Callable[..., float],
+    def minimize(self, objective_function: Callable[..., float],
                  executor: Optional[ExecutorLike] = None,
                  batch_mode: bool = False,
                  verbosity: int = 0) -> Candidate:
@@ -457,6 +457,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._running_jobs, self._finished_jobs = tmp_runnings, tmp_finished
             first_iteration = False
         return self.provide_recommendation()
+
+    def optimize(self, objective_function: Callable[..., float],
+                 executor: Optional[ExecutorLike] = None,
+                 batch_mode: bool = False,
+                 verbosity: int = 0) -> Candidate:
+        warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
+        self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
 
 
 class OptimizationPrinter:

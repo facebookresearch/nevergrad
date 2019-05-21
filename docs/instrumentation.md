@@ -68,7 +68,7 @@ def myfunction(arg1, arg2, arg3, value=3):
 
 from nevergrad.optimization import optimizerlib
 optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
-recommendation = optimizer.optimize(ifunc)
+recommendation = optimizer.minimize(ifunc)
 ```
 
 When you have performed optimization on this function and want to trace back to what should your values be, use:

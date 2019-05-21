@@ -58,7 +58,7 @@ def test_noisy_arificial_function_loss() -> None:
 def test_run_with_error() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=1)
-    with patch("nevergrad.optimization.optimizerlib._OnePlusOne.optimize") as run:
+    with patch("nevergrad.optimization.optimizerlib._OnePlusOne.minimize") as run:
         run.side_effect = ValueError("test error string")
         with contextlib.redirect_stderr(sys.stdout):
             summary = xp.run()

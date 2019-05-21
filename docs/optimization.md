@@ -15,7 +15,7 @@ def square(x, y=12):
 optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry["OnePlusOne"]
 # (registry is a dict containing all optimizer classes)
-recommendation = optimizer.optimize(square)
+recommendation = optimizer.minimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
 ```
@@ -28,7 +28,7 @@ Defining the following instrumentation instead will optimize on both `x` and `y`
 from nevergrad import instrumentation as inst
 instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asscalar())
 optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
-recommendation = optimizer.optimize(square)
+recommendation = optimizer.minimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
 ```
@@ -42,7 +42,7 @@ Running the function evaluation in parallel with several workers is as easy as p
 from concurrent import futures
 optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
 with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
-    recommendation = optimizer.optimize(square, executor=executor, batch_mode=False)
+    recommendation = optimizer.minimize(square, executor=executor, batch_mode=False)
 ```
 With `batch_mode=True` it will ask the optimizer for `num_workers` points to evaluate, run the evaluations, then update the optimizer with the `num_workers` function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. `num_workers > 1` with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism). `batch_mode=False` (steady state mode) will ask for a new evaluation whenever a worker is ready.
 

@@ -55,7 +55,7 @@ def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expec
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        optim.optimize(func, verbosity=2, batch_mode=batch_mode)
+        optim.minimize(func, verbosity=2, batch_mode=batch_mode)
     testing.printed_assert_equal(optim.logs, expected)
 
 
@@ -100,7 +100,7 @@ def test_optimize_and_dump() -> None:
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        result = optimizer.optimize(func, verbosity=2)
+        result = optimizer.minimize(func, verbosity=2)
     np.testing.assert_almost_equal(result.data[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
     # pickling
@@ -124,7 +124,7 @@ def test_optimizer_family() -> None:
     for zero in [True, False]:
         optf = StupidFamily(zero=zero)
         opt = optf(instrumentation=2, budget=4, num_workers=1)
-        recom = opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
+        recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom.data == np.zeros(2), zero)
 
 

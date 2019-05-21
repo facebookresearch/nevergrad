@@ -15,4 +15,4 @@ if __name__ == "__main__":
                                            value2=12,
                                            string=inst.var.SoftmaxCategorical(["plop", "blublu", "plouf"]))
     opt = optimization.registry["OnePlusOne"](instrumentation, budget=4)
-    opt.optimize(func)
+    opt.minimize(func)
