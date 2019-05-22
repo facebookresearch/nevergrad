@@ -2,7 +2,7 @@
 
 ## master
 
-N/A
+- added a `Scalar` variable as a shortcut to `Array(1).asscalar(dtype)` to simplify specifying instrumentation.
 
 ## v0.2.1
 
