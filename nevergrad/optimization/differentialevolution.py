@@ -112,7 +112,7 @@ class _DE(base.Optimizer):
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
-        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
+        a, b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
         if self._parameters.hashed:
             k = self.random_state.randint(3)
             if k == 0:
