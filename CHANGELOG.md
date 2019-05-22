@@ -2,7 +2,7 @@
 
 ## master
 
-N/A
+- Renamed `optimize` to `minimize` to be more explicit. Using `optimize` will raise a `DeprecationWarning` for the time being.
 
 ## v0.2.1
 
