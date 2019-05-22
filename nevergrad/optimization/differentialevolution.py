@@ -113,17 +113,10 @@ class _DE(base.Optimizer):
             return candidate
         a, b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
         assert a is not None and b is not None
-        if self._parameters.hashed:
-            k = self.random_state.randint(3)
-            if k == 0:
-                if self._parameters.NF:
-                    donor = self.random_state.normal(0, 1, self.dimension)
-                else:
-                    donor = i
-            if k == 1:
-                donor = a
-            if k == 2:
-                donor = np.array(self.current_bests["pessimistic"].x)
+        # define donor
+        if self._parameters.hashed:  # hashed is not used for now -> to be defined
+            case_1 = self.random_state.normal(0, 1, self.dimension) if self._parameters.NF else i
+            donor = self.random_state.choice([case_1, a, self.current_bests["pessimistic"].x])
         else:
             donor = i + self._parameters.F1 * (a - b) + self._parameters.F2 * (self.current_bests["pessimistic"].x - i)
         k = self._parameters.crossover
