@@ -85,7 +85,6 @@ class _DE(base.Optimizer):
         self.match_population_size_to_lambda()
         particle = self.population.get_queued(remove=True)
         i = particle.position
-        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
 
         if i is None:
             location = self._num_ask % self.llambda
@@ -113,6 +112,7 @@ class _DE(base.Optimizer):
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
+        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
         if self._parameters.hashed:
             k = self.random_state.randint(3)
             if k == 0:
