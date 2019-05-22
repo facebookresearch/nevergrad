@@ -24,6 +24,34 @@ class DEParticle(base.utils.Particle):
         return f"Part<{self.position}, {self.fitness}, {self.active}>"
 
 
+class Crossovers:
+
+    def __init__(self, random_state: np.random.RandomState, CR: float):
+        self.random_state = random_state
+        self.CR = CR
+
+    def variablewise(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        R = self.random_state.randint(donor.size)
+        # the following could be updated to vectorial uniform sampling (changes recomms)
+        transfer = np.array([idx != R and self.random_state.uniform(0, 1) > self.CR for idx in range(donor.size)])
+        donor[transfer] = individual[transfer]
+
+    def onepoint(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        R = self.random_state.choice(np.arange(1, donor.size))
+        if self.random_state.uniform(0., 1.) < .5:
+            donor[:R] = individual[:R]
+        else:
+            donor[R:] = individual[R:]
+
+    def twopoints(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        Ra, Rb = sorted(self.random_state.choice(donor.size - 1, size=2, replace=False).tolist())
+        if self.random_state.uniform(0., 1.) < .5:
+            donor[:Ra + 1] = individual[:Ra + 1]
+            donor[Rb:] = individual[Rb:]
+        else:
+            donor[Ra: Rb + 1] = individual[Ra: Rb + 1]
+
+
 class _DE(base.Optimizer):
     """Differential evolution.
 
@@ -119,26 +147,17 @@ class _DE(base.Optimizer):
             donor = self.random_state.choice([case_1, a, self.current_bests["pessimistic"].x])
         else:
             donor = i + self._parameters.F1 * (a - b) + self._parameters.F2 * (self.current_bests["pessimistic"].x - i)
+        # apply crossover
         k = self._parameters.crossover
         assert k <= 2
-        if k == 0 or self.dimension < 3:
-            R = self.random_state.randint(self.dimension)
-            # the following could be updated to vectorial uniform sampling (changes recomms)
-            transfer = np.array([idx != R and self.random_state.uniform(0, 1) > CR for idx in range(self.dimension)])
-            donor[transfer] = i[transfer]
+        crossovers = Crossovers(self.random_state, CR)
+        if k == 0 or self.dimension < 3:  # variablewise
+            crossovers.variablewise(donor, i)
         elif k == 1 or self.dimension < 4:
-            R = self.random_state.choice(np.arange(1, self.dimension))
-            if self.random_state.uniform(0., 1.) < .5:
-                donor[:R] = i[:R]
-            else:
-                donor[R:] = i[R:]
+            crossovers.onepoint(donor, i)
         elif k == 2:
-            Ra, Rb = sorted(self.random_state.choice(self.dimension - 1, size=2, replace=False).tolist())
-            if self.random_state.uniform(0., 1.) < .5:
-                donor[:Ra + 1] = i[:Ra + 1]
-                donor[Rb:] = i[Rb:]
-            else:
-                donor[Ra: Rb + 1] = i[Ra: Rb + 1]
+            crossovers.twopoints(donor, i)
+        # create candidate
         candidate = self.create_candidate.from_data(donor)
         candidate._meta["particle"] = particle
         return candidate
