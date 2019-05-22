@@ -183,9 +183,9 @@ class _CMA(base.Optimizer):
         if self._es is None:
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
             diag = self._parameters.diagonal
+            inopts = {"popsize": popsize, "randn": self.random_state.randn, "CMA_diagonal": diag, "verbose": 0}
             self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
-                                                sigma0=self._parameters.scale,
-                                                inopts={"popsize": popsize, "randn": self.random_state.randn, "CMA_diagonal": diag})
+                                                sigma0=self._parameters.scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> base.ArrayLike:
