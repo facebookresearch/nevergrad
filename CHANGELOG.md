@@ -2,7 +2,8 @@
 
 ## master
 
-N/A
+- Optimizers now hold a `random_state` attribute which can be seeded (`optimizer.random_state.seed(12)`). Seeding `numpy`'s global random
+  state seed before initilializing the algorithm still works as well.
 
 ## v0.2.1
 
