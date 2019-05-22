@@ -82,16 +82,16 @@ class _DE(base.Optimizer):
             CR = 1. / self.dimension
         elif self._parameters.CR == "random":
             CR = self.random_state.uniform(0., 1.)
+        self.match_population_size_to_lambda()
+        particle = self.population.get_queued(remove=True)
+        i = particle.position
+        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
         # initialization
         init = self._parameters.initialization
         if self.sampler is None and init is not None:
             assert init in ["LHS", "QR"]
             sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
             self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
-        self.match_population_size_to_lambda()
-        particle = self.population.get_queued(remove=True)
-        i = particle.position
-        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
 
         if any(x is None for x in [i, a, b, c]):
             location = self._num_ask % self.llambda
