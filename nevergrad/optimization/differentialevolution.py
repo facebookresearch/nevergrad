@@ -123,9 +123,9 @@ class _DE(base.Optimizer):
         assert k <= 2
         if k == 0 or self.dimension < 3:
             R = self.random_state.randint(self.dimension)
-            for idx in range(self.dimension):
-                if idx != R and self.random_state.uniform(0, 1) > CR:
-                    donor[idx] = i[idx]
+            # the following could be updated to vectorial uniform sampling (changes recomms)
+            transfer = np.array([idx != R and self.random_state.uniform(0, 1) > CR for idx in range(self.dimension)])
+            donor[transfer] = i[transfer]
         elif k == 1 or self.dimension < 4:
             R = self.random_state.choice(np.arange(1, self.dimension))
             if self.random_state.uniform(0., 1.) < .5:
