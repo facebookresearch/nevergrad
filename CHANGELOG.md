@@ -3,7 +3,8 @@
 ## master
 
 - Optimizers now hold a `random_state` attribute which can be seeded (`optimizer.random_state.seed(12)`). Seeding `numpy`'s global random
-  state seed before initilializing the algorithm still works as well.
+  state seed **before** initializing the optimizer still works as well (but setting it between initialization and optimization does not while
+  it used to work).
 
 ## v0.2.1
 
