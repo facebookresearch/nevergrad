@@ -33,8 +33,9 @@ class _RandomSearch(OneShotOptimizer):
             return np.zeros(self.dimension)  # type: ignore
         scale = self._parameters.scale
         if isinstance(scale, str) and scale == "random":
-            scale = np.exp(np.random.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
-        point = np.random.standard_cauchy(self.dimension) if self._parameters.cauchy else np.random.normal(0, 1, self.dimension)
+            scale = np.exp(self.random_state.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
+        point = (self.random_state.standard_cauchy(self.dimension) if self._parameters.cauchy
+                 else self.random_state.normal(0, 1, self.dimension))
         return scale * point  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -105,7 +106,8 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled)
+            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled,
+                                                                        random_state=self.random_state)
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
