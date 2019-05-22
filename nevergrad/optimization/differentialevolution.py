@@ -79,15 +79,15 @@ class _DE(base.Optimizer):
         if self.sampler is None and init is not None:
             assert init in ["LHS", "QR"]
             sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR")
+            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
         self.match_population_size_to_lambda()
         particle = self.population.get_queued(remove=True)
         i = particle.position
-        a, b, c = (self.population[self.population.uuids[np.random.randint(self.llambda)]].position for _ in range(3))
+        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
 
         CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
         if self._parameters.por_DE:
-            CR = np.random.uniform(0., 1.)
+            CR = self.random_state.uniform(0., 1.)
 
         if any(x is None for x in [i, a, b, c]):
             location = self._num_ask % self.llambda
@@ -98,10 +98,10 @@ class _DE(base.Optimizer):
             if self._parameters.hyperinoc:
                 p = [float(self.llambda - location), location]
                 p = [p_ / sum(p) for p_ in p]
-                sample = self.sampler() if init is not None else np.random.normal(0, 1, self.dimension)  # type: ignore
-                new_guy = tuple([np.random.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
+                sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
+                new_guy = tuple([self.random_state.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
             else:
-                new_guy = tuple(inoc * self.scale * (np.random.normal(0, 1, self.dimension)
+                new_guy = tuple(inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
                                                      if init is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             particle.position = np.array(new_guy)  #
@@ -114,10 +114,10 @@ class _DE(base.Optimizer):
         b = np.array(b)
         c = np.array(c)
         if self._parameters.hashed:
-            k = np.random.randint(3)
+            k = self.random_state.randint(3)
             if k == 0:
                 if self.NF:
-                    donor = np.random.normal(0, 1, self.dimension)
+                    donor = self.random_state.normal(0, 1, self.dimension)
                 else:
                     donor = i
             if k == 1:
@@ -129,21 +129,21 @@ class _DE(base.Optimizer):
         k = self._parameters.crossover
         assert k <= 2
         if k == 0 or self.dimension < 3:
-            R = np.random.randint(self.dimension)
+            R = self.random_state.randint(self.dimension)
             for idx in range(self.dimension):
-                if idx != R and np.random.uniform(0, 1) > CR:
+                if idx != R and self.random_state.uniform(0, 1) > CR:
                     donor[idx] = i[idx]
         elif k == 1 or self.dimension < 4:
-            R = np.random.choice(np.arange(1, self.dimension))
-            if np.random.uniform(0., 1.) < .5:
+            R = self.random_state.choice(np.arange(1, self.dimension))
+            if self.random_state.uniform(0., 1.) < .5:
                 for idx in range(R):
                     donor[idx] = i[idx]
             else:
                 for idx in range(R, self.dimension):
                     donor[idx] = i[idx]
         elif k == 2:
-            Ra, Rb = np.random.choice(self.dimension - 1, size=2, replace=False)
-            if np.random.uniform(0., 1.) < .5:
+            Ra, Rb = self.random_state.choice(self.dimension - 1, size=2, replace=False)
+            if self.random_state.uniform(0., 1.) < .5:
                 for idx in range(self.dimension):
                     if (idx - Ra) * (idx - Rb) >= 0:
                         donor[idx] = i[idx]

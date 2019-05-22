@@ -124,8 +124,9 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
-    np.random.seed(12)
+    np.random.seed(None)
     if optimizer_cls.recast:
+        np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
     budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
@@ -138,6 +139,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
+    optim.random_state.seed(12)
     np.testing.assert_equal(optim.name, name)
     # the following context manager speeds up BO tests
     # BEWARE: BO tests are deterministic but can get different results from a computer to another.
@@ -218,11 +220,11 @@ def test_tell_not_asked(name: str) -> None:
 
 
 def test_tbpsa_recom_with_update() -> None:
-    np.random.seed(12)
     budget = 20
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4])
     optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
+    optim.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.optimize(fitness)
     np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
