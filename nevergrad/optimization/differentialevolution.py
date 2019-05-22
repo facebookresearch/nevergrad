@@ -129,22 +129,16 @@ class _DE(base.Optimizer):
         elif k == 1 or self.dimension < 4:
             R = self.random_state.choice(np.arange(1, self.dimension))
             if self.random_state.uniform(0., 1.) < .5:
-                for idx in range(R):
-                    donor[idx] = i[idx]
+                donor[:R] = i[:R]
             else:
-                for idx in range(R, self.dimension):
-                    donor[idx] = i[idx]
+                donor[R:] = i[R:]
         elif k == 2:
-            Ra, Rb = self.random_state.choice(self.dimension - 1, size=2, replace=False)
+            Ra, Rb = sorted(self.random_state.choice(self.dimension - 1, size=2, replace=False).tolist())
             if self.random_state.uniform(0., 1.) < .5:
-                for idx in range(self.dimension):
-                    if (idx - Ra) * (idx - Rb) >= 0:
-                        donor[idx] = i[idx]
+                donor[:Ra + 1] = i[:Ra + 1]
+                donor[Rb:] = i[Rb:]
             else:
-                for idx in range(self.dimension):
-                    if (idx - Ra) * (idx - Rb) <= 0:
-                        donor[idx] = i[idx]
-        donor = tuple(donor)
+                donor[Ra: Rb + 1] = i[Ra: Rb + 1]
         candidate = self.create_candidate.from_data(donor)
         candidate._meta["particle"] = particle
         return candidate
