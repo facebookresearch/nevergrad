@@ -40,11 +40,6 @@ class _OnePlusOne(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedOnePlusOne()
-        self._mutations: Dict[str, Callable[[base.ArrayLike], base.ArrayLike]] = {
-            "discrete": mutations.discrete_mutation,
-            "fastga": mutations.doerr_discrete_mutation,
-            "doublefastga": mutations.doubledoerr_discrete_mutation,
-            "portfolio": mutations.portfolio_discrete_mutation}
         self._sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -63,9 +58,10 @@ class _OnePlusOne(base.Optimizer):
                 elif strategy == "optimistic":
                     return self.current_bests["optimistic"].x
         # crossover
+        mutator = mutations.Mutator(self.random_state)
         if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
+            return mutator.crossover(self.current_bests["pessimistic"].x,
+                                     mutator.get_roulette(self.archive, num=2))
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
@@ -74,12 +70,17 @@ class _OnePlusOne(base.Optimizer):
             return self.current_bests["pessimistic"].x + self._sigma * self.random_state.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+                return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
             else:
-                return mutations.crossover(self.current_bests["pessimistic"].x,
-                                           mutations.get_roulette(self.archive, num=2))
+                return mutator.crossover(self.current_bests["pessimistic"].x,
+                                         mutator.get_roulette(self.archive, num=2))
         else:
-            return self._mutations[mutation](self.current_bests["pessimistic"].x)
+            func: Callable[[base.ArrayLike], base.ArrayLike] = {  # type: ignore
+                "discrete": mutator.discrete_mutation,
+                "fastga": mutator.doerr_discrete_mutation,
+                "doublefastga": mutator.doubledoerr_discrete_mutation,
+                "portfolio": mutator.portfolio_discrete_mutation}[mutation]
+            return func(self.current_bests["pessimistic"].x)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
@@ -743,7 +744,7 @@ class Portfolio(base.Optimizer):
             self.optims = [ScrHammersleySearch(instrumentation, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
@@ -790,7 +791,7 @@ class ParaPortfolio(Portfolio):
                        ScrHammersleySearch(instrumentation, budget=(budget // len(self.which_optim)) * nw4)
                        ]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask_candidate(self) -> base.Candidate:
@@ -820,7 +821,7 @@ class ParaSQPCMA(ParaPortfolio):
                 self.optims[-1].initial_guess = self.random_state.normal(0, 1, self.dimension)  # type: ignore
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -833,7 +834,7 @@ class ASCMADEthird(Portfolio):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        LhsDE(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
@@ -868,7 +869,7 @@ class ASCMADEQRthird(ASCMADEthird):
                        LhsDE(instrumentation, budget=None, num_workers=num_workers),
                        ScrHaltonSearch(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -880,7 +881,7 @@ class ASCMA2PDEthird(ASCMADEQRthird):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -900,7 +901,7 @@ class CMandAS2(ASCMADEthird):
                            CMA(instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -920,7 +921,7 @@ class CMandAS(CMandAS2):
                            CMA(instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 3
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -937,7 +938,7 @@ class CM(CMandAS2):
         if budget > 50 * self.dimension:
             self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -951,7 +952,7 @@ class MultiCMA(CM):
                        CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
         self.budget_before_choosing = budget // 10
 
 
@@ -966,7 +967,7 @@ class TripleCMA(CM):
                        CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
         self.budget_before_choosing = budget // 3
 
 
@@ -980,7 +981,7 @@ class MultiScaleCMA(CM):
                        MilliCMA(instrumentation, budget=None, num_workers=num_workers),
                        MicroCMA(instrumentation, budget=None, num_workers=num_workers)]
         for optim in self.optims:
-            optim.random_state = self.random_state  # share the state
+            optim._random_state = self.random_state  # share the state
         assert budget is not None
         self.budget_before_choosing = budget // 3
 
