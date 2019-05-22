@@ -33,6 +33,12 @@ def test_gaussian() -> None:
     np.testing.assert_equal(token.data_to_argument(token.argument_to_data(12)), 12)
 
 
+def test_scalar() -> None:
+    token = variables.Scalar(int)
+    np.testing.assert_equal(token.data_to_argument([.7]), 1)
+    np.testing.assert_equal(token.argument_to_data(1), [1.])
+
+
 def test_array_as_ascalar() -> None:
     var = variables.Array(1).exponentiated(10, -1).asscalar()
     data = np.array([2])
