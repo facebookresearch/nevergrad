@@ -41,7 +41,6 @@ class _DE(base.Optimizer):
         self._llambda: Optional[int] = None
         self.population: base.utils.Population[DEParticle] = base.utils.Population([])
         self.sampler: Optional[sequences.Sampler] = None
-        self.NF = False  # This is not a noise-free variant of DE.
         self._replaced: Set[bytes] = set()
 
     @property
@@ -113,10 +112,11 @@ class _DE(base.Optimizer):
             candidate._meta["particle"] = particle
             return candidate
         a, b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
+        assert a is not None and b is not None
         if self._parameters.hashed:
             k = self.random_state.randint(3)
             if k == 0:
-                if self.NF:
+                if self._parameters.NF:
                     donor = self.random_state.normal(0, 1, self.dimension)
                 else:
                     donor = i
