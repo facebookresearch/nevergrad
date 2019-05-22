@@ -10,6 +10,8 @@ from . import utils
 
 
 class Mutator:
+    """Class defining mutations, and holding a random state used for random generation.
+    """
 
     def __init__(self, random_state: np.random.RandomState) -> None:
         self.random_state = random_state
