@@ -75,6 +75,14 @@ class _DE(base.Optimizer):
         return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> base.Candidate:
+        # crossover rate
+        if isinstance(self._parameters.CR, float):
+            CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
+        elif self._parameters.CR == "dimension":
+            CR = 1. / self.dimension
+        elif self._parameters.CR == "random":
+            CR = self.random_state.uniform(0., 1.)
+        # initialization
         init = self._parameters.initialization
         if self.sampler is None and init is not None:
             assert init in ["LHS", "QR"]
@@ -84,10 +92,6 @@ class _DE(base.Optimizer):
         particle = self.population.get_queued(remove=True)
         i = particle.position
         a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
-
-        CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
-        if self._parameters.por_DE:
-            CR = self.random_state.uniform(0., 1.)
 
         if any(x is None for x in [i, a, b, c]):
             location = self._num_ask % self.llambda
@@ -109,10 +113,6 @@ class _DE(base.Optimizer):
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
-        i = np.array(i)
-        a = np.array(a)
-        b = np.array(b)
-        c = np.array(c)
         if self._parameters.hashed:
             k = self.random_state.randint(3)
             if k == 0:
@@ -182,7 +182,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
     _optimizer_class = _DE
 
-    def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
+    def __init__(self, *, initialization: Optional[str] = None, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic", NF: bool = True,
                  CR: Union[str, float] = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard",
                  hashed: bool = False) -> None:
@@ -197,8 +197,6 @@ class DifferentialEvolution(base.ParametrizedFamily):
         ----------
         initialization: "LHS", "QR" or None
             algorithm for the initialization phase
-        por_DE: bool
-            TODO
         scale: float
             scale of random component of the updates
         inoculation: bool
@@ -207,12 +205,12 @@ class DifferentialEvolution(base.ParametrizedFamily):
             TODO
         recommendation: "pessimistic", "optimistic", "mean" or "noisy"
             choice of the criterion for the best point to recommend
-        CR: float
-            TODO
+        CR: float or str
+            crossover rate value, or strategy ("dimension" leads to 1 / dimension, and "random" a uniform sampling each iteration)
         F1: float
-            TODO
+            differential weight #1
         F2: float
-            TODO
+            differential weight #2
         crossover: int
             TODO
         popsize: "standard", "dimension", "large"
@@ -229,9 +227,8 @@ class DifferentialEvolution(base.ParametrizedFamily):
         assert initialization in [None, "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
-        assert isinstance(CR, float) or CR == "dimension"
+        assert isinstance(CR, float) or CR in ["dimension", "random"]
         self.initialization = initialization
-        self.por_DE = por_DE
         self.scale = scale
         self.inoculation = inoculation
         self.hyperinoc = hyperinoc
