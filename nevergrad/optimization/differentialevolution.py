@@ -111,9 +111,9 @@ class _DE(base.Optimizer):
             CR = self.random_state.uniform(0., 1.)
         self.match_population_size_to_lambda()
         particle = self.population.get_queued(remove=True)
-        i = particle.position
+        individual = particle.position
 
-        if i is None:
+        if individual is None:
             location = self._num_ask % self.llambda
             if self._parameters.inoculation:
                 inoc = float(location) / float(self.llambda)
@@ -139,24 +139,26 @@ class _DE(base.Optimizer):
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
-        a, b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
-        assert a is not None and b is not None
         # define donor
+        indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
+        assert indiv_a is not None and indiv_b is not None
         if self._parameters.hashed:  # hashed is not used for now -> to be defined
-            case_1 = self.random_state.normal(0, 1, self.dimension) if self._parameters.NF else i
-            donor = self.random_state.choice([case_1, a, self.current_bests["pessimistic"].x])
+            case_1 = self.random_state.normal(0, 1, self.dimension) if self._parameters.NF else individual
+            donor = self.random_state.choice([case_1, indiv_a, self.current_bests["pessimistic"].x])
         else:
-            donor = i + self._parameters.F1 * (a - b) + self._parameters.F2 * (self.current_bests["pessimistic"].x - i)
+            donor = individual + \
+                self._parameters.F1 * (indiv_a - indiv_b) + \
+                self._parameters.F2 * (self.current_bests["pessimistic"].x - individual)
         # apply crossover
         k = self._parameters.crossover
         assert k <= 2
         crossovers = Crossovers(self.random_state, CR)
         if k == 0 or self.dimension < 3:  # variablewise
-            crossovers.variablewise(donor, i)
+            crossovers.variablewise(donor, individual)
         elif k == 1 or self.dimension < 4:
-            crossovers.onepoint(donor, i)
+            crossovers.onepoint(donor, individual)
         elif k == 2:
-            crossovers.twopoints(donor, i)
+            crossovers.twopoints(donor, individual)
         # create candidate
         candidate = self.create_candidate.from_data(donor)
         candidate._meta["particle"] = particle
