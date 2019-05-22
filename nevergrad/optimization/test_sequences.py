@@ -41,7 +41,8 @@ def test_sampler_draw() -> None:
 
 
 @testing.parametrized(
-    lhs=("LHSSampler", [0.069, 0.106, 0.384], [0.282, 0.857, 0.688]),
+    # lhs=("LHSSampler", [0.069, 0.106, 0.384], [0.282, 0.857, 0.688]),  # previous: for the record
+    lhs=("LHSSampler", [0.931, 0.422, 0.391], [0.428, 0.625, 0.797]),
     halton=("HaltonSampler", [0.5, 0.333, 0.2], [0.25, 0.667, 0.4]),
 )
 def test_sampler_values(name: str, seq1: List[float], seq2: List[float]) -> None:
@@ -65,7 +66,8 @@ def test_permutation_generator() -> None:
     gen = sequences.HaltonPermutationGenerator(5, scrambling=True)
     value3 = list(gen.get_permutations_generator())
     testing.printed_assert_equal(value1, value2)
-    testing.printed_assert_equal(value1[:3], [[0, 1], [0, 2, 1], [0, 4, 3, 2, 1]])
+    # testing.printed_assert_equal(value1[:3], [[0, 1], [0, 2, 1], [0, 4, 3, 2, 1]])  # previous: for the record
+    testing.printed_assert_equal(value1[:3], [[0, 1], [0, 1, 2], [0, 2, 3, 1, 4]])
     np.testing.assert_raises(AssertionError, testing.printed_assert_equal, value3, value2)
     #
     gen = sequences.HaltonPermutationGenerator(5, scrambling=False)
