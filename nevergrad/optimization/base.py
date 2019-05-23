@@ -255,8 +255,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._callbacks = {}
 
     def suggest(self, *args: Any, **kwargs: Any) -> None:
-        """Requests a new point to ask.
-        It will be ask at the next call (last in first out).
+        """Suggests a new point to ask.
+        It will be asked at the next call (last in first out).
 
         Parameters
         ----------
@@ -265,9 +265,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Note
         ----
-        This relies on optmizers implementing a way to deal with unasked candidate.
-        Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
-        at "tell" time.
+        - This relies on optmizers implementing a way to deal with unasked candidate.
+          Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
+          at "tell" time.
+        - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
+          calling optimizer.create_candidate.from_call.
         """
         self._suggestions.append(self.create_candidate.from_call(*args, **kwargs))
 
