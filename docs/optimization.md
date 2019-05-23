@@ -50,7 +50,7 @@ With `batch_mode=True` it will ask the optimizer for `num_workers` points to eva
 An *ask and tell* interface is also available. The 3 key methods for this interface are respectively:
 - `ask`: suggest a candidate on which to evaluate the function to optimize.
 - `tell`: for updated the optimizer with the value of the function for a candidate.
-- `provide_recommendation`: returns the candidate the algorithms considers the best.
+- `recommend`: returns the candidate the algorithms considers the best.
 For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute `no_parallelization=True` however do not support this.
 
 The `Candidate` class holds attributes `args` and `kwargs` corresponding to the `args` and `kwargs` of the function you optimize,
@@ -62,7 +62,7 @@ for _ in range(optimizer.budget):
     x = optimizer.ask()
     value = square(*x.args, **x.kwargs)
     optimizer.tell(x, value)
-recommendation = optimizer.provide_recommendation()
+recommendation = optimizer.recommend()
 ```
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)

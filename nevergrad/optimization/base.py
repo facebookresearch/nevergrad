@@ -136,11 +136,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
     - "ask()" which provides a candidate on which to evaluate the function to optimize
     - "tell(candidate, value)" which lets you provide the values associated to points
-    - "provide_recommendation()" which provides the best final candidate
+    - "recommend()" which provides the best final candidate
     Typically, one would call "ask()" num_workers times, evaluate the
     function on these num_workers points in parallel, update with the fitness value when the
     evaluations is finished, and iterate until the budget is over. At the very end,
-    one would call provide_recommendation for the estimated optimum.
+    one would call `recommend()` for the estimated optimum.
 
     This class is abstract, it provides _internal equivalents for the 3 main functions,
     among which at least _internal_ask has to be overridden.
@@ -363,6 +363,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
             on the function (objective_function(*candidate.args, **candidate.kwargs)).
         """
+        warnings.warn("'provide_recommendation' method is deprecated, please use 'recommend' instead", DeprecationWarning)
         return self.recommend()  # duplicate method
 
     def recommend(self) -> Candidate:
