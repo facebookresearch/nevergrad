@@ -14,7 +14,7 @@ from . import sequences
 
 class DEParticle(base.utils.Particle):
 
-    def __init__(self, position: Optional[np.ndarray] = None, fitness: Optional[float] = None):
+    def __init__(self, position: np.ndarray, fitness: Optional[float] = None):
         super().__init__()
         self.position = position
         self.fitness = fitness
@@ -87,11 +87,6 @@ class _DE(base.Optimizer):
             self._llambda = max(30, self.num_workers, pop_choice[self._parameters.popsize])
         return self._llambda
 
-    def match_population_size_to_lambda(self) -> None:
-        current_pop = len(self.population)
-        if current_pop < self.llambda:
-            self.population.extend(DEParticle() for _ in range(self.llambda - current_pop))
-
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
@@ -109,11 +104,9 @@ class _DE(base.Optimizer):
             CR = 1. / self.dimension
         elif self._parameters.CR == "random":
             CR = self.random_state.uniform(0., 1.)
-        self.match_population_size_to_lambda()
-        particle = self.population.get_queued(remove=True)
-        individual = particle.position
-
-        if individual is None:
+        # initialization
+        current_pop = len(self.population)
+        if current_pop < self.llambda:
             location = self._num_ask % self.llambda
             if self._parameters.inoculation:
                 inoc = float(location) / float(self.llambda)
@@ -134,11 +127,16 @@ class _DE(base.Optimizer):
                 new_guy = tuple(inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
                                                      if init is None
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
-            particle.position = np.array(new_guy)  #
-            particle.fitness = None  #
+            particle = DEParticle(np.array(new_guy))
+            self.population.extend([particle])
+            self.population.get_queued(remove=True)  # since it was just added
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
+
+        # init is done
+        particle = self.population.get_queued(remove=True)
+        individual = particle.position
         # define donor
         indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
         assert indiv_a is not None and indiv_b is not None
@@ -169,20 +167,21 @@ class _DE(base.Optimizer):
         if not particle.active:
             self._internal_tell_not_asked(candidate, value)
             return
-        self.match_population_size_to_lambda()
         if particle.fitness is None or value <= particle.fitness:
             particle.position = candidate.data
             particle.fitness = value
         self.population.set_queued(particle)
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        self.match_population_size_to_lambda()
-        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
-        if worst_part.fitness is not None and worst_part.fitness < value:
-            return  # no need to update
+        worst_part = None
+        if not len(self.population) < self.llambda:
+            worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
+            if worst_part.fitness is not None and worst_part.fitness < value:
+                return  # no need to update
         particle = DEParticle(position=candidate.data, fitness=value)
-        self.population.replace(worst_part, particle)
-        worst_part.active = False
+        if worst_part is not None:
+            self.population.replace(worst_part, particle)
+            worst_part.active = False
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
