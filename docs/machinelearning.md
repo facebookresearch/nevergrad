@@ -10,11 +10,11 @@ def myfunction(lr, num_layers, arg3, arg4, other_anything):
 You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete` for all discrete variables (yes, even if they are not ordered), `Array` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne` as optimizer.
 
 ```python
-from nevergrad import instrumentation as inst
+import nevergrad as ng
 # instrument learning rate and number of layers, keep arg3 to 3 and arg4 to 4
-lr = inst.var.Array(1).asscalar().bounded(0, 3).exponentiated(base=10, coeff=-1)  # log distributed between 0.001 and 1
-num_layers = inst.var.OrderedDiscrete([4, 5, 6])
-instrumentation = inst.Instrumentation(lr, num_layers, 3., arg4=4)
+lr = ng.var.Array(1).asscalar().bounded(0, 3).exponentiated(base=10, coeff=-1)  # log distributed between 0.001 and 1
+num_layers = ng.var.OrderedDiscrete([4, 5, 6])
+instrumentation = ng.Instrumentation(lr, num_layers, 3., arg4=4)
 ```
 
 Just take care that the default value (your initial guess) is at the middle in the list of possible values for `OrderedDiscrete`, and 0 for `Array` (you can modify this with `Array` methods). You can check that things are correct by checking that for zero you get the default:
@@ -47,8 +47,7 @@ The third example is the optimization of parameters in a noisy setting, typicall
 
 Let's first define our test case:
 ```python
-import nevergrad.optimization as optimization
-from nevergrad import instrumentation as inst
+import nevergrad as ng
 import numpy as np
 
 
@@ -59,7 +58,7 @@ print("Optimization of continuous hyperparameters =========")
 def train_and_return_test_error(x):
     return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in x])
 
-instrumentation = inst.Instrumentation(inst.var.Array(300))  # optimize on R^300
+instrumentation = ng.Instrumentation(ng.var.Array(300))  # optimize on R^300
 
 budget = 1200  # How many trainings we will do before concluding.
 
@@ -77,7 +76,7 @@ A complete list is available in `nevergrad.optimization.registry`.
 
 ```python
 for name in names:
-    optim = optimization.registry[name](instrumentation=instrumentation, budget=budget)
+    optim = ng.optimizers.registry[name](instrumentation=instrumentation, budget=budget)
     for u in range(budget // 3):
         x1 = optim.ask()
         # Ask and tell can be asynchronous.
@@ -94,7 +93,7 @@ for name in names:
         optim.tell(x1, y1)
         optim.tell(x2, y2)
         optim.tell(x3, y3)
-    recommendation = optim.provide_recommendation()
+    recommendation = optim.recommend()
     print("* ", name, " provides a vector of parameters with test error ",
           train_and_return_test_error(*recommendation.args, **recommendation.kwargs))
 ```
@@ -128,17 +127,17 @@ def myfunction(arg1, arg2, arg3, value=3):
 
 This function must then be instrumented in order to let the optimizer now what are the arguments:
 ```python
-from nevergrad import instrumentation as inst
+import nevergrad as ng
 # argument transformation
 # Optimization of mixed (continuous and discrete) hyperparameters.
-arg1 = inst.variables.OrderedDiscrete(["a", "b"])  # 1st arg. = positional discrete argument
+arg1 = ng.var.OrderedDiscrete(["a", "b"])  # 1st arg. = positional discrete argument
 # We apply a softmax for converting real numbers to discrete values.
-arg2 = inst.variables.SoftmaxCategorical(["a", "c", "e"])  # 2nd arg. = positional discrete argument
-value = inst.variables.Gaussian(mean=1, std=2)  # the 4th arg. is a keyword argument with Gaussian prior
+arg2 = ng.var.SoftmaxCategorical(["a", "c", "e"])  # 2nd arg. = positional discrete argument
+value = ng.var.Gaussian(mean=1, std=2)  # the 4th arg. is a keyword argument with Gaussian prior
 
 # create the instrumentation
 # the 3rd arg. is a positional arg. which will be kept constant to "blublu"
-instrumentation = inst.Instrumentation(arg1, arg2, "blublu", value=value)
+instrumentation = ng.Instrumentation(arg1, arg2, "blublu", value=value)
 
 print(instrumentation.dimension)  # 5 dimensional space
 ```
@@ -167,11 +166,12 @@ The function therefore returns 7 + 1 = 8.
 
 Then you can run the optimization as usual. PortfolioDiscreteOnePlusOne is quite a natural choice when you have a good initial guess and a mix of discrete and continuous variables; in this case, it might be better to use `OrderedDiscrete` rather than `SoftmaxCategorical`.  
 `TwoPointsDE` is often excellent in the large scale case (budget in the hundreds).
+
 ```python
-import nevergrad.optimization as optimization
+import nevergrad as ng
 budget = 1200  # How many episode we will do before concluding.
 for name in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDiscreteOnePlusOne", "CMA", "PSO"]:
-    optim = optimization.registry[name](instrumentation=instrumentation, budget=budget)
+    optim = ng.optimizers.registry[name](instrumentation=instrumentation, budget=budget)
     for u in range(budget // 3):
         x1 = optim.ask()
         # Ask and tell can be asynchronous.
@@ -188,7 +188,7 @@ for name in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDis
         optim.tell(x1, y1)
         optim.tell(x2, y2)
         optim.tell(x3, y3)
-    recommendation = optim.provide_recommendation()
+    recommendation = optim.recommend()
     print("* ", name, " provides a vector of parameters with test error ",
           myfunction(*recommendation.args, **recommendation.kwargs))
 ```
@@ -234,7 +234,7 @@ We do not average evaluations over multiple episodes - the algorithm is in charg
 `TBPSA`, based on population-control mechasnisms, performs quite well in this case.
 
 ```python
-import nevergrad.optimization as optimization
+import nevergrad as ng
 import numpy as np
 
 # Similar, but with a noisy case: typically a case in which we train in reinforcement learning.
@@ -256,7 +256,7 @@ budget = 1200  # How many trainings we will do before concluding.
 for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
         "PortfolioNoisyDiscreteOnePlusOne"]:
 
-    optim = optimization.registry[tool](instrumentation=300, budget=budget)
+    optim = ng.optimizers.registry[tool](instrumentation=300, budget=budget)
 
     for u in range(budget // 3):
         # Ask and tell can be asynchronous.
@@ -275,7 +275,7 @@ for tool in ["TwoPointsDE", "RandomSearch", "TBPSA", "CMA", "NaiveTBPSA",
         optim.tell(x2, y2)
         optim.tell(x3, y3)
 
-    recommendation = optim.provide_recommendation()
+    recommendation = optim.recommend()
     print("* ", tool, " provides a vector of parameters with test error ",
           simulate_and_return_test_error_with_rl(*recommendation.args, noisy=False))
 ```

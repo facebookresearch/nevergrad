@@ -7,12 +7,12 @@
 Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can be easily run with:
 
 ```python
-from nevergrad.optimization import optimizerlib
+import nevergrad as ng
 
 def square(x, y=12):
     return sum((x - .5)**2) + abs(y)
 
-optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
+optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
 # alternatively, you can use optimizerlib.registry["OnePlusOne"]
 # (registry is a dict containing all optimizer classes)
 recommendation = optimizer.optimize(square)
@@ -25,9 +25,8 @@ In this example, the optimal value will be found in `recommendation.args[0]` and
 `instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
 Defining the following instrumentation instead will optimize on both `x` and `y`.
 ```python
-from nevergrad import instrumentation as inst
-instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asscalar())
-optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
+instrum = ng.Instrumentation(ng.var.Array(2), y=ng.var.Array(1).asscalar())
+optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.optimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
@@ -40,7 +39,7 @@ See the [instrumentation tutorial](instrumentation.md) for more complex instrume
 Running the function evaluation in parallel with several workers is as easy as provided an executor:
 ```python
 from concurrent import futures
-optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
+optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
 with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
     recommendation = optimizer.optimize(square, executor=executor, batch_mode=False)
 ```
@@ -72,8 +71,8 @@ Please make sure that your function returns a float, and that you indeed want to
 
 **You can print the full list of optimizers** with:
 ```
-from nevergrad.optimization import registry
-print(sorted(registry.keys()))
+import nevergrad as ng
+print(sorted(ng.optimizers.registry.keys()))
 ```
 
 All algorithms have strenghts and weaknesses. Questionable rules of thumb could be:
