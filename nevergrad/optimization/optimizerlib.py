@@ -40,11 +40,6 @@ class _OnePlusOne(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedOnePlusOne()
-        self._mutations: Dict[str, Callable[[base.ArrayLike], base.ArrayLike]] = {
-            "discrete": mutations.discrete_mutation,
-            "fastga": mutations.doerr_discrete_mutation,
-            "doublefastga": mutations.doubledoerr_discrete_mutation,
-            "portfolio": mutations.portfolio_discrete_mutation}
         self._sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -58,28 +53,34 @@ class _OnePlusOne(base.Optimizer):
             strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
-                    idx = np.random.choice(len(self.archive))
+                    idx = self.random_state.choice(len(self.archive))
                     return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
                 elif strategy == "optimistic":
                     return self.current_bests["optimistic"].x
         # crossover
+        mutator = mutations.Mutator(self.random_state)
         if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
-            return mutations.crossover(self.current_bests["pessimistic"].x,
-                                       mutations.get_roulette(self.archive, num=2))
+            return mutator.crossover(self.current_bests["pessimistic"].x,
+                                     mutator.get_roulette(self.archive, num=2))
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * np.random.normal(0, 1, self.dimension)  # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self.random_state.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
-            return self.current_bests["pessimistic"].x + self._sigma * np.random.standard_cauchy(self.dimension)  # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self.random_state.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutations.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+                return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
             else:
-                return mutations.crossover(self.current_bests["pessimistic"].x,
-                                           mutations.get_roulette(self.archive, num=2))
+                return mutator.crossover(self.current_bests["pessimistic"].x,
+                                         mutator.get_roulette(self.archive, num=2))
         else:
-            return self._mutations[mutation](self.current_bests["pessimistic"].x)
+            func: Callable[[base.ArrayLike], base.ArrayLike] = {  # type: ignore
+                "discrete": mutator.discrete_mutation,
+                "fastga": mutator.doerr_discrete_mutation,
+                "doublefastga": mutator.doubledoerr_discrete_mutation,
+                "portfolio": mutator.portfolio_discrete_mutation}[mutation]
+            return func(self.current_bests["pessimistic"].x)
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
@@ -182,9 +183,9 @@ class _CMA(base.Optimizer):
         if self._es is None:
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
             diag = self._parameters.diagonal
+            inopts = {"popsize": popsize, "randn": self.random_state.randn, "CMA_diagonal": diag, "verbose": 0}
             self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
-                                                sigma0=self._parameters.scale,
-                                                inopts={"popsize": popsize, "seed": np.nan, "CMA_diagonal": diag})
+                                                sigma0=self._parameters.scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -269,9 +270,9 @@ class EDA(base.Optimizer):
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
-        mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.dimension))
+        mutated_sigma = self.sigma * np.exp(self.random_state.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        individual = tuple(mutated_sigma * np.random.multivariate_normal(self.current_center, self.covariance))
+        individual = tuple(mutated_sigma * self.random_state.multivariate_normal(self.current_center, self.covariance))
         self.unevaluated_population_sigma += [mutated_sigma]
         self.unevaluated_population += [tuple(individual)]
         return individual
@@ -447,6 +448,9 @@ class ParticleTBPSA:
         self.sigma = sigma
         self.loss = loss
 
+    def __repr__(self) -> str:
+        return f"Part<{self.position}, {self.sigma}, {self.loss}>"
+
 
 @registry.register
 class TBPSA(base.Optimizer):
@@ -474,8 +478,8 @@ class TBPSA(base.Optimizer):
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
-        mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.dimension))
-        individual = self.current_center + mutated_sigma * np.random.normal(0, 1, self.dimension)
+        mutated_sigma = self.sigma * np.exp(self.random_state.normal(0, 1) / np.sqrt(self.dimension))
+        individual = self.current_center + mutated_sigma * self.random_state.normal(0, 1, self.dimension)
         self._unevaluated_population[individual.tobytes()] = ParticleTBPSA(individual, sigma=mutated_sigma)
         return individual  # type: ignore
 
@@ -536,10 +540,10 @@ class NoisyBandit(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
-            return np.random.normal(0, 1, self.dimension)  # type: ignore
-        if np.random.choice([True, False]):
+            return self.random_state.normal(0, 1, self.dimension)  # type: ignore
+        if self.random_state.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
-            idx = np.random.choice(len(self.archive))
+            idx = self.random_state.choice(len(self.archive))
             return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
         return self.current_bests["optimistic"].x
 
@@ -553,28 +557,29 @@ class PSOParticle(utils.Particle):
 
     # pylint: disable=too-many-arguments
     def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
-                 best_position: np.ndarray, best_fitness: float) -> None:
+                 best_position: np.ndarray, best_fitness: float, random_state: np.random.RandomState) -> None:
         super().__init__()
         self.position = position
         self.speed = speed
         self.fitness = fitness
         self.best_position = best_position
         self.best_fitness = best_fitness
+        self.random_state = random_state
         self.active = True
 
     @classmethod
-    def random_initialization(cls, dimension: int) -> 'PSOParticle':
-        position = np.random.uniform(0., 1., dimension)
-        speed = np.random.uniform(-1., 1., dimension)
-        return cls(position, None, speed, position, float("inf"))
+    def random_initialization(cls, dimension: int, random_state: np.random.RandomState) -> 'PSOParticle':
+        position = random_state.uniform(0., 1., dimension)
+        speed = random_state.uniform(-1., 1., dimension)
+        return cls(position, None, speed, position, float("inf"), random_state=random_state)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.fitness}, best: {self.best_fitness}>"
 
     def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
         dim = len(best_position)
-        rp = np.random.uniform(0., 1., size=dim)
-        rg = np.random.uniform(0., 1., size=dim)
+        rp = self.random_state.uniform(0., 1., size=dim)
+        rg = self.random_state.uniform(0., 1., size=dim)
         self.speed = (omega * self.speed
                       + phip * rp * (self.best_position - self.position)
                       + phig * rg * (best_position - self.position))
@@ -607,7 +612,8 @@ class PSO(base.Optimizer):
     def _internal_ask_candidate(self) -> base.Candidate:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
-            additional = [self._PARTICULE.random_initialization(self.dimension) for _ in range(self.llambda - len(self.population))]
+            additional = [self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
+                          for _ in range(self.llambda - len(self.population))]
             self.population.extend(additional)
         particle = self.population.get_queued(remove=False)
         if particle.fitness is not None:  # particle was already initialized
@@ -641,14 +647,14 @@ class PSO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         if len(self.population) < self.llambda:
-            particle = self._PARTICULE.random_initialization(self.dimension)
+            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
             particle.position = self._PARTICULE.transform.backward(x)
             self.population.extend([particle])
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
             if worst_part.best_fitness < value:
                 return  # no need to update
-            particle = self._PARTICULE.random_initialization(self.dimension)
+            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
             particle.position = self._PARTICULE.transform.backward(x)
             worst_part.active = False
             self.population.replace(worst_part, particle)
@@ -675,7 +681,6 @@ class SPSA(base.Optimizer):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self._rng = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
         self.init = True
         self.idx = 0
         self.delta = float('nan')
@@ -711,7 +716,7 @@ class SPSA(base.Optimizer):
                 assert self.yp is not None and self.ym is not None
                 self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
-            self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
+            self.delta = 2 * self.random_state.randint(2, size=self.dimension) - 1
             return self.t - self.ck(k) * self.delta  # type:ignore
         return self.t + self.ck(k) * self.delta  # type: ignore
 
@@ -738,6 +743,8 @@ class Portfolio(base.Optimizer):
         if budget < 12 * num_workers:
             self.optims = [ScrHammersleySearch(instrumentation, budget, num_workers)]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
@@ -783,6 +790,8 @@ class ParaPortfolio(Portfolio):
                        SQP(instrumentation, 1),
                        ScrHammersleySearch(instrumentation, budget=(budget // len(self.which_optim)) * nw4)
                        ]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask_candidate(self) -> base.Candidate:
@@ -809,8 +818,10 @@ class ParaSQPCMA(ParaPortfolio):
         for i in range(num_workers - nw):
             self.optims += [SQP(instrumentation, 1)]
             if i > 0:
-                self.optims[-1].initial_guess = np.random.normal(0, 1, self.dimension)  # type: ignore
+                self.optims[-1].initial_guess = self.random_state.normal(0, 1, self.dimension)  # type: ignore
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -822,6 +833,8 @@ class ASCMADEthird(Portfolio):
         assert budget is not None
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        LhsDE(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
@@ -855,6 +868,8 @@ class ASCMADEQRthird(ASCMADEthird):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        LhsDE(instrumentation, budget=None, num_workers=num_workers),
                        ScrHaltonSearch(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -865,6 +880,8 @@ class ASCMA2PDEthird(ASCMADEQRthird):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -883,6 +900,8 @@ class CMandAS2(ASCMADEthird):
                            CMA(instrumentation, budget=None, num_workers=num_workers),
                            CMA(instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -901,6 +920,8 @@ class CMandAS(CMandAS2):
             self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                            CMA(instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 3
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -916,6 +937,8 @@ class CM(CMandAS2):
             self.optims = [OnePlusOne(instrumentation, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension:
             self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -928,6 +951,8 @@ class MultiCMA(CM):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
         self.budget_before_choosing = budget // 10
 
 
@@ -941,6 +966,8 @@ class TripleCMA(CM):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers),
                        CMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
         self.budget_before_choosing = budget // 3
 
 
@@ -953,6 +980,8 @@ class MultiScaleCMA(CM):
         self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
                        MilliCMA(instrumentation, budget=None, num_workers=num_workers),
                        MicroCMA(instrumentation, budget=None, num_workers=num_workers)]
+        for optim in self.optims:
+            optim._random_state = self.random_state  # share the state
         assert budget is not None
         self.budget_before_choosing = budget // 3
 
@@ -995,8 +1024,7 @@ class _BO(base.Optimizer):
         if self._bo is None:
             params = self._parameters
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
-            seed = np.random.randint(2**32, dtype=np.uint32)
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=np.random.RandomState(seed))
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self.random_state)
             if self._parameters.gp_parameters is not None:
                 self._bo.set_gp_params(**self._parameters.gp_parameters)
             # init
@@ -1012,7 +1040,8 @@ class _BO(base.Optimizer):
                     sampler = {"Hammersley": sequences.HammersleySampler,
                                "LHS": sequences.LHSSampler,
                                "random": sequences.RandomSampler}[init](self.dimension, budget=init_budget,
-                                                                        scrambling=(init == "Hammersley"))
+                                                                        scrambling=(init == "Hammersley"),
+                                                                        random_state=self.random_state)
                     for point in sampler:
                         self._bo.probe(point, lazy=True)
         return self._bo
