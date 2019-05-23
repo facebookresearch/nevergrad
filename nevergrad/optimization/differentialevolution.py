@@ -112,26 +112,21 @@ class _DE(base.Optimizer):
         return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        # crossover rate
-        # initialization
-        current_pop = len(self.population)
-        if current_pop < self.llambda:
+        if len(self.population) < self.llambda:  # initialization phase
+            init = self._parameters.initialization
             location = self._num_ask % self.llambda
             if self._parameters.inoculation:
                 inoc = float(location) / float(self.llambda)
             else:
                 inoc = 1.
-            # initialization
-            init = self._parameters.initialization
             if self.sampler is None and init is not None:
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
             if self._parameters.hyperinoc:
-                p = [float(self.llambda - location), location]
-                p = [p_ / sum(p) for p_ in p]
+                weights = [self.llambda - location, location]
                 sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
-                new_guy = np.array([self.random_state.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
+                new_guy = np.array([self.random_state.choice([0, self.scale * sample[i]], p=weights) for i in range(self.dimension)])
             else:
                 new_guy = inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
                                                if init is None else stats.norm.ppf(self.sampler()))  # type: ignore
