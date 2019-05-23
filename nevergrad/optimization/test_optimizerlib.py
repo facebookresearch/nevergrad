@@ -119,6 +119,20 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
 
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        optimizer = registry[name](instrumentation=4, budget=2)
+    optimizer.suggest(np.array([12.] * 4))
+    candidate = optimizer.ask()
+    try:
+        optimizer.tell(candidate, 12)
+    except base.TellNotAskedNotSupportedError:
+        pass
+
+
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
     # set up environment
     optimizer_cls = registry[name]
