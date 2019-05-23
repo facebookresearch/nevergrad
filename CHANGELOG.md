@@ -6,7 +6,7 @@
   state seed **before** initializing the optimizer still works as well (but setting it between initialization and optimization does not while
   it used to work).
 - added a `Scalar` variable as a shortcut to `Array(1).asscalar(dtype)` to simplify specifying instrumentation.
-- added a way to request a given `Candidate` from the `ask` method: `suggest` method (experimental feature, name and behavior may change).
+- added `suggest` method to manually provide the next `Candidate` from the `ask` method (experimental feature, name and behavior may change).
 
 ## v0.2.1
 
