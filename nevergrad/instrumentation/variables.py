@@ -182,6 +182,7 @@ class Array(utils.Variable[Y]):
     ----
     Interesting methods (which can be chained):
     - asscalar(): converts the array into a float or int (only for arrays with 1 element)
+      You may also directly use `Scalar` the scalar object instead.
     - with_transform(transform): apply a transform to the array
     - affined(a, b): applies a*x+b
     - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
@@ -192,7 +193,7 @@ class Array(utils.Variable[Y]):
     def __init__(self, *dims: int) -> None:
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
-        self._scalar_type: Optional[Type[Union[float, int]]] = None
+        self._dtype: Optional[Type[Union[float, int]]] = None
 
     @property
     def dimension(self) -> int:
@@ -200,19 +201,19 @@ class Array(utils.Variable[Y]):
 
     @property
     def continuous(self) -> bool:
-        return self._scalar_type != int
+        return self._dtype != int
 
     def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension
         array = np.array(data, copy=False)
         for transf in self.transforms:
             array = transf.forward(array)
-        if self._scalar_type is not None:
-            return self._scalar_type(array[0] if self._scalar_type != int else round(array[0]))
+        if self._dtype is not None:
+            return self._dtype(array[0] if self._dtype != int else round(array[0]))
         return array.reshape(self.shape)
 
     def argument_to_data(self, arg: Y) -> np.ndarray:
-        if self._scalar_type is not None:
+        if self._dtype is not None:
             output = np.array([arg], dtype=float)
         else:
             output = np.array(arg, copy=False).ravel()
@@ -223,32 +224,32 @@ class Array(utils.Variable[Y]):
     def _short_repr(self) -> str:
         dims = ",".join(str(d) for d in self.shape)
         transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
-        fl = {None: "", int: "i", float: "f"}[self._scalar_type]
+        fl = {None: "", int: "i", float: "f"}[self._dtype]
         return f"A({dims}{transf}){fl}"
 
     def asfloat(self) -> 'Array':
         warnings.warn('Please use "asscalar" instead of "asfloat"', DeprecationWarning)
         return self.asscalar()
 
-    def asscalar(self, scalar_type: Type[Union[float, int]] = float) -> 'Array':
+    def asscalar(self, dtype: Type[Union[float, int]] = float) -> 'Array':
         """Converts the array into a scalar
 
         Parameter
         ---------
-        scalar_type: type
+        dtype: type
             either int or float
 
         Note
         ----
         This method can only be called on size 1 arrays
         """
-        if self._scalar_type is not None:
+        if self._dtype is not None:
             raise RuntimeError('"asscalar" must only be called once')
         if self.dimension != 1:
             raise RuntimeError("Only Arrays with 1 element can be cast to float")
-        if scalar_type not in [float, int]:
-            raise ValueError('"scalar_type" should be either float or int')
-        self._scalar_type = scalar_type
+        if dtype not in [float, int]:
+            raise ValueError('"dtype" should be either float or int')
+        self._dtype = dtype
         return self
 
     def with_transform(self, transform: transforms.Transform) -> 'Array':
@@ -300,3 +301,27 @@ class Array(utils.Variable[Y]):
             return self.with_transform(Transf(a_min=a_min, a_max=a_max))
         else:
             return self.with_transform(transforms.Clipping(a_min, a_max))
+
+
+class Scalar(Array):
+    """Scalar variable, on which several transforms can be applied.
+
+    Parameters
+    ----------
+    dtype: type
+        either int or float
+
+    Note
+    ----
+    Interesting methods (which can be chained):
+    - with_transform(transform): apply a transform to the array
+    - affined(a, b): applies a*x+b
+    - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
+      so that output values are in range [a_min, a_max]
+    - exponentiated(base, coeff): applies base**(coeff * x)
+    - `Scalar` is completely equivalent to `Array(1).asscalar(dtype)`
+    """
+
+    def __init__(self, dtype: Type[Union[float, int]] = float):
+        super().__init__(1)
+        self.asscalar(dtype=dtype)

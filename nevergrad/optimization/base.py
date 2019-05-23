@@ -189,7 +189,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
         self._asked: Set[str] = set()
-        self._requests: Deque[Candidate] = deque()
+        self._suggestions: Deque[Candidate] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
@@ -254,7 +254,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def request(self, *args: Any, **kwargs: Any) -> None:
+    def suggest(self, *args: Any, **kwargs: Any) -> None:
         """Requests a new point to ask.
         It will be ask at the next call (last in first out).
 
@@ -269,7 +269,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
         at "tell" time.
         """
-        self._requests.append(self.create_candidate.from_call(*args, **kwargs))
+        self._suggestions.append(self.create_candidate.from_call(*args, **kwargs))
 
     def tell(self, candidate: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
@@ -339,8 +339,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        if self._requests:
-            candidate = self._requests.pop()
+        if self._suggestions:
+            candidate = self._suggestions.pop()
         else:
             candidate = self._internal_ask_candidate()
             # only register actual asked points

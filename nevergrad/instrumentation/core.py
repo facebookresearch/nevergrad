@@ -32,6 +32,8 @@ class Instrumentation:
       - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
       - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
         (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
+      - `Scalar`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
+        and all `Array` methods are therefore available
     * Depending on the variables, Instrumentation can be noisy (SoftmaxCategorical in non-deterministic mode), and not continuous
       (SoftmaxCategorical in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
       to deal with these cases properly.
@@ -181,6 +183,8 @@ class InstrumentedFunction:
         - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
         - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
           (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
+        - `Scalar`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
+          and all `Array` methods are therefore available
     - This function can then be directly used in benchmarks *if it returns a float*.
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """
