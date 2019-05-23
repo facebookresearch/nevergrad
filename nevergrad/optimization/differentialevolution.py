@@ -32,11 +32,9 @@ class Crossovers:
         self.random_state = random_state
         if isinstance(crossover, float):
             self.CR = crossover
-        elif crossover == "dimension":
-            self.CR = 1. / self.dimension
         elif crossover == "random":
             self.CR = self.random_state.uniform(0., 1.)
-        elif crossover not in ["twopoints", "onepoint"]:
+        elif crossover not in ["twopoints", "onepoint", "dimension"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
@@ -94,8 +92,7 @@ class _DE(base.Optimizer):
         scale = self._parameters.scale
         if isinstance(scale, str):
             assert scale == "mini"  # computing on demand because it requires to know the dimension
-            scale = 1. / np.sqrt(self.dimension)
-        assert isinstance(scale, float)
+            return float(1. / np.sqrt(self.dimension))
         return scale
 
     @property
@@ -134,12 +131,12 @@ class _DE(base.Optimizer):
                 p = [float(self.llambda - location), location]
                 p = [p_ / sum(p) for p_ in p]
                 sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
-                new_guy = tuple([self.random_state.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
+                new_guy = np.array([self.random_state.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
             else:
-                new_guy = tuple(inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
-                                                     if init is None
-                                                     else stats.norm.ppf(self.sampler())))  # type: ignore
-            particle = DEParticle(np.array(new_guy))
+                new_guy = np.array([inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
+                                                         if init is None
+                                                         else stats.norm.ppf(self.sampler()))])  # type: ignore
+            particle = DEParticle(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
             candidate = self.create_candidate.from_data(new_guy)
@@ -160,7 +157,8 @@ class _DE(base.Optimizer):
                 self._parameters.F1 * (indiv_a - indiv_b) + \
                 self._parameters.F2 * (self.current_bests["pessimistic"].x - individual)
         # apply crossover
-        crossovers = Crossovers(self.random_state, self._parameters.crossover)
+        co = self._parameters.crossover
+        crossovers = Crossovers(self.random_state, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
         candidate = self.create_candidate.from_data(donor)
@@ -209,7 +207,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
         ----------
         initialization: "LHS", "QR" or None
             algorithm for the initialization phase
-        scale: float
+        scale: float or str
             scale of random component of the updates
         inoculation: bool
             TODO
