@@ -141,6 +141,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
+    if name != "TwoPointsDE":
+        raise SkipTest
     np.random.seed(None)
     if optimizer_cls.recast:
         np.random.seed(12)
@@ -171,6 +173,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=decimal,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
+    raise Exception
 
 
 @testing.parametrized(
