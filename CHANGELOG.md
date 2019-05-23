@@ -7,6 +7,8 @@
   it used to work).
 - added a `Scalar` variable as a shortcut to `Array(1).asscalar(dtype)` to simplify specifying instrumentation.
 - added `suggest` method to optimizers in order to manually provide the next `Candidate` from the `ask` method (experimental feature, name and behavior may change).
+- populated `nevergrad`'s namespace so that `import nevergrad as ng` gives access to `ng.Instrumentation`, `ng.var` and `ng.optimizers`. The
+  `optimizers` namespace is quite messy, some non-optimizer objects will eventually be removed from there.
 
 ## v0.2.1
 

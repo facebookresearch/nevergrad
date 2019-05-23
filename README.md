@@ -61,13 +61,12 @@ The following README is very general, here are links to find more details on:
 Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can be easily run with:
 
 ```python
-from nevergrad.optimization import optimizerlib
+import nevergrad as ng
 
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
-# alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
+optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
 recommendation = optimizer.optimize(square)
 print(recommendation)  # optimal args and kwargs
 >>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
@@ -82,7 +81,7 @@ See the [instrumentation tutorial](docs/instrumentation.md) for more complex ins
 
 You can print the full list of optimizers with:
 ```
-from nevergrad.optimization import registry
+import nevergrad as ng
 print(sorted(registry.keys()))
 ```
 

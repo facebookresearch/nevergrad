@@ -4,7 +4,7 @@ These guidelines are for people who want to add an algorithm to `nevergrad`. Fee
 
 ## Where to add the algorithm?
 
-All optimizers are implemented in the `nevergrad.optimization` subpackage, and all optimizer classes are available either in the `nevergrad.optimization.optimizerlib` module, or through the optimizer registry: `nevergrad.optimization.registry`.
+All optimizers are implemented in the `ng.optimization` subpackage, and all optimizer classes are available either in the `ng.optimization.optimizerlib` module (which is aliased to `ng.optimizers`, or through the optimizer registry: `ng.optimizers.registry`.
 
 Implementations are however spread into several files:
 - [optimizerlib.py](../nevergrad/optimization/optimizerlib.py): this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
