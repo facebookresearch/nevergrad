@@ -34,7 +34,7 @@ class Crossovers:
             self.CR = crossover
         elif crossover == "random":
             self.CR = self.random_state.uniform(0., 1.)
-        elif crossover not in ["twopoints", "onepoint", "dimension"]:
+        elif crossover not in ["twopoints", "onepoint"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
@@ -133,9 +133,8 @@ class _DE(base.Optimizer):
                 sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
                 new_guy = np.array([self.random_state.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
             else:
-                new_guy = np.array([inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
-                                                         if init is None
-                                                         else stats.norm.ppf(self.sampler()))])  # type: ignore
+                new_guy = inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
+                                               if init is None else stats.norm.ppf(self.sampler()))  # type: ignore
             particle = DEParticle(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
