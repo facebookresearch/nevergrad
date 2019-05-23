@@ -87,11 +87,6 @@ class _DE(base.Optimizer):
             self._llambda = max(30, self.num_workers, pop_choice[self._parameters.popsize])
         return self._llambda
 
-    # def match_population_size_to_lambda(self) -> None:
-    #    current_pop = len(self.population)
-    #    if current_pop < self.llambda:
-    #        self.population.extend(DEParticle() for _ in range(self.llambda - current_pop))
-
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
@@ -134,6 +129,7 @@ class _DE(base.Optimizer):
                                                      else stats.norm.ppf(self.sampler())))  # type: ignore
             particle = DEParticle(np.array(new_guy))
             self.population.extend([particle])
+            self.population.get_queued(remove=True)  # since it was just added
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
