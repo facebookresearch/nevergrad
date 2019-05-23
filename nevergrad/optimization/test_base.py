@@ -7,6 +7,7 @@ import tempfile
 import warnings
 from pathlib import Path
 from typing import List, Tuple, Any, Optional, Union
+import pytest
 import numpy as np
 from ..common import testing
 from ..instrumentation import Instrumentation
@@ -130,6 +131,12 @@ def test_optimizer_family() -> None:
         opt = optf(instrumentation=2, budget=4, num_workers=1)
         recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom.data == np.zeros(2), zero)
+
+
+def test_deprecation_warning() -> None:
+    opt = StupidFamily()(instrumentation=2, budget=4, num_workers=1)
+    with pytest.warns(DeprecationWarning):
+        opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
 
 
 def test_naming() -> None:
