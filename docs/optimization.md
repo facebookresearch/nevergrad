@@ -13,7 +13,7 @@ def square(x, y=12):
     return sum((x - .5)**2) + abs(y)
 
 optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
-# alternatively, you can use optimizerlib.registry["OnePlusOne"]
+# alternatively, you could use ng.optimizers.registry["OnePlusOne"]
 # (registry is a dict containing all optimizer classes)
 recommendation = optimizer.optimize(square)
 print(recommendation)

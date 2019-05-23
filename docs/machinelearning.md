@@ -70,7 +70,7 @@ We will compare several algorithms (defined in `names`).
 are fully parallel, i.e. we can perform the 1200 trainings in parallel.
 `CMA` and `PSO` are classical optimization algorithms, and `TwoPointsDE`
 is Differential Evolution equipped with a 2-points crossover.
-A complete list is available in `nevergrad.optimization.registry`.
+A complete list is available in `ng.optimizers.registry`.
 
 ### Ask and tell version
 
@@ -104,7 +104,7 @@ for name in names:
 from concurrent import futures
 
 for name in names:
-    optim = optimization.registry[name](instrumentation=instrumentation, budget=budget)
+    optim = np.optimizers.registry[name](instrumentation=instrumentation, budget=budget)
 
     with futures.ThreadPoolExecutor(max_workers=optim.num_workers) as executor:  # the executor will evaluate the function in multiple threads
         recommendation = optim.optimize(train_and_return_test_error, executor=executor)
