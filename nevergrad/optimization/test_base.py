@@ -7,6 +7,7 @@ import tempfile
 import warnings
 from pathlib import Path
 from typing import List, Tuple, Any, Optional, Union
+import pytest
 import numpy as np
 from ..common import testing
 from ..instrumentation import Instrumentation
@@ -55,7 +56,7 @@ def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expec
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        optim.optimize(func, verbosity=2, batch_mode=batch_mode)
+        optim.minimize(func, verbosity=2, batch_mode=batch_mode)
     testing.printed_assert_equal(optim.logs, expected)
 
 
@@ -92,6 +93,10 @@ def test_base_optimizer() -> None:
     zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
+    # check suggest
+    zeroptim.suggest([12, 12])
+    np.testing.assert_array_equal(zeroptim.ask().args[0], [12, 12])
+    np.testing.assert_array_equal(zeroptim.ask().args[0], [0, 0])
 
 
 def test_optimize_and_dump() -> None:
@@ -100,7 +105,7 @@ def test_optimize_and_dump() -> None:
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        result = optimizer.optimize(func, verbosity=2)
+        result = optimizer.minimize(func, verbosity=2)
     np.testing.assert_almost_equal(result.data[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
     # pickling
@@ -124,8 +129,14 @@ def test_optimizer_family() -> None:
     for zero in [True, False]:
         optf = StupidFamily(zero=zero)
         opt = optf(instrumentation=2, budget=4, num_workers=1)
-        recom = opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
+        recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom.data == np.zeros(2), zero)
+
+
+def test_deprecation_warning() -> None:
+    opt = StupidFamily()(instrumentation=2, budget=4, num_workers=1)
+    with pytest.warns(DeprecationWarning):
+        opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
 
 
 def test_naming() -> None:

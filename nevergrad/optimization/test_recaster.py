@@ -61,20 +61,20 @@ class FakeOptimizer(recaster.SequentialRecastOptimizer):
 
     def _optim_function(self, func: Callable[..., Any]) -> ArrayLike:
         suboptim = optimizerlib.OnePlusOne(instrumentation=2, budget=self.budget)
-        recom = suboptim.optimize(func)
+        recom = suboptim.minimize(func)
         return recom.data
 
 
 def test_recast_optimizer() -> None:
     optimizer = FakeOptimizer(instrumentation=2, budget=100)
-    optimizer.optimize(fake_cost_function)
+    optimizer.minimize(fake_cost_function)
     assert optimizer._messaging_thread is not None
     np.testing.assert_equal(optimizer._messaging_thread._thread.call_count, 100)
 
 
 def test_recast_optimizer_with_error() -> None:
     optimizer = FakeOptimizer(instrumentation=2, budget=100)
-    np.testing.assert_raises(TypeError, optimizer.optimize)  # did hang in some versions
+    np.testing.assert_raises(TypeError, optimizer.minimize)  # did hang in some versions
 
 
 def test_recast_optimizer_and_stop() -> None:

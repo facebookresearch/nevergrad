@@ -2,9 +2,14 @@
 
 ## master
 
-- Optimizers now hold a `random_state` attribute which can be seeded (`optimizer.random_state.seed(12)`). Seeding `numpy`'s global random
+- optimizers now hold a `random_state` attribute which can be seeded (`optimizer.random_state.seed(12)`). Seeding `numpy`'s global random
   state seed **before** initializing the optimizer still works as well (but setting it between initialization and optimization does not while
   it used to work).
+- added a `Scalar` variable as a shortcut to `Array(1).asscalar(dtype)` to simplify specifying instrumentation.
+- added `suggest` method to optimizers in order to manually provide the next `Candidate` from the `ask` method (experimental feature, name and behavior may change).
+- populated `nevergrad`'s namespace so that `import nevergrad as ng` gives access to `ng.Instrumentation`, `ng.var` and `ng.optimizers`. The
+  `optimizers` namespace is quite messy, some non-optimizer objects will eventually be removed from there.
+- renamed `optimize` to `minimize` to be more explicit. Using `optimize` will raise a `DeprecationWarning` for the time being.
 
 ## v0.2.1
 
