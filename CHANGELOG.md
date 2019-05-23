@@ -9,6 +9,7 @@
 - added `suggest` method to optimizers in order to manually provide the next `Candidate` from the `ask` method (experimental feature, name and behavior may change).
 - populated `nevergrad`'s namespace so that `import nevergrad as ng` gives access to `ng.Instrumentation`, `ng.var` and `ng.optimizers`. The
   `optimizers` namespace is quite messy, some non-optimizer objects will eventually be removed from there.
+- renamed `optimize` to `minimize` to be more explicit. Using `optimize` will raise a `DeprecationWarning` for the time being.
 
 ## v0.2.1
 

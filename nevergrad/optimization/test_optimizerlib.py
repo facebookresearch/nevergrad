@@ -49,7 +49,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
-            candidate = optimizer.optimize(fitness)
+            candidate = optimizer.minimize(fitness)
         if verify_value:
             try:
                 np.testing.assert_array_almost_equal(candidate.data, [0.5, -0.8], decimal=1)
@@ -160,7 +160,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # Reducing the precision could help in this regard.
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch('bayes_opt.bayesian_optimization.acq_max', patched):
-        candidate = optim.optimize(fitness)
+        candidate = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
@@ -240,7 +240,7 @@ def test_tbpsa_recom_with_update() -> None:
     optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
     optim.random_state.seed(12)
     optim.llambda = 3
-    candidate = optim.optimize(fitness)
+    candidate = optim.minimize(fitness)
     np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
 
 
@@ -251,7 +251,7 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 def test_optimization_doc_instrumentation_example() -> None:
     instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asscalar())
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
-    recom = optimizer.optimize(_square)
+    recom = optimizer.minimize(_square)
     assert len(recom.args) == 1
     testing.assert_set_equal(recom.kwargs, ['y'])
     value = _square(*recom.args, **recom.kwargs)
@@ -260,7 +260,7 @@ def test_optimization_doc_instrumentation_example() -> None:
 
 def test_optimization_discrete_with_one_sample() -> None:
     optimizer = optimizerlib.PortfolioDiscreteOnePlusOne(instrumentation=1, budget=10)
-    optimizer.optimize(_square)
+    optimizer.minimize(_square)
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore

@@ -107,7 +107,7 @@ for name in names:
     optim = np.optimizers.registry[name](instrumentation=instrumentation, budget=budget)
 
     with futures.ThreadPoolExecutor(max_workers=optim.num_workers) as executor:  # the executor will evaluate the function in multiple threads
-        recommendation = optim.optimize(train_and_return_test_error, executor=executor)
+        recommendation = optim.minimize(train_and_return_test_error, executor=executor)
     print("* ", name, " provides a vector of parameters with test error ",
           train_and_return_test_error(recommendation))
 
