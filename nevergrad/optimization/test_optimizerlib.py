@@ -61,7 +61,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
                 break
     # check population queue
     if hasattr(optimizer, "population"):
-        assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"
+        assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
     # make sure we are correctly tracking the best values
     archive = optimizer.archive
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
