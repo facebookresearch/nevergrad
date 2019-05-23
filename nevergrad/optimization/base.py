@@ -189,6 +189,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
         self._asked: Set[str] = set()
+        self._suggestions: Deque[Candidate] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
@@ -252,6 +253,25 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """Removes all registered callables
         """
         self._callbacks = {}
+
+    def suggest(self, *args: Any, **kwargs: Any) -> None:
+        """Suggests a new point to ask.
+        It will be asked at the next call (last in first out).
+
+        Parameters
+        ----------
+        *args, **kwargs: Any
+            any arguments which match the instrumentation pattern.
+
+        Note
+        ----
+        - This relies on optmizers implementing a way to deal with unasked candidate.
+          Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
+          at "tell" time.
+        - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
+          calling optimizer.create_candidate.from_call.
+        """
+        self._suggestions.append(self.create_candidate.from_call(*args, **kwargs))
 
     def tell(self, candidate: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
@@ -321,13 +341,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        candidate = self._internal_ask_candidate()
+        if self._suggestions:
+            candidate = self._suggestions.pop()
+        else:
+            candidate = self._internal_ask_candidate()
+            # only register actual asked points
+            if candidate.uuid in self._asked:
+                raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
+                                   "This is to make sure that stochastic instrumentations are resampled.")
+            self._asked.add(candidate.uuid)
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        if candidate.uuid in self._asked:
-            raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                               "This is to make sure that stochastic instrumentations are resampled.")
-        self._asked.add(candidate.uuid)
         return candidate
 
     def provide_recommendation(self) -> Candidate:
