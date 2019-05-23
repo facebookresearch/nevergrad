@@ -26,9 +26,27 @@ class DEParticle(base.utils.Particle):
 
 class Crossovers:
 
-    def __init__(self, random_state: np.random.RandomState, CR: float):
+    def __init__(self, random_state: np.random.RandomState, crossover: Union[str, float]):
+        self.CR = .5
+        self.crossover = crossover
         self.random_state = random_state
-        self.CR = CR
+        if isinstance(crossover, float):
+            self.CR = crossover
+        elif crossover == "dimension":
+            self.CR = 1. / self.dimension
+        elif crossover == "random":
+            self.CR = self.random_state.uniform(0., 1.)
+        elif crossover not in ["twopoints", "onepoint"]:
+            raise ValueError(f'Unknown crossover "{crossover}"')
+
+    def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        dim = donor.size
+        if self.crossover == "twopoints" and dim >= 4:
+            return self.twopoints(donor, individual)
+        elif self.crossover == "onepoint" and dim >= 3:
+            return self.onepoint(donor, individual)
+        else:
+            return self.variablewise(donor, individual)
 
     def variablewise(self, donor: np.ndarray, individual: np.ndarray) -> None:
         R = self.random_state.randint(donor.size)
@@ -98,12 +116,6 @@ class _DE(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         # crossover rate
-        if isinstance(self._parameters.CR, float):
-            CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
-        elif self._parameters.CR == "dimension":
-            CR = 1. / self.dimension
-        elif self._parameters.CR == "random":
-            CR = self.random_state.uniform(0., 1.)
         # initialization
         current_pop = len(self.population)
         if current_pop < self.llambda:
@@ -148,15 +160,8 @@ class _DE(base.Optimizer):
                 self._parameters.F1 * (indiv_a - indiv_b) + \
                 self._parameters.F2 * (self.current_bests["pessimistic"].x - individual)
         # apply crossover
-        k = self._parameters.crossover
-        assert k <= 2
-        crossovers = Crossovers(self.random_state, CR)
-        if k == 0 or self.dimension < 3:  # variablewise
-            crossovers.variablewise(donor, individual)
-        elif k == 1 or self.dimension < 4:
-            crossovers.onepoint(donor, individual)
-        elif k == 2:
-            crossovers.twopoints(donor, individual)
+        crossovers = Crossovers(self.random_state, self._parameters.crossover)
+        crossovers.apply(donor, individual)
         # create candidate
         candidate = self.create_candidate.from_data(donor)
         candidate._meta["particle"] = particle
@@ -191,7 +196,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
     def __init__(self, *, initialization: Optional[str] = None, scale: Union[str, float] = 1.,
                  inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic", NF: bool = True,
-                 CR: Union[str, float] = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard",
+                 crossover: Union[str, float] = .5, F1: float = .8, F2: float = .8, popsize: str = "standard",
                  hashed: bool = False) -> None:
         """Differential evolution algorithms.
 
@@ -212,14 +217,16 @@ class DifferentialEvolution(base.ParametrizedFamily):
             TODO
         recommendation: "pessimistic", "optimistic", "mean" or "noisy"
             choice of the criterion for the best point to recommend
-        CR: float or str
-            crossover rate value, or strategy ("dimension" leads to 1 / dimension, and "random" a uniform sampling each iteration)
+        crossover: float or str
+            crossover rate value, or strategy among:
+            - "dimension": crossover rate of  1 / dimension,
+            - "random": different random (uniform) crossover rate at each iteration
+            - "onepoint": one point crossover
+            - "twopoints": two points crossover
         F1: float
             differential weight #1
         F2: float
             differential weight #2
-        crossover: int
-            TODO
         popsize: "standard", "dimension", "large"
             size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
             and "large" max(num_workers, 30, 7 * dimension).
@@ -230,18 +237,16 @@ class DifferentialEvolution(base.ParametrizedFamily):
         """
         # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert crossover in [0, 1, 2]
         assert initialization in [None, "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
-        assert isinstance(CR, float) or CR in ["dimension", "random"]
+        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random"]
         self.initialization = initialization
         self.scale = scale
         self.inoculation = inoculation
         self.hyperinoc = hyperinoc
         self.recommendation = recommendation
         # parameters
-        self.CR = CR
         self.F1 = F1
         self.F2 = F2
         self.crossover = crossover
@@ -258,16 +263,16 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
 
 DE = DifferentialEvolution().with_name("DE", register=True)
-OnePointDE = DifferentialEvolution(crossover=1).with_name("OnePointDE", register=True)
-TwoPointsDE = DifferentialEvolution(crossover=2).with_name("TwoPointsDE", register=True)
+OnePointDE = DifferentialEvolution(crossover="onepoint").with_name("OnePointDE", register=True)
+TwoPointsDE = DifferentialEvolution(crossover="twopoints").with_name("TwoPointsDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=True)
 MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
 MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").with_name("MiniLhsDE", register=True)
 MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").with_name("MiniQrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
-AlmostRotationInvariantDE = DifferentialEvolution(CR=.9).with_name("AlmostRotationInvariantDE", register=True)
-AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(CR=.9, popsize="dimension").with_name("AlmostRotationInvariantDEAndBigPop",
-                                                                                                 register=True)
-RotationInvariantDE = DifferentialEvolution(CR=1., popsize="dimension").with_name("RotationInvariantDE", register=True)
-BPRotationInvariantDE = DifferentialEvolution(CR=1., popsize="large").with_name("BPRotationInvariantDE", register=True)
+AlmostRotationInvariantDE = DifferentialEvolution(crossover=.9).with_name("AlmostRotationInvariantDE", register=True)
+AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=.9, popsize="dimension").with_name(
+    "AlmostRotationInvariantDEAndBigPop", register=True)
+RotationInvariantDE = DifferentialEvolution(crossover=1., popsize="dimension").with_name("RotationInvariantDE", register=True)
+BPRotationInvariantDE = DifferentialEvolution(crossover=1., popsize="large").with_name("BPRotationInvariantDE", register=True)

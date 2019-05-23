@@ -292,15 +292,10 @@ class Pruning:
         return cls(min_len, max(max_len, max_len_1gb))
 
 
-_k = 0
-
-
 class Particle:
 
     def __init__(self) -> None:
-        global _k
-        self.uuid = _k  # uuid4().hex
-        _k += 1
+        self.uuid = uuid4().hex
         self._waiting_for_removal = False
 
 
@@ -373,7 +368,6 @@ class Population(Generic[X]):
         if not self._queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
         uuid = self._queue[0]  # pylint: disable=unsubscriptable-object
-        print("got", uuid)
         if remove:
             self._queue.popleft()
         return self._particles[uuid]
@@ -381,7 +375,6 @@ class Population(Generic[X]):
     def set_queued(self, particle: X) -> None:
         if particle.uuid not in self._particles:
             raise ValueError("Particle is not part of the population")
-        print("set", particle.uuid)
         self._queue.append(particle.uuid)
 
     def replace(self, oldie: X, newbie: X) -> Optional[Union[str, bytes, int]]:
