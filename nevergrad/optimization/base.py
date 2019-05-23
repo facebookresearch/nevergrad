@@ -168,6 +168,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                  budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
+        # "seedable" random state: externally setting the seed will provide deterministic behavior
+        # you can also replace or reinitialize this random state
+        self._random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
         self.num_workers = int(num_workers)
         self.budget = budget
         self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
@@ -182,10 +185,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                               for x in ["optimistic", "pessimistic", "average"]}
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
-        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = None
-        self.pruning = utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
+        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = \
+            utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
         # instance state
         self._asked: Set[str] = set()
+        self._suggestions: Deque[Candidate] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
@@ -193,6 +197,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[Candidate, JobLike[float]]] = []
         self._finished_jobs: Deque[Tuple[Candidate, JobLike[float]]] = deque()
+
+    @property
+    def random_state(self) -> np.random.RandomState:
+        return self._random_state
 
     @property
     def dimension(self) -> int:
@@ -245,6 +253,25 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """Removes all registered callables
         """
         self._callbacks = {}
+
+    def suggest(self, *args: Any, **kwargs: Any) -> None:
+        """Suggests a new point to ask.
+        It will be asked at the next call (last in first out).
+
+        Parameters
+        ----------
+        *args, **kwargs: Any
+            any arguments which match the instrumentation pattern.
+
+        Note
+        ----
+        - This relies on optmizers implementing a way to deal with unasked candidate.
+          Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
+          at "tell" time.
+        - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
+          calling optimizer.create_candidate.from_call.
+        """
+        self._suggestions.append(self.create_candidate.from_call(*args, **kwargs))
 
     def tell(self, candidate: Candidate, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
@@ -314,13 +341,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        candidate = self._internal_ask_candidate()
+        if self._suggestions:
+            candidate = self._suggestions.pop()
+        else:
+            candidate = self._internal_ask_candidate()
+            # only register actual asked points
+            if candidate.uuid in self._asked:
+                raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
+                                   "This is to make sure that stochastic instrumentations are resampled.")
+            self._asked.add(candidate.uuid)
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
-        if candidate.uuid in self._asked:
-            raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                               "This is to make sure that stochastic instrumentations are resampled.")
-        self._asked.add(candidate.uuid)
         return candidate
 
     def provide_recommendation(self) -> Candidate:

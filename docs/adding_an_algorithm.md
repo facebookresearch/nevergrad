@@ -4,7 +4,7 @@ These guidelines are for people who want to add an algorithm to `nevergrad`. Fee
 
 ## Where to add the algorithm?
 
-All optimizers are implemented in the `nevergrad.optimization` subpackage, and all optimizer classes are available either in the `nevergrad.optimization.optimizerlib` module, or through the optimizer registry: `nevergrad.optimization.registry`.
+All optimizers are implemented in the `ng.optimization` subpackage, and all optimizer classes are available either in the `ng.optimization.optimizerlib` module (which is aliased to `ng.optimizers`, or through the optimizer registry: `ng.optimizers.registry`.
 
 Implementations are however spread into several files:
 - [optimizerlib.py](../nevergrad/optimization/optimizerlib.py): this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
@@ -68,17 +68,16 @@ If the algorithm is not able to handle parallelization (if `ask` cannot be calle
 
 ### Seeding
 
-Seeding has an important part for the significance and reproducibility of the algorithm benchmarking. For this to work, it is however important to **avoid seeding from inside** the algorithm. Indeed:
-- we expect stochastic algorithms to be actually stochastic, if we set a seed inside the implementation this assumption is broken.
+Seeding has an important part for the significance and reproducibility of the algorithm benchmarking. We want to ensure the following constraints:
+- we expect stochastic algorithms to be actually stochastic, if we set a hard seed inside the implementation this assumption is broken.
 - we need the randomness to obtain relevant statistics when benchmarking the algorithms on deterministic functions.
-- we can seed anyway from **outside** when we need it. This is what happens in the benchmarks: in this case we do want each independent run to be repeatable.
+- we should be able to seed from **outside** when we need it: we expect that setting a seed to the global random state should lead to
+reproducible results.
 
-For consistency and simplicity's sake, please prefer `numpy`'s random generator over the standard one.
-Also, you may instanciate a random generator for each optimizer and using it afterwards. This way it makes the optimizer independent of other uses of the default random generator.
-Still, please seed it with the standard numpy random generator so that seeding the standard generator will produce deterministic outputs:
-```python
-self._rng = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
-```
+In order to facilitate these behaviors, each optimizer has a `random_state` attribute (`np.random.RandomState`), which can be seeded by the
+user if need be. All calls to stochastic functions should there be made through this `random_state`.
+By default, it will be seeded randomly by drawing a number from the global numpy random state so
+that seeding the global numpy random statewill yield reproducible results as well
 
 A unit tests automatically makes sure that all optimizers have repeatable bvehaviors on a simple test case when seeded from outside (see below).
 

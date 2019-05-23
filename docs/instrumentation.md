@@ -12,14 +12,15 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 
 ## Variables
 
-4 types of variables are currently provided:
+5 types of variables are currently provided:
 - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
 - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
 - `Array`: casts the data from the optimizaton space into a `np.ndarray` of any shape, to which some transforms can be applied
   (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
-  For instance, one can use it for a logarithmicly distributed value between 0.001 and 1.: `Array(1).asscalar().bounded(0, 3).exponentiated(base=10, coeff=-1)`.
-  Also, note that `Gaussian(a, b)` is equivalent to `Array(1).asscalar().affined(a, b)`.
+- `Scalar`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
+  and all `Array` methods are therefore available. For instance, one can use it for a logarithmicly distributed value between
+  0.001 and 1.: `Scalar().bounded(0, 3).exponentiated(base=10, coeff=-1)`.  Also, note that `Gaussian(a, b)` is equivalent to `Scalar().affined(a, b)`.
 
 
 ## Instrumentation
@@ -28,15 +29,15 @@ Instrumentation helps you convert a set of arguments into variables in the data 
 
 
 ```python
-from nevergrad import instrumentation as inst
+import nevergrad as ng
 
 # argument transformation
-arg1 = inst.var.OrderedDiscrete(["a", "b"])  # 1st arg. = positional discrete argument
-arg2 = inst.var.SoftmaxCategorical(["a", "c", "e"])  # 2nd arg. = positional discrete argument
-value = inst.var.Gaussian(mean=1, std=2)  # the 4th arg. is a keyword argument with Gaussian prior
+arg1 = ng.var.OrderedDiscrete(["a", "b"])  # 1st arg. = positional discrete argument
+arg2 = ng.var.SoftmaxCategorical(["a", "c", "e"])  # 2nd arg. = positional discrete argument
+value = ng.var.Gaussian(mean=1, std=2)  # the 4th arg. is a keyword argument with Gaussian prior
 
 # create the instrumented function
-instrum = inst.Instrumentation(arg1, arg2, "blublu", value=value)
+instrum = ng.Instrumentation(arg1, arg2, "blublu", value=value)
 # the 3rd arg. is a positional arg. which will be kept constant to "blublu"
 print(instrum.dimension)  # 5 dimensional space
 
@@ -66,8 +67,7 @@ def myfunction(arg1, arg2, arg3, value=3):
     print(arg1, arg2, arg3)
     return value**2
 
-from nevergrad.optimization import optimizerlib
-optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
+optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.minimize(ifunc)
 ```
 

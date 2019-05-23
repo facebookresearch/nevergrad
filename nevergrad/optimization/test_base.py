@@ -92,6 +92,10 @@ def test_base_optimizer() -> None:
     zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
+    # check suggest
+    zeroptim.suggest([12, 12])
+    np.testing.assert_array_equal(zeroptim.ask().args[0], [12, 12])
+    np.testing.assert_array_equal(zeroptim.ask().args[0], [0, 0])
 
 
 def test_optimize_and_dump() -> None:
