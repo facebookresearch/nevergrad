@@ -24,7 +24,7 @@ class DEParticle(base.utils.Particle):
         return f"Part<{self.position}, {self.fitness}, {self.active}>"
 
 
-class Crossovers:
+class Crossover:
 
     def __init__(self, random_state: np.random.RandomState, crossover: Union[str, float]):
         self.CR = .5
@@ -113,12 +113,9 @@ class _DE(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         if len(self.population) < self.llambda:  # initialization phase
+            scale = self.scale
             init = self._parameters.initialization
             location = self._num_ask % self.llambda
-            if self._parameters.inoculation:
-                inoc = float(location) / float(self.llambda)
-            else:
-                inoc = 1.
             if self.sampler is None and init is not None:
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
@@ -126,10 +123,12 @@ class _DE(base.Optimizer):
             if self._parameters.hyperinoc:
                 weights = [self.llambda - location, location]
                 sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
-                new_guy = np.array([self.random_state.choice([0, self.scale * sample[i]], p=weights) for i in range(self.dimension)])
+                new_guy = np.array([self.random_state.choice([0, scale * sample[i]], p=weights) for i in range(self.dimension)])
             else:
-                new_guy = inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
-                                               if init is None else stats.norm.ppf(self.sampler()))  # type: ignore
+                if self._parameters.inoculation:
+                    scale *= float(location) / float(self.llambda)
+                new_guy = scale * (self.random_state.normal(0, 1, self.dimension)
+                                   if init is None else stats.norm.ppf(self.sampler()))  # type: ignore
             particle = DEParticle(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
@@ -152,7 +151,7 @@ class _DE(base.Optimizer):
                 self._parameters.F2 * (self.current_bests["pessimistic"].x - individual)
         # apply crossover
         co = self._parameters.crossover
-        crossovers = Crossovers(self.random_state, 1. / self.dimension if co == "dimension" else co)
+        crossovers = Crossover(self.random_state, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
         candidate = self.create_candidate.from_data(donor)

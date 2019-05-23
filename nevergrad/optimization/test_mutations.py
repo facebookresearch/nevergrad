@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Union, List
 import numpy as np
 from ..common import testing
 from . import utils
 from .mutations import Mutator
+from .differentialevolution import Crossover
 
 
 def test_discrete_mutation() -> None:
@@ -50,3 +52,18 @@ def test_get_roulette(num: int, expected: str) -> None:
         archive[np.array([k + .5])] = utils.Value(k)
     output = Mutator(rng).get_roulette(archive, num)
     np.testing.assert_equal(output, expected)
+
+
+@testing.parametrized(
+    cr_0=(0., [0, 0, 3, 0]),  # one item is always kept
+    cr_1=(1., [1, 2, 3, 4]),
+    cr_02=(.2, [0, 2, 3, 0]),
+    onepoint=("onepoint", [0, 0, 0, 0, 0, 0]),
+    twopoints=("twopoints", [0, 0, 0, 0, 0, 0]),
+)
+def test_de_crossover(crossover_param: Union[str, float], expected: List[int]) -> None:
+    rng = np.random.RandomState(24)
+    crossover = Crossover(rng, crossover_param)
+    donor = np.arange(1, len(expected) + 1)
+    crossover.apply(donor, 0. * donor)
+    np.testing.assert_array_equal(donor, expected)
