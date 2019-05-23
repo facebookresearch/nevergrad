@@ -65,7 +65,7 @@ class _DE(base.Optimizer):
         if current_pop < self.llambda:
             self.population.extend(DEParticle() for _ in range(self.llambda - current_pop))
 
-    def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
+    def _internal_recommend(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
         med_fitness = np.median([p.fitness for p in self.population if p.fitness is not None])

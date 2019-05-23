@@ -232,7 +232,7 @@ class Experiment:
             try:
                 self.recommendation = self._optimizer.minimize(counter, batch_mode=executor.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
-                self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
+                self.recommendation = self._optimizer.recommend()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
                 raise e
         self._log_results(t0, counter.num_calls)

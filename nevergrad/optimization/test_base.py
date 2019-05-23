@@ -87,11 +87,11 @@ def test_base_optimizer() -> None:
     np.testing.assert_equal(zeroptim.ask().data, [0, 0])
     zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 0)
     zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
-    np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
+    np.testing.assert_equal(zeroptim.recommend().data, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
     zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 10)
     zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
-    np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
+    np.testing.assert_equal(zeroptim.recommend().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
     # check suggest
     zeroptim.suggest([12, 12])
@@ -113,7 +113,7 @@ def test_optimize_and_dump() -> None:
         filepath = Path(folder) / "dump_test.pkl"
         optimizer.dump(filepath)
         optimizer2 = optimizerlib.OnePlusOne.load(filepath)
-        np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
+        np.testing.assert_almost_equal(optimizer2.recommend().data[0], 1, decimal=2)
 
 
 class StupidFamily(base.OptimizerFamily):

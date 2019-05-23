@@ -197,6 +197,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[Candidate, JobLike[float]]] = []
         self._finished_jobs: Deque[Tuple[Candidate, JobLike[float]]] = deque()
+        # hacky test to prevent some silent errors in external implementations
+        assert self._internal_provide_recommendation == 12, "_internal_provide_recommendation disappeared in favor of _internal_recommend"
+
+    _internal_provide_recommendation = 12  # HACK
 
     @property
     def random_state(self) -> np.random.RandomState:
@@ -375,7 +379,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
             on the function (objective_function(*candidate.args, **candidate.kwargs)).
         """
-        return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
+        return self.create_candidate.from_data(self._internal_recommend(), deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: Candidate, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -398,7 +402,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_ask(self) -> ArrayLike:
         raise RuntimeError("Not implemented, should not be called.")
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_recommend(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def minimize(self, objective_function: Callable[..., float],
@@ -488,7 +492,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 (tmp_finished if x_job[1].done() else tmp_runnings).append(x_job)
             self._running_jobs, self._finished_jobs = tmp_runnings, tmp_finished
             first_iteration = False
-        return self.provide_recommendation()
+        return self.recommend()
 
     def optimize(self, objective_function: Callable[..., float],
                  executor: Optional[ExecutorLike] = None,
@@ -521,7 +525,7 @@ class OptimizationPrinter:
         if self._last_time is None:
             self._last_time = time.time()
         if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_tell % self._num_eval):
-            x = optimizer.provide_recommendation()
+            x = optimizer.recommend()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
 

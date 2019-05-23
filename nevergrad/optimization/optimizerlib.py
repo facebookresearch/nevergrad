@@ -205,7 +205,7 @@ class _CMA(base.Optimizer):
                 self.listx = []
                 self.listy = []
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         if self._es is None:
             raise RuntimeError("Either ask or tell method should have been called before")
         if self.es.result.xbest is None:
@@ -266,7 +266,7 @@ class EDA(base.Optimizer):
         # Archive
         self.archive_fitness: List[float] = []
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_recommend(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -474,7 +474,7 @@ class TBPSA(base.Optimizer):
         self._evaluated_population: List[ParticleTBPSA] = []
         self._unevaluated_population: Dict[bytes, ParticleTBPSA] = {}
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_recommend(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -526,7 +526,7 @@ class TBPSA(base.Optimizer):
 @registry.register
 class NaiveTBPSA(TBPSA):
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         return self.current_bests["optimistic"].x
 
 
@@ -624,7 +624,7 @@ class PSO(base.Optimizer):
         # only remove at the last minute (safer for checkpointing)
         return candidate
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         return self._PARTICULE.transform.forward(self.best_position)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -726,7 +726,7 @@ class SPSA(base.Optimizer):
         if self.init and self.yp is not None and self.ym is not None:
             self.init = False
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         return self.avg
 
 
@@ -758,7 +758,7 @@ class Portfolio(base.Optimizer):
         del self.who_asked[tx][0]
         self.optims[optim_index].tell(candidate, value)
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
@@ -1071,7 +1071,7 @@ class _BO(base.Optimizer):
         # so we should clean the "fake" function
         self._fake_function._registered.clear()
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         return self._transform.backward(np.array([self.bo.max['params'][f'x{i}'] for i in range(self.dimension)]))
 
 

@@ -38,10 +38,10 @@ class _RandomSearch(OneShotOptimizer):
                  else self.random_state.normal(0, 1, self.dimension))
         return scale * point  # type: ignore
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_recommend(self) -> ArrayLike:
         if self._parameters.stupid:
             return self._internal_ask()
-        return super()._internal_provide_recommendation()
+        return super()._internal_recommend()
 
 
 class RandomSearchMaker(base.ParametrizedFamily):

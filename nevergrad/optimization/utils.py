@@ -115,7 +115,7 @@ def _get_nash(optimizer: Any) -> List[Tuple[Tuple[float, ...], int]]:
     sum_num_trial = sum(p.count for p in optimizer.archive.values())
     threshold = np.power(max_num_trial, .5)
     if threshold <= np.power(sum_num_trial, .25):
-        return [(optimizer.provide_recommendation(), 1)]
+        return [(optimizer.recommend(), 1)]
     # make deterministic at the price of sort complexity
     return sorted(((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
                   key=operator.itemgetter(1))

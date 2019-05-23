@@ -228,7 +228,7 @@ class RecastOptimizer(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_recommend(self) -> base.ArrayLike:
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
         else the best pessimistic point.
         """
