@@ -10,6 +10,7 @@
 - populated `nevergrad`'s namespace so that `import nevergrad as ng` gives access to `ng.Instrumentation`, `ng.var` and `ng.optimizers`. The
   `optimizers` namespace is quite messy, some non-optimizer objects will eventually be removed from there.
 - renamed `optimize` to `minimize` to be more explicit. Using `optimize` will raise a `DeprecationWarning` for the time being.
+- rename `provide_recommendation` to `recommend` in optimizers for consistency with the literature and other main methods. Using `provide_recommendation` will raise a `DeprecationWarning` for the time being. `_internal_provide_recommendation` is also renamed to `_internal_recommend`, and implementing this method will raise an error at runtime.
 
 ## v0.2.1
 
