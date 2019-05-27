@@ -114,7 +114,7 @@ class _DE(base.Optimizer):
     def _internal_ask_candidate(self) -> base.Candidate:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._parameters.initialization
-            if self.sampler is None and init is not None:
+            if self.sampler is None and init != "gaussian":
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
@@ -132,13 +132,8 @@ class _DE(base.Optimizer):
         # define donor
         indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
         assert indiv_a is not None and indiv_b is not None
-        if self._parameters.hashed:  # hashed is not used for now -> to be defined
-            case_1 = self.random_state.normal(0, 1, self.dimension) if self._parameters.NF else individual
-            donor = self.random_state.choice([case_1, indiv_a, self.current_bests["pessimistic"].x])
-        else:
-            donor = individual + \
-                self._parameters.F1 * (indiv_a - indiv_b) + \
-                self._parameters.F2 * (self.current_bests["pessimistic"].x - individual)
+        donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
+                 self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
         # apply crossover
         co = self._parameters.crossover
         crossovers = Crossover(self.random_state, 1. / self.dimension if co == "dimension" else co)
@@ -175,10 +170,9 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
     _optimizer_class = _DE
 
-    def __init__(self, *, initialization: Optional[str] = None, scale: Union[str, float] = 1.,
-                 recommendation: str = "optimistic", NF: bool = True,
-                 crossover: Union[str, float] = .5, F1: float = .8, F2: float = .8, popsize: str = "standard",
-                 hashed: bool = False) -> None:
+    def __init__(self, *, initialization: str = "gaussian", scale: Union[str, float] = 1.,
+                 recommendation: str = "optimistic", crossover: Union[str, float] = .5,
+                 F1: float = .8, F2: float = .8, popsize: str = "standard") -> None:
         """Differential evolution algorithms.
 
         Default pop size is 30
@@ -188,8 +182,8 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
         Parameters
         ----------
-        initialization: "LHS", "QR" or None
-            algorithm for the initialization phase
+        initialization: "LHS", "QR" or "gaussian"
+            algorithm/distribution used for the initialization phase
         scale: float or str
             scale of random component of the updates
         recommendation: "pessimistic", "optimistic", "mean" or "noisy"
@@ -207,14 +201,10 @@ class DifferentialEvolution(base.ParametrizedFamily):
         popsize: "standard", "dimension", "large"
             size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
             and "large" max(num_workers, 30, 7 * dimension).
-        NF: bool
-            TODO
-        hashed: bool
-            TODO
         """
         # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in [None, "LHS", "QR"]
+        assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
         assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random"]
@@ -226,8 +216,6 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
-        self.NF = NF
-        self.hashed = hashed
         super().__init__()
 
     def __call__(self, instrumentation: Union[int, Instrumentation],
