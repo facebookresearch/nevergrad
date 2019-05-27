@@ -53,19 +53,21 @@ class Crossover:
         donor[transfer] = individual[transfer]
 
     def onepoint(self, donor: np.ndarray, individual: np.ndarray) -> None:
-        R = self.random_state.choice(np.arange(1, donor.size))
-        if self.random_state.uniform(0., 1.) < .5:
-            donor[:R] = individual[:R]
-        else:
+        R = self.random_state.randint(1, donor.size)
+        if self.random_state.choice([True, False]):
             donor[R:] = individual[R:]
+        else:
+            donor[:R] = individual[:R]
 
     def twopoints(self, donor: np.ndarray, individual: np.ndarray) -> None:
-        Ra, Rb = sorted(self.random_state.choice(donor.size - 1, size=2, replace=False).tolist())
-        if self.random_state.uniform(0., 1.) < .5:
-            donor[:Ra + 1] = individual[:Ra + 1]
-            donor[Rb:] = individual[Rb:]
+        bounds = sorted(self.random_state.choice(donor.size + 1, size=2, replace=False).tolist())
+        if bounds[1] == donor.size and not bounds[0]:  # make sure there is at least one point crossover
+            bounds[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
+        if self.random_state.choice([True, False]):
+            donor[bounds[0]: bounds[1]] = individual[bounds[0]: bounds[1]]
         else:
-            donor[Ra: Rb + 1] = individual[Ra: Rb + 1]
+            donor[:bounds[0]] = individual[:bounds[0]]
+            donor[bounds[1]:] = individual[bounds[1]:]
 
 
 class _DE(base.Optimizer):
