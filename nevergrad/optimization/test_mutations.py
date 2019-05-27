@@ -59,7 +59,8 @@ def test_get_roulette(num: int, expected: str) -> None:
     cr_1=(1., 24, [1, 2, 3, 4]),
     cr_02=(.2, 24, [0, 2, 3, 0]),
     onepoint=("onepoint", 24, [0, 0, 0, 4, 5, 6]),
-    twopoints=("twopoints", 12, [0, 0, 0, 0, 0, 0]),  # TODO: solve this
+    twopoints=("twopoints", 16, [0, 0, 3, 4, 0, 0]),
+    twopoints_special=("twopoints", 20, [0, 0, 0, 0, 5, 6]),  # redraws since bounds was [0, 6]
 )
 def test_de_crossover(crossover_param: Union[str, float], seed: int, expected: List[int]) -> None:
     rng = np.random.RandomState(seed)
