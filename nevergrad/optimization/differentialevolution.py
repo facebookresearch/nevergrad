@@ -113,29 +113,19 @@ class _DE(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         if len(self.population) < self.llambda:  # initialization phase
-            scale = self.scale
             init = self._parameters.initialization
-            location = self._num_ask % self.llambda
             if self.sampler is None and init is not None:
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
-            if self._parameters.hyperinoc:
-                weights = [self.llambda - location, location]
-                sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
-                new_guy = np.array([self.random_state.choice([0, scale * sample[i]], p=weights) for i in range(self.dimension)])
-            else:
-                if self._parameters.inoculation:
-                    scale *= float(location) / float(self.llambda)
-                new_guy = scale * (self.random_state.normal(0, 1, self.dimension)
-                                   if init is None else stats.norm.ppf(self.sampler()))  # type: ignore
+            new_guy = self.scale * (self.random_state.normal(0, 1, self.dimension)
+                                    if self.sampler is None else stats.norm.ppf(self.sampler()))
             particle = DEParticle(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
-
         # init is done
         particle = self.population.get_queued(remove=True)
         individual = particle.position
@@ -186,7 +176,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
     _optimizer_class = _DE
 
     def __init__(self, *, initialization: Optional[str] = None, scale: Union[str, float] = 1.,
-                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic", NF: bool = True,
+                 recommendation: str = "optimistic", NF: bool = True,
                  crossover: Union[str, float] = .5, F1: float = .8, F2: float = .8, popsize: str = "standard",
                  hashed: bool = False) -> None:
         """Differential evolution algorithms.
@@ -202,10 +192,6 @@ class DifferentialEvolution(base.ParametrizedFamily):
             algorithm for the initialization phase
         scale: float or str
             scale of random component of the updates
-        inoculation: bool
-            TODO
-        hyperinoc: bool
-            TODO
         recommendation: "pessimistic", "optimistic", "mean" or "noisy"
             choice of the criterion for the best point to recommend
         crossover: float or str
@@ -234,8 +220,6 @@ class DifferentialEvolution(base.ParametrizedFamily):
         assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random"]
         self.initialization = initialization
         self.scale = scale
-        self.inoculation = inoculation
-        self.hyperinoc = hyperinoc
         self.recommendation = recommendation
         # parameters
         self.F1 = F1
