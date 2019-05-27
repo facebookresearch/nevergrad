@@ -14,7 +14,7 @@ from . import sequences
 
 class DEParticle(base.utils.Particle):
 
-    def __init__(self, position: Optional[np.ndarray] = None, fitness: Optional[float] = None):
+    def __init__(self, position: np.ndarray, fitness: Optional[float] = None):
         super().__init__()
         self.position = position
         self.fitness = fitness
@@ -22,6 +22,50 @@ class DEParticle(base.utils.Particle):
 
     def __repr__(self) -> str:
         return f"Part<{self.position}, {self.fitness}, {self.active}>"
+
+
+class Crossover:
+
+    def __init__(self, random_state: np.random.RandomState, crossover: Union[str, float]):
+        self.CR = .5
+        self.crossover = crossover
+        self.random_state = random_state
+        if isinstance(crossover, float):
+            self.CR = crossover
+        elif crossover == "random":
+            self.CR = self.random_state.uniform(0., 1.)
+        elif crossover not in ["twopoints", "onepoint"]:
+            raise ValueError(f'Unknown crossover "{crossover}"')
+
+    def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        dim = donor.size
+        if self.crossover == "twopoints" and dim >= 4:
+            return self.twopoints(donor, individual)
+        elif self.crossover == "onepoint" and dim >= 3:
+            return self.onepoint(donor, individual)
+        else:
+            return self.variablewise(donor, individual)
+
+    def variablewise(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        R = self.random_state.randint(donor.size)
+        # the following could be updated to vectorial uniform sampling (changes recomms)
+        transfer = np.array([idx != R and self.random_state.uniform(0, 1) > self.CR for idx in range(donor.size)])
+        donor[transfer] = individual[transfer]
+
+    def onepoint(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        R = self.random_state.choice(np.arange(1, donor.size))
+        if self.random_state.uniform(0., 1.) < .5:
+            donor[:R] = individual[:R]
+        else:
+            donor[R:] = individual[R:]
+
+    def twopoints(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        Ra, Rb = sorted(self.random_state.choice(donor.size - 1, size=2, replace=False).tolist())
+        if self.random_state.uniform(0., 1.) < .5:
+            donor[:Ra + 1] = individual[:Ra + 1]
+            donor[Rb:] = individual[Rb:]
+        else:
+            donor[Ra: Rb + 1] = individual[Ra: Rb + 1]
 
 
 class _DE(base.Optimizer):
@@ -41,7 +85,6 @@ class _DE(base.Optimizer):
         self._llambda: Optional[int] = None
         self.population: base.utils.Population[DEParticle] = base.utils.Population([])
         self.sampler: Optional[sequences.Sampler] = None
-        self.NF = False  # This is not a noise-free variant of DE.
         self._replaced: Set[bytes] = set()
 
     @property
@@ -49,8 +92,7 @@ class _DE(base.Optimizer):
         scale = self._parameters.scale
         if isinstance(scale, str):
             assert scale == "mini"  # computing on demand because it requires to know the dimension
-            scale = 1. / np.sqrt(self.dimension)
-        assert isinstance(scale, float)
+            return float(1. / np.sqrt(self.dimension))
         return scale
 
     @property
@@ -59,11 +101,6 @@ class _DE(base.Optimizer):
             pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
             self._llambda = max(30, self.num_workers, pop_choice[self._parameters.popsize])
         return self._llambda
-
-    def match_population_size_to_lambda(self) -> None:
-        current_pop = len(self.population)
-        if current_pop < self.llambda:
-            self.population.extend(DEParticle() for _ in range(self.llambda - current_pop))
 
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
@@ -75,83 +112,33 @@ class _DE(base.Optimizer):
         return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        init = self._parameters.initialization
-        if self.sampler is None and init is not None:
-            assert init in ["LHS", "QR"]
-            sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-            self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
-        self.match_population_size_to_lambda()
-        particle = self.population.get_queued(remove=True)
-        i = particle.position
-        a, b, c = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(3))
-
-        CR = 1. / self.dimension if isinstance(self._parameters.CR, str) else self._parameters.CR
-        if self._parameters.por_DE:
-            CR = self.random_state.uniform(0., 1.)
-
-        if any(x is None for x in [i, a, b, c]):
-            location = self._num_ask % self.llambda
-            if self._parameters.inoculation:
-                inoc = float(location) / float(self.llambda)
-            else:
-                inoc = 1.
-            if self._parameters.hyperinoc:
-                p = [float(self.llambda - location), location]
-                p = [p_ / sum(p) for p_ in p]
-                sample = self.sampler() if init is not None else self.random_state.normal(0, 1, self.dimension)  # type: ignore
-                new_guy = tuple([self.random_state.choice([0, self.scale * sample[i]], p=p) for i in range(self.dimension)])
-            else:
-                new_guy = tuple(inoc * self.scale * (self.random_state.normal(0, 1, self.dimension)
-                                                     if init is None
-                                                     else stats.norm.ppf(self.sampler())))  # type: ignore
-            particle.position = np.array(new_guy)  #
-            particle.fitness = None  #
+        if len(self.population) < self.llambda:  # initialization phase
+            init = self._parameters.initialization
+            if self.sampler is None and init != "gaussian":
+                assert init in ["LHS", "QR"]
+                sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
+                self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
+            new_guy = self.scale * (self.random_state.normal(0, 1, self.dimension)
+                                    if self.sampler is None else stats.norm.ppf(self.sampler()))
+            particle = DEParticle(new_guy)
+            self.population.extend([particle])
+            self.population.get_queued(remove=True)  # since it was just added
             candidate = self.create_candidate.from_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
-        i = np.array(i)
-        a = np.array(a)
-        b = np.array(b)
-        c = np.array(c)
-        if self._parameters.hashed:
-            k = self.random_state.randint(3)
-            if k == 0:
-                if self.NF:
-                    donor = self.random_state.normal(0, 1, self.dimension)
-                else:
-                    donor = i
-            if k == 1:
-                donor = a
-            if k == 2:
-                donor = np.array(self.current_bests["pessimistic"].x)
-        else:
-            donor = i + self._parameters.F1 * (a - b) + self._parameters.F2 * (self.current_bests["pessimistic"].x - i)
-        k = self._parameters.crossover
-        assert k <= 2
-        if k == 0 or self.dimension < 3:
-            R = self.random_state.randint(self.dimension)
-            for idx in range(self.dimension):
-                if idx != R and self.random_state.uniform(0, 1) > CR:
-                    donor[idx] = i[idx]
-        elif k == 1 or self.dimension < 4:
-            R = self.random_state.choice(np.arange(1, self.dimension))
-            if self.random_state.uniform(0., 1.) < .5:
-                for idx in range(R):
-                    donor[idx] = i[idx]
-            else:
-                for idx in range(R, self.dimension):
-                    donor[idx] = i[idx]
-        elif k == 2:
-            Ra, Rb = self.random_state.choice(self.dimension - 1, size=2, replace=False)
-            if self.random_state.uniform(0., 1.) < .5:
-                for idx in range(self.dimension):
-                    if (idx - Ra) * (idx - Rb) >= 0:
-                        donor[idx] = i[idx]
-            else:
-                for idx in range(self.dimension):
-                    if (idx - Ra) * (idx - Rb) <= 0:
-                        donor[idx] = i[idx]
-        donor = tuple(donor)
+        # init is done
+        particle = self.population.get_queued(remove=True)
+        individual = particle.position
+        # define donor
+        indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
+        assert indiv_a is not None and indiv_b is not None
+        donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
+                 self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
+        # apply crossover
+        co = self._parameters.crossover
+        crossovers = Crossover(self.random_state, 1. / self.dimension if co == "dimension" else co)
+        crossovers.apply(donor, individual)
+        # create candidate
         candidate = self.create_candidate.from_data(donor)
         candidate._meta["particle"] = particle
         return candidate
@@ -161,20 +148,21 @@ class _DE(base.Optimizer):
         if not particle.active:
             self._internal_tell_not_asked(candidate, value)
             return
-        self.match_population_size_to_lambda()
         if particle.fitness is None or value <= particle.fitness:
             particle.position = candidate.data
             particle.fitness = value
         self.population.set_queued(particle)
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        self.match_population_size_to_lambda()
-        worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
-        if worst_part.fitness is not None and worst_part.fitness < value:
-            return  # no need to update
+        worst_part = None
+        if not len(self.population) < self.llambda:
+            worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
+            if worst_part.fitness is not None and worst_part.fitness < value:
+                return  # no need to update
         particle = DEParticle(position=candidate.data, fitness=value)
-        self.population.replace(worst_part, particle)
-        worst_part.active = False
+        if worst_part is not None:
+            self.population.replace(worst_part, particle)
+            worst_part.active = False
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
@@ -182,10 +170,9 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
     _optimizer_class = _DE
 
-    def __init__(self, *, initialization: Optional[str] = None, por_DE: bool = False, scale: Union[str, float] = 1.,
-                 inoculation: bool = False, hyperinoc: bool = False, recommendation: str = "optimistic", NF: bool = True,
-                 CR: Union[str, float] = .5, F1: float = .8, F2: float = .8, crossover: int = 0, popsize: str = "standard",
-                 hashed: bool = False) -> None:
+    def __init__(self, *, initialization: str = "gaussian", scale: Union[str, float] = 1.,
+                 recommendation: str = "optimistic", crossover: Union[str, float] = .5,
+                 F1: float = .8, F2: float = .8, popsize: str = "standard") -> None:
         """Differential evolution algorithms.
 
         Default pop size is 30
@@ -195,55 +182,40 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
         Parameters
         ----------
-        initialization: "LHS", "QR" or None
-            algorithm for the initialization phase
-        por_DE: bool
-            TODO
-        scale: float
+        initialization: "LHS", "QR" or "gaussian"
+            algorithm/distribution used for the initialization phase
+        scale: float or str
             scale of random component of the updates
-        inoculation: bool
-            TODO
-        hyperinoc: bool
-            TODO
         recommendation: "pessimistic", "optimistic", "mean" or "noisy"
             choice of the criterion for the best point to recommend
-        CR: float
-            TODO
+        crossover: float or str
+            crossover rate value, or strategy among:
+            - "dimension": crossover rate of  1 / dimension,
+            - "random": different random (uniform) crossover rate at each iteration
+            - "onepoint": one point crossover
+            - "twopoints": two points crossover
         F1: float
-            TODO
+            differential weight #1
         F2: float
-            TODO
-        crossover: int
-            TODO
+            differential weight #2
         popsize: "standard", "dimension", "large"
             size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
             and "large" max(num_workers, 30, 7 * dimension).
-        NF: bool
-            TODO
-        hashed: bool
-            TODO
         """
         # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert crossover in [0, 1, 2]
-        assert initialization in [None, "LHS", "QR"]
+        assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
-        assert isinstance(CR, float) or CR == "dimension"
+        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random"]
         self.initialization = initialization
-        self.por_DE = por_DE
         self.scale = scale
-        self.inoculation = inoculation
-        self.hyperinoc = hyperinoc
         self.recommendation = recommendation
         # parameters
-        self.CR = CR
         self.F1 = F1
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
-        self.NF = NF
-        self.hashed = hashed
         super().__init__()
 
     def __call__(self, instrumentation: Union[int, Instrumentation],
@@ -254,16 +226,16 @@ class DifferentialEvolution(base.ParametrizedFamily):
 
 
 DE = DifferentialEvolution().with_name("DE", register=True)
-OnePointDE = DifferentialEvolution(crossover=1).with_name("OnePointDE", register=True)
-TwoPointsDE = DifferentialEvolution(crossover=2).with_name("TwoPointsDE", register=True)
+OnePointDE = DifferentialEvolution(crossover="onepoint").with_name("OnePointDE", register=True)
+TwoPointsDE = DifferentialEvolution(crossover="twopoints").with_name("TwoPointsDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=True)
 MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
 MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").with_name("MiniLhsDE", register=True)
 MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").with_name("MiniQrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
-AlmostRotationInvariantDE = DifferentialEvolution(CR=.9).with_name("AlmostRotationInvariantDE", register=True)
-AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(CR=.9, popsize="dimension").with_name("AlmostRotationInvariantDEAndBigPop",
-                                                                                                 register=True)
-RotationInvariantDE = DifferentialEvolution(CR=1., popsize="dimension").with_name("RotationInvariantDE", register=True)
-BPRotationInvariantDE = DifferentialEvolution(CR=1., popsize="large").with_name("BPRotationInvariantDE", register=True)
+AlmostRotationInvariantDE = DifferentialEvolution(crossover=.9).with_name("AlmostRotationInvariantDE", register=True)
+AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=.9, popsize="dimension").with_name(
+    "AlmostRotationInvariantDEAndBigPop", register=True)
+RotationInvariantDE = DifferentialEvolution(crossover=1., popsize="dimension").with_name("RotationInvariantDE", register=True)
+BPRotationInvariantDE = DifferentialEvolution(crossover=1., popsize="large").with_name("BPRotationInvariantDE", register=True)
