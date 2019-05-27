@@ -116,13 +116,6 @@ class RandomSampler(Sampler):
         return self.random_state.uniform(0, 1, self.dimension)  # type: ignore
 
 
-@samplers.register
-class GaussianSampler(RandomSampler):
-
-    def _internal_sampler(self) -> ArrayLike:
-        return self.random_state.normal(0, 1, self.dimension)  # type: ignore
-
-
 class HaltonPermutationGenerator:
     """Provides a light-memory access to a possibly huge list of permutations
     (at the cost of being slightly slower)
