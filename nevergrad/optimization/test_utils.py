@@ -108,24 +108,10 @@ def test_population_queue() -> None:
     np.testing.assert_raises(ValueError, pop.set_queued, Partitest(5))  # not in pop
 
 
-def test_population_link() -> None:
-    particles = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particles)
-    np.testing.assert_raises(ValueError, pop.set_linked, "blublu", Partitest(5))  # not in pop
-    p = particles[0]
-    pop.set_linked(12, p)
-    p2 = pop.get_linked(12)
-    assert p2.uuid == p.uuid
-    pop.del_link(12, p)
-    np.testing.assert_raises(KeyError, pop.get_linked, 12)  # removed
-
-
 def test_population_replace() -> None:
     particles = [Partitest(k) for k in range(4)]
     pop = utils.Population(particles)
-    pop.set_linked(12, particles[2])
-    key = pop.replace(particles[2], Partitest(5))
-    assert key == 12
+    pop.replace(particles[2], Partitest(5))
     assert pop.get_queued().number == 5
     for uuid in pop.uuids:
         # checks that it exists and correctly linked
