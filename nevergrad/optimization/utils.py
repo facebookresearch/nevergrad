@@ -301,6 +301,9 @@ class Individual:
         self._parameters = np.array([])
         self._active = True
 
+    def __repr__(self) -> str:
+        return f"Indiv<{self.x}, {self.value}>"
+
 
 X = TypeVar('X', bound=Individual)
 
