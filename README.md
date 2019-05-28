@@ -80,7 +80,7 @@ See the [instrumentation tutorial](docs/instrumentation.md) for more complex ins
 
 
 You can print the full list of optimizers with:
-```
+```python
 import nevergrad as ng
 print(sorted(registry.keys()))
 ```
