@@ -70,7 +70,7 @@ Please make sure that your function returns a float, and that you indeed want to
 ## Choosing an optimizer
 
 **You can print the full list of optimizers** with:
-```
+```python
 import nevergrad as ng
 print(sorted(ng.optimizers.registry.keys()))
 ```
