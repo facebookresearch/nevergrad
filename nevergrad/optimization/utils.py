@@ -292,14 +292,17 @@ class Pruning:
         return cls(min_len, max(max_len, max_len_1gb))
 
 
-class Particle:
+class Individual:
 
-    def __init__(self) -> None:
+    def __init__(self, x: ArrayLike) -> None:
+        self.x = np.array(x, copy=False)
         self.uuid = uuid4().hex
-        self._waiting_for_removal = False
+        self.value: Optional[float] = None
+        self._parameters = np.array([])
+        self._active = True
 
 
-X = TypeVar('X', bound=Particle)
+X = TypeVar('X', bound=Individual)
 
 
 class Population(Generic[X]):
@@ -353,7 +356,7 @@ class Population(Generic[X]):
 
     def set_linked(self, key: Union[str, bytes, int], particle: X) -> None:
         if particle.uuid not in self._particles:
-            raise ValueError("Particle is not part of the population")
+            raise ValueError("Individual is not part of the population")
         self._link[key].append(particle.uuid)
 
     def del_link(self, key: Union[str, bytes, int], particle: X) -> None:
@@ -374,7 +377,7 @@ class Population(Generic[X]):
 
     def set_queued(self, particle: X) -> None:
         if particle.uuid not in self._particles:
-            raise ValueError("Particle is not part of the population")
+            raise ValueError("Individual is not part of the population")
         self._queue.append(particle.uuid)
 
     def replace(self, oldie: X, newbie: X) -> Optional[Union[str, bytes, int]]:
@@ -383,9 +386,9 @@ class Population(Generic[X]):
         If the old particle was linked, the key will be returned
         """
         if oldie.uuid not in self._particles:
-            raise ValueError("Particle is not part of the population")
+            raise ValueError("Individual is not part of the population")
         if newbie.uuid in self._particles:
-            raise ValueError("Particle is already in the population")
+            raise ValueError("Individual is already in the population")
         del self._particles[oldie.uuid]
         self._particles[newbie.uuid] = newbie
         self._uuids = [newbie.uuid if u == oldie.uuid else u for u in self._uuids]
