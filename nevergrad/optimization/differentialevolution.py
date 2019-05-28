@@ -12,18 +12,6 @@ from . import base
 from . import sequences
 
 
-class DEParticle(base.utils.Particle):
-
-    def __init__(self, position: np.ndarray, fitness: Optional[float] = None):
-        super().__init__()
-        self.position = position
-        self.fitness = fitness
-        self.active = True
-
-    def __repr__(self) -> str:
-        return f"Part<{self.position}, {self.fitness}, {self.active}>"
-
-
 class Crossover:
 
     def __init__(self, random_state: np.random.RandomState, crossover: Union[str, float]):
@@ -85,7 +73,7 @@ class _DE(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
-        self.population: base.utils.Population[DEParticle] = base.utils.Population([])
+        self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])
         self.sampler: Optional[sequences.Sampler] = None
         self._replaced: Set[bytes] = set()
 
@@ -107,11 +95,11 @@ class _DE(base.Optimizer):
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
-        med_fitness = np.median([p.fitness for p in self.population if p.fitness is not None])
-        good_guys = [p for p in self.population if p.fitness is not None and p.position is not None and p.fitness < med_fitness]
+        med_fitness = np.median([p.value for p in self.population if p.value is not None])
+        good_guys = [p for p in self.population if p.value is not None and p.x is not None and p.value < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([g.position for g in good_guys]) / len(good_guys)  # type: ignore
+        return sum([g.x for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> base.Candidate:
         if len(self.population) < self.llambda:  # initialization phase
@@ -122,7 +110,7 @@ class _DE(base.Optimizer):
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
             new_guy = self.scale * (self.random_state.normal(0, 1, self.dimension)
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
-            particle = DEParticle(new_guy)
+            particle = base.utils.Individual(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
             candidate = self.create_candidate.from_data(new_guy)
@@ -130,9 +118,9 @@ class _DE(base.Optimizer):
             return candidate
         # init is done
         particle = self.population.get_queued(remove=True)
-        individual = particle.position
+        individual = particle.x
         # define donor
-        indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].position for _ in range(2))
+        indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].x for _ in range(2))
         assert indiv_a is not None and indiv_b is not None
         donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
@@ -146,25 +134,26 @@ class _DE(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        particle: DEParticle = candidate._meta["particle"]  # all asked candidate should have this field
-        if not particle.active:
+        particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
+        if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
-        if particle.fitness is None or value <= particle.fitness:
-            particle.position = candidate.data
-            particle.fitness = value
+        if particle.value is None or value <= particle.value:
+            particle.x = candidate.data
+            particle.value = value
         self.population.set_queued(particle)
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         worst_part = None
         if not len(self.population) < self.llambda:
-            worst_part = max(iter(self.population), key=lambda p: p.fitness if p.fitness is not None else np.inf)
-            if worst_part.fitness is not None and worst_part.fitness < value:
+            worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
+            if worst_part.value is not None and worst_part.value < value:
                 return  # no need to update
-        particle = DEParticle(position=candidate.data, fitness=value)
+        particle = base.utils.Individual(candidate.data)
+        particle.value = value
         if worst_part is not None:
             self.population.replace(worst_part, particle)
-            worst_part.active = False
+            worst_part._active = False
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes

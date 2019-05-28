@@ -85,10 +85,10 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(RuntimeError, archive.items)
 
 
-class Partitest(utils.Particle):
+class Partitest(utils.Individual):
 
     def __init__(self, number: int) -> None:
-        super().__init__()
+        super().__init__([])
         self.number = number
 
 

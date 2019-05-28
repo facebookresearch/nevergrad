@@ -441,17 +441,6 @@ class MEDA(EDA):
             self.evaluated_population_fitness = []
 
 
-class ParticleTBPSA:
-
-    def __init__(self, position: np.ndarray, sigma: float, loss: Optional[float] = None) -> None:
-        self.position = np.array(position, copy=False)
-        self.sigma = sigma
-        self.loss = loss
-
-    def __repr__(self) -> str:
-        return f"Part<{self.position}, {self.sigma}, {self.loss}>"
-
-
 @registry.register
 class TBPSA(base.Optimizer):
     """Test-based population-size adaptation.
@@ -471,8 +460,8 @@ class TBPSA(base.Optimizer):
         self.current_center: np.ndarray = np.zeros(self.dimension)
         self._loss_record: List[float] = []
         # population
-        self._evaluated_population: List[ParticleTBPSA] = []
-        self._unevaluated_population: Dict[bytes, ParticleTBPSA] = {}
+        self._evaluated_population: List[base.utils.Individual] = []
+        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
@@ -480,7 +469,9 @@ class TBPSA(base.Optimizer):
     def _internal_ask(self) -> base.ArrayLike:
         mutated_sigma = self.sigma * np.exp(self.random_state.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self.random_state.normal(0, 1, self.dimension)
-        self._unevaluated_population[individual.tobytes()] = ParticleTBPSA(individual, sigma=mutated_sigma)
+        part = base.utils.Individual(individual)
+        part._parameters = np.array([mutated_sigma])
+        self._unevaluated_population[individual.tobytes()] = part
         return individual  # type: ignore
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
@@ -505,21 +496,23 @@ class TBPSA(base.Optimizer):
         x = np.array(x, copy=False)
         x_bytes = x.tobytes()
         particle = self._unevaluated_population[x_bytes]
-        particle.loss = value
+        particle.value = value
         self._evaluated_population.append(particle)
         if len(self._evaluated_population) >= self.llambda:
             # Sorting the population.
-            self._evaluated_population.sort(key=lambda p: p.loss)
+            self._evaluated_population.sort(key=lambda p: p.value)
             # Computing the new parent.
-            self.current_center = sum(p.position for p in self._evaluated_population[:self.mu]) / self.mu  # type: ignore
-            self.sigma = np.exp(np.sum(np.log([p.sigma for p in self._evaluated_population[:self.mu]])) / self.mu)
+            self.current_center = sum(p.x for p in self._evaluated_population[:self.mu]) / self.mu  # type: ignore
+            self.sigma = np.exp(np.sum(np.log([p._parameters[0] for p in self._evaluated_population[:self.mu]])) / self.mu)
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
-        self._unevaluated_population[x.tobytes()] = ParticleTBPSA(x, sigma=sigma)
+        part = base.utils.Individual(x)
+        part._parameters = np.array([sigma])
+        self._unevaluated_population[x.tobytes()] = part
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
@@ -548,7 +541,7 @@ class NoisyBandit(base.Optimizer):
         return self.current_bests["optimistic"].x
 
 
-class PSOParticle(utils.Particle):
+class PSOParticle(utils.Individual):
     """Particle for the PSO algorithm, holding relevant information
     """
 
@@ -556,16 +549,14 @@ class PSOParticle(utils.Particle):
     _eps = 0.  # to clip to [eps, 1 - eps] for transform not defined on borders
 
     # pylint: disable=too-many-arguments
-    def __init__(self, position: np.ndarray, fitness: Optional[float], speed: np.ndarray,
-                 best_position: np.ndarray, best_fitness: float, random_state: np.random.RandomState) -> None:
-        super().__init__()
-        self.position = position
+    def __init__(self, x: np.ndarray, value: Optional[float], speed: np.ndarray,
+                 best_x: np.ndarray, best_value: float, random_state: np.random.RandomState) -> None:
+        super().__init__(x)
         self.speed = speed
-        self.fitness = fitness
-        self.best_position = best_position
-        self.best_fitness = best_fitness
+        self.value = value
+        self.best_x = best_x
+        self.best_value = best_value
         self.random_state = random_state
-        self.active = True
 
     @classmethod
     def random_initialization(cls, dimension: int, random_state: np.random.RandomState) -> 'PSOParticle':
@@ -574,19 +565,19 @@ class PSOParticle(utils.Particle):
         return cls(position, None, speed, position, float("inf"), random_state=random_state)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.fitness}, best: {self.best_fitness}>"
+        return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.value}, best: {self.best_value}>"
 
-    def mutate(self, best_position: np.ndarray, omega: float, phip: float, phig: float) -> None:
-        dim = len(best_position)
+    def mutate(self, best_x: np.ndarray, omega: float, phip: float, phig: float) -> None:
+        dim = len(best_x)
         rp = self.random_state.uniform(0., 1., size=dim)
         rg = self.random_state.uniform(0., 1., size=dim)
         self.speed = (omega * self.speed
-                      + phip * rp * (self.best_position - self.position)
-                      + phig * rg * (best_position - self.position))
-        self.position = np.clip(self.speed + self.position, self._eps, 1 - self._eps)
+                      + phip * rp * (self.best_x - self.x)
+                      + phig * rg * (best_x - self.x))
+        self.x = np.clip(self.speed + self.x, self._eps, 1 - self._eps)
 
     def get_transformed_position(self) -> np.ndarray:
-        return self.transform.forward(self.position)
+        return self.transform.forward(self.x)
 
 
 @registry.register
@@ -603,8 +594,8 @@ class PSO(base.Optimizer):
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
         self.population: utils.Population[PSOParticle] = utils.Population([])
-        self.best_position = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
-        self.best_fitness = float("inf")
+        self.best_x = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
+        self.best_value = float("inf")
         self.omega = 0.5 / np.log(2.)
         self.phip = 0.5 + np.log(2.)
         self.phig = 0.5 + np.log(2.)
@@ -616,8 +607,8 @@ class PSO(base.Optimizer):
                           for _ in range(self.llambda - len(self.population))]
             self.population.extend(additional)
         particle = self.population.get_queued(remove=False)
-        if particle.fitness is not None:  # particle was already initialized
-            particle.mutate(best_position=self.best_position, omega=self.omega, phip=self.phip, phig=self.phig)
+        if particle.value is not None:  # particle was already initialized
+            particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
         candidate = self.create_candidate.from_data(particle.get_transformed_position())
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
@@ -625,38 +616,38 @@ class PSO(base.Optimizer):
         return candidate
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return self._PARTICULE.transform.forward(self.best_position)
+        return self._PARTICULE.transform.forward(self.best_x)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
-        if not particle.active:
+        if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
         x = candidate.data
         point = particle.get_transformed_position()
         assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
-        particle.fitness = value
-        if value < self.best_fitness:
-            self.best_position = np.array(particle.position, copy=True)
-            self.best_fitness = value
-        if value < particle.best_fitness:
-            particle.best_position = np.array(particle.position, copy=False)
-            particle.best_fitness = value
+        particle.value = value
+        if value < self.best_value:
+            self.best_x = np.array(particle.x, copy=True)
+            self.best_value = value
+        if value < particle.best_value:
+            particle.best_x = np.array(particle.x, copy=False)
+            particle.best_value = value
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         if len(self.population) < self.llambda:
             particle = self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
-            particle.position = self._PARTICULE.transform.backward(x)
+            particle.x = self._PARTICULE.transform.backward(x)
             self.population.extend([particle])
         else:
-            worst_part = max(iter(self.population), key=lambda p: p.best_fitness)  # or fitness?
-            if worst_part.best_fitness < value:
+            worst_part = max(iter(self.population), key=lambda p: p.best_value)  # or fitness?
+            if worst_part.best_value < value:
                 return  # no need to update
             particle = self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
-            particle.position = self._PARTICULE.transform.backward(x)
-            worst_part.active = False
+            particle.x = self._PARTICULE.transform.backward(x)
+            worst_part._active = False
             self.population.replace(worst_part, particle)
         # go through standard pipeline
         c2 = self._internal_ask_candidate()
@@ -813,7 +804,7 @@ class ParaSQPCMA(ParaPortfolio):
         for i in range(num_workers - nw):
             self.which_optim += [i+1]
         assert len(self.which_optim) == num_workers
-        #b1, b2, b3, b4, b5 = intshare(budget, 5)
+        # b1, b2, b3, b4, b5 = intshare(budget, 5)
         self.optims = [CMA(instrumentation, num_workers=nw)]
         for i in range(num_workers - nw):
             self.optims += [SQP(instrumentation, 1)]
