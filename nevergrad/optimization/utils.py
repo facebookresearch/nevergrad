@@ -6,9 +6,9 @@
 import warnings
 import operator
 from uuid import uuid4
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from typing import (Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator,
-                    TypeVar, Generic, Union, Deque, Iterable)
+                    TypeVar, Generic, Deque, Iterable)
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -315,7 +315,6 @@ class Population(Generic[X]):
 
     def __init__(self, particles: Iterable[X]) -> None:
         self._particles = OrderedDict({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
-        self._link: Dict[Union[str, bytes, int], List[str]] = defaultdict(list)  # several particles can be linked to a same point
         self._queue = Deque[str]()
         self._uuids: List[str] = []
         self.extend(self._particles.values())
@@ -351,22 +350,6 @@ class Population(Generic[X]):
     def __len__(self) -> int:
         return len(self._particles)
 
-    def get_linked(self, key: Union[str, bytes, int]) -> X:
-        uuids = self._link[key]
-        if not uuids:
-            raise KeyError("No link available")
-        return self._particles[uuids[0]]
-
-    def set_linked(self, key: Union[str, bytes, int], particle: X) -> None:
-        if particle.uuid not in self._particles:
-            raise ValueError("Individual is not part of the population")
-        self._link[key].append(particle.uuid)
-
-    def del_link(self, key: Union[str, bytes, int], particle: X) -> None:
-        self._link[key].remove(particle.uuid)
-        if not self._link[key]:
-            del self._link[key]
-
     def is_queue_empty(self) -> bool:
         return not self._queue
 
@@ -383,10 +366,9 @@ class Population(Generic[X]):
             raise ValueError("Individual is not part of the population")
         self._queue.append(particle.uuid)
 
-    def replace(self, oldie: X, newbie: X) -> Optional[Union[str, bytes, int]]:
+    def replace(self, oldie: X, newbie: X) -> None:
         """Replaces an old particle by a new particle.
         The new particle is queue left (first out of queue)
-        If the old particle was linked, the key will be returned
         """
         if oldie.uuid not in self._particles:
             raise ValueError("Individual is not part of the population")
@@ -401,11 +383,3 @@ class Population(Generic[X]):
         except ValueError:
             pass
         self._queue.appendleft(newbie.uuid)
-        # update dict
-        links = [key for key, uuids in self._link.items() if oldie.uuid in uuids]
-        assert len(links) <= 1
-        if not links:
-            return None
-        else:
-            del self._link[links[0]]
-            return links[0]
