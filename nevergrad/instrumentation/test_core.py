@@ -41,6 +41,15 @@ def test_instrumentation() -> None:
     testing.printed_assert_equal("blublu", instru.with_name("blublu").name)
 
 
+def test_instrumentation_split() -> None:
+    instru = core.Instrumentation(var.Gaussian(0, 1),
+                                  3,
+                                  b=var.SoftmaxCategorical([0, 1, 2, 3]),
+                                  a=var.OrderedDiscrete([0, 1, 2, 3]))
+    splitted = instru.split_data([0, 1, 2, 3, 4, 5])
+    np.testing.assert_equal([x.tolist() for x in splitted], [[0], [], [1], [2, 3, 4, 5]])  # order of kwargs is alphabetical
+
+
 def test_instrumentation_init_error() -> None:
     variable = var.Gaussian(0, 1)
     np.testing.assert_raises(AssertionError, core.Instrumentation, variable, variable)

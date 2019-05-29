@@ -61,7 +61,7 @@ class Variable(Generic[X]):
         return repr(self)
 
 
-def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[ArrayLike]:
+def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[np.ndarray]:
     """Splits data according to the data requirements of the variables
     """
     # this functions should be tested
@@ -69,7 +69,8 @@ def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[Arra
     variables = list(variables)  # make sure it is not an iterator
     total = sum(t.dimension for t in variables)
     assert len(data) == total, f"Expected {total} values but got {len(data)}"
-    splitted_data = []
+    splitted_data: List[np.ndarray] = []
+    variables = list(variables)  # make sure it is not an iterator
     start, end = 0, 0
     for variable in variables:
         end = start + variable.dimension
