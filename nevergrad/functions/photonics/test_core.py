@@ -16,23 +16,45 @@ from . import core
     chirped=("chirped", [280.36, 52.96, 104.08, 36.34, 31.53, 15.98, 226.69, 193.11]),
 )
 def test_photonics_transforms(pb: str, expected: List[float]) -> None:
-    np.random.seed(24)
     with patch("shutil.which", return_value="here"):
-        func = core.Photonics(pb, 16)  # should be 8... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
-    func.instrumentation.args[0]._dimension = 8  # type: ignore
-    x = np.random.normal(0, 1, size=8)
-    (output,), _ = func.instrumentation.data_to_arguments(x)
-    np.testing.assert_almost_equal(output, expected, decimal=2)
+        # dim 8 is easier to test... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
+        with patch("nevergrad.functions.photonics.core._make_instrumentation", return_value=core._make_instrumentation(pb, 8)):
+            func = core.Photonics(pb, 16)
+    assert func.dimension == 8
     np.random.seed(24)
-    x2 = np.random.normal(0, 1, size=8)
-    np.testing.assert_almost_equal(x, x2, decimal=2, err_msg="x was modified in the process")
+    x = np.random.normal(0, 1, size=8)
+    all_x, _ = func.instrumentation.data_to_arguments(x)
+    output = np.concatenate(all_x)
+    np.testing.assert_almost_equal(output, expected, decimal=2)
+
+
+@testing.parametrized(
+    # bragg domain (n=60): [2,3]^30 x [0,300]^30
+    bragg_tanh=("bragg", "tanh", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),  # TODO: unbias this?
+    bragg_arctan=("bragg", "arctan", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),  # TODO: unbias this?
+    # chirped domain (n=60): [0,300]^60
+    chirped_tanh=("chirped", "tanh", [150., 150., 150., 150., 150., 150., 150., 150.]),
+    chirped_arctan=("chirped", "arctan", [150., 150., 150., 150., 150., 150., 150., 150.]),
+    # morpho domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
+    morpho_tanh=("morpho", "tanh", [150., 150., 300., 300., 315., 315., 150., 150.]),
+    morpho_arctan=("morpho", "arctan", [150., 150., 300., 300., 315., 315., 150., 150.]),
+)
+def test_photonics_transforms_mean(pb: str, transform: str, expected: List[float]) -> None:
+    with patch("shutil.which", return_value="here"):
+        # dim 8 is easier to test... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
+        with patch("nevergrad.functions.photonics.core._make_instrumentation", return_value=core._make_instrumentation(pb, 8, transform)):
+            func = core.Photonics(pb, 16, transform=transform)
+    all_x, _ = func.instrumentation.data_to_arguments([0] * 8)
+    output = np.concatenate(all_x)
+    np.testing.assert_almost_equal(output, expected, decimal=2)
 
 
 def test_morpho_transform_constraints() -> None:
     with patch("shutil.which", return_value="here"):
         func = core.Photonics("morpho", 60)
     x = np.random.normal(0, 5, size=60)  # std 5 to play with boundaries
-    (output,), _ = func.instrumentation.data_to_arguments(x)
+    all_x, _ = func.instrumentation.data_to_arguments(x)
+    output = np.concatenate(all_x)
     assert np.all(output >= 0)
     q = len(x) // 4
     assert np.all(output[:q] <= 300)
