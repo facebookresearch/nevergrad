@@ -22,7 +22,7 @@ def test_instrumentation() -> None:
     testing.printed_assert_equal((args, kwargs), ((4., 3), {'a': 0, 'b': 3}))
     assert ", 3, a=Ordered" in repr(instru), f"Erroneous representation {instru}"
     # check deterministic
-    data = [0, 0, 0, 0, 0, 0]
+    data = np.array([0., 0, 0, 0, 0, 0])
     total = 0
     for _ in range(24):
         total += instru.data_to_arguments(data, deterministic=True)[1]["b"]
