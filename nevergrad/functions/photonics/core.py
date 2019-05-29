@@ -21,53 +21,52 @@
 
 import os
 import shutil
+from typing import List
 from pathlib import Path
 import numpy as np
-from ...common.typetools import ArrayLike
 from ... import instrumentation as inst
-from ...instrumentation.transforms import TanhBound
 
 
-class PhotonicsVariable(inst.var.utils.Variable[np.ndarray]):
+def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> inst.Instrumentation:
+    """Creates appropriate instrumentation for a Photonics problem
 
-    def __init__(self, name: str, dimension: int) -> None:
-        self.name = name
-        self._dimension = dimension
+    Parameters
+    name: str
+        problem name, among bragg, chirped and morpho
+    dimension: int
+        size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
+    transform: str
+        transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
 
-    @property
-    def dimension(self) -> int:
-        return self._dimension
-
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
-        n = len(data)
-        data = np.array(data, copy=False)
-        assert not n % 4, f"points length should be a multiple of 4, got {n}"
-        if self.name == "bragg":
-            # n multiple of 2, from 16 to 80
-            # domain (n=60): [2,3]^30 x [0,300]^30
-            y = np.array(data, copy=True)
-            y[:n // 2] = TanhBound(2, 3).forward(y[:n // 2])
-            y[n // 2:] = TanhBound(0, 300).forward(y[n // 2:])
-        elif self.name == "chirped":
-            # n multiple of 2, from 10 to 80
-            # domain (n=60): [0,300]^60
-            y = TanhBound(0, 300).forward(data)
-        elif self.name == "morpho":
-            # n multiple of 4, from 16 to 60
-            # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-            y = TanhBound(0, 1).forward(data)
-            q = n // 4
-            y[:q] *= 300
-            y[q: 2 * q] *= 600
-            y[2 * q: 3 * q] *= 570
-            y[2 * q: 3 * q] += 30
-            y[3 * q:] *= 300
-        else:
-            raise NotImplementedError(f"Transform for {self.name} is not implemented")
-        return y
-
-    def _short_repr(self) -> str:
-        return "Photonics"
+    Returns
+    -------
+    Instrumentation
+        the instrumentation for the problem
+    """
+    assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
+    n = dimension // 4
+    arrays: List[inst.var.Array] = []
+    if name == "bragg":
+        # n multiple of 2, from 16 to 80
+        # domain (n=60): [2,3]^30 x [0,300]^30
+        arrays.extend([inst.var.Array(n).bounded(2, 3, transform=transform) for _ in range(2)])
+        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(2)])
+    elif name == "chirped":
+        # n multiple of 2, from 10 to 80
+        # domain (n=60): [0,300]^60
+        arrays = [inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(4)]
+    elif name == "morpho":
+        # n multiple of 4, from 16 to 60
+        # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
+        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform),
+                       inst.var.Array(n).bounded(0, 600, transform=transform),
+                       inst.var.Array(n).bounded(30, 600, transform=transform),
+                       inst.var.Array(n).bounded(0, 300, transform=transform)])
+    else:
+        raise NotImplementedError(f"Transform for {name} is not implemented")
+    instrumentation = inst.Instrumentation(*arrays)
+    assert instrumentation.dimension == dimension
+    return instrumentation
 
 
 class Photonics(inst.InstrumentedFunction):
@@ -75,10 +74,12 @@ class Photonics(inst.InstrumentedFunction):
 
     Parameters
     ----------
-    pb: str
+    name: str
         problem name, among bragg, chirped and morpho
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
+    transform: str
+        transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
 
     Returns
     -------
@@ -112,10 +113,10 @@ class Photonics(inst.InstrumentedFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int) -> None:
+    def __init__(self, name: str, dimension: int, transform: str = "tanh") -> None:
         if shutil.which("octave") is None:
             raise RuntimeError("Photonics function requires Octave to be installed in order to run")
-        assert dimension in [16, 40, 60 if name == "morpho" else 80]
+        assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         path = Path(__file__).absolute().parent / 'src' / (name + '.m')
@@ -123,12 +124,13 @@ class Photonics(inst.InstrumentedFunction):
         self._func = inst.CommandFunction(["octave", "--no-history", "--norc", "--no-gui", "--quiet", path.name],
                                           cwd=path.parent, verbose=False,
                                           env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"))
-        super().__init__(self._compute, PhotonicsVariable(name=name, dimension=dimension))
+        super().__init__(self._compute, *_make_instrumentation(name=name, dimension=dimension, transform=transform).args)
         self._descriptors.update(name=name)
 
-    def _compute(self, x: np.ndarray) -> float:
-        assert len(x) == self.dimension, f"Got length {len(x)} but expected {self.dimension}"
-        output = self._func(*x.tolist())
+    def _compute(self, *x: np.ndarray) -> float:
+        x_cat = np.concatenate(x)
+        assert x_cat.shape == (self.dimension,), f"Got length {x_cat.shape} but expected ({self.dimension},)"
+        output = self._func(*x_cat.tolist())
         output_list = output.strip().splitlines()
         try:
             value = float(output_list[-1])
