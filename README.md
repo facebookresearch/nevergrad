@@ -81,7 +81,7 @@ See the [instrumentation tutorial](docs/instrumentation.md) for more complex ins
 
 You can print the full list of optimizers with:
 ```python
-import nevergrad as ng
+from nevergrad.benchmark import registry
 print(sorted(registry.keys()))
 ```
 
