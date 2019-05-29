@@ -106,14 +106,41 @@ class Instrumentation:
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Converts data to arguments
+
+        Parameters
+        ----------
+        data: ArrayLike (list/tuple of floats, np.ndarray)
+            the data in the optimization space
+        deterministic: bool
+            whether the conversion should be deterministic (some variables can be stochastic, if deterministic=True
+            the most likely output will be used)
+
+        Returns
+        -------
+        args: Tuple[Any]
+            the positional arguments corresponding to the instance initialization positional arguments
+        kwargs: Dict[str, Any]
+            the keyword arguments corresponding to the instance initialization keyword arguments
         """
         arguments = utils.process_variables(self.variables, data, deterministic=deterministic)
         args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
         kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
         return args, kwargs
 
-    def arguments_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
         """Converts arguments to data
+
+        Parameters
+        ----------
+        *args: Any
+            the positional arguments corresponding to the instance initialization positional arguments
+        **kwargs: Any
+            the keyword arguments corresponding to the instance initialization keyword arguments
+
+        Returns
+        -------
+        data: np.ndarray
+            the corresponding data in the optimization space
 
         Note
         ----
@@ -131,6 +158,21 @@ class Instrumentation:
 
     def instrument(self, function: Callable[..., Any]) -> "InstrumentedFunction":
         return InstrumentedFunction(function, *self.args, **self.kwargs)
+
+    def split_data(self, data: ArrayLike) -> List[np.ndarray]:
+        """Splits the input data in chunks corresponding to each of the variables in self.variables
+
+        Parameter
+        ---------
+        data: ArrayLike (list/tuple of floats, np.ndarray)
+            the data in the optimization space
+
+        Returns
+        -------
+        List[np.ndarray]
+            the list of data chunks corresponding to each variable in self.variables
+        """
+        return utils.split_data(data, self.variables)
 
     def __format__(self, format_spec: str) -> str:
         arguments = [format(x, format_spec) for x in self.args]

@@ -22,7 +22,7 @@ def test_instrumentation() -> None:
     testing.printed_assert_equal((args, kwargs), ((4., 3), {'a': 0, 'b': 3}))
     assert ", 3, a=Ordered" in repr(instru), f"Erroneous representation {instru}"
     # check deterministic
-    data = [0, 0, 0, 0, 0, 0]
+    data = np.array([0., 0, 0, 0, 0, 0])
     total = 0
     for _ in range(24):
         total += instru.data_to_arguments(data, deterministic=True)[1]["b"]
@@ -39,6 +39,15 @@ def test_instrumentation() -> None:
     # check naming
     testing.printed_assert_equal("G(0,1),3,a=OD(0,1,2,3),b=SC(0,1,2,3|0)", instru.name)
     testing.printed_assert_equal("blublu", instru.with_name("blublu").name)
+
+
+def test_instrumentation_split() -> None:
+    instru = core.Instrumentation(var.Gaussian(0, 1),
+                                  3,
+                                  b=var.SoftmaxCategorical([0, 1, 2, 3]),
+                                  a=var.OrderedDiscrete([0, 1, 2, 3]))
+    splitted = instru.split_data([0, 1, 2, 3, 4, 5])
+    np.testing.assert_equal([x.tolist() for x in splitted], [[0], [], [1], [2, 3, 4, 5]])  # order of kwargs is alphabetical
 
 
 def test_instrumentation_init_error() -> None:
