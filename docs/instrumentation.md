@@ -11,12 +11,12 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 ## Variables
 
 5 types of variables are currently provided:
-- `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
-- `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
-- `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-- `Array`: casts the data from the optimizaton space into a `np.ndarray` of any shape, to which some transforms can be applied
-  (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
-- `Scalar`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
+- `SoftmaxCategorical(items)`: converts a list of `n` (unordered) categorial items into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
+- `OrderedDiscrete(items)`: converts a list of (ordered) discrete items into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
+- `Gaussian(mean, std)`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
+- `Array(dim1, ...)`: casts the data from the optimizaton space into a `np.ndarray` of any shape, to which some transforms can be applied
+  (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable. Eg. `Array(2, 3).bounded(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
+- `Scalar(dtype)`: casts the data from the optimization space into a float (the default) or an int. It is equivalent to `Array(1).asscalar(dtype)`
   and all `Array` methods are therefore available. For instance, one can use it for a logarithmicly distributed value between
   0.001 and 1.: `Scalar().bounded(0, 3).exponentiated(base=10, coeff=-1)`.  Also, note that `Gaussian(a, b)` is equivalent to `Scalar().affined(a, b)`.
 
