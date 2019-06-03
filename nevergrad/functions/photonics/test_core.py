@@ -30,8 +30,8 @@ def test_photonics_transforms(pb: str, expected: List[float]) -> None:
 
 @testing.parametrized(
     # bragg domain (n=60): [2,3]^30 x [0,300]^30
-    bragg_tanh=("bragg", "tanh", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),  # TODO: unbias this?
-    bragg_arctan=("bragg", "arctan", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),  # TODO: unbias this?
+    bragg_tanh=("bragg", "tanh", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),
+    bragg_arctan=("bragg", "arctan", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),
     # chirped domain (n=60): [0,300]^60
     chirped_tanh=("chirped", "tanh", [150., 150., 150., 150., 150., 150., 150., 150.]),
     chirped_arctan=("chirped", "arctan", [150., 150., 150., 150., 150., 150., 150., 150.]),
