@@ -237,7 +237,8 @@ class FolderFunction:
 
     Returns
     -------
-    the post-processed output of the called command
+    Any
+        the post-processed output of the called command
 
     Note
     ----

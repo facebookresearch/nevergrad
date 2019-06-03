@@ -17,25 +17,30 @@ class Instrumentation:
 
     Parameters
     ----------
-    *args, **kwargs: Any
-        Any argument. Arguments of type Variable (see note) will serve for instrumentation
+    *args:
+        Any positional argument. Arguments of type Variable (see note) will serve for instrumentation
+        and others will be kept constant.
+    **kwargs
+        Any keyword argument. Arguments of type Variable (see note) will serve for instrumentation
         and others will be kept constant.
 
     Note
     ----
     * Variable classes are:
-      - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned
-         element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic
-         and makes the function evaluation noisy.
-      - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will
-         depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
-      - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-      - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
-        (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
-      - `Scalar`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
-        and all `Array` methods are therefore available
-    * Depending on the variables, Instrumentation can be noisy (SoftmaxCategorical in non-deterministic mode), and not continuous
-      (SoftmaxCategorical in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
+
+        - `SoftmaxCategorical(items)`: converts a list of `n` (unordered) categorial items into an `n`-dimensional space. The returned
+          element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic
+          and makes the function evaluation noisy.
+        - `OrderedDiscrete(items)`: converts a list of (ordered) discrete items into a 1-dimensional variable. The returned value will
+          depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
+        - `Gaussian(mean, std)`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
+        - `Array(dim1, ...)`: casts the data from the optimization space into a np.ndarray of any shape,
+          to which some transforms can be applied (see `asscalar`, `affined`, `exponentiated`, `bounded`).
+          This is therefore a very flexible type of variable.
+        - `Scalar(dtype)`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
+          and all `Array` methods are therefore available
+    * Depending on the variables, `Instrumentation` can be noisy (`SoftmaxCategorical` in non-deterministic mode), and not continuous
+      (`SoftmaxCategorical` in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
       to deal with these cases properly.
     """
 
@@ -46,6 +51,24 @@ class Instrumentation:
         self._name: Optional[str] = None
 
     @property
+    def dimension(self) -> int:
+        """Dimension of the optimization corresponding optimization space.
+        """
+        return sum(i.dimension for i in self.variables)
+
+    @property
+    def args(self) -> Tuple[utils.Variable[Any], ...]:
+        """List of variables passed as positional arguments
+        """
+        return tuple(arg for name, arg in zip(self.names, self.variables) if name is None)
+
+    @property
+    def kwargs(self) -> Dict[str, utils.Variable[Any]]:
+        """Dictionary of variables passed as named arguments
+        """
+        return {name: arg for name, arg in zip(self.names, self.variables) if name is not None}
+
+    @property
     def name(self) -> str:
         if self._name is not None:
             return self._name
@@ -53,13 +76,13 @@ class Instrumentation:
 
     @property
     def continuous(self) -> bool:
-        """Wether the instrumentation is continuous, i.e. all underlying variables are continuous.
+        """Whether the instrumentation is continuous, i.e. all underlying variables are continuous.
         """
         return all(v.continuous for v in self.variables)
 
     @property
     def noisy(self) -> bool:
-        """Wether the instrumentation is noisy, i.e. at least one of the underlying variable is noisy.
+        """Whether the instrumentation is noisy, i.e. at least one of the underlying variable is noisy.
         """
         return any(v.noisy for v in self.variables)
 
@@ -74,22 +97,6 @@ class Instrumentation:
         self.variables: List[utils.Variable[Any]] = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.variables))
         assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
-
-    @property
-    def dimension(self) -> int:
-        return sum(i.dimension for i in self.variables)
-
-    @property
-    def args(self) -> Tuple[utils.Variable[Any], ...]:
-        """List of variables passed as positional arguments
-        """
-        return tuple(arg for name, arg in zip(self.names, self.variables) if name is None)
-
-    @property
-    def kwargs(self) -> Dict[str, utils.Variable[Any]]:
-        """Dictionary of variables passed as named arguments
-        """
-        return {name: arg for name, arg in zip(self.names, self.variables) if name is not None}
 
     @staticmethod
     def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
@@ -162,8 +169,8 @@ class Instrumentation:
     def split_data(self, data: ArrayLike) -> List[np.ndarray]:
         """Splits the input data in chunks corresponding to each of the variables in self.variables
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         data: ArrayLike (list/tuple of floats, np.ndarray)
             the data in the optimization space
 
@@ -217,15 +224,16 @@ class InstrumentedFunction:
     Notes
     -----
     - Variable classes are:
-        - `SoftmaxCategorical`: converts a list of `n` (unordered) categorial variables into an `n`-dimensional space. The returned
+        - `SoftmaxCategorical(items)`: converts a list of `n` (unordered) categorial items into an `n`-dimensional space. The returned
            element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic
            and makes the function evaluation noisy.
-        - `OrderedDiscrete`: converts a list of (ordered) discrete variables into a 1-dimensional variable. The returned value will
+        - `OrderedDiscrete(items)`: converts a list of (ordered) discrete items into a 1-dimensional variable. The returned value will
            depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
-        - `Gaussian`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-        - `Array`: casts the data from the optimization space into a np.ndarray of any shape, to which some transforms can be applied
-          (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable.
-        - `Scalar`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
+        - `Gaussian(mean, std)`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
+        - `Array(dim1, ...)`: casts the data from the optimization space into a np.ndarray of any shape,
+          to which some transforms can be applied (see `asscalar`, `affined`, `exponentiated`, `bounded`).
+          This is therefore a very flexible type of variable.
+        - `Scalar(dtype)`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
           and all `Array` methods are therefore available
     - This function can then be directly used in benchmarks *if it returns a float*.
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
