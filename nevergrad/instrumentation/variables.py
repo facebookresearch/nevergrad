@@ -11,6 +11,8 @@ from . import transforms
 from . import utils
 
 
+__all__ = ["SoftmaxCategorical", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
+
 X = TypeVar("X")
 
 
@@ -181,12 +183,14 @@ class Array(utils.Variable[Y]):
     Note
     ----
     Interesting methods (which can be chained):
+
     - asscalar(): converts the array into a float or int (only for arrays with 1 element)
       You may also directly use `Scalar` the scalar object instead.
     - with_transform(transform): apply a transform to the array
     - affined(a, b): applies a*x+b
     - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
       so that output values are in range [a_min, a_max]
+
     - exponentiated(base, coeff): applies base**(coeff * x)
     """
 

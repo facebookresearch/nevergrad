@@ -7,4 +7,6 @@ from .optimization import optimizerlib as optimizers  # busy namespace, likely t
 from .instrumentation import Instrumentation
 from .instrumentation import variables as var
 
+__all__ = ["Instrumentation", "var", "optimizers"]
+
 __version__ = "0.2.1"
