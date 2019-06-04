@@ -10,8 +10,14 @@ Welcome to nevergrad's documentation!
    :maxdepth: 3
    :caption: Contents:
 
-   optimizers
-   instrumentation
+   optimization.md
+   optimizers.rst
+   instrumentation.md
+   instrumentation_api.rst
+   machinelearning.md
+   benchmarking.md
+   benchmarks.md
+   adding_an_algorithm.md
 
 
 Indices and tables
