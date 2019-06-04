@@ -16,3 +16,4 @@ if __name__ == "__main__":
                                          string=ng.var.SoftmaxCategorical(["plop", "blublu", "plouf"]))
     opt = ng.optimizers.registry["OnePlusOne"](instrumentation, budget=4)
     opt.minimize(func)
+    ng.families.ParametrizedOnePlusOne()

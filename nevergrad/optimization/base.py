@@ -51,11 +51,23 @@ class Candidate:
     """
 
     def __init__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike):
-        self.args = args
-        self.kwargs = kwargs
+        self._args = args
+        self._kwargs = kwargs
         self.data = np.array(data, copy=False)
         self.uuid = uuid.uuid4().hex
         self._meta: Dict[str, Any] = {}
+
+    @property
+    def args(self) -> Tuple[Any, ...]:
+        """Positional arguments to be used on a function with `func(*candidate.args, **candidate.kwargs)`
+        """
+        return self._args
+
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        """Keyword arguments to be used on a function with `func(*candidate.args, **candidate.kwargs)`
+        """
+        return self._kwargs
 
     def __getitem__(self, ind: int) -> None:
         raise RuntimeError('Return type of "ask" is now a Candidate, use candidate.data[ind] '
@@ -105,8 +117,8 @@ class CandidateMaker:
         Returns
         -------
         Candidate:
-            The corresponding candidate. Candidates have field "args" and "kwargs" which can be directly used
-            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+            The corresponding candidate. Candidates have field `args` and `kwargs` which can be directly used
+            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         data = self._instrumentation.arguments_to_data(*args, **kwargs)
         return Candidate(args, kwargs, data)
@@ -125,8 +137,8 @@ class CandidateMaker:
         Returns
         -------
         Candidate:
-            The corresponding candidate. Candidates have field "args" and "kwargs" which can be directly used
-            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+            The corresponding candidate. Candidates have field `args` and `kwargs` which can be directly used
+            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         args, kwargs = self._instrumentation.data_to_arguments(data, deterministic=deterministic)
         return Candidate(args, kwargs, data)
@@ -134,16 +146,18 @@ class CandidateMaker:
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
-    - "ask()" which provides a candidate on which to evaluate the function to optimize
-    - "tell(candidate, value)" which lets you provide the values associated to points
-    - "provide_recommendation()" which provides the best final candidate
-    Typically, one would call "ask()" num_workers times, evaluate the
+
+    - `ask()` which provides a candidate on which to evaluate the function to optimize.
+    - `tell(candidate, value)` which lets you provide the values associated to points.
+    - `provide_recommendation()` which provides the best final candidate.
+
+    Typically, one would call `ask()` num_workers times, evaluate the
     function on these num_workers points in parallel, update with the fitness value when the
     evaluations is finished, and iterate until the budget is over. At the very end,
     one would call provide_recommendation for the estimated optimum.
 
-    This class is abstract, it provides _internal equivalents for the 3 main functions,
-    among which at least _internal_ask has to be overridden.
+    This class is abstract, it provides internal equivalents for the 3 main functions,
+    among which at least `_internal_ask_candidate` has to be overridden.
 
     Each optimizer instance should be used only once, with the initial provided budget
 
@@ -200,22 +214,33 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def random_state(self) -> np.random.RandomState:
+        """np.random.RandomState: Random state the optimizer pulls from (can be seeded if need be).
+        """
         return self._random_state
 
     @property
     def dimension(self) -> int:
+        """int: Dimension of the optimization space.
+        """
         return self.instrumentation.dimension
 
     @property
     def num_ask(self) -> int:
+        """int: Number of time the `ask` method was called.
+        """
         return self._num_ask
 
     @property
     def num_tell(self) -> int:
+        """int: Number of time the `tell` method was called.
+        """
         return self._num_tell
 
     @property
     def num_tell_not_asked(self) -> int:
+        """int: Number of time the `tell` method was called on candidates that were not asked for by the optimizer
+        (or were suggested).
+        """
         return self._num_tell_not_asked
 
     def dump(self, filepath: Union[str, Path]) -> None:
@@ -236,13 +261,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return f"Instance of {self.name}(instrumentation={inststr}, budget={self.budget}, num_workers={self.num_workers})"
 
     def register_callback(self, name: str, callback: _OptimCallBack) -> None:
-        """Add a callback method called either when "tell" or "ask" are called, with the same
+        """Add a callback method called either when `tell` or `ask` are called, with the same
         arguments (including the optimizer / self). This can be useful for custom logging.
 
         Parameters
         ----------
         name: str
-            name of the method to register the callback for (either "ask" or "tell")
+            name of the method to register the callback for (either `ask` or `tell`)
         callback: callable
             a callable taking the same parameters as the method it is registered upon (including self)
         """
@@ -260,8 +285,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        *args, **kwargs: Any
-            any arguments which match the instrumentation pattern.
+        *args: Any
+            positional arguments matching the instrumentation pattern.
+        *kwargs: Any
+            keyword arguments matching the instrumentation pattern.
 
         Note
         ----
@@ -285,9 +312,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Note
         ----
-        The candidate should generally be one provided by ask(), but can be also
+        The candidate should generally be one provided by `ask()`, but can be also
         a non-asked candidate. To create a Candidate instance from args and kwargs,
-        you can use optimizer.create_candidate.from_call(*args, **kwargs)
+        you can use `optimizer.create_candidate.from_call(*args, **kwargs)`.
         """
         if not isinstance(candidate, Candidate):
             raise TypeError("'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
@@ -335,8 +362,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         Candidate:
-            The candidate to try on the objective function. Candidates have field "args" and "kwargs" which can be directly used
-            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+            The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
+            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
@@ -360,8 +387,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         Candidate
-            The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
-            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+            The candidate with minimal value. Candidates have field `args` and `kwargs` which can be directly used
+            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.recommend()  # duplicate method
 
@@ -371,8 +398,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         Candidate
-            The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
-            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+            The candidate with minimal value. Candidates have field `args` and `kwargs` which can be directly used
+            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
 
@@ -411,10 +438,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         objective_function: callable
             A callable to optimize (minimize)
         executor: Executor
-            An executor object, with method submit(callable, *args, **kwargs) and returning a Future-like object
-            with methods done() -> bool and result() -> float. The executor role is to dispatch the execution of
+            An executor object, with method `submit(callable, *args, **kwargs)` and returning a Future-like object
+            with methods `done() -> bool` and `result() -> float`. The executor role is to dispatch the execution of
             the jobs locally/on a cluster/with multithreading depending on the implementation.
-            Eg: concurrent.futures.ThreadPoolExecutor
+            Eg: `concurrent.futures.ThreadPoolExecutor`
         batch_mode: bool
             when num_workers = n > 1, whether jobs are executed by batch (n function evaluations are launched,
             we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
@@ -427,8 +454,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         Candidate
-            The candidate with minimal value. Candidates have field "args" and "kwargs" which can be directly used
-            on the function (objective_function(*candidate.args, **candidate.kwargs)).
+            The candidate with minimal value. Candidates have field `args` and `kwargs` which can be directly used
+            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----
@@ -583,6 +610,17 @@ class ParametrizedFamily(OptimizerFamily):
 
     def __call__(self, instrumentation: Union[int, instru.Instrumentation],
                  budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+        """Creates an optimizer from the parametrization
+
+        Parameters
+        ----------
+        instrumentation: int or Instrumentation
+            either the dimension of the optimization space, or its instrumentation
+        budget: int/None
+            number of allowed evaluations
+        num_workers: int
+            number of evaluations which will be run in parallel at once
+        """
         assert self._optimizer_class is not None
         run = self._optimizer_class(instrumentation=instrumentation, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
         assert hasattr(run, "_parameters")

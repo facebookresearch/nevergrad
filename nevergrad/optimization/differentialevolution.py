@@ -158,41 +158,41 @@ class _DE(base.Optimizer):
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class DifferentialEvolution(base.ParametrizedFamily):
+    """Differential evolution algorithms.
+
+    Default pop size is 30
+    We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
+    Default settings are CR =.5, F1=.8, F2=.8, curr-to-best.
+    Initial population: pure random.
+
+    Parameters
+    ----------
+    initialization: "LHS", "QR" or "gaussian"
+        algorithm/distribution used for the initialization phase
+    scale: float or str
+        scale of random component of the updates
+    recommendation: "pessimistic", "optimistic", "mean" or "noisy"
+        choice of the criterion for the best point to recommend
+    crossover: float or str
+        crossover rate value, or strategy among:
+        - "dimension": crossover rate of  1 / dimension,
+        - "random": different random (uniform) crossover rate at each iteration
+        - "onepoint": one point crossover
+        - "twopoints": two points crossover
+    F1: float
+        differential weight #1
+    F2: float
+        differential weight #2
+    popsize: "standard", "dimension", "large"
+        size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
+        and "large" max(num_workers, 30, 7 * dimension).
+    """
 
     _optimizer_class = _DE
 
     def __init__(self, *, initialization: str = "gaussian", scale: Union[str, float] = 1.,
                  recommendation: str = "optimistic", crossover: Union[str, float] = .5,
                  F1: float = .8, F2: float = .8, popsize: str = "standard") -> None:
-        """Differential evolution algorithms.
-
-        Default pop size is 30
-        We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
-        Default settings are CR =.5, F1=.8, F2=.8, curr-to-best.
-        Initial population: pure random.
-
-        Parameters
-        ----------
-        initialization: "LHS", "QR" or "gaussian"
-            algorithm/distribution used for the initialization phase
-        scale: float or str
-            scale of random component of the updates
-        recommendation: "pessimistic", "optimistic", "mean" or "noisy"
-            choice of the criterion for the best point to recommend
-        crossover: float or str
-            crossover rate value, or strategy among:
-            - "dimension": crossover rate of  1 / dimension,
-            - "random": different random (uniform) crossover rate at each iteration
-            - "onepoint": one point crossover
-            - "twopoints": two points crossover
-        F1: float
-            differential weight #1
-        F2: float
-            differential weight #2
-        popsize: "standard", "dimension", "large"
-            size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
-            and "large" max(num_workers, 30, 7 * dimension).
-        """
         # initial checks
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QR"]
