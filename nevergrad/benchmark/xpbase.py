@@ -230,7 +230,9 @@ class Experiment:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
-                self.recommendation = self._optimizer.minimize(counter, batch_mode=executor.batch_mode, executor=executor)
+                # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
+                # and provide unfair comparisons  (especially for parallelized settings)
+                self.recommendation = base.Optimizer.minimize(self._optimizer, counter, batch_mode=executor.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
