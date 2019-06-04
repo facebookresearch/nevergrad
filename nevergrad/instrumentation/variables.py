@@ -11,6 +11,8 @@ from . import transforms
 from . import utils
 
 
+__all__ = ["SoftmaxCategorical", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
+
 X = TypeVar("X")
 
 
@@ -20,10 +22,10 @@ class SoftmaxCategorical(utils.Variable[X]):
     provide probabilities for each possible value. A random value is sampled from
     this distribution.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     possibilities: list
-        a list of possible values for the variable
+        a list of possible values for the variable.
 
     Note
     ----
@@ -73,10 +75,10 @@ class OrderedDiscrete(utils.Variable[X]):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     possibilities: list
-        a list of possible values for the variable
+        a list of possible values for the variable.
 
     Note
     ----
@@ -181,12 +183,14 @@ class Array(utils.Variable[Y]):
     Note
     ----
     Interesting methods (which can be chained):
+
     - asscalar(): converts the array into a float or int (only for arrays with 1 element)
       You may also directly use `Scalar` the scalar object instead.
     - with_transform(transform): apply a transform to the array
     - affined(a, b): applies a*x+b
     - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
       so that output values are in range [a_min, a_max]
+
     - exponentiated(base, coeff): applies base**(coeff * x)
     """
 
@@ -234,8 +238,8 @@ class Array(utils.Variable[Y]):
     def asscalar(self, dtype: Type[Union[float, int]] = float) -> 'Array':
         """Converts the array into a scalar
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         dtype: type
             either int or float
 
@@ -284,9 +288,11 @@ class Array(utils.Variable[Y]):
         Parameters
         ----------
         a_min: float or None
+            minimum value
         a_max: float or None
+            maximum value
         transform: str
-            "clipping", "tanh" or "arctan
+            "clipping", "tanh" or "arctan"
 
         Notes
         -----
@@ -314,12 +320,13 @@ class Scalar(Array):
     Note
     ----
     Interesting methods (which can be chained):
+
     - with_transform(transform): apply a transform to the array
     - affined(a, b): applies a*x+b
     - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
       so that output values are in range [a_min, a_max]
     - exponentiated(base, coeff): applies base**(coeff * x)
-    - `Scalar` is completely equivalent to `Array(1).asscalar(dtype)`
+    - `Scalar(dtype)` is completely equivalent to `Array(1).asscalar(dtype)`
     """
 
     def __init__(self, dtype: Type[Union[float, int]] = float):

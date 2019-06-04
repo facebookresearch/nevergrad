@@ -54,6 +54,10 @@ outlined on that page and do not file a public issue.
 We use pep8, but allow lines to be as long as 140 characters.
 Please use the pre-commit hooks to ensure correctness (see section "Our Development Process").
 
+## Documentation
+
+Documation can be build with `make html` from the `docs` folder.
+
 ## License
 By contributing to `nevergrad`, you agree that your contributions will be licensed
 under the LICENSE file in the root directory of this source tree.

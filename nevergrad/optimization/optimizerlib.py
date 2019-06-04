@@ -2,7 +2,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
 from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any
 from collections import defaultdict, deque
 import warnings
@@ -95,20 +94,23 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
     Parameters
     ----------
     noise_handling: str or Tuple[str, float]
-        method for handling the noise. The name can be either "random" (a random point
-        is reevaluated regularly) or "optimistic" (the best optimistic point is reevaluated
-        regularly, optimism in front of uncertainty). A coefficient can also be provided
-        to tune the regularity of these reevaluations (default .05)
+        Method for handling the noise. The name can be:
+
+        - `"random"`: a random point is reevaluated regularly
+        - `"optimistic"`: the best optimistic point is reevaluated regularly, optimism in front of uncertainty
+        - a coefficient can to tune the regularity of these reevaluations (default .05)
     mutation: str
         One of the available mutations from:
-        - "gaussian": standard mutation by adding a Gaussian random variable (with progressive
-        widening) to the best pessimistic point
-        - "cauchy": same as Gaussian but with a Cauchy distribution.
-        - "discrete": TODO
-        - "fastga": FastGA mutations from the current best
-        - "doublefastga": double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
-        - "portfolio": Random number of mutated bits (called niform mixing in
-           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
+
+        - `"gaussian"`: standard mutation by adding a Gaussian random variable (with progressive
+          widening) to the best pessimistic point
+        - `"cauchy"`: same as Gaussian but with a Cauchy distribution.
+        - `"discrete"`: TODO
+        - `"fastga"`: FastGA mutations from the current best
+        - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - `"portfolio"`: Random number of mutated bits (called niform mixing in
+          Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
+
     crossover: bool
         whether to add a genetic crossover step every other iteration.
 
@@ -526,10 +528,10 @@ class NaiveTBPSA(TBPSA):
 @registry.register
 class NoisyBandit(base.Optimizer):
     """UCB.
-
     This is upper confidence bound (adapted to minimization),
-      with very poor parametrization; in particular, the logarithmic term is set to zero.
-    Infinite arms: we add one arm when #trials >= #arms ** 3."""
+    with very poor parametrization; in particular, the logarithmic term is set to zero.
+    Infinite arms: we add one arm when `20 * #ask >= #arms ** 3`.
+    """
 
     def _internal_ask(self) -> base.ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
@@ -660,13 +662,13 @@ class SPSA(base.Optimizer):
     ''' The First order SPSA algorithm as shown in [1,2,3], with implementation details
     from [4,5].
 
-    [1] https://en.wikipedia.org/wiki/Simultaneous_perturbation_stochastic_approximation
-    [2] https://www.chessprogramming.org/SPSA
-    [3] Spall, James C. "Multivariate stochastic approximation using a simultaneous perturbation gradient approximation."
-        IEEE transactions on automatic control 37.3 (1992): 332-341.
-    [4] Section 7.5.2 in "Introduction to Stochastic Search and Optimization: Estimation, Simulation and Control" by James C. Spall.
-    [5] Pushpendre Rastogi, Jingyi Zhu, James C. Spall CISS (2016).
-        Efficient implementation of Enhanced Adaptive Simultaneous Perturbation Algorithms.
+    1) https://en.wikipedia.org/wiki/Simultaneous_perturbation_stochastic_approximation
+    2) https://www.chessprogramming.org/SPSA
+    3) Spall, James C. "Multivariate stochastic approximation using a simultaneous perturbation gradient approximation."
+       IEEE transactions on automatic control 37.3 (1992): 332-341.
+    4) Section 7.5.2 in "Introduction to Stochastic Search and Optimization: Estimation, Simulation and Control" by James C. Spall.
+    5) Pushpendre Rastogi, Jingyi Zhu, James C. Spall CISS (2016).
+       Efficient implementation of Enhanced Adaptive Simultaneous Perturbation Algorithms.
     '''
     no_parallelization = True
 
@@ -692,11 +694,11 @@ class SPSA(base.Optimizer):
         # magnitude of the gradient. 1e-5 is arbitrary.
         self.a = 1e-5
 
-    def ck(self, k: int) -> float:
+    def _ck(self, k: int) -> float:
         'c_k determines the pertubation.'
         return self.c / (k//2 + 1)**0.101
 
-    def ak(self, k: int) -> float:
+    def _ak(self, k: int) -> float:
         'a_k is the learning rate.'
         return self.a / (k//2 + 1 + self.A)**0.602
 
@@ -705,11 +707,11 @@ class SPSA(base.Optimizer):
         if k % 2 == 0:
             if not self.init:
                 assert self.yp is not None and self.ym is not None
-                self.t -= (self.ak(k) * (self.yp - self.ym) / 2 / self.ck(k)) * self.delta
+                self.t -= (self._ak(k) * (self.yp - self.ym) / 2 / self._ck(k)) * self.delta
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
             self.delta = 2 * self.random_state.randint(2, size=self.dimension) - 1
-            return self.t - self.ck(k) * self.delta  # type:ignore
-        return self.t + self.ck(k) * self.delta  # type: ignore
+            return self.t - self._ck(k) * self.delta  # type:ignore
+        return self.t + self._ck(k) * self.delta  # type: ignore
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         setattr(self, ('ym' if self.idx % 2 == 0 else 'yp'), np.array(value, copy=True))
@@ -1069,6 +1071,8 @@ class _BO(base.Optimizer):
 class ParametrizedBO(base.ParametrizedFamily):
     """Bayesian optimization
 
+    Parameters
+    ----------
     initialization: str
         Initialization algorithms (None, "Hammersley", "random" or "LHS")
     init_budget: int or None
@@ -1126,3 +1130,5 @@ RBO = ParametrizedBO(initialization="random").with_name("RBO", register=True)
 QRBO = ParametrizedBO(initialization="Hammersley").with_name("QRBO", register=True)
 MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).with_name("MidQRBO", register=True)
 LBO = ParametrizedBO(initialization="LHS").with_name("LBO", register=True)
+
+__all__ = list(registry.keys())
