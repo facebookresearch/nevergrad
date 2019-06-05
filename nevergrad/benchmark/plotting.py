@@ -137,7 +137,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     num_rows = 6
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         # choice of the cases with values for the fixed variables
-        for case in df.unique(fixed):
+        for case in df.unique(fixed) if len(fixed) > 0 else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
