@@ -121,7 +121,7 @@ class Photonics(inst.InstrumentedFunction):
         self.name = name
         path = Path(__file__).absolute().parent / 'src' / (name + '.m')
         assert path.exists(), f"Path {path} does not exist (anymore?)"
-        self._func = inst.CommandFunction(["octave", "--no-history", "--norc", "--no-gui", "--quiet", path.name],
+        self._func = inst.CommandFunction(["octave-cli", "--no-gui", "--no-history", "--norc", "--quiet", "--no-window-system", path.name],
                                           cwd=path.parent, verbose=False,
                                           env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"))
         super().__init__(self._compute, *_make_instrumentation(name=name, dimension=dimension, transform=transform).args)
