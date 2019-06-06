@@ -56,8 +56,9 @@ def test_make_sorted_winrates() -> None:
 def test_create_plots_from_csv_mocked() -> None:
     df = pd.read_csv(Path(__file__).parent / "sphere_perf_example.csv")
     with patch('nevergrad.benchmark.plotting.XpPlotter'):
-        with patch('nevergrad.benchmark.plotting.FightPlotter'):
+        with patch('nevergrad.benchmark.plotting.FightPlotter') as fplt:
             plotting.create_plots(df, "", max_combsize=1)
+            assert fplt.call_count == 6, "Should be called for all, 2 noise levels and 3 budgets"
 
 
 def test_fight_plotter() -> None:

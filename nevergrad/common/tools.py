@@ -58,7 +58,7 @@ class Selector(pd.DataFrame):  # type: ignore
     """Pandas dataframe class with a simplified selection function
     """
 
-    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
+    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':  # pylint: disable=arguments-differ
         """Select rows based on a value, a sequence of values or a discriminating function
 
         Parameters
