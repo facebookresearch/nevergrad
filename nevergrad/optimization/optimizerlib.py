@@ -318,7 +318,7 @@ class PCEDA(EDA):
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+            last_fifth = [self.archive_fitness[i] for i in range(4 * self.llambda, 5 * self.llambda)]
             mean1 = sum(first_fifth) / float(self.llambda)
             std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
             mean2 = sum(last_fifth) / float(self.llambda)
@@ -370,7 +370,7 @@ class MPCEDA(EDA):
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+            last_fifth = [self.archive_fitness[i] for i in range(4 * self.llambda, 5 * self.llambda)]
             mean1 = sum(first_fifth) / float(self.llambda)
             std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
             mean2 = sum(last_fifth) / float(self.llambda)
@@ -696,11 +696,11 @@ class SPSA(base.Optimizer):
 
     def _ck(self, k: int) -> float:
         'c_k determines the pertubation.'
-        return self.c / (k//2 + 1)**0.101
+        return self.c / (k // 2 + 1)**0.101
 
     def _ak(self, k: int) -> float:
         'a_k is the learning rate.'
-        return self.a / (k//2 + 1 + self.A)**0.602
+        return self.a / (k // 2 + 1 + self.A)**0.602
 
     def _internal_ask(self) -> base.ArrayLike:
         k = self.idx
@@ -804,7 +804,7 @@ class ParaSQPCMA(ParaPortfolio):
         nw = num_workers // 2
         self.which_optim = [0] * nw
         for i in range(num_workers - nw):
-            self.which_optim += [i+1]
+            self.which_optim += [i + 1]
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
         self.optims = [CMA(instrumentation, num_workers=nw)]
