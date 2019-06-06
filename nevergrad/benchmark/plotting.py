@@ -137,9 +137,10 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     num_rows = 6
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         # choice of the cases with values for the fixed variables
-        for case in df.unique(fixed):
+        for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
+            assert (len(casedf) == len(df)) != bool(case), "The full data should be used iff when notheing is fixed"  # safeguard
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
             fplotter = FightPlotter(data_df)
             # save
@@ -314,7 +315,7 @@ def split_long_title(title: str) -> str:
     if not comma_indices.size:
         return title
     best_index = comma_indices[np.argmin(abs(comma_indices - len(title) // 2))]
-    title = title[:(best_index+1)] + "\n" + title[(best_index+1):]
+    title = title[:(best_index + 1)] + "\n" + title[(best_index + 1):]
     return title
 
 
