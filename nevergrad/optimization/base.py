@@ -20,7 +20,7 @@ from ..common.decorators import Registry
 from . import utils
 
 
-registry = Registry[Union['OptimizerFamily', Type['Optimizer']]]()
+registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
 
@@ -70,14 +70,18 @@ class Candidate:
         return self._kwargs
 
     def __getitem__(self, ind: int) -> None:
-        raise RuntimeError('Return type of "ask" is now a Candidate, use candidate.data[ind] '
-                           '(rather than candidate[ind]) for the legacy behavior. '
-                           'However, please update your code to use candidate.args and kwargs instead (see documentation).')
+        raise RuntimeError(
+            'Return type of "ask" is now a Candidate, use candidate.data[ind] '
+            "(rather than candidate[ind]) for the legacy behavior. "
+            "However, please update your code to use candidate.args and kwargs instead (see documentation)."
+        )
 
     def __array__(self) -> None:
-        raise RuntimeError('Return type of "ask" is now a Candidate instead of an array. '
-                           'You can use candidate.data to recover the data array as in the old versions. '
-                           'However, please update your code to use args and kwargs instead (see documentation).')
+        raise RuntimeError(
+            'Return type of "ask" is now a Candidate instead of an array. '
+            "You can use candidate.data to recover the data array as in the old versions. "
+            "However, please update your code to use args and kwargs instead (see documentation)."
+        )
 
     def __repr__(self) -> str:
         return f"Candidate(args={self.args}, kwargs={self.kwargs}, data={self.data})"
@@ -170,6 +174,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     num_workers: int
         number of evaluations which will be run in parallel at once
     """
+
     # pylint: disable=too-many-locals
 
     # optimizer qualifiers
@@ -178,29 +183,33 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, instrumentation: Union[instru.Instrumentation, int],
-                 budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Union[instru.Instrumentation, int], budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
         # you can also replace or reinitialize this random state
-        self._random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
+        self._random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
         self.num_workers = int(num_workers)
         self.budget = budget
-        self.instrumentation = (instrumentation if isinstance(instrumentation, instru.Instrumentation) else
-                                instru.Instrumentation(instru.var.Array(instrumentation)))
+        self.instrumentation = (
+            instrumentation
+            if isinstance(instrumentation, instru.Instrumentation)
+            else instru.Instrumentation(instru.var.Array(instrumentation))
+        )
         if not self.dimension:
             raise ValueError("No variable to optimize in this instrumentation.")
         self.create_candidate = CandidateMaker(self.instrumentation)
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
-        self.current_bests = {x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf))
-                              for x in ["optimistic", "pessimistic", "average"]}
+        self.current_bests = {
+            x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf)) for x in ["optimistic", "pessimistic", "average"]
+        }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
-        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = \
-            utils.Pruning.sensible_default(num_workers=num_workers, dimension=self.instrumentation.dimension)
+        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = utils.Pruning.sensible_default(
+            num_workers=num_workers, dimension=self.instrumentation.dimension
+        )
         # instance state
         self._asked: Set[str] = set()
         self._suggestions: Deque[Candidate] = deque()
@@ -257,7 +266,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return load(cls, filepath)
 
     def __repr__(self) -> str:
-        inststr = f'{self.instrumentation:short}'
+        inststr = f"{self.instrumentation:short}"
         return f"Instance of {self.name}(instrumentation={inststr}, budget={self.budget}, num_workers={self.num_workers})"
 
     def register_callback(self, name: str, callback: _OptimCallBack) -> None:
@@ -317,8 +326,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         you can use `optimizer.create_candidate.from_call(*args, **kwargs)`.
         """
         if not isinstance(candidate, Candidate):
-            raise TypeError("'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
-                            "if you want to inoculate a point that as not been asked for")
+            raise TypeError(
+                "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
+                "if you want to inoculate a point that as not been asked for"
+            )
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
@@ -343,7 +354,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # update current best records
         # this may have to be improved if we want to keep more kinds of best values
         for name in ["optimistic", "pessimistic", "average"]:
-            if np.array_equal(x, self.current_bests[name].x):   # reboot
+            if np.array_equal(x, self.current_bests[name].x):  # reboot
                 y: bytes = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))  # type: ignore
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = utils.Point(np.frombuffer(y), self.archive.bytesdict[y])
@@ -374,8 +385,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             candidate = self._internal_ask_candidate()
             # only register actual asked points
             if candidate.uuid in self._asked:
-                raise RuntimeError("Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                                   "This is to make sure that stochastic instrumentations are resampled.")
+                raise RuntimeError(
+                    "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
+                    "This is to make sure that stochastic instrumentations are resampled."
+                )
             self._asked.add(candidate.uuid)
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
@@ -427,10 +440,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def minimize(self, objective_function: Callable[..., float],
-                 executor: Optional[ExecutorLike] = None,
-                 batch_mode: bool = False,
-                 verbosity: int = 0) -> Candidate:
+    def minimize(
+        self,
+        objective_function: Callable[..., float],
+        executor: Optional[ExecutorLike] = None,
+        batch_mode: bool = False,
+        verbosity: int = 0,
+    ) -> Candidate:
         """Optimization (minimization) procedure
 
         Parameters
@@ -516,10 +532,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             first_iteration = False
         return self.provide_recommendation()
 
-    def optimize(self, objective_function: Callable[..., float],
-                 executor: Optional[ExecutorLike] = None,
-                 batch_mode: bool = False,
-                 verbosity: int = 0) -> Candidate:
+    def optimize(
+        self,
+        objective_function: Callable[..., float],
+        executor: Optional[ExecutorLike] = None,
+        batch_mode: bool = False,
+        verbosity: int = 0,
+    ) -> Candidate:
         """This function is deprecated and renamed "minimize".
         """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
@@ -556,6 +575,7 @@ class OptimizerFamily:
     This class only provides a very general pattern for it and enable its instances for use in
     benchmarks.
     """
+
     # this class will probably evolve in the near future
     # the naming pattern is not yet very clear, better ideas are welcome
 
@@ -573,17 +593,18 @@ class OptimizerFamily:
     def __repr__(self) -> str:
         return self._repr
 
-    def with_name(self, name: str, register: bool = False) -> 'OptimizerFamily':
+    def with_name(self, name: str, register: bool = False) -> "OptimizerFamily":
         self._repr = name
         if register:
             registry.register_name(name, self)
         return self
 
-    def __call__(self, instrumentation: Union[int, instru.Instrumentation],
-                 budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+    def __call__(
+        self, instrumentation: Union[int, instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+    ) -> Optimizer:
         raise NotImplementedError
 
-    def load(self, filepath: Union[str, Path]) -> 'Optimizer':
+    def load(self, filepath: Union[str, Path]) -> "Optimizer":
         """Loads a pickle and checks that it is an Optimizer.
         """
         return load(Optimizer, filepath)
@@ -599,8 +620,9 @@ class ParametrizedFamily(OptimizerFamily):
     _optimizer_class: Optional[Type[Optimizer]] = None
 
     def __init__(self) -> None:
-        defaults = {x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items()
-                    if x not in ["self", "__class__"]}
+        defaults = {
+            x: y.default for x, y in inspect.signature(self.__class__.__init__).parameters.items() if x not in ["self", "__class__"]
+        }
         diff = set(defaults.keys()).symmetric_difference(self.__dict__.keys())
         if diff:  # this is to help durring development
             raise RuntimeError(f"Mismatch between attributes and arguments of ParametrizedFamily: {diff}")
@@ -608,8 +630,9 @@ class ParametrizedFamily(OptimizerFamily):
         different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x] and not x.startswith("_")}
         super().__init__(**different)
 
-    def __call__(self, instrumentation: Union[int, instru.Instrumentation],
-                 budget: Optional[int] = None, num_workers: int = 1) -> Optimizer:
+    def __call__(
+        self, instrumentation: Union[int, instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+    ) -> Optimizer:
         """Creates an optimizer from the parametrization
 
         Parameters
@@ -629,7 +652,7 @@ class ParametrizedFamily(OptimizerFamily):
         run.name = repr(self)
         return run
 
-    def load(self, filepath: Union[str, Path]) -> 'Optimizer':
+    def load(self, filepath: Union[str, Path]) -> "Optimizer":
         """Loads a pickle and checks that it corresponds to the correct family of optimizer
         """
         assert self._optimizer_class is not None
