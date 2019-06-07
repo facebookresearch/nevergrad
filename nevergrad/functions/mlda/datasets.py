@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import contextlib
 from typing import Union, Iterator, Any
 from pathlib import Path
@@ -41,7 +42,11 @@ def get_dataset_filepath(name: str) -> Path:
             path.unlink()
     if not path.exists():
         print(f'Downloading and caching external file "{name}" from url: {url}')
-        response = requests.get(url)
+        try:
+            response = requests.get(url, verify=True)
+        except requests.exceptions.SSLError:
+            warnings.warn(f"SSL verification failed for {url}, downloading without verification.")
+            response = requests.get(url, verify=False)
         with path.open("wb") as f:
             f.write(response.content)
     return path
