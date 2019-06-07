@@ -19,6 +19,10 @@ X = TypeVar("X")
 
 class Variable(Generic[X]):
 
+    def __init__(self) -> None:
+        # pull randomness from here (and don't modify manually, only by setting instrumentation.random_state)
+        self._rng = np.random.RandomState()
+
     @property
     def dimension(self) -> int:
         raise NotImplementedError

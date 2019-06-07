@@ -34,6 +34,7 @@ class SoftmaxCategorical(utils.Variable[X]):
     """
 
     def __init__(self, possibilities: List[X], deterministic: bool = False) -> None:
+        super().__init__()
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
@@ -86,6 +87,7 @@ class OrderedDiscrete(utils.Variable[X]):
     """
 
     def __init__(self, possibilities: List[X]) -> None:
+        super().__init__()
         self.possibilities = list(possibilities)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
@@ -122,6 +124,7 @@ class Gaussian(utils.Variable[Y]):
     """
 
     def __init__(self, mean: float, std: float, shape: Optional[Sequence[int]] = None) -> None:
+        super().__init__()
         self.mean = mean
         self.std = std
         self.shape = shape
@@ -148,6 +151,7 @@ class _Constant(utils.Variable[X]):
     """
 
     def __init__(self, value: X) -> None:
+        super().__init__()
         self.value = value
 
     @classmethod
@@ -195,6 +199,7 @@ class Array(utils.Variable[Y]):
     """
 
     def __init__(self, *dims: int) -> None:
+        super().__init__()
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
         self._dtype: Optional[Type[Union[float, int]]] = None

@@ -49,9 +49,23 @@ class Instrumentation:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.names: Tuple[Optional[str], ...] = ()
         self.variables: List[utils.Variable[Any]] = []
-        self.random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
+        self._random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
+        self.random_state = self._random_state  # trigger propagation to variables
+
+    @property
+    def random_state(self) -> np.random.RandomState:
+        """Random state the instrumentation and the optimizers pull from.
+        It can be seeded/replaced.
+        """
+        return self._random_state
+
+    @random_state.setter
+    def random_state(self, random_state: np.random.RandomState) -> None:
+        self._random_state = random_state
+        for var in self.variables:  # propagate to all variables
+            var._rng = self._random_state
 
     @property
     def dimension(self) -> int:
