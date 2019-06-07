@@ -292,9 +292,8 @@ def test_bo_instrumentation_and_parameters() -> None:
 
 
 def test_instrumentation_optimizer_reproducibility() -> None:
-    np.random.seed(12)
     instrumentation = inst.Instrumentation(inst.var.Array(1), y=inst.var.SoftmaxCategorical(list(range(100))))
     instrumentation.random_state.seed(12)
     optimizer = optimizerlib.RandomSearch(instrumentation, budget=10)
     recom = optimizer.minimize(_square)
-    np.testing.assert_equal(recom.kwargs["y"], 14)
+    np.testing.assert_equal(recom.kwargs["y"], 67)

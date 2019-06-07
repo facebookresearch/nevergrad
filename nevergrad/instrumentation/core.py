@@ -69,7 +69,8 @@ class Instrumentation:
         """
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
-            self.random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
+            seed = np.random.randint(2 ** 32, dtype=np.uint32)
+            self.random_state = np.random.RandomState(seed)
         assert self._random_state is not None
         return self._random_state
 
@@ -77,6 +78,7 @@ class Instrumentation:
     def random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
         for var in self.variables:  # propagate to all variables
+            print("setting to", var)
             var._rng = self._random_state
 
     @property

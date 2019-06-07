@@ -215,9 +215,8 @@ class Experiment:
         instrumentation = self.function.instrumentation.copy()  # make sure it is not shared
         if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
-            # np.random.seed(self.seed)
+            np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
             random.seed(self.seed)
-            np.random.seed(self.seed)  # seeds both functions and instrumentation
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)

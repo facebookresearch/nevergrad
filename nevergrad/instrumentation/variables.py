@@ -39,8 +39,10 @@ class SoftmaxCategorical(utils.Variable[X]):
         super().__init__()
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
-        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
-                                        "for the Instrumentation intialization")
+        assert len(possibilities) > 1, (
+            "Variable needs at least 2 values to choose from (constant values can be directly used as input "
+            "for the Instrumentation intialization"
+        )
 
     @property
     def continuous(self) -> bool:
@@ -57,11 +59,11 @@ class SoftmaxCategorical(utils.Variable[X]):
     def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:
         assert len(data) == len(self.possibilities)
         deterministic = deterministic | self.deterministic
-        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
+        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic, rng=self._rng)[0])
         return self.possibilities[index]
 
     def argument_to_data(self, arg: X) -> ArrayLike:
-        assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
+        assert arg in self.possibilities, f"{arg} not in allowed values: {self.possibilities}"
         return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
 
     def get_summary(self, data: ArrayLike) -> str:
@@ -91,8 +93,10 @@ class OrderedDiscrete(utils.Variable[X]):
     def __init__(self, possibilities: List[X]) -> None:
         super().__init__()
         self.possibilities = list(possibilities)
-        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
-                                        "for the Instrumentation intialization")
+        assert len(possibilities) > 1, (
+            "Variable needs at least 2 values to choose from (constant values can be directly used as input "
+            "for the Instrumentation intialization"
+        )
 
     @property
     def continuous(self) -> bool:
@@ -108,7 +112,7 @@ class OrderedDiscrete(utils.Variable[X]):
         return self.possibilities[index]
 
     def argument_to_data(self, arg: X) -> ArrayLike:
-        assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
+        assert arg in self.possibilities, f"{arg} not in allowed values: {self.possibilities}"
         index = self.possibilities.index(arg)
         return discretization.inverse_threshold_discretization([index], len(self.possibilities))
 
@@ -168,7 +172,7 @@ class _Constant(utils.Variable[X]):
         return self.value
 
     def argument_to_data(self, arg: X) -> ArrayLike:
-        assert arg == self.value, f'{arg} != {self.value}'
+        assert arg == self.value, f"{arg} != {self.value}"
         return []
 
     def get_summary(self, data: ArrayLike) -> str:
@@ -238,11 +242,11 @@ class Array(utils.Variable[Y]):
         fl = {None: "", int: "i", float: "f"}[self._dtype]
         return f"A({dims}{transf}){fl}"
 
-    def asfloat(self) -> 'Array':
+    def asfloat(self) -> "Array":
         warnings.warn('Please use "asscalar" instead of "asfloat"', DeprecationWarning)
         return self.asscalar()
 
-    def asscalar(self, dtype: Type[Union[float, int]] = float) -> 'Array':
+    def asscalar(self, dtype: Type[Union[float, int]] = float) -> "Array":
         """Converts the array into a scalar
 
         Parameters
@@ -263,11 +267,11 @@ class Array(utils.Variable[Y]):
         self._dtype = dtype
         return self
 
-    def with_transform(self, transform: transforms.Transform) -> 'Array':
+    def with_transform(self, transform: transforms.Transform) -> "Array":
         self.transforms.append(transform)
         return self
 
-    def exponentiated(self, base: float, coeff: float) -> 'Array':
+    def exponentiated(self, base: float, coeff: float) -> "Array":
         """Exponentiation transform base ** (coeff * x)
         This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
 
@@ -278,7 +282,7 @@ class Array(utils.Variable[Y]):
         """
         return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))
 
-    def affined(self, a: float, b: float = 0.) -> 'Array':
+    def affined(self, a: float, b: float = 0.0) -> "Array":
         """Affine transform a * x + b
 
         Parameters
@@ -288,7 +292,7 @@ class Array(utils.Variable[Y]):
         """
         return self.with_transform(transforms.Affine(a=a, b=b))
 
-    def bounded(self, a_min: Optional[float] = None, a_max: Optional[float] = None, transform: str = "arctan") -> 'Array':
+    def bounded(self, a_min: Optional[float] = None, a_max: Optional[float] = None, transform: str = "arctan") -> "Array":
         """Bounds all real values into [a_min, a_max] using a tanh transform.
         Beware, tanh goes very fast to its limits.
 
