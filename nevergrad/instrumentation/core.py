@@ -42,11 +42,14 @@ class Instrumentation:
     * Depending on the variables, `Instrumentation` can be noisy (`SoftmaxCategorical` in non-deterministic mode), and not continuous
       (`SoftmaxCategorical` in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
       to deal with these cases properly.
+    * Since instrumentation can have a stochastic behavior, it is responsible of holding the random state which optimizers
+      pull from.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.names: Tuple[Optional[str], ...] = ()
         self.variables: List[utils.Variable[Any]] = []
+        self.random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
 

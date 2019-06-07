@@ -188,7 +188,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
         # you can also replace or reinitialize this random state
-        self._random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
         self.num_workers = int(num_workers)
         self.budget = budget
         self.instrumentation = (
@@ -225,7 +224,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def random_state(self) -> np.random.RandomState:
         """np.random.RandomState: Random state the optimizer pulls from (can be seeded if need be).
         """
-        return self._random_state
+        return self.instrumentation.random_state
 
     @property
     def dimension(self) -> int:
