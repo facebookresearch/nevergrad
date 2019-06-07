@@ -41,6 +41,17 @@ def test_instrumentation() -> None:
     testing.printed_assert_equal("blublu", instru.with_name("blublu").name)
 
 
+def test_instrumentation_copy() -> None:
+    instru = core.Instrumentation(var.Gaussian(0, 1),
+                                  3,
+                                  b=var.SoftmaxCategorical([0, 1, 2, 3]),
+                                  a=var.OrderedDiscrete([0, 1, 2, 3])).with_name("bidule")
+    copied = instru.copy()
+    assert copied.name == "bidule"
+    assert copied.random_state is not instru.random_state
+    assert str(copied.variables) == str(instru.variables)
+
+
 def test_instrumentation_split() -> None:
     instru = core.Instrumentation(var.Gaussian(0, 1),
                                   3,

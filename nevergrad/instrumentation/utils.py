@@ -20,8 +20,10 @@ X = TypeVar("X")
 class Variable(Generic[X]):
 
     def __init__(self) -> None:
-        # pull randomness from here (and don't modify manually, only by setting instrumentation.random_state)
-        self._rng = np.random.RandomState()
+        # pull randomness from here
+        # this variable should only be handled by the instrumentation
+        # also, a custom RandomState is not created, because this is slow!
+        self._rng = np.random
 
     @property
     def dimension(self) -> int:

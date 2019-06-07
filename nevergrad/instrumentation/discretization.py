@@ -75,7 +75,7 @@ def softmax_discretization(
         output = np.argmax(data, axis=1).tolist()
         return output  # type: ignore
     if rng is None:
-        rng = np.random.RandomState()
+        rng = np.random  # default random number generator (creating a RandomState is slow)
     return [rng.choice(arity, p=softmax_probas(d)) for d in data]
 
 

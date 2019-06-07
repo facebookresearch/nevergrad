@@ -43,7 +43,7 @@ class Instrumentation:
       (`SoftmaxCategorical` in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
       to deal with these cases properly.
     * Since instrumentation can have a stochastic behavior, it is responsible of holding the random state which optimizers
-      pull from.
+      pull from. This random state is initialized lazily, and can be modified
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -51,14 +51,26 @@ class Instrumentation:
         self.variables: List[utils.Variable[Any]] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
-        self._random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
+        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
         self.random_state = self._random_state  # trigger propagation to variables
+
+    def copy(self) -> 'Instrumentation':
+        """Return a new instrumentation with the same variable and same name
+        (but a different random state)
+        """
+        instrumentation = Instrumentation(*self.args, **self.kwargs)
+        instrumentation._name = self._name
+        return instrumentation
 
     @property
     def random_state(self) -> np.random.RandomState:
         """Random state the instrumentation and the optimizers pull from.
         It can be seeded/replaced.
         """
+        if self._random_state is None:
+            # use the setter, to make sure the random state is propagated to the variables
+            self.random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
+        assert self._random_state is not None
         return self._random_state
 
     @random_state.setter

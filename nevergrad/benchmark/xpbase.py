@@ -49,7 +49,7 @@ class CallCounter(execution.PostponedObject):
 
 class OptimizerSettings:
     """Handle for optimizer settings (name, num_workers etc)
-    Optimizers can be instanciated through this class, providing the optimization space dimension.
+    Optimizers can be instantiated through this class, providing the optimization space dimension.
 
     Note
     ----
@@ -88,8 +88,8 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instanciate(self, instrumentation: instru.Instrumentation) -> base.Optimizer:
-        """Instanciate an optimizer, providing the optimization space dimension
+    def instantiate(self, instrumentation: instru.Instrumentation) -> base.Optimizer:
+        """Instantiate an optimizer, providing the optimization space dimension
         """
         return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
 
@@ -212,13 +212,15 @@ class Experiment:
             a dictionary of callbacks to register on the optimizer with key "ask" and/or "tell" (see base Optimizer class).
             This is only for easier debugging.
         """
+        instrumentation = self.function.instrumentation.copy()  # make sure it is not shared
         if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
-            np.random.seed(self.seed)
+            # np.random.seed(self.seed)
             random.seed(self.seed)
+            instrumentation.random_state.seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)
+            self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

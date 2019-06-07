@@ -3,6 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import List, Optional, TypeVar, Union, Sequence, Any, Type
+from functools import reduce
+import operator
 import warnings
 import numpy as np
 from . import discretization
@@ -206,7 +208,7 @@ class Array(utils.Variable[Y]):
 
     @property
     def dimension(self) -> int:
-        return int(np.prod(self.shape))
+        return reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
 
     @property
     def continuous(self) -> bool:
