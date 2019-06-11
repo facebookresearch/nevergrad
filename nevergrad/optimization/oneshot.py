@@ -30,7 +30,7 @@ class _RandomSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._parameters.quasi_opposite == "quasi" and self._num_ask % 2:
-            return -self.random_state.uniform(0., 1.) * self.last_guy
+            return -self.random_state.uniform(0., 1.) * self.last_guy  # type: ignore
         if self._parameters.quasi_opposite == "opposite" and self._num_ask % 2:
             return -self.last_guy  # type: ignore
         if self._parameters.middle_point and not self._num_ask:
