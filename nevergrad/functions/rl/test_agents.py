@@ -29,7 +29,7 @@ def test_torch_agent() -> None:
     game = mgame.with_agent(player_1=agents.RandomAgent(mgame)).as_single_agent()
     obs = game.reset()
     agent = agents.TorchAgent.from_module_maker(game, agents.DenseNet)
-    output = agent.act(obs, 0., False, None)
+    output = agent.act(obs, 0.0, False, None)
     assert output in game.action_space
 
 
@@ -56,7 +56,7 @@ def test_torch_agent_function() -> None:
     assert value in [0, 1]
     # optimization
     opt = optimizerlib.OnePlusOne(instru, budget=10)
-    opt.optimize(agentfunction.compute)
+    opt.minimize(agentfunction.compute)
 
 
 def test_partial_double_seven() -> None:

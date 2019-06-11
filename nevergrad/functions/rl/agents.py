@@ -26,7 +26,7 @@ class RandomAgent(base.Agent):
     def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
         return np.random.randint(self.num_outputs)
 
-    def duplicate(self) -> 'RandomAgent':
+    def duplicate(self) -> "RandomAgent":
         return self.__class__(self.env)
 
 
@@ -48,26 +48,28 @@ class Agent007(base.Agent):
             action = np.random.choice(["fire", "protect", "reload"])
         return envs.JamesBond.actions.index(action)
 
-    def duplicate(self) -> 'Agent007':
+    def duplicate(self) -> "Agent007":
         return self.__class__(self.env)
 
 
 class TorchAgent(base.Agent):
-    """
-    Base class for an ``Agent`` operating in a ``gymons.Env``
+    """Agents than plays through a torch neural network
     """
 
-    def __init__(self, module: nn.Module, deterministic: bool = True, instrumentation_std: float = .1) -> None:
+    def __init__(self, module: nn.Module, deterministic: bool = True, instrumentation_std: float = 0.1) -> None:
         super().__init__()
         self.deterministic = deterministic
         self.module = module
-        kwargs = {name: inst.var.Array(*value.shape).affined(a=instrumentation_std).bounded(-10, 10, transform="arctan")
-                  for name, value in module.state_dict().items()}  # bounded to avoid overflows
+        kwargs = {
+            name: inst.var.Array(*value.shape).affined(a=instrumentation_std).bounded(-10, 10, transform="arctan")
+            for name, value in module.state_dict().items()
+        }  # bounded to avoid overflows
         self.instrumentation = inst.Instrumentation(**kwargs)
 
     @classmethod
-    def from_module_maker(cls, env: gym.Env, module_maker: Callable[[Tuple[int, ...], int], nn.Module],
-                          deterministic: bool = True) -> 'TorchAgent':
+    def from_module_maker(
+        cls, env: gym.Env, module_maker: Callable[[Tuple[int, ...], int], nn.Module], deterministic: bool = True
+    ) -> "TorchAgent":
         assert isinstance(env.action_space, gym.spaces.Discrete)
         assert isinstance(env.observation_space, gym.spaces.Box)
         module = module_maker(env.observation_space.shape, env.action_space.n)
@@ -82,7 +84,7 @@ class TorchAgent(base.Agent):
         else:
             return next(iter(WeightedRandomSampler(probas, 1)))
 
-    def duplicate(self) -> 'TorchAgent':
+    def duplicate(self) -> "TorchAgent":
         return TorchAgent(self.module, self.deterministic)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
@@ -100,7 +102,7 @@ class TrainingTorchAgent(base.Agent):
         self.optimizer = OptimizerClass(instrumentation=agent.instrumentation, budget=None, num_workers=1)
         self.num_repetitions = num_repetitions
         self.repetition = 0
-        self.cum_reward = 0.
+        self.cum_reward = 0.0
         self.current_candidate = self.optimizer.ask()
         self.agent.load_state_dict(self.current_candidate.kwargs)
 
@@ -119,14 +121,14 @@ class TrainingTorchAgent(base.Agent):
         self.agent.load_state_dict(self.current_candidate.kwargs)
         self.agent.reset()
 
-    def duplicate(self) -> 'TrainingTorchAgent':
+    def duplicate(self) -> "TrainingTorchAgent":
         return TrainingTorchAgent(self.agent.duplicate(), self.optimizer.__class__, num_repetitions=self.num_repetitions)
 
 
 class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
-
-    def __init__(self, agent: TorchAgent, env_runner: base.EnvironmentRunner,
-                 reward_postprocessing: Callable[[float], float] = operator.neg) -> None:
+    def __init__(
+        self, agent: TorchAgent, env_runner: base.EnvironmentRunner, reward_postprocessing: Callable[[float], float] = operator.neg
+    ) -> None:
         assert isinstance(env_runner.env, gym.Env)
         self.agent = agent.duplicate()
         self.runner = env_runner
@@ -140,7 +142,7 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
             reward = self.runner.run(self.agent)
         except RuntimeError as e:
             warnings.warn(f"Returning 0 after error: {e}")
-            reward = 0.
+            reward = 0.0
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
@@ -148,12 +150,11 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        num_tests = int(100000 / self.runner.num_repetitions)  # hardcoded
+        num_tests = int(1000 / self.runner.num_repetitions)  # hardcoded
         return sum(self.compute(**kwargs) for _ in range(num_tests)) / num_tests
 
 
 class Perceptron(nn.Module):  # type: ignore
-
     def __init__(self, input_shape: Tuple[int, ...], output_size: int) -> None:
         super().__init__()
         assert len(input_shape) == 1
@@ -165,7 +166,6 @@ class Perceptron(nn.Module):  # type: ignore
 
 
 class DenseNet(nn.Module):  # type: ignore
-
     def __init__(self, input_shape: Tuple[int, ...], output_size: int) -> None:
         super().__init__()
         assert len(input_shape) == 1
