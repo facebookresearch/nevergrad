@@ -202,6 +202,14 @@ Calais20ScrRandomSearch = SamplingSearch(
     scale=2.0, sampler="Random", scrambled=True).with_name("Calais20ScrRandomSearch", register=True)
 Calais20ScrHammersleySearch = SamplingSearch(
     scale=2.0, sampler="Hammersley", scrambled=True).with_name("Calais20ScrHammersleySearch", register=True)
+Calais12ScrHaltonSearch = SamplingSearch(
+    scale=1.2, sampler="Halton", scrambled=True).with_name("Calais12ScrHaltonSearch", register=True)
+Calais12ScrLHSSearch = SamplingSearch(
+    scale=1.2, sampler="LHS", scrambled=True).with_name("Calais12ScrLHSSearch", register=True)
+Calais12ScrRandomSearch = SamplingSearch(
+    scale=1.2, sampler="Random", scrambled=True).with_name("Calais12ScrRandomSearch", register=True)
+Calais12ScrHammersleySearch = SamplingSearch(
+    scale=1.2, sampler="Hammersley", scrambled=True).with_name("Calais12ScrHammersleySearch", register=True)
 Calais7ScrHaltonSearch = SamplingSearch(
     scale=0.7, sampler="Halton", scrambled=True).with_name("Calais7ScrHaltonSearch", register=True)
 Calais7ScrLHSSearch = SamplingSearch(

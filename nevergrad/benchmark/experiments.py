@@ -114,7 +114,7 @@ def oneshotcalais(seed: Optional[int] = None) -> Iterator[Experiment]:
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 300, 1000, 3000, 10000, 30000]:
+            for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
 
@@ -263,16 +263,10 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-<<<<<<< HEAD
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
              "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",
              "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
     algos += sorted(x for x, y in optimization.registry.items() if "alais" in x or "EMNA" in x)
-=======
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE"]
->>>>>>> 10058ef5f87bc1cca77ce9f1055171f05f4a21ac
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:

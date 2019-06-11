@@ -161,15 +161,18 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             if orders == 2:
                 print("fixed=", fixed)
                 print("dfunique(fixed)=", df.unique(fixed))
-                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
-                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
-                best_algo = []
-                for _ in range(len(xindices)):
-                    best_algo += [[]]
-                for i in range(len(xindices)):
-                    for _ in range(len(yindices)):
-                        best_algo[i] += [str(i)]
-                print("TOTO:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
+                try:
+                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                    best_algo = []
+                    for _ in range(len(xindices)):
+                        best_algo += [[]]
+                    for i in range(len(xindices)):
+                        for _ in range(len(yindices)):
+                            best_algo[i] += [str(i)]
+                    print("TOTO:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
+                except:
+                    pass
                 
             for case in df.unique(fixed) if len(fixed) > 0 else [()]:
                 print("\n# new case #", fixed, case)
@@ -177,13 +180,17 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                 data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
                 fplotter = FightPlotter(data_df)
                 if orders == 2:
+                  try:
                     best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+                  except:
+                    pass
                 # save
                 name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
                 name = "fight_all.png" if name == "fight_.png" else name
                 fplotter.save(str(output_folder / name), dpi=_DPI)
 
             if orders == 2:
+              try:
                 name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
                 def export_table(filename, rows, cols, data):
                     rows = [str(r) for r in rows]
@@ -218,6 +225,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         f.write("\\end{document}\n")
                 export_table(str(output_folder  / name), xindices, yindices, best_algo)
                 print("CM:", fixed, case, best_algo)
+              except:
+                pass
     plt.close("all")
     #
     # xp plots
