@@ -60,7 +60,7 @@ class DoubleOSeven(base.MultiAgentEnv):
         states = [p.get_state() for p in self.players]
         return {"player_0": np.array(states[0] + states[1]), "player_1": np.array(states[1] + states[0])}
 
-    def duplicate(self) -> "DoubleOSeven":
+    def copy(self) -> "DoubleOSeven":
         return self.__class__(verbose=self.verbose)
 
     def step(self, action_dict: Dict[str, int]) -> base.StepReturn:

@@ -33,16 +33,6 @@ def test_torch_agent() -> None:
     assert output in game.action_space
 
 
-def test_training_torch_agent() -> None:
-    mgame = envs.DoubleOSeven()
-    game = mgame.with_agent(player_1=agents.RandomAgent(mgame)).as_single_agent()
-    agent = agents.TorchAgent.from_module_maker(game, agents.DenseNet)
-    tagent = agents.TrainingTorchAgent(agent, optimizerlib.TBPSA, num_repetitions=1)
-    tagent2 = tagent.duplicate()
-    runner = base.EnvironmentRunner(mgame)
-    runner.run(player_1=tagent2, player_0=tagent)
-
-
 def test_torch_agent_function() -> None:
     mgame = envs.DoubleOSeven()
     game = mgame.with_agent(player_1=agents.RandomAgent(mgame)).as_single_agent()

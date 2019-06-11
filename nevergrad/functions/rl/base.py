@@ -51,7 +51,7 @@ class Agent:
     def reset(self) -> None:
         pass
 
-    def duplicate(self) -> "Agent":
+    def copy(self) -> "Agent":
         return self.__class__()
 
 
@@ -71,7 +71,7 @@ class MultiAgentEnv:
         """
         raise NotImplementedError
 
-    def duplicate(self) -> "MultiAgentEnv":
+    def copy(self) -> "MultiAgentEnv":
         """Used to create new instances of Ray MultiAgentEnv
         """
         raise NotImplementedError
@@ -82,8 +82,8 @@ class MultiAgentEnv:
 
 class PartialMultiAgentEnv(MultiAgentEnv):
     def __init__(self, env: MultiAgentEnv, **agents: Agent) -> None:
-        self.env = env.duplicate()
-        self.agents = {name: agent.duplicate() for name, agent in agents.items()}
+        self.env = env.copy()
+        self.agents = {name: agent.copy() for name, agent in agents.items()}
         self.env.reset()
         unknown = set(agents) - set(env.agent_names)
         if unknown:  # this assumes that all agents play from the start
@@ -109,7 +109,7 @@ class PartialMultiAgentEnv(MultiAgentEnv):
         self._agents_outcome = {name: outcomes[name] for name in self.agents}
         return StepOutcome.to_multiagent_step({name: outcomes[name] for name in outcomes if name not in self.agents}, done)
 
-    def duplicate(self) -> "PartialMultiAgentEnv":
+    def copy(self) -> "PartialMultiAgentEnv":
         return self.__class__(self.env, **self.agents)
 
     def as_single_agent(self) -> "SingleAgentEnv":
@@ -120,7 +120,7 @@ class PartialMultiAgentEnv(MultiAgentEnv):
 class SingleAgentEnv(gym.Env):  # type: ignore
     def __init__(self, env: PartialMultiAgentEnv):
         assert len(env.agent_names) == 1, f"Too many remaining agents: {self.agent_names}"
-        self.env = env.duplicate()
+        self.env = env.copy()
         self.env.reset()
         self.observation_space = env.observation_space
         self.action_space = env.action_space
@@ -135,8 +135,8 @@ class SingleAgentEnv(gym.Env):  # type: ignore
         obs, reward, done, info = self.env.step({an: action})
         return obs[an], reward[an], done[an] | done["__all__"], info.get(an, {})
 
-    def duplicate(self) -> "SingleAgentEnv":
-        return self.__class__(self.env.duplicate())
+    def copy(self) -> "SingleAgentEnv":
+        return self.__class__(self.env.copy())
 
 
 class EnvironmentRunner:

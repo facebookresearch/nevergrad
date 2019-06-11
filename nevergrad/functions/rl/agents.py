@@ -1,6 +1,6 @@
 import warnings
 import operator
-from typing import Dict, Any, Optional, Callable, Tuple, Type
+from typing import Dict, Any, Optional, Callable, Tuple
 import gym
 import numpy as np
 import torch
@@ -9,7 +9,6 @@ from torch import nn
 from torch.utils.data import WeightedRandomSampler
 from nevergrad import instrumentation as inst
 from nevergrad.functions import utils
-from nevergrad.optimization.base import Optimizer
 from . import base
 from . import envs
 
@@ -26,7 +25,7 @@ class RandomAgent(base.Agent):
     def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
         return np.random.randint(self.num_outputs)
 
-    def duplicate(self) -> "RandomAgent":
+    def copy(self) -> "RandomAgent":
         return self.__class__(self.env)
 
 
@@ -48,7 +47,7 @@ class Agent007(base.Agent):
             action = np.random.choice(["fire", "protect", "reload"])
         return envs.JamesBond.actions.index(action)
 
-    def duplicate(self) -> "Agent007":
+    def copy(self) -> "Agent007":
         return self.__class__(self.env)
 
 
@@ -84,45 +83,11 @@ class TorchAgent(base.Agent):
         else:
             return next(iter(WeightedRandomSampler(probas, 1)))
 
-    def duplicate(self) -> "TorchAgent":
+    def copy(self) -> "TorchAgent":
         return TorchAgent(self.module, self.deterministic)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
         self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})
-
-
-class TrainingTorchAgent(base.Agent):
-    """
-    Base class for an `Agent` operating in a `gym.Env`
-    """
-
-    def __init__(self, agent: TorchAgent, OptimizerClass: Type[Optimizer], num_repetitions: int = 1) -> None:
-        super().__init__()
-        self.agent = agent
-        self.optimizer = OptimizerClass(instrumentation=agent.instrumentation, budget=None, num_workers=1)
-        self.num_repetitions = num_repetitions
-        self.repetition = 0
-        self.cum_reward = 0.0
-        self.current_candidate = self.optimizer.ask()
-        self.agent.load_state_dict(self.current_candidate.kwargs)
-
-    def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
-        if reward is not None:
-            self.cum_reward += reward
-        return self.agent.act(observation, reward, done, info)
-
-    def reset(self) -> None:
-        self.repetition += 1
-        if self.repetition >= self.num_repetitions:
-            self.optimizer.tell(self.current_candidate, -self.cum_reward / self.repetition)
-            self.repetition = 0
-            self.current_candidate = self.optimizer.ask()
-            self.cum_reward = 0
-        self.agent.load_state_dict(self.current_candidate.kwargs)
-        self.agent.reset()
-
-    def duplicate(self) -> "TrainingTorchAgent":
-        return TrainingTorchAgent(self.agent.duplicate(), self.optimizer.__class__, num_repetitions=self.num_repetitions)
 
 
 class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
@@ -133,7 +98,7 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         self, agent: TorchAgent, env_runner: base.EnvironmentRunner, reward_postprocessing: Callable[[float], float] = operator.neg
     ) -> None:
         assert isinstance(env_runner.env, gym.Env)
-        self.agent = agent.duplicate()
+        self.agent = agent.copy()
         self.runner = env_runner
         self.reward_postprocessing = reward_postprocessing
         super().__init__(self.compute, **self.agent.instrumentation.kwargs)
