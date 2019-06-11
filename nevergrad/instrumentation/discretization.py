@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional
+from typing import List, Union
 import warnings
 import numpy as np
 import scipy.stats
@@ -42,9 +42,7 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> Arra
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
 
 
-def softmax_discretization(
-    x: ArrayLike, arity: int = 2, deterministic: bool = False, rng: Optional[np.random.RandomState] = None
-) -> List[int]:
+def softmax_discretization(x: ArrayLike, arity: int = 2, random: Union[bool, np.random.RandomState] = True) -> List[int]:
     """Discretize a list of floats to a list of ints based on softmax probabilities.
     For arity n, a softmax is applied to the first n values, and the result
     serves as probability for the first output integer. The same process it
@@ -56,10 +54,9 @@ def softmax_discretization(
         the float values from a continuous space which need to be discretized
     arity: int
         the number of possible integer values (arity 2 will lead to values in {0, 1})
-    deterministic: bool
-        removes all randomness by returning the last most probable output (highest values)
-    rng: np.random.RandomState
-        random number generator to pull from
+    random: bool or np.random.RandomState
+        either a RandomState to pull values from, or True for pulling values on the default random state,
+        or False to get a deterministic behavior
 
     Notes
     -----
@@ -71,12 +68,12 @@ def softmax_discretization(
     if np.any(np.isnan(data)):
         warnings.warn("Encountered NaN values for discretization")
         data[np.isnan(data)] = -np.inf
-    if deterministic:
+    if random is False:
         output = np.argmax(data, axis=1).tolist()
         return output  # type: ignore
-    if rng is None:
-        rng = np.random  # default random number generator (creating a RandomState is slow)
-    return [rng.choice(arity, p=softmax_probas(d)) for d in data]
+    if isinstance(random, bool):  # equivalent to "random is True"
+        random = np.random  # default random number generator (creating a RandomState is slow)
+    return [random.choice(arity, p=softmax_probas(d)) for d in data]
 
 
 def softmax_probas(data: np.ndarray) -> np.ndarray:

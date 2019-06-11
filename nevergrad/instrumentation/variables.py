@@ -57,7 +57,7 @@ class SoftmaxCategorical(utils.Variable[X]):
     def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:
         assert len(data) == len(self.possibilities)
         deterministic = deterministic | self.deterministic
-        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic, rng=self._rng)[0])
+        index = int(discretization.softmax_discretization(data, len(self.possibilities), random=False if deterministic else self._rng)[0])
         return self.possibilities[index]
 
     def argument_to_data(self, arg: X) -> ArrayLike:

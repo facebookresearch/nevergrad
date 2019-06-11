@@ -52,7 +52,6 @@ class Instrumentation:
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
-        self.random_state = self._random_state  # trigger propagation to variables
 
     def copy(self) -> 'Instrumentation':
         """Return a new instrumentation with the same variable and same name
@@ -78,7 +77,6 @@ class Instrumentation:
     def random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
         for var in self.variables:  # propagate to all variables
-            print("setting to", var)
             var._rng = self._random_state
 
     @property
