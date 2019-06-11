@@ -1,5 +1,6 @@
 import warnings
 import operator
+import copy as _copy
 from typing import Dict, Any, Optional, Callable, Tuple
 import gym
 import numpy as np
@@ -84,7 +85,7 @@ class TorchAgent(base.Agent):
             return next(iter(WeightedRandomSampler(probas, 1)))
 
     def copy(self) -> "TorchAgent":
-        return TorchAgent(self.module, self.deterministic)
+        return TorchAgent(_copy.deepcopy(self.module), self.deterministic)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
         self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})
