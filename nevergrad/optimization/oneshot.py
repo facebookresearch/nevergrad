@@ -29,35 +29,6 @@ class _RandomSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
-        if self._parameters.quasi_opposite == "quasi" and (self._num_ask % 2):
-            return -self.random_state.uniform(0., 1.) * self.last_guy
-        if self._parameters.quasi_opposite == "opposite" and (self._num_ask % 2):
-            return -self.last_guy
-        if self._parameters.middle_point and not self._num_ask:
-            self.last_guy = np.zeros(self.dimension)
-            return self.last_guy  # type: ignore
-        scale = self._parameters.scale
-        if isinstance(scale, str) and scale == "random":
-            scale = np.exp(self.random_state.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
-        point = (self.random_state.standard_cauchy(self.dimension) if self._parameters.cauchy
-                 else self.random_state.normal(0, 1, self.dimension))
-        last_guy = scale * point
-        return last_guy  # type: ignore
-
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        if self._parameters.stupid:
-            return self._internal_ask()
-        return super()._internal_provide_recommendation()
-
-
-class _RandomSearch(OneShotOptimizer):
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self._parameters = RandomSearchMaker()  # updated by the parametrized family
-
-    def _internal_ask(self) -> ArrayLike:
-        # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)  # type: ignore
         scale = self._parameters.scale
