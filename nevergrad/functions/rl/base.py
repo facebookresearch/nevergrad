@@ -118,7 +118,6 @@ class PartialMultiAgentEnv(MultiAgentEnv):
 
 # pylint: disable=abstract-method
 class SingleAgentEnv(gym.Env):  # type: ignore
-
     def __init__(self, env: PartialMultiAgentEnv):
         assert len(env.agent_names) == 1, f"Too many remaining agents: {self.agent_names}"
         self.env = env.duplicate()
@@ -141,15 +140,14 @@ class SingleAgentEnv(gym.Env):  # type: ignore
 
 
 class EnvironmentRunner:
-
-    def __init__(self, env: Union[gym.Env, MultiAgentEnv], num_repetitions: int = 1, max_step: float = float('inf')) -> None:
+    def __init__(self, env: Union[gym.Env, MultiAgentEnv], num_repetitions: int = 1, max_step: float = float("inf")) -> None:
         self.env = env
         self.num_repetitions = num_repetitions
         self.max_step = max_step
 
     def run(self, *agent: Agent, **agents: Agent) -> Union[float, Dict[str, float]]:
         san = "single_agent_name"
-        sum_rewards: Dict[str, float] = {name: 0. for name in agents} if agents else {san: 0.}
+        sum_rewards: Dict[str, float] = {name: 0.0 for name in agents} if agents else {san: 0.0}
         for _ in range(self.num_repetitions):
             rewards = self._run_once(*agent, **agents)
             for name, value in rewards.items():
@@ -161,9 +159,9 @@ class EnvironmentRunner:
 
     def _run_once(self, *single_agent: Agent, **agents: Agent) -> Dict[str, float]:
         san = "single_agent_name"
-        if (len(single_agent) == 1 and not agents):
+        if len(single_agent) == 1 and not agents:
             agents = {san: single_agent[0]}
-        elif (single_agent or not agents):
+        elif single_agent or not agents:
             raise ValueError("Either provide 1 unnamed agent or several named agents")
         for agent in agents.values():
             agent.reset()
