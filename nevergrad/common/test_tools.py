@@ -53,14 +53,15 @@ def test_roundrobin() -> None:
     np.testing.assert_array_equal(output, [1, 4, 8, 2, 5, 3, 6, 7])
 
 
-def test_selector_unique_single() -> None:
-    df = tools.Selector(index=["i1", "i2", "i3"], columns=["c1"], data=[1, 2, 2])
-    testing.assert_set_equal(df.unique("c1"), [1, 2])
-
-
-def test_selector_unique_multiple() -> None:
+@testing.parametrized(
+    multiple=(["c1", "c2"], {(2, 1), (2, 2)}),
+    unique=(["c1"], {(2,)}),
+    unique_2=(["c2"], {(1,), (2,)}),
+    none=([], set()),
+)
+def test_selector_unique(columns: List[str], expected: Iterable[Tuple[int, int]]) -> None:
     df = tools.Selector(index=["i1", "i2", "i3"], columns=["c1", "c2"], data=[[2, 1], [2, 2], [2, 1]])
-    testing.printed_assert_equal(df.unique(["c1", "c2"]), {(2, 1), (2, 2)})
+    testing.printed_assert_equal(df.unique(columns), expected)
 
 
 def test_grouper() -> None:

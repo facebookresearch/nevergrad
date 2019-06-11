@@ -82,7 +82,7 @@ See the [instrumentation tutorial](docs/instrumentation.md) for more complex ins
 You can print the full list of optimizers with:
 ```python
 import nevergrad as ng
-print(sorted(registry.keys()))
+print(list(sorted(ng.optimizers.registry.keys())))
 ```
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.

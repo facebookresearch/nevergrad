@@ -23,7 +23,7 @@ def pairwise(iterable: Iterable[Any]) -> Iterator[Tuple[Any, Any]]:
     ----
     Nothing will be returned if length of iterator is strictly less
     than 2.
-    """   # From itertools documentation
+    """  # From itertools documentation
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
@@ -58,7 +58,7 @@ class Selector(pd.DataFrame):  # type: ignore
     """Pandas dataframe class with a simplified selection function
     """
 
-    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
+    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> "Selector":  # pylint: disable=arguments-differ
         """Select rows based on a value, a sequence of values or a discriminating function
 
         Parameters
@@ -83,7 +83,7 @@ class Selector(pd.DataFrame):  # type: ignore
             df = df.loc[selected, :]
         return Selector(df)
 
-    def select_and_drop(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
+    def select_and_drop(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> "Selector":
         """Same as select, but drops the columns used for selection
         """
         df = self.select(**kwargs)
@@ -115,7 +115,7 @@ class Selector(pd.DataFrame):  # type: ignore
             raise NotImplementedError("Only strings, lists and tuples are allowed")
 
     @classmethod
-    def read_csv(cls, path: PathLike) -> 'Selector':
+    def read_csv(cls, path: PathLike) -> "Selector":
         return cls(pd.read_csv(str(path)))
 
     def assert_equivalent(self, other: pd.DataFrame, err_msg: str = "") -> None:
@@ -150,7 +150,7 @@ class Sleeper:
         size for averaging the registered durations
     """
 
-    def __init__(self, min_sleep: float = 1e-7, max_sleep: float = 1., averaging_size: int = 10) -> None:
+    def __init__(self, min_sleep: float = 1e-7, max_sleep: float = 1.0, averaging_size: int = 10) -> None:
         self._min = min_sleep
         self._max = max_sleep
         self._start: Optional[float] = None
@@ -174,7 +174,7 @@ class Sleeper:
         if not self._queue:
             if self._start is None:
                 return self._min
-            value = (time.time() - self._start)
+            value = time.time() - self._start
         else:
             value = np.mean(self._queue)
         return float(np.clip(value / self._num_waits, self._min, self._max))

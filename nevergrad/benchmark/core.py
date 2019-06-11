@@ -64,7 +64,7 @@ class Moduler:
         self.index = index
         self.total_length = total_length
 
-    def split(self, number: int) -> List['Moduler']:
+    def split(self, number: int) -> List["Moduler"]:
         return [Moduler(self.modulo * number, self.index + k * self.modulo, self.total_length) for k in range(number)]
 
     def __len__(self) -> int:
@@ -104,8 +104,11 @@ class BenchmarkChunk:
         self.repetitions = repetitions
         self.summaries: List[Dict[str, Any]] = []
         self._current_experiment: Optional[Experiment] = None  # for stopping and resuming
-        self._id = (datetime.datetime.now().strftime("%y-%m-%d_%H%M") + "_" +
-                    "".join(np.random.choice([x for x in "abcdefghijklmnopqrstuvwxyz"], 4)))
+        self._id = (
+            datetime.datetime.now().strftime("%y-%m-%d_%H%M")
+            + "_"
+            + "".join(np.random.choice([x for x in "abcdefghijklmnopqrstuvwxyz"], 4))
+        )
 
     @property
     def moduler(self) -> Moduler:
@@ -122,8 +125,9 @@ class BenchmarkChunk:
 
     def __iter__(self) -> Iterator[Tuple[int, Experiment]]:
         maker = registry[self.name]
-        seeds: Iterable[Optional[int]] = ((None for _ in range(self.repetitions)) if self.seed is None else
-                                          range(self.seed, self.seed + self.repetitions))
+        seeds: Iterable[Optional[int]] = (
+            (None for _ in range(self.repetitions)) if self.seed is None else range(self.seed, self.seed + self.repetitions)
+        )
         # check experiments.py to see seedable xp
         generators = [maker() if seed is None else maker(seed=seed) for seed in seeds]
         generators = [itertools.islice(g, 0, self.cap_index) for g in generators]
@@ -131,7 +135,7 @@ class BenchmarkChunk:
         enumerated_selection = ((k, s) for (k, s) in enumerate(itertools.chain.from_iterable(generators)) if self.moduler(k))
         return enumerated_selection
 
-    def split(self, number: int) -> List['BenchmarkChunk']:
+    def split(self, number: int) -> List["BenchmarkChunk"]:
         """Create n BenchmarkChunk which split the experiments of the current BenchmarkChunk
 
         Parameters
@@ -169,7 +173,7 @@ class BenchmarkChunk:
         for local_ind, (index, xp) in enumerate(self):
             if local_ind < len(self.summaries):
                 continue  # already computed
-            indstr = f'{index} ({local_ind + 1}/{len(self)} of worker)'
+            indstr = f"{index} ({local_ind + 1}/{len(self)} of worker)"
             print(f"Starting {indstr}: {xp}", flush=True)
             if self._current_experiment is None:
                 self._current_experiment = xp
@@ -192,10 +196,14 @@ class BenchmarkChunk:
 
 
 # pylint: disable=too-many-arguments
-def _submit_jobs(experiment_name: str, num_workers: int = 1,
-                 seed: Optional[int] = None, executor: Optional[ExecutorLike] = None,
-                 print_function: Optional[Callable[[Experiment], None]] = None,
-                 cap_index: Optional[int] = None) -> List[JobLike[tools.Selector]]:
+def _submit_jobs(
+    experiment_name: str,
+    num_workers: int = 1,
+    seed: Optional[int] = None,
+    executor: Optional[ExecutorLike] = None,
+    print_function: Optional[Callable[[Experiment], None]] = None,
+    cap_index: Optional[int] = None,
+) -> List[JobLike[tools.Selector]]:
     """Submits a job for computation
 
     Parameters
@@ -235,8 +243,14 @@ def _submit_jobs(experiment_name: str, num_workers: int = 1,
 
 
 # pylint: disable=too-many-arguments
-def compute(experiment_name: str, num_workers: int = 1, seed: Optional[int] = None, executor: Optional[ExecutorLike] = None,
-            print_function: Optional[Callable[[Dict[str, Any]], None]] = None, cap_index: Optional[int] = None) -> tools.Selector:
+def compute(
+    experiment_name: str,
+    num_workers: int = 1,
+    seed: Optional[int] = None,
+    executor: Optional[ExecutorLike] = None,
+    print_function: Optional[Callable[[Dict[str, Any]], None]] = None,
+    cap_index: Optional[int] = None,
+) -> tools.Selector:
     """Submits a job for computation
 
     Parameters
