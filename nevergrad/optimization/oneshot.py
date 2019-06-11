@@ -74,7 +74,6 @@ class RandomSearchMaker(base.ParametrizedFamily):
         self.scale = scale
         super().__init__()
 
-
 Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
 RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
 RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
@@ -175,6 +174,50 @@ class SamplingSearch(base.ParametrizedFamily):
         self.scale = scale
         self.rescaled = rescaled
         super().__init__()
+
+
+Calais1ScrHammersleySearch = SamplingSearch(
+    scale=0.1, sampler="Hammersley", scrambled=True).with_name("Calais1ScrHammersleySearch", register=True)
+Calais4ScrHammersleySearch = SamplingSearch(
+    scale=0.4, sampler="Hammersley", scrambled=True).with_name("Calais4ScrHammersleySearch", register=True)
+Calais1ScrHaltonSearch = SamplingSearch(
+    scale=0.1, sampler="Halton", scrambled=True).with_name("Calais1ScrHaltonSearch", register=True)
+Calais4ScrHaltonSearch = SamplingSearch(
+    scale=0.4, sampler="Halton", scrambled=True).with_name("Calais4ScrHaltonSearch", register=True)
+Calais1ScrLHSSearch = SamplingSearch(
+    scale=0.1, sampler="LHS", scrambled=True).with_name("Calais1ScrLHSSearch", register=True)
+Calais4ScrLHSSearch = SamplingSearch(
+    scale=0.4, sampler="LHS", scrambled=True).with_name("Calais4ScrLHSSearch", register=True)
+Calais1ScrRandomSearch = SamplingSearch(
+    scale=0.1, sampler="Random", scrambled=True).with_name("Calais1ScrRandomSearch", register=True)
+Calais4ScrRandomSearch = SamplingSearch(
+    scale=0.4, sampler="Random", scrambled=True).with_name("Calais4ScrRandomSearch", register=True)
+Calais7ScrHammersleySearch = SamplingSearch(
+    scale=0.7, sampler="Hammersley", scrambled=True).with_name("Calais7ScrHammersleySearch", register=True)
+Calais20ScrHaltonSearch = SamplingSearch(
+    scale=2.0, sampler="Halton", scrambled=True).with_name("Calais20ScrHaltonSearch", register=True)
+Calais20ScrLHSSearch = SamplingSearch(
+    scale=2.0, sampler="LHS", scrambled=True).with_name("Calais20ScrLHSSearch", register=True)
+Calais20ScrRandomSearch = SamplingSearch(
+    scale=2.0, sampler="Random", scrambled=True).with_name("Calais20ScrRandomSearch", register=True)
+Calais20ScrHammersleySearch = SamplingSearch(
+    scale=2.0, sampler="Hammersley", scrambled=True).with_name("Calais20ScrHammersleySearch", register=True)
+Calais7ScrHaltonSearch = SamplingSearch(
+    scale=0.7, sampler="Halton", scrambled=True).with_name("Calais7ScrHaltonSearch", register=True)
+Calais7ScrLHSSearch = SamplingSearch(
+    scale=0.7, sampler="LHS", scrambled=True).with_name("Calais7ScrLHSSearch", register=True)
+Calais7ScrRandomSearch = SamplingSearch(
+    scale=0.7, sampler="Random", scrambled=True).with_name("Calais7ScrRandomSearch", register=True)
+
+
+Calais0ScrHammersleySearch = SamplingSearch(
+    scale=0.01, sampler="Hammersley", scrambled=True).with_name("Calais0ScrHammersleySearch", register=True)
+Calais0ScrHaltonSearch = SamplingSearch(
+    scale=0.01, sampler="Halton", scrambled=True).with_name("Calais0ScrHaltonSearch", register=True)
+Calais0ScrLHSSearch = SamplingSearch(
+    scale=0.01, sampler="LHS", scrambled=True).with_name("Calais0ScrLHSSearch", register=True)
+Calais0ScrRandomSearch = SamplingSearch(
+    scale=0.01, sampler="Random", scrambled=True).with_name("Calais0ScrRandomSearch", register=True)
 
 
 # pylint: disable=line-too-long

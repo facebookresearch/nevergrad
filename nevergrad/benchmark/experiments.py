@@ -75,14 +75,31 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     names = ["sphere", "rastrigin", "cigar"]
     optims = ["ScrHammersleySearch", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne",
               "DE", "TwoPointsDE"]
+    optims += sorted(x for x, y in optimization.registry.items() if "EMNA" in x)
     functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
-                 for name in names for bd in [25] for uv_factor in [0, 5]]
+                 for name in names for bd in [3, 25] for uv_factor in [0, 5]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
+            for budget in [30, 100, 300, 1000, 3000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=int(budget/5), seed=next(seedg))
+
+
+@registry.register
+def oneshotcalais(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and not "arg" in str(x) and not "mal" in str(x))
+    functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+                 for name in names for bd in [3, 25, 100] for uv_factor in [0, 5]]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 300, 1000, 3000, 10000, 30000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -218,6 +235,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch",
              "PSO", "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom",
              "RandomSearch", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE"]
+    algos += sorted(x for x, y in optimization.registry.items() if "alais" in x or "EMNA" in x)
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:

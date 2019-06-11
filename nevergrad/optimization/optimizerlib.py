@@ -1131,4 +1131,533 @@ QRBO = ParametrizedBO(initialization="Hammersley").with_name("QRBO", register=Tr
 MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).with_name("MidQRBO", register=True)
 LBO = ParametrizedBO(initialization="LHS").with_name("LBO", register=True)
 
+
+@registry.register
+class EMNA_pure(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = np.ones(instrumentation)
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        # mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.instrumentation))
+        mutated_sigma = self.sigma * np.random.normal(0, 1, self.instrumentation)
+        individual = tuple(self.current_center + mutated_sigma)
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+@registry.register
+class EMNA_loglambda(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = np.ones(instrumentation)
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        # mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.instrumentation))
+        mutated_sigma = self.sigma * np.random.normal(0, 1, self.instrumentation)
+        individual = tuple(self.current_center + mutated_sigma)
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            if self.largeenough:
+                self.sigma /=  max(1,(np.log(self.llambda)/2)**(1/(self.instrumentation)))
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+@registry.register
+class EMNA_aniso(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        instrumentation = instrumentation.dimension
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = np.ones(instrumentation)
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+        # Archive
+        self.archive_fitness: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        # mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.instrumentation))
+        mutated_sigma = self.sigma * np.random.normal(0, 1, self.instrumentation)
+        individual = tuple(self.current_center + mutated_sigma)
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.archive_fitness += [value]
+        if (not self.largeenough):
+            if len(self.archive_fitness) >= 5 * self.llambda:
+                first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
+                last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+                mean1 = sum(first_fifth) / float(self.llambda)
+                std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
+                mean2 = sum(last_fifth) / float(self.llambda)
+                std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
+                z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+                if z < 2.:
+                    self.mu *= 2
+                else:
+                    self.mu = int(self.mu * 0.84)
+                    if self.mu < self.instrumentation:
+                        self.mu = self.instrumentation
+                self.llambda = 4 * self.mu
+                if self.num_workers > 1:
+                    self.llambda = max(self.llambda, self.num_workers)
+                    self.mu = self.llambda // 4
+                self.archive_fitness = []
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+@registry.register
+class EMNA_mm(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = 1
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.instrumentation))
+        individual = tuple(self.current_center + mutated_sigma * np.random.normal(0, 1, self.instrumentation))
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+@registry.register
+class EMNA_win(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = 1
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+        # Archive
+        self.archive_fitness: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1) / np.sqrt(self.instrumentation))
+        individual = tuple(self.current_center + mutated_sigma * np.random.normal(0, 1, self.instrumentation))
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.archive_fitness += [value]
+        if (not self.largeenough):
+            if len(self.archive_fitness) >= 5 * self.llambda:
+                first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
+                last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+                mean1 = sum(first_fifth) / float(self.llambda)
+                std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
+                mean2 = sum(last_fifth) / float(self.llambda)
+                std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
+                z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+                if z < 2.:
+                    self.mu *= 2
+                else:
+                    self.mu = int(self.mu * 0.84)
+                    if self.mu < self.instrumentation:
+                        self.mu = self.instrumentation
+                self.llambda = 4 * self.mu
+                if self.num_workers > 1:
+                    self.llambda = max(self.llambda, self.num_workers)
+                    self.mu = self.llambda // 4
+                self.archive_fitness = []
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+
+
+@registry.register
+class EMNA_aniso_win(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = np.ones(instrumentation)
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+        # Archive
+        self.archive_fitness: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        mutated_sigma = self.sigma * np.exp(np.random.normal(0, 1, self.instrumentation) / np.sqrt(self.instrumentation))
+        individual = tuple(self.current_center + mutated_sigma * np.random.normal(0, 1, self.instrumentation))
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        self.archive_fitness += [value]
+        if (not self.largeenough):
+            if len(self.archive_fitness) >= 5 * self.llambda:
+                first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
+                last_fifth = [self.archive_fitness[i] for i in range(4*self.llambda, 5*self.llambda)]
+                mean1 = sum(first_fifth) / float(self.llambda)
+                std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
+                mean2 = sum(last_fifth) / float(self.llambda)
+                std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
+                z = (mean1 - mean2) / (np.sqrt(std1**2 + std2**2))
+                if z < 2.:
+                    self.mu *= 2
+                else:
+                    self.mu = int(self.mu * 0.84)
+                    if self.mu < self.instrumentation:
+                        self.mu = self.instrumentation
+                self.llambda = 4 * self.mu
+                if self.num_workers > 1:
+                    self.llambda = max(self.llambda, self.num_workers)
+                    self.mu = self.llambda // 4
+                self.archive_fitness = []
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
+
+@registry.register
+class EMNA_iso(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        try:
+          instrumentation = instrumentation.dimension
+        except:
+          instrumentation = int(instrumentation)
+        self.instrumentation = instrumentation
+        self.sigma = 1
+        self.mu = instrumentation
+        self.llambda = 4 * instrumentation
+        self.previousBest = None
+        self.secondToLastBest = None
+
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.largeenough = False
+        if num_workers/instrumentation > 8:
+            self.largeenough = True
+        self.current_center = np.zeros(instrumentation)
+        # Evaluated population
+        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population_sigma: List[float] = []
+        self.evaluated_population_fitness: List[float] = []
+        # Unevaluated population
+        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population_sigma: List[float] = []
+
+    def _internal_provide_recommendation(self) -> base.ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    def _internal_ask(self) -> base.ArrayLike:
+        mutated_sigma = self.sigma
+        individual = tuple(self.current_center + mutated_sigma * np.random.normal(0, 1, self.instrumentation))
+        self.unevaluated_population_sigma += [mutated_sigma]
+        self.unevaluated_population += [tuple(individual)]
+        return individual
+
+    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+        idx = self.unevaluated_population.index(tuple(x))
+        self.evaluated_population += [x]
+        self.evaluated_population_fitness += [value]
+        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
+        del self.unevaluated_population[idx]
+        del self.unevaluated_population_sigma[idx]
+        if len(self.evaluated_population) >= self.llambda:
+            # Sorting the population.
+            sorted_pop_with_sigma_and_fitness = [(i, s, f) for f, i, s in sorted(
+                zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))]
+            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
+            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            # Computing the new parent.
+            # EMNA update
+            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            self.evaluated_population = []
+            self.evaluated_population_sigma = []
+            self.evaluated_population_fitness = []
 __all__ = list(registry.keys())
+

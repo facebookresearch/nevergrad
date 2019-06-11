@@ -135,17 +135,72 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
-    for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
-        # choice of the cases with values for the fixed variables
-        for case in df.unique(fixed):
-            print("\n# new case #", fixed, case)
-            casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-            fplotter = FightPlotter(data_df)
-            # save
-            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-            name = "fight_all.png" if name == "fight_.png" else name
-            fplotter.save(str(output_folder / name), dpi=_DPI)
+    name = "xxx"
+    for orders in range(max_combsize + 1):
+        # The next line is a shame. Sorry. (TODO(oteytaud): improve this).
+        for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
+            # choice of the cases with values for the fixed variables
+            print("\n# ", fixed)
+            if orders == 2:
+                print("fixed=", fixed)
+                print("dfunique(fixed)=", df.unique(fixed))
+                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                best_algo = []
+                for _ in range(len(xindices)):
+                    best_algo += [[]]
+                for i in range(len(xindices)):
+                    for _ in range(len(yindices)):
+                        best_algo[i] += [str(i)]
+                print("TOTO:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
+                
+            for case in df.unique(fixed) if len(fixed) > 0 else [()]:
+                print("\n# new case #", fixed, case)
+                casedf = df.select(**dict(zip(fixed, case)))
+                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+                fplotter = FightPlotter(data_df)
+                if orders == 2:
+                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+                # save
+                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+                name = "fight_all.png" if name == "fight_.png" else name
+                fplotter.save(str(output_folder / name), dpi=_DPI)
+
+            if orders == 2:
+                name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+                def export_table(filename, rows, cols, data):
+                    rows = [str(r) for r in rows]
+                    cols = [str(r) for r in cols]
+                    data = [[d.replace("%", "\%").replace("_", "") for d in datarow] for datarow in data]
+                    try:
+                      data = [[d[:d.index("(")] for d in datarow] for datarow in data]
+                    except:
+                      pass
+                    print("filename=", filename)
+                    print("rows=", rows)
+                    print("cols=", cols)
+                    print("data=", data)
+                    with open(filename, "w") as f:
+                        f.write("\\documentclass{article}\n")
+                        f.write("\\usepackage{lscape}\n")
+                        f.write("\\usepackage{array}\n")
+                        f.write("\\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}\n")
+                        f.write("\\begin{document}\n")
+                        f.write("\\scriptsize\n")
+                        f.write("\\sloppy\n")
+                        f.write("\\begin{landscape}\n")
+                        f.write("\\begin{tabular}{|P{.1\\textwidth}|" + "P{.1\\textwidth}|" * len(cols) + "}\n")
+                        f.write("\\hline\n")
+                        f.write(" & " + "&".join(cols) + "\\\\\n")
+                        f.write("\\hline\n")
+                        for i, row in enumerate(rows):
+                            f.write(row + "&" + "&".join(data[i]) + "\\\\\n")
+                        f.write("\\hline\n")
+                        f.write("\\end{tabular}\n")
+                        f.write("\\end{landscape}\n")
+                        f.write("\\end{document}\n")
+                export_table(str(output_folder  / name), xindices, yindices, best_algo)
+                print("CM:", fixed, case, best_algo)
     plt.close("all")
     #
     # xp plots
@@ -380,7 +435,8 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
-        data = np.array(winrates.iloc[:num_rows, :])
+        sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
+        data = np.array(winrates.iloc[:num_rows, :len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [(f"{name} ({100 * val:2.1f}%)").replace("Search", "") for name, val in zip(mean_win.index[: num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
