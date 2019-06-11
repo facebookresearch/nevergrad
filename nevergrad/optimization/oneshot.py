@@ -32,7 +32,7 @@ class _RandomSearch(OneShotOptimizer):
         if self._parameters.quasi_opposite == "quasi" and self._num_ask % 2:
             return -self.random_state.uniform(0., 1.) * self.last_guy
         if self._parameters.quasi_opposite == "opposite" and self._num_ask % 2:
-            return -self.last_guy
+            return -self.last_guy  # type: ignore
         if self._parameters.middle_point and not self._num_ask:
             self.last_guy = np.zeros(self.dimension)
             return self.last_guy  # type: ignore
