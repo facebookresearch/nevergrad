@@ -36,6 +36,20 @@ class JamesBond:
 
 
 class DoubleOSeven(base.MultiAgentEnv):
+    """2-player environment with "player_0" and "player_1", playing the 007 game.
+    Each player state has:
+    - a number of ammunition (init: 0)
+    - a number of consecutive protection (init: 0)
+    Each player can:
+    - reload: to get one more ammunition
+    - fire: to try to kill the other player (reloads instead if no ammunition)
+    - protect: to avoid the other player's fire
+
+    The winner is either:
+    - the first to fire while the other people is reloading (or firing without ammunition)
+    - the one that did not protect more that 4 times consecutively if the other one did.
+    The game stops if nobody won after 100 iterations.
+    """
 
     observation_space = gym.spaces.Box(low=0, high=float("inf"), shape=(4,), dtype=int)
     action_space = gym.spaces.Discrete(3)

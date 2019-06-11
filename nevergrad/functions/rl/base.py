@@ -41,8 +41,7 @@ class StepOutcome:
 
 
 class Agent:
-    """
-    Base class for an Agent operating in an environment
+    """Base class for an Agent operating in an environment.
     """
 
     def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
@@ -56,6 +55,8 @@ class Agent:
 
 
 class MultiAgentEnv:
+    """Base class for an multi-agent environment (in a ray-like fashion).
+    """
 
     observation_space: gym.Space
     action_space: gym.Space
@@ -81,6 +82,9 @@ class MultiAgentEnv:
 
 
 class PartialMultiAgentEnv(MultiAgentEnv):
+    """Multi agent environement for which some of the agents have been fixed
+    """
+
     def __init__(self, env: MultiAgentEnv, **agents: Agent) -> None:
         self.env = env.copy()
         self.agents = {name: agent.copy() for name, agent in agents.items()}
@@ -118,6 +122,10 @@ class PartialMultiAgentEnv(MultiAgentEnv):
 
 # pylint: disable=abstract-method
 class SingleAgentEnv(gym.Env):  # type: ignore
+    """Single-agent gym-like environment based on a multi-agent environment for which
+    all but one agent has been fixed.
+    """
+
     def __init__(self, env: PartialMultiAgentEnv):
         assert len(env.agent_names) == 1, f"Too many remaining agents: {self.agent_names}"
         self.env = env.copy()
@@ -140,12 +148,38 @@ class SingleAgentEnv(gym.Env):  # type: ignore
 
 
 class EnvironmentRunner:
+    """Helper for running environements
+
+    Parameters
+    ----------
+    env: gym.Env or MultiAgentEnv
+        a possibly multi agent environment
+    num_repetations: int
+        number of repetitions to play the environment (smoothes the output)
+    max_step: int
+        maximum number of steps to play the environemnet before breaking
+    """
+
     def __init__(self, env: Union[gym.Env, MultiAgentEnv], num_repetitions: int = 1, max_step: float = float("inf")) -> None:
         self.env = env
         self.num_repetitions = num_repetitions
         self.max_step = max_step
 
     def run(self, *agent: Agent, **agents: Agent) -> Union[float, Dict[str, float]]:
+        """Run one agent or multiple named agents
+
+        Parameters
+        ----------
+        *agent: Agent (optional)
+            the agent to play a single-agent environment
+        **agents: Agent
+            the named agents to play a multi-agent environment
+
+        Returns
+        -------
+        float:
+            the mean reward (possibly for each agent)
+        """
         san = "single_agent_name"
         sum_rewards: Dict[str, float] = {name: 0.0 for name in agents} if agents else {san: 0.0}
         for _ in range(self.num_repetitions):

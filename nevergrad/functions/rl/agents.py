@@ -92,6 +92,8 @@ class TorchAgent(base.Agent):
 
 
 class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
+    """Instrumented function which plays the agent using an environment runner
+    """
 
     _num_test_evaluations = 1000
 
