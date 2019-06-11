@@ -29,6 +29,35 @@ class _RandomSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
+        if self._parameters.quasi_opposite == "quasi" and (self._num_ask % 2):
+            return -self.random_state.uniform(0., 1.) * self.last_guy
+        if self._parameters.quasi_opposite == "opposite" and (self._num_ask % 2):
+            return -self.last_guy
+        if self._parameters.middle_point and not self._num_ask:
+            self.last_guy = np.zeros(self.dimension)
+            return self.last_guy  # type: ignore
+        scale = self._parameters.scale
+        if isinstance(scale, str) and scale == "random":
+            scale = np.exp(self.random_state.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
+        point = (self.random_state.standard_cauchy(self.dimension) if self._parameters.cauchy
+                 else self.random_state.normal(0, 1, self.dimension))
+        last_guy = scale * point
+        return last_guy  # type: ignore
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        if self._parameters.stupid:
+            return self._internal_ask()
+        return super()._internal_provide_recommendation()
+
+
+class _RandomSearch(OneShotOptimizer):
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._parameters = RandomSearchMaker()  # updated by the parametrized family
+
+    def _internal_ask(self) -> ArrayLike:
+        # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)  # type: ignore
         scale = self._parameters.scale
@@ -53,6 +82,10 @@ class RandomSearchMaker(base.ParametrizedFamily):
         Provides a random recommendation instead of the best point so far (for baseline)
     middle_point: bool
         enforces that the first suggested point (ask) is zero.
+    quasi_opposite: string
+        symmetrizes exploration wrt the center:
+             - full symmetry if "opposite"
+             - random * symmetric if "quasi"
     cauchy: bool
         use a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
@@ -65,10 +98,12 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
+                 quasi_opposite: string = "none",
                  cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
         assert isinstance(scale, (int, float)) or scale == "random"
         self.middle_point = middle_point
+        self.quasi_opposite = quasi_opposite
         self.stupid = stupid
         self.cauchy = cauchy
         self.scale = scale
@@ -77,6 +112,8 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
 Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
 RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
+QORandomSearch = RandomSearchMaker(quasi_opposite="quasi").with_name("QORandomSearch", register=True)
+ORandomSearch = RandomSearchMaker(quasi_opposite="opposite").with_name("ORandomSearch", register=True)
 RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
 LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
@@ -210,6 +247,8 @@ LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_na
 LargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
+QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="quasi").with_name("QOScrHammersleySearch", register=True)
+OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="opposite").with_name("OScrHammersleySearch", register=True)
 RescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
 CauchyScrHammersleySearch = SamplingSearch(
