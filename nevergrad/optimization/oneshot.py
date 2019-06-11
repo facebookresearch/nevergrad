@@ -203,9 +203,11 @@ class SamplingSearch(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
+                 quasi_opposite: str = "none",
                  cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
         # keep all parameters and set initialize superclass for print
         self.sampler = sampler
+        self.quasi_opposite = quasi_opposite
         self.middle_point = middle_point
         self.scrambled = scrambled
         self.cauchy = cauchy
