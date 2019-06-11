@@ -82,7 +82,7 @@ class RandomSearchMaker(base.ParametrizedFamily):
         Provides a random recommendation instead of the best point so far (for baseline)
     middle_point: bool
         enforces that the first suggested point (ask) is zero.
-    quasi_opposite: string
+    quasi_opposite: str
         symmetrizes exploration wrt the center:
              - full symmetry if "opposite"
              - random * symmetric if "quasi"
@@ -98,7 +98,7 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
-                 quasi_opposite: string = "none",
+                 quasi_opposite: str = "none",
                  cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
         assert isinstance(scale, (int, float)) or scale == "random"
