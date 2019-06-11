@@ -326,8 +326,8 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                 for env_budget in [5000, 10000, 20000, 40000]:
                     for num_workers in [1, 10, 100]:
                         # careful, not threadsafe
-                        runner = rl.EnvironmentRunner(env.duplicate(), num_repetitions=num_repetitions, max_step=50)
-                        func = rl.agents.TorchAgentFunction(agent.duplicate(), runner, reward_postprocessing=lambda x: 1 - x)
+                        runner = rl.EnvironmentRunner(env.copy(), num_repetitions=num_repetitions, max_step=50)
+                        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
                         func._descriptors.update(archi=archi)
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
