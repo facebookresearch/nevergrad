@@ -10,6 +10,7 @@
 - populated `nevergrad`'s namespace so that `import nevergrad as ng` gives access to `ng.Instrumentation`, `ng.var` and `ng.optimizers`. The
   `optimizers` namespace is quite messy, some non-optimizer objects will eventually be removed from there.
 - renamed `optimize` to `minimize` to be more explicit. Using `optimize` will raise a `DeprecationWarning` for the time being.
+- added first game-oriented testbed function in the `functions.rl` module. This is still experimental and will require refactoring before the API becomes stable.
 
 ## v0.2.1
 
