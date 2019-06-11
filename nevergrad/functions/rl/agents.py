@@ -126,6 +126,9 @@ class TrainingTorchAgent(base.Agent):
 
 
 class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
+
+    _num_test_evaluations = 1000
+
     def __init__(
         self, agent: TorchAgent, env_runner: base.EnvironmentRunner, reward_postprocessing: Callable[[float], float] = operator.neg
     ) -> None:
@@ -139,7 +142,8 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
     def compute(self, **kwargs: np.ndarray) -> float:
         self.agent.load_state_dict(kwargs)
         try:  # safeguard against nans
-            reward = self.runner.run(self.agent)
+            with torch.no_grad():
+                reward = self.runner.run(self.agent)
         except RuntimeError as e:
             warnings.warn(f"Returning 0 after error: {e}")
             reward = 0.0
@@ -150,7 +154,7 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        num_tests = int(1000 / self.runner.num_repetitions)  # hardcoded
+        num_tests = max(1, int(self._num_test_evaluations / self.runner.num_repetitions))
         return sum(self.compute(**kwargs) for _ in range(num_tests)) / num_tests
 
 
