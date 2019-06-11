@@ -9,6 +9,7 @@ import random
 import warnings
 import traceback
 from typing import Dict, Union, Any, Optional, Iterator, Tuple, Type, Callable
+import torch
 import numpy as np
 from ..common import decorators
 from .. import instrumentation as instru
@@ -216,6 +217,7 @@ class Experiment:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(self.seed)
             random.seed(self.seed)
+            torch.manual_seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instanciate(instrumentation=self.function.instrumentation)

@@ -4,11 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Iterator, Optional, List
+import nevergrad as ng
 from ..functions import ArtificialFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
+from ..functions import rl
 from ..instrumentation import InstrumentedFunction
-from .. import optimization
 from .xpbase import Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry
@@ -27,7 +28,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
     optims = sorted(
-        x for x, y in optimization.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x
+        x for x, y in ng.optimizers.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x
     )
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
@@ -69,7 +70,7 @@ def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Additional large scale experiments for one-shot optimizers.
     seedg = create_seed_generator(seed)
     names = ["sphere"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -110,7 +111,7 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot)
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -165,7 +166,7 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
     # prepare list of parameters to sweep for independent variables
     names = ["sphere"]
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -187,7 +188,7 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = sorted(
-        x for x, y in optimization.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
+        x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     )
     for budget in [50000]:
         for optim in optims:
@@ -211,7 +212,7 @@ def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
-        for optim in sorted(x for x, y in optimization.registry.items() if "BO" in x):
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x):
             for rotation in [False]:
                 for d in [20]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
@@ -227,7 +228,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems. This benchmark is based on the noise benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -305,3 +306,28 @@ def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
                 xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # pylint: disable=too-many-locals
+    seedg = create_seed_generator(seed)
+    base_env = rl.envs.DoubleOSeven(verbose=False)
+    random_agent = rl.agents.Agent007(base_env)
+    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
+    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    for num_repetitions in [1, 10, 100]:
+        for archi in ["mono", "multi"]:
+            agent = agent_mono if archi == "mono" else agent_multi
+            dde = ng.optimizers.DifferentialEvolution(crossover="dimension").with_name("DiscreteDE")
+            for optim in ["PSO", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
+                          "RandomSearch", "AlmostRotationInvariantDE", dde]:
+                for env_budget in [5000, 10000, 20000, 40000]:
+                    for num_workers in [1, 10, 100]:
+                        # careful, not threadsafe
+                        runner = rl.EnvironmentRunner(env.copy(), num_repetitions=num_repetitions, max_step=50)
+                        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+                        func._descriptors.update(archi=archi)
+                        opt_budget = env_budget // num_repetitions
+                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
