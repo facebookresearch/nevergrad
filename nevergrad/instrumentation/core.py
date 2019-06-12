@@ -76,8 +76,6 @@ class Instrumentation:
     @random_state.setter
     def random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
-        for var in self.variables:  # propagate to all variables
-            var._rng = self._random_state
 
     @property
     def dimension(self) -> int:
@@ -158,7 +156,7 @@ class Instrumentation:
         kwargs: Dict[str, Any]
             the keyword arguments corresponding to the instance initialization keyword arguments
         """
-        arguments = utils.process_variables(self.variables, data, deterministic=deterministic)
+        arguments = utils.process_variables(self.variables, data, random=False if deterministic else self.random_state)
         args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
         kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
         return args, kwargs

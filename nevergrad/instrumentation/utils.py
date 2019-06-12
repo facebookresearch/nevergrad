@@ -19,12 +19,6 @@ X = TypeVar("X")
 
 class Variable(Generic[X]):
 
-    def __init__(self) -> None:
-        # pull randomness from here
-        # this variable should only be handled by the instrumentation
-        # also, a custom RandomState is not created, because this is slow!
-        self._rng = np.random
-
     @property
     def dimension(self) -> int:
         raise NotImplementedError
@@ -40,11 +34,11 @@ class Variable(Generic[X]):
     def argument_to_data(self, arg: X) -> ArrayLike:
         raise NotImplementedError
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
         raise NotImplementedError
 
     def get_summary(self, data: ArrayLike) -> str:
-        output = self.data_to_argument(data, deterministic=True)
+        output = self.data_to_argument(data, random=False)
         d = data if len(data) > 1 else data[0]
         return f"Value {output}, from data: {d}"
 
@@ -87,12 +81,12 @@ def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[np.n
 
 
 def process_variables(variables: Iterable[Variable[Any]], data: ArrayLike,
-                      deterministic: bool = False) -> Tuple[Any, ...]:
+                      random: Union[bool, np.random.RandomState] = True) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
     variables = list(variables)
     splitted_data = split_data(data, variables)
-    return tuple([variable.data_to_argument(d, deterministic=deterministic) for variable, d in zip(variables, splitted_data)])
+    return tuple([variable.data_to_argument(d, random=random) for variable, d in zip(variables, splitted_data)])
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
