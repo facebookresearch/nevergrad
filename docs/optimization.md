@@ -99,8 +99,8 @@ Or if you want something more aimed at robustly outperforming random search in h
 
 ## Reproducibility
 
-Each optimizer has its own `random_state` for generating random numbers and is therefore often expected to produce stochastic behaviors.
-For reproducibility, it can be seeded in two ways:
-- by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the optimizer's initialization. Indeed, at initialization,
-  the optimizer's random state is seeded with a seed drawn from the global random state.
-- by setting a seed manually on the optimizer (E.g.: `optimizer.random_state.seed(12)`)
+Each instrumentation has its own `random_state` for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
+For reproducibility, this random state can be seeded in two ways:
+- by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the instrumentation's first use. Indeed, when first used,
+  the instrumentation's random state is seeded with a seed drawn from the global random state.
+- by manually seeding the instrumentation random state (E.g.: `instrumentation.random_state.seed(12)` or `optimizer.instrumentation.random_state = np.random.RandomState(12)`)

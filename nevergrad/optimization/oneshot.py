@@ -26,23 +26,25 @@ class _RandomSearch(OneShotOptimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = RandomSearchMaker()  # updated by the parametrized family
+        self._last_ask: np.ndarray = np.zeros((self.dimension,))
 
     def _internal_ask(self) -> ArrayLike:
-        # pylint: disable=not-callable
-        if self._parameters.quasi_opposite == "quasi" and self._num_ask % 2:
-            return -self.random_state.uniform(0., 1.) * self.last_guy  # type: ignore
-        if self._parameters.quasi_opposite == "opposite" and self._num_ask % 2:
-            return -self.last_guy  # type: ignore
-        if self._parameters.middle_point and not self._num_ask:
-            self.last_guy = np.zeros(self.dimension)
-            return self.last_guy  # type: ignore
-        scale = self._parameters.scale
+        params = self._parameters
+        if params.opposition_mode is not None and self.num_ask % 2 and self.num_ask > params.middle_point:
+            if params.opposition_mode == "quasi":
+                return -self._rng.uniform(0., 1.) * self._last_ask  # type: ignore
+            elif params.opposition_mode == "opposite":
+                return -self._last_ask
+        if params.middle_point and not self._num_ask:
+            self._last_ask = np.zeros(self.dimension)
+            return self._last_ask
+        scale = params.scale
         if isinstance(scale, str) and scale == "random":
-            scale = np.exp(self.random_state.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
-        point = (self.random_state.standard_cauchy(self.dimension) if self._parameters.cauchy
-                 else self.random_state.normal(0, 1, self.dimension))
-        self.last_guy = scale * point
-        return self.last_guy  # type: ignore
+            scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
+        point = (self._rng.standard_cauchy(self.dimension) if params.cauchy
+                 else self._rng.normal(0, 1, self.dimension))
+        self._last_ask = scale * point
+        return self._last_ask  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
@@ -59,10 +61,10 @@ class RandomSearchMaker(base.ParametrizedFamily):
         Provides a random recommendation instead of the best point so far (for baseline)
     middle_point: bool
         enforces that the first suggested point (ask) is zero.
-    quasi_opposite: str
-        symmetrizes exploration wrt the center:
-             - full symmetry if "opposite"
-             - random * symmetric if "quasi"
+    opposition_mode: str or None
+        if not None, symmetrizes exploration wrt the center:
+         - "opposite": full symmetry
+         - "quasi": uniform random * symmetric
     cauchy: bool
         use a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
@@ -75,12 +77,13 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
-                 quasi_opposite: str = "none",
+                 opposition_mode: Optional[str] = None,
                  cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
         assert isinstance(scale, (int, float)) or scale == "random"
+        assert opposition_mode in [None, "quasi", "opposite"]
         self.middle_point = middle_point
-        self.quasi_opposite = quasi_opposite
+        self.opposition_mode = opposition_mode
         self.stupid = stupid
         self.cauchy = cauchy
         self.scale = scale
@@ -89,8 +92,8 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
 Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
 RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
-QORandomSearch = RandomSearchMaker(quasi_opposite="quasi").with_name("QORandomSearch", register=True)
-ORandomSearch = RandomSearchMaker(quasi_opposite="opposite").with_name("ORandomSearch", register=True)
+QORandomSearch = RandomSearchMaker(opposition_mode="quasi").with_name("QORandomSearch", register=True)
+ORandomSearch = RandomSearchMaker(opposition_mode="opposite").with_name("ORandomSearch", register=True)
 RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
 LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
@@ -121,7 +124,7 @@ class _SamplingSearch(OneShotOptimizer):
                         "LHS": sequences.LHSSampler,
                         }
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled,
-                                                                        random_state=self.random_state)
+                                                                        random_state=self._rng)
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
@@ -180,11 +183,11 @@ class SamplingSearch(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
-                 quasi_opposite: str = "none",
+                 opposition_mode: str = "none",
                  cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
         # keep all parameters and set initialize superclass for print
         self.sampler = sampler
-        self.quasi_opposite = quasi_opposite
+        self.opposition_mode = opposition_mode
         self.middle_point = middle_point
         self.scrambled = scrambled
         self.cauchy = cauchy
@@ -226,8 +229,10 @@ LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_na
 LargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
-QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="quasi").with_name("QOScrHammersleySearch", register=True)
-OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="opposite").with_name("OScrHammersleySearch", register=True)
+QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
+                                       opposition_mode="quasi").with_name("QOScrHammersleySearch", register=True)
+OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
+                                      opposition_mode="opposite").with_name("OScrHammersleySearch", register=True)
 RescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
 CauchyScrHammersleySearch = SamplingSearch(
