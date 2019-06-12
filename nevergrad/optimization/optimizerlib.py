@@ -730,7 +730,7 @@ class Portfolio(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(self.instrumentation, budget // 3 + (budget % 3 > 0), num_workers),
+        self.optims = [CMA(self.instrumentation, budget // 3 + (budget % 3 > 0), num_workers),  # share instrumentation and its rng
                        TwoPointsDE(self.instrumentation, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
                        ScrHammersleySearch(self.instrumentation, budget // 3, num_workers)]  # noqa: F405
         if budget < 12 * num_workers:
@@ -775,7 +775,7 @@ class ParaPortfolio(Portfolio):
         self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
-        self.optims = [CMA(self.instrumentation, num_workers=nw1),
+        self.optims = [CMA(self.instrumentation, num_workers=nw1),  # share instrumentation and its rng
                        TwoPointsDE(self.instrumentation, num_workers=nw2),  # noqa: F405
                        PSO(self.instrumentation, num_workers=nw3),
                        SQP(self.instrumentation, 1),  # noqa: F405
@@ -803,7 +803,7 @@ class ParaSQPCMA(ParaPortfolio):
             self.which_optim += [i + 1]
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
-        self.optims = [CMA(self.instrumentation, num_workers=nw)]
+        self.optims = [CMA(self.instrumentation, num_workers=nw)]  # share instrumentation and its rng
         for i in range(num_workers - nw):
             self.optims += [SQP(self.instrumentation, 1)]  # noqa: F405
             if i > 0:
@@ -818,7 +818,7 @@ class ASCMADEthird(Portfolio):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
                        LhsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
@@ -877,7 +877,7 @@ class CMandAS2(ASCMADEthird):
         if budget < 201:
             self.optims = [OnePlusOne(self.instrumentation, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+            self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
                            CMA(self.instrumentation, budget=None, num_workers=num_workers),
                            CMA(self.instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
@@ -893,6 +893,7 @@ class CMandAS(CMandAS2):
         assert budget is not None
         self.budget_before_choosing = 2 * budget
         if budget < 201:
+            # share instrumentation and its rng
             self.optims = [OnePlusOne(self.instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = 2 * budget
         if budget > 50 * self.dimension or num_workers < 30:
@@ -908,6 +909,7 @@ class CM(CMandAS2):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
+        # share instrumentation and its random number generator between all underlying optimizers
         self.optims = [TwoPointsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         self.budget_before_choosing = 2 * budget
         if budget < 201:
@@ -923,7 +925,7 @@ class MultiCMA(CM):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
                        CMA(self.instrumentation, budget=None, num_workers=num_workers),
                        CMA(self.instrumentation, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 10
@@ -936,7 +938,7 @@ class TripleCMA(CM):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
                        CMA(self.instrumentation, budget=None, num_workers=num_workers),
                        CMA(self.instrumentation, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 3
@@ -948,7 +950,7 @@ class MultiScaleCMA(CM):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
                        MilliCMA(self.instrumentation, budget=None, num_workers=num_workers),
                        MicroCMA(self.instrumentation, budget=None, num_workers=num_workers)]
         assert budget is not None
