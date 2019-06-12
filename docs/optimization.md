@@ -103,4 +103,4 @@ Each instrumentation has its own `random_state` for generating random numbers. A
 For reproducibility, this random state can be seeded in two ways:
 - by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the instrumentation's first use. Indeed, when first used,
   the instrumentation's random state is seeded with a seed drawn from the global random state.
-- by manually seeding the instrumentation random state (E.g.: `instrumentation.random_state.seed(12)` or `optimizer.instrumentation.random_state = np.RandomState(12)`)
+- by manually seeding the instrumentation random state (E.g.: `instrumentation.random_state.seed(12)` or `optimizer.instrumentation.random_state = np.random.RandomState(12)`)
