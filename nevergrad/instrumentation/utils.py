@@ -35,6 +35,16 @@ class Variable(Generic[X]):
         raise NotImplementedError
 
     def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
+        """Converts data into arguments
+
+        Parameters
+        ----------
+        data: np.ndarray
+            data to convert
+        random: bool or np.random.RandomState
+            either a RandomState to pull values from, or True for pulling values on the default random state,
+            or False to get a deterministic behavior
+        """
         raise NotImplementedError
 
     def get_summary(self, data: ArrayLike) -> str:
