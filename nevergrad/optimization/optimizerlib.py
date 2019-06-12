@@ -52,21 +52,21 @@ class _OnePlusOne(base.Optimizer):
             strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
-                    idx = self.random_state.choice(len(self.archive))
+                    idx = self._rng.choice(len(self.archive))
                     return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
                 elif strategy == "optimistic":
                     return self.current_bests["optimistic"].x
         # crossover
-        mutator = mutations.Mutator(self.random_state)
+        mutator = mutations.Mutator(self._rng)
         if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             return mutator.crossover(self.current_bests["pessimistic"].x,
                                      mutator.get_roulette(self.archive, num=2))
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * self.random_state.normal(0, 1, self.dimension)  # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
-            return self.current_bests["pessimistic"].x + self._sigma * self.random_state.standard_cauchy(self.dimension)  # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
                 return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
@@ -185,7 +185,7 @@ class _CMA(base.Optimizer):
         if self._es is None:
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
             diag = self._parameters.diagonal
-            inopts = {"popsize": popsize, "randn": self.random_state.randn, "CMA_diagonal": diag, "verbose": 0}
+            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": diag, "verbose": 0}
             self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
                                                 sigma0=self._parameters.scale, inopts=inopts)
         return self._es
@@ -272,9 +272,9 @@ class EDA(base.Optimizer):
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
-        mutated_sigma = self.sigma * np.exp(self.random_state.normal(0, 1) / np.sqrt(self.dimension))
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        individual = tuple(mutated_sigma * self.random_state.multivariate_normal(self.current_center, self.covariance))
+        individual = tuple(mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance))
         self.unevaluated_population_sigma += [mutated_sigma]
         self.unevaluated_population += [tuple(individual)]
         return individual
@@ -469,8 +469,8 @@ class TBPSA(base.Optimizer):
         return self.current_center
 
     def _internal_ask(self) -> base.ArrayLike:
-        mutated_sigma = self.sigma * np.exp(self.random_state.normal(0, 1) / np.sqrt(self.dimension))
-        individual = self.current_center + mutated_sigma * self.random_state.normal(0, 1, self.dimension)
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
+        individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
         part = base.utils.Individual(individual)
         part._parameters = np.array([mutated_sigma])
         self._unevaluated_population[individual.tobytes()] = part
@@ -535,10 +535,10 @@ class NoisyBandit(base.Optimizer):
 
     def _internal_ask(self) -> base.ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
-            return self.random_state.normal(0, 1, self.dimension)  # type: ignore
-        if self.random_state.choice([True, False]):
+            return self._rng.normal(0, 1, self.dimension)  # type: ignore
+        if self._rng.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
-            idx = self.random_state.choice(len(self.archive))
+            idx = self._rng.choice(len(self.archive))
             return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
         return self.current_bests["optimistic"].x
 
@@ -605,7 +605,7 @@ class PSO(base.Optimizer):
     def _internal_ask_candidate(self) -> base.Candidate:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
-            additional = [self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
+            additional = [self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
                           for _ in range(self.llambda - len(self.population))]
             self.population.extend(additional)
         particle = self.population.get_queued(remove=False)
@@ -640,14 +640,14 @@ class PSO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         if len(self.population) < self.llambda:
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
+            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
             particle.x = self._PARTICULE.transform.backward(x)
             self.population.extend([particle])
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_value)  # or fitness?
             if worst_part.best_value < value:
                 return  # no need to update
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self.random_state)
+            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
             particle.x = self._PARTICULE.transform.backward(x)
             worst_part._active = False
             self.population.replace(worst_part, particle)
@@ -709,7 +709,7 @@ class SPSA(base.Optimizer):
                 assert self.yp is not None and self.ym is not None
                 self.t -= (self._ak(k) * (self.yp - self.ym) / 2 / self._ck(k)) * self.delta
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
-            self.delta = 2 * self.random_state.randint(2, size=self.dimension) - 1
+            self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
             return self.t - self._ck(k) * self.delta  # type:ignore
         return self.t + self._ck(k) * self.delta  # type: ignore
 
@@ -730,14 +730,12 @@ class Portfolio(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(instrumentation, budget // 3 + (budget % 3 > 0), num_workers),
-                       TwoPointsDE(instrumentation, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
-                       ScrHammersleySearch(instrumentation, budget // 3, num_workers)]  # noqa: F405
+        self.optims = [CMA(self.instrumentation, budget // 3 + (budget % 3 > 0), num_workers),  # share instrumentation and its rng
+                       TwoPointsDE(self.instrumentation, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
+                       ScrHammersleySearch(self.instrumentation, budget // 3, num_workers)]  # noqa: F405
         if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(instrumentation, budget, num_workers)]  # noqa: F405
+            self.optims = [ScrHammersleySearch(self.instrumentation, budget, num_workers)]  # noqa: F405
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
@@ -777,14 +775,12 @@ class ParaPortfolio(Portfolio):
         self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
-        self.optims = [CMA(instrumentation, num_workers=nw1),
-                       TwoPointsDE(instrumentation, num_workers=nw2),  # noqa: F405
-                       PSO(instrumentation, num_workers=nw3),
-                       SQP(instrumentation, 1),  # noqa: F405
-                       ScrHammersleySearch(instrumentation, budget=(budget // len(self.which_optim)) * nw4)  # noqa: F405
+        self.optims = [CMA(self.instrumentation, num_workers=nw1),  # share instrumentation and its rng
+                       TwoPointsDE(self.instrumentation, num_workers=nw2),  # noqa: F405
+                       PSO(self.instrumentation, num_workers=nw3),
+                       SQP(self.instrumentation, 1),  # noqa: F405
+                       ScrHammersleySearch(self.instrumentation, budget=(budget // len(self.which_optim)) * nw4)  # noqa: F405
                        ]
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask_candidate(self) -> base.Candidate:
@@ -807,14 +803,12 @@ class ParaSQPCMA(ParaPortfolio):
             self.which_optim += [i + 1]
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
-        self.optims = [CMA(instrumentation, num_workers=nw)]
+        self.optims = [CMA(self.instrumentation, num_workers=nw)]  # share instrumentation and its rng
         for i in range(num_workers - nw):
-            self.optims += [SQP(instrumentation, 1)]  # noqa: F405
+            self.optims += [SQP(self.instrumentation, 1)]  # noqa: F405
             if i > 0:
-                self.optims[-1].initial_guess = self.random_state.normal(0, 1, self.dimension)  # type: ignore
+                self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -824,10 +818,8 @@ class ASCMADEthird(Portfolio):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                       LhsDE(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                       LhsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
@@ -858,11 +850,9 @@ class ASCMADEQRthird(ASCMADEthird):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                       LhsDE(instrumentation, budget=None, num_workers=num_workers),  # noqa: F405
-                       ScrHaltonSearch(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                       LhsDE(self.instrumentation, budget=None, num_workers=num_workers),  # noqa: F405
+                       ScrHaltonSearch(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
 
 
 @registry.register
@@ -871,10 +861,8 @@ class ASCMA2PDEthird(ASCMADEQRthird):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                       TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                       TwoPointsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
 
 
 @registry.register
@@ -883,18 +871,16 @@ class CMandAS2(ASCMADEthird):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
+        self.optims = [TwoPointsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         assert budget is not None
         self.budget_before_choosing = 2 * budget
         if budget < 201:
-            self.optims = [OnePlusOne(instrumentation, budget=None, num_workers=num_workers)]
+            self.optims = [OnePlusOne(self.instrumentation, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                           CMA(instrumentation, budget=None, num_workers=num_workers),
-                           CMA(instrumentation, budget=None, num_workers=num_workers)]
+            self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                           CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                           CMA(self.instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 10
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -903,18 +889,17 @@ class CMandAS(CMandAS2):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
+        self.optims = [TwoPointsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         assert budget is not None
         self.budget_before_choosing = 2 * budget
         if budget < 201:
-            self.optims = [OnePlusOne(instrumentation, budget=None, num_workers=num_workers)]
+            # share instrumentation and its rng
+            self.optims = [OnePlusOne(self.instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = 2 * budget
         if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                           CMA(instrumentation, budget=None, num_workers=num_workers)]
+            self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                           CMA(self.instrumentation, budget=None, num_workers=num_workers)]
             self.budget_before_choosing = budget // 3
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
 
 
 @registry.register
@@ -924,14 +909,13 @@ class CM(CMandAS2):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [TwoPointsDE(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
+        # share instrumentation and its random number generator between all underlying optimizers
+        self.optims = [TwoPointsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         self.budget_before_choosing = 2 * budget
         if budget < 201:
-            self.optims = [OnePlusOne(instrumentation, budget=None, num_workers=num_workers)]
+            self.optims = [OnePlusOne(self.instrumentation, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension:
-            self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers)]
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+            self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers)]
 
 
 @registry.register
@@ -941,11 +925,9 @@ class MultiCMA(CM):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                       CMA(instrumentation, budget=None, num_workers=num_workers),
-                       CMA(instrumentation, budget=None, num_workers=num_workers)]
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                       CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                       CMA(self.instrumentation, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 10
 
 
@@ -956,11 +938,9 @@ class TripleCMA(CM):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                       CMA(instrumentation, budget=None, num_workers=num_workers),
-                       CMA(instrumentation, budget=None, num_workers=num_workers)]
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                       CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                       CMA(self.instrumentation, budget=None, num_workers=num_workers)]
         self.budget_before_choosing = budget // 3
 
 
@@ -970,11 +950,9 @@ class MultiScaleCMA(CM):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.optims = [CMA(instrumentation, budget=None, num_workers=num_workers),
-                       MilliCMA(instrumentation, budget=None, num_workers=num_workers),
-                       MicroCMA(instrumentation, budget=None, num_workers=num_workers)]
-        for optim in self.optims:
-            optim._random_state = self.random_state  # share the state
+        self.optims = [CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                       MilliCMA(self.instrumentation, budget=None, num_workers=num_workers),
+                       MicroCMA(self.instrumentation, budget=None, num_workers=num_workers)]
         assert budget is not None
         self.budget_before_choosing = budget // 3
 
@@ -1017,7 +995,7 @@ class _BO(base.Optimizer):
         if self._bo is None:
             params = self._parameters
             bounds = {f'x{i}': (0., 1.) for i in range(self.dimension)}
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self.random_state)
+            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
             if self._parameters.gp_parameters is not None:
                 self._bo.set_gp_params(**self._parameters.gp_parameters)
             # init
@@ -1034,7 +1012,7 @@ class _BO(base.Optimizer):
                                "LHS": sequences.LHSSampler,
                                "random": sequences.RandomSampler}[init](self.dimension, budget=init_budget,
                                                                         scrambling=(init == "Hammersley"),
-                                                                        random_state=self.random_state)
+                                                                        random_state=self._rng)
                     for point in sampler:
                         self._bo.probe(point, lazy=True)
         return self._bo
