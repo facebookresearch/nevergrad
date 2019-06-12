@@ -40,7 +40,7 @@ class ARCoatingVariable(inst.var.utils.Variable[np.ndarray]):
         return self._dimension
 
     # pylint: disable=unused-argument
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.randomState] = True) -> np.ndarray:
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> np.ndarray:
         return (self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin  # type: ignore
 
     def _short_repr(self) -> str:
