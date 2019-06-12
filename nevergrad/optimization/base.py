@@ -221,8 +221,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._finished_jobs: Deque[Tuple[Candidate, JobLike[float]]] = deque()
 
     @property
-    def random_state(self) -> np.random.RandomState:
-        """np.random.RandomState: Random state the optimizer pulls from (can be seeded if need be).
+    def _rng(self) -> np.random.RandomState:
+        """np.random.RandomState: instrumentation random state the optimizer must pull from.
+        It can be seeded or updated directly on the instrumentation instance (`optimizer.instrumentation.random_state`)
         """
         return self.instrumentation.random_state
 

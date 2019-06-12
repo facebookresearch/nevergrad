@@ -23,7 +23,7 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 
 ## Instrumentation
 
-Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods.
+Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods. Since `data_to_arguments` can be stochastic, the instrumentation holds a random state (`instrumentation.random_state`) which is also used by optimizers.
 
 
 ```python

@@ -74,8 +74,8 @@ Seeding has an important part for the significance and reproducibility of the al
 - we should be able to seed from **outside** when we need it: we expect that setting a seed to the global random state should lead to
 reproducible results.
 
-In order to facilitate these behaviors, each optimizer has a `random_state` attribute (`np.random.RandomState`), which can be seeded by the
-user if need be. All calls to stochastic functions should there be made through this `random_state`.
+In order to facilitate these behaviors, each instrumentation has a `random_state` attribute (`np.random.RandomState`), which can be seeded by the
+user if need be. `optimizer._rng` is a shortcut to access it. All calls to stochastic functions should there be made through it.
 By default, it will be seeded randomly by drawing a number from the global numpy random state so
 that seeding the global numpy random statewill yield reproducible results as well
 

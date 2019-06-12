@@ -156,7 +156,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
-    optim.random_state.seed(12)
+    optim.instrumentation.random_state.seed(12)
     np.testing.assert_equal(optim.name, name)
     # the following context manager speeds up BO tests
     # BEWARE: BO tests are deterministic but can get different results from a computer to another.
@@ -241,7 +241,7 @@ def test_tbpsa_recom_with_update() -> None:
     # set up problem
     fitness = Fitness([.5, -.8, 0, 4])
     optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
-    optim.random_state.seed(12)
+    optim.instrumentation.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.minimize(fitness)
     np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
