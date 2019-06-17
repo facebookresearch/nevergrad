@@ -66,7 +66,7 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+optimizer = ng.optimization.optimizerlib._OnePlusOne(instrumentation=2, budget=100)
 recommendation = optimizer.optimize(square)
 print(recommendation)  # optimal args and kwargs
 >>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
@@ -82,7 +82,7 @@ See the [instrumentation tutorial](docs/instrumentation.md) for more complex ins
 You can print the full list of optimizers with:
 ```python
 import nevergrad as ng
-print(list(sorted(ng.optimizers.registry.keys())))
+print(list(sorted(ng.optimization.registry.keys())))
 ```
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
