@@ -54,9 +54,10 @@ def _jump(x: List[int]) -> float:  # TODO: docstring?
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
     """Classical function for testing noisy optimization."""
-    val = np.sum(np.power(x, 4) - 16 * np.power(x, 2) + 5 * x)
+    x2 = x**2
+    val = x2.dot(x2) + np.sum(5 * x - 16 * x2)
     # return a positive value for maximization
-    return float(39.16599 * len(x) + 1 * 0.5 * val + noise * np.random.normal(size=val.shape))
+    return float(39.16599 * len(x) + 0.5 * val + noise * np.random.normal(size=val.shape))
 
 
 class DelayedSphere(PostponedObject):
@@ -116,7 +117,7 @@ def altcigar(x: np.ndarray) -> float:
     """Similar to cigar, but variables in inverse order.
 
     E.g. for pointing out algorithms not invariant to the order of variables."""
-    return float(x[-1]**2 + 1000000. * np.sum(x[:-1]**2))
+    return float(x[-1])**2 + 1000000. * sphere(x[:-1])
 
 
 @registry.register

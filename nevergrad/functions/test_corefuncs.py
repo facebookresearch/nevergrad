@@ -51,8 +51,15 @@ def test_genzcornerpeak_inf() -> None:
     rosenbrock=(corefuncs.rosenbrock, 1967.57859, None),
     rosenbrock_m=(corefuncs.rosenbrock, 2705, [1, 2, 3, 4]),
 )
-def test_core_function(func: Callable[[np.ndarray], float], expected: float, data: Optional[List[float]]) -> None:
+def test_core_function_values(func: Callable[[np.ndarray], float], expected: float, data: Optional[List[float]]) -> None:
     if data is None:
         data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
     value = func(np.array(data))
     np.testing.assert_almost_equal(value, expected, decimal=5)
+
+
+def test_styblinksitang() -> None:
+    np.random.seed(12)
+    data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
+    value = corefuncs._styblinksitang(np.array(data), noise=0.1)
+    np.testing.assert_almost_equal(value, 421.374940, decimal=5)
