@@ -47,7 +47,7 @@ class Registry(MutableMapping[str, X]):
         if name in self:
             del self[name]
 
-    def register_with_info(self, **info: Any) -> Callable[..., Any]:
+    def register_with_info(self, **info: Any) -> Callable[[X], X]:
         """Decorator for registering a function and information about it
         """
         return functools.partial(self.register, info=info)

@@ -47,6 +47,13 @@ def test_genzcornerpeak_inf() -> None:
     altelliptic=(corefuncs.altellipsoid, 609313.71475, None),
     rosenbrock=(corefuncs.rosenbrock, 1967.57859, None),
     rosenbrock_m=(corefuncs.rosenbrock, 2705, [1, 2, 3, 4]),
+    ackley=(corefuncs.ackley, 4.7298473, None),
+    schwefel=(corefuncs.schwefel_1_2, 128.709765, None),
+    ackley_m=(corefuncs.ackley, 2.254444, [0.1, 0.2, 0.3]),
+    schwefel_m=(corefuncs.schwefel_1_2, 146, [1, 2, 3, 4]),
+    genzgaussianpeakintegral=(corefuncs.genzgaussianpeakintegral, 0.10427, None),
+    minusgenzgaussianpeakintegral=(corefuncs.minusgenzgaussianpeakintegral, -0.10427, None),
+    linear=(corefuncs.linear, 0.57969, None),
 )
 def test_core_function_values(func: Callable[[np.ndarray], float], expected: float, data: Optional[List[float]]) -> None:
     if data is None:
