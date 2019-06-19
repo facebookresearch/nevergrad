@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
 from typing import Dict, Any, Tuple, List, Callable
 import numpy as np
 from .utils import PostponedObject
@@ -55,17 +54,9 @@ def _jump(x: List[int]) -> float:  # TODO: docstring?
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
     """Classical function for testing noisy optimization."""
-    x = np.asarray(x)
     val = np.sum(np.power(x, 4) - 16 * np.power(x, 2) + 5 * x)
     # return a positive value for maximization
     return float(39.16599 * len(x) + 1 * 0.5 * val + noise * np.random.normal(size=val.shape))
-
-
-@registry.register
-def delayedsphere(x: np.ndarray) -> float:
-    '''For asynchronous experiments, we induce delays.'''
-    time.sleep(abs(1. / x[0]) / 100000. if x[0] != 0. else 0.)
-    return float(np.sum(x**2))
 
 
 class DelayedSphere(PostponedObject):
@@ -134,7 +125,7 @@ def cigar(x: np.ndarray) -> float:
 
     The other classical example is ellipsoid.
     """
-    return float(x[0]**2 + 1000000. * np.sum(x[1:]**2))
+    return float(x[0])**2 + 1000000. * sphere(x[1:])
 
 
 @registry.register
@@ -142,8 +133,7 @@ def altellipsoid(y: np.ndarray) -> float:
     """Similar to Ellipsoid, but variables in inverse order.
 
     E.g. for pointing out algorithms not invariant to the order of variables."""
-    x = y[::-1]
-    return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
+    return ellipsoid(y[::-1])
 
 
 @registry.register
@@ -153,7 +143,7 @@ def ellipsoid(x: np.ndarray) -> float:
     The other classical example is cigar.
     """
     dim = x.size
-    weights = 10 ** (np.linspace(0, 6, dim) - 6. / (dim - 1))
+    weights = 10 ** np.linspace(0, 6, dim)
     return float(weights.dot(x ** 2))
 
 
@@ -167,7 +157,7 @@ def rastrigin(x: np.ndarray) -> float:
 @registry.register
 def hm(x: np.ndarray) -> float:
     """New multimodal function (proposed for Nevergrad)."""
-    return float(np.sum((x**2) * (1.1 + np.cos(1. / x))))
+    return float((x**2).dot(1.1 + np.cos(1. / x)))
 
 
 @registry.register
@@ -180,7 +170,7 @@ def rosenbrock(x: np.ndarray) -> float:
 @registry.register
 def griewank(x: np.ndarray) -> float:
     """Multimodal function, often used in Bayesian optimization."""
-    part1 = np.sum(x**2)
+    part1 = sphere(x)
     part2 = np.prod(np.cos(x / np.sqrt(1 + np.arange(len(x)))))
     return 1 + (float(part1) / 4000.0) - float(part2)
 

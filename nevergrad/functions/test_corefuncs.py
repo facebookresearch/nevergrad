@@ -38,12 +38,16 @@ def test_genzcornerpeak_inf() -> None:
 
 
 @testing.parametrized(
+    cigar=(corefuncs.cigar, 8604785.43824, None),
+    hm=(corefuncs.hm, 15.85037, None),
+    griewank=(corefuncs.griewank, 0.70028, None),
     sphere=(corefuncs.sphere, 9.043029, None),
     sphere1=(corefuncs.sphere1, 10.329029, None),
     sphere2=(corefuncs.sphere2, 35.615029, None),
     sphere4=(corefuncs.sphere4, 158.187029, None),
     sphere_m=(corefuncs.sphere, 30, [1, 2, 3, 4]),
-    elliptic=(corefuncs.ellipsoid, 74729.4827107325, None),
+    elliptic=(corefuncs.ellipsoid, 262389.541996, None),
+    altelliptic=(corefuncs.altellipsoid, 609313.71475, None),
     rosenbrock=(corefuncs.rosenbrock, 1967.57859, None),
     rosenbrock_m=(corefuncs.rosenbrock, 2705, [1, 2, 3, 4]),
 )
