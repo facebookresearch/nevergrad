@@ -54,20 +54,19 @@ def _jump(x: List[int]) -> float:  # TODO: docstring?
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
     """Classical function for testing noisy optimization."""
-    x2 = x**2
+    x2 = x ** 2
     val = x2.dot(x2) + np.sum(5 * x - 16 * x2)
     # return a positive value for maximization
     return float(39.16599 * len(x) + 0.5 * val + noise * np.random.normal(size=val.shape))
 
 
 class DelayedSphere(PostponedObject):
-
     def __call__(self, x: np.ndarray) -> float:
-        return float(np.sum(x**2))
+        return float(np.sum(x ** 2))
 
     def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         x = args[0]
-        return float(abs(1. / x[0]) / 1000.) if x[0] != 0. else 0.
+        return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
 
 registry.register(DelayedSphere())
@@ -85,30 +84,30 @@ def sphere(x: np.ndarray) -> float:
 @registry.register
 def sphere1(x: np.ndarray) -> float:
     """Translated sphere function."""
-    return sphere(x - 1.)
+    return sphere(x - 1.0)
 
 
 @registry.register
 def sphere2(x: np.ndarray) -> float:
     """A bit more translated sphere function."""
-    return sphere(x - 2.)
+    return sphere(x - 2.0)
 
 
 @registry.register
 def sphere4(x: np.ndarray) -> float:
     """Even more translated sphere function."""
-    return sphere(x - 4.)
+    return sphere(x - 4.0)
 
 
 @registry.register
 def maxdeceptive(x: np.ndarray) -> float:
-    dec = 3 * x**2 - (2 / (3**(x - 2)**2 + .1))
+    dec = 3 * x ** 2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
     return float(np.max(dec))
 
 
 @registry.register
 def sumdeceptive(x: np.ndarray) -> float:
-    dec = 3 * x**2 - (2 / (3**(x - 2)**2 + .1))
+    dec = 3 * x ** 2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
     return float(np.sum(dec))
 
 
@@ -117,7 +116,7 @@ def altcigar(x: np.ndarray) -> float:
     """Similar to cigar, but variables in inverse order.
 
     E.g. for pointing out algorithms not invariant to the order of variables."""
-    return float(x[-1])**2 + 1000000. * sphere(x[:-1])
+    return float(x[-1]) ** 2 + 1000000.0 * sphere(x[:-1])
 
 
 @registry.register
@@ -126,7 +125,7 @@ def cigar(x: np.ndarray) -> float:
 
     The other classical example is ellipsoid.
     """
-    return float(x[0])**2 + 1000000. * sphere(x[1:])
+    return float(x[0]) ** 2 + 1000000.0 * sphere(x[1:])
 
 
 @registry.register
@@ -158,7 +157,7 @@ def rastrigin(x: np.ndarray) -> float:
 @registry.register
 def hm(x: np.ndarray) -> float:
     """New multimodal function (proposed for Nevergrad)."""
-    return float((x**2).dot(1.1 + np.cos(1. / x)))
+    return float((x ** 2).dot(1.1 + np.cos(1.0 / x)))
 
 
 @registry.register
@@ -182,9 +181,9 @@ def deceptiveillcond(x: np.ndarray) -> float:
 
     The condition number increases to infinity as we get closer to the optimum."""
     assert len(x) >= 2
-    return float(max(np.abs(np.arctan(x[1] / x[0])),
-                     np.sqrt(x[0]**2. + x[1]**2.),
-                     1. if x[0] > 0 else 0.) if x[0] != 0. else float("inf"))
+    return float(
+        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0] ** 2.0 + x[1] ** 2.0), 1.0 if x[0] > 0 else 0.0) if x[0] != 0.0 else float("inf")
+    )
 
 
 @registry.register
@@ -193,13 +192,13 @@ def deceptivepath(x: np.ndarray) -> float:
 
     The path becomes thiner as we get closer to the optimum."""
     assert len(x) >= 2
-    distance = np.sqrt(x[0]**2 + x[1]**2)
-    if distance == 0.:
-        return 0.
-    angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
-    invdistance = (1. / distance) if distance > 0. else 0.
+    distance = np.sqrt(x[0] ** 2 + x[1] ** 2)
+    if distance == 0.0:
+        return 0.0
+    angle = np.arctan(x[0] / x[1]) if x[1] != 0.0 else np.pi / 2.0
+    invdistance = (1.0 / distance) if distance > 0.0 else 0.0
     if np.abs(np.cos(invdistance) - angle) > 0.1:
-        return 1.
+        return 1.0
     return float(distance)
 
 
@@ -207,13 +206,13 @@ def deceptivepath(x: np.ndarray) -> float:
 def deceptivemultimodal(x: np.ndarray) -> float:
     """Infinitely many local optima, as we get closer to the optimum."""
     assert len(x) >= 2
-    distance = np.sqrt(x[0]**2 + x[1]**2)
-    if distance == 0.:
-        return 0.
-    angle = np.arctan(x[0] / x[1]) if x[1] != 0. else np.pi / 2.
-    invdistance = int(1. / distance) if distance > 0. else 0.
+    distance = np.sqrt(x[0] ** 2 + x[1] ** 2)
+    if distance == 0.0:
+        return 0.0
+    angle = np.arctan(x[0] / x[1]) if x[1] != 0.0 else np.pi / 2.0
+    invdistance = int(1.0 / distance) if distance > 0.0 else 0.0
     if np.abs(np.cos(invdistance) - angle) > 0.1:
-        return 1.
+        return 1.0
     return float(distance)
 
 
@@ -225,13 +224,13 @@ def lunacek(x: np.ndarray) -> float:
     problemDimensions = len(x)
     s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
     mu1 = 2.5
-    mu2 = - np.sqrt(abs((mu1**2 - 1.0) / s))
+    mu2 = -np.sqrt(abs((mu1 ** 2 - 1.0) / s))
     firstSum = 0.0
     secondSum = 0.0
     thirdSum = 0.0
     for i in range(problemDimensions):
-        firstSum += (x[i] - mu1)**2
-        secondSum += (x[i] - mu2)**2
+        firstSum += (x[i] - mu1) ** 2
+        secondSum += (x[i] - mu2) ** 2
         thirdSum += 1.0 - np.cos(2 * np.pi * (x[i] - mu1))
     return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
 
@@ -325,7 +324,7 @@ def genzcornerpeak(y: np.ndarray) -> float:
     value = float(1 + np.mean(np.tanh(y)))
     if value == 0:
         return float("inf")
-    return value**(-len(y) - 1)
+    return value ** (-len(y) - 1)
 
 
 @registry.register_with_info(no_transfrom=True)
@@ -341,7 +340,7 @@ def genzgaussianpeakintegral(x: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 
     tested in optim because why not."""
-    return float(np.exp(-np.sum(x**2 / 4.)))
+    return float(np.exp(-np.sum(x ** 2 / 4.0)))
 
 
 @registry.register
@@ -349,7 +348,7 @@ def minusgenzgaussianpeakintegral(x: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 
     tested in optim because why not."""
-    return -float(np.exp(-sum(x**2 / 4.)))
+    return -float(np.exp(-sum(x ** 2 / 4.0)))
 
 
 @registry.register

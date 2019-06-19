@@ -16,13 +16,10 @@ def testcorefuncs_function(name: str, func: Callable[..., Any]) -> None:
     for _ in range(2):
         np.random.seed(12)
         outputs.append(func(x))
-    np.testing.assert_equal(outputs[0], outputs[1], f'Function {name} is not deterministic')
+    np.testing.assert_equal(outputs[0], outputs[1], f"Function {name} is not deterministic")
 
 
-@testing.parametrized(
-    expe1=([6, 4, 2, 1, 9], 4, 5, 3),  # jump was assumed correct (verify?)
-    expe2=([6, 6, 7, 1, 9], 4, 5, 3),
-)
+@testing.parametrized(expe1=([6, 4, 2, 1, 9], 4, 5, 3), expe2=([6, 6, 7, 1, 9], 4, 5, 3))  # jump was assumed correct (verify?)
 def test_base_functions(x: List[int], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
     np.testing.assert_equal(corefuncs._onemax(x), onemax_expected, err_msg="Wrong output for onemax")
     np.testing.assert_equal(corefuncs._leadingones(x), leadingones_expected, err_msg="Wrong output for leadingones")
