@@ -2,9 +2,18 @@
 
 ## master
 
+N/A
+
+## v0.2.2
+
+### Breaking changes
+
 - instrumentations now hold a `random_state` attribute which can be seeded (`optimizer.instrumentation.random_state.seed(12)`).
-  Seeding `numpy`'s global random state seed **before** initializing the instrumentaiton still works as well.
-  This random state is used by the optimizers through the `optimizer._rng` property.
+  Seeding `numpy`'s global random state seed **before** using the instrumentation still works (but if not, this change can break reproducibility).
+  The random state is used by the optimizers through the `optimizer._rng` property.
+
+### Other changes
+
 - added a `Scalar` variable as a shortcut to `Array(1).asscalar(dtype)` to simplify specifying instrumentation.
 - added `suggest` method to optimizers in order to manually provide the next `Candidate` from the `ask` method (experimental feature, name and behavior may change).
 - populated `nevergrad`'s namespace so that `import nevergrad as ng` gives access to `ng.Instrumentation`, `ng.var` and `ng.optimizers`. The
