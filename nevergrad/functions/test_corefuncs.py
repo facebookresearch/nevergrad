@@ -27,7 +27,7 @@ def test_base_functions(x: List[int], onemax_expected: float, leadingones_expect
 
 
 def test_genzcornerpeak_inf() -> None:
-    y = [-np.inf, -np.inf]
+    y = np.array([-np.inf, -np.inf])
     output = corefuncs.genzcornerpeak(y)
     np.testing.assert_equal(output, np.inf)
     output = corefuncs.minusgenzcornerpeak(y)
