@@ -17,7 +17,7 @@ registry = Registry[Callable[[np.ndarray], float]]()
 def _onemax(x: List[int]) -> float:
     """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
-    It is originally designed for lists of bits. It just counts the number of 1, 
+    It is originally designed for lists of bits. It just counts the number of 1,
     and returns len(x) - number of ones..
     It also works in the continuous case but in that cases discretizes the
     input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
@@ -28,7 +28,7 @@ def _onemax(x: List[int]) -> float:
 def _leadingones(x: List[int]) -> float:
     """leadingones is the second most classical discrete function, adapted for minimization.
 
-    Returns len(x) - number of initial 1. I.e. 
+    Returns len(x) - number of initial 1. I.e.
     leadingones([0 1 1 1]) = 4,
     leadingones([1 1 1 1]) = 0,
     leadingones([1 0 0 0]) = 1.
@@ -64,7 +64,7 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
 @registry.register
 def delayedsphere(x: np.ndarray) -> float:
     '''For asynchronous experiments, we induce delays.'''
-    time.sleep(abs(1./x[0]) / 100000. if x[0] != 0. else 0.)
+    time.sleep(abs(1. / x[0]) / 100000. if x[0] != 0. else 0.)
     return float(np.sum(x**2))
 
 
@@ -75,7 +75,7 @@ class DelayedSphere(PostponedObject):
 
     def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         x = args[0]
-        return float(abs(1./x[0]) / 1000.) if x[0] != 0. else 0.
+        return float(abs(1. / x[0]) / 1000.) if x[0] != 0. else 0.
 
 
 registry.register(DelayedSphere())
@@ -84,27 +84,28 @@ registry.register(DelayedSphere())
 @registry.register
 def sphere(x: np.ndarray) -> float:
     """The most classical continuous optimization testbed.
-    
+
     If you do not solve that one then you have a bug."""
-    return float(np.sum(x**2))
+    assert x.ndim == 1
+    return float(x.dot(x))
 
 
 @registry.register
 def sphere1(x: np.ndarray) -> float:
     """Translated sphere function."""
-    return float(np.sum((x - 1.)**2))
+    return sphere(x - 1.)
 
 
 @registry.register
 def sphere2(x: np.ndarray) -> float:
     """A bit more translated sphere function."""
-    return float(np.sum((x - 2.)**2))
+    return sphere(x - 2.)
 
 
 @registry.register
 def sphere4(x: np.ndarray) -> float:
     """Even more translated sphere function."""
-    return float(np.sum((x - 4.)**2))
+    return sphere(x - 4.)
 
 
 @registry.register
@@ -122,7 +123,7 @@ def sumdeceptive(x: np.ndarray) -> float:
 @registry.register
 def altcigar(x: np.ndarray) -> float:
     """Similar to cigar, but variables in inverse order.
-    
+
     E.g. for pointing out algorithms not invariant to the order of variables."""
     return float(x[-1]**2 + 1000000. * np.sum(x[:-1]**2))
 
@@ -139,7 +140,7 @@ def cigar(x: np.ndarray) -> float:
 @registry.register
 def altellipsoid(y: np.ndarray) -> float:
     """Similar to Ellipsoid, but variables in inverse order.
-    
+
     E.g. for pointing out algorithms not invariant to the order of variables."""
     x = y[::-1]
     return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
@@ -151,7 +152,9 @@ def ellipsoid(x: np.ndarray) -> float:
 
     The other classical example is cigar.
     """
-    return sum((10**(6 * (i - 1) / float(len(x) - 1))) * (x[i]**2) for i in range(len(x)))
+    dim = x.size
+    weights = 10 ** (np.linspace(0, 6, dim) - 6. / (dim - 1))
+    return float(weights.dot(x ** 2))
 
 
 @registry.register
@@ -169,7 +172,9 @@ def hm(x: np.ndarray) -> float:
 
 @registry.register
 def rosenbrock(x: np.ndarray) -> float:
-    return sum(100.0*(x[1:] - x[:-1]**2.0)**2.0 + (1 - x[:-1])**2.0)
+    x_m_1 = x[:-1] - 1
+    x_diff = x[:-1] ** 2 - x[1:]
+    return float(100 * x_diff.dot(x_diff) + x_m_1.dot(x_m_1))
 
 
 @registry.register
@@ -177,16 +182,16 @@ def griewank(x: np.ndarray) -> float:
     """Multimodal function, often used in Bayesian optimization."""
     part1 = np.sum(x**2)
     part2 = np.prod(np.cos(x / np.sqrt(1 + np.arange(len(x)))))
-    return 1 + (float(part1)/4000.0) - float(part2)
+    return 1 + (float(part1) / 4000.0) - float(part2)
 
 
 @registry.register
 def deceptiveillcond(x: np.ndarray) -> float:
     """An extreme ill conditioned functions. Most algorithms fail on this.
-    
+
     The condition number increases to infinity as we get closer to the optimum."""
     assert len(x) >= 2
-    return float(max(np.abs(np.arctan(x[1]/x[0])),
+    return float(max(np.abs(np.arctan(x[1] / x[0])),
                      np.sqrt(x[0]**2. + x[1]**2.),
                      1. if x[0] > 0 else 0.) if x[0] != 0. else float("inf"))
 
@@ -194,7 +199,7 @@ def deceptiveillcond(x: np.ndarray) -> float:
 @registry.register
 def deceptivepath(x: np.ndarray) -> float:
     """A function which needs following a long path. Most algorithms fail on this.
-    
+
     The path becomes thiner as we get closer to the optimum."""
     assert len(x) >= 2
     distance = np.sqrt(x[0]**2 + x[1]**2)
@@ -224,7 +229,7 @@ def deceptivemultimodal(x: np.ndarray) -> float:
 @registry.register
 def lunacek(x: np.ndarray) -> float:
     """Multimodal function.
-    
+
     Based on https://www.cs.unm.edu/~neal.holts/dga/benchmarkFunction/lunacek.html."""
     problemDimensions = len(x)
     s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
@@ -234,10 +239,10 @@ def lunacek(x: np.ndarray) -> float:
     secondSum = 0.0
     thirdSum = 0.0
     for i in range(problemDimensions):
-        firstSum += (x[i]-mu1)**2
-        secondSum += (x[i]-mu2)**2
-        thirdSum += 1.0 - np.cos(2*np.pi*(x[i]-mu1))
-    return min(firstSum, 1.0*problemDimensions + secondSum)+10*thirdSum
+        firstSum += (x[i] - mu1)**2
+        secondSum += (x[i] - mu2)**2
+        thirdSum += 1.0 - np.cos(2 * np.pi * (x[i] - mu1))
+    return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
 
 
 # following functions using discretization should not be used with translation/rotation
@@ -300,7 +305,7 @@ def leadingones(y: np.ndarray) -> float:
 @registry.register_with_info(no_transfrom=True)
 def onemax5(y: np.ndarray) -> float:
     """Softmax discretization of onemax with 5 possibles values.
-    
+
     This multiplies the dimension by 5."""
     return _onemax(discretization.softmax_discretization(y, 5))
 
@@ -308,7 +313,7 @@ def onemax5(y: np.ndarray) -> float:
 @registry.register_with_info(no_transfrom=True)
 def jump5(y: np.ndarray) -> float:
     """Softmax discretization of jump with 5 possibles values.
-    
+
     This multiplies the dimension by 5."""
     return _jump(discretization.softmax_discretization(y, 5))
 
@@ -316,7 +321,7 @@ def jump5(y: np.ndarray) -> float:
 @registry.register_with_info(no_transfrom=True)
 def leadingones5(y: np.ndarray) -> float:
     """Softmax discretization of leadingones with 5 possibles values.
-    
+
     This multiplies the dimension by 5."""
     return _leadingones(discretization.softmax_discretization(y, 5))
 
@@ -324,7 +329,7 @@ def leadingones5(y: np.ndarray) -> float:
 @registry.register_with_info(no_transfrom=True)
 def genzcornerpeak(y: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
-    
+
     tested in optim because why not."""
     value = float(1 + np.mean(np.tanh(y)))
     if value == 0:
@@ -335,7 +340,7 @@ def genzcornerpeak(y: np.ndarray) -> float:
 @registry.register_with_info(no_transfrom=True)
 def minusgenzcornerpeak(y: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
-    
+
     tested in optim because why not."""
     return -float(genzcornerpeak(y))
 
@@ -343,7 +348,7 @@ def minusgenzcornerpeak(y: np.ndarray) -> float:
 @registry.register
 def genzgaussianpeakintegral(x: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
-    
+
     tested in optim because why not."""
     return float(np.exp(-np.sum(x**2 / 4.)))
 
@@ -351,7 +356,7 @@ def genzgaussianpeakintegral(x: np.ndarray) -> float:
 @registry.register
 def minusgenzgaussianpeakintegral(x: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
-    
+
     tested in optim because why not."""
     return -float(np.exp(-sum(x**2 / 4.)))
 

@@ -3,14 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Optional
 import numpy as np
 from ..common import testing
 from . import corefuncs
 
 
 @testing.parametrized(**{name: (name, func) for name, func in corefuncs.registry.items()})
-def test_core_function(name: str, func: Callable[..., Any]) -> None:
+def testcorefuncs_function(name: str, func: Callable[..., Any]) -> None:
     x = np.random.normal(0, 1, 100)
     outputs = []
     for _ in range(2):
@@ -35,3 +35,20 @@ def test_genzcornerpeak_inf() -> None:
     np.testing.assert_equal(output, np.inf)
     output = corefuncs.minusgenzcornerpeak(y)
     np.testing.assert_equal(output, -np.inf)
+
+
+@testing.parametrized(
+    sphere=(corefuncs.sphere, 9.043029, None),
+    sphere1=(corefuncs.sphere1, 10.329029, None),
+    sphere2=(corefuncs.sphere2, 35.615029, None),
+    sphere4=(corefuncs.sphere4, 158.187029, None),
+    sphere_m=(corefuncs.sphere, 30, [1, 2, 3, 4]),
+    elliptic=(corefuncs.ellipsoid, 74729.4827107325, None),
+    rosenbrock=(corefuncs.rosenbrock, 1967.57859, None),
+    rosenbrock_m=(corefuncs.rosenbrock, 2705, [1, 2, 3, 4]),
+)
+def test_core_function(func: Callable[[np.ndarray], float], expected: float, data: Optional[List[float]]) -> None:
+    if data is None:
+        data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
+    value = func(np.array(data))
+    np.testing.assert_almost_equal(value, expected, decimal=5)
