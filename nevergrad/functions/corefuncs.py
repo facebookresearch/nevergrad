@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Dict, Any, Tuple, List, Callable
+from math import exp, sqrt, tanh
 import numpy as np
 from .utils import PostponedObject
 from ..instrumentation import discretization
@@ -165,6 +166,17 @@ def rosenbrock(x: np.ndarray) -> float:
     x_m_1 = x[:-1] - 1
     x_diff = x[:-1] ** 2 - x[1:]
     return float(100 * x_diff.dot(x_diff) + x_m_1.dot(x_m_1))
+
+
+def ackley(x: np.ndarray) -> float:
+    dim = x.size
+    sum_cos = np.sum(np.cos(2 * np.pi * x))
+    return -20.0 * exp(-0.2 * sqrt(sphere(x) / dim)) - exp(sum_cos / dim) + 20 + exp(1)
+
+
+def schwefel_1_2(x: np.ndarray) -> float:
+    cx = np.cumsum(x)
+    return sphere(cx)
 
 
 @registry.register
@@ -332,7 +344,7 @@ def minusgenzcornerpeak(y: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 
     tested in optim because why not."""
-    return -float(genzcornerpeak(y))
+    return -genzcornerpeak(y)
 
 
 @registry.register
@@ -340,7 +352,7 @@ def genzgaussianpeakintegral(x: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 
     tested in optim because why not."""
-    return float(np.exp(-np.sum(x ** 2 / 4.0)))
+    return exp(-sphere(x) / 4.0)
 
 
 @registry.register
@@ -348,7 +360,7 @@ def minusgenzgaussianpeakintegral(x: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 
     tested in optim because why not."""
-    return -float(np.exp(-sum(x ** 2 / 4.0)))
+    return -genzgaussianpeakintegral(x)
 
 
 @registry.register
@@ -358,7 +370,7 @@ def slope(x: np.ndarray) -> float:
 
 @registry.register
 def linear(x: np.ndarray) -> float:
-    return float(np.tanh(x[0]))
+    return tanh(x[0])
 
 
 @registry.register
