@@ -109,7 +109,7 @@ def oneshotcalais(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and not "arg" in str(x) and not "mal" in str(x))
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and not "arg" in str(x) and not "mal" in str(x))
     functions = [ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
                  for name in names for bd in [3, 25, 100] for uv_factor in [0, 5]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
