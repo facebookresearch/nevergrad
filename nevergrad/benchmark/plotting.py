@@ -6,6 +6,7 @@
 import os
 import argparse
 import itertools
+import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
@@ -101,7 +102,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget") -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget", competencemaps: bool=False) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -153,7 +154,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
 #            name = "fight_all.png" if name == "fight_.png" else name
 #            fplotter.save(str(output_folder / name), dpi=_DPI)
 
-    for orders in range(max_combsize + 1):
+    for orders in range(max_combsize + 1) if not competencemaps else [2]:
         # The next line is a shame. Sorry. (TODO(oteytaud): improve this).
         for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
             # choice of the cases with values for the fixed variables
@@ -185,12 +186,13 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                   except:
                     pass
                 # save
-                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-                name = "fight_all.png" if name == "fight_.png" else name
-                fplotter.save(str(output_folder / name), dpi=_DPI)
+                if not competencemaps:
+                  name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+                  name = "fight_all.png" if name == "fight_.png" else name
+                  fplotter.save(str(output_folder / name), dpi=_DPI)
 
             if orders == 2:
-              try:
+            #  try:
                 name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
                 def export_table(filename, rows, cols, data):
                     rows = [str(r) for r in rows]
@@ -235,23 +237,24 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         f.write("\\end{document}\n")
                 export_table(str(output_folder  / name), xindices, yindices, best_algo)
                 print("CM:", fixed, case, best_algo)
-              except:
-                pass
+            #  except:
+            #    pass
     plt.close("all")
-    #
-    # xp plots
-    # plot mean loss / budget for each optimizer for 1 context
-    print("# Xp plots")
-    name_style = NameStyle()  # keep the same style for each algorithm
-    cases = df.unique(descriptors)
-    for case in cases:
-        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-        data = XpPlotter.make_data(subdf)
-        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-        xpplotter.save(out_filepath)
-    plt.close("all")
+    if not competencemaps:
+      #
+      # xp plots
+      # plot mean loss / budget for each optimizer for 1 context
+      print("# Xp plots")
+      name_style = NameStyle()  # keep the same style for each algorithm
+      cases = df.unique(descriptors)
+      for case in cases:
+          subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+          description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+          out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+          data = XpPlotter.make_data(subdf)
+          xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+          xpplotter.save(out_filepath)
+      plt.close("all")
 
 
 class LegendInfo(NamedTuple):
@@ -589,12 +592,13 @@ def main() -> None:
         "--max_combsize", type=int, default=0, help="maximum number of parameters to fix (combinations) when creating experiment plots"
     )
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
+    parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget")
+    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget", competencemaps=args.competencemaps)
 
 
 if __name__ == "__main__":

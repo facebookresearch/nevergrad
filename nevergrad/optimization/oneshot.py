@@ -129,6 +129,7 @@ class _SamplingSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
+        TODO all wrong
         if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)  # type: ignore
         sample = self.sampler()
