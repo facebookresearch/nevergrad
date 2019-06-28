@@ -36,7 +36,7 @@ See the [instrumentation tutorial](instrumentation.md) for more complex instrume
 
 ## Using several workers
 
-Running the function evaluation in parallel with several workers is as easy as provided an executor:
+Running the function evaluation in parallel with several workers is as easy as providing an executor:
 ```python
 from concurrent import futures
 optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
