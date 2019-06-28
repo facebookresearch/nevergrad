@@ -75,7 +75,7 @@ import nevergrad as ng
 print(sorted(ng.optimizers.registry.keys()))
 ```
 
-All algorithms have strenghts and weaknesses. Questionable rules of thumb could be:
+All algorithms have strengths and weaknesses. Questionable rules of thumb could be:
 - `TwoPointsDE` is excellent in many cases, including very high `num_workers`.
 - `PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
 - `OnePlusOne` is a simple robust method for continuous parameters with `num_workers` < 8.
