@@ -231,7 +231,7 @@ instrumentation = 300
 ## Third example: optimization of parameters for reinforcement learning.
 
 We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
-`TBPSA`, based on population-control mechasnisms, performs quite well in this case.
+`TBPSA`, based on population-control mechanisms, performs quite well in this case.
 
 ```python
 import nevergrad as ng
