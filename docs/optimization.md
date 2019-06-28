@@ -80,7 +80,7 @@ All algorithms have strengths and weaknesses. Questionable rules of thumb could 
 - `PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
 - `OnePlusOne` is a simple robust method for continuous parameters with `num_workers` < 8.
 - `CMA` is excellent for control (e.g. neurocontrol) when the environment is not very noisy (num_workers ~50 ok) and when the budget is large (e.g. 1000 x the dimension).
-- `TBPSA` is excellent for problems corrupted by noise, in particular overparametrized (neural) ones; very high `num_workers` ok).
+- `TBPSA` is excellent for problems corrupted by noise, in particular overparameterized (neural) ones; very high `num_workers` ok).
 - `PSO` is excellent in terms of robustness, high `num_workers` ok.
 - `ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. `num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
 - `RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
