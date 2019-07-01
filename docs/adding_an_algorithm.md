@@ -9,7 +9,7 @@ All optimizers are implemented in the `ng.optimization` subpackage, and all opti
 Implementations are however spread into several files:
 - [optimizerlib.py](../nevergrad/optimization/optimizerlib.py): this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
 - [oneshot.py](../nevergrad/optimization/oneshot.py): this is where one-shot optimizers are implemented
-- [differentialevolution.py](../nevergrad/optimization/differentialevolution.py): this is where evolutionary algorithms are implemteted.
+- [differentialevolution.py](../nevergrad/optimization/differentialevolution.py): this is where evolutionary algorithms are implemented.
 - [recastlib.py](../nevergrad/optimization/recastlib.py): this is where we implement ask & tell versions of existing Python implementations which do not follow this pattern. The underlying class which helps spawn a subprocess to run the existing implementation into is in [recaster.py](../nevergrad/optimization/recaster.py). Hopefully, you won't need this.
 
 If you implement one new algorithm and if this algorithm is not one-shot/evolutionary/recast, you should implement it into [optimizerlib.py](../nevergrad/optimization/optimizerlib.py). If you implement a whole family of algorithms, you are welcome to create a new corresponding file.
@@ -23,7 +23,7 @@ Still, this structure is not final, it is bound to evolve and you are welcome to
 All algorithms derive from a base class named `Optimizer` and are registered through a decorator. The implementation of the base class is [here](../nevergrad/optimization/base.py).
 This base class implements the `ask` and `tell` interface.
 
-It records all evaluated points through the `archive` attribute of class `Archive`. It can be seen be used as if it was of type `Dict[np.ndarray, Value]`, but since `np.ndarray` are not hashable, the underlying implementation converts arrays into bytes and register them into the `archive.bytesdict` dictionary. `Archive` however does not implement `keys` and `items` methods because converting from bytes to array is not very efficient, one should therefore interate on `bytesdict` and the keys can then be transformed back to arrays using `np.frombuffer(key)`. See [OnePlusOne implementation](../nevergrad/optimization/optimizerlib.py) for an example.
+It records all evaluated points through the `archive` attribute of class `Archive`. It can be seen be used as if it was of type `Dict[np.ndarray, Value]`, but since `np.ndarray` are not hashable, the underlying implementation converts arrays into bytes and register them into the `archive.bytesdict` dictionary. `Archive` however does not implement `keys` and `items` methods because converting from bytes to array is not very efficient, one should therefore integrate on `bytesdict` and the keys can then be transformed back to arrays using `np.frombuffer(key)`. See [OnePlusOne implementation](../nevergrad/optimization/optimizerlib.py) for an example.
 
 
 The key tuple if the point location, and `Value` is a class with attributes:
@@ -44,21 +44,21 @@ The key string is either `optimistic` or `pessimistic`, and the `Point` value is
 
 ### Methods and attributes
 
-4 methods are designed to be overriden:
+4 methods are designed to be overridden:
 - `__init__`: for the initialization of your algorithm
-- `_internal_ask_candidate`: to fetch the next point to be evaluated. This function is the only one that is absolutely required to be overriden. The default `ask` method calls this method (please do not override the default `ask`).
+- `_internal_ask_candidate`: to fetch the next point to be evaluated. This function is the only one that is absolutely required to be overridden. The default `ask` method calls this method (please do not override the default `ask`).
 - `_internal_tell_candidate`: to update your algorithm with the new point. The default `tell` method calls this internal method after updating the archive (see paragraph above), please do not override it.
 - `_internal_provide_recommendation`: to provide the final recommendation. By default, the recommendation is the pessimistic best point.
 - `_internal_tell_not_asked` (optional): if the optimizer must handle points differently if they were not asked for, this method must be implemented. If you do not want to support this, you can raise `base.TellNotAskedNotSupportedError`. A unit test will make sure that the optimizer either accepts the point or raises this error.
 
-These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initilization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
+These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initialization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
 
 
-These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initilization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
+These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initialization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
 
 
 
-These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initilization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
+These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the instrumentation provided at the initialization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
 
 
 
@@ -77,9 +77,9 @@ reproducible results.
 In order to facilitate these behaviors, each instrumentation has a `random_state` attribute (`np.random.RandomState`), which can be seeded by the
 user if need be. `optimizer._rng` is a shortcut to access it. All calls to stochastic functions should there be made through it.
 By default, it will be seeded randomly by drawing a number from the global numpy random state so
-that seeding the global numpy random statewill yield reproducible results as well
+that seeding the global numpy random state will yield reproducible results as well
 
-A unit tests automatically makes sure that all optimizers have repeatable bvehaviors on a simple test case when seeded from outside (see below).
+A unit tests automatically makes sure that all optimizers have repeatable behaviors  on a simple test case when seeded from outside (see below).
 
 
 ### About type hints
@@ -95,14 +95,14 @@ If it makes sense to create several variations of your optimizer, using differen
 
 You are welcome to add tests if you want to make sure your implementation is correct. It is however not required since some tests are run on all registered algorithms. They will test two features:
 - that all algorithms are able to find the optimum of a simple 2-variable quadratic fitness function.
-- that running the algorithms twice after setting a seed lead to the exact same recommendation. This is useful to make sure we will get repeatibility in the benchmarks.
+- that running the algorithms twice after setting a seed lead to the exact same recommendation. This is useful to make sure we will get repeatability in the benchmarks.
 
 To run these tests, you can use:
 ```
 pytest nevergrad/optimization/test_optimizerlib.py
 ```
 
-The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exist. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.
+The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exists. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.
 
 If for any reason one of this test is not suitable for your algorithm, we'll discuss this in the pull request and decide of the appropriate workaround.
 
@@ -111,7 +111,7 @@ If for any reason one of this test is not suitable for your algorithm, we'll dis
 Benchmarks are implemented in two files [experiments.py](../nevergrad/benchmark/experiments.py) and [frozenexperiments.py](../nevergrad/benchmark/frozenexperiments.py).
 While the former can be freely modified (benchmarks will be regularly added and removed), the latter file implements experiments which should not be modified when adding an algorithm, because they are used in tests, or for reproducibility of published results.
 
-Providing some benchmark results along your pull requests will highlight the interest of your algorithm. It is however not required. For now, there is no standard apprroach for benchmarking your algorithm. You can implement your own benchmark, or copy an existing one and add your algorithm. Feel free to propose other solutions.
+Providing some benchmark results along your pull requests will highlight the interest of your algorithm. It is however not required. For now, there is no standard approach for benchmarking your algorithm. You can implement your own benchmark, or copy an existing one and add your algorithm. Feel free to propose other solutions.
 
 ### How benchmarks are implemented
 
