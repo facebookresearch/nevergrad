@@ -119,7 +119,10 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled,
+            internal_budget = (budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else budget
+            internal_budget -= 1 if self._parameters.middle_point else 0
+
+            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
                                                                         random_state=self.random_state)
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
@@ -129,13 +132,20 @@ class _SamplingSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
-        TODO all wrong
+        if self._parameters.middle_point and not self._num_ask:
+            self.last_guy = np.zeros(self.dimension)
+            return self.last_guy  # type: ignore
+        if self._parameters.quasi_opposite == "quasi" and (self._num_ask - (1 if self._middle_point else 0)) % 2:
+            return -self.random_state.uniform(0., 1.) * self.last_guy  # type: ignore
+        if self._parameters.quasi_opposite == "opposite" and (self._num_ask - (1 if self._middle_point else 0)) % 2:
+            return -self.last_guy  # type: ignore
         if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)  # type: ignore
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
+        self.last_guy = self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
+        return self.last_guy
 
 
 class SamplingSearch(base.ParametrizedFamily):
