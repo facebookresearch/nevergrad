@@ -107,8 +107,8 @@ class _DE(base.Optimizer):
             if self.sampler is None and init != "gaussian":
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-                self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self.random_state)
-            new_guy = self.scale * (self.random_state.normal(0, 1, self.dimension)
+                self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng)
+            new_guy = self.scale * (self._rng.normal(0, 1, self.dimension)
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
             particle = base.utils.Individual(new_guy)
             self.population.extend([particle])
@@ -120,13 +120,13 @@ class _DE(base.Optimizer):
         particle = self.population.get_queued(remove=True)
         individual = particle.x
         # define donor
-        indiv_a, indiv_b = (self.population[self.population.uuids[self.random_state.randint(self.llambda)]].x for _ in range(2))
+        indiv_a, indiv_b = (self.population[self.population.uuids[self._rng.randint(self.llambda)]].x for _ in range(2))
         assert indiv_a is not None and indiv_b is not None
         donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
         # apply crossover
         co = self._parameters.crossover
-        crossovers = Crossover(self.random_state, 1. / self.dimension if co == "dimension" else co)
+        crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
         candidate = self.create_candidate.from_data(donor)

@@ -3,6 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import List, Optional, TypeVar, Union, Sequence, Any, Type
+from functools import reduce
+import operator
 import warnings
 import numpy as np
 from . import discretization
@@ -34,6 +36,7 @@ class SoftmaxCategorical(utils.Variable[X]):
     """
 
     def __init__(self, possibilities: List[X], deterministic: bool = False) -> None:
+        super().__init__()
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
@@ -51,10 +54,11 @@ class SoftmaxCategorical(utils.Variable[X]):
     def dimension(self) -> int:
         return len(self.possibilities)
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
         assert len(data) == len(self.possibilities)
-        deterministic = deterministic | self.deterministic
-        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
+        if self.deterministic:
+            random = False
+        index = int(discretization.softmax_discretization(data, len(self.possibilities), random=random)[0])
         return self.possibilities[index]
 
     def argument_to_data(self, arg: X) -> ArrayLike:
@@ -62,7 +66,7 @@ class SoftmaxCategorical(utils.Variable[X]):
         return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
 
     def get_summary(self, data: ArrayLike) -> str:
-        output = self.data_to_argument(data, deterministic=True)
+        output = self.data_to_argument(data, random=False)
         probas = discretization.softmax_probas(np.array(data, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
@@ -86,6 +90,7 @@ class OrderedDiscrete(utils.Variable[X]):
     """
 
     def __init__(self, possibilities: List[X]) -> None:
+        super().__init__()
         self.possibilities = list(possibilities)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
@@ -98,7 +103,7 @@ class OrderedDiscrete(utils.Variable[X]):
     def dimension(self) -> int:
         return 1
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:  # pylint: disable=arguments-differ, unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:  # pylint: disable=unused-argument
         assert len(data) == 1
         index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
         return self.possibilities[index]
@@ -122,6 +127,7 @@ class Gaussian(utils.Variable[Y]):
     """
 
     def __init__(self, mean: float, std: float, shape: Optional[Sequence[int]] = None) -> None:
+        super().__init__()
         self.mean = mean
         self.std = std
         self.shape = shape
@@ -130,7 +136,7 @@ class Gaussian(utils.Variable[Y]):
     def dimension(self) -> int:
         return 1 if self.shape is None else int(np.prod(self.shape))
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> Y:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
@@ -148,6 +154,7 @@ class _Constant(utils.Variable[X]):
     """
 
     def __init__(self, value: X) -> None:
+        super().__init__()
         self.value = value
 
     @classmethod
@@ -158,7 +165,7 @@ class _Constant(utils.Variable[X]):
     def dimension(self) -> int:
         return 0
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> X:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:  # pylint: disable=unused-argument
         return self.value
 
     def argument_to_data(self, arg: X) -> ArrayLike:
@@ -195,19 +202,20 @@ class Array(utils.Variable[Y]):
     """
 
     def __init__(self, *dims: int) -> None:
+        super().__init__()
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
         self._dtype: Optional[Type[Union[float, int]]] = None
 
     @property
     def dimension(self) -> int:
-        return int(np.prod(self.shape))
+        return reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
 
     @property
     def continuous(self) -> bool:
         return self._dtype != int
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = False) -> Y:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension
         array = np.array(data, copy=False)
         for transf in self.transforms:

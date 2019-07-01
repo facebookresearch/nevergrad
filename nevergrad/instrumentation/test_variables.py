@@ -10,21 +10,21 @@ from . import variables
 
 def test_softmax_categorical_deterministic() -> None:
     token = variables.SoftmaxCategorical(["blu", "blublu", "blublublu"], deterministic=True)
-    np.testing.assert_equal(token.data_to_argument([1, 1, 1.01], deterministic=False), "blublublu")
+    np.testing.assert_equal(token.data_to_argument([1, 1, 1.01], random=True), "blublublu")
 
 
 def test_softmax_categorical() -> None:
     np.random.seed(12)
     token = variables.SoftmaxCategorical(["blu", "blublu", "blublublu"])
     np.testing.assert_equal(token.data_to_argument([.5, 1, 2.]), "blublu")
-    np.testing.assert_equal(token.data_to_argument(token.argument_to_data("blu"), deterministic=True), "blu")
+    np.testing.assert_equal(token.data_to_argument(token.argument_to_data("blu"), random=False), "blu")
 
 
 def test_ordered_discrete() -> None:
     token = variables.OrderedDiscrete(["blu", "blublu", "blublublu"])
     np.testing.assert_equal(token.data_to_argument([5]), "blublublu")
     np.testing.assert_equal(token.data_to_argument([0]), "blublu")
-    np.testing.assert_equal(token.data_to_argument(token.argument_to_data("blu"), deterministic=True), "blu")
+    np.testing.assert_equal(token.data_to_argument(token.argument_to_data("blu"), random=False), "blu")
 
 
 def test_gaussian() -> None:

@@ -102,7 +102,7 @@ def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optio
 def test_batch_mode_parameter(batch_mode: bool, expected: List[str]) -> None:
     func = Function(dimension=1)
     optim = test_base.LoggingOptimizer(3)
-    with patch.object(xpbase.OptimizerSettings, "instanciate", return_value=optim):
+    with patch.object(xpbase.OptimizerSettings, "instantiate", return_value=optim):
         xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=10, num_workers=3, batch_mode=batch_mode)
         xp._run_with_error()
         testing.printed_assert_equal(optim.logs, expected)

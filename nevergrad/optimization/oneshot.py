@@ -44,6 +44,7 @@ class _RandomSearch(OneShotOptimizer):
         self.last_guy = scale * point
         return self.last_guy  # type: ignore
 
+
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
             return self._internal_ask()
@@ -123,7 +124,8 @@ class _SamplingSearch(OneShotOptimizer):
             internal_budget -= 1 if self._parameters.middle_point else 0
 
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
-                                                                        random_state=self.random_state)
+                                                                        random_state=self._rng)
+
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
