@@ -231,6 +231,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         f.write("\\hline\n")
                         for i, row in enumerate(rows):
                             f.write(row + "&" + "&".join([re.sub("[A-Z]", lambda w: " " + w.group(), d) for d in data[i]]) + "\\\\\n")
+                            #f.write(row + "&" + "&".join([d for d in data[i]]) + "\\\\\n")
                         f.write("\\hline\n")
                         f.write("\\end{tabular}\n")
                         f.write("\\end{landscape}\n")
@@ -598,7 +599,8 @@ def main() -> None:
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget", competencemaps=args.competencemaps)
+    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize if not args.competencemaps else 2,
+                 xpaxis="pseudotime" if args.pseudotime else "budget", competencemaps=args.competencemaps)
 
 
 if __name__ == "__main__":
