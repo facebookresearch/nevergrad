@@ -11,9 +11,9 @@ from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
-
-    def __init__(self, instrumentation: Union[int, base.instru.Instrumentation],
-                 budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self, instrumentation: Union[int, base.instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+    ) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ScipyOptimizer()
         self.multirun = 1  # work in progress
@@ -36,8 +36,13 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(objective_function, best_x if not self._parameters.random_restart else
-                                         np.random.normal(0., 1., self.dimension), method=self._parameters.method, options=options, tol=0)
+            res = scipyoptimize.minimize(
+                objective_function,
+                best_x if not self._parameters.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                method=self._parameters.method,
+                options=options,
+                tol=0,
+            )
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x

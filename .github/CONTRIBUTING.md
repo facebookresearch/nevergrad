@@ -56,7 +56,7 @@ Please use the pre-commit hooks to ensure correctness (see section "Our Developm
 
 ## Documentation
 
-Documation can be build with `make html` from the `docs` folder.
+Documentation can be build with `make html` from the `docs` folder.
 
 ## License
 By contributing to `nevergrad`, you agree that your contributions will be licensed

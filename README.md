@@ -16,7 +16,7 @@ pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergr
 
 Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
 
-By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interesting in the benchmarking part,
+By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interested in the benchmarking part,
 you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
 the `[all]` flag (example: `pip install -e '.[all]'`)
 

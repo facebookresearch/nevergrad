@@ -2,7 +2,7 @@
 
 **Please note that instrumentation is still a work in progress. We will try to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that their will be breaking changes.**
 
-The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed. For this, discrete/categorial arguments must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do thanks to:
+The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed. For this, discrete/categorical arguments must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do thanks to:
 - the `variables` modules providing priors that can be used to define each argument.
 - the `Instrumentation`, and `InstrumentedFunction` classes which provide an interface for converting any arguments into the data space used for optimization, and convert from data space back to the arguments space.
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
@@ -14,7 +14,7 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 - `SoftmaxCategorical(items)`: converts a list of `n` (unordered) categorial items into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `OrderedDiscrete(items)`: converts a list of (ordered) discrete items into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
 - `Gaussian(mean, std)`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-- `Array(dim1, ...)`: casts the data from the optimizaton space into a `np.ndarray` of any shape, to which some transforms can be applied
+- `Array(dim1, ...)`: casts the data from the optimization space into a `np.ndarray` of any shape, to which some transforms can be applied
   (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable. Eg. `Array(2, 3).bounded(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
 - `Scalar(dtype)`: casts the data from the optimization space into a float (the default) or an int. It is equivalent to `Array(1).asscalar(dtype)`
   and all `Array` methods are therefore available. For instance, one can use it for a logarithmicly distributed value between
@@ -23,7 +23,7 @@ The aim of instrumentation is to turn a piece of code with parameters you want t
 
 ## Instrumentation
 
-Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods.
+Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods. Since `data_to_arguments` can be stochastic, the instrumentation holds a random state (`instrumentation.random_state`) which is also used by optimizers.
 
 
 ```python
@@ -87,7 +87,7 @@ print(instrum.get_summary(recommendation.data))
 
 Sometimes it is completely impractical or impossible to have a simple Python3.6+ function to optimize. This may happen when the code you want to optimize is a script. Even more so if the code you want to optimize is not Python3.6+.
 
-We provide tooling for this situation. Go through this steps to instrument your code:
+We provide tooling for this situation. Go through these steps to instrument your code:
  - **identify the variables** (parameters, constants...) you want to optimize.
  - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for instrumentation, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the code:
 ```c

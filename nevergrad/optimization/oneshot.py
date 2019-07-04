@@ -38,9 +38,9 @@ class _RandomSearch(OneShotOptimizer):
             return self.last_guy  # type: ignore
         scale = self._parameters.scale
         if isinstance(scale, str) and scale == "random":
-            scale = np.exp(self.random_state.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
-        point = (self.random_state.standard_cauchy(self.dimension) if self._parameters.cauchy
-                 else self.random_state.normal(0, 1, self.dimension))
+            scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
+        point = (self._rng.standard_cauchy(self.dimension) if self._parameters.cauchy
+                 else self._rng.normal(0, 1, self.dimension))
         self.last_guy = scale * point
         return self.last_guy  # type: ignore
 
@@ -123,7 +123,7 @@ class _SamplingSearch(OneShotOptimizer):
             internal_budget -= 1 if self._parameters.middle_point else 0
 
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
-                                                                        random_state=self.random_state)
+                                                                        random_state=self._rng)
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)

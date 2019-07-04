@@ -7,6 +7,7 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 from math import sqrt, tan, pi
+from typing import Union
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from ... import instrumentation as inst
@@ -38,7 +39,8 @@ class ARCoatingVariable(inst.var.utils.Variable[np.ndarray]):
     def dimension(self) -> int:
         return self._dimension
 
-    def data_to_argument(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> np.ndarray:
         return (self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin  # type: ignore
 
     def _short_repr(self) -> str:
