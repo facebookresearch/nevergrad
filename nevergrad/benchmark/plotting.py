@@ -192,7 +192,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                   fplotter.save(str(output_folder / name), dpi=_DPI)
 
             if orders == 2:
-            #  try:
+              try:
                 name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
                 def export_table(filename, rows, cols, data):
                     rows = [str(r) for r in rows]
@@ -240,8 +240,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         f.write("\\end{document}\n")
                 export_table(str(output_folder  / name), xindices, yindices, best_algo)
                 print("CM:", fixed, case, best_algo)
-            #  except:
-            #    pass
+              except:
+                pass
     plt.close("all")
     if not competencemaps:
       #

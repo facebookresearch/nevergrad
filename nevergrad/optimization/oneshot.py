@@ -206,6 +206,8 @@ Calais1ScrHammersleySearch = SamplingSearch(
     scale=0.1, sampler="Hammersley", scrambled=True).with_name("Calais1ScrHammersleySearch", register=True)
 Calais4ScrHammersleySearch = SamplingSearch(
     scale=0.4, sampler="Hammersley", scrambled=True).with_name("Calais4ScrHammersleySearch", register=True)
+CauchyCalais4ScrHammersleySearch = SamplingSearch(
+    scale=0.4, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais4ScrHammersleySearch", register=True)
 Calais1ScrHaltonSearch = SamplingSearch(
     scale=0.1, sampler="Halton", scrambled=True).with_name("Calais1ScrHaltonSearch", register=True)
 Calais4ScrHaltonSearch = SamplingSearch(
@@ -220,6 +222,8 @@ Calais4ScrRandomSearch = SamplingSearch(
     scale=0.4, sampler="Random", scrambled=True).with_name("Calais4ScrRandomSearch", register=True)
 Calais7ScrHammersleySearch = SamplingSearch(
     scale=0.7, sampler="Hammersley", scrambled=True).with_name("Calais7ScrHammersleySearch", register=True)
+CauchyCalais7ScrHammersleySearch = SamplingSearch(
+    scale=0.7, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais7ScrHammersleySearch", register=True)
 Calais20ScrHaltonSearch = SamplingSearch(
     scale=2.0, sampler="Halton", scrambled=True).with_name("Calais20ScrHaltonSearch", register=True)
 Calais20ScrLHSSearch = SamplingSearch(
@@ -236,6 +240,8 @@ Calais12ScrRandomSearch = SamplingSearch(
     scale=1.2, sampler="Random", scrambled=True).with_name("Calais12ScrRandomSearch", register=True)
 Calais12ScrHammersleySearch = SamplingSearch(
     scale=1.2, sampler="Hammersley", scrambled=True).with_name("Calais12ScrHammersleySearch", register=True)
+CauchyCalais12ScrHammersleySearch = SamplingSearch(
+    cauchy=True, scale=1.2, sampler="Hammersley", scrambled=True).with_name("CauchyCalais12ScrHammersleySearch", register=True)
 Calais7ScrHaltonSearch = SamplingSearch(
     scale=0.7, sampler="Halton", scrambled=True).with_name("Calais7ScrHaltonSearch", register=True)
 Calais7ScrLHSSearch = SamplingSearch(
