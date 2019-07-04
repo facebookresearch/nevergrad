@@ -124,6 +124,7 @@ class _SamplingSearch(OneShotOptimizer):
 
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
                                                                         random_state=self._rng)
+
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
