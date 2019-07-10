@@ -309,6 +309,39 @@ def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # Launching with slurm:
+    # python -m dfoptim.benchmark.slurm realworld --seed=0 --repetitions=2400 --num_workers=300
+    # (remove .slum without slurm)
+    # Plotting:
+    # python -m dfoptim.benchmark.slurmplot outputs/realworld --max_combsize=2
+    funcs = [ARCoating()]
+    # Adding landscapes from MLDA.
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+    funcs: List[InstrumentedFunction] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+    ]
+    # Adding Salmon mappings from MLDA.
+    funcs += [
+        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+        _mlda.SammonMapping.from_mlda("Employees"),
+    ]    
+    # Note: on purpose, we do not add perceptron tasks from MLDA, we will add bigger machine learning cases.
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
+             "OnePlusOne", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
+    # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+    for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
+        for num_workers in [1, 10, 100]:
+            for algo in algos:
+                for func in funcs:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+@registry.register
 def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
     # pylint: disable=too-many-locals
     seedg = create_seed_generator(seed)
