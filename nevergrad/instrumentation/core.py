@@ -121,7 +121,7 @@ class Instrumentation:
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
-        self.variables: List[utils.Variable[Any]] = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        self.variables = [variables._Constant.convert_non_instrument(a) for a in arguments]
         num_instru = len(set(id(i) for i in self.variables))
         assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
 
