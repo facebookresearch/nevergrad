@@ -40,9 +40,12 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
-    fitness = Fitness([.5, -.8])
+    optimum = [.5, -.8]
+    if optimizer_cls in (optimizerlib.cGA, optimizerlib.PBIL):
+        optimum = [0, 1, 0, 1, 0, 1]
+    fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
-        optimizer = optimizer_cls(instrumentation=2, budget=budget, num_workers=num_workers)
+        optimizer = optimizer_cls(instrumentation=len(optimum), budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -52,7 +55,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             candidate = optimizer.minimize(fitness)
         if verify_value:
             try:
-                np.testing.assert_array_almost_equal(candidate.data, [0.5, -0.8], decimal=1)
+                np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
             except AssertionError as e:
                 print(f"Attemp #{k}: failed with best point {tuple(candidate.data)}")
                 if k == num_attempts:
@@ -61,7 +64,8 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
                 break
     # check population queue
     if hasattr(optimizer, "population"):  # TODO add a PopBasedOptimizer
-        assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
+        assert len(optimizer.population._queue) == len(
+            set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
     # make sure we are correctly tracking the best values
     archive = optimizer.archive
     assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
@@ -82,6 +86,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
 
 SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
         "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
+DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: List[str] = []
 
 
@@ -167,7 +172,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    decimal = 2 if isinstance(optimizer_cls, optimizerlib.ParametrizedBO) else 7  # BO slightly differs from a computer to another
+    # BO slightly differs from a computer to another
+    decimal = 2 if isinstance(optimizer_cls, optimizerlib.ParametrizedBO) else 7
     np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=decimal,
                                          err_msg="Something has changed, if this is normal, delete the following "
                                          f"file and rerun to update the values:\n{recomkeeper.filepath}")
@@ -267,7 +273,8 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
-def test_population_pickle(name: str) -> None:  # this test is added because some generic class (like Population) can fail to be pickled
+# this test is added because some generic class (like Population) can fail to be pickled
+def test_population_pickle(name: str) -> None:
     # example of work around:
     # "self.population = base.utils.Population[DEParticle]([])"
     # becomes:

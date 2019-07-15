@@ -64,9 +64,11 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
+            # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)
         elif mutation == "cauchy":
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
+            # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
                 return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
@@ -129,7 +131,8 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
             if isinstance(noise_handling, str):
                 assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
             else:
-                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert isinstance(
+                    noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0., "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
@@ -141,13 +144,15 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
 
 OnePlusOne = ParametrizedOnePlusOne().with_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").with_name("NoisyOnePlusOne", register=True)
-OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
+OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("DiscreteOnePlusOne", register=True)
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="discrete").with_name("OptimisticDiscreteOnePlusOne", register=True)
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling=("random", 1.), mutation="discrete").with_name("NoisyDiscreteOnePlusOne", register=True)
-DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
+DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
     mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
@@ -156,7 +161,8 @@ FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="fastga").with_name("FastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
 FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="random", mutation="fastga").with_name("FastGANoisyDiscreteOnePlusOne", register=True)
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
+PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
 PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="portfolio").with_name("PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
@@ -295,7 +301,8 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
+            self.current_center = sum([np.asarray(self.evaluated_population[i])
+                                       for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -350,7 +357,8 @@ class PCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
+            self.current_center = sum([np.asarray(self.evaluated_population[i])
+                                       for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -403,7 +411,8 @@ class MPCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
+            self.current_center = sum([np.asarray(self.evaluated_population[i])
+                                       for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -436,7 +445,8 @@ class MEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu  # type: ignore
+            self.current_center = sum([np.asarray(self.evaluated_population[i])
+                                       for i in range(self.mu)]) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -505,7 +515,8 @@ class TBPSA(base.Optimizer):
             self._evaluated_population.sort(key=lambda p: p.value)
             # Computing the new parent.
             self.current_center = sum(p.x for p in self._evaluated_population[:self.mu]) / self.mu  # type: ignore
-            self.sigma = np.exp(np.sum(np.log([p._parameters[0] for p in self._evaluated_population[:self.mu]])) / self.mu)
+            self.sigma = np.exp(np.sum(np.log([p._parameters[0]
+                                               for p in self._evaluated_population[:self.mu]])) / self.mu)
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
@@ -1108,5 +1119,74 @@ RBO = ParametrizedBO(initialization="random").with_name("RBO", register=True)
 QRBO = ParametrizedBO(initialization="Hammersley").with_name("QRBO", register=True)
 MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).with_name("MidQRBO", register=True)
 LBO = ParametrizedBO(initialization="LHS").with_name("LBO", register=True)
+
+
+@registry.register
+class PBIL(base.Optimizer):
+    """
+    Implementation of the discrete algorithm PBIL
+
+    https://www.ri.cmu.edu/pub_files/pub1/baluja_shumeet_1994_2/baluja_shumeet_1994_2.pdf
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+
+        num_categories = 2
+        self.p: np.ndarray = np.ones((1, self.dimension))/num_categories
+        self.alpha = 0.3
+        self.llambda = max(100, num_workers)  # size of the population
+        self.mu = self.llambda // 2  # number of selected candidates
+        self._population: List[Tuple[float, np.ndarray]] = []
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        unif = self._rng.uniform(size=self.dimension)
+        data = (unif > self.p[0]).astype(float)
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        self._population.append((value, candidate.data))
+        if len(self._population) >= self.llambda:
+            self._population.sort(key=lambda tup: tup[0])
+            mean_pop: np.ndarray = np.mean([x[1] for x in self._population[:self.mu]])
+            self.p[0] = (1-self.alpha) * self.p[0] + self.alpha * mean_pop
+            self._population = []
+
+
+@registry.register
+class cGA(base.Optimizer):
+    """
+    Implementation of the discrete cGA algorithm
+
+    https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+
+        num_categories = 2
+        self.p: np.ndarray = np.ones((1, self.dimension))/num_categories
+        self.llambda = int(2*self.budget)
+        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        unif = self._rng.uniform(size=self.dimension)
+        data = (unif > self.p[0]).astype(float)
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        if self._value_candidate is None:
+            self._value_candidate = (value, candidate.data)
+        else:
+            winner, loser = self._value_candidate[1], candidate.data
+            if self._value_candidate[0] > value:
+                winner, loser = loser, winner
+
+            self.p[0] = self.p[0] + (winner != loser)*(2*winner-1)/self.llambda
+            self.p[0] = np.clip(self.p[0], 0, 1)
+            self._value_candidate = None
+
 
 __all__ = list(registry.keys())
