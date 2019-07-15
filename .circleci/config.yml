@@ -78,7 +78,7 @@ jobs:
           name: "[all] Run pytest"
           command: |
             . venv/bin/activate
-            pytest nevergrad --duration=20 --cov=nevergrad
+            pytest nevergrad --durations=20 --cov=nevergrad
 
       - run:
           name: "[all] Run mypy"
