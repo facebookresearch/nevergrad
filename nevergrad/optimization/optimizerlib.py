@@ -1142,7 +1142,7 @@ class PBIL(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         unif = self._rng.uniform(size=self.dimension)
-        data = (unif > self.p[0]).astype(float)
+        data = (unif > 1-self.p[0]).astype(float)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -1173,7 +1173,7 @@ class cGA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         unif = self._rng.uniform(size=self.dimension)
-        data = (unif > self.p[0]).astype(float)
+        data = (unif > 1-self.p[0]).astype(float)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
