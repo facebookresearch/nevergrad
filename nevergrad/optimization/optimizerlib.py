@@ -64,9 +64,11 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         if mutation == "gaussian":  # standard case
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
+            # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)
         elif mutation == "cauchy":
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
+            # type: ignore
+            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
                 return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
@@ -130,7 +132,8 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
             if isinstance(noise_handling, str):
                 assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
             else:
-                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert isinstance(
+                    noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
@@ -142,7 +145,8 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
 
 OnePlusOne = ParametrizedOnePlusOne().with_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").with_name("NoisyOnePlusOne", register=True)
-OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
+OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("DiscreteOnePlusOne", register=True)
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").with_name(
     "OptimisticDiscreteOnePlusOne", register=True
@@ -150,8 +154,10 @@ OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=("random", 1.0), mutation="discrete").with_name(
     "NoisyDiscreteOnePlusOne", register=True
 )
-DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
-FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
+DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
+FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="doublefastga").with_name(
     "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True
 )
@@ -161,7 +167,8 @@ FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=
 FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").with_name(
     "FastGANoisyDiscreteOnePlusOne", register=True
 )
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
+PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
 PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="portfolio").with_name(
     "PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True
 )
@@ -193,7 +200,8 @@ class _CMA(base.Optimizer):
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
             diag = self._parameters.diagonal
             inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": diag, "verbose": 0}
-            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._parameters.scale, inopts=inopts)
+            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
+                                                sigma0=self._parameters.scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -507,7 +515,7 @@ class TBPSA(base.Optimizer):
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-self.llambda :]
+            last_fifth = self._loss_record[-self.llambda:]
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
@@ -532,7 +540,8 @@ class TBPSA(base.Optimizer):
             self._evaluated_population.sort(key=lambda p: p.value)
             # Computing the new parent.
             self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
-            self.sigma = np.exp(np.sum(np.log([p._parameters[0] for p in self._evaluated_population[: self.mu]])) / self.mu)
+            self.sigma = np.exp(np.sum(np.log([p._parameters[0]
+                                               for p in self._evaluated_population[: self.mu]])) / self.mu)
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
