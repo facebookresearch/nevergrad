@@ -132,8 +132,7 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
             if isinstance(noise_handling, str):
                 assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
             else:
-                assert isinstance(
-                    noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
@@ -200,8 +199,7 @@ class _CMA(base.Optimizer):
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
             diag = self._parameters.diagonal
             inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": diag, "verbose": 0}
-            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float),
-                                                sigma0=self._parameters.scale, inopts=inopts)
+            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._parameters.scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -515,7 +513,7 @@ class TBPSA(base.Optimizer):
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-self.llambda:]
+            last_fifth = self._loss_record[-self.llambda :]
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
@@ -1195,7 +1193,7 @@ class PBIL(base.Optimizer):
         self._population: List[Tuple[float, np.ndarray]] = []
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
+        unif = self._rng.uniform(size=self.dimension
         data = (unif > 1-self.p[0]).astype(float)
         return self.create_candidate.from_data(data)
 
