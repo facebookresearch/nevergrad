@@ -104,7 +104,7 @@ for name in names:
 from concurrent import futures
 
 for name in names:
-    optim = np.optimizers.registry[name](instrumentation=instrumentation, budget=budget)
+    optim = ng.optimizers.registry[name](instrumentation=instrumentation, budget=budget)
 
     with futures.ThreadPoolExecutor(max_workers=optim.num_workers) as executor:  # the executor will evaluate the function in multiple threads
         recommendation = optim.minimize(train_and_return_test_error, executor=executor)
