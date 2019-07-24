@@ -21,7 +21,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # for black (since lists are way too long...):
 # fmt: off
 
-
+# Discrete functions on {0,1}^d.
 @registry.register
 def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
