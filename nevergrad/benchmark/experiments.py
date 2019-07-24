@@ -28,7 +28,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
     optims = sorted(
-        x for x, y in ng.optimizers.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x
+        x for x, y in ng.optimizers.registry.items() if "PBIL" in x or "cGA" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
