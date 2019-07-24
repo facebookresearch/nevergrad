@@ -1194,14 +1194,14 @@ class PBIL(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1-self.p[0]).astype(float)
+        data = 2. * (unif > 1-self.p[0]).astype(float) - 1.
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self._population.append((value, candidate.data))
         if len(self._population) >= self.llambda:
             self._population.sort(key=lambda tup: tup[0])
-            mean_pop: np.ndarray = np.mean([x[1] for x in self._population[: self.mu]])
+            mean_pop: np.ndarray = np.mean([(x[1] + 1.) / 2. for x in self._population[: self.mu]])
             self.p[0] = (1 - self.alpha) * self.p[0] + self.alpha * mean_pop
             self._population = []
 
@@ -1225,7 +1225,7 @@ class cGA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1-self.p[0]).astype(float)
+        data = 2. * (unif > 1-self.p[0]).astype(float) - 1.
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -1236,7 +1236,7 @@ class cGA(base.Optimizer):
             if self._value_candidate[0] > value:
                 winner, loser = loser, winner
 
-            self.p[0] = self.p[0] + (winner != loser) * (2 * winner - 1) / self.llambda
+            self.p[0] = self.p[0] + (winner != loser) * (winner) / self.llambda
             self.p[0] = np.clip(self.p[0], 0, 1)
             self._value_candidate = None
 
