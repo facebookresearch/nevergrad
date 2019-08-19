@@ -15,6 +15,7 @@ from .xpbase import create_seed_generator
 from .xpbase import registry
 
 # register all frozen experiments
+from . import cec2019_experiments  # noqa # pylint:disable=unused-import
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks

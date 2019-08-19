@@ -23,6 +23,7 @@ from . import sequences
 from .differentialevolution import *  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
+from .cec2019_optimizer import *  # noqa: F403
 
 
 # # # # # optimizers # # # # #
