@@ -5,28 +5,24 @@
 
 import inspect
 import itertools
-from unittest import TestCase
 from unittest.mock import patch
 from typing import Callable, Iterator, Any
-import genty
 import numpy as np
 from ..functions.mlda import datasets
+from ..functions import rl
 from ..common import testing
 from ..common.tools import Selector
 from .xpbase import Experiment
 from . import experiments
 
 
-@genty.genty
-class ExperimentsTests(TestCase):
-
-    @genty.genty_dataset(**{name: (name, maker,) for name, maker in experiments.registry.items()})  # type: ignore
-    def test_experiments_registry(self, name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
-        with patch("shutil.which", return_value="here"):  # do not check for missing packages
-            with datasets.mocked_data():  # mock mlda data that should be downloaded
-                check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-            if "mlda" not in name:
-                check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
+@testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
+def test_experiments_registry(name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
+    with patch("shutil.which", return_value="here"):  # do not check for missing packages
+        with datasets.mocked_data():  # mock mlda data that should be downloaded
+            check_maker(maker)  # this is to extract the function for reuse if other external packages need it
+        if "mlda" not in name:
+            check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
     @genty.genty_dataset(
         parallelcec=("parallelcec",),
@@ -55,13 +51,16 @@ def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
     for k, (elem1, elem2) in enumerate(itertools.zip_longest(*generators)):
-        assert not elem1.is_incoherent, f'Incoherent settings should be filtered out from generator:\n{elem1}'
+        assert not elem1.is_incoherent, f"Incoherent settings should be filtered out from generator:\n{elem1}"
         try:
             assert elem1 == elem2  # much faster but lacks explicit message
         except AssertionError:
             testing.printed_assert_equal(
-                elem1.get_description(), elem2.get_description(), err_msg=f"Two paths on the generator differed (see element #{k})\n"
-                "Generators need to be deterministic in order to split the workload!")
+                elem1.get_description(),
+                elem2.get_description(),
+                err_msg=f"Two paths on the generator differed (see element #{k})\n"
+                "Generators need to be deterministic in order to split the workload!",
+            )
 
 
 def check_seedable(maker: Any) -> None:
@@ -78,11 +77,14 @@ def check_seedable(maker: Any) -> None:
     algo = "OnePlusOne"  # for simplifying the test
     for seed in [random_seed, random_seed, random_seed + 1]:
         xps = list(itertools.islice(maker(seed), 0, 8))
-        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed)
-                      for xp in xps]
+        for xp in xps:
+            if isinstance(xp.function, rl.agents.TorchAgentFunction):
+                xp.function._num_test_evaluations = 1  # patch for faster evaluation
+        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed"]]))  # elapsed_time can vary...
     results[0].assert_equivalent(results[1], f"Non identical outputs for seed={random_seed}")
-    np.testing.assert_raises(AssertionError, results[1].assert_equivalent, results[2],
-                             f"Identical output with different seeds (seed={random_seed})")
+    np.testing.assert_raises(
+        AssertionError, results[1].assert_equivalent, results[2], f"Identical output with different seeds (seed={random_seed})"
+    )

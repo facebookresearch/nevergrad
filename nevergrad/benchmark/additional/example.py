@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import nevergrad as ng
+from nevergrad import instrumentation as inst
 from nevergrad.functions import ArtificialFunction
-from nevergrad.functions import BaseFunction
-from nevergrad.optimization import registry as optimregistry
 from nevergrad.benchmark import registry as xpregistry
 from nevergrad.benchmark import Experiment
 # this file implements:
@@ -15,12 +15,12 @@ from nevergrad.benchmark import Experiment
 # it can be used with the --imports parameters if nevergrad.benchmark commandline function
 
 
-class CustomFunction(BaseFunction):
+class CustomFunction(inst.InstrumentedFunction):
     """Example of a new test function
     """
 
     def __init__(self, offset):
-        super().__init__(dimension=1)
+        super().__init__(self.oracle_call, ng.var.Scalar())
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks
@@ -30,11 +30,11 @@ class CustomFunction(BaseFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        return (x[0] - self.offset)**2
+        return (x - self.offset)**2
 
 
-@optimregistry.register  # register optimizers in the optimization registry
-class NewOptimizer(optimregistry["OnePlusOne"]):
+@ng.optimizers.registry.register  # register optimizers in the optimization registry
+class NewOptimizer(ng.optimizers.registry["NoisyBandit"]):
     pass
 
 
@@ -44,4 +44,4 @@ def additional_experiment():  # The signature can also include a seed argument i
     for budget in [10, 100]:
         for optimizer in ["NewOptimizer", "RandomSearch"]:
             for func in funcs:  # 2 realizations of the same function
-                yield Experiment(func, optimizer_name=optimizer, budget=budget, num_workers=1)
+                yield Experiment(func, optimizer=optimizer, budget=budget, num_workers=1)

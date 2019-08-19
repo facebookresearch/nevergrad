@@ -4,8 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 from unittest.mock import patch
-from unittest import TestCase
-import genty
 import numpy as np
 import pandas as pd
 from ...common import testing
@@ -27,7 +25,7 @@ def test_clustering() -> None:
         np.testing.assert_equal(func.dimension, 10)
     func([k for k in range(10)])
     testing.printed_assert_equal(func.descriptors,
-                                 {"transform": None, "function_class": "Clustering", "dimension": 10,
+                                 {"instrumentation": "A(5,2)", "function_class": "Clustering", "dimension": 10,
                                   "name": "Ruspini", "num_clusters": 5, "rescale": True})
 
 
@@ -53,20 +51,17 @@ def test_perceptron() -> None:
     np.testing.assert_equal(func.descriptors["name"], "quadratic")
 
 
-@genty.genty
-class ProblemTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        virus=("Virus",),
-        employees=("Employees",),
-    )
-    def test_sammon_mapping(self, name: str) -> None:
-        data = np.arange(6).reshape(3, 2) if name == "Virus" else pd.DataFrame(data=np.arange(12).reshape(3, 4))
-        with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
-            data_getter.return_value = data
-            func = problems.SammonMapping.from_mlda(name=name)
-        value = func(np.arange(6))
-        np.testing.assert_almost_equal(value, 0 if name == "Virus" else 5.152, decimal=4)
+@testing.parametrized(
+    virus=("Virus",),
+    employees=("Employees",),
+)
+def test_sammon_mapping(name: str) -> None:
+    data = np.arange(6).reshape(3, 2) if name == "Virus" else pd.DataFrame(data=np.arange(12).reshape(3, 4))
+    with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
+        data_getter.return_value = data
+        func = problems.SammonMapping.from_mlda(name=name)
+    value = func(np.arange(6))
+    np.testing.assert_almost_equal(value, 0 if name == "Virus" else 5.152, decimal=4)
 
 
 def test_sammon_circle() -> None:
@@ -86,7 +81,11 @@ def test_landscape() -> None:
     np.testing.assert_equal(func([2, 1]), 0)
     np.testing.assert_equal(func([2.6, 1]), float("inf"))
     # with square
+    args, _ = sfunc.data_to_arguments([-1, -1])  # bottom left
+    np.testing.assert_equal(args, [0, 0])
     np.testing.assert_equal(sfunc([-1, -1]), 5)
+    args, _ = sfunc.data_to_arguments([1, 1])  # upper right
+    np.testing.assert_equal(args, [2, 1])
     np.testing.assert_equal(sfunc([1, 1]), 0)
     np.testing.assert_equal(sfunc([1.6, 1]), np.inf)
 
@@ -98,5 +97,6 @@ def test_landscape_gaussian() -> None:
         func = problems.Landscape(transform="gaussian")
     output = func([-144, -144])
     np.testing.assert_equal(output, 5)  # should be mapped to 0, 0
-    output = func.transform([144, 144])
-    np.testing.assert_array_equal(output, [2, 1])  # last element
+    output2, _ = func.data_to_arguments([144, 144])
+    np.testing.assert_array_equal(output2, [2, 1])  # last element
+    testing.printed_assert_equal(func.descriptors, {"instrumentation": "gaussian", "function_class": "Landscape", "dimension": 2})

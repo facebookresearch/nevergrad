@@ -25,12 +25,11 @@ def launch(experiment: str, num_workers: int = 1, seed: Optional[int] = None,
         df = core.compute(experiment, cap_index=cap_index, seed=seed)
     else:
         with futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
-            df = core.compute(experiment, seed=seed, cap_index=cap_index, executor=executor, num_workers=num_workers)  # type: ignore
-            # protocol for executor does not seem to work :( help wanted ;)
+            df = core.compute(experiment, seed=seed, cap_index=cap_index, executor=executor, num_workers=num_workers)
     # save data to csv
     try:
         core.save_or_append_to_csv(df, csvpath)
-    except:  # pylint: disable=bare-except
+    except Exception:  # pylint: disable=broad-except
         csvpath = Path(experiment + ".csv")
         print(f"Failed to save to {output}, falling back to {csvpath}")
         core.save_or_append_to_csv(df, csvpath)

@@ -6,9 +6,12 @@
 from . import plotting  # pylint: disable=wrong-import-position, wrong-import-order
 from unittest.mock import patch
 from pathlib import Path
+from typing import List
 import numpy as np
 import pandas as pd
 import matplotlib
+from ..common import tools
+from ..common import testing
 matplotlib.use('Agg')
 
 
@@ -50,10 +53,43 @@ def test_make_sorted_winrates() -> None:
     assert winrates.equals(expected), f"Expected:\n{expected}\nbut got:\n{winrates}"
 
 
-def test_create_plots_from_csv() -> None:
+def test_create_plots_from_csv_mocked() -> None:
     df = pd.read_csv(Path(__file__).parent / "sphere_perf_example.csv")
-    with patch('matplotlib.pyplot.savefig'):
-        plotting.create_plots(df, "", max_combsize=2)
+    with patch('nevergrad.benchmark.plotting.XpPlotter'):
+        with patch('nevergrad.benchmark.plotting.FightPlotter') as fplt:
+            plotting.create_plots(df, "", max_combsize=1)
+            assert fplt.call_count == 6, "Should be called for all, 2 noise levels and 3 budgets"
+
+
+def test_fight_plotter() -> None:
+    df = tools.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(
+        optimizer_name=["OnePlusOneOptimizer", "HaltonSearch", "Powell"])
+    winrates = plotting.FightPlotter.winrates_from_selection(df, ["noise_level", "budget"])
+    # check data
+    np.testing.assert_array_equal(winrates.index, ["Powell (75.0%)", "OnePlusOneOptimizer (58.3%)", "Halton (16.7%)"])
+    np.testing.assert_array_equal(winrates.columns, ["Powell (6/6)", "OnePlusOneOptimizer (6/6)", "HaltonSearch (6/6)"])
+    np.testing.assert_almost_equal(winrates, [[.5, .75, 1], [.25, .5, 1], [0, 0, .5]])
+    # plot
+    plotter = plotting.FightPlotter(winrates)
+    with patch('matplotlib.pyplot.Figure.savefig'):
+        plotter.save("should_not_exist.png")
+
+
+def test_xp_plotter() -> None:
+    opt = "OnePlusOneOptimizer"
+    df = tools.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
+    data = plotting.XpPlotter.make_data(df)
+    # check data
+    testing.assert_set_equal(data.keys(), {opt})
+    testing.assert_set_equal(data[opt].keys(), {"budget", "loss", "loss_std"})
+    np.testing.assert_almost_equal(data[opt]["budget"], [200, 400, 800])
+    np.testing.assert_almost_equal(data[opt]["loss"], [0.4811605, 0.3920045, 0.14778369])
+    np.testing.assert_almost_equal(data[opt]["loss_std"], [0.83034832, 0.73255529, 0.18551625])
+    # plot
+    with patch('matplotlib.pyplot.Figure.tight_layout'):  # avoid warning message
+        plotter = plotting.XpPlotter(data, title="Title")
+    with patch('matplotlib.pyplot.Figure.savefig'):
+        plotter.save("should_not_exist.png")
 
 
 def test_remove_errors() -> None:
@@ -95,3 +131,19 @@ def test_split_long_title() -> None:
     np.testing.assert_equal(plotting.split_long_title(title), title[:52] + "\n" + title[52:])
     title = "a" * 70
     np.testing.assert_equal(plotting.split_long_title(title), title)
+
+
+@testing.parametrized(
+    nothing=([1, 2, 10.], [1, 2, 10.]),
+    identic=([1, 1, 10., 10.], [.5, 1.5, 9.5, 10.5]),
+)
+def test_compute_best_placements(positions: List[float], expected: List[float]) -> None:
+    new_positions = plotting.compute_best_placements(positions, min_diff=1.)
+    np.testing.assert_array_equal(new_positions, expected)
+
+
+if __name__ == "__main__":
+    # simple example which can be run with:
+    # python -m nevergrad.benchmark.test_plotting
+    df_test = pd.read_csv(Path(__file__).parent / "sphere_perf_example.csv")
+    plotting.create_plots(df_test, output_folder="", max_combsize=0)

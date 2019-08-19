@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from operator import add
-from unittest import TestCase
 from typing import List, Tuple, Dict, Any, Optional, Callable
-import genty
 import numpy as np
+from ..common import testing
+from ..functions import ArtificialFunction
 from . import execution
 
 
@@ -16,35 +16,31 @@ class Function(execution.PostponedObject):
         return x + y
 
     # pylint: disable=unused-argument
-    def get_postponing_delay(self, arguments: Tuple[Tuple[Any, ...], Dict[str, Any]], value: float) -> float:
-        print("waiting", 5 - value)
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         return 5 - value
 
 
-@genty.genty
-class ExecutorTest(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        simple=(add, list(range(10))),
-        delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
-    )
-    def test_mocked_steady_executor(self, func: Callable[..., Any], expected: List[int]) -> None:
-        executor = execution.MockedSteadyExecutor()
-        jobs: List[execution.MockedSteadyJob] = []
-        for k in range(10):
-            jobs.append(executor.submit(func, k, 0))
-        results: List[float] = []
-        while jobs:
-            finished = [j for j in jobs if j.done()]
-            np.testing.assert_(len(finished) == 1)
-            results.append(finished[0].result())
-            jobs.remove(finished[0])
-        np.testing.assert_array_equal(results, expected)
+@testing.parametrized(
+    simple=(add, list(range(10))),
+    delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
+)
+def test_mocked_steady_executor(func: Callable[..., Any], expected: List[int]) -> None:
+    executor = execution.MockedTimedExecutor(batch_mode=False)
+    jobs: List[execution.MockedTimedJob] = []
+    for k in range(10):
+        jobs.append(executor.submit(func, k, 0))
+    results: List[float] = []
+    while jobs:
+        finished = [j for j in jobs if j.done()]
+        np.testing.assert_equal(len(finished), 1)
+        results.append(finished[0].result())
+        jobs.remove(finished[0])
+    np.testing.assert_array_equal(results, expected)
 
 
 def test_mocked_steady_executor_time() -> None:
     func = Function()
-    executor = execution.MockedSteadyExecutor()
+    executor = execution.MockedTimedExecutor(batch_mode=False)
     jobs = [executor.submit(func, 0, 0)]
     np.testing.assert_equal(jobs[0].done(), True)
     jobs.append(executor.submit(func, 2, 0))
@@ -56,8 +52,9 @@ def test_mocked_steady_executor_time() -> None:
     # now making sure that jobs start from new time
     jobs.append(executor.submit(func, 4, 0))
     jobs.append(executor.submit(func, 3, 0))
-    np.testing.assert_array_equal([j.release_time for j in executor.priority_queue], [4, 5, 5])
-    new_finished: Optional[List[execution.MockedSteadyJob]] = None
+    np.testing.assert_equal(sum(j.done() for j in jobs), 2)
+    np.testing.assert_array_equal([j.release_time for j in executor._steady_priority_queue], [4, 5, 5])
+    new_finished: Optional[List[execution.MockedTimedJob]] = None
     order: List[int] = []
     # pylint: disable=unsubscriptable-object
     while new_finished is None or new_finished:
@@ -65,6 +62,30 @@ def test_mocked_steady_executor_time() -> None:
             assert len(new_finished) == 1, f'Weird list: {new_finished}'
             order.append(jobs.index(new_finished[0]))
             new_finished[0].result()
-        print(jobs)
         new_finished = [j for j in jobs if j.done() and not j._is_read]
     np.testing.assert_array_equal(order, [2, 0, 3])
+
+
+def test_batch_executor_time() -> None:
+    func = Function()
+    executor = execution.MockedTimedExecutor(batch_mode=True)
+    jobs = [executor.submit(func, k, 0) for k in range(3)]
+    np.testing.assert_equal([j.release_time for j in jobs], [5, 4, 3])
+    np.testing.assert_equal([j.done() for j in jobs], [True, True, True])
+    for job in jobs:
+        job.result()
+    np.testing.assert_equal(executor.time, 5)
+    job = executor.submit(func, 0, 0)
+    np.testing.assert_equal(job.release_time, 10)
+
+
+def test_functionlib_delayed_job() -> None:
+    np.random.seed(None)
+    func = ArtificialFunction("DelayedSphere", 2)
+    func([0, 0])  # trigger init
+    executor = execution.MockedTimedExecutor(batch_mode=False)
+    x0 = func.transform_var._transforms[0].translation  # optimal value
+    job0 = executor.submit(func, x0)
+    job1 = executor.submit(func, x0 + 1.)
+    assert job0.release_time == 0
+    assert job1.release_time > 0

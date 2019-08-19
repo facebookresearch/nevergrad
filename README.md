@@ -14,8 +14,11 @@ You can also install the master branch instead of the latest release with:
 pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
 ```
 
-Alternatively, you can clone the repository and run `python3 setup.py develop` from inside the repository folder.
+Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
 
+By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interested in the benchmarking part,
+you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
+the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
 ## Goals and structure
@@ -33,7 +36,7 @@ The structure of the package follows its goal, you will therefore find subpackag
 - `benchmark`: for running experiments comparing the algorithms on benchmark functions
 - `common`: a set of tools used throughout the package
 
-![Example of benchmark result](TwoPointsDE.gif)
+![Example of optimization](TwoPointsDE.gif)
 
 *Convergence of a population of points to the minima with two-points DE.*
 
@@ -58,20 +61,28 @@ The following README is very general, here are links to find more details on:
 Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can be easily run with:
 
 ```python
-from nevergrad.optimization import optimizerlib
+import nevergrad as ng
 
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = optimizerlib.OnePlusOne(dimension=1, budget=100)
-# alternatively, you can use optimizerlib.registry which is a dict containing all optimizer classes
+optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
 recommendation = optimizer.optimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
 ```
 
+`recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
+In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+
+`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
+See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
+
+
 You can print the full list of optimizers with:
-```
-from nevergrad.optimization import registry
-print(sorted(registry.keys()))
+```python
+import nevergrad as ng
+print(list(sorted(ng.optimizers.registry.keys())))
 ```
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.

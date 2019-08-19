@@ -1,0 +1,5 @@
+numpy>=1.15.0
+pandas>=0.23.4
+cma>=2.6.0
+bayesian-optimization>=1.0.1
+typing_extensions>=3.6.6

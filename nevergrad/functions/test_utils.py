@@ -10,6 +10,7 @@ from . import utils
 def test_transform() -> None:
     indices = list(range(12))
     transform = utils.Transform(indices, rotation=True)
+    assert transform.rotation_matrix is not None
     rot: np.ndarray = transform.rotation_matrix
     np.testing.assert_array_almost_equal(rot.T.dot(rot), np.identity(12))
     x = np.random.normal(0, 1, 16)

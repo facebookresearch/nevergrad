@@ -2,6 +2,8 @@
 
 The benchmark tools aim at providing a way to evaluate optimizers on a large range of settings. They provide a way to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.
 
+By default, `nevergrad` does not come with all the requirements for the benchmarks to run. Make sure you have installed/updated it with either the `benchmark` or the `all` flag (example: `pip install 'nevergrad[benchmark]'`) or you will miss some packages.
+
 ## Creating data from experiments
 
 Experiment plans are described in `nevergrad.benchmark.experiments`. Each experiment plan is a generator yielding different `Experiment` instances (defining function and optimizer settings).
@@ -44,6 +46,6 @@ python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmar
 ```
 See the [example file](../nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`. In this case, please refer to these [guidelines](adding_an_algorithm.md).
 
-Functions used for the experiments must derive from `nevergrad.functions.BaseFunction`. This abstract class helps you set up a description of your function settings through the `_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](../nevergrad/functions/functionlib.py) and [example.py](../nevergrad/benchmark/additional/example.py) for examples.
+Functions used for the experiments must derive from `nevergrad.instrumentation.InstrumentedFunction`. This class keeps a dictionary of descriptors of your function settings through the `_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](../nevergrad/functions/arcoating/core.py) and [example.py](../nevergrad/benchmark/additional/example.py) for examples.
 
 If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiments.py](../nevergrad/benchmark/experiments.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).

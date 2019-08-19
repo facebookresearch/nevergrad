@@ -8,32 +8,55 @@ import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
+from typing import List, Any, Iterable, Tuple, Union, Optional, Dict, Generic, TypeVar
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
 
 
-class Variable:
+X = TypeVar("X")
+
+
+class Variable(Generic[X]):
 
     @property
     def dimension(self) -> int:
         raise NotImplementedError
 
-    def process_arg(self, arg: Any) -> ArrayLike:
+    @property
+    def continuous(self) -> bool:
+        return True
+
+    @property
+    def noisy(self) -> bool:
+        return False
+
+    def argument_to_data(self, arg: X) -> ArrayLike:
         raise NotImplementedError
 
-    def process(self, data: List[float], deterministic: bool = False) -> Any:
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
+        """Converts data into arguments
+
+        Parameters
+        ----------
+        data: np.ndarray
+            data to convert
+        random: bool or np.random.RandomState
+            either a RandomState to pull values from, or True for pulling values on the default random state,
+            or False to get a deterministic behavior
+        """
         raise NotImplementedError
 
-    def get_summary(self, data: np.ndarray) -> str:
-        raise NotImplementedError
+    def get_summary(self, data: ArrayLike) -> str:
+        output = self.data_to_argument(data, random=False)
+        d = data if len(data) > 1 else data[0]
+        return f"Value {output}, from data: {d}"
 
     def __eq__(self, other: Any) -> bool:
         return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
 
     def __repr__(self) -> str:
-        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
+        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()) if not x.startswith("_"))
         return f"{self.__class__.__name__}({args})"
 
     def _short_repr(self) -> str:
@@ -48,31 +71,32 @@ class Variable:
         return repr(self)
 
 
-def split_data(data: List[float], instruments: Iterable[Variable]) -> List[List[float]]:
-    """Splits data according to the data requirements of the instruments
+def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[np.ndarray]:
+    """Splits data according to the data requirements of the variables
     """
     # this functions should be tested
     data = np.array(data).ravel()
-    instruments = list(instruments)  # make sure it is not an iterator
-    total = sum(t.dimension for t in instruments)
+    variables = list(variables)  # make sure it is not an iterator
+    total = sum(t.dimension for t in variables)
     assert len(data) == total, f"Expected {total} values but got {len(data)}"
-    splitted_data = []
+    splitted_data: List[np.ndarray] = []
+    variables = list(variables)  # make sure it is not an iterator
     start, end = 0, 0
-    for instrument in instruments:
-        end = start + instrument.dimension
+    for variable in variables:
+        end = start + variable.dimension
         splitted_data.append(data[start: end])
         start = end
     assert end == len(data), f"Finished at {end} but expected {len(data)}"
     return splitted_data
 
 
-def process_instruments(instruments: Iterable[Variable], data: List[float],
-                        deterministic: bool = False) -> Tuple[Any, ...]:
+def process_variables(variables: Iterable[Variable[Any]], data: ArrayLike,
+                      random: Union[bool, np.random.RandomState] = True) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
-    instruments = list(instruments)
-    splitted_data = split_data(data, instruments)
-    return tuple([instrument.process(d, deterministic=deterministic) for instrument, d in zip(instruments, splitted_data)])
+    variables = list(variables)
+    splitted_data = split_data(data, variables)
+    return tuple([variable.data_to_argument(d, random=random) for variable, d in zip(variables, splitted_data)])
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
@@ -112,7 +136,6 @@ class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
 class FailedJobError(RuntimeError):
     """Job failed during processing
     """
-    pass
 
 
 class CommandFunction:

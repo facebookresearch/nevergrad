@@ -3,13 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Tuple
-from scipy import stats
+from typing import Optional, Union
 import numpy as np
+from scipy import stats
 from ..common.typetools import ArrayLike
+from ..instrumentation import Instrumentation
 from . import sequences
 from . import base
-from .base import registry
 
 # # # # # classes of optimizers # # # # #
 
@@ -18,472 +18,201 @@ class OneShotOptimizer(base.Optimizer):
     # pylint: disable=abstract-method
     one_shot = True
 
-
 # # # # # very basic baseline optimizers # # # # #
 
 
-@registry.register
-class Zero(OneShotOptimizer):
-    """Always returns 0 (including for the recommendation)
+class _RandomSearch(OneShotOptimizer):
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._parameters = RandomSearchMaker()  # updated by the parametrized family
+
+    def _internal_ask(self) -> ArrayLike:
+        # pylint: disable=not-callable
+        if self._parameters.middle_point and not self._num_ask:
+            return np.zeros(self.dimension)  # type: ignore
+        scale = self._parameters.scale
+        if isinstance(scale, str) and scale == "random":
+            scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
+        point = (self._rng.standard_cauchy(self.dimension) if self._parameters.cauchy
+                 else self._rng.normal(0, 1, self.dimension))
+        return scale * point  # type: ignore
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        if self._parameters.stupid:
+            return self._internal_ask()
+        return super()._internal_provide_recommendation()
+
+
+class RandomSearchMaker(base.ParametrizedFamily):
+    """Provides random suggestions.
+
+    Parameters
+    ----------
+    stupid: bool
+        Provides a random recommendation instead of the best point so far (for baseline)
+    middle_point: bool
+        enforces that the first suggested point (ask) is zero.
+    cauchy: bool
+        use a Cauchy distribution instead of Gaussian distribution
+    scale: float or "random"
+        scalar for multiplying the suggested point values. If "random", this
+        used a randomized pattern for the scale.
     """
 
-    def _internal_ask(self) -> Tuple[float, ...]:
-        return tuple([0] * self.dimension)
+    _optimizer_class = _RandomSearch
+    one_shot = True
+
+    # pylint: disable=unused-argument
+    def __init__(self, *, middle_point: bool = False, stupid: bool = False,
+                 cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
+        # keep all parameters and set initialize superclass for print
+        assert isinstance(scale, (int, float)) or scale == "random"
+        self.middle_point = middle_point
+        self.stupid = stupid
+        self.cauchy = cauchy
+        self.scale = scale
+        super().__init__()
 
 
-@registry.register
-class RandomSearch(OneShotOptimizer):
-    """Provides random suggestions, and a recommendation
-    based on the best returned fitness values.
-    Use StupidRandom instead if you would rather the recommendation
-    should not be based on past fitness values.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class CauchyRandomSearch(OneShotOptimizer):
-    """Provides random suggestions, and a recommendation
-    based on the best returned fitness values.
-    Uses Cauchy distribution.
-    """
-
-    def _internal_ask(self) -> base.ArrayLike:
-        return np.random.standard_cauchy(self.dimension)
+Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
+RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
+RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
+LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
+    middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
+SmallScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
+    middle_point=True, scale=.01).with_name("SmallScaleRandomSearchPlusMiddlePoint", register=True)
+StupidRandom = RandomSearchMaker(stupid=True).with_name("StupidRandom", register=True)
+CauchyRandomSearch = RandomSearchMaker(cauchy=True).with_name("CauchyRandomSearch", register=True)
+RandomScaleRandomSearch = RandomSearchMaker(
+    scale="random", middle_point=True).with_name("RandomScaleRandomSearch", register=True)
+RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
+    scale="random", middle_point=True).with_name("RandomScaleRandomSearchPlusMiddlePoint", register=True)
 
 
-@registry.register
-class StupidRandom(RandomSearch):
-    """Provides random suggestions, and a random recommendation
-    which is *not* based on past fitness values.
-    Use RandomSearch instead if you would rather the recommendation
-    be based on past fitness values.
-    """
+class _SamplingSearch(OneShotOptimizer):
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
-        return np.random.normal(0, 1, self.dimension)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._parameters = SamplingSearch()  # updated by the parametrized family
+        self._sampler_instance: Optional[sequences.Sampler] = None
+        self._rescaler: Optional[sequences.Rescaler] = None
+
+    @property
+    def sampler(self) -> sequences.Sampler:
+        if self._sampler_instance is None:
+            budget = None if self.budget is None else self.budget - self._parameters.middle_point
+            samplers = {"Halton": sequences.HaltonSampler,
+                        "Hammersley": sequences.HammersleySampler,
+                        "LHS": sequences.LHSSampler,
+                        }
+            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled,
+                                                                        random_state=self._rng)
+            assert self._sampler_instance is not None
+            if self._parameters.rescaled:
+                self._rescaler = sequences.Rescaler(self.sampler)
+                self._sampler_instance.reinitialize()  # sampler was consumed by the scaler
+        return self._sampler_instance
+
+    def _internal_ask(self) -> ArrayLike:
+        # pylint: disable=not-callable
+        if self._parameters.middle_point and not self._num_ask:
+            return np.zeros(self.dimension)  # type: ignore
+        sample = self.sampler()
+        if self._rescaler is not None:
+            sample = self._rescaler.apply(sample)
+        return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
 
 
-# # # # # implementations # # # # #
-
-
-@registry.register
-class HaltonSearch(OneShotOptimizer):
-    """Halton low-discrepancy search.
-
-    This is a one-shot optimization method, hopefully better than random search
+class SamplingSearch(base.ParametrizedFamily):
+    """This is a one-shot optimization method, hopefully better than random search
     by ensuring more uniformity.
-    However, Halton is a low quality sampling method when the dimension is high;
-    it is usually better to use Halton with scrambling.
-    When the budget is known in advance, it is also better to replace Halton by Hammersley.
-    Reference: Halton 1964: Algorithm 247: Radical-inverse quasi-random point sequence, ACM, p. 701.
+
+    Parameters
+    ----------
+    sampler: str
+        Choice of the sampler among "Halton", "Hammersley" and "LHS".
+    scrambled: bool
+        Adds scrambling to the search; much better in high dimension and rarely worse
+        than the original search.
+    middle_point: bool
+        enforces that the first suggested point (ask) is zero.
+    cauchy: bool
+        use Cauchy inverse distribution instead of Gaussian when fitting points to real space
+        (instead of box).
+    scale: float or "random"
+        scalar for multiplying the suggested point values.
+    rescaled: bool
+        rescales the sampling pattern to reach the boundaries.
+
+    Notes
+    -----
+    - Halton is a low quality sampling method when the dimension is high; it is usually better
+      to use Halton with scrambling.
+    - When the budget is known in advance, it is also better to replace Halton by Hammersley.
+      Basically the key difference with Halton is adding one coordinate evenly spaced
+      (the discrepancy is better).
+      budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
+    - Reference: Halton 1964: Algorithm 247: Radical-inverse quasi-random point sequence, ACM, p. 701.
+      adds scrambling to the Halton search; much better in high dimension and rarely worse
+      than the original Halton search.
+    - About Latin Hypercube Sampling (LHS):
+      Though partially incremental versions exist, this implementation needs the budget in advance.
+      This can be great in terms of discrepancy when the budget is not very high.
     """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHaltonSearch(OneShotOptimizer):
-    """Scrambled Halton search.
-
-    Adds scrambling to the Halton search; much better in high dimension and rarely worse
-    than the original Halton search.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class HammersleySearch(OneShotOptimizer):
-    """Hammersley version of the Halton search.
-
-    Basically the key difference with Halton is adding one coordinate evenly spaced.
-    The discrepancy is better; but we need the budget in advance."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHammersleySearch(OneShotOptimizer):
-    """Scrambled Hammersley sequence.
-
-    This combines Scrambled Halton and Hammersley.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class CauchyScrHammersleySearch(OneShotOptimizer):
-    """Scrambled Hammersley sequence.
-
-    This combines Scrambled Halton and Hammersley.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.cauchy.ppf(self.sampler())
-
-
-@registry.register
-class LHSSearch(OneShotOptimizer):
-    """Latin Hypercube Sampling.
-
-    Though partially incremental versions exist, this implementation needs the budget in advance.
-    This can be great in terms of discrepancy when the budget is not very high - for high
-    budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.LHSSampler(self.dimension, budget=self.budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class CauchyLHSSearch(OneShotOptimizer):
-    """Latin Hypercube Sampling.
-
-    Though partially incremental versions exist, this implementation needs the budget in advance.
-    This can be great in terms of discrepancy when the budget is not very high - for high
-    budget, low discrepancy sequences (e.g. scrambled Hammersley) have a better discrepancy.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.LHSSampler(self.dimension, budget=self.budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.cauchy.ppf(self.sampler())
-
-
-@registry.register
-class RescaleScrHammersleySearch(OneShotOptimizer):
-    """Rescaled version of scrambled Hammersley search.
-
-    We need the budget in advance, and rescale each variable linearly for almost matching the bounds.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        assert self.budget is not None, "A budget must be provided"
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=self.budget)
-        self.rescaler = sequences.Rescaler(self.sampler)
-        self.sampler.reinitialize()
-        self.iterator = iter(self.sampler)
-
-    def _internal_ask(self) -> ArrayLike:
-        return stats.norm.ppf(self.rescaler.apply(next(self.iterator)))
-
-
-@registry.register
-class LargeHaltonSearch(OneShotOptimizer):
-    """Larger scale Halton search.
-
-    This corresponds to Halton, but pushing points closer to boundaries. This is in case
-    extreme values are more likely to be useful.
-    """
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHaltonSearch(OneShotOptimizer):
-    """Larger scale scrambled Halton search."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeHammersleySearch(OneShotOptimizer):
-    """Larger scale Hammersley search."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHammersleySearch(OneShotOptimizer):
-    """Larger scale scrambled Hammersley search."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class HaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Halton search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Scrambled Halton search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class HammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Hammersley search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class ScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Scrambled Hammersley search with an additional middle point.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return stats.norm.ppf(self.sampler())
-
-# In "Large" samplers, all points are multiplied by 100.
-
-
-@registry.register
-class LargeHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale Halton search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale scrambled Halton search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale Hammersley search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class LargeScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Adding a middle point in the larger scale scrambled Hammersley search.
-
-    The additional point is the very first one."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 100. * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallScrHaltonSearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHaltonSampler(self.dimension)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.HammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class SmallScrHammersleySearchPlusMiddlePoint(OneShotOptimizer):
-    """Exact opposite of the version with "Large" instead of "Small"."""
-
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
-        self.sampler = sequences.ScrHammersleySampler(self.dimension, budget=budget)
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 0.01 * stats.norm.ppf(self.sampler())
-
-
-@registry.register
-class RandomSearchPlusMiddlePoint(OneShotOptimizer):
-    """Random search plus a middle point.
-
-    The middle point is the very first one."""
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class SmallScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 0.01 * np.random.normal(0, 1, self.dimension)
-
-
-@registry.register
-class RandomScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return np.exp(np.random.normal(0., 1.) - 2.) * np.random.normal(0., 1. / np.sqrt(self.dimension), self.dimension)
-
-
-@registry.register
-class RandomScaleRandomSearch(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        return np.exp(np.random.normal(0., 1.) - 2.) * np.random.normal(0., 1. / np.sqrt(self.dimension), self.dimension)
-
-
-@registry.register
-class LargerScaleRandomSearchPlusMiddlePoint(OneShotOptimizer):
-
-    def _internal_ask(self) -> ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
-        return 500. * np.random.normal(0, 1, self.dimension)
+    one_shot = True
+    _optimizer_class = _SamplingSearch
+
+    # pylint: disable=unused-argument
+    def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
+                 cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
+        # keep all parameters and set initialize superclass for print
+        self.sampler = sampler
+        self.middle_point = middle_point
+        self.scrambled = scrambled
+        self.cauchy = cauchy
+        self.scale = scale
+        self.rescaled = rescaled
+        super().__init__()
+
+
+# pylint: disable=line-too-long
+HaltonSearch = SamplingSearch().with_name("HaltonSearch", register=True)
+HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).with_name("HaltonSearchPlusMiddlePoint", register=True)
+LargeHaltonSearch = SamplingSearch(scale=100.).with_name("LargeHaltonSearch", register=True)
+LargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True).with_name("LargeScrHaltonSearch", register=True)
+LargeHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=100., middle_point=True).with_name("LargeHaltonSearchPlusMiddlePoint", register=True)
+SmallHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=.01, middle_point=True).with_name("SmallHaltonSearchPlusMiddlePoint", register=True)
+ScrHaltonSearch = SamplingSearch(scrambled=True).with_name("ScrHaltonSearch", register=True)
+ScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+    middle_point=True, scrambled=True).with_name("ScrHaltonSearchPlusMiddlePoint", register=True)
+LargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=100., middle_point=True, scrambled=True).with_name("LargeScrHaltonSearchPlusMiddlePoint", register=True)
+SmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=.01, middle_point=True, scrambled=True).with_name("SmallScrHaltonSearchPlusMiddlePoint", register=True)
+HammersleySearch = SamplingSearch(sampler="Hammersley").with_name("HammersleySearch", register=True)
+HammersleySearchPlusMiddlePoint = SamplingSearch(
+    sampler="Hammersley", middle_point=True).with_name("HammersleySearchPlusMiddlePoint", register=True)
+LargeHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scale=100., sampler="Hammersley", middle_point=True).with_name("LargeHammersleySearchPlusMiddlePoint", register=True)
+SmallHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallHammersleySearchPlusMiddlePoint", register=True)
+LargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scrambled=True, scale=100., sampler="Hammersley", middle_point=True).with_name("LargeScrHammersleySearchPlusMiddlePoint", register=True)
+SmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).with_name("SmallScrHammersleySearchPlusMiddlePoint", register=True)
+ScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scrambled=True, sampler="Hammersley", middle_point=True).with_name("ScrHammersleySearchPlusMiddlePoint", register=True)
+LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True)
+LargeScrHammersleySearch = SamplingSearch(
+    scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
+ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
+RescaleScrHammersleySearch = SamplingSearch(
+    sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
+CauchyScrHammersleySearch = SamplingSearch(
+    cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyScrHammersleySearch", register=True)
+LHSSearch = SamplingSearch(sampler="LHS").with_name("LHSSearch", register=True)
+CauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)

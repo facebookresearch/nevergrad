@@ -3,14 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# pylint: disable=wrong-import-position, wrong-import-order
+from .__main__ import repeated_launch
+import warnings
 import tempfile
 import itertools
-from unittest import TestCase
 from unittest.mock import patch
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import genty
 import matplotlib
 from ..optimization import optimizerlib
 from ..instrumentation.utils import CommandFunction
@@ -18,22 +19,17 @@ from ..common import testing
 from . import core
 from .test_xpbase import DESCRIPTION_KEYS
 matplotlib.use('Agg')
-# pylint: disable=wrong-import-position
-from .__main__ import repeated_launch
 
 
-@genty.genty
-class BenchmarkTests(TestCase):
-
-    @genty.genty_dataset(  # type: ignore
-        val0=(0, False),
-        val1=(1, True),
-        val5=(5, False),
-        val6=(6, True),
-    )
-    def test_moduler(self, value: int, expected: bool) -> None:
-        moduler = core.Moduler(5, 1)
-        np.testing.assert_equal(moduler(value), expected)
+@testing.parametrized(
+    val0=(0, False),
+    val1=(1, True),
+    val5=(5, False),
+    val6=(6, True),
+)
+def test_moduler(value: int, expected: bool) -> None:
+    moduler = core.Moduler(5, 1)
+    np.testing.assert_equal(moduler(value), expected)
 
 
 def test_compute() -> None:
@@ -62,6 +58,7 @@ def test_launch() -> None:
             repeated_launch("repeated_basic", cap_index=4, num_workers=2, output=output, plot=True)
             assert output.exists()
             df = core.tools.Selector.read_csv(str(output))
+            testing.assert_set_equal(df.unique("optimizer_name"), {"DifferentialEvolution()", "OnePlusOne"})
             assert isinstance(df, core.tools.Selector)
             np.testing.assert_equal(len(df), 4)
 
@@ -88,10 +85,25 @@ def test_save_or_append_to_csv() -> None:
         np.testing.assert_array_equal(np.array(df), [[1, 2, -1], [3, 4, -1], [5, -1, 6]])
 
 
+def test_moduler_split() -> None:
+    total_length = np.random.randint(100, 200)
+    split = np.random.randint(1, 12)
+    modulers = core.Moduler(1, 0, total_length).split(split)
+    data = list(range(total_length))
+    err_msg = f"Moduler failed for total_length={total_length} and split={split}."
+    all_indices = set()
+    for moduler in modulers:
+        indices = {k for k in data if moduler(k)}
+        np.testing.assert_equal(len(indices), len(moduler), err_msg=err_msg)
+        all_indices.update(indices)
+    np.testing.assert_equal(len(all_indices), len(data), err_msg=err_msg)
+
+
 def test_experiment_chunk_split() -> None:
     chunk = core.BenchmarkChunk(name="repeated_basic", seed=12, repetitions=2)
     chunks = chunk.split(2)
     chunks = [chunks[0]] + chunks[1].split(3)
+    np.testing.assert_array_equal([len(c) for c in chunks], [10, 4, 3, 3])
     chained = [x[0] for x in itertools.chain.from_iterable(chunks)]
     # check full order (everythink only once)
     np.testing.assert_array_equal(chained, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18,
@@ -108,4 +120,17 @@ def test_experiment_chunk_seeding() -> None:
     chunk = core.BenchmarkChunk(name="repeated_basic", seed=12, repetitions=2, cap_index=cap_index)
     xps = [xp for _, xp in chunk]
     assert xps[0].seed != xps[cap_index].seed
-    np.testing.assert_equal(len(xps), 2 * cap_index)
+
+
+def test_benchmark_chunk_resuming() -> None:
+    chunk = core.BenchmarkChunk(name="repeated_basic", seed=12, repetitions=1, cap_index=2)
+    # creating an error on the first experiment
+    with patch("nevergrad.benchmark.xpbase.Experiment.run") as run:
+        run.side_effect = ValueError("test error string")
+        np.testing.assert_raises(ValueError, chunk.compute)
+    # making sure we restart from the actual experiment
+    assert chunk._current_experiment is not None
+    with warnings.catch_warnings(record=True) as w:
+        warnings.filterwarnings("ignore", category=optimizerlib.InefficientSettingsWarning)
+        chunk.compute()
+        assert not w, "A warning was raised while it should not have (experiment could not be resumed)"

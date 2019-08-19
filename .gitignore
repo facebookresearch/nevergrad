@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.swp
+*_build
 
 # C extensions
 *.so
@@ -47,7 +48,6 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/

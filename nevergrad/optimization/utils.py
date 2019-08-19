@@ -3,9 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import operator
-from typing import Tuple, Any, Callable, List
+from uuid import uuid4
+from collections import OrderedDict
+from typing import (Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator,
+                    TypeVar, Generic, Deque, Iterable)
 import numpy as np
+from ..common.typetools import ArrayLike
 
 
 class Value:
@@ -40,6 +45,7 @@ class Value:
         return float(self.mean + .1 * np.sqrt((self.variance) / (1 + self.count)))
 
     def get_estimation(self, name: str) -> float:
+        # Note: pruning below relies on the fact than only 3 modes exist. If a new mode is added, update pruning
         if name == "optimistic":
             return self.optimistic_confidence_bound
         elif name == "pessimistic":
@@ -87,11 +93,13 @@ class Point(Value):
         the value estimation instance
     """
 
-    def __init__(self, x: Tuple[float, ...], value: Value) -> None:
+    def __init__(self, x: ArrayLike, value: Value) -> None:
         assert isinstance(value, Value)
         super().__init__(value.mean)
         self.__dict__.update(value.__dict__)
-        self.x = x
+        assert not isinstance(x, (str, bytes))
+        self.x = np.array(x, copy=True)  # copy to avoid interfering with algorithms
+        self.x.flags.writeable = False  # make sure it is not modified!
 
     def __repr__(self) -> str:
         return "Point<x: {}, mean: {}, count: {}>".format(self.x, self.mean, self.count)
@@ -109,7 +117,7 @@ def _get_nash(optimizer: Any) -> List[Tuple[Tuple[float, ...], int]]:
     if threshold <= np.power(sum_num_trial, .25):
         return [(optimizer.provide_recommendation(), 1)]
     # make deterministic at the price of sort complexity
-    return sorted(((k, p.count) for k, p in optimizer.archive.items() if p.count >= threshold),
+    return sorted(((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
                   key=operator.itemgetter(1))
 
 
@@ -123,17 +131,24 @@ def sample_nash(optimizer: Any) -> Tuple[float, ...]:   # Somehow like fictitiou
     return nash[index][0]
 
 
-class FinishedJob:
-    """Future-like object with a pre-computed value
+class DelayedJob:
+    """Future-like object which delays computation
     """
 
-    def __init__(self, result: Any) -> None:
-        self._result = result
+    def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self._result: Optional[Any] = None
+        self._computed = False
 
     def done(self) -> bool:
         return True
 
     def result(self) -> Any:
+        if not self._computed:
+            self._result = self.func(*self.args, **self.kwargs)
+            self._computed = True
         return self._result
 
 
@@ -142,5 +157,229 @@ class SequentialExecutor:
     (just calls the function and returns a FinishedJob)
     """
 
-    def submit(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> FinishedJob:
-        return FinishedJob(function(*args, **kwargs))
+    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
+        return DelayedJob(fn, *args, **kwargs)
+
+
+def _tobytes(x: ArrayLike) -> bytes:
+    x = np.array(x, copy=False)  # for compatibility
+    assert x.ndim == 1, f"Input shape: {x.shape}"
+    assert x.dtype == np.float
+    return x.tobytes()
+
+
+_ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
+              "work on archive.bytesdict.<keys,items>() directly and convert with "
+              "np.frombuffer if you can. You can also use archive.<keys,items>_as_arrays() "
+              "but it is less efficient.")
+
+
+Y = TypeVar("Y")
+
+
+class Archive(Generic[Y]):
+    """A dict-like object with numpy arrays as keys.
+    The underlying `bytesdict` dict stores the arrays as bytes since arrays are not hashable.
+    Keys can be converted back with np.frombuffer(key)
+    """
+
+    def __init__(self) -> None:
+        self.bytesdict: Dict[bytes, Y] = {}
+
+    def __setitem__(self, x: ArrayLike, value: Y) -> None:
+        self.bytesdict[_tobytes(x)] = value
+
+    def __getitem__(self, x: ArrayLike) -> Y:
+        return self.bytesdict[_tobytes(x)]
+
+    def __contains__(self, x: ArrayLike) -> bool:
+        return _tobytes(x) in self.bytesdict
+
+    def get(self, x: ArrayLike, default: Optional[Y] = None) -> Optional[Y]:
+        return self.bytesdict.get(_tobytes(x), default)
+
+    def __len__(self) -> int:
+        return len(self.bytesdict)
+
+    def values(self) -> ValuesView[Y]:
+        return self.bytesdict.values()
+
+    def keys(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
+    def items(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
+    def items_as_array(self) -> Iterator[Tuple[np.ndarray, Y]]:
+        """Functions that iterates on key-values but transforms keys
+        to np.ndarray. This is to simplify interactions, but should not
+        be used in an algorithm since the conversion can be inefficient.
+        Prefer using self.bytesdict.items() directly, and convert the bytes
+        to np.ndarray using np.frombuffer(b)
+        """
+        return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())
+
+    def keys_as_array(self) -> Iterator[np.ndarray]:
+        """Functions that iterates on keys but transforms them
+        to np.ndarray. This is to simplify interactions, but should not
+        be used in an algorithm since the conversion can be inefficient.
+        Prefer using self.bytesdict.keys() directly, and convert the bytes
+        to np.ndarray using np.frombuffer(b)
+        """
+        return (np.frombuffer(b) for b in self.bytesdict)
+
+    def __repr__(self) -> str:
+        return f"Archive with bytesdict: {self.bytesdict!r}"
+
+    def __str__(self) -> str:
+        return f"Archive with bytesdict: {self.bytesdict}"
+
+    def __iter__(self) -> None:
+        raise RuntimeError(_ERROR_STR)
+
+
+class Pruning:
+    """Callable for pruning archives in the optimizer class.
+    See Optimizer.pruning attribute, called at each "tell".
+
+    Parameters
+    ----------
+    min_len: int
+        minimum length of the pruned archive.
+    max_len: int
+        length at which pruning is activated (maximum allowed length for the archive).
+
+    Note
+    ----
+    For each of the 3 criteria (optimistic, pessimistic and average), the min_len best (lowest)
+    points will be kept, which can lead to at most 3 * min_len points.
+    """
+
+    def __init__(self, min_len: int, max_len: int):
+        self.min_len = min_len
+        self.max_len = max_len
+
+    def __call__(self, archive: Archive[Value]) -> Archive[Value]:
+        if len(archive) < self.max_len:
+            return archive
+        warnings.warn("Pruning archive to save memory")
+        quantiles: Dict[str, float] = {}
+        threshold = float(self.min_len) / len(archive)
+        names = ["optimistic", "pessimistic", "average"]
+        for name in names:
+            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold)
+        new_archive = Archive[Value]()
+        new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
+        return new_archive
+
+    @classmethod
+    def sensible_default(cls, num_workers: int, dimension: int) -> 'Pruning':
+        """ Very conservative pruning
+        - keep at least min_len 3 times num_workers
+        - keep at most 30 times min_len or up to 1GB of array memory (whatever is biggest)
+
+        Parameters
+        ----------
+        num_workers: int
+            number of evaluations which will be run in parallel at once
+        dimension: int
+            dimension of the optimization space
+        """
+        # safer to keep at least 3 time the workers
+        min_len = 3 * num_workers
+        max_len = 10 * 3 * min_len  # len after pruning can be up to 3 min_len, amortize with an order of magnitude
+        max_len_1gb = 1024**3 // (dimension * 8)
+        return cls(min_len, max(max_len, max_len_1gb))
+
+
+class Individual:
+
+    def __init__(self, x: ArrayLike) -> None:
+        self.x = np.array(x, copy=False)
+        self.uuid = uuid4().hex
+        self.value: Optional[float] = None
+        self._parameters = np.array([])
+        self._active = True
+
+    def __repr__(self) -> str:
+        return f"Indiv<{self.x}, {self.value}>"
+
+
+X = TypeVar('X', bound=Individual)
+
+
+class Population(Generic[X]):
+    """Handle a population
+    This could have a nicer interface... but it is already good enough
+    """
+
+    def __init__(self, particles: Iterable[X]) -> None:
+        self._particles = OrderedDict({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
+        self._queue = Deque[str]()
+        self._uuids: List[str] = []
+        self.extend(self._particles.values())
+
+    @property
+    def uuids(self) -> List[str]:
+        """Don't modify manually
+        """
+        return self._uuids
+
+    def __repr__(self) -> str:
+        particles = [p for p in self._particles.values()]
+        return f"Population({particles})"
+
+    def __getitem__(self, uuid: str) -> X:
+        parti = self._particles[uuid]
+        if parti.uuid != uuid:
+            raise RuntimeError("Something went horribly wrong in the Population structure")
+        return parti
+
+    def __iter__(self) -> Iterator[X]:
+        return iter(self._particles.values())
+
+    def extend(self, particles: Iterable[X]) -> None:
+        """Adds new particles
+        The new particles are queued left (first out of queue)
+        """
+        particles = list(particles)
+        self._uuids.extend(p.uuid for p in particles)
+        self._particles.update({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
+        self._queue.extendleft(p.uuid for p in reversed(particles))
+
+    def __len__(self) -> int:
+        return len(self._particles)
+
+    def is_queue_empty(self) -> bool:
+        return not self._queue
+
+    def get_queued(self, remove: bool = False) -> X:
+        if not self._queue:
+            raise RuntimeError("Queue is empty, you tried to ask more than population size")
+        uuid = self._queue[0]  # pylint: disable=unsubscriptable-object
+        if remove:
+            self._queue.popleft()
+        return self._particles[uuid]
+
+    def set_queued(self, particle: X) -> None:
+        if particle.uuid not in self._particles:
+            raise ValueError("Individual is not part of the population")
+        self._queue.append(particle.uuid)
+
+    def replace(self, oldie: X, newbie: X) -> None:
+        """Replaces an old particle by a new particle.
+        The new particle is queue left (first out of queue)
+        """
+        if oldie.uuid not in self._particles:
+            raise ValueError("Individual is not part of the population")
+        if newbie.uuid in self._particles:
+            raise ValueError("Individual is already in the population")
+        del self._particles[oldie.uuid]
+        self._particles[newbie.uuid] = newbie
+        self._uuids = [newbie.uuid if u == oldie.uuid else u for u in self._uuids]
+        # update queue
+        try:
+            self._queue.remove(oldie.uuid)
+        except ValueError:
+            pass
+        self._queue.appendleft(newbie.uuid)

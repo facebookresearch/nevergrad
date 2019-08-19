@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pytest
 import numpy as np
 from ..common import testing
 from .test_base import CounterFunction
@@ -23,7 +24,7 @@ def test_value_and_point() -> None:
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
     # now test point based on this value
-    p = utils.Point((0, 0), v)
+    p = utils.Point(np.array([0., 0]), v)
     np.testing.assert_equal(p.mean, 3.5)
     np.testing.assert_almost_equal(p.variance, 0.3536, decimal=4)
     repr(p)
@@ -37,17 +38,107 @@ def test_sequential_executor() -> None:
     np.testing.assert_equal(job1.done(), True)
     np.testing.assert_equal(job1.result(), 4)
     np.testing.assert_equal(func.count, 1)
-    executor.submit(func, [3])
+    job2 = executor.submit(func, [3])
+    np.testing.assert_equal(job2.done(), True)
+    np.testing.assert_equal(func.count, 1)  # not computed just yet
+    job2.result()
     np.testing.assert_equal(func.count, 2)
 
 
 def test_get_nash() -> None:
-    zeroptim = Zero(dimension=1, budget=4, num_workers=1)
+    zeroptim = Zero(instrumentation=1, budget=4, num_workers=1)
     for k in range(4):
-        zeroptim.archive[(k,)] = utils.Value(k)
-        zeroptim.archive[(k,)].count += (4 - k)
+        array = (float(k),)
+        zeroptim.archive[array] = utils.Value(k)
+        zeroptim.archive[array].count += (4 - k)
     nash = utils._get_nash(zeroptim)
     testing.printed_assert_equal(nash, [((2,), 3), ((1,), 4), ((0,), 5)])
     np.random.seed(12)
     output = utils.sample_nash(zeroptim)
     np.testing.assert_equal(output, (2,))
+
+
+def test_archive() -> None:
+    data = [1, 4.5, 12, 0]
+    archive = utils.Archive[int]()
+    archive[np.array(data)] = 12
+    np.testing.assert_equal(archive[np.array(data)], 12)
+    np.testing.assert_equal(archive.get(data), 12)
+    np.testing.assert_equal(archive.get([0, 12.]), None)
+    y = np.frombuffer(next(iter(archive.bytesdict.keys())))
+    assert data in archive
+    np.testing.assert_equal(y, data)
+    items = list(archive.items_as_array())
+    assert isinstance(items[0][0], np.ndarray)
+    keys = list(archive.keys_as_array())
+    assert isinstance(keys[0], np.ndarray)
+    repr(archive)
+    str(archive)
+
+
+def test_archive_errors() -> None:
+    archive = utils.Archive[float]()
+    archive[[12, 0.]] = 12.
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
+    np.testing.assert_raises(RuntimeError, archive.keys)
+    np.testing.assert_raises(RuntimeError, archive.items)
+
+
+class Partitest(utils.Individual):
+
+    def __init__(self, number: int) -> None:
+        super().__init__([])
+        self.number = number
+
+
+def test_population_queue() -> None:
+    particles = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particles[2:])
+    _ = repr(pop)
+    pop.extend(particles[:2])  # should append queue on the left
+    p = pop.get_queued()
+    assert p.number == 0
+    nums = [pop.get_queued(remove=True).number for _ in range(4)]
+    np.testing.assert_equal(nums, [0, 1, 2, 3])
+    np.testing.assert_raises(RuntimeError, pop.get_queued)  # nothing more in queue
+    pop.set_queued(particles[1])
+    p = pop.get_queued()
+    assert p.number == 1
+    np.testing.assert_raises(ValueError, pop.set_queued, Partitest(5))  # not in pop
+
+
+def test_population_replace() -> None:
+    particles = [Partitest(k) for k in range(4)]
+    pop = utils.Population(particles)
+    pop.replace(particles[2], Partitest(5))
+    assert pop.get_queued().number == 5
+    for uuid in pop.uuids:
+        # checks that it exists and correctly linked
+        pop[uuid]  # pylint: disable= pointless-statement
+
+
+def test_pruning() -> None:
+    archive = utils.Archive[utils.Value]()
+    for k in range(3):
+        value = utils.Value(float(k))
+        archive[(float(k),)] = value
+    value = utils.Value(1.)
+    value.add_evaluation(1.)
+    archive[(3.,)] = value
+    # pruning
+    pruning = utils.Pruning(min_len=1, max_len=3)
+    # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
+    with pytest.warns(UserWarning):
+        archive = pruning(archive)
+    testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+    # should not change anything this time
+    archive = pruning(archive)
+    testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+
+
+@pytest.mark.parametrize("dimension,expected_max", [(100, 1342177), (10000, 13421), (1000000, 1080)])  # type: ignore
+def test_pruning_sensible_default(dimension: int, expected_max: int) -> None:
+    pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
+    assert pruning.min_len == 36
+    assert pruning.max_len == expected_max

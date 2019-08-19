@@ -1,25 +1,33 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Any, Match, Optional
+from typing import List, Optional, TypeVar, Union, Sequence, Any, Type
+from functools import reduce
+import operator
+import warnings
 import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
+from . import transforms
 from . import utils
 
 
-class SoftmaxCategorical(utils.Variable):
+__all__ = ["SoftmaxCategorical", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
+
+X = TypeVar("X")
+
+
+class SoftmaxCategorical(utils.Variable[X]):
     """Discrete set of n values transformed to a n-dim continuous variable.
     Each of the dimension encodes a weight for a value, and the softmax of weights
     provide probabilities for each possible value. A random value is sampled from
     this distribution.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     possibilities: list
-        a list of possible values for the variable
+        a list of possible values for the variable.
 
     Note
     ----
@@ -27,27 +35,39 @@ class SoftmaxCategorical(utils.Variable):
     functions become stochastic, hence "adding noise"
     """
 
-    def __init__(self, possibilities: List[Any], deterministic: bool = False) -> None:
+    def __init__(self, possibilities: List[X], deterministic: bool = False) -> None:
+        super().__init__()
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
+        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
+                                        "for the Instrumentation intialization")
+
+    @property
+    def continuous(self) -> bool:
+        return not self.deterministic
+
+    @property
+    def noisy(self) -> bool:
+        return not self.deterministic
 
     @property
     def dimension(self) -> int:
         return len(self.possibilities)
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> Any:
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
         assert len(data) == len(self.possibilities)
-        deterministic = deterministic | self.deterministic
-        index = int(discretization.softmax_discretization(data, len(self.possibilities), deterministic=deterministic)[0])
+        if self.deterministic:
+            random = False
+        index = int(discretization.softmax_discretization(data, len(self.possibilities), random=random)[0])
         return self.possibilities[index]
 
-    def process_arg(self, arg: Any) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
 
-    def get_summary(self, data: List[float]) -> str:
-        output = self.process(data, deterministic=True)
-        probas = discretization.softmax_probas(data)
+    def get_summary(self, data: ArrayLike) -> str:
+        output = self.data_to_argument(data, random=False)
+        probas = discretization.softmax_probas(np.array(data, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
 
@@ -55,102 +75,268 @@ class SoftmaxCategorical(utils.Variable):
         return "SC({}|{})".format(",".join([str(x) for x in self.possibilities]), int(self.deterministic))
 
 
-class OrderedDiscrete(SoftmaxCategorical):
+class OrderedDiscrete(utils.Variable[X]):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     possibilities: list
-        a list of possible values for the variable
+        a list of possible values for the variable.
 
     Note
     ----
     The variables are assumed to be ordered.
     """
 
+    def __init__(self, possibilities: List[X]) -> None:
+        super().__init__()
+        self.possibilities = list(possibilities)
+        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
+                                        "for the Instrumentation intialization")
+
+    @property
+    def continuous(self) -> bool:
+        return False
+
     @property
     def dimension(self) -> int:
         return 1
 
-    def process(self, data: ArrayLike, deterministic: bool = False) -> Any:  # pylint: disable=arguments-differ, unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:  # pylint: disable=unused-argument
         assert len(data) == 1
         index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
         return self.possibilities[index]
 
-    def process_arg(self, arg: Any) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         index = self.possibilities.index(arg)
         return discretization.inverse_threshold_discretization([index], len(self.possibilities))
-
-    def get_summary(self, data: List[float]) -> str:
-        output = self.process(data, deterministic=True)
-        return f"Value {output}, from data: {data[0]}"
 
     def _short_repr(self) -> str:
         return "OD({})".format(",".join([str(x) for x in self.possibilities]))
 
 
-class Gaussian(utils.Variable):
+Y = Union[int, float, np.ndarray]
+
+
+class Gaussian(utils.Variable[Y]):
     """Gaussian variable with a mean and a standard deviation, and
     possibly a shape (when using directly in Python)
     The output will simply be mean + std * data
     """
 
-    def __init__(self, mean: float, std: float, shape: Optional[List[int]] = None) -> None:
+    def __init__(self, mean: float, std: float, shape: Optional[Sequence[int]] = None) -> None:
+        super().__init__()
         self.mean = mean
         self.std = std
         self.shape = shape
-
-    @classmethod
-    def from_regex(cls, regex: Match[str]) -> utils.Variable:
-        return cls(float(regex.group("mean")), float(regex.group("std")))
 
     @property
     def dimension(self) -> int:
         return 1 if self.shape is None else int(np.prod(self.shape))
 
-    def process(self, data: List[float], deterministic: bool = True) -> Any:
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> Y:  # pylint: disable=unused-argument
         assert len(data) == self.dimension
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
         return self.std * x + self.mean
 
-    def process_arg(self, arg: Any) -> List[float]:
+    def argument_to_data(self, arg: Y) -> ArrayLike:
         return [(arg - self.mean) / self.std]
-
-    def get_summary(self, data: List[float]) -> str:
-        output = self.process(data)
-        return f"Value {output}, from data: {data}"
 
     def _short_repr(self) -> str:
         return f"G({self.mean},{self.std})"
 
 
-class _Constant(utils.Variable):
+class _Constant(utils.Variable[X]):
     """Fake variable so that constant variables can fit into the
     pipeline.
     """
 
-    def __init__(self, value: Any) -> None:
+    def __init__(self, value: X) -> None:
+        super().__init__()
         self.value = value
 
     @classmethod
-    def convert_non_instrument(cls, x: Any) -> utils.Variable:
+    def convert_non_instrument(cls, x: Union[X, utils.Variable[X]]) -> utils.Variable[X]:
         return x if isinstance(x, utils.Variable) else cls(x)
 
     @property
     def dimension(self) -> int:
         return 0
 
-    def process(self, data: List[float], deterministic: bool = False) -> Any:  # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:  # pylint: disable=unused-argument
         return self.value
 
-    def process_arg(self, arg: Any) -> ArrayLike:
+    def argument_to_data(self, arg: X) -> ArrayLike:
         assert arg == self.value, f'{arg} != {self.value}'
         return []
 
-    def get_summary(self, data: List[float]) -> str:
+    def get_summary(self, data: ArrayLike) -> str:
         raise RuntimeError("Constant summary should not be called")
 
     def _short_repr(self) -> str:
         return f"{self.value}"
+
+
+class Array(utils.Variable[Y]):
+    """Array variable of a given shape, on which several transforms can be applied.
+
+    Parameters
+    ----------
+    *dims: int
+        dimensions of the array (elements of shape)
+
+    Note
+    ----
+    Interesting methods (which can be chained):
+
+    - asscalar(): converts the array into a float or int (only for arrays with 1 element)
+      You may also directly use `Scalar` the scalar object instead.
+    - with_transform(transform): apply a transform to the array
+    - affined(a, b): applies a*x+b
+    - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
+      so that output values are in range [a_min, a_max]
+
+    - exponentiated(base, coeff): applies base**(coeff * x)
+    """
+
+    def __init__(self, *dims: int) -> None:
+        super().__init__()
+        self.transforms: List[Any] = []
+        self.shape = tuple(dims)
+        self._dtype: Optional[Type[Union[float, int]]] = None
+
+    @property
+    def dimension(self) -> int:
+        return reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
+
+    @property
+    def continuous(self) -> bool:
+        return self._dtype != int
+
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> Y:  # pylint: disable=unused-argument
+        assert len(data) == self.dimension
+        array = np.array(data, copy=False)
+        for transf in self.transforms:
+            array = transf.forward(array)
+        if self._dtype is not None:
+            return self._dtype(array[0] if self._dtype != int else round(array[0]))
+        return array.reshape(self.shape)
+
+    def argument_to_data(self, arg: Y) -> np.ndarray:
+        if self._dtype is not None:
+            output = np.array([arg], dtype=float)
+        else:
+            output = np.array(arg, copy=False).ravel()
+        for transf in reversed(self.transforms):
+            output = transf.backward(output)
+        return output
+
+    def _short_repr(self) -> str:
+        dims = ",".join(str(d) for d in self.shape)
+        transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
+        fl = {None: "", int: "i", float: "f"}[self._dtype]
+        return f"A({dims}{transf}){fl}"
+
+    def asfloat(self) -> 'Array':
+        warnings.warn('Please use "asscalar" instead of "asfloat"', DeprecationWarning)
+        return self.asscalar()
+
+    def asscalar(self, dtype: Type[Union[float, int]] = float) -> 'Array':
+        """Converts the array into a scalar
+
+        Parameters
+        ----------
+        dtype: type
+            either int or float
+
+        Note
+        ----
+        This method can only be called on size 1 arrays
+        """
+        if self._dtype is not None:
+            raise RuntimeError('"asscalar" must only be called once')
+        if self.dimension != 1:
+            raise RuntimeError("Only Arrays with 1 element can be cast to float")
+        if dtype not in [float, int]:
+            raise ValueError('"dtype" should be either float or int')
+        self._dtype = dtype
+        return self
+
+    def with_transform(self, transform: transforms.Transform) -> 'Array':
+        self.transforms.append(transform)
+        return self
+
+    def exponentiated(self, base: float, coeff: float) -> 'Array':
+        """Exponentiation transform base ** (coeff * x)
+        This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
+
+        Parameters
+        ----------
+        base: float
+        coeff: float
+        """
+        return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))
+
+    def affined(self, a: float, b: float = 0.) -> 'Array':
+        """Affine transform a * x + b
+
+        Parameters
+        ----------
+        a: float
+        b: float
+        """
+        return self.with_transform(transforms.Affine(a=a, b=b))
+
+    def bounded(self, a_min: Optional[float] = None, a_max: Optional[float] = None, transform: str = "arctan") -> 'Array':
+        """Bounds all real values into [a_min, a_max] using a tanh transform.
+        Beware, tanh goes very fast to its limits.
+
+        Parameters
+        ----------
+        a_min: float or None
+            minimum value
+        a_max: float or None
+            maximum value
+        transform: str
+            "clipping", "tanh" or "arctan"
+
+        Notes
+        -----
+        - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
+        - only "clipping" accepts partial bounds (None values)
+        """
+        if transform not in ["tanh", "arctan", "clipping"]:
+            raise ValueError("Only 'tanh', 'clipping' and 'arctan' are allowed as transform")
+        if transform in ["arctan", "tanh"]:
+            Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound
+            assert a_min is not None and a_max is not None, "Only 'clipping' can be used for partial bounds"
+            return self.with_transform(Transf(a_min=a_min, a_max=a_max))
+        else:
+            return self.with_transform(transforms.Clipping(a_min, a_max))
+
+
+class Scalar(Array):
+    """Scalar variable, on which several transforms can be applied.
+
+    Parameters
+    ----------
+    dtype: type
+        either int or float
+
+    Note
+    ----
+    Interesting methods (which can be chained):
+
+    - with_transform(transform): apply a transform to the array
+    - affined(a, b): applies a*x+b
+    - bounded(a_min, a_max, transform="tanh"): applies a transform ("tanh" or "arctan")
+      so that output values are in range [a_min, a_max]
+    - exponentiated(base, coeff): applies base**(coeff * x)
+    - `Scalar(dtype)` is completely equivalent to `Array(1).asscalar(dtype)`
+    """
+
+    def __init__(self, dtype: Type[Union[float, int]] = float):
+        super().__init__(1)
+        self.asscalar(dtype=dtype)

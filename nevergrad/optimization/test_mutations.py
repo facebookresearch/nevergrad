@@ -3,51 +3,68 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from unittest import TestCase
-from typing import Callable, Any
+from typing import Union, List
 import numpy as np
-import genty
-from .utils import Value
-from . import mutations
+from ..common import testing
+from . import utils
+from .mutations import Mutator
+from .differentialevolution import Crossover
 
 
 def test_discrete_mutation() -> None:
     data = [0.1, -.1, 1]
-    np.random.seed(12)
-    output = mutations.discrete_mutation(data)
+    rng = np.random.RandomState(12)
+    output = Mutator(rng).discrete_mutation(data)
     np.testing.assert_almost_equal(output, [-.33, -.1, .02], decimal=2)
 
 
 def test_crossover() -> None:
     data = [0.1, -.1, 1, -0.1]
-    np.random.seed(15)
-    output = mutations.crossover(data, 2 * np.array(data))
+    rng = np.random.RandomState(15)
+    output = Mutator(rng).crossover(data, 2 * np.array(data))
     np.testing.assert_almost_equal(output, [-1.1, -.1, 2, -.1], decimal=2)
 
 
-@genty.genty
-class MutationTests(TestCase):
+@testing.parametrized(
+    dicrete=("discrete_mutation",),
+    portfolio_discrete=("portfolio_discrete_mutation",),
+    doubledoerr=("doubledoerr_discrete_mutation",),
+    doerr=("doerr_discrete_mutation",),
+)
+def test_run_with_array(name: str) -> None:
+    data = [0.1, -.1, 1, -.2] * 3
+    mutator = Mutator(np.random.RandomState(12))
+    func = getattr(mutator, name)
+    output1 = func(data)
+    mutator.random_state.seed(12)
+    output2 = func(np.array(data))
+    np.testing.assert_equal(output1, output2)
 
-    @genty.genty_dataset(  # type: ignore
-        dicrete=(mutations.discrete_mutation,),
-        portfolio_discrete=(mutations.portfolio_discrete_mutation,),
-        doubledoerr=(mutations.doubledoerr_discrete_mutation,),
-        doerr=(mutations.doerr_discrete_mutation,),
-    )
-    def test_run_with_array(self, func: Callable[..., Any]) -> None:
-        data = [0.1, -.1, 1, -.2] * 3
-        np.random.seed(12)
-        output1 = func(data)
-        np.random.seed(12)
-        output2 = func(np.array(data))
-        np.testing.assert_equal(output1, output2)
 
-    @genty.genty_dataset(  # type: ignore
-        only_2=(2, "b"),
-        all_4=(4, "a"),
-    )
-    def test_get_roulette(self, num: int, expected: str) -> None:
-        np.random.seed(24)
-        archive = {"a": Value(0), "b": Value(1), "c": Value(2), "d": Value(3)}
-        output = mutations.get_roulette(archive, num)
-        np.testing.assert_equal(output, expected)
+@testing.parametrized(
+    only_2=(2, 1.5),
+    all_4=(4, 0.5),
+)
+def test_get_roulette(num: int, expected: str) -> None:
+    rng = np.random.RandomState(24)
+    archive = utils.Archive[utils.Value]()
+    for k in range(4):
+        archive[np.array([k + .5])] = utils.Value(k)
+    output = Mutator(rng).get_roulette(archive, num)
+    np.testing.assert_equal(output, expected)
+
+
+@testing.parametrized(
+    cr_0=(0., 24, [0, 0, 3, 0]),  # one item is always kept
+    cr_1=(1., 24, [1, 2, 3, 4]),
+    cr_02=(.2, 24, [0, 2, 3, 0]),
+    onepoint=("onepoint", 24, [0, 0, 0, 4, 5, 6]),
+    twopoints=("twopoints", 16, [0, 0, 3, 4, 0, 0]),
+    twopoints_special=("twopoints", 20, [0, 0, 0, 0, 5, 6]),  # redraws since bounds was [0, 6]
+)
+def test_de_crossover(crossover_param: Union[str, float], seed: int, expected: List[int]) -> None:
+    rng = np.random.RandomState(seed)
+    crossover = Crossover(rng, crossover_param)
+    donor = np.arange(1, len(expected) + 1)
+    crossover.apply(donor, 0. * donor)
+    np.testing.assert_array_equal(donor, expected)

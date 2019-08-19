@@ -7,12 +7,13 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 from math import sqrt, tan, pi
+from typing import Union
 import numpy as np
-from nevergrad.functions import BaseFunction
 from nevergrad.common.typetools import ArrayLike
+from ... import instrumentation as inst
 
 
-def impedance_pix(x: np.ndarray, dpix: float, lam: float, ep0: float, epf: float) -> float:
+def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
     """Normalized impedance Z/Z0
     ep0, epf:  epsilons in et out
     lam: lambda in nanometers
@@ -27,13 +28,26 @@ def impedance_pix(x: np.ndarray, dpix: float, lam: float, ep0: float, epf: float
     return R
 
 
-def _transform(func: 'ARCoating', x: np.ndarray) -> np.ndarray:
-    """Transform to domain [epmin, epf]^dim
-    """
-    return (func.epf - func.epmin) * .5 * (1 + np.tanh(np.array(x))) + func.epmin
+class ARCoatingVariable(inst.var.utils.Variable[np.ndarray]):
+
+    def __init__(self, dimension: int, epmin: float, epf: float) -> None:
+        self._dimension = dimension
+        self.epf = epf
+        self.epmin = epmin
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    # pylint: disable=unused-argument
+    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> np.ndarray:
+        return (self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin  # type: ignore
+
+    def _short_repr(self) -> str:
+        return "Photonics"
 
 
-class ARCoating(BaseFunction):
+class ARCoating(inst.InstrumentedFunction):
     """
     Parameters
     ----------
@@ -55,8 +69,6 @@ class ARCoating(BaseFunction):
     University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
     """
 
-    _TRANSFORMS = {"bound": _transform}
-
     def __init__(self, nbslab: int = 10, d_ar: int = 400) -> None:
         # Wave length range
         self.lambdas = np.arange(400, 900, 5)  # lambda values from min to max, in nm
@@ -67,15 +79,10 @@ class ARCoating(BaseFunction):
         self.ep0 = 1
         self.epf = 9
         self.epmin = 1
-        super().__init__(dimension=nbslab, transform="bound")
+        super().__init__(self._get_minimum_average_reflexion, ARCoatingVariable(nbslab, self.epmin, self.epf))
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar)
 
-    def oracle_call(self, x: ArrayLike) -> float:
-        """Minimum average reflexion
-        """
-        return self._get_minimum_average_reflexion(x)
-
-    def _get_minimum_average_reflexion(self, x: ArrayLike) -> float:
+    def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:
         assert len(x) == self.dimension, f"Expected dimension {self.dimension}, got {len(x)}"
         if np.min(x) < self.epmin or np.max(x) > self.epf:  # acceptability
             return float('inf')

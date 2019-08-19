@@ -23,7 +23,7 @@ def pairwise(iterable: Iterable[Any]) -> Iterator[Tuple[Any, Any]]:
     ----
     Nothing will be returned if length of iterator is strictly less
     than 2.
-    """   # From itertools documentation
+    """  # From itertools documentation
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
@@ -58,7 +58,7 @@ class Selector(pd.DataFrame):  # type: ignore
     """Pandas dataframe class with a simplified selection function
     """
 
-    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
+    def select(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> "Selector":  # pylint: disable=arguments-differ
         """Select rows based on a value, a sequence of values or a discriminating function
 
         Parameters
@@ -83,7 +83,7 @@ class Selector(pd.DataFrame):  # type: ignore
             df = df.loc[selected, :]
         return Selector(df)
 
-    def select_and_drop(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> 'Selector':
+    def select_and_drop(self, **kwargs: Union[str, Sequence[str], Callable[[Any], bool]]) -> "Selector":
         """Same as select, but drops the columns used for selection
         """
         df = self.select(**kwargs)
@@ -110,12 +110,12 @@ class Selector(pd.DataFrame):  # type: ignore
             testing.assert_set_equal(set(column_s) - set(self.columns), {}, err_msg="Unknown column(s)")
             df = self.loc[:, column_s]
             assert not df.isnull().values.any(), "Cannot work with NaN values"
-            return set(tuple(row) for _, row in df.iterrows())
+            return set(tuple(row) for row in df.itertuples(index=False))
         else:
             raise NotImplementedError("Only strings, lists and tuples are allowed")
 
     @classmethod
-    def read_csv(cls, path: PathLike) -> 'Selector':
+    def read_csv(cls, path: PathLike) -> "Selector":
         return cls(pd.read_csv(str(path)))
 
     def assert_equivalent(self, other: pd.DataFrame, err_msg: str = "") -> None:
@@ -130,7 +130,7 @@ class Selector(pd.DataFrame):  # type: ignore
         other_df = other.loc[:, self.columns]
         df_rows: List[List[Tuple[Any, ...]]] = [[], []]
         for k, df in enumerate([self, other_df]):
-            for _, row in df.iterrows():
+            for row in df.itertuples(index=False):
                 df_rows[k].append(tuple(row))
             df_rows[k].sort()
         for row1, row2 in zip(*df_rows):
@@ -150,7 +150,7 @@ class Sleeper:
         size for averaging the registered durations
     """
 
-    def __init__(self, min_sleep: float = 1e-7, max_sleep: float = 1., averaging_size: int = 10) -> None:
+    def __init__(self, min_sleep: float = 1e-7, max_sleep: float = 1.0, averaging_size: int = 10) -> None:
         self._min = min_sleep
         self._max = max_sleep
         self._start: Optional[float] = None
@@ -174,7 +174,7 @@ class Sleeper:
         if not self._queue:
             if self._start is None:
                 return self._min
-            value = (time.time() - self._start)
+            value = time.time() - self._start
         else:
             value = np.mean(self._queue)
         return float(np.clip(value / self._num_waits, self._min, self._max))
