@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 import numpy as np
 from . import base
 
@@ -19,21 +19,23 @@ class CustomOptimizer(base.Optimizer):
     performs quite well in such a context - this is naturally close to 1+lambda.
     """
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(
+        self, instrumentation: Union[base.instru.Instrumentation, int], budget: Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.sigma: float = 1
 
     def _internal_ask(self) -> base.ArrayLike:
-        if not self._num_suggestions:
-            return np.zeros(self.dimension)
+        if not self.num_ask:
+            return np.zeros(self.dimension)  # type: ignore
         else:
-            return self.current_bests["pessimistic"].x + self.sigma * np.random.normal(0, 1, self.dimension)
+            return self.current_bests["pessimistic"].x + self.sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
 
     def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
         if value <= self.current_bests["pessimistic"].mean:
-            self.sigma = 2. * self.sigma
+            self.sigma = 2.0 * self.sigma
         else:
-            self.sigma = .84 * self.sigma
+            self.sigma = 0.84 * self.sigma
 
     def _internal_provide_recommendation(self) -> Tuple[float, ...]:
-        return self.current_bests["pessimistic"].x
+        return self.current_bests["pessimistic"].x  # type: ignore
