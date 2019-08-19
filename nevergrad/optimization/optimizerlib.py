@@ -23,7 +23,6 @@ from . import sequences
 from .differentialevolution import *  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
-from .cec2019_optimizer import *  # noqa: F403
 
 
 # # # # # optimizers # # # # #
@@ -514,7 +513,7 @@ class TBPSA(base.Optimizer):
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-self.llambda :]
+            last_fifth = self._loss_record[-self.llambda:]
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
@@ -1195,7 +1194,7 @@ class PBIL(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1-self.p[0]).astype(float)
+        data = (unif > 1 - self.p[0]).astype(float)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -1226,7 +1225,7 @@ class cGA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1-self.p[0]).astype(float)
+        data = (unif > 1 - self.p[0]).astype(float)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
