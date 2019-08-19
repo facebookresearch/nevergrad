@@ -15,7 +15,6 @@ from .xpbase import create_seed_generator
 from .xpbase import registry
 
 # register all frozen experiments
-from . import cec2019_experiments  # noqa # pylint:disable=unused-import
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks
@@ -27,9 +26,11 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    names = [n for n in ArtificialFunction.list_sorted_function_names() if ("one" in n or "jump" in n) and (not "5" in n) and ("hard" in n)]
+    names = [n for n in ArtificialFunction.list_sorted_function_names()
+             if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
     optims = sorted(
-        x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
+        x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
+        ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
@@ -52,7 +53,8 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
     optims = sorted(
-        x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
+        x for x, y in ng.optimizers.registry.items()
+        if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
