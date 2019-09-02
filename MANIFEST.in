@@ -1,3 +1,2 @@
 include LICENSE README.md
 include requirements/*.txt
-recursive-include nevergrad *.csv *.py *.typed
