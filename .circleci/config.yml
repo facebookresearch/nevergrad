@@ -86,7 +86,6 @@ jobs:
             . venv/bin/activate
             mypy --ignore-missing-imports nevergrad
 
-
       - run:
           name: "Run wheel and check files presence"
           command: |
