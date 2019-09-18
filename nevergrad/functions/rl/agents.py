@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import warnings
 import operator
 import copy as _copy
@@ -62,7 +67,7 @@ class TorchAgent(base.Agent):
         self.module = module
         kwargs = {
             name: inst.var.Array(*value.shape).affined(a=instrumentation_std).bounded(-10, 10, transform="arctan")
-            for name, value in module.state_dict().items()
+            for name, value in module.state_dict().items()  # type: ignore
         }  # bounded to avoid overflows
         self.instrumentation = inst.Instrumentation(**kwargs)
 
@@ -77,7 +82,7 @@ class TorchAgent(base.Agent):
 
     def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
         obs = torch.from_numpy(observation.astype(np.float32))
-        forward = self.module.forward(obs)
+        forward = self.module.forward(obs)  # type: ignore
         probas = F.softmax(forward, dim=0)
         if self.deterministic:
             return probas.max(0)[1].view(1, 1).item()
@@ -88,7 +93,7 @@ class TorchAgent(base.Agent):
         return TorchAgent(_copy.deepcopy(self.module), self.deterministic)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
-        self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})
+        self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})  # type: ignore
 
 
 class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
@@ -126,25 +131,25 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         return sum(self.compute(**kwargs) for _ in range(num_tests)) / num_tests
 
 
-class Perceptron(nn.Module):  # type: ignore
+class Perceptron(nn.Module):
     def __init__(self, input_shape: Tuple[int, ...], output_size: int) -> None:
-        super().__init__()
+        super().__init__()  # type: ignore
         assert len(input_shape) == 1
-        self.head = nn.Linear(input_shape[0], output_size)
+        self.head = nn.Linear(input_shape[0], output_size)  # type: ignore
 
     def forward(self, *args: Any) -> Any:
         assert len(args) == 1
         return self.head(args[0])
 
 
-class DenseNet(nn.Module):  # type: ignore
+class DenseNet(nn.Module):
     def __init__(self, input_shape: Tuple[int, ...], output_size: int) -> None:
-        super().__init__()
+        super().__init__()  # type: ignore
         assert len(input_shape) == 1
-        self.lin1 = nn.Linear(input_shape[0], 16)
-        self.lin2 = nn.Linear(16, 16)
-        self.lin3 = nn.Linear(16, 16)
-        self.head = nn.Linear(16, output_size)
+        self.lin1 = nn.Linear(input_shape[0], 16)  # type: ignore
+        self.lin2 = nn.Linear(16, 16)  # type: ignore
+        self.lin3 = nn.Linear(16, 16)  # type: ignore
+        self.head = nn.Linear(16, output_size)  # type: ignore
 
     def forward(self, *args: Any) -> Any:
         assert len(args) == 1

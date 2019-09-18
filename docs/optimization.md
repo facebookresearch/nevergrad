@@ -36,7 +36,7 @@ See the [instrumentation tutorial](instrumentation.md) for more complex instrume
 
 ## Using several workers
 
-Running the function evaluation in parallel with several workers is as easy as provided an executor:
+Running the function evaluation in parallel with several workers is as easy as providing an executor:
 ```python
 from concurrent import futures
 optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
@@ -75,12 +75,12 @@ import nevergrad as ng
 print(sorted(ng.optimizers.registry.keys()))
 ```
 
-All algorithms have strenghts and weaknesses. Questionable rules of thumb could be:
+All algorithms have strengths and weaknesses. Questionable rules of thumb could be:
 - `TwoPointsDE` is excellent in many cases, including very high `num_workers`.
 - `PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
 - `OnePlusOne` is a simple robust method for continuous parameters with `num_workers` < 8.
 - `CMA` is excellent for control (e.g. neurocontrol) when the environment is not very noisy (num_workers ~50 ok) and when the budget is large (e.g. 1000 x the dimension).
-- `TBPSA` is excellent for problems corrupted by noise, in particular overparametrized (neural) ones; very high `num_workers` ok).
+- `TBPSA` is excellent for problems corrupted by noise, in particular overparameterized (neural) ones; very high `num_workers` ok).
 - `PSO` is excellent in terms of robustness, high `num_workers` ok.
 - `ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. `num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
 - `RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
@@ -99,8 +99,8 @@ Or if you want something more aimed at robustly outperforming random search in h
 
 ## Reproducibility
 
-Each optimizer has its own `random_state` for generating random numbers and is therefore often expected to produce stochastic behaviors.
-For reproducibility, it can be seeded in two ways:
-- by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the optimizer's initialization. Indeed, at initialization,
-  the optimizer's random state is seeded with a seed drawn from the global random state.
-- by setting a seed manually on the optimizer (E.g.: `optimizer.random_state.seed(12)`)
+Each instrumentation has its own `random_state` for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
+For reproducibility, this random state can be seeded in two ways:
+- by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the instrumentation's first use. Indeed, when first used,
+  the instrumentation's random state is seeded with a seed drawn from the global random state.
+- by manually seeding the instrumentation random state (E.g.: `instrumentation.random_state.seed(12)` or `optimizer.instrumentation.random_state = np.random.RandomState(12)`)

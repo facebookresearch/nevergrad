@@ -30,7 +30,7 @@ def test_softmax_discretization(arity: int, data: List[float], expected: List[fl
     np.testing.assert_almost_equal(output, expected, decimal=1, err_msg="Wrong mean value")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        deterministic_output = discretization.softmax_discretization(coeffs, arity=arity, deterministic=True)
+        deterministic_output = discretization.softmax_discretization(coeffs, arity=arity, random=False)
     np.testing.assert_array_equal(deterministic_output, deterministic_expected, err_msg="Wrong deterministic value")
 
 
