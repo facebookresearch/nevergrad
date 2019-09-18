@@ -159,9 +159,9 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
             # choice of the cases with values for the fixed variables
             print("\n# ", fixed)
-            if orders == 2:
-                print("fixed=", fixed)
-                print("dfunique(fixed)=", df.unique(fixed))
+            if orders == 2:  # With order 2 we can create a competence map.
+                # print("fixed=", fixed)
+                # print("dfunique(fixed)=", df.unique(fixed))
                 try:
                     xindices = sorted(set([c[0] for c in df.unique(fixed)]))
                     yindices = sorted(set([c[1] for c in df.unique(fixed)]))
@@ -171,7 +171,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                     for i in range(len(xindices)):
                         for _ in range(len(yindices)):
                             best_algo[i] += [str(i)]
-                    print("TOTO:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
+                    # print("Competence maps:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
                 except:
                     pass
                 
@@ -191,7 +191,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                   name = "fight_all.png" if name == "fight_.png" else name
                   fplotter.save(str(output_folder / name), dpi=_DPI)
 
-            if orders == 2:
+            if orders == 2:  # With order 2 we can create a competence map.
               try:
                 name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
                 def export_table(filename, rows, cols, data):
@@ -239,7 +239,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
 #                        f.write("\\end{landscape}\n")
                         f.write("\\end{document}\n")
                 export_table(str(output_folder  / name), xindices, yindices, best_algo)
-                print("CM:", fixed, case, best_algo)
+                print("Competence map data:", fixed, case, best_algo)
               except:
                 pass
     plt.close("all")
