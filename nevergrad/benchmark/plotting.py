@@ -140,19 +140,6 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
-#    name = "xxx"
-#    for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
-#        # choice of the cases with values for the fixed variables
-#        for case in df.unique(fixed) if fixed else [()]:
-#            print("\n# new case #", fixed, case)
-#            casedf = df.select(**dict(zip(fixed, case)))
-#            assert (len(casedf) == len(df)) != bool(case), "The full data should be used iff when notheing is fixed"  # safeguard
-#            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-#            fplotter = FightPlotter(data_df)
-#            # save
-#            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-#            name = "fight_all.png" if name == "fight_.png" else name
-#            fplotter.save(str(output_folder / name), dpi=_DPI)
 
     for orders in range(max_combsize + 1) if not competencemaps else [2]:
         # The next line is a shame. Sorry. (TODO(oteytaud): improve this).
@@ -170,7 +157,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         best_algo += [[]]
                     for i in range(len(xindices)):
                         for _ in range(len(yindices)):
-                            best_algo[i] += [str(i)]
+                            best_algo[i] += [str(i)]  # Stupid value, for initialization.
                     # print("Competence maps:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
                 except:
                     pass
@@ -226,17 +213,16 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         f.write("\\renewcommand{\\arraystretch}{1.5}\n")
                         f.write("\\sloppy\n")
                         p = str(1./(2+len(cols)))
-#                        f.write("\\begin{landscape}\n")
+                        # f.write("\\begin{landscape}\n")
                         f.write("\\begin{tabular}{|P{" + p +"\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n")
                         f.write("\\hline\n")
                         f.write(" & " + "&".join(cols) + "\\\\\n")
                         f.write("\\hline\n")
                         for i, row in enumerate(rows):
                             f.write(row + "&" + "&".join([re.sub("[A-Z]", lambda w: " " + w.group(), d) for d in data[i]]) + "\\\\\n")
-                            #f.write(row + "&" + "&".join([d for d in data[i]]) + "\\\\\n")
                         f.write("\\hline\n")
                         f.write("\\end{tabular}\n")
-#                        f.write("\\end{landscape}\n")
+                        # f.write("\\end{landscape}\n")
                         f.write("\\end{document}\n")
                 export_table(str(output_folder  / name), xindices, yindices, best_algo)
                 print("Competence map data:", fixed, case, best_algo)
