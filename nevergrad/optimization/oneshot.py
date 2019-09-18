@@ -29,14 +29,22 @@ class _RandomSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
+        if self._parameters.quasi_opposite == "quasi" and self._num_ask % 2:
+            return -self.random_state.uniform(0., 1.) * self.last_guy  # type: ignore
+        if self._parameters.quasi_opposite == "opposite" and self._num_ask % 2:
+            return -self.last_guy  # type: ignore
         if self._parameters.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+            self.last_guy = np.zeros(self.dimension)
+            return self.last_guy  # type: ignore
         scale = self._parameters.scale
+        if isinstance(scale, str) and scale == "super":
+            scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self._parameters.cauchy
                  else self._rng.normal(0, 1, self.dimension))
-        return scale * point  # type: ignore
+        self.last_guy = scale * point
+        return self.last_guy  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
@@ -53,6 +61,10 @@ class RandomSearchMaker(base.ParametrizedFamily):
         Provides a random recommendation instead of the best point so far (for baseline)
     middle_point: bool
         enforces that the first suggested point (ask) is zero.
+    quasi_opposite: str
+        symmetrizes exploration wrt the center:
+             - full symmetry if "opposite"
+             - random * symmetric if "quasi"
     cauchy: bool
         use a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
@@ -65,18 +77,21 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
+                 quasi_opposite: str = "none",
                  cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
         assert isinstance(scale, (int, float)) or scale == "random"
         self.middle_point = middle_point
+        self.quasi_opposite = quasi_opposite
         self.stupid = stupid
         self.cauchy = cauchy
         self.scale = scale
         super().__init__()
 
-
 Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
 RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
+QORandomSearch = RandomSearchMaker(quasi_opposite="quasi").with_name("QORandomSearch", register=True)
+ORandomSearch = RandomSearchMaker(quasi_opposite="opposite").with_name("ORandomSearch", register=True)
 RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
 LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
@@ -98,6 +113,7 @@ class _SamplingSearch(OneShotOptimizer):
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None
 
+
     @property
     def sampler(self) -> sequences.Sampler:
         if self._sampler_instance is None:
@@ -106,8 +122,12 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, budget, scrambling=self._parameters.scrambled,
+            internal_budget = (budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else budget
+            internal_budget -= 1 if self._parameters.middle_point else 0
+
+            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
                                                                         random_state=self._rng)
+
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
@@ -117,11 +137,21 @@ class _SamplingSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
+            self.last_guy = np.zeros(self.dimension)
+            return self.last_guy  # type: ignore
+        if self._parameters.quasi_opposite == "quasi" and (self._num_ask - (1 if self._middle_point else 0)) % 2:
+            return -self.random_state.uniform(0., 1.) * self.last_guy  # type: ignore
+        if self._parameters.quasi_opposite == "opposite" and (self._num_ask - (1 if self._middle_point else 0)) % 2:
+            return -self.last_guy  # type: ignore
+        if self._parameters.middle_point and not self._num_ask:
             return np.zeros(self.dimension)  # type: ignore
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
+        if self._parameters.supercalais:
+            self._parameters.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        self.last_guy = self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
+        return self.last_guy
 
 
 class SamplingSearch(base.ParametrizedFamily):
@@ -166,15 +196,135 @@ class SamplingSearch(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
-                 cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
+                 quasi_opposite: str = "none",
+                 cauchy: bool = False, supercalais: bool = False, scale: float = 1., rescaled: bool = False) -> None:
         # keep all parameters and set initialize superclass for print
         self.sampler = sampler
+        self.quasi_opposite = quasi_opposite
         self.middle_point = middle_point
         self.scrambled = scrambled
         self.cauchy = cauchy
+        self.supercalais = supercalais
         self.scale = scale
         self.rescaled = rescaled
         super().__init__()
+
+SuperCalais = SamplingSearch(
+    cauchy=False, supercalais=True, sampler="Hammersley", scrambled=True).with_name("MetaCalais", register=True)
+SuperCauchyCalais = SamplingSearch(
+    cauchy=True, supercalais=True, sampler="Hammersley", scrambled=True).with_name("MetaCauchyCalais", register=True)
+Calais1ScrHammersleySearch = SamplingSearch(
+    scale=0.1, sampler="Hammersley", scrambled=True).with_name("Calais1ScrHammersleySearch", register=True)
+Calais4ScrHammersleySearch = SamplingSearch(
+    scale=0.4, sampler="Hammersley", scrambled=True).with_name("Calais4ScrHammersleySearch", register=True)
+CauchyCalais4ScrHammersleySearch = SamplingSearch(
+    scale=0.4, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais4ScrHammersleySearch", register=True)
+Calais1ScrHaltonSearch = SamplingSearch(
+    scale=0.1, sampler="Halton", scrambled=True).with_name("Calais1ScrHaltonSearch", register=True)
+Calais4ScrHaltonSearch = SamplingSearch(
+    scale=0.4, sampler="Halton", scrambled=True).with_name("Calais4ScrHaltonSearch", register=True)
+Calais1ScrLHSSearch = SamplingSearch(
+    scale=0.1, sampler="LHS", scrambled=True).with_name("Calais1ScrLHSSearch", register=True)
+Calais4ScrLHSSearch = SamplingSearch(
+    scale=0.4, sampler="LHS", scrambled=True).with_name("Calais4ScrLHSSearch", register=True)
+Calais1ScrRandomSearch = SamplingSearch(
+    scale=0.1, sampler="Random", scrambled=True).with_name("Calais1ScrRandomSearch", register=True)
+Calais4ScrRandomSearch = SamplingSearch(
+    scale=0.4, sampler="Random", scrambled=True).with_name("Calais4ScrRandomSearch", register=True)
+Calais7ScrHammersleySearch = SamplingSearch(
+    scale=0.7, sampler="Hammersley", scrambled=True).with_name("Calais7ScrHammersleySearch", register=True)
+CauchyCalais7ScrHammersleySearch = SamplingSearch(
+    scale=0.7, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais7ScrHammersleySearch", register=True)
+Calais20ScrHaltonSearch = SamplingSearch(
+    scale=2.0, sampler="Halton", scrambled=True).with_name("Calais20ScrHaltonSearch", register=True)
+Calais20ScrLHSSearch = SamplingSearch(
+    scale=2.0, sampler="LHS", scrambled=True).with_name("Calais20ScrLHSSearch", register=True)
+Calais20ScrRandomSearch = SamplingSearch(
+    scale=2.0, sampler="Random", scrambled=True).with_name("Calais20ScrRandomSearch", register=True)
+Calais20ScrHammersleySearch = SamplingSearch(
+    scale=2.0, sampler="Hammersley", scrambled=True).with_name("Calais20ScrHammersleySearch", register=True)
+Calais12ScrHaltonSearch = SamplingSearch(
+    scale=1.2, sampler="Halton", scrambled=True).with_name("Calais12ScrHaltonSearch", register=True)
+Calais12ScrLHSSearch = SamplingSearch(
+    scale=1.2, sampler="LHS", scrambled=True).with_name("Calais12ScrLHSSearch", register=True)
+Calais12ScrRandomSearch = SamplingSearch(
+    scale=1.2, sampler="Random", scrambled=True).with_name("Calais12ScrRandomSearch", register=True)
+Calais12ScrHammersleySearch = SamplingSearch(
+    scale=1.2, sampler="Hammersley", scrambled=True).with_name("Calais12ScrHammersleySearch", register=True)
+CauchyCalais12ScrHammersleySearch = SamplingSearch(
+    cauchy=True, scale=1.2, sampler="Hammersley", scrambled=True).with_name("CauchyCalais12ScrHammersleySearch", register=True)
+Calais7ScrHaltonSearch = SamplingSearch(
+    scale=0.7, sampler="Halton", scrambled=True).with_name("Calais7ScrHaltonSearch", register=True)
+Calais7ScrLHSSearch = SamplingSearch(
+    scale=0.7, sampler="LHS", scrambled=True).with_name("Calais7ScrLHSSearch", register=True)
+Calais7ScrRandomSearch = SamplingSearch(
+    scale=0.7, sampler="Random", scrambled=True).with_name("Calais7ScrRandomSearch", register=True)
+
+
+Calais0ScrHammersleySearch = SamplingSearch(
+    scale=0.01, sampler="Hammersley", scrambled=True).with_name("Calais0ScrHammersleySearch", register=True)
+Calais0ScrHaltonSearch = SamplingSearch(
+    scale=0.01, sampler="Halton", scrambled=True).with_name("Calais0ScrHaltonSearch", register=True)
+Calais0ScrLHSSearch = SamplingSearch(
+    scale=0.01, sampler="LHS", scrambled=True).with_name("Calais0ScrLHSSearch", register=True)
+Calais0ScrRandomSearch = SamplingSearch(
+    scale=0.01, sampler="Random", scrambled=True).with_name("Calais0ScrRandomSearch", register=True)
+
+
+OCalais1ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.1, sampler="Hammersley", scrambled=True).with_name("Ocalais1ScrHammersleySearch", register=True)
+OCalais4ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.4, sampler="Hammersley", scrambled=True).with_name("Ocalais4ScrHammersleySearch", register=True)
+QOCalais4ScrHammersleySearch = SamplingSearch(quasi_opposite="quasi",
+    scale=0.4, sampler="Hammersley", scrambled=True).with_name("QOcalais4ScrHammersleySearch", register=True)
+OCalais1ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.1, sampler="Halton", scrambled=True).with_name("Ocalais1ScrHaltonSearch", register=True)
+OCalais4ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.4, sampler="Halton", scrambled=True).with_name("Ocalais4ScrHaltonSearch", register=True)
+OCalais1ScrLHSSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.1, sampler="LHS", scrambled=True).with_name("Ocalais1ScrLHSSearch", register=True)
+OCalais4ScrLHSSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.4, sampler="LHS", scrambled=True).with_name("Ocalais4ScrLHSSearch", register=True)
+OCalais1ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.1, sampler="Random", scrambled=True).with_name("Ocalais1ScrRandomSearch", register=True)
+OCalais4ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.4, sampler="Random", scrambled=True).with_name("Ocalais4ScrRandomSearch", register=True)
+OCalais7ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.7, sampler="Hammersley", scrambled=True).with_name("Ocalais7ScrHammersleySearch", register=True)
+QOCalais7ScrHammersleySearch = SamplingSearch(quasi_opposite="quasi",
+    scale=0.7, sampler="Hammersley", scrambled=True).with_name("QOcalais7ScrHammersleySearch", register=True)
+OCalais20ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=2.0, sampler="Halton", scrambled=True).with_name("Ocalais20ScrHaltonSearch", register=True)
+OCalais20ScrLHSSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=2.0, sampler="LHS", scrambled=True).with_name("Ocalais20ScrLHSSearch", register=True)
+OCalais20ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=2.0, sampler="Random", scrambled=True).with_name("Ocalais20ScrRandomSearch", register=True)
+OCalais20ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
+    scale=2.0, sampler="Hammersley", scrambled=True).with_name("Ocalais20ScrHammersleySearch", register=True)
+OCalais12ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=1.2, sampler="Halton", scrambled=True).with_name("Ocalais12ScrHaltonSearch", register=True)
+OCalais12ScrLHSSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=1.2, sampler="LHS", scrambled=True).with_name("Ocalais12ScrLHSSearch", register=True)
+OCalais12ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=1.2, sampler="Random", scrambled=True).with_name("Ocalais12ScrRandomSearch", register=True)
+OCalais12ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
+    scale=1.2, sampler="Hammersley", scrambled=True).with_name("Ocalais12ScrHammersleySearch", register=True)
+OCalais7ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.7, sampler="Halton", scrambled=True).with_name("Ocalais7ScrHaltonSearch", register=True)
+OCalais7ScrLHSSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.7, sampler="LHS", scrambled=True).with_name("Ocalais7ScrLHSSearch", register=True)
+OCalais7ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.7, sampler="Random", scrambled=True).with_name("Ocalais7ScrRandomSearch", register=True)
+
+
+OCalais0ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.01, sampler="Hammersley", scrambled=True).with_name("Ocalais0ScrHammersleySearch", register=True)
+OCalais0ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.01, sampler="Halton", scrambled=True).with_name("Ocalais0ScrHaltonSearch", register=True)
+OCalais0ScrLHSSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.01, sampler="LHS", scrambled=True).with_name("Ocalais0ScrLHSSearch", register=True)
+OCalais0ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
+    scale=0.01, sampler="Random", scrambled=True).with_name("Ocalais0ScrRandomSearch", register=True)
 
 
 # pylint: disable=line-too-long
@@ -210,6 +360,8 @@ LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_na
 LargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
+QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="quasi").with_name("QOScrHammersleySearch", register=True)
+OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="opposite").with_name("OScrHammersleySearch", register=True)
 RescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
 CauchyScrHammersleySearch = SamplingSearch(
