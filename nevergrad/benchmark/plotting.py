@@ -6,6 +6,7 @@
 import os
 import argparse
 import itertools
+import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
@@ -101,7 +102,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget") -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget", competencemaps: bool=False) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -139,33 +140,124 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
-    for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
-        # choice of the cases with values for the fixed variables
-        for case in df.unique(fixed) if fixed else [()]:
-            print("\n# new case #", fixed, case)
-            casedf = df.select(**dict(zip(fixed, case)))
-            assert (len(casedf) == len(df)) != bool(case), "The full data should be used iff when notheing is fixed"  # safeguard
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-            fplotter = FightPlotter(data_df)
-            # save
-            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-            name = "fight_all.png" if name == "fight_.png" else name
-            fplotter.save(str(output_folder / name), dpi=_DPI)
+#    name = "xxx"
+#    for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
+#        # choice of the cases with values for the fixed variables
+#        for case in df.unique(fixed) if fixed else [()]:
+#            print("\n# new case #", fixed, case)
+#            casedf = df.select(**dict(zip(fixed, case)))
+#            assert (len(casedf) == len(df)) != bool(case), "The full data should be used iff when notheing is fixed"  # safeguard
+#            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+#            fplotter = FightPlotter(data_df)
+#            # save
+#            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+#            name = "fight_all.png" if name == "fight_.png" else name
+#            fplotter.save(str(output_folder / name), dpi=_DPI)
+
+    for orders in range(max_combsize + 1) if not competencemaps else [2]:
+        # The next line is a shame. Sorry. (TODO(oteytaud): improve this).
+        for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
+            # choice of the cases with values for the fixed variables
+            print("\n# ", fixed)
+            if orders == 2:
+                print("fixed=", fixed)
+                print("dfunique(fixed)=", df.unique(fixed))
+                try:
+                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                    best_algo = []
+                    for _ in range(len(xindices)):
+                        best_algo += [[]]
+                    for i in range(len(xindices)):
+                        for _ in range(len(yindices)):
+                            best_algo[i] += [str(i)]
+                    print("TOTO:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
+                except:
+                    pass
+                
+            for case in df.unique(fixed) if len(fixed) > 0 else [()]:
+                print("\n# new case #", fixed, case)
+                casedf = df.select(**dict(zip(fixed, case)))
+                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+                fplotter = FightPlotter(data_df)
+                if orders == 2:
+                  try:
+                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+                  except:
+                    pass
+                # save
+                if not competencemaps:
+                  name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+                  name = "fight_all.png" if name == "fight_.png" else name
+                  fplotter.save(str(output_folder / name), dpi=_DPI)
+
+            if orders == 2:
+              try:
+                name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+                def export_table(filename, rows, cols, data):
+                    rows = [str(r) for r in rows]
+                    cols = [str(r) for r in cols]
+                    data = [[d.replace("%", "\%").replace("_", "") for d in datarow] for datarow in data]
+                    try:
+                      data = [[d[:d.index("(")] for d in datarow] for datarow in data]
+                    except:
+                      pass
+                    print("filename=", filename)
+                    print("rows=", rows)
+                    print("cols=", cols)
+                    print("data=", data)
+                    with open(filename, "w") as f:
+                        f.write("\\documentclass{article}\n")
+                        f.write("\\usepackage{lscape}\n")
+                        f.write("\\usepackage{array}\n")
+                        f.write("\\lccode`0=`0\n")
+                        f.write("\\lccode`1=`1\n")
+                        f.write("\\lccode`2=`2\n")
+                        f.write("\\lccode`3=`3\n")
+                        f.write("\\lccode`4=`4\n")
+                        f.write("\\lccode`5=`5\n")
+                        f.write("\\lccode`6=`6\n")
+                        f.write("\\lccode`7=`7\n")
+                        f.write("\\lccode`8=`8\n")
+                        f.write("\\lccode`9=`9\n")
+                        f.write("\\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}\n")
+                        f.write("\\begin{document}\n")
+                        f.write("\\scriptsize\n")
+                        f.write("\\renewcommand{\\arraystretch}{1.5}\n")
+                        f.write("\\sloppy\n")
+                        p = str(1./(2+len(cols)))
+#                        f.write("\\begin{landscape}\n")
+                        f.write("\\begin{tabular}{|P{" + p +"\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n")
+                        f.write("\\hline\n")
+                        f.write(" & " + "&".join(cols) + "\\\\\n")
+                        f.write("\\hline\n")
+                        for i, row in enumerate(rows):
+                            f.write(row + "&" + "&".join([re.sub("[A-Z]", lambda w: " " + w.group(), d) for d in data[i]]) + "\\\\\n")
+                            #f.write(row + "&" + "&".join([d for d in data[i]]) + "\\\\\n")
+                        f.write("\\hline\n")
+                        f.write("\\end{tabular}\n")
+#                        f.write("\\end{landscape}\n")
+                        f.write("\\end{document}\n")
+                export_table(str(output_folder  / name), xindices, yindices, best_algo)
+                print("CM:", fixed, case, best_algo)
+              except:
+                pass
     plt.close("all")
-    #
-    # xp plots
-    # plot mean loss / budget for each optimizer for 1 context
-    print("# Xp plots")
-    name_style = NameStyle()  # keep the same style for each algorithm
-    cases = df.unique(descriptors)
-    for case in cases:
-        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-        data = XpPlotter.make_data(subdf)
-        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-        xpplotter.save(out_filepath)
-    plt.close("all")
+    if not competencemaps:
+      #
+      # xp plots
+      # plot mean loss / budget for each optimizer for 1 context
+      print("# Xp plots")
+      name_style = NameStyle()  # keep the same style for each algorithm
+      cases = df.unique(descriptors)
+      for case in cases:
+          subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+          description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+          out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+          data = XpPlotter.make_data(subdf)
+          xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+          xpplotter.save(out_filepath)
+      plt.close("all")
 
 
 class LegendInfo(NamedTuple):
@@ -388,7 +480,8 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
-        data = np.array(winrates.iloc[:num_rows, :])
+        sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
+        data = np.array(winrates.iloc[:num_rows, :len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [(f"{name} ({100 * val:2.1f}%)").replace("Search", "") for name, val in zip(mean_win.index[:num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
@@ -502,12 +595,14 @@ def main() -> None:
         "--max_combsize", type=int, default=0, help="maximum number of parameters to fix (combinations) when creating experiment plots"
     )
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
+    parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget")
+    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize if not args.competencemaps else 2,
+                 xpaxis="pseudotime" if args.pseudotime else "budget", competencemaps=args.competencemaps)
 
 
 if __name__ == "__main__":
