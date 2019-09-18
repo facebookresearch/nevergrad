@@ -758,6 +758,43 @@ class Portfolio(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
+#@registry.register
+#class RobustOneShot(Portfolio):
+#    """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
+#
+#    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+#        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+#        assert budget is not None
+#
+#        def intshare(n: int, m: int) -> Tuple[int, ...]:
+#            x = [n // m] * m
+#            i = 0
+#            while sum(x) < n:
+#                x[i] += 1
+#                i += 1
+#            return tuple(x)
+#        nw1, nw2, nw3, nw4 = intshare(num_workers, 4)
+#        self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] * nw4
+#        assert len(self.which_optim) == num_workers
+#        # b1, b2, b3, b4, b5 = intshare(budget, 5)
+#        self.optims = [
+#                       MetaCalais(instrumentation, num_workers=nw1),
+#                       LHS(instrumentation, num_workers=nw2),  # noqa: F405
+#                       CauchyLHS(instrumentation, num_workers=nw3),
+#                       SQP(instrumentation, 1),  # noqa: F405
+#                       ]
+#        for optim in self.optims:
+#            optim._random_state = self.random_state  # share the state
+#        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+#
+#    def _internal_ask_candidate(self) -> base.Candidate:
+#        optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
+#        individual = self.optims[optim_index].ask()
+#        self.who_asked[tuple(individual.data)] += [optim_index]
+#        return individual
+
+
+
 @registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
@@ -863,6 +900,7 @@ class ASCMADEQRthird(ASCMADEthird):
                        ScrHaltonSearch(instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
         for optim in self.optims:
             optim._random_state = self.random_state  # share the state
+
 
 
 @registry.register
