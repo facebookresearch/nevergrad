@@ -277,8 +277,11 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
-    func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-    func._descriptors.update(archi=archi)
+    for archi in ["mono", "multi"]:
+        agent = agent_mono if archi == "mono" else agent_multi
+        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+        func._descriptors.update(archi=archi)
+        funcs += [func]
     
     funcs: List[InstrumentedFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -290,6 +293,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+    
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
