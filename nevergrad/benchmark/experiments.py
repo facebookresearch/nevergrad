@@ -262,6 +262,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                     function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
+
 @registry.register
 def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
@@ -271,7 +272,7 @@ def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - TODO FIXME DO NOT SUBMIT
     
     # MLDA stuff, except the Perceptron.
-    funcs: List[InstrumentedFunction] = [
+    funcs: List[Union[InstrumentedFunction, TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -312,6 +313,7 @@ def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
+                            
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = [
@@ -324,7 +326,6 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
-
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
