@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List
+from typing import Iterator, Optional, List, Union
 import nevergrad as ng
 from ..functions import ArtificialFunction
 from ..functions import mlda as _mlda
