@@ -223,16 +223,12 @@ Calais1ScrHaltonSearch = SamplingSearch(
     scale=0.1, sampler="Halton", scrambled=True).with_name("Calais1ScrHaltonSearch", register=True)
 Calais4ScrHaltonSearch = SamplingSearch(
     scale=0.4, sampler="Halton", scrambled=True).with_name("Calais4ScrHaltonSearch", register=True)
-Calais4ScrRandomSearch = SamplingSearch(
-    scale=0.4, sampler="Random", scrambled=True).with_name("Calais4ScrRandomSearch", register=True)
 Calais7ScrHammersleySearch = SamplingSearch(
     scale=0.7, sampler="Hammersley", scrambled=True).with_name("Calais7ScrHammersleySearch", register=True)
 CauchyCalais7ScrHammersleySearch = SamplingSearch(
     scale=0.7, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais7ScrHammersleySearch", register=True)
 Calais20ScrHaltonSearch = SamplingSearch(
     scale=2.0, sampler="Halton", scrambled=True).with_name("Calais20ScrHaltonSearch", register=True)
-Calais20ScrRandomSearch = SamplingSearch(
-    scale=2.0, sampler="Random", scrambled=True).with_name("Calais20ScrRandomSearch", register=True)
 Calais20ScrHammersleySearch = SamplingSearch(
     scale=2.0, sampler="Hammersley", scrambled=True).with_name("Calais20ScrHammersleySearch", register=True)
 Calais12ScrHaltonSearch = SamplingSearch(
@@ -251,8 +247,6 @@ Calais0ScrHaltonSearch = SamplingSearch(
     scale=0.01, sampler="Halton", scrambled=True).with_name("Calais0ScrHaltonSearch", register=True)
 Calais0ScrLHSSearch = SamplingSearch(
     scale=0.01, sampler="LHS", scrambled=True).with_name("Calais0ScrLHSSearch", register=True)
-Calais0ScrRandomSearch = SamplingSearch(
-    scale=0.01, sampler="Random", scrambled=True).with_name("Calais0ScrRandomSearch", register=True)
 
 
 OCalais1ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
@@ -265,38 +259,24 @@ OCalais1ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
     scale=0.1, sampler="Halton", scrambled=True).with_name("Ocalais1ScrHaltonSearch", register=True)
 OCalais4ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
     scale=0.4, sampler="Halton", scrambled=True).with_name("Ocalais4ScrHaltonSearch", register=True)
-OCalais1ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.1, sampler="Random", scrambled=True).with_name("Ocalais1ScrRandomSearch", register=True)
-OCalais4ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.4, sampler="Random", scrambled=True).with_name("Ocalais4ScrRandomSearch", register=True)
 OCalais7ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
     scale=0.7, sampler="Hammersley", scrambled=True).with_name("Ocalais7ScrHammersleySearch", register=True)
 QOCalais7ScrHammersleySearch = SamplingSearch(quasi_opposite="quasi",
     scale=0.7, sampler="Hammersley", scrambled=True).with_name("QOcalais7ScrHammersleySearch", register=True)
 OCalais20ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
     scale=2.0, sampler="Halton", scrambled=True).with_name("Ocalais20ScrHaltonSearch", register=True)
-OCalais20ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=2.0, sampler="Random", scrambled=True).with_name("Ocalais20ScrRandomSearch", register=True)
 OCalais20ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
     scale=2.0, sampler="Hammersley", scrambled=True).with_name("Ocalais20ScrHammersleySearch", register=True)
 OCalais12ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
     scale=1.2, sampler="Halton", scrambled=True).with_name("Ocalais12ScrHaltonSearch", register=True)
-OCalais12ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=1.2, sampler="Random", scrambled=True).with_name("Ocalais12ScrRandomSearch", register=True)
 OCalais12ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
     scale=1.2, sampler="Hammersley", scrambled=True).with_name("Ocalais12ScrHammersleySearch", register=True)
 OCalais7ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
     scale=0.7, sampler="Halton", scrambled=True).with_name("Ocalais7ScrHaltonSearch", register=True)
-OCalais7ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.7, sampler="Random", scrambled=True).with_name("Ocalais7ScrRandomSearch", register=True)
-
-
 OCalais0ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
     scale=0.01, sampler="Hammersley", scrambled=True).with_name("Ocalais0ScrHammersleySearch", register=True)
 OCalais0ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
     scale=0.01, sampler="Halton", scrambled=True).with_name("Ocalais0ScrHaltonSearch", register=True)
-OCalais0ScrRandomSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.01, sampler="Random", scrambled=True).with_name("Ocalais0ScrRandomSearch", register=True)
 
 
 # pylint: disable=line-too-long
