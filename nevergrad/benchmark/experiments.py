@@ -262,6 +262,46 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                     function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
+@registry.register
+def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # This experiment contains:
+    # - a subset of MLDA (excluding gthe perceptron)
+    # - ARCoating TODO reference
+    # - The 007 game
+    # - TODO FIXME DO NOT SUBMIT
+    
+    # Needed for 007.
+    base_env = rl.envs.DoubleOSeven(verbose=False)
+    random_agent = rl.agents.Agent007(base_env)
+    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
+    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
+    func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+    func._descriptors.update(archi=archi)
+    
+    funcs: List[InstrumentedFunction] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+    ]
+    funcs += [
+        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+        _mlda.SammonMapping.from_mlda("Employees"),
+    ]
+    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for func in funcs:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
@@ -275,6 +315,8 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+    funcs += [ARCoating()]
+
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
