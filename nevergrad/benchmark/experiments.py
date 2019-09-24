@@ -266,10 +266,9 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
-    # - a subset of MLDA (excluding gthe perceptron)
-    # - ARCoating TODO reference
+    # - a subset of MLDA (excluding the perceptron)
+    # - ARCoating https://arxiv.org/abs/1904.02907
     # - The 007 game
-    # - TODO FIXME DO NOT SUBMIT
     
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, TorchAgentFunction]] = [
@@ -286,7 +285,7 @@ def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Adding ARCoating.
     funcs += [ARCoating()]
 
-    # 007.
+    # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
     agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
