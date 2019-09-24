@@ -1,5 +1,6 @@
 import itertools
 from collections import namedtuple
+# Credits: http://www.moderndescartes.com/essays/implementing_go/
 N = 7
 NN = N ** 2
 WHITE, BLACK, EMPTY = 'O', 'X', '.'
