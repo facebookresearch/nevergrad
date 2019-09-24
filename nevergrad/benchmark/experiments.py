@@ -264,7 +264,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
+def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
     # - a subset of MLDA (excluding the perceptron)
     # - ARCoating https://arxiv.org/abs/1904.02907
