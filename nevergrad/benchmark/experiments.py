@@ -263,7 +263,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 @registry.register
-def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+def realworld_mlda_extended(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
     # - a subset of MLDA (excluding gthe perceptron)
     # - ARCoating TODO reference
