@@ -42,7 +42,7 @@ class battleship(object):
         self.N = N
         self.board = board
         self.short_policy = 100
-        self.long_policy = 5000
+        self.long_policy = 50000
 
     def __str__(self):
         serialized = "".join(["".join(b) for b in self.board])
