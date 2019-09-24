@@ -307,8 +307,8 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:
-                    for func in funcs:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
 
