@@ -271,7 +271,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - The 007 game
     
     # MLDA stuff, except the Perceptron.
-    funcs: List[Union[InstrumentedFunction, TorchAgentFunction]] = [
+    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
