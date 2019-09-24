@@ -28,14 +28,6 @@ class Game(object):
         self.history2 = []
         if game == "flip":
             return self.flip_play_game(policy1, policy2)
-        if game == "007":
-            return self.game007_play_game(policy1, policy2)
-        if game == "007nn":
-            return self.game007_play_game(policy1, policy2, "nn")
-        if game == "007doublenn":
-            return self.game007_play_game(policy1, policy2, "2nn")
-        if game == "007triplenn":
-            return self.game007_play_game(policy1, policy2, "3nn")
         if game == "batawaf":
             return self.war_play_game(policy1, policy2, batawaf=True)
         if game == "war":
@@ -55,112 +47,6 @@ class Game(object):
         if game == "battleship2":
             return battleship.play_game(policy1, policy2, version=2)
         raise NotImplementedError(game)
-
-    def choose_action007(self, player, munitions, protections,
-                         opp_munitions, opp_protections, setting=None):
-        # 0 = fire, 1 = protect, 2 = reload.
-        if player is None:
-            if munitions == 0 and opp_munitions == 0:
-                return 2
-            if opp_protections == 4 and munitions > 0:
-                return 0
-            return np.random.choice(range(3))
-        x = np.array([munitions, protections, opp_munitions, opp_protections])
-        if setting is None:
-            assert len(player) == 12
-            w = np.reshape(player, (3, 4))
-            y = np.matmul(w, x)
-        else:
-            if setting == "nn":
-                w1 = np.reshape(player[:12], (3, 4))
-                w2 = np.reshape(player[12:21], (3, 3))
-                a = np.tanh(np.matmul(w1, x))
-                y = np.matmul(w2, a)
-            else:
-                if setting == "2nn":
-                    w1 = np.reshape(player[:12], (3, 4))
-                    w2 = np.reshape(player[12:21], (3, 3))
-                    w3 = np.reshape(player[21:30], (3, 3))
-                    a = np.tanh(np.matmul(w1, x))
-                    b = np.tanh(np.matmul(w2, a))
-                    y = np.matmul(w3, b)
-                else:
-                    if setting == "3nn":
-                        w1 = np.reshape(player[:12], (3, 4))
-                        w2 = np.reshape(player[12:21], (3, 3))
-                        w3 = np.reshape(player[21:30], (3, 3))
-                        w4 = np.reshape(player[30:39], (3, 3))
-                        a = np.tanh(np.matmul(w1, x))
-                        b = np.tanh(np.matmul(w2, a))
-                        c = np.tanh(np.matmul(w3, b))
-                        y = np.matmul(w4, c)
-                    else:
-                        assert False
-        y = y - np.max(y)
-        # Now, y is a vector of size 3.
-        proba = [np.exp(y_) for y_ in y]
-        proba = [p_ / sum(proba) for p_ in proba]
-        assert len(proba) == 3
-        action = np.random.choice(range(3), p=proba)
-        # 0 = fire, 1 = protect, 2 = reload.
-        if action == 0 and munitions == 0:
-            action = 2
-        return action
-
-    def game007_play_game(self, player1, player2, setting=None):
-        if player1 is None and player2 is None:
-            if setting is None:
-                return 12
-            if setting is "nn":
-                return 21
-            if setting is "2nn":
-                return 30
-            if setting is "3nn":
-                return 39
-        munitions_player1 = 0
-        munitions_player2 = 0
-        number_of_protections1 = 0
-        number_of_protections2 = 0
-        for i in range(500):
-            action1 = self.choose_action007(
-                player1,
-                munitions_player1,
-                number_of_protections1,
-                munitions_player2,
-                number_of_protections2, setting)
-            action2 = self.choose_action007(
-                player2,
-                munitions_player2,
-                number_of_protections2,
-                munitions_player1,
-                number_of_protections1, setting)
-            # 0 = fire, 1 = protect, 2 = reload.
-            if action1 == 0 and action2 == 2:
-                return 1   # player 1 wins.
-            if action2 == 0 and action1 == 2:
-                return 2   # player 2 wins.
-            if action1 == 0:
-                munitions_player1 -= 1
-            if action2 == 0:
-                munitions_player2 -= 1
-            if action1 == 2:
-                munitions_player1 += 1
-            if action2 == 1:
-                munitions_player2 += 1
-            if action1 == 1:
-                number_of_protections1 += 1
-            else:
-                number_of_protections1 = 0
-            if action2 == 1:
-                number_of_protections2 += 1
-            else:
-                number_of_protections2 = 0
-            if not(number_of_protections1 >= 5 and number_of_protections2 >= 5):
-                if number_of_protections1 >= 5:
-                    return 2  # player 2 wins.
-                if number_of_protections2 >= 5:
-                    return 1  # player 1 wins.
-        return 0
 
     def guesswho_play_noturn(self, decks, policy):
         assert decks[0] > 0
