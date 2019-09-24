@@ -270,7 +270,22 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - The 007 game
     # - TODO FIXME DO NOT SUBMIT
     
-    # Needed for 007.
+    # MLDA stuff, except the Perceptron.
+    funcs: List[InstrumentedFunction] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+    ]
+    funcs += [
+        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+        _mlda.SammonMapping.from_mlda("Employees"),
+    ]
+    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+
+    # Adding ARCoating.
+    funcs += [ARCoating()]
+
+    # 007.
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
     agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
@@ -283,16 +298,6 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         func._descriptors.update(archi=archi)
         funcs += [func]
     
-    funcs: List[InstrumentedFunction] = [
-        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
-    ]
-    funcs += [
-        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
-        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
-    ]
-    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
-    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
@@ -319,7 +324,6 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
-    funcs += [ARCoating()]
 
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
