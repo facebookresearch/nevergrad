@@ -44,7 +44,7 @@ class ARCoatingVariable(inst.var.utils.Variable[np.ndarray]):
         return (self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin  # type: ignore
 
     def _short_repr(self) -> str:
-        return "Photonics"
+        return "ARCoating"
 
 
 class ARCoating(inst.InstrumentedFunction):
