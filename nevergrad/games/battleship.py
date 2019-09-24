@@ -327,7 +327,7 @@ def play_game(policy1=None, policy2=None, version=1):
         board1.good_shoot(policy2)
         if board1.alive == 0:
             return 2
-    return 0  # This should never happen.
+    assert False  # This should never happen.
 
 
 #play_game([random.uniform(0., 1.) for _ in xrange(500)], [random.uniform(0., 1.) for _ in xrange(500)])
