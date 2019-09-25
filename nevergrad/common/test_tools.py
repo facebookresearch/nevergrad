@@ -84,4 +84,4 @@ def test_sleeper() -> None:
     sleeper.start_timer()
     np.testing.assert_equal(sleeper._get_advised_sleep_duration(), min_sleep)
     sleeper.stop_timer()
-    np.testing.assert_equal(sleeper._get_advised_sleep_duration(), min_sleep)
+    np.testing.assert_almost_equal(sleeper._get_advised_sleep_duration(), min_sleep, decimal=2)
