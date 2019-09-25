@@ -122,8 +122,8 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            internal_budget = (budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else budget
-            internal_budget -= 1 if self._parameters.middle_point else 0
+            dec_budget = budget - (1 if self._parameters.middle_point else 0)
+            internal_budget = (dec_budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else dec_budget
 
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
                                                                         random_state=self._rng)
