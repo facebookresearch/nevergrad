@@ -62,7 +62,7 @@ class RandomSearchMaker(base.ParametrizedFamily):
     middle_point: bool
         enforces that the first suggested point (ask) is zero.
     quasi_opposite: str
-        symmetrizes exploration wrt the center:
+        symmetrizes exploration wrt the center: (e.g. https://ieeexplore.ieee.org/document/4424748)
              - full symmetry if "opposite"
              - random * symmetric if "quasi"
     cauchy: bool
