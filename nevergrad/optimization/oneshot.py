@@ -245,8 +245,7 @@ Calais0ScrHammersleySearch = SamplingSearch(
     scale=0.01, sampler="Hammersley", scrambled=True).with_name("Calais0ScrHammersleySearch", register=True)
 Calais0ScrHaltonSearch = SamplingSearch(
     scale=0.01, sampler="Halton", scrambled=True).with_name("Calais0ScrHaltonSearch", register=True)
-Calais0ScrLHSSearch = SamplingSearch(
-    scale=0.01, sampler="LHS", scrambled=True).with_name("Calais0ScrLHSSearch", register=True)
+
 
 
 OCalais1ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
