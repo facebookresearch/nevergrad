@@ -18,7 +18,17 @@ class OneShotOptimizer(base.Optimizer):
     # pylint: disable=abstract-method
     one_shot = True
 
-# # # # # very basic baseline optimizers # # # # #
+# Calais or center-based counterparts of the original Nevergrad oneshot optimizers.
+# Quasi-opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one,
+# multiplied by rand([0,1]).
+# Opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one.
+# PlusMiddlePoint counterpart of a sampling: we add (0,0,...,0) as a first point.
+# Useful in high dim.
+
+
+
+
+# # # # # One-shot optimizers: all fitness evaluations are in parallel. # # # # #
 
 
 class _RandomSearch(OneShotOptimizer):
