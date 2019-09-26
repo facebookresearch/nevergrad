@@ -18,12 +18,13 @@ class OneShotOptimizer(base.Optimizer):
     # pylint: disable=abstract-method
     one_shot = True
 
-# Calais or center-based counterparts of the original Nevergrad oneshot optimizers.
-# Quasi-opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one,
-# multiplied by rand([0,1]).
-# Opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one.
-# PlusMiddlePoint counterpart of a sampling: we add (0,0,...,0) as a first point.
-# Useful in high dim.
+# Calais or center-based counterparts of the original Nevergrad oneshot optimizers:
+# - Quasi-opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one,
+#   multiplied by rand([0,1]).
+# - Opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one.
+# - PlusMiddlePoint counterpart of a sampling: we add (0,0,...,0) as a first point.
+#   Useful in high dim.
+# - Some variants use a rescaling depending on the budget and the dimension.
 
 
 
@@ -48,6 +49,7 @@ class _RandomSearch(OneShotOptimizer):
             return self.last_guy  # type: ignore
         scale = self._parameters.scale
         if isinstance(scale, str) and scale == "super":
+            # Some variants use a rescaling depending on the budget and the dimension.
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
