@@ -560,6 +560,10 @@ def compute_best_placements(positions: List[float], min_diff: float) -> List[flo
     ----
     This function is probably not optimal, but seems a very good heuristic
     """
+    if not all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1])):
+        print(positions[1:])
+        print("vs:")
+        print(positions[:-1])
     assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: List[LegendGroup] = []

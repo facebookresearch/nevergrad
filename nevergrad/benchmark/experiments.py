@@ -280,15 +280,16 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def mlda_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = [
-        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True]
+#        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
-        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+#        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+#        _mlda.SammonMapping.from_mlda("Employees"),
     ]
-    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
-    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+#    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    #funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
     algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and not "arg" in str(x) and not "mal" in str(x))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
