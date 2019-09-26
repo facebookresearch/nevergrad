@@ -266,9 +266,9 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
-    # - a subset of MLDA (excluding the perceptron)
-    # - ARCoating https://arxiv.org/abs/1904.02907
-    # - The 007 game
+    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
+    # - The 007 game: 1 function, noisy.
     
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
