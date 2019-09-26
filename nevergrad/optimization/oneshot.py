@@ -122,11 +122,7 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            if budget:
-                internal_budget = (budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else budget
-            else:
-                internal_budget = None
-            self.internal_budget = internal_budget
+            internal_budget = (budget + 1) // 2 if budget and (self._parameters == "quasi" or self._parameters == "opposite") else budget
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
                                                                         random_state=self._rng)
 
@@ -145,10 +141,6 @@ class _SamplingSearch(OneShotOptimizer):
             return -self._rng.uniform(0., 1.) * self.last_guy  # type: ignore
         if self._parameters.quasi_opposite == "opposite" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
             return -self.last_guy  # type: ignore
-        #if self._parameters.middle_point and not self._num_ask:
-        #    return np.zeros(self.dimension)  # type: ignore
-        if self._sampler_instance:
-            print("internal budget = ", self.internal_budget)
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
