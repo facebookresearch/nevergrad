@@ -122,9 +122,11 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            dec_budget = budget - (1 if self._parameters.middle_point else 0)
-            internal_budget = (dec_budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else dec_budget
-
+            if budget:
+                internal_budget = (budget + 1) // 2 if self._parameters == "quasi" or self._parameters == "opposite" else budget
+            else:
+                internal_budget = None
+            self.internal_budget = internal_budget
             self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
                                                                         random_state=self._rng)
 
@@ -139,12 +141,14 @@ class _SamplingSearch(OneShotOptimizer):
         if self._parameters.middle_point and not self._num_ask:
             self.last_guy = np.zeros(self.dimension)
             return self.last_guy  # type: ignore
-        if self._parameters.quasi_opposite == "quasi" and (self._num_ask - (1 if self._middle_point else 0)) % 2:
-            return -self.random_state.uniform(0., 1.) * self.last_guy  # type: ignore
-        if self._parameters.quasi_opposite == "opposite" and (self._num_ask - (1 if self._middle_point else 0)) % 2:
+        if self._parameters.quasi_opposite == "quasi" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
+            return -self._rng.uniform(0., 1.) * self.last_guy  # type: ignore
+        if self._parameters.quasi_opposite == "opposite" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
             return -self.last_guy  # type: ignore
-        if self._parameters.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+        #if self._parameters.middle_point and not self._num_ask:
+        #    return np.zeros(self.dimension)  # type: ignore
+        if self._sampler_instance:
+            print("internal budget = ", self.internal_budget)
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
@@ -209,9 +213,9 @@ class SamplingSearch(base.ParametrizedFamily):
         self.rescaled = rescaled
         super().__init__()
 
-SuperCalais = SamplingSearch(
+MetaCalais = SamplingSearch(
     cauchy=False, supercalais=True, sampler="Hammersley", scrambled=True).with_name("MetaCalais", register=True)
-SuperCauchyCalais = SamplingSearch(
+MetaCauchyCalais = SamplingSearch(
     cauchy=True, supercalais=True, sampler="Hammersley", scrambled=True).with_name("MetaCauchyCalais", register=True)
 Calais1ScrHammersleySearch = SamplingSearch(
     scale=0.1, sampler="Hammersley", scrambled=True).with_name("Calais1ScrHammersleySearch", register=True)
@@ -249,33 +253,33 @@ Calais0ScrHaltonSearch = SamplingSearch(
 
 
 OCalais1ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.1, sampler="Hammersley", scrambled=True).with_name("Ocalais1ScrHammersleySearch", register=True)
+    scale=0.1, sampler="Hammersley", scrambled=True).with_name("OCalais1ScrHammersleySearch", register=True)
 OCalais4ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.4, sampler="Hammersley", scrambled=True).with_name("Ocalais4ScrHammersleySearch", register=True)
+    scale=0.4, sampler="Hammersley", scrambled=True).with_name("OCalais4ScrHammersleySearch", register=True)
 QOCalais4ScrHammersleySearch = SamplingSearch(quasi_opposite="quasi",
-    scale=0.4, sampler="Hammersley", scrambled=True).with_name("QOcalais4ScrHammersleySearch", register=True)
+    scale=0.4, sampler="Hammersley", scrambled=True).with_name("QOCalais4ScrHammersleySearch", register=True)
 OCalais1ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.1, sampler="Halton", scrambled=True).with_name("Ocalais1ScrHaltonSearch", register=True)
+    scale=0.1, sampler="Halton", scrambled=True).with_name("OCalais1ScrHaltonSearch", register=True)
 OCalais4ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.4, sampler="Halton", scrambled=True).with_name("Ocalais4ScrHaltonSearch", register=True)
+    scale=0.4, sampler="Halton", scrambled=True).with_name("OCalais4ScrHaltonSearch", register=True)
 OCalais7ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.7, sampler="Hammersley", scrambled=True).with_name("Ocalais7ScrHammersleySearch", register=True)
+    scale=0.7, sampler="Hammersley", scrambled=True).with_name("OCalais7ScrHammersleySearch", register=True)
 QOCalais7ScrHammersleySearch = SamplingSearch(quasi_opposite="quasi",
-    scale=0.7, sampler="Hammersley", scrambled=True).with_name("QOcalais7ScrHammersleySearch", register=True)
+    scale=0.7, sampler="Hammersley", scrambled=True).with_name("QOCalais7ScrHammersleySearch", register=True)
 OCalais20ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=2.0, sampler="Halton", scrambled=True).with_name("Ocalais20ScrHaltonSearch", register=True)
+    scale=2.0, sampler="Halton", scrambled=True).with_name("OCalais20ScrHaltonSearch", register=True)
 OCalais20ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
-    scale=2.0, sampler="Hammersley", scrambled=True).with_name("Ocalais20ScrHammersleySearch", register=True)
+    scale=2.0, sampler="Hammersley", scrambled=True).with_name("OCalais20ScrHammersleySearch", register=True)
 OCalais12ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=1.2, sampler="Halton", scrambled=True).with_name("Ocalais12ScrHaltonSearch", register=True)
+    scale=1.2, sampler="Halton", scrambled=True).with_name("OCalais12ScrHaltonSearch", register=True)
 OCalais12ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
-    scale=1.2, sampler="Hammersley", scrambled=True).with_name("Ocalais12ScrHammersleySearch", register=True)
+    scale=1.2, sampler="Hammersley", scrambled=True).with_name("OCalais12ScrHammersleySearch", register=True)
 OCalais7ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.7, sampler="Halton", scrambled=True).with_name("Ocalais7ScrHaltonSearch", register=True)
+    scale=0.7, sampler="Halton", scrambled=True).with_name("OCalais7ScrHaltonSearch", register=True)
 OCalais0ScrHammersleySearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.01, sampler="Hammersley", scrambled=True).with_name("Ocalais0ScrHammersleySearch", register=True)
+    scale=0.01, sampler="Hammersley", scrambled=True).with_name("OCalais0ScrHammersleySearch", register=True)
 OCalais0ScrHaltonSearch = SamplingSearch(quasi_opposite="opposite",
-    scale=0.01, sampler="Halton", scrambled=True).with_name("Ocalais0ScrHaltonSearch", register=True)
+    scale=0.01, sampler="Halton", scrambled=True).with_name("OCalais0ScrHaltonSearch", register=True)
 
 
 # pylint: disable=line-too-long
