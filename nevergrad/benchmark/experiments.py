@@ -169,6 +169,28 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def dfo(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    #optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
+    #          "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    #optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    optims = sorted(x for x, y in ng.optimizers.registry.items())
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, useless_variables=uv*d) for name in ["deceptivemultimodal",
+        "rosenbrock", "rastrigin", "griewank", "deceptiveillcond", "deceptivepath", "sphere", "cigar", "ellipsoid"] for rotation in [True, False]
+        for d in [10, 50] for uv in [0, 5]
+    ]
+    for _ in range(1):
+      for optim in optims:
+        for function in functions:
+          for nw in [1, 50, 100]:
+            for budget in [100,200,400]:
+                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
 def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
