@@ -215,6 +215,8 @@ Calais4ScrHammersleySearch = SamplingSearch(
     scale=0.4, sampler="Hammersley", scrambled=True).with_name("Calais4ScrHammersleySearch", register=True)
 CauchyCalais4ScrHammersleySearch = SamplingSearch(
     scale=0.4, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais4ScrHammersleySearch", register=True)
+CauchyCalais55ScrHammersleySearch = SamplingSearch(
+    scale=0.55, cauchy=True, sampler="Hammersley", scrambled=True).with_name("CauchyCalais55ScrHammersleySearch", register=True)
 Calais1ScrHaltonSearch = SamplingSearch(
     scale=0.1, sampler="Halton", scrambled=True).with_name("Calais1ScrHaltonSearch", register=True)
 Calais4ScrHaltonSearch = SamplingSearch(

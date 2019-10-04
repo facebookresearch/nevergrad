@@ -78,10 +78,17 @@ jobs:
           name: "[all] Run pytest"
           command: |
             . venv/bin/activate
-            pytest nevergrad --duration=20 --cov=nevergrad
+            pytest nevergrad --durations=20 --cov=nevergrad
 
       - run:
           name: "[all] Run mypy"
           command: |
             . venv/bin/activate
             mypy --ignore-missing-imports nevergrad
+
+      - run:
+          name: "Run wheel and check files presence"
+          command: |
+            . venv/bin/activate
+            python setup.py sdist bdist_wheel
+            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text(); assert 'photonics/src/CREDIT' in files"

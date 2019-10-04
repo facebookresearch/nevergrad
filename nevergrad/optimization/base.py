@@ -464,8 +464,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             another one)
         verbosity: int
             print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)
-        callback: callable
-            callable called on the optimizer (self) at the end of each iteration (for user specific logging, etc)
 
         Returns
         -------

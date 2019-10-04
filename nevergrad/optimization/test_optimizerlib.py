@@ -33,16 +33,19 @@ class Fitness:
 
     def __call__(self, x: ArrayLike) -> float:
         assert len(self.x0) == len(x)
-        return float(np.sum((np.array(x, copy=False) - self.x0)**2))
+        return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))
 
 
 def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]], budget: int = 300, verify_value: bool = True) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
-    num_workers = (1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2)
+    num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
-    fitness = Fitness([.5, -.8])
+    optimum = [0.5, -0.8]
+    if optimizer_cls in (optimizerlib.cGA, optimizerlib.PBIL):
+        optimum = [0, 1, 0, 1, 0, 1]
+    fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
-        optimizer = optimizer_cls(instrumentation=2, budget=budget, num_workers=num_workers)
+        optimizer = optimizer_cls(instrumentation=len(optimum), budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -52,7 +55,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             candidate = optimizer.minimize(fitness)
         if verify_value:
             try:
-                np.testing.assert_array_almost_equal(candidate.data, [0.5, -0.8], decimal=1)
+                np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
             except AssertionError as e:
                 print(f"Attemp #{k}: failed with best point {tuple(candidate.data)}")
                 if k == num_attempts:
@@ -64,24 +67,40 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
         assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
     # make sure we are correctly tracking the best values
     archive = optimizer.archive
-    assert (optimizer.current_bests["pessimistic"].pessimistic_confidence_bound ==
-            min(v.pessimistic_confidence_bound for v in archive.values()))
+    assert optimizer.current_bests["pessimistic"].pessimistic_confidence_bound == min(
+        v.pessimistic_confidence_bound for v in archive.values()
+    )
     # add a random point to test tell_not_asked
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
-        optimizer.tell(candidate, 12.)
+        optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
-            raise AssertionError("Optimizers should raise base.TellNotAskedNotSupportedError "
-                                 "at when telling unasked points if they do not support it") from e
+            raise AssertionError(
+                "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
+            ) from e
     else:
         assert optimizer.num_tell == budget + 1
         assert optimizer.num_tell_not_asked == 1
 
 
-SLOW = ["NoisyDE", "NoisyBandit", "SPSA", "NoisyOnePlusOne", "OptimisticNoisyOnePlusOne", "ASCMADEthird", "ASCMA2PDEthird", "MultiScaleCMA",
-        "PCEDA", "MPCEDA", "EDA", "MEDA", "MicroCMA"]
+SLOW = [
+    "NoisyDE",
+    "NoisyBandit",
+    "SPSA",
+    "NoisyOnePlusOne",
+    "OptimisticNoisyOnePlusOne",
+    "ASCMADEthird",
+    "ASCMA2PDEthird",
+    "MultiScaleCMA",
+    "PCEDA",
+    "MPCEDA",
+    "EDA",
+    "MEDA",
+    "MicroCMA",
+]
+DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: List[str] = []
 
 
@@ -93,12 +112,11 @@ def test_optimizers(name: str) -> None:
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
-    with patch('bayes_opt.bayesian_optimization.acq_max', patched):
+    with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 2, verify_value=verify)
 
 
 class RecommendationKeeper:
-
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
         self.recommendations = pd.DataFrame(columns=[f"v{k}" for k in range(16)])  # up to 64 values
@@ -127,7 +145,7 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         optimizer = registry[name](instrumentation=4, budget=2)
-    optimizer.suggest(np.array([12.] * 4))
+    optimizer.suggest(np.array([12.0] * 4))
     candidate = optimizer.ask()
     try:
         optimizer.tell(candidate, 12)
@@ -151,7 +169,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
-    fitness = Fitness([.5, -.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
+    fitness = Fitness([0.5, -0.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -162,15 +180,20 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # BEWARE: BO tests are deterministic but can get different results from a computer to another.
     # Reducing the precision could help in this regard.
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
-    with patch('bayes_opt.bayesian_optimization.acq_max', patched):
+    with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         candidate = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
-    decimal = 2 if isinstance(optimizer_cls, optimizerlib.ParametrizedBO) else 7  # BO slightly differs from a computer to another
-    np.testing.assert_array_almost_equal(candidate.data, recomkeeper.recommendations.loc[name, :][:dimension], decimal=decimal,
-                                         err_msg="Something has changed, if this is normal, delete the following "
-                                         f"file and rerun to update the values:\n{recomkeeper.filepath}")
+    # BO slightly differs from a computer to another
+    decimal = 2 if isinstance(optimizer_cls, optimizerlib.ParametrizedBO) else 7
+    np.testing.assert_array_almost_equal(
+        candidate.data,
+        recomkeeper.recommendations.loc[name, :][:dimension],
+        decimal=decimal,
+        err_msg="Something has changed, if this is normal, delete the following "
+        f"file and rerun to update the values:\n{recomkeeper.filepath}",
+    )
 
 
 @testing.parametrized(
@@ -200,7 +223,7 @@ def test_portfolio_budget() -> None:
 def test_optimizer_families_repr() -> None:
     Cls = optimizerlib.DifferentialEvolution
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
-    np.testing.assert_equal(repr(Cls(initialization='LHS')), "DifferentialEvolution(initialization='LHS')")
+    np.testing.assert_equal(repr(Cls(initialization="LHS")), "DifferentialEvolution(initialization='LHS')")
     #
     optimrs = optimizerlib.RandomSearchMaker(cauchy=True)
     np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(cauchy=True)")
@@ -212,7 +235,7 @@ def test_optimizer_families_repr() -> None:
 
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
 def test_tell_not_asked(name: str) -> None:
-    best = [.5, -.8, 0, 4]
+    best = [0.5, -0.8, 0, 4]
     dim = len(best)
     fitness = Fitness(best)
     with warnings.catch_warnings():
@@ -223,7 +246,7 @@ def test_tell_not_asked(name: str) -> None:
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
-    zeros = [0.] * dim
+    zeros = [0.0] * dim
     opt.tell(opt.create_candidate.from_data(zeros), fitness(zeros))  # not asked
     asked = [opt.ask(), opt.ask()]
     opt.tell(opt.create_candidate.from_data(best), fitness(best))  # not asked
@@ -239,16 +262,16 @@ def test_tell_not_asked(name: str) -> None:
 def test_tbpsa_recom_with_update() -> None:
     budget = 20
     # set up problem
-    fitness = Fitness([.5, -.8, 0, 4])
+    fitness = Fitness([0.5, -0.8, 0, 4])
     optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
     optim.instrumentation.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.minimize(fitness)
-    np.testing.assert_almost_equal(candidate.data, [.037964, .0433031, -.4688667, .3633273])
+    np.testing.assert_almost_equal(candidate.data, [0.037964, 0.0433031, -0.4688667, 0.3633273])
 
 
 def _square(x: np.ndarray, y: float = 12) -> float:
-    return sum((x - .5)**2) + abs(y)
+    return sum((x - 0.5) ** 2) + abs(y)
 
 
 def test_optimization_doc_instrumentation_example() -> None:
@@ -256,9 +279,9 @@ def test_optimization_doc_instrumentation_example() -> None:
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
     recom = optimizer.minimize(_square)
     assert len(recom.args) == 1
-    testing.assert_set_equal(recom.kwargs, ['y'])
+    testing.assert_set_equal(recom.kwargs, ["y"])
     value = _square(*recom.args, **recom.kwargs)
-    assert value < .2  # should be large enough by an order of magnitude
+    assert value < 0.2  # should be large enough by an order of magnitude
 
 
 def test_optimization_discrete_with_one_sample() -> None:
@@ -267,7 +290,8 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
-def test_population_pickle(name: str) -> None:  # this test is added because some generic class (like Population) can fail to be pickled
+# this test is added because some generic class (like Population) can fail to be pickled
+def test_population_pickle(name: str) -> None:
     # example of work around:
     # "self.population = base.utils.Population[DEParticle]([])"
     # becomes:
@@ -288,7 +312,7 @@ def test_bo_instrumentation_and_parameters() -> None:
     assert not record, record.list  # no warning
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
-    opt.tell(opt.create_candidate.from_call(True), 0.)
+    opt.tell(opt.create_candidate.from_call(True), 0.0)
 
 
 def test_instrumentation_optimizer_reproducibility() -> None:

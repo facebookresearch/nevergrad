@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List
+from typing import Iterator, Optional, List, Union
 import nevergrad as ng
 from ..functions import ArtificialFunction
 from ..functions import mlda as _mlda
@@ -21,6 +21,31 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # for black (since lists are way too long...):
 # fmt: off
 
+# Discrete functions on {0,1}^d.
+@registry.register
+def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = [n for n in ArtificialFunction.list_sorted_function_names()
+             if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
+    optims = sorted(
+        x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
+        ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
+    )
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
+        for name in names
+        for bd in [30]
+        for uv_factor in [0, 5, 10]
+        for n_blocks in [1]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for func in functions:
+        for optim in optims:
+            for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
+                           1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
 
 @registry.register
 def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
@@ -28,7 +53,8 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
     optims = sorted(
-        x for x, y in ng.optimizers.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x
+        x for x, y in ng.optimizers.registry.items()
+        if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
@@ -250,7 +276,111 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                     function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
+@registry.register
+def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # This experiment contains:
+    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
+    # - The 007 game: 1 function, noisy.
+    
+    # MLDA stuff, except the Perceptron.
+    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+    ]
+    funcs += [
+        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+        _mlda.SammonMapping.from_mlda("Employees"),
+    ]
+    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 
+    # Adding ARCoating.
+    funcs += [ARCoating()]
+
+    # 007 with 100 repetitions, both mono and multi architectures.
+    base_env = rl.envs.DoubleOSeven(verbose=False)
+    random_agent = rl.agents.Agent007(base_env)
+    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
+    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
+    for archi in ["mono", "multi"]:
+        agent = agent_mono if archi == "mono" else agent_multi
+        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+        func._descriptors.update(archi=archi)
+        funcs += [func]
+    
+    
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+                            
+
+@registry.register
+def oneshotscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # This experiment contains:
+    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
+    # - The 007 game: 1 function, noisy.
+    # Restricted to scaled stuff.
+    
+    # MLDA stuff, except the Perceptron.
+    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+        _mlda.Clustering.from_mlda(name, num*num_f, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for
+        rescale in [True] for num_f in [1, 2, 4]
+    ]
+#    funcs += [
+#        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+#        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+#        _mlda.SammonMapping.from_mlda("Employees"),
+#    ]
+#    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+#    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+
+    # Adding ARCoating.
+    funcs += [ARCoating()]
+
+    # 007 with 100 repetitions, both mono and multi architectures.
+    base_env = rl.envs.DoubleOSeven(verbose=False)
+    random_agent = rl.agents.Agent007(base_env)
+    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
+    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
+    for archi in ["mono", "multi"]:
+        agent = agent_mono if archi == "mono" else agent_multi
+        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+        func._descriptors.update(archi=archi)
+#        funcs += [func]
+    
+    
+    seedg = create_seed_generator(seed)
+    #algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    #         "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+    #         "RandomScaleRandomSearch", "MiniDE"]
+    algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and not "arg" in str(x) and not "mal" in str(x))
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [budget]:
+            if num_workers <= budget:
+                for algo in algos:
+                  if "55" in algo:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+                            
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = [
