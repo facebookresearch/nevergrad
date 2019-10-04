@@ -12,7 +12,7 @@ pytest nevergrad --cov=nevergrad
 
 For type checking, please install `numpy-stubs` (git clone it then `pip install .`). You can then run `mypy` on `nevergrad` with:
 ```
-mypy --ignore-missing-imports --implicit-reexport --strict nevergrad
+mypy --implicit-reexport --strict nevergrad
 ```
 You can however omit the `--strict` mode and/or the installation of the `numpy` stubs for a simplified version of the checks.
 Indeed, if you are not familiar with type checking, we do not want it to be an annoyance and you can can even ignore errors by adding `# type: ignore` at the end of lines flagged as incorrect.
