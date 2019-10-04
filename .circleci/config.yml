@@ -84,7 +84,8 @@ jobs:
           name: "[all] Run mypy"
           command: |
             . venv/bin/activate
-            mypy --ignore-missing-imports nevergrad
+            mypy --version
+            mypy nevergrad
 
       - run:
           name: "Run wheel and check files presence"
