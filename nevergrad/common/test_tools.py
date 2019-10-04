@@ -80,8 +80,8 @@ def test_selector_assert_equivalent() -> None:
 def test_sleeper() -> None:
     min_sleep = 1e-5
     sleeper = tools.Sleeper(min_sleep=min_sleep)
-    np.testing.assert_equal(sleeper._get_advised_sleep_duration(), min_sleep)
+    np.testing.assert_almost_equal(sleeper._get_advised_sleep_duration(), min_sleep, decimal=5)
     sleeper.start_timer()
-    np.testing.assert_equal(sleeper._get_advised_sleep_duration(), min_sleep)
+    np.testing.assert_almost_equal(sleeper._get_advised_sleep_duration(), min_sleep, decimal=5)
     sleeper.stop_timer()
-    np.testing.assert_equal(sleeper._get_advised_sleep_duration(), min_sleep)
+    np.testing.assert_almost_equal(sleeper._get_advised_sleep_duration(), min_sleep, decimal=5)
