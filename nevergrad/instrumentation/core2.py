@@ -68,7 +68,9 @@ class Variable:
         """Return a new instrumentation with the same variable and same name
         (but a different random state)
         """
-        return copy.deepcopy(self)
+        instru = copy.deepcopy(self)
+        instru._random_state = None
+        return instru
 
     @property
     def dimension(self) -> int:

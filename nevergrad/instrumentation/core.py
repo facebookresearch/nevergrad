@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import warnings
 import itertools
 from typing import List, Any, Tuple, Dict, Optional, Callable
 import numpy as np
@@ -50,7 +49,7 @@ class Instrumentation(Variable):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         self.names: Tuple[Optional[str], ...] = ()
-        self.variables: List[Variable] = []
+        self._variables: List[Variable] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
@@ -69,19 +68,25 @@ class Instrumentation(Variable):
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
-        self.variables = [variables._Constant.convert_non_instrument(a) for a in arguments]
-        for var in self.variables:
-            var.random_state = self.random_state
-        assert all(v.nargs == 1 and not v.kwargs_keys for v in self.variables), "Not yet supported"
-        num_instru = len(set(id(i) for i in self.variables))
-        assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
+        self._variables = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        assert all(v.nargs == 1 and not v.kwargs_keys for v in self._variables), "Not yet supported"
+        num_instru = len(set(id(i) for i in self._variables))
+        assert len(self._variables) == num_instru, "All instruments must be different (sharing is not supported)"
         self._specs.update(
-            dimension=sum(i.dimension for i in self.variables),
-            continuous=all(v.continuous for v in self.variables),
-            noisy=any(v.noisy for v in self.variables),
+            dimension=sum(i.dimension for i in self._variables),
+            continuous=all(v.continuous for v in self._variables),
+            noisy=any(v.noisy for v in self._variables),
             nargs=len(args),
             kwargs_keys=set(kwargs.keys()),
         )
+
+    @property
+    def variables(self) -> List[Variable]:
+        # lazy random state update (so that random_state can be seeded  after initializing the Instrumentation)
+        if self._variables and self._variables[0]._random_state is None:
+            for var in self._variables:
+                var.random_state = self.random_state
+        return self._variables
 
     @staticmethod
     def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
@@ -257,14 +262,6 @@ class InstrumentedFunction:
         """Provides the summary corresponding to the provided data
         """
         return self.instrumentation.get_summary(data)
-
-    def convert_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
-        warnings.warn("convert_to_arguments is deprecated, please use data_to_arguments instead")
-        return self.data_to_arguments(data, deterministic=deterministic)
-
-    def convert_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
-        warnings.warn("convert_to_data is deprecated, please use arguments_to_data instead")
-        return self.arguments_to_data(*args, **kwargs)
 
     @property
     def descriptors(self) -> Dict[str, Any]:
