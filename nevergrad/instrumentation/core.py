@@ -10,9 +10,10 @@ import numpy as np
 from ..common.typetools import ArrayLike
 from . import utils
 from . import variables
+from .core2 import Variable, ArgsKwargs
 
 
-class Instrumentation:
+class Instrumentation(Variable):
     """Class handling arguments instrumentation, and providing conversion to and from data.
 
     Parameters
@@ -47,83 +48,40 @@ class Instrumentation:
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__()
         self.names: Tuple[Optional[str], ...] = ()
-        self.variables: List[utils.Variable[Any]] = []
+        self.variables: List[Variable] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
 
-    def copy(self) -> 'Instrumentation':
-        """Return a new instrumentation with the same variable and same name
-        (but a different random state)
-        """
-        instrumentation = Instrumentation(*self.args, **self.kwargs)
-        instrumentation._name = self._name
-        return instrumentation
-
     @property
-    def random_state(self) -> np.random.RandomState:
-        """Random state the instrumentation and the optimizers pull from.
-        It can be seeded/replaced.
-        """
-        if self._random_state is None:
-            # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)
-            self.random_state = np.random.RandomState(seed)
-        assert self._random_state is not None
-        return self._random_state
-
-    @random_state.setter
-    def random_state(self, random_state: np.random.RandomState) -> None:
-        self._random_state = random_state
-
-    @property
-    def dimension(self) -> int:
-        """Dimension of the optimization corresponding optimization space.
-        """
-        return sum(i.dimension for i in self.variables)
-
-    @property
-    def args(self) -> Tuple[utils.Variable[Any], ...]:
+    def args(self) -> Tuple[Variable, ...]:
         """List of variables passed as positional arguments
         """
         return tuple(arg for name, arg in zip(self.names, self.variables) if name is None)
 
     @property
-    def kwargs(self) -> Dict[str, utils.Variable[Any]]:
+    def kwargs(self) -> Dict[str, Variable]:
         """Dictionary of variables passed as named arguments
         """
         return {name: arg for name, arg in zip(self.names, self.variables) if name is not None}
 
-    @property
-    def name(self) -> str:
-        if self._name is not None:
-            return self._name
-        return format(self, "short")
-
-    @property
-    def continuous(self) -> bool:
-        """Whether the instrumentation is continuous, i.e. all underlying variables are continuous.
-        """
-        return all(v.continuous for v in self.variables)
-
-    @property
-    def noisy(self) -> bool:
-        """Whether the instrumentation is noisy, i.e. at least one of the underlying variable is noisy.
-        """
-        return any(v.noisy for v in self.variables)
-
-    def with_name(self, name: str) -> "Instrumentation":
-        """Sets a name and return the current instrumentation (for chaining)
-        """
-        self._name = name
-        return self
-
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
         self.variables = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        for var in self.variables:
+            var.random_state = self.random_state
+        assert all(v.nargs == 1 and not v.kwargs_keys for v in self.variables), "Not yet supported"
         num_instru = len(set(id(i) for i in self.variables))
         assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
+        self._specs.update(
+            dimension=sum(i.dimension for i in self.variables),
+            continuous=all(v.continuous for v in self.variables),
+            noisy=any(v.noisy for v in self.variables),
+            nargs=len(args),
+            kwargs_keys=set(kwargs.keys()),
+        )
 
     @staticmethod
     def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
@@ -138,30 +96,13 @@ class Instrumentation:
         arguments: Tuple[Any, ...] = args + tuple(kwargs[x] for x in names if x is not None)
         return names, arguments
 
-    def data_to_arguments(self, data: ArrayLike, deterministic: bool = True) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
-        """Converts data to arguments
-
-        Parameters
-        ----------
-        data: ArrayLike (list/tuple of floats, np.ndarray)
-            the data in the optimization space
-        deterministic: bool
-            whether the conversion should be deterministic (some variables can be stochastic, if deterministic=True
-            the most likely output will be used)
-
-        Returns
-        -------
-        args: Tuple[Any]
-            the positional arguments corresponding to the instance initialization positional arguments
-        kwargs: Dict[str, Any]
-            the keyword arguments corresponding to the instance initialization keyword arguments
-        """
-        arguments = utils.process_variables(self.variables, data, random=False if deterministic else self.random_state)
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
+        arguments = utils.process_variables(self.variables, data, deterministic=deterministic)
         args = tuple(arg for name, arg in zip(self.names, arguments) if name is None)
         kwargs = {name: arg for name, arg in zip(self.names, arguments) if name is not None}
         return args, kwargs
 
-    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
         """Converts arguments to data
 
         Parameters
@@ -186,7 +127,7 @@ class Instrumentation:
         names, arguments = self._make_argument_names_and_list(args, kwargs)
         assert names == self.names, (f"Passed argument pattern (positional Vs named) was:\n{names}\n"
                                      f"but expected:\n{self.names}")
-        data = list(itertools.chain.from_iterable([instrument.argument_to_data(arg)
+        data = list(itertools.chain.from_iterable([instrument.arguments_to_data(arg)
                                                    for instrument, arg in zip(self.variables, arguments)]))
         return np.array(data)
 

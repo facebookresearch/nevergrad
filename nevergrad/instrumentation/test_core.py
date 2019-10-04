@@ -8,6 +8,7 @@ import numpy as np
 from ..common import testing
 from . import variables as var
 from . import core
+from .core2 import Variable
 
 
 def test_instrumentation() -> None:
@@ -137,7 +138,7 @@ def test_deterministic_data_to_arguments() -> None:
     softmax_deterministic=((var.SoftmaxCategorical(["blue", "red"], deterministic=True), var.Array(1)), False, False),
     ordered_discrete=((var.OrderedDiscrete([True, False]), var.Array(1)), False, False),
 )
-def test_instrumentation_continuous_noisy(variables: Tuple[var.utils.Variable[Any], ...], continuous: bool, noisy: bool) -> None:
+def test_instrumentation_continuous_noisy(variables: Tuple[Variable, ...], continuous: bool, noisy: bool) -> None:
     instru = core.Instrumentation(*variables)
     assert instru.continuous == continuous
     assert instru.noisy == noisy

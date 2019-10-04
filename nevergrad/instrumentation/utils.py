@@ -8,70 +8,14 @@ import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Iterable, Tuple, Union, Optional, Dict, Generic, TypeVar
+from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
+from .core2 import Variable
 
 
-X = TypeVar("X")
-
-
-class Variable(Generic[X]):
-
-    @property
-    def dimension(self) -> int:
-        raise NotImplementedError
-
-    @property
-    def continuous(self) -> bool:
-        return True
-
-    @property
-    def noisy(self) -> bool:
-        return False
-
-    def argument_to_data(self, arg: X) -> ArrayLike:
-        raise NotImplementedError
-
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
-        """Converts data into arguments
-
-        Parameters
-        ----------
-        data: np.ndarray
-            data to convert
-        random: bool or np.random.RandomState
-            either a RandomState to pull values from, or True for pulling values on the default random state,
-            or False to get a deterministic behavior
-        """
-        raise NotImplementedError
-
-    def get_summary(self, data: ArrayLike) -> str:
-        output = self.data_to_argument(data, random=False)
-        d = data if len(data) > 1 else data[0]
-        return f"Value {output}, from data: {d}"
-
-    def __eq__(self, other: Any) -> bool:
-        return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
-
-    def __repr__(self) -> str:
-        args = ", ".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()) if not x.startswith("_"))
-        return f"{self.__class__.__name__}({args})"
-
-    def _short_repr(self) -> str:
-        raise NotImplementedError
-
-    def __format__(self, format_spec: str) -> str:
-        if format_spec == "short":
-            return self._short_repr()
-        elif format_spec == "display":
-            # ugly hack below, but simplifies code a lot
-            return self._short_repr() if self.__class__.__name__ == "_Constant" else repr(self)
-        return repr(self)
-
-
-def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[np.ndarray]:
+def split_data(data: ArrayLike, variables: Iterable[Variable]) -> List[np.ndarray]:
     """Splits data according to the data requirements of the variables
     """
     # this functions should be tested
@@ -90,13 +34,13 @@ def split_data(data: ArrayLike, variables: Iterable[Variable[Any]]) -> List[np.n
     return splitted_data
 
 
-def process_variables(variables: Iterable[Variable[Any]], data: ArrayLike,
-                      random: Union[bool, np.random.RandomState] = True) -> Tuple[Any, ...]:
+def process_variables(variables: Iterable[Variable], data: ArrayLike,
+                      deterministic: bool = True) -> Tuple[Any, ...]:
     # this function should be removed (but tests of split_data are currently
     # made through this function)
     variables = list(variables)
     splitted_data = split_data(data, variables)
-    return tuple([variable.data_to_argument(d, random=random) for variable, d in zip(variables, splitted_data)])
+    return tuple([variable.data_to_arguments(d, deterministic=deterministic)[0][0] for variable, d in zip(variables, splitted_data)])
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore

@@ -13,7 +13,7 @@ from ..common import tools
 from ..common.typetools import ArrayLike
 
 
-class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
+class ArtificialVariable:
     # pylint: disable=too-many-instance-attributes,too-many-arguments
     # TODO: refactor, this is not more used for instrumentation, so using the
     # Variable framework is not necessary
@@ -28,10 +28,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         self.block_dimension = block_dimension
         self.only_index_transform = only_index_transform
         self.hashing = hashing
-
-    @property
-    def dimension(self) -> int:
-        return self._dimension if not self.hashing else 1
+        self.dimension = self._dimension if not self.hashing else 1
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -217,6 +214,6 @@ def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
             side_point = transf(x + np.random.normal(0, 1, size=len(x)))
             if noise_dissymmetry:
-                noise_level *= (1. + x_transf.ravel()[0]*100.)
+                noise_level *= (1. + x_transf.ravel()[0] * 100.)
             noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
