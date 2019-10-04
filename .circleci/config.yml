@@ -83,7 +83,7 @@ jobs:
           command: |
             . venv/bin/activate
             mypy --version
-            mypy --ignore-missiong-imports nevergrad
+            mypy nevergrad
 
       - run:
           name: "Run wheel and check files presence"
