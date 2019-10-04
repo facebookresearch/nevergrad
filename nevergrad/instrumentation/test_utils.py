@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Any
 import numpy as np
 from ..common import testing
+from .core2 import Variable
 from . import variables
 from . import utils
 
@@ -17,14 +18,14 @@ from . import utils
 @testing.parametrized(
     empty=([], [], [])
 )
-def test_split_data(tokens: List[utils.Variable[Any]], data: List[float], expected: List[List[float]]) -> None:
+def test_split_data(tokens: List[Variable], data: List[float], expected: List[List[float]]) -> None:
     output = utils.split_data(data, tokens)
     testing.printed_assert_equal(output, expected)
 
 
 def test_process_variables() -> None:
-    tokens: List[utils.Variable[Any]] = [variables.SoftmaxCategorical(list(range(5))),  # TODO: why casting?
-                                         variables.Gaussian(3, 4)]
+    tokens: List[Variable] = [variables.SoftmaxCategorical(list(range(5))),  # TODO: why casting?
+                              variables.Gaussian(3, 4)]
     values = utils.process_variables(tokens, [0, 200, 0, 0, 0, 2])
     np.testing.assert_equal(values, [1, 11])
     np.testing.assert_raises(AssertionError, utils.process_variables, tokens, [0, 200, 0, 0, 0, 2, 3])
