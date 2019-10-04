@@ -137,7 +137,7 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         self._func = corefuncs.registry[name]
         # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
-        only_index_transform = info.get("no_transfrom", False)
+        only_index_transform = info.get("no_transform", False)
         # variable
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
