@@ -53,9 +53,7 @@ jobs:
           keys:
           - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v2-dependencies-main-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}
-          # fallback to using the latest cache if no exact match is found
-          - v2-dependencies-
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -85,7 +83,7 @@ jobs:
           command: |
             . venv/bin/activate
             mypy --version
-            mypy nevergrad
+            mypy --ignore-missiong-imports nevergrad
 
       - run:
           name: "Run wheel and check files presence"
