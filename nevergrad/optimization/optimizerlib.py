@@ -9,6 +9,7 @@ import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
+from ..common.typetools import ArrayLike
 from ..instrumentation import transforms
 from ..instrumentation import Instrumentation
 from . import utils
@@ -42,7 +43,7 @@ class _OnePlusOne(base.Optimizer):
         self._parameters = ParametrizedOnePlusOne()
         self._sigma: float = 1
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self._parameters.noise_handling
         if not self._num_ask:
@@ -63,19 +64,19 @@ class _OnePlusOne(base.Optimizer):
             return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
         # mutating
         mutation = self._parameters.mutation
+        pessimistic = self.current_bests["pessimistic"].x
+
         if mutation == "gaussian":  # standard case
-            # type: ignore
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)
+            return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
-            # type: ignore
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)
+            return pessimistic + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+                return mutator.portfolio_discrete_mutation(pessimistic)
             else:
-                return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
+                return mutator.crossover(pessimistic, mutator.get_roulette(self.archive, num=2))
         else:
-            func: Callable[[base.ArrayLike], base.ArrayLike] = {  # type: ignore
+            func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
                 "discrete": mutator.discrete_mutation,
                 "fastga": mutator.doerr_discrete_mutation,
                 "doublefastga": mutator.doubledoerr_discrete_mutation,
@@ -83,7 +84,7 @@ class _OnePlusOne(base.Optimizer):
             }[mutation]
             return func(self.current_bests["pessimistic"].x)
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
 
@@ -189,7 +190,7 @@ class _CMA(base.Optimizer):
         self._parameters = ParametrizedCMA()
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
-        self.listx: List[base.ArrayLike] = []
+        self.listx: List[ArrayLike] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
 
@@ -202,12 +203,12 @@ class _CMA(base.Optimizer):
             self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._parameters.scale, inopts=inopts)
         return self._es
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         if not self.to_be_asked:
             self.to_be_asked.extend(self.es.ask())
         return self.to_be_asked.popleft()
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.listx += [x]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
@@ -219,7 +220,7 @@ class _CMA(base.Optimizer):
                 self.listx = []
                 self.listy = []
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         if self._es is None:
             raise RuntimeError("Either ask or tell method should have been called before")
         if self.es.result.xbest is None:
@@ -272,19 +273,19 @@ class EDA(base.Optimizer):
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # Evaluated population
-        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population: List[ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
         self.evaluated_population_fitness: List[float] = []
         # Unevaluated population
-        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population: List[ArrayLike] = []
         self.unevaluated_population_sigma: List[float] = []
         # Archive
         self.archive_fitness: List[float] = []
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         individual = tuple(mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance))
@@ -292,7 +293,7 @@ class EDA(base.Optimizer):
         self.unevaluated_population += [tuple(individual)]
         return individual
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         idx = self.unevaluated_population.index(tuple(x))
         self.evaluated_population += [x]
         self.evaluated_population_fitness += [value]
@@ -332,7 +333,7 @@ class PCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -389,7 +390,7 @@ class MPCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -447,7 +448,7 @@ class MEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         idx = self.unevaluated_population.index(tuple(x))
         self.evaluated_population += [x]
         self.evaluated_population_fitness += [value]
@@ -498,10 +499,10 @@ class TBPSA(base.Optimizer):
         self._evaluated_population: List[base.utils.Individual] = []
         self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
         part = base.utils.Individual(individual)
@@ -509,7 +510,7 @@ class TBPSA(base.Optimizer):
         self._unevaluated_population[individual.tobytes()] = part
         return individual  # type: ignore
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -554,7 +555,7 @@ class TBPSA(base.Optimizer):
 
 @registry.register
 class NaiveTBPSA(TBPSA):
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x
 
 
@@ -566,7 +567,7 @@ class NoisyBandit(base.Optimizer):
     Infinite arms: we add one arm when `20 * #ask >= #arms ** 3`.
     """
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
             return self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
@@ -658,7 +659,7 @@ class PSO(base.Optimizer):
         # only remove at the last minute (safer for checkpointing)
         return candidate
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self._PARTICULE.transform.forward(self.best_x)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -743,7 +744,7 @@ class SPSA(base.Optimizer):
         "a_k is the learning rate."
         return self.a / (k // 2 + 1 + self.A) ** 0.602
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         k = self.idx
         if k % 2 == 0:
             if not self.init:
@@ -754,13 +755,13 @@ class SPSA(base.Optimizer):
             return self.t - self._ck(k) * self.delta  # type:ignore
         return self.t + self._ck(k) * self.delta  # type: ignore
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         setattr(self, ("ym" if self.idx % 2 == 0 else "yp"), np.array(value, copy=True))
         self.idx += 1
         if self.init and self.yp is not None and self.ym is not None:
             self.init = False
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.avg
 
 
@@ -792,7 +793,7 @@ class Portfolio(base.Optimizer):
         del self.who_asked[tx][0]
         self.optims[optim_index].tell(candidate, value)
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
@@ -1100,7 +1101,7 @@ class _BO(base.Optimizer):
         # so we should clean the "fake" function
         self._fake_function._registered.clear()
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
 
 
