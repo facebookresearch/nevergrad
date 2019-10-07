@@ -28,7 +28,7 @@ class ArtificialVariable:
         self.block_dimension = block_dimension
         self.only_index_transform = only_index_transform
         self.hashing = hashing
-        self.dimension = self._dimension if not self.hashing else 1
+        self.dimension = self._dimension if not self.hashing else 1  # external dim?
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -84,7 +84,8 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
     rotation: bool
         whether the block space should be rotated (random rotation)
     hashing: bool
-        whether the input data should be hashed
+        whether the input data should be hashed. In this case, the function expects an array of size 1 with
+        string as element.
     aggregator: str
         how to aggregate the multiple block outputs
 

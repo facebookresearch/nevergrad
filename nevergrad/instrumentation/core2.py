@@ -129,7 +129,7 @@ class Variable:
         assert self.random_state is not None
         array = np.array(data, copy=False)
         if array.shape != (self.dimension,):
-            raise ValueError(f"Unexpected shape {array.shape} for {self} with dimension {self.dimension}")
+            raise ValueError(f"Unexpected shape {array.shape} of {array} for {self} with dimension {self.dimension}")
         return self._data_to_arguments(array, deterministic)
 
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool) -> ArgsKwargs:
