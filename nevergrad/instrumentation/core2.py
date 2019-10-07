@@ -44,12 +44,15 @@ class Variable:
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
             seed = np.random.randint(2 ** 32, dtype=np.uint32)
-            self.random_state = np.random.RandomState(seed)
+            self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
         return self._random_state
 
     @random_state.setter
     def random_state(self, random_state: np.random.RandomState) -> None:
+        self._set_random_state(random_state)
+
+    def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
 
     def with_name(self: T, name: str) -> T:
@@ -122,6 +125,8 @@ class Variable:
         kwargs: Dict[str, Any]
             the keyword arguments corresponding to the instance initialization keyword arguments
         """
+        # trigger random_state creation (may require to be propagated to sub-variables
+        assert self.random_state is not None
         array = np.array(data, copy=False)
         if array.shape != (self.dimension,):
             raise ValueError(f"Unexpected shape {array.shape} for {self} with dimension {self.dimension}")

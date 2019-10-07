@@ -49,7 +49,7 @@ class Instrumentation(Variable):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         self.names: Tuple[Optional[str], ...] = ()
-        self._variables: List[Variable] = []
+        self.variables: List[Variable] = []
         self._set_args_kwargs(args, kwargs)
         self._name: Optional[str] = None
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
@@ -80,13 +80,12 @@ class Instrumentation(Variable):
             kwargs_keys=set(kwargs.keys()),
         )
 
-    @property
-    def variables(self) -> List[Variable]:
-        # lazy random state update (so that random_state can be seeded  after initializing the Instrumentation)
-        if self._variables and self._variables[0]._random_state is None:
+    def _set_random_state(self, random_state: np.random.RandomState) -> None:
+        super()._set_random_state(random_state)
+        assert self._random_state is not None
+        if self._variables:
             for var in self._variables:
-                var.random_state = self.random_state
-        return self._variables
+                var._random_state = self._random_state
 
     @staticmethod
     def _make_argument_names_and_list(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Tuple[Optional[str], ...], Tuple[Any, ...]]:
