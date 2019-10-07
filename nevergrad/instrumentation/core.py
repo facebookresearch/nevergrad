@@ -68,14 +68,14 @@ class Instrumentation(Variable):
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         self.names, arguments = self._make_argument_names_and_list(args, kwargs)
-        self._variables = [variables._Constant.convert_non_instrument(a) for a in arguments]
-        assert all(v.nargs == 1 and not v.kwargs_keys for v in self._variables), "Not yet supported"
-        num_instru = len(set(id(i) for i in self._variables))
-        assert len(self._variables) == num_instru, "All instruments must be different (sharing is not supported)"
+        self.variables = [variables._Constant.convert_non_instrument(a) for a in arguments]
+        assert all(v.nargs == 1 and not v.kwargs_keys for v in self.variables), "Not yet supported"
+        num_instru = len(set(id(i) for i in self.variables))
+        assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
         self._specs.update(
-            dimension=sum(i.dimension for i in self._variables),
-            continuous=all(v.continuous for v in self._variables),
-            noisy=any(v.noisy for v in self._variables),
+            dimension=sum(i.dimension for i in self.variables),
+            continuous=all(v.continuous for v in self.variables),
+            noisy=any(v.noisy for v in self.variables),
             nargs=len(args),
             kwargs_keys=set(kwargs.keys()),
         )
@@ -83,8 +83,8 @@ class Instrumentation(Variable):
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         super()._set_random_state(random_state)
         assert self._random_state is not None
-        if self._variables:
-            for var in self._variables:
+        if self.variables:
+            for var in self.variables:
                 var._random_state = self._random_state
 
     @staticmethod
