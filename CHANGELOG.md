@@ -2,7 +2,15 @@
 
 ## master
 
-N/A
+### Breaking changes
+
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more changes are coming. This
+should only impact custom variables.o
+
+### Other changes
+
+- Benchmark plots now show confidence area (using partially transparent lines).
+- Cleaner installation.
 
 ## v0.2.2
 
