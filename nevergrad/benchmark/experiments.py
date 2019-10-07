@@ -338,7 +338,7 @@ def oneshotscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num*num_f, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for
-        rescale in [True] for num_f in [1, 2, 4]
+        rescale in [True, False] for num_f in [1, 2, 4]
     ]
 #    funcs += [
 #        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
@@ -362,7 +362,7 @@ def oneshotscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         agent = agent_mono if archi == "mono" else agent_multi
         func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
         func._descriptors.update(archi=archi)
-#        funcs += [func]
+        funcs += [func]
     
     
     seedg = create_seed_generator(seed)
@@ -374,7 +374,6 @@ def oneshotscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         for num_workers in [budget]:
             if num_workers <= budget:
                 for algo in algos:
-                  if "55" in algo:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
