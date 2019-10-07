@@ -119,7 +119,7 @@ def test_get_postponing_delay() -> None:
     np.testing.assert_equal(func.get_postponing_delay((x,), {}, 3), 1.)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.get_postponing_delay((x,), {}, 3), 0.000347026)
+    np.testing.assert_almost_equal(func.get_postponing_delay((x,), {}, 3), 0.0010534)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
