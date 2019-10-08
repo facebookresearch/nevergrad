@@ -312,7 +312,7 @@ class EDA(base.Optimizer):
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
             arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum([arrays]) / self.mu  # type: ignore
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -371,7 +371,7 @@ class PCEDA(EDA):
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
             arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum([arrays]) / self.mu  # type: ignore
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -428,7 +428,7 @@ class MPCEDA(EDA):
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
             arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum([arrays]) / self.mu  # type: ignore
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -465,7 +465,7 @@ class MEDA(EDA):
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
             arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum([arrays]) / self.mu  # type: ignore
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
