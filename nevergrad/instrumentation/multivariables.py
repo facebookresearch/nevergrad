@@ -158,14 +158,6 @@ class Instrumentation(Variable):
         """
         return utils.split_data(data, self.variables)
 
-    def __format__(self, format_spec: str) -> str:
-        arguments = [format(x, format_spec) for x in self.args]
-        sorted_kwargs = [(name, format(self.kwargs[name], format_spec)) for name in sorted(self.kwargs)]
-        all_params = arguments + [f"{x}={y}" for x, y in sorted_kwargs]
-        if format_spec == "short":
-            return ",".join(all_params)
-        return "{}({})".format(self.__class__.__name__, ", ".join(all_params))
-
     def __repr__(self) -> str:
         ivars = [x.name if isinstance(x, variables._Constant) else x for x in self.variables]  # hide constants
         params = [f"{y}" for x, y in zip(self.keywords, ivars) if x is None]

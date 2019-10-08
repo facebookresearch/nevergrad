@@ -88,7 +88,7 @@ class OrderedDiscrete(Variable):
     def __init__(self, possibilities: List[Any]) -> None:
         super().__init__()
         self.possibilities = list(possibilities)
-        name = "OD({})".format(str(possibilities).strip("[]").replace(" ", ""))
+        name = "OD({})".format(str(possibilities).strip("[],").replace(" ", ""))
         self._specs.update(continuous=False, dimension=1, name=name)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
@@ -203,7 +203,7 @@ class Array(Variable):
         if self._specs.name is not None:
             return self._specs.name
         # dynamic naming
-        dims = str(self.shape)[1:-1].replace(" ", "")
+        dims = str(self.shape)[1:-1].rstrip(",").replace(" ", "")
         transf = "" if not self.transforms else (",[" + ",".join(t.name for t in self.transforms) + "]")
         fl = {None: "", int: "i", float: "f"}[self._dtype]
         return f"A({dims}{transf}){fl}"
