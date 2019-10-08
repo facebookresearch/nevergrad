@@ -21,7 +21,7 @@ from . import sequences
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *  # noqa: F403
-from .oneshot import *  # noqa: F403
+from .oneshotcalais import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 
