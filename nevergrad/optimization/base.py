@@ -266,7 +266,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return load(cls, filepath)
 
     def __repr__(self) -> str:
-        inststr = f"{self.instrumentation:short}"
+        inststr = self.instrumentation.name
         return f"Instance of {self.name}(instrumentation={inststr}, budget={self.budget}, num_workers={self.num_workers})"
 
     def register_callback(self, name: str, callback: _OptimCallBack) -> None:

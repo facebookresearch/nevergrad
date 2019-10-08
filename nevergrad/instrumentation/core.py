@@ -16,13 +16,15 @@ class VarSpecs:
         self.kwargs_keys: Set[str] = set()
         self.continuous = True
         self.noisy = False
+        self.name: Optional[str] = None
 
     def update(self,
                dimension: Optional[int] = None,
                nargs: Optional[int] = None,
                kwargs_keys: Optional[Set[str]] = None,
                continuous: Optional[bool] = None,
-               noisy: Optional[bool] = None
+               noisy: Optional[bool] = None,
+               name: Optional[str] = None
                ) -> None:
         for key, value in locals().items():
             if key != "self" and value is not None:
@@ -32,7 +34,6 @@ class VarSpecs:
 class Variable:
 
     def __init__(self) -> None:
-        self._name: Optional[str] = None
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
         self._specs = VarSpecs()
 
@@ -58,14 +59,16 @@ class Variable:
     def with_name(self: T, name: str) -> T:
         """Sets a name and return the current instrumentation (for chaining)
         """
-        self._name = name
+        self._specs.update(name=name)
         return self
 
     @property
     def name(self) -> str:
-        if self._name is not None:
-            return self._name
-        return format(self, "short")
+        """Short identifier for the variables
+        """
+        if self._specs.name is not None:
+            return self._specs.name
+        return repr(self)
 
     def copy(self: T) -> T:  # TODO, use deepcopy directly in the code if it works?
         """Return a new instrumentation with the same variable and same name
@@ -137,19 +140,3 @@ class Variable:
 
     def get_summary(self, data: np.ndarray) -> str:  # pylint: disable=unused-argument
         return f"No configured summary in {self}"
-
-    # def __eq__(self, other: Any) -> bool:
-    #    return bool(self.__class__ == other.__class__ and self.__dict__ == other.__dict__)
-
-    def _short_repr(self) -> str:
-        return repr(self)
-
-    def __format__(self, format_spec: str) -> str:
-        if self._name is not None:
-            return self._name
-        if format_spec == "short":
-            return self._short_repr()
-        elif format_spec == "display":
-            # ugly hack below, but simplifies code a lot
-            return self._short_repr() if self.__class__.__name__ == "_Constant" else repr(self)
-        return repr(self)

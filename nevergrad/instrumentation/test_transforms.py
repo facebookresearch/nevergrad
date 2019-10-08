@@ -24,7 +24,7 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     y = transform.forward(x)
     x2 = transform.backward(y)
     np.testing.assert_array_almost_equal(x2, x)
-    np.testing.assert_equal(f"{transform:short}", string)
+    np.testing.assert_equal(transform.name, string)
     print(f"{transform}")
 
 

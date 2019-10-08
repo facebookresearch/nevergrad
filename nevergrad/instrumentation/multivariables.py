@@ -70,12 +70,16 @@ class Instrumentation(Variable):
         assert all(v.nargs == 1 and not v.kwargs_keys for v in self.variables), "Not yet supported"
         num_instru = len(set(id(i) for i in self.variables))
         assert len(self.variables) == num_instru, "All instruments must be different (sharing is not supported)"
+        params = [y.name for x, y in zip(self.keywords, self.variables) if x is None]
+        params += [f"{x}={y.name}" for x, y in zip(self.keywords, self.variables) if x is not None]
+        name = ",".join(params)
         self._specs.update(
             dimension=sum(i.dimension for i in self.variables),
             continuous=all(v.continuous for v in self.variables),
             noisy=any(v.noisy for v in self.variables),
             nargs=len(args),
             kwargs_keys=set(kwargs.keys()),
+            name=name
         )
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
@@ -154,16 +158,11 @@ class Instrumentation(Variable):
         """
         return utils.split_data(data, self.variables)
 
-    def __format__(self, format_spec: str) -> str:
-        arguments = [format(x, format_spec) for x in self.args]
-        sorted_kwargs = [(name, format(self.kwargs[name], format_spec)) for name in sorted(self.kwargs)]
-        all_params = arguments + [f"{x}={y}" for x, y in sorted_kwargs]
-        if format_spec == "short":
-            return ",".join(all_params)
-        return "{}({})".format(self.__class__.__name__, ", ".join(all_params))
-
     def __repr__(self) -> str:
-        return f"{self:display}"
+        ivars = [x.name if isinstance(x, variables._Constant) else x for x in self.variables]  # hide constants
+        params = [f"{y}" for x, y in zip(self.keywords, ivars) if x is None]
+        params += [f"{x}={y}" for x, y in zip(self.keywords, ivars) if x is not None]
+        return "{}({})".format(self.__class__.__name__, ", ".join(params))
 
     def get_summary(self, data: ArrayLike) -> Any:
         """Provides the summary string corresponding to the provided data
