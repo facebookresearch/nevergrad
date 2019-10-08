@@ -64,6 +64,8 @@ class Variable:
 
     @property
     def name(self) -> str:
+        """Short identifier for the variables
+        """
         if self._specs.name is not None:
             return self._specs.name
         return repr(self)
