@@ -138,5 +138,6 @@ class Variable:
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool) -> ArgsKwargs:
         raise NotImplementedError
 
-    def get_summary(self, data: np.ndarray) -> str:  # pylint: disable=unused-argument
-        return f"No configured summary in {self}"
+    def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
+        output = self.data_to_arguments(np.array(data, copy=False), deterministic=True)
+        return f"Value {output[0][0]}, from data: {data}"

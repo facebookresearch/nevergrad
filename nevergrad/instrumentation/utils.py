@@ -8,39 +8,8 @@ import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
+from typing import List, Any, Union, Optional, Dict
 from pathlib import Path
-import numpy as np
-from ..common.typetools import ArrayLike
-from .core import Variable
-
-
-def split_data(data: ArrayLike, variables: Iterable[Variable]) -> List[np.ndarray]:
-    """Splits data according to the data requirements of the variables
-    """
-    # this functions should be tested
-    data = np.array(data).ravel()
-    variables = list(variables)  # make sure it is not an iterator
-    total = sum(t.dimension for t in variables)
-    assert len(data) == total, f"Expected {total} values but got {len(data)}"
-    splitted_data: List[np.ndarray] = []
-    variables = list(variables)  # make sure it is not an iterator
-    start, end = 0, 0
-    for variable in variables:
-        end = start + variable.dimension
-        splitted_data.append(data[start: end])
-        start = end
-    assert end == len(data), f"Finished at {end} but expected {len(data)}"
-    return splitted_data
-
-
-def process_variables(variables: Iterable[Variable], data: ArrayLike,
-                      deterministic: bool = True) -> Tuple[Any, ...]:
-    # this function should be removed (but tests of split_data are currently
-    # made through this function)
-    variables = list(variables)
-    splitted_data = split_data(data, variables)
-    return tuple([variable.data_to_arguments(d, deterministic=deterministic)[0][0] for variable, d in zip(variables, splitted_data)])
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore

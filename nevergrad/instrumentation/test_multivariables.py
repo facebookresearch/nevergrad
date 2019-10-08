@@ -3,12 +3,36 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, List
 import numpy as np
 from ..common import testing
 from . import variables as var
 from . import multivariables as mvar
 from .core import Variable
+
+
+@testing.parametrized(
+    empty=([], [], [])
+)
+def test_split_data(tokens: List[Variable], data: List[float], expected: List[List[float]]) -> None:
+    instru = mvar.Instrumentation(*tokens)
+    output = instru._split_data(np.array(data))
+    testing.printed_assert_equal(output, expected)
+
+
+def test_nested_variables_data_to_arguments() -> None:
+    instru = mvar.NestedVariables(var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4))
+    values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])
+    expected: Any = (tuple(var.wrap_arg(x) for x in (1, 11)), {})
+    assert values == expected
+
+
+def test_instrumentation_data_to_arguments() -> None:
+    tokens = [var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4)]
+    instru = mvar.Instrumentation(*tokens)
+    values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])[0]
+    assert values == (1, 11)
+    np.testing.assert_raises(ValueError, instru.data_to_arguments, tokens, [0, 200, 0, 0, 0, 2, 3])
 
 
 def test_instrumentation() -> None:
@@ -54,7 +78,7 @@ def test_instrumentation_copy() -> None:
 
 def test_instrumentation_split() -> None:
     instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
-    splitted = instru.split_data([0, 1, 2, 3, 4, 5])
+    splitted = instru._split_data(np.array([0, 1, 2, 3, 4, 5]))
     np.testing.assert_equal([x.tolist() for x in splitted], [[0], [], [1], [2, 3, 4, 5]])  # order of kwargs is alphabetical
 
 
@@ -137,6 +161,8 @@ def test_deterministic_data_to_arguments() -> None:
     softmax_noisy=((var.SoftmaxCategorical(["blue", "red"]), var.Array(1)), True, True),
     softmax_deterministic=((var.SoftmaxCategorical(["blue", "red"], deterministic=True), var.Array(1)), False, False),
     ordered_discrete=((var.OrderedDiscrete([True, False]), var.Array(1)), False, False),
+
+
 )
 def test_instrumentation_continuous_noisy(variables: Tuple[Variable, ...], continuous: bool, noisy: bool) -> None:
     instru = mvar.Instrumentation(*variables)
