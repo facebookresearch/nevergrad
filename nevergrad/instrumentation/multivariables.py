@@ -88,7 +88,7 @@ class NestedVariables(Variable):
         """Splits data according to the data requirements of the variables
         """
         # this functions should be tested
-        data = np.asarray(data).ravel()
+        data = data.ravel()
         data_parts: List[np.ndarray] = []
         start, end = 0, 0
         for variable in self.variables:
@@ -137,7 +137,7 @@ class NestedVariables(Variable):
         params += [f"{x}={y}" for x, y in zip(self.keywords, ivars) if x is not None]
         return "{}({})".format(self.__class__.__name__, ", ".join(params))
 
-    def get_summary(self, data: np.ndarray) -> Any:
+    def get_summary(self, data: ArrayLike) -> Any:
         """Provides the summary string corresponding to the provided data
 
         Note
@@ -145,7 +145,7 @@ class NestedVariables(Variable):
         This is impractical for large arrays
         """
         strings = []
-        splitted_data = self._split_data(data)
+        splitted_data = self._split_data(np.asarray(data))
         for k, (keyword, var, d) in enumerate(zip(self.keywords, self.variables, splitted_data)):
             if not isinstance(var, _Constant):
                 explanation = var.get_summary(d)
@@ -300,7 +300,7 @@ class InstrumentedFunction:
         self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
         return self.function(*self.last_call_args, **self.last_call_kwargs)
 
-    def get_summary(self, data: np.ndarray) -> Any:  # probably impractical for large arrays
+    def get_summary(self, data: ArrayLike) -> Any:  # probably impractical for large arrays
         """Provides the summary corresponding to the provided data
         """
         return self.instrumentation.get_summary(data)

@@ -61,11 +61,12 @@ class SoftmaxCategorical(Variable):
         out = discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
         return np.array(out, copy=False)
 
-    def get_summary(self, data: np.ndarray) -> str:
-        output = self.data_to_arguments(data, deterministic=True)
-        probas = discretization.softmax_probas(np.array(data, copy=False))
+    def get_summary(self, data: ArrayLike) -> str:
+        array = np.array(data, copy=False)
+        output = self.data_to_arguments(array, deterministic=True)
+        probas = discretization.softmax_probas(np.array(array, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
-        return f"Value {output}, from data: {data} yielding probas: {proba_str}"
+        return f"Value {output[0][0]}, from data: {data} yielding probas: {proba_str}"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.possibilities}, {self.deterministic})"
