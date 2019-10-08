@@ -7,7 +7,6 @@ import itertools
 from typing import List, Any, Tuple, Dict, Optional, Callable
 import numpy as np
 from ..common.typetools import ArrayLike
-from . import utils
 from .variables import _Constant, wrap_arg
 from .core import Variable, ArgsKwargs
 
@@ -85,7 +84,17 @@ class NestedVariables(Variable):
         return keywords, arguments
 
     def _split_data(self, data: np.ndarray) -> List[np.ndarray]:
-        """Splits data according to the data requirements of the variables
+        """Splits the input data in chunks corresponding to each of the variables in self.variables
+
+        Parameters
+        ----------
+        data: ArrayLike (list/tuple of floats, np.ndarray)
+            the data in the optimization space
+
+        Returns
+        -------
+        List[np.ndarray]
+            the list of data chunks corresponding to each variable in self.variables
         """
         # this functions should be tested
         data = data.ravel()
@@ -115,21 +124,6 @@ class NestedVariables(Variable):
 
     def instrument(self, function: Callable[..., Any]) -> "InstrumentedFunction":
         return InstrumentedFunction(function, *self.args, **self.kwargs)
-
-    def split_data(self, data: ArrayLike) -> List[np.ndarray]:
-        """Splits the input data in chunks corresponding to each of the variables in self.variables
-
-        Parameters
-        ----------
-        data: ArrayLike (list/tuple of floats, np.ndarray)
-            the data in the optimization space
-
-        Returns
-        -------
-        List[np.ndarray]
-            the list of data chunks corresponding to each variable in self.variables
-        """
-        return utils.split_data(data, self.variables)
 
     def __repr__(self) -> str:
         ivars = [x.name if isinstance(x, _Constant) else x for x in self.variables]  # hide constants
