@@ -15,6 +15,10 @@ class Transform:
     for each transform.
     """
 
+    @property
+    def name(self) -> str:
+        return "{self:short}"  # TODO remove formating and keep only name for simplicity's sake
+
     def forward(self, x: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 

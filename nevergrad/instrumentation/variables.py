@@ -45,7 +45,8 @@ class SoftmaxCategorical(Variable):
         super().__init__()
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
-        self._specs.update(dimension=len(self.possibilities), continuous=not self.deterministic, noisy=not self.deterministic)
+        name = "SC({}|{})".format(str(possibilities).strip("[]").replace(" ", ""), int(deterministic))
+        self._specs.update(dimension=len(self.possibilities), continuous=not self.deterministic, noisy=not self.deterministic, name=name)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
 
@@ -65,9 +66,6 @@ class SoftmaxCategorical(Variable):
         probas = discretization.softmax_probas(np.array(data, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
         return f"Value {output}, from data: {data} yielding probas: {proba_str}"
-
-    def _short_repr(self) -> str:
-        return "SC({}|{})".format(",".join([str(x) for x in self.possibilities]), int(self.deterministic))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.possibilities}, {self.deterministic})"
@@ -90,7 +88,8 @@ class OrderedDiscrete(Variable):
     def __init__(self, possibilities: List[Any]) -> None:
         super().__init__()
         self.possibilities = list(possibilities)
-        self._specs.update(continuous=False, dimension=1)
+        name = "OD({})".format(str(possibilities).strip("[]").replace(" ", ""))
+        self._specs.update(continuous=False, dimension=1, name=name)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
 
@@ -123,7 +122,8 @@ class Gaussian(Variable):
         self.mean = mean
         self.std = std
         self.shape = shape
-        self._specs.update(dimension=1 if self.shape is None else int(np.prod(self.shape)))
+        name = f"G({mean},{std})"
+        self._specs.update(dimension=1 if self.shape is None else int(np.prod(self.shape)), name=name)
 
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
@@ -132,9 +132,6 @@ class Gaussian(Variable):
     def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
         out = (args[0] - self.mean) / self.std
         return np.array([out]) if self.shape is None else out  # type: ignore
-
-    def _short_repr(self) -> str:
-        return f"G({self.mean},{self.std})"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.mean},{self.std})"
@@ -148,7 +145,7 @@ class _Constant(Variable):
     def __init__(self, value: Any) -> None:
         super().__init__()
         self.value = value
-        self._specs.update(dimension=0)
+        self._specs.update(dimension=0, name=str(value))
 
     @classmethod
     def convert_non_instrument(cls, x: Any) -> Variable:
@@ -198,14 +195,18 @@ class Array(Variable):
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
         self._dtype: Optional[Type[Union[float, int]]] = None
+        dim = reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
+        self._specs.update(dimension=dim)
 
     @property
-    def dimension(self) -> int:
-        return reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
-
-    @property
-    def continuous(self) -> bool:
-        return self._dtype != int
+    def name(self) -> str:
+        if self._specs.name is not None:
+            return self._specs.name
+        # dynamic naming
+        dims = str(self.shape)[1:-1].replace(" ", "")
+        transf = "" if not self.transforms else (",[" + ",".join(t.name for t in self.transforms) + "]")
+        fl = {None: "", int: "i", float: "f"}[self._dtype]
+        return f"A({dims}{transf}){fl}"
 
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         assert len(data) == self.dimension
@@ -230,12 +231,6 @@ class Array(Variable):
     def __repr__(self) -> str:
         return f"Array({self.shape}, {self.transforms})"
 
-    def _short_repr(self) -> str:
-        dims = ",".join(str(d) for d in self.shape)
-        transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
-        fl = {None: "", int: "i", float: "f"}[self._dtype]
-        return f"A({dims}{transf}){fl}"
-
     def asfloat(self) -> 'Array':
         warnings.warn('Please use "asscalar" instead of "asfloat"', DeprecationWarning)
         return self.asscalar()
@@ -258,6 +253,7 @@ class Array(Variable):
             raise RuntimeError("Only Arrays with 1 element can be cast to float")
         if dtype not in [float, int]:
             raise ValueError('"dtype" should be either float or int')
+        self._specs.update(continuous=dtype == float)
         self._dtype = dtype
         return self
 
