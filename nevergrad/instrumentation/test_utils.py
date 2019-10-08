@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Any
 import numpy as np
 from ..common import testing
-from .core2 import Variable
+from .core import Variable
 from . import variables
 from . import utils
 

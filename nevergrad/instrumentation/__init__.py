@@ -6,7 +6,7 @@
 from .instantiate import register_file_type, FolderFunction
 from . import variables
 from . import variables as var
-from .core import Instrumentation, InstrumentedFunction
+from .multivariables import Instrumentation, InstrumentedFunction
 from .utils import TemporaryDirectoryCopy, CommandFunction
 
 __all__ = ["Instrumentation", "var", "CommandFunction", "FolderFunction"]
