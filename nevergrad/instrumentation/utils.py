@@ -12,7 +12,7 @@ from typing import List, Any, Iterable, Tuple, Union, Optional, Dict
 from pathlib import Path
 import numpy as np
 from ..common.typetools import ArrayLike
-from .core2 import Variable
+from .core import Variable
 
 
 def split_data(data: ArrayLike, variables: Iterable[Variable]) -> List[np.ndarray]:

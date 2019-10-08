@@ -10,8 +10,8 @@ import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
 from . import transforms
-from .core2 import ArgsKwargs
-from .core2 import Variable
+from .core import ArgsKwargs
+from .core import Variable
 # pylint: disable=unused-argument
 
 

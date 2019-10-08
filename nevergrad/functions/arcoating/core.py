@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from ... import instrumentation as inst
-from ...instrumentation.core2 import Variable
+from ...instrumentation.core import Variable
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
