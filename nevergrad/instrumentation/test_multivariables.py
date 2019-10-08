@@ -20,11 +20,18 @@ def test_split_data(tokens: List[Variable], data: List[float], expected: List[Li
     testing.printed_assert_equal(output, expected)
 
 
+def test_nested_variables_data_to_arguments() -> None:
+    instru = mvar.NestedVariables(var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4))
+    values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])
+    expected: Any = (tuple(var.wrap_arg(x) for x in (1, 11)), {})
+    assert values == expected
+
+
 def test_instrumentation_data_to_arguments() -> None:
     tokens = [var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4)]
     instru = mvar.Instrumentation(*tokens)
     values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])[0]
-    np.testing.assert_equal(values, [1, 11])
+    assert values == (1, 11)
     np.testing.assert_raises(ValueError, instru.data_to_arguments, tokens, [0, 200, 0, 0, 0, 2, 3])
 
 
@@ -154,6 +161,8 @@ def test_deterministic_data_to_arguments() -> None:
     softmax_noisy=((var.SoftmaxCategorical(["blue", "red"]), var.Array(1)), True, True),
     softmax_deterministic=((var.SoftmaxCategorical(["blue", "red"], deterministic=True), var.Array(1)), False, False),
     ordered_discrete=((var.OrderedDiscrete([True, False]), var.Array(1)), False, False),
+
+
 )
 def test_instrumentation_continuous_noisy(variables: Tuple[Variable, ...], continuous: bool, noisy: bool) -> None:
     instru = mvar.Instrumentation(*variables)
