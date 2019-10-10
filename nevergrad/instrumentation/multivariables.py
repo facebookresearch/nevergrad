@@ -1,8 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-
 import itertools
 from typing import List, Any, Tuple, Dict, Optional, Callable
 import numpy as np
@@ -187,18 +182,6 @@ class Instrumentation(NestedVariables):
         self.keywords: Tuple[Optional[str], ...] = ()
         self.variables: List[Variable] = []
         self._set_args_kwargs(args, kwargs)
-
-    @property
-    def args(self) -> Tuple[Variable, ...]:
-        """List of variables passed as positional arguments
-        """
-        return tuple(arg for name, arg in zip(self.keywords, self.variables) if name is None)
-
-    @property
-    def kwargs(self) -> Dict[str, Variable]:
-        """Dictionary of variables passed as named arguments
-        """
-        return {name: arg for name, arg in zip(self.keywords, self.variables) if name is not None}
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         super()._set_args_kwargs(args, kwargs)
