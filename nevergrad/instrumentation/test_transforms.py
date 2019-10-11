@@ -60,6 +60,28 @@ def test_out_of_bound(transform: transforms.Transform, x: List[float], expected:
 
 
 @testing.parametrized(
+    tanh=(transforms.TanhBound, [1., 100.]),
+    arctan=(transforms.ArctanBound, [0.9968, 99.65]),
+    clipping=(transforms.Clipping, [1, 90]),
+)
+def test_multibounds(transform_cls: Type[transforms.BoundTransform], expected: List[float]) -> None:
+    transform = transform_cls([0, 0], [1, 100])
+    output = transform.forward(np.array([100, 90]))
+    np.testing.assert_almost_equal(output, expected, decimal=2)
+    # shapes
+    with pytest.raises(ValueError):
+        transform.forward(np.array([-3, 5, 4]))
+    with pytest.raises(ValueError):
+        transform.backward(np.array([-3, 5, 4]))
+    # bound error
+    with pytest.raises(ValueError):
+        transform_cls([0, 0], [0, 100])
+    # two Nones
+    with pytest.raises(ValueError):
+        transform_cls(None, None)
+
+
+@testing.parametrized(
     both_sides=(transforms.Clipping(0, 1), [0, 1.]),
     one_side=(transforms.Clipping(a_max=1), [-3, 1.]),
 )

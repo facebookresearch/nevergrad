@@ -4,9 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
-from typing import Optional
+from typing import Optional, Union, Tuple
 import numpy as np
 from scipy import stats
+from ..common.typetools import ArrayLike
 
 
 class Transform:
@@ -100,7 +101,33 @@ class Exponentiate(Transform):
         return np.log(y) / (float(self.coeff) * np.log(self.base))  # type: ignore
 
 
-class TanhBound(Transform):
+class BoundTransform(Transform):  # pylint: disable=abstract-method
+
+    def __init__(
+        self,
+        a_min: Optional[Union[ArrayLike, float]] = None,
+        a_max: Optional[Union[ArrayLike, float]] = None
+    ) -> None:
+        super().__init__()
+        self.a_min: Optional[np.ndarray] = None
+        self.a_max: Optional[np.ndarray] = None
+        for name, value in [("a_min", a_min), ("a_max", a_max)]:
+            if value is not None:
+                isarray = isinstance(value, (tuple, list, np.ndarray))
+                setattr(self, name, np.array(value, copy=False) if isarray else np.array([value]))
+        if not (self.a_min is None or self.a_max is None):
+            if (self.a_min >= self.a_max).any():
+                raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")
+        if self.a_min is None and self.a_max is None:
+            raise ValueError("At least one bound must be specified")
+        self.shape: Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
+
+    def _check_shape(self, x: np.ndarray) -> None:
+        if self.shape != (1,) and x.shape != self.shape:
+            raise ValueError(f"Shapes do not match: {self.shape} and {x.shape}")
+
+
+class TanhBound(BoundTransform):
     """Bounds all real values into [a_min, a_max] using a tanh transform.
     Beware, tanh goes very fast to its limits.
 
@@ -110,26 +137,31 @@ class TanhBound(Transform):
     a_max: float
     """
 
-    def __init__(self, a_min: float, a_max: float) -> None:
-        super().__init__()
-        assert a_min < a_max
-        self.a_min = a_min
-        self.a_max = a_max
+    def __init__(
+        self,
+        a_min: Union[ArrayLike, float],
+        a_max: Union[ArrayLike, float]
+    ) -> None:
+        super().__init__(a_min=a_min, a_max=a_max)
+        if self.a_min is None or self.a_max is None:
+            raise ValueError("Both bounds must be specified")
         self._b = .5 * (self.a_max + self.a_min)
         self._a = .5 * (self.a_max - self.a_min)
-        self.name = f"Th({self.a_min},{self.a_max})"
+        self.name = f"Th({a_min},{a_max})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
+        self._check_shape(x)
         return self._b + self._a * np.tanh(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) > self.a_max or np.min(y) < self.a_min:
+        self._check_shape(y)
+        if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} "
                              "can be transformed back (bounds lead to infinity).")
         return np.arctanh((y - self._b) / self._a)  # type: ignore
 
 
-class Clipping(Transform):
+class Clipping(BoundTransform):
     """Bounds all real values into [a_min, a_max] using clipping (not bijective).
 
     Parameters
@@ -138,26 +170,27 @@ class Clipping(Transform):
     a_max: float or None
     """
 
-    def __init__(self, a_min: Optional[float] = None, a_max: Optional[float] = None) -> None:
-        super().__init__()
-        if a_min is not None and a_max is not None:
-            assert a_min < a_max
-        assert not (a_min is None and a_max is None), "At least one side should be clipped"
-        self.a_min = a_min
-        self.a_max = a_max
-        self.name = f"Cl({self.a_min},{self.a_max})"
+    def __init__(
+        self,
+        a_min: Optional[Union[ArrayLike, float]] = None,
+        a_max: Optional[Union[ArrayLike, float]] = None
+    ) -> None:
+        super().__init__(a_min=a_min, a_max=a_max)
+        self.name = f"Cl({a_min},{a_max})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
+        self._check_shape(x)
         return np.clip(x, self.a_min, self.a_max)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
+        self._check_shape(y)
         if (self.a_max is not None and np.max(y) > self.a_max) or (self.a_min is not None and np.min(y) < self.a_min):
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} "
                              "can be transformed back.")
         return y
 
 
-class ArctanBound(Transform):
+class ArctanBound(BoundTransform):
     """Bounds all real values into [a_min, a_max] using an arctan transform.
     This is a much softer approach compared to tanh.
 
@@ -167,19 +200,24 @@ class ArctanBound(Transform):
     a_max: float
     """
 
-    def __init__(self, a_min: float, a_max: float) -> None:
-        super().__init__()
-        assert a_min < a_max
-        self.a_min = a_min
-        self.a_max = a_max
+    def __init__(
+        self,
+        a_min: Union[ArrayLike, float],
+        a_max: Union[ArrayLike, float]
+    ) -> None:
+        super().__init__(a_min=a_min, a_max=a_max)
+        if self.a_min is None or self.a_max is None:
+            raise ValueError("Both bounds must be specified")
         self._b = .5 * (self.a_max + self.a_min)
         self._a = (self.a_max - self.a_min) / np.pi
-        self.name = f"At({self.a_min},{self.a_max})"
+        self.name = f"At({a_min},{a_max})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
+        self._check_shape(x)
         return self._b + self._a * np.arctan(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
+        self._check_shape(y)
         if np.max(y) > self.a_max or np.min(y) < self.a_min:
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
         return np.tan((y - self._b) / self._a)  # type: ignore
