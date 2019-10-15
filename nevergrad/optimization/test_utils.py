@@ -113,9 +113,9 @@ def test_population_replace() -> None:
     pop = utils.Population(particles)
     pop.replace(particles[2], Partitest(5))
     assert pop.get_queued().number == 5
-    for uuid in pop.uuids:
+    for uid in pop.uids:
         # checks that it exists and correctly linked
-        pop[uuid]  # pylint: disable= pointless-statement
+        pop[uid]  # pylint: disable= pointless-statement
 
 
 def test_pruning() -> None:

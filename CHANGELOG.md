@@ -6,6 +6,7 @@
 
 - `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more changes are coming. This
 should only impact custom variables.o
+- `Candidates` have now a `uid` instead of a `uuid` for compatibility reasons.
 
 ### Other changes
 
