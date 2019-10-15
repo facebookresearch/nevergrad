@@ -59,12 +59,14 @@ class Candidate:
 
     @property
     def uid(self) -> str:  # non-writable
+        """Unique identifier of the candidate, used for identification in the algorithms
+        """
         return self._uid
 
-    # @property
-    # def uuid(self) -> str:
-    #    warnings.warn("uuid has been renamed to uid for compatibility reasons", DeprecationWarning)
-    #    return self._uid
+    @property
+    def uuid(self) -> str:
+        warnings.warn("uuid has been renamed to uid for compatibility reasons", DeprecationWarning)
+        return self._uid
 
     @property
     def args(self) -> Tuple[Any, ...]:
