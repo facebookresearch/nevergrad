@@ -461,7 +461,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # Wasted time.
         first_k_individuals = [self.archive[k] for k in sorted(self.archive.keys(),
                                                                lambda indiv: self.archive[indiv])[:k]]
-        return self.current_center = sum(p.data for p in first_k_individual) / k
+        return sum(p.x for p in first_k_individual) / k
 
     def minimize(
         self,
