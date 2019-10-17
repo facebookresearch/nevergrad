@@ -13,7 +13,7 @@ from . import base
 from . import utils
 
 # In some cases we will need the average of the k best.
-def avg_of_k_best(archive: utils.Archive[utils.Value], dimension) -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
     items = list(archive.items_as_array())
     dimension = len(archive[items[0]].x)
