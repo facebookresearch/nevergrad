@@ -16,13 +16,13 @@ from . import utils
 def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
     items = list(archive.items_as_array())
-    dimension = len(archive[items[0]].x)
+    dimension = len(items[0][0])
     k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
     k = 1 if k < 1 else k
     # Wasted time.
-    first_k_individuals = [archive[k] for k in sorted(items,
-                                                           lambda indiv: self.archive[indiv])[:k]]
-    return sum(p.x for p in first_k_individuals) / k
+    first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
+    assert len(first_k_individuals) == k
+    return sum(p[0] for p in first_k_individuals) / k
 
 # # # # # classes of optimizers # # # # #
 
