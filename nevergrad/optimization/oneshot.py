@@ -10,6 +10,18 @@ from ..common.typetools import ArrayLike
 from ..instrumentation import Instrumentation
 from . import sequences
 from . import base
+from . import utils
+
+# In some cases we will need the average of the k best.
+def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
+    # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
+    items = list(archive.items_as_array())
+    k = min(len(archive) // 4, self.dimension)  # fteytaud heuristic.
+    k = 1 if k < 1 else k
+    # Wasted time.
+    first_k_individuals = [archive[k] for k in sorted(items,
+                                                           lambda indiv: self.archive[indiv])[:k]]
+    return sum(p.x for p in first_k_individuals) / k
 
 # # # # # classes of optimizers # # # # #
 
@@ -39,6 +51,8 @@ class _RandomSearch(OneShotOptimizer):
         return scale * point  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
+        if self._parameters._recommendation_rule == "average_of_k_best":
+            return avg_of_k_best(self.archive)
         if self._parameters.stupid:
             return self._internal_ask()
         return super()._internal_provide_recommendation()
@@ -58,6 +72,8 @@ class RandomSearchMaker(base.ParametrizedFamily):
     scale: float or "random"
         scalar for multiplying the suggested point values. If "random", this
         used a randomized pattern for the scale.
+    recommendation_rule: str
+        "average_of_k_best" or "none"; "none" is the default and implies selecting the pessimistic best.        
     """
 
     _optimizer_class = _RandomSearch
@@ -65,11 +81,12 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
-                 cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
+                 cauchy: bool = False, scale: Union[float, str] = 1., recommendation_rule: str = "none") -> None:
         # keep all parameters and set initialize superclass for print
         assert isinstance(scale, (int, float)) or scale == "random"
         self.middle_point = middle_point
         self.stupid = stupid
+        self._recommendation_rule = recommendation_rule
         self.cauchy = cauchy
         self.scale = scale
         super().__init__()
@@ -122,6 +139,12 @@ class _SamplingSearch(OneShotOptimizer):
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
         return self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
+    
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        if self._parameters._recommendation_rule == "average_of_k_best":
+            return avg_of_k_best(self.archive)
+        return super()._internal_provide_recommendation()
+
 
 
 class SamplingSearch(base.ParametrizedFamily):
@@ -144,6 +167,8 @@ class SamplingSearch(base.ParametrizedFamily):
         scalar for multiplying the suggested point values.
     rescaled: bool
         rescales the sampling pattern to reach the boundaries.
+    recommendation_rule: str
+        "average_of_k_best" or "none"; "none" is the default and implies selecting the pessimistic best.
 
     Notes
     -----
@@ -166,7 +191,7 @@ class SamplingSearch(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
-                 cauchy: bool = False, scale: float = 1., rescaled: bool = False) -> None:
+                 cauchy: bool = False, scale: float = 1., rescaled: bool = False, recommendation_rule: str = "none") -> None:
         # keep all parameters and set initialize superclass for print
         self.sampler = sampler
         self.middle_point = middle_point
@@ -174,6 +199,7 @@ class SamplingSearch(base.ParametrizedFamily):
         self.cauchy = cauchy
         self.scale = scale
         self.rescaled = rescaled
+        self._recommendation_rule = recommendation_rule
         super().__init__()
 
 
