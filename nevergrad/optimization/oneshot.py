@@ -272,7 +272,7 @@ AvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_k_best").with_name("AvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
 AvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_k_best").with_name("AvgScrHammersleySearchPlusMiddlePoint", register=True)
-AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley", recommendation_rule="average_of_k_best").with_name("LargeHammersleySearch", register=True)
+AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley", recommendation_rule="average_of_k_best").with_name("AvgLargeHammersleySearch", register=True)
 AvgLargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_k_best").with_name("AvgLargeScrHammersleySearch", register=True)
 AvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, recommendation_rule="average_of_k_best").with_name("AvgScrHammersleySearch", register=True)
