@@ -244,42 +244,42 @@ LHSSearch = SamplingSearch(sampler="LHS").with_name("LHSSearch", register=True)
 CauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).with_name("CauchyLHSSearch", register=True)
 
 
-AvgHaltonSearch = SamplingSearch().with_name("AvgHaltonSearch", register=True, recommendation_rule_="average_of_k_best")
-AvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).with_name("AvgHaltonSearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
-AvgLargeHaltonSearch = SamplingSearch(scale=100.).with_name("AvgLargeHaltonSearch", register=True, recommendation_rule_="average_of_k_best")
-AvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True).with_name("AvgLargeScrHaltonSearch", register=True, recommendation_rule_="average_of_k_best")
+AvgHaltonSearch = SamplingSearch().with_name("AvgHaltonSearch", register=True, recommendation_rule="average_of_k_best")
+AvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).with_name("AvgHaltonSearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
+AvgLargeHaltonSearch = SamplingSearch(scale=100.).with_name("AvgLargeHaltonSearch", register=True, recommendation_rule="average_of_k_best")
+AvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True).with_name("AvgLargeScrHaltonSearch", register=True, recommendation_rule="average_of_k_best")
 AvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True).with_name("AvgLargeHaltonSearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    scale=100., middle_point=True).with_name("AvgLargeHaltonSearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True).with_name("AvgSmallHaltonSearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
-AvgScrHaltonSearch = SamplingSearch(scrambled=True).with_name("AvgScrHaltonSearch", register=True, recommendation_rule_="average_of_k_best")
+    scale=.01, middle_point=True).with_name("AvgSmallHaltonSearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
+AvgScrHaltonSearch = SamplingSearch(scrambled=True).with_name("AvgScrHaltonSearch", register=True, recommendation_rule="average_of_k_best")
 AvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    middle_point=True, scrambled=True).with_name("AvgScrHaltonSearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    middle_point=True, scrambled=True).with_name("AvgScrHaltonSearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, scrambled=True).with_name("AvgLargeScrHaltonSearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    scale=100., middle_point=True, scrambled=True).with_name("AvgLargeScrHaltonSearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgSmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, scrambled=True).with_name("AvgSmallScrHaltonSearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
-AvgHammersleySearch = SamplingSearch(sampler="Hammersley").with_name("AvgHammersleySearch", register=True, recommendation_rule_="average_of_k_best")
+    scale=.01, middle_point=True, scrambled=True).with_name("AvgSmallScrHaltonSearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
+AvgHammersleySearch = SamplingSearch(sampler="Hammersley").with_name("AvgHammersleySearch", register=True, recommendation_rule="average_of_k_best")
 AvgHammersleySearchPlusMiddlePoint = SamplingSearch(
-    sampler="Hammersley", middle_point=True).with_name("AvgHammersleySearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    sampler="Hammersley", middle_point=True).with_name("AvgHammersleySearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgLargeHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=100., sampler="Hammersley", middle_point=True).with_name("AvgLargeHammersleySearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    scale=100., sampler="Hammersley", middle_point=True).with_name("AvgLargeHammersleySearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgSmallHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, sampler="Hammersley", middle_point=True).with_name("AvgSmallHammersleySearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    scale=.01, sampler="Hammersley", middle_point=True).with_name("AvgSmallHammersleySearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgLargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=100., sampler="Hammersley", middle_point=True).with_name("AvgLargeScrHammersleySearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    scrambled=True, scale=100., sampler="Hammersley", middle_point=True).with_name("AvgLargeScrHammersleySearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).with_name("AvgSmallScrHammersleySearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
+    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).with_name("AvgSmallScrHammersleySearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
 AvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, sampler="Hammersley", middle_point=True).with_name("AvgScrHammersleySearchPlusMiddlePoint", register=True, recommendation_rule_="average_of_k_best")
-AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True, recommendation_rule_="average_of_k_best")
+    scrambled=True, sampler="Hammersley", middle_point=True).with_name("AvgScrHammersleySearchPlusMiddlePoint", register=True, recommendation_rule="average_of_k_best")
+AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_name("LargeHammersleySearch", register=True, recommendation_rule="average_of_k_best")
 AvgLargeScrHammersleySearch = SamplingSearch(
-    scale=100., sampler="Hammersley", scrambled=True).with_name("AvgLargeScrHammersleySearch", register=True, recommendation_rule_="average_of_k_best")
-AvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("AvgScrHammersleySearch", register=True, recommendation_rule_="average_of_k_best")
+    scale=100., sampler="Hammersley", scrambled=True).with_name("AvgLargeScrHammersleySearch", register=True, recommendation_rule="average_of_k_best")
+AvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("AvgScrHammersleySearch", register=True, recommendation_rule="average_of_k_best")
 AvgRescaleScrHammersleySearch = SamplingSearch(
-    sampler="Hammersley", scrambled=True, rescaled=True).with_name("AvgRescaleScrHammersleySearch", register=True, recommendation_rule_="average_of_k_best")
+    sampler="Hammersley", scrambled=True, rescaled=True).with_name("AvgRescaleScrHammersleySearch", register=True, recommendation_rule="average_of_k_best")
 AvgCauchyScrHammersleySearch = SamplingSearch(
-    cauchy=True, sampler="Hammersley", scrambled=True).with_name("AvgCauchyScrHammersleySearch", register=True, recommendation_rule_="average_of_k_best")
-AvgLHSSearch = SamplingSearch(sampler="LHS").with_name("AvgLHSSearch", register=True, recommendation_rule_="average_of_k_best")
-AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).with_name("AvgCauchyLHSSearch", register=True, recommendation_rule_="average_of_k_best")
+    cauchy=True, sampler="Hammersley", scrambled=True).with_name("AvgCauchyScrHammersleySearch", register=True, recommendation_rule="average_of_k_best")
+AvgLHSSearch = SamplingSearch(sampler="LHS").with_name("AvgLHSSearch", register=True, recommendation_rule="average_of_k_best")
+AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).with_name("AvgCauchyLHSSearch", register=True, recommendation_rule="average_of_k_best")
 
