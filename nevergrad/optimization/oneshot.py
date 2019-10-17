@@ -13,10 +13,11 @@ from . import base
 from . import utils
 
 # In some cases we will need the average of the k best.
-def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.Value], dimension) -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
     items = list(archive.items_as_array())
-    k = min(len(archive) // 4, self.dimension)  # fteytaud heuristic.
+    dimension = len(archive[items[0]].x)
+    k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
     k = 1 if k < 1 else k
     # Wasted time.
     first_k_individuals = [archive[k] for k in sorted(items,
