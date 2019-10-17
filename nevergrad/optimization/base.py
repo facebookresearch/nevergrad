@@ -453,15 +453,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _avg_internal_provide_recommendation(self) -> ArrayLike:
         # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
-        if self._es is None:
-            raise RuntimeError("Either ask or tell method should have been called before")
         items = list(archive.items_as_array())
         k = min(len(self.archive) // 4, self.dimension)  # fteytaud heuristic.
         k = 1 if k < 1 else k
         # Wasted time.
-        first_k_individuals = [self.archive[k] for k in sorted(self.archive.keys(),
+        first_k_individuals = [self.archive[k] for k in sorted(items,
                                                                lambda indiv: self.archive[indiv])[:k]]
-        return sum(p.x for p in first_k_individual) / k
+        return sum(p.x for p in first_k_individuals) / k
 
     def minimize(
         self,
