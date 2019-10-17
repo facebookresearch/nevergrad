@@ -22,7 +22,8 @@ def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
     assert len(first_k_individuals) == k
-    return sum(p[0] for p in first_k_individuals) / k
+    #print("sum=",sum(p[0] for p in first_k_individuals) / k)
+    return np.array(sum(p[0] for p in first_k_individuals) / k)
 
 # # # # # classes of optimizers # # # # #
 
