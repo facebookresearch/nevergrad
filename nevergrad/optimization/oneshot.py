@@ -53,10 +53,10 @@ class _RandomSearch(OneShotOptimizer):
         return scale * point  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
+        if self._parameters.stupid:
+            return self._internal_ask()        
         if self._parameters.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
-        if self._parameters.stupid:
-            return self._internal_ask()
         return super()._internal_provide_recommendation()
 
 
