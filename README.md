@@ -87,6 +87,20 @@ print(list(sorted(ng.optimizers.registry.keys())))
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
 
+## Multiobjective minimization with Nevergrad
+
+```python
+import nevergrad as ng
+
+f = ng.functions.multiobjective_minimization([lambda x: x[0], lambda x: x[1]])
+optimizer = ng.optimizers.CMA(instrumentation=2, budget=100)  # 2 is the dimension, 100 is the budget.
+recommendation = optimizer.optimize(square)
+
+
+# The function embeds its Pareto-front:
+print("My Pareto front:", f())
+```
+
 ## Citing
 
 ```bibtex
