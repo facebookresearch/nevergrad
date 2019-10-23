@@ -457,6 +457,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        list_of_cheap_positivity_constraints: ArrayLike = [],  # We repeat "ask" until all these constraints are positive.
     ) -> Candidate:
         """Optimization (minimization) procedure
 
@@ -527,7 +528,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
+                    
                     args = self.ask()
+                    num_tries = 0
+                    while any([c(args) < 0 for c in list_of_cheap_positivity_constraints]) or num_tries > 1000000:
+                        self.num_ask -= 1
+                        args = self.ask()
+                        num_tries += 1
                     self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                 if new_sugg:
                     sleeper.start_timer()
