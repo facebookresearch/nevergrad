@@ -70,6 +70,7 @@ def multiobjective_minimization(functions):
         def __init__(self):
             self.my_target_function = my_target_function
             super().__init__(self.my_target_function)
+            self._instrumentation = functions[0]._instrumentation 
         
     return my_instrumented_target_function
 
