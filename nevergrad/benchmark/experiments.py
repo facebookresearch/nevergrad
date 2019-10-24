@@ -29,12 +29,15 @@ def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
     functions = [
-        multiobjective_minimization([ArtificialFunction(name1), ArtificialFunction(name2)])
+        multiobjective_minimization([ArtificialFunction(name1, block_dimension=7),
+                                     ArtificialFunction(name2, block_dimension=7)])
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "cigar", "hm"]
     ]
     functions += [
-        multiobjective_minimization([ArtificialFunction(name1), ArtificialFunction(name2), ArtificialFunction(name3)])
+        multiobjective_minimization([ArtificialFunction(name1, block_dimension=6), 
+                                     ArtificialFunction(name2, block_dimension=6), 
+                                     ArtificialFunction(name3, block_dimension=6)])
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "ellipsoid"]
         for name3 in ["sphere", "cigar", "hm"]
