@@ -94,7 +94,7 @@ import nevergrad as ng
 
 f = ng.functions.multiobjective_minimization([lambda x: x[0], lambda x: x[1]])
 optimizer = ng.optimizers.CMA(instrumentation=2, budget=100)  # 2 is the dimension, 100 is the budget.
-recommendation = optimizer.optimize(square)
+recommendation = optimizer.optimize(f)
 
 
 # The function embeds its Pareto-front:
