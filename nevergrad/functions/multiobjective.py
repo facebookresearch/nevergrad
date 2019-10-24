@@ -24,6 +24,7 @@
 #
 #    Modified by O. Teytaud as needed for Nevergrad.
 
+from ..instrumentation import InstrumentedFunction
 from math import log, floor
 import random
 import warnings
@@ -64,7 +65,13 @@ def multiobjective_minimization(functions):
         return 0.
     my_target_function.pointset = []
     my_target_function.best_hypervolume = 0
-    return my_target_function
+
+    class my_instrumented_target_function(InstrumentedFunction):
+        def __init__(self):
+            self.my_target_function = my_target_function
+            super().__init__(self.my_target_function)
+        
+    return my_instrumented_target_function
 
 class _HyperVolume:
     """
