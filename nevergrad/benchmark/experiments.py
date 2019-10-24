@@ -6,6 +6,7 @@
 from typing import Iterator, Optional, List
 import nevergrad as ng
 from ..functions import ArtificialFunction
+from ..functions import multiobjective_minimization
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
 from ..functions import rl
