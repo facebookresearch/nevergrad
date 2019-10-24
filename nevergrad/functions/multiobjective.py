@@ -35,7 +35,7 @@ def hypervolume(pointset, ref=None):
     reference point *ref*.
     """
     if ref is None:
-        ref = numpy.array([3] * len(pointset[0]))
+        ref = numpy.array([3000000] * len(pointset[0]))
     warnings.warn("Falling back to the python version of hypervolume "
         "module. Expect this to be very slow.", RuntimeWarning)
     hv = _HyperVolume(ref)
