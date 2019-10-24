@@ -457,7 +457,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-        list_of_cheap_positivity_constraints: ArrayLike = [],  # We repeat "ask" until all these constraints are positive.
+        list_of_cheap_positivity_constraints: Any = [],  # We repeat "ask" until all these constraints are positive.
     ) -> Candidate:
         """Optimization (minimization) procedure
 
