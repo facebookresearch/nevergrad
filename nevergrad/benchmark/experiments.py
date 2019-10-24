@@ -21,6 +21,29 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # for black (since lists are way too long...):
 # fmt: off
 
+
+@registry.register
+def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
+    functions = [
+        multiobjective_minimization([ArtificialFunction(name1), ArtificialFunction(name2)])
+        for name1 in ["sphere", "cigar"]
+        for name2 in ["sphere", "cigar", "hm"]
+    ]
+    functions += [
+        multiobjective_minimization([ArtificialFunction(name1), ArtificialFunction(name2), ArtificialFunction(name3)])
+        for name1 in ["sphere", "cigar"]
+        for name2 in ["sphere", "ellipsoid"]
+        for name3 in ["sphere", "cigar", "hm"]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for func in functions:
+        for optim in optims:
+            for budget in list(range(100, 2901, 400)):
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+
 # Discrete functions on {0,1}^d.
 @registry.register
 def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
