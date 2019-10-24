@@ -532,7 +532,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     args = self.ask()
                     num_tries = 0
                     while any([c(args) < 0 for c in list_of_cheap_positivity_constraints]) or num_tries > 1000000:
-                        self.num_ask -= 1
+                        self._num_ask -= 1
                         args = self.ask()
                         num_tries += 1
                     self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
