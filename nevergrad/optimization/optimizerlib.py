@@ -1204,7 +1204,7 @@ class PBIL(base.Optimizer):
 
 
 @registry.register
-class chaining(base.ParametrizedFamily):
+class chaining():
     """
     A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
     Each algorithm (except the first one) is fed with the entire archive.
@@ -1212,7 +1212,6 @@ class chaining(base.ParametrizedFamily):
     
     def __init__(
         self,
-        *,
         list_of_algorithms,
         list_of_budgets,
     ) -> None:
@@ -1223,8 +1222,6 @@ class chaining(base.ParametrizedFamily):
         self._list_of_budgets = list_of_budgets
         self._list_of_algorithms = list_of_algorithms
 
-        # Initialization of the base class.
-        super().__init__()
 
     # From the user point of view, the call below is the creation of the optimizer.
     def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
