@@ -1223,7 +1223,7 @@ class chaining():
 
 
     # From the user point of view, the call below is the creation of the optimizer.
-    def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
 
         list_of_algorithms = self._list_of_algorithms
         list_of_budgets = self._list_of_budgets
