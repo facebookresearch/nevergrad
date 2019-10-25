@@ -89,10 +89,11 @@ The [optimization documentation](docs/optimization.md) contains more information
 
 ## Multiobjective minimization with Nevergrad
 
+Let us minimize x1 and x2 (two objective functions) assuming that values above 2.5 are of no interest.
 ```python
 import nevergrad as ng
 
-f = ng.functions.multiobjective_minimization([lambda x: x[0], lambda x: x[1]])
+f = ng.functions.multiobjective_minimization([lambda x: x[0], lambda x: x[1]], bad_values=[2.5, 2.5])
 optimizer = ng.optimizers.CMA(instrumentation=2, budget=100)  # 2 is the dimension, 100 is the budget.
 recommendation = optimizer.optimize(f)
 
