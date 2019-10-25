@@ -41,6 +41,20 @@ def hypervolume(pointset, ref=None):
     return hv.compute(pointset)
 
 def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
+    """Given several functions, and threshold on their values (above which solutions are pointless),
+    this function returns a single-objective function, correctly instrumented, the minimization of which
+    yields a solution to the original multiobjective problem.
+    
+    functions: objective functions, to be minimized, of the original multiobjective problem.
+    bad_values: bad_values[i] is a threshold above which x is pointless if functions[i](x) > bad_values[i].
+    
+    Returns an objective function to be minimized (it is a single objective function).
+    Warning: this function is not stationary.
+    The minimum value obtained for this objective function is -h,
+    where h is the hypervolume of the Pareto front obtained, given bad_values as a reference point.
+    When called with no argument, this monoobjective function returns an approximate Pareto front,
+    reaching the current hypervolume.
+    """
 
     bad_values = numpy.array(bad_values)
     def my_target_function(x=None):
