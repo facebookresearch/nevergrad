@@ -1212,7 +1212,7 @@ class chaining(base.Optimizer):
     def __init__(self, list_of_algorithms, list_of_budgets, instrumentation: Union[int, Instrumentation], 
             budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is None or budget = sum(list_of_budgets)
+        assert budget is None or budget == sum(list_of_budgets)
         # We might provide an algorithm without budget, at the end -- that one runs forever.
         # -1 in the list of budgets means "num_workers".
         # -2 in the list of budgets means "dimension".
