@@ -154,6 +154,7 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.Candidate] = None
         self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
+        self._cheap_constraints_checker = cheap_constraints_checker
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
@@ -237,7 +238,7 @@ class Experiment:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
                 self.recommendation = base.Optimizer.minimize(self._optimizer, counter, batch_mode=executor.batch_mode, executor=executor,
-                        cheap_constraints_checker=cheap_constraints_checker)
+                        cheap_constraints_checker=self._cheap_constraints_checker)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
