@@ -1241,6 +1241,7 @@ class chaining(base.Optimizer):
 
 DEwithLHS = chaining([LHSSearch, DE], [-1])  # Runs LHSSearch with budget num_workers and then DE.
 DEwithLHSdim = chaining([LHSSearch, DE], [-2])  # Runs LHSSearch with budget the dimension and then DE.
+DEwithLHS30 = chaining([LHSSearch, DE], [30])  # Runs LHSSearch with budget the dimension and then DE.
 
 
 @registry.register

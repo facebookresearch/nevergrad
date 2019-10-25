@@ -87,6 +87,31 @@ print(list(sorted(ng.optimizers.registry.keys())))
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
 
+
+## Example of chaining, or inoculation, or initialization of an evolutionary algorithm
+
+
+In optimizerlib.py, you can read the following:
+```
+DEwithLHS = chaining([LHSSearch, DE], [-1])  # Runs LHSSearch with budget num_workers and then DE.
+DEwithLHSdim = chaining([LHSSearch, DE], [-2])  # Runs LHSSearch with budget the dimension and then DE.
+DEwithLHS30 = chaining([LHSSearch, DE], [30])  # Runs LHSSearch with budget the dimension and then DE.
+```
+
+This means that we ``chain'' LHS and DE (in the first case LHS is run with as budget the number of workers, and in the second case with budget equal to the dimension).
+We can then do:
+```python
+import nevergrad as ng
+
+def square(x):
+    return sum((x - .5)**2)
+
+optimizer = ng.optimizers.DEwithLHS30(instrumentation=2, budget=100)
+recommendation = optimizer.optimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
+```
+
 ## Citing
 
 ```bibtex
