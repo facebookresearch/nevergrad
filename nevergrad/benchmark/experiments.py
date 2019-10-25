@@ -30,7 +30,7 @@ def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
     functions = [
         multiobjective_minimization([ArtificialFunction(name1, block_dimension=7),
-                                     ArtificialFunction(name2, block_dimension=7),
+                                     ArtificialFunction(name2, block_dimension=7)],
                                      bad_values=[10000.]*2)
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "cigar", "hm"]
