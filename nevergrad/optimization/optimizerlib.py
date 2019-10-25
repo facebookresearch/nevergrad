@@ -1212,7 +1212,6 @@ class chaining(base.ParametrizedFamily):
     
     def __init__(
         self,
-        *,
         list_of_algorithms,
         list_of_budgets,
     ) -> None:
