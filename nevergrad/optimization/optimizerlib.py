@@ -1204,39 +1204,57 @@ class PBIL(base.Optimizer):
 
 
 @registry.register
-class chaining(base.Optimizer):
+class chaining(base.ParametrizedFamily):
     """
     A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
     Each algorithm (except the first one) is fed with the entire archive.
     """
-    def __init__(self, list_of_algorithms, list_of_budgets, instrumentation: Union[int, Instrumentation], 
-            budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is None or budget == sum(list_of_budgets)
-        # We might provide an algorithm without budget, at the end -- that one runs forever.
-        # -1 in the list of budgets means "num_workers".
-        # -2 in the list of budgets means "dimension".
-        for i in range(len(list_of_budgets)):
-            if list_of_budgets[i] == -1:
-                list_of_budgets[i] = num_workers
-            if list_of_budgets[i] == -2:
-                list_of_budgets[i] = self.dimension
+    
+    def __init__(
+        self,
+        *,
+        list_of_algorithms,
+        list_of_budgets,
+    ) -> None:
         assert len(list_of_algorithms) == len(list_of_budgets) or len(list_of_algorithms) == len(list_of_budgets) + 1 
-        self._list_of_algorithms = [l(instrumentation, budget, num_workers) for l in list_of_algorithms]
         self._list_of_budgets = list_of_budgets
+        self._list_of_algorithms = list_of_algorithms
+        super().__init__()
 
-    def _internal_ask_candidate(self) -> base.Candidate:
-        # Which algorithm are we playing with ?
-        algo_index = 0
-        for b in self._list_of_budgets:
-            if self._num_ask >= b:
-                algo_index += 1
-        return self._list_of_algorithms[algo_index].ask()
+    def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        self._list_of_algorithms[i].tell(candidate, value)
-        for i in range(algo_index+1, len(self._list_of_algorithms) + 1):
-            self._list_of_algorithms[i].tell_not_ask(candidate, value)
+        list_of_algorithms = self._list_of_algorithms
+        list_of_budgets = self._list_of_budgets
+
+        class chain(base.Optimizer):
+
+            def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+                super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+                self._list_of_budgets = list_of_budgets
+                self._list_of_algorithms = [l(instrumentation, budget, num_workers) for l in list_of_algorithms]
+                # -1 in the list of budgets means "num_workers".
+                # -2 in the list of budgets means "dimension".
+                for i in range(len(self._list_of_budgets)):
+                    if self._list_of_budgets[i] == -1:
+                        self._list_of_budgets[i] = num_workers
+                    if self._list_of_budgets[i] == -2:
+                        self._list_of_budgets[i] = self.dimension
+
+            def _internal_ask_candidate(self) -> base.Candidate:
+                # Which algorithm are we playing with ?
+                algo_index = 0
+                for b in self._list_of_budgets:
+                    if self._num_ask >= b:
+                        algo_index += 1
+                return self._list_of_algorithms[algo_index].ask()
+        
+            def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+                self._list_of_algorithms[i].tell(candidate, value)
+                for i in range(algo_index+1, len(self._list_of_algorithms) + 1):
+                    self._list_of_algorithms[i].tell(candidate, value)
+
+        return chain(instrumentation, budget, num_workers)
+
 
 
 DEwithLHS = chaining([LHSSearch, DE], [-1])  # Runs LHSSearch with budget num_workers and then DE.
