@@ -74,8 +74,8 @@ def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
         return -my_hypervolume + numpy.sqrt(sum([a*a for a in vector_to_pareto]))
 
     # Initialization: at the beginning we have no Pareto front and no best hypervolume.
-    my_target_function.pointset = []
-    my_target_function.best_hypervolume = 0
+    my_target_function.pointset = []  # type: ignore
+    my_target_function.best_hypervolume = 0  # type: ignore
 
     # Hack for returning an intrumenting function rather than just a lambda x: objective(x).
     class my_instrumented_target_function(InstrumentedFunction):
