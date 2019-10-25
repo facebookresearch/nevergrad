@@ -42,6 +42,7 @@ def hypervolume(pointset, ref=None):
 
 def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
 
+    bad_values = numpy.array(bad_values)
     def my_target_function(x=None):
         if x is None:  # Then we return the Pareto front.
             contrib = []
