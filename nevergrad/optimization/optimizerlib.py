@@ -1225,7 +1225,7 @@ class chaining(base.Optimizer):
         self._list_of_algorithms = [l(instrumentation, budget, num_workers) for l in list_of_algorithms]
         self._list_of_budgets = list_of_budgets
 
-    def _internal_ask_candidate(self) --> base.Candidate:
+    def _internal_ask_candidate(self) -> base.Candidate:
         # Which algorithm are we playing with ?
         algo_index = 0
         for b in self._list_of_budgets:
