@@ -1216,16 +1216,23 @@ class chaining(base.ParametrizedFamily):
         list_of_algorithms,
         list_of_budgets,
     ) -> None:
+        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
         assert len(list_of_algorithms) == len(list_of_budgets) or len(list_of_algorithms) == len(list_of_budgets) + 1 
+
+        # Let us store the two key parameters:
         self._list_of_budgets = list_of_budgets
         self._list_of_algorithms = list_of_algorithms
+
+        # Initialization of the base class.
         super().__init__()
 
+    # From the user point of view, the call below is the creation of the optimizer.
     def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
 
         list_of_algorithms = self._list_of_algorithms
         list_of_budgets = self._list_of_budgets
 
+        # We create the class we want to use.
         class chain(base.Optimizer):
 
             def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -1246,13 +1253,15 @@ class chaining(base.ParametrizedFamily):
                 for b in self._list_of_budgets:
                     if self._num_ask >= b:
                         algo_index += 1
+                # Ok, that algorithm chooses the next point to evaluate.
                 return self._list_of_algorithms[algo_index].ask()
         
             def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-                self._list_of_algorithms[i].tell(candidate, value)
-                for i in range(algo_index+1, len(self._list_of_algorithms) + 1):
-                    self._list_of_algorithms[i].tell(candidate, value)
+                # Let us inform all algorithms
+                for l in self._list_of_algorithms:
+                    l.tell(candidate, value)
 
+        # We return the chain, ready to use and with the right initialization.
         return chain(instrumentation, budget, num_workers)
 
 
