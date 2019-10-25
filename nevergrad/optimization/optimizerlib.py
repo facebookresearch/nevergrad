@@ -1203,7 +1203,6 @@ class PBIL(base.Optimizer):
             self._population = []
 
 
-@registry.register
 class chaining():
     """
     A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
@@ -1260,7 +1259,6 @@ class chaining():
 
         # We return the chain, ready to use and with the right initialization.
         return chain(instrumentation, budget, num_workers)
-
 
 
 DEwithLHS = chaining([LHSSearch, DE], [-1])  # Runs LHSSearch with budget num_workers and then DE.
