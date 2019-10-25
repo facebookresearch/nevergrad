@@ -42,7 +42,7 @@ def hypervolume(pointset, ref=None):
     hv = _HyperVolume(ref)
     return hv.compute(pointset)
 
-def multiobjective_minimization(functions):
+def multiobjective_minimization(functions) --> InstrumentedFunction:
 
     def my_target_function(x=None):
         if x is None:
