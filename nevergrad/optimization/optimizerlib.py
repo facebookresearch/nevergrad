@@ -1239,8 +1239,8 @@ class chaining(base.Optimizer):
             self._list_of_algorithms[i].tell_not_ask(candidate, value)
 
 
-DEwithLHS = chaining([LHSSearch, DE], [-1]]  # Runs LHSSearch with budget num_workers and then DE.
-DEwithLHSdim = chaining([LHSSearch, DE], [-2]]  # Runs LHSSearch with budget the dimension and then DE.
+DEwithLHS = chaining([LHSSearch, DE], [-1])  # Runs LHSSearch with budget num_workers and then DE.
+DEwithLHSdim = chaining([LHSSearch, DE], [-2])  # Runs LHSSearch with budget the dimension and then DE.
 
 
 @registry.register
