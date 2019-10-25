@@ -71,7 +71,7 @@ def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
             if all([y[i] <= v[i] for i in range(len(v))]):
                 for i in range(len(v)):
                     vector_to_pareto[i] = min(vector_to_pareto[i], v[i]-y[i])
-        return -my_hypervolume + numpy.sqrt(sum([a*a for a in distance_to_pareto]))
+        return -my_hypervolume + numpy.sqrt(sum([a*a for a in vector_to_pareto]))
 
     # Initialization: at the beginning we have no Pareto front and no best hypervolume.
     my_target_function.pointset = []
