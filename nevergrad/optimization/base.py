@@ -531,7 +531,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     
                     args = self.ask()
                     num_tries = 0
-                    while cheap_constraints_checker is not None and cheap_constraints_checker(args) and num_tries < 1000:
+                    while cheap_constraints_checker is not None and not cheap_constraints_checker(args) and num_tries < 1000:
                         self._num_ask -= 1
                         args = self.ask()
                         num_tries += 1
