@@ -457,7 +457,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-        list_of_cheap_positivity_constraints: Any = [],  # We repeat "ask" until all these constraints are positive.
+        cheap_constraints_checker: Any = None,  # We repeat "ask" until all these constraints are positive.
     ) -> Candidate:
         """Optimization (minimization) procedure
 
@@ -531,7 +531,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     
                     args = self.ask()
                     num_tries = 0
-                    while any([c(args) < 0 for c in list_of_cheap_positivity_constraints]) or num_tries > 1000000:
+                    while cheap_constraints_checker is not None and cheap_constraints_checker(c) and num_tries < 1000:
                         self._num_ask -= 1
                         args = self.ask()
                         num_tries += 1

@@ -146,7 +146,7 @@ class Experiment:
     def __init__(self, function: instru.InstrumentedFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
-                 list_of_cheap_constraints: list = []) -> None:
+                 cheap_constraints_checker: Any = None) -> None:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
@@ -237,7 +237,7 @@ class Experiment:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
                 self.recommendation = base.Optimizer.minimize(self._optimizer, counter, batch_mode=executor.batch_mode, executor=executor,
-                        list_of_cheap_constraints=list_of_cheap_constraints)
+                        cheap_constraints_checker=cheap_constraints_checker)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, counter.num_calls)
