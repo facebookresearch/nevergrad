@@ -1235,7 +1235,7 @@ class chaining(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self._list_of_algorithms[i].tell(candidate, value)
-        for i in range(algo_index+1:len(self._list_of_algorithms) + 1):
+        for i in range(algo_index+1, len(self._list_of_algorithms) + 1):
             self._list_of_algorithms[i].tell_not_ask(candidate, value)
 
 
