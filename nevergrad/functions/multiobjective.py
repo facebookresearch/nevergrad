@@ -42,10 +42,10 @@ def hypervolume(pointset, ref=None):
     hv = _HyperVolume(ref)
     return hv.compute(pointset)
 
-def multiobjective_minimization(functions) --> InstrumentedFunction:
+def multiobjective_minimization(functions, bad_values) --> InstrumentedFunction:
 
     def my_target_function(x=None):
-        if x is None:
+        if x is None:  # Then we return the Pareto front.
             contrib = []
             for i in range(len(my_target_function.pointset)):
                 v = hypervolume(my_target_function.pointset[:i] + my_target_function.pointset[i+1:])
@@ -54,18 +54,31 @@ def multiobjective_minimization(functions) --> InstrumentedFunction:
             # print("Reducing Pareto front from ", len(my_target_function.pointset), " to ", len(contrib), ".")
             my_target_function.pointset = contrib
             return contrib
+        # This is a real input x; we compute the fitness values for each objective.
         v = [f(x) for f in functions]
-        my_hypervolume = hypervolume(my_target_function.pointset + [v])
-        if my_hypervolume > my_target_function.best_hypervolume:
+        # We compute the hypervolume
+        my_hypervolume = hypervolume(my_target_function.pointset + [v], bad_values)
+        if my_hypervolume > my_target_function.best_hypervolume:  # This point is good! Let us give him a great mono-fitness value.
             my_target_function.best_hypervolume = my_hypervolume
             my_target_function.pointset += [v]
+            # Maybe let us simplify the Pareto front (with low probability).
+            if numpy.random.rand() < 0.001:
+                my_target_function()
             return -my_hypervolume
-        if numpy.random.rand() < 0.001:
-            my_target_function()
-        return 0.
+        # Ok, this is not a good points, let us penalize it by the distance to the Pareto front.
+        # I have never run the code below: let me check (the rest ran smoothly at least on trivial examples :-) ).
+        vector_to_pareto = [x[i] - bad_values[i] for i in range(len(v))]
+        for y in my_target_function.pointset:
+            if all([y[i] <= v[i] for i in range(len(v))]):
+                for i in range(len(v)):
+                    vector_to_pareto[i] = min(vector_to_pareto[i], v[i]-y[i])
+        return -my_hypervolume + numpy.sqrt(sum([a*a for a in distance_to_pareto]))
+
+    # Initialization: at the beginning we have no Pareto front and no best hypervolume.
     my_target_function.pointset = []
     my_target_function.best_hypervolume = 0
 
+    # Hack for returning an intrumenting function rather than just a lambda x: objective(x).
     class my_instrumented_target_function(InstrumentedFunction):
         def __init__(self):
             self.my_target_function = my_target_function
