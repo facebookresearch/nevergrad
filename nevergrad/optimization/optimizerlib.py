@@ -564,7 +564,6 @@ class NoisyBandit(base.Optimizer):
     """
 
     def _internal_ask(self) -> ArrayLike:
-        self._penalize_cheap_violations = False
         if 20 * self._num_ask >= len(self.archive) ** 3:
             return self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
@@ -629,7 +628,6 @@ class PSO(base.Optimizer):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self._penalize_cheap_violations = False
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
@@ -768,7 +766,6 @@ class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        self._penalize_cheap_violations = False
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
@@ -1045,7 +1042,6 @@ class _FakeFunction:
 class _BO(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self._penalize_cheap_violations = False
         self._parameters = ParametrizedBO()
         self._transform = transforms.ArctanBound(0, 1)
         self._bo: Optional[BayesianOptimization] = None
