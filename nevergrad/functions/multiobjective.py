@@ -95,15 +95,16 @@ def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
     my_target_function.pointset = []  # type: ignore
     my_target_function.best_hypervolume = 0  # type: ignore
 
-#    # Hack for returning an intrumenting function rather than just a lambda x: objective(x).
-#    class my_instrumented_target_function(InstrumentedFunction):
-#        def __init__(self):
-#            self.my_target_function = my_target_function
-#            super().__init__(self.my_target_function)
-#            if hasattr(functions[0], "instrumentation"):
-#                self._instrumentation = functions[0]._instrumentation 
-#
-#    return my_instrumented_target_function()
+    if hasattr(functions[0], "_instrumentation"):
+        # Hack for returning an intrumenting function rather than just a lambda x: objective(x).
+        class my_instrumented_target_function(InstrumentedFunction):
+            def __init__(self):
+                self.my_target_function = my_target_function
+                super().__init__(self.my_target_function)
+                self._instrumentation = functions[0]._instrumentation
+        return my_instrumented_target_function()
+
+    # Ok, so bad, we just return a callable.
     return my_target_function
 
 class _HyperVolume:
