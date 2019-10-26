@@ -408,9 +408,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     )
                 self._asked.add(candidate.uid)
             assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
-            if not cheap_constraints_checker or cheap_constraints_checker(candidate):
+            if not cheap_constraints_checker or cheap_constraints_checker(candidate.data):
                 break
-            if self._penalize_cheap_violations and not cheap_constraints_checker(candidate):
+            if self._penalize_cheap_violations and not cheap_constraints_checker(candidate.data):
                 self._internal_tell_candidate(candidate, float("Inf"))
                 break
         self._num_ask += 1
@@ -560,11 +560,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        cheap_constraints_checker: Any = None,
     ) -> Candidate:
         """This function is deprecated and renamed "minimize".
         """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
-        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
+        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity,
+                cheap_constraints_checker=cheap_constraints_checker)
 
 
 class OptimizationPrinter:
