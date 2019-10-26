@@ -391,7 +391,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        # TODO: should we have a limit on the loop below ?
+        num_tries = 0
         while True:  # Until we satisfy cheap constraints.
             # call callbacks for logging etc...
             for callback in self._callbacks.get("ask", []):
@@ -413,6 +413,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self._penalize_cheap_violations and not cheap_constraints_checker(candidate.data):
                 self._internal_tell_candidate(candidate, float("Inf"))
                 break
+            if num_tries > 1000:
+                self._internal_tell_candidate(candidate, float("Inf"))
+                break
+            num_tries += 1
         self._num_ask += 1
         return candidate
 
