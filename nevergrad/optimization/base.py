@@ -391,12 +391,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
+        # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        MAX_TENTATIVES = 1000
         current_num_ask = self.num_ask
+        # tentatives if a cheap constraint is available
+        MAX_TENTATIVES = 1000
         for k in range(MAX_TENTATIVES):
-            # call callbacks for logging etc...
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
@@ -411,7 +412,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     self._internal_tell_candidate(candidate, float("Inf"))
                 self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
                 if k == MAX_TENTATIVES - 1:
-                    raise RuntimeError("Could not find any point satisfying the constraint")
+                    warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
