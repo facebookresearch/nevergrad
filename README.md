@@ -112,10 +112,10 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = ng.optimizers.DEwithLHS30(instrumentation=2, budget=100)
+optimizer = ng.optimizers.DEwithLHS30(instrumentation=2, budget=300)
 recommendation = optimizer.optimize(square)
 print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
+>>> Candidate(args=(array([0.50843113, 0.5104554 ]),), kwargs={})
 ```
 
 ## Citing
