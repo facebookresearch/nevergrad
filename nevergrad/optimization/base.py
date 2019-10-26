@@ -377,7 +377,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self) -> Candidate:
+    def ask(self, cheap_constraints_checker: Any = None) -> Candidate:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
 
@@ -387,21 +387,27 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        # call callbacks for logging etc...
-        for callback in self._callbacks.get("ask", []):
-            callback(self)
-        if self._suggestions:
-            candidate = self._suggestions.pop()
-        else:
-            candidate = self._internal_ask_candidate()
-            # only register actual asked points
-            if candidate.uid in self._asked:
-                raise RuntimeError(
-                    "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                    "This is to make sure that stochastic instrumentations are resampled."
-                )
-            self._asked.add(candidate.uid)
-        assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        while True:  # Until we satisfy cheap constraints.
+            # call callbacks for logging etc...
+            for callback in self._callbacks.get("ask", []):
+                callback(self)
+            if self._suggestions:
+                candidate = self._suggestions.pop()
+            else:
+                candidate = self._internal_ask_candidate()
+                # only register actual asked points
+                if candidate.uid in self._asked:
+                    raise RuntimeError(
+                        "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
+                        "This is to make sure that stochastic instrumentations are resampled."
+                    )
+                self._asked.add(candidate.uid)
+            assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+            if not cheap_constraints_checker or cheap_constraints_checker(candidate):
+                break
+            if self._penalize_cheap_violations and not cheap_constraints_checker(candidate):
+                self._internal_tell(candidate, float("Inf"))
+                break
         self._num_ask += 1
         return candidate
 
@@ -529,12 +535,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
                     
-                    args = self.ask()
-                    num_tries = 0
-                    while cheap_constraints_checker is not None and not cheap_constraints_checker(args) and num_tries < 1000:
-                        self._num_ask -= 1
-                        args = self.ask()
-                        num_tries += 1
+                    args = self.ask(cheap_constraints_checker=cheap_constraints_checker)
                     self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                 if new_sugg:
                     sleeper.start_timer()
