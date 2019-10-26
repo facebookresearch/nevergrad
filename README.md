@@ -93,7 +93,10 @@ Let us minimize x1 and x2 (two objective functions) assuming that values above 2
 ```python
 import nevergrad as ng
 
-f = ng.functions.multiobjective_minimization([lambda x: x[0], lambda x: x[1]], bad_values=[2.5, 2.5])
+# Let us work in dimension 7.
+# The instrumentation parameter can be an Instrumentation (describing variables and their types) or just the dimension in the
+# continuous case; it is not mandatory if functions provided as arguments are equipped with an instrumentation.
+f = ng.optimizers.multiobjective_minimization([lambda x: x[0], lambda x: x[1]], bad_values=[2.5, 2.5], 7)
 optimizer = ng.optimizers.CMA(instrumentation=f.instrumentation, budget=100)  # 2 is the dimension, 100 is the budget.
 recommendation = optimizer.optimize(f)
 

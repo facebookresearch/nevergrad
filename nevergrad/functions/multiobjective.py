@@ -40,13 +40,15 @@ def hypervolume(pointset, ref=None):
     hv = _HyperVolume(ref)
     return hv.compute(pointset)
 
-def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
+def multiobjective_minimization(functions, bad_values, instrumentation=None) -> InstrumentedFunction:
     """Given several functions, and threshold on their values (above which solutions are pointless),
     this function returns a single-objective function, correctly instrumented, the minimization of which
     yields a solution to the original multiobjective problem.
     
     functions: objective functions, to be minimized, of the original multiobjective problem.
     bad_values: bad_values[i] is a threshold above which x is pointless if functions[i](x) > bad_values[i].
+    instrumentation: an instrumentation (simply the dimension, possibly, for a continuous problem). Not
+        mandatory, if functions[0] is equipped with an instrumentation.
     
     Returns an objective function to be minimized (it is a single objective function).
     Warning: this function is not stationary.
@@ -96,7 +98,7 @@ def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
         def __init__(self):
             self.my_target_function = my_target_function
             super().__init__(self.my_target_function)
-            self._instrumentation = functions[0]._instrumentation 
+            self._instrumentation = instrumentation if instrumentation else functions[0]._instrumentation 
 
     return my_instrumented_target_function()
 
