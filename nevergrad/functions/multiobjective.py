@@ -31,16 +31,14 @@ import warnings
 
 import numpy
 
-def hypervolume(pointset, ref=None):
+def hypervolume(pointset, ref):
     """Compute the absolute hypervolume of a *pointset* according to the
     reference point *ref*.
     """
-    if ref is None:
-        ref = numpy.array([3000000] * len(pointset[0]))
     hv = _HyperVolume(ref)
     return hv.compute(pointset)
 
-def multiobjective_minimization(functions, bad_values, instrumentation=None) -> InstrumentedFunction:
+def multiobjective_minimization(functions, bad_values) -> InstrumentedFunction:
     """Given several functions, and threshold on their values (above which solutions are pointless),
     this function returns a single-objective function, correctly instrumented, the minimization of which
     yields a solution to the original multiobjective problem.
@@ -63,21 +61,25 @@ def multiobjective_minimization(functions, bad_values, instrumentation=None) -> 
         if x is None:  # Then we return the Pareto front.
             contrib = []
             for i in range(len(my_target_function.pointset)):
-                v = hypervolume(my_target_function.pointset[:i] + my_target_function.pointset[i+1:])
+                v = hypervolume(my_target_function.pointset[:i] + my_target_function.pointset[i+1:], bad_values)
+                #print(v, " vs ", my_target_function.best_hypervolume)
                 if v < my_target_function.best_hypervolume:
                     contrib += [my_target_function.pointset[i]]
-            # print("Reducing Pareto front from ", len(my_target_function.pointset), " to ", len(contrib), ".")
+            #print("Reducing Pareto front from ", len(my_target_function.pointset), " to ", len(contrib), ".")
             my_target_function.pointset = contrib
             return contrib
         # This is a real input x; we compute the fitness values for each objective.
         v = [f(x) for f in functions]
         # We compute the hypervolume
         my_hypervolume = hypervolume(my_target_function.pointset + [v], bad_values)
+        #print(x, " --> ", v, "     hv=", my_hypervolume)
         if my_hypervolume > my_target_function.best_hypervolume:  # This point is good! Let us give him a great mono-fitness value.
             my_target_function.best_hypervolume = my_hypervolume
             my_target_function.pointset += [v]
+            #print("now we have ", len(my_target_function.pointset), " points!")
             # Maybe let us simplify the Pareto front (with low probability).
             if numpy.random.rand() < 0.001:
+                #print("pruning!")
                 my_target_function()
             return -my_hypervolume
         # Ok, this is not a good points, let us penalize it by the distance to the Pareto front.
@@ -93,14 +95,16 @@ def multiobjective_minimization(functions, bad_values, instrumentation=None) -> 
     my_target_function.pointset = []  # type: ignore
     my_target_function.best_hypervolume = 0  # type: ignore
 
-    # Hack for returning an intrumenting function rather than just a lambda x: objective(x).
-    class my_instrumented_target_function(InstrumentedFunction):
-        def __init__(self):
-            self.my_target_function = my_target_function
-            super().__init__(self.my_target_function)
-            self._instrumentation = instrumentation if instrumentation else functions[0]._instrumentation 
-
-    return my_instrumented_target_function()
+#    # Hack for returning an intrumenting function rather than just a lambda x: objective(x).
+#    class my_instrumented_target_function(InstrumentedFunction):
+#        def __init__(self):
+#            self.my_target_function = my_target_function
+#            super().__init__(self.my_target_function)
+#            if hasattr(functions[0], "instrumentation"):
+#                self._instrumentation = functions[0]._instrumentation 
+#
+#    return my_instrumented_target_function()
+    return my_target_function
 
 class _HyperVolume:
     """

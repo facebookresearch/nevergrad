@@ -92,12 +92,17 @@ The [optimization documentation](docs/optimization.md) contains more information
 Let us minimize x1 and x2 (two objective functions) assuming that values above 2.5 are of no interest.
 ```python
 import nevergrad as ng
+import numpy as np
 
-# Let us work in dimension 7.
-# The instrumentation parameter can be an Instrumentation (describing variables and their types) or just the dimension in the
-# continuous case; it is not mandatory if functions provided as arguments are equipped with an instrumentation.
-f = ng.optimizers.multiobjective_minimization([lambda x: x[0], lambda x: x[1]], bad_values=[2.5, 2.5], 7)
-optimizer = ng.optimizers.CMA(instrumentation=f.instrumentation, budget=100)  # 2 is the dimension, 100 is the budget.
+f = ng.optimizers.multiobjective_minimization([lambda x: x[0], lambda x: x[1]], bad_values=[2.5, 2.5])
+
+# Let us work in dimension 3.
+# Let us check that it works.
+print(f(np.array([1,2,3])))
+
+# The parameter ``instrumentation`` can be replaced by a more sophisticated instrumentation (docs/instrumentation.md).
+# We here just use the dimension as we assume simple continuous rescaled variables (mean 0, std 1).
+optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 2 is the dimension, 100 is the budget.
 recommendation = optimizer.optimize(f)
 
 
