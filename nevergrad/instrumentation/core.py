@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
-from typing import Any, Tuple, Optional, Dict, Set, TypeVar
+from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
 import numpy as np
 from ..common.typetools import ArrayLike
 
@@ -36,11 +36,22 @@ class VarSpecs:
                 setattr(self, key, value)
 
 
+def _default_checker(*args: Any, **kwargs: Any) -> bool:  # pylint: disable=unused-argument
+    return True
+
+
 class Variable:
 
     def __init__(self) -> None:
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
         self._specs = VarSpecs()
+        self._constraint_checker = _default_checker
+
+    def set_cheap_constraint_checker(self, func: Callable[..., bool]) -> None:
+        self._constraint_checker = func
+
+    def cheap_constraint_check(self, *args: Any, **kwargs: Any) -> bool:
+        return self._constraint_checker(*args, **kwargs)
 
     @property
     def random_state(self) -> np.random.RandomState:

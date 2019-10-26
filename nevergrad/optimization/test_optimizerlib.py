@@ -321,3 +321,12 @@ def test_instrumentation_optimizer_reproducibility() -> None:
     optimizer = optimizerlib.RandomSearch(instrumentation, budget=10)
     recom = optimizer.minimize(_square)
     np.testing.assert_equal(recom.kwargs["y"], 67)
+
+
+def test_constrained_optimization() -> None:
+    instrumentation = inst.Instrumentation(x=inst.var.Array(1), y=inst.var.Scalar())
+    optimizer = optimizerlib.OnePlusOne(instrumentation, budget=100)
+    optimizer.instrumentation.random_state.seed(12)
+    optimizer.instrumentation.set_cheap_constraint_checker(lambda x, y: x[0] >= 1)  # type:ignore
+    recom = optimizer.minimize(_square)
+    np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
