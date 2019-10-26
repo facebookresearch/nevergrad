@@ -38,7 +38,7 @@ def hypervolume(pointset, ref):
     hv = _HyperVolume(ref)
     return hv.compute(pointset)
 
-def multiobjective_minimization(functions, bad_values) -> Any:  #InstrumentedFunction:
+def multiobjective_minimization(functions, bad_values):  #InstrumentedFunction:
     """Given several functions, and threshold on their values (above which solutions are pointless),
     this function returns a single-objective function, correctly instrumented, the minimization of which
     yields a solution to the original multiobjective problem.
