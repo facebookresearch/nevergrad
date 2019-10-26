@@ -18,7 +18,7 @@ class OneShotOptimizer(base.Optimizer):
     # pylint: disable=abstract-method
     one_shot = True
 
-# Calais or center-based counterparts of the original Nevergrad oneshot optimizers:
+# Recentering or center-based counterparts of the original Nevergrad oneshot optimizers:
 # - Quasi-opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one,
 #   multiplied by rand([0,1]).
 # - Opposite counterpart of a sampling = one sample out of 2 is the symmetric of the previous one.
@@ -89,9 +89,10 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
-                 quasi_opposite: str = "none",
+                 quasi_opposite: Optional[str] = None,
                  cauchy: bool = False, scale: Union[float, str] = 1.) -> None:
         # keep all parameters and set initialize superclass for print
+        assert quasi_opposite is None or quasi_opposite in ["quasi", "opposite"]
         assert isinstance(scale, (int, float)) or scale == "random"
         self.middle_point = middle_point
         self.quasi_opposite = quasi_opposite
@@ -156,7 +157,7 @@ class _SamplingSearch(OneShotOptimizer):
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        if self._parameters.supercalais:
+        if self._parameters.autorescale:
             self._parameters.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         self.last_guy = self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
         return self.last_guy
@@ -204,15 +205,15 @@ class SamplingSearch(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
-                 quasi_opposite: str = "none",
-                 cauchy: bool = False, supercalais: bool = False, scale: float = 1., rescaled: bool = False) -> None:
+                 quasi_opposite: Optional[str] = None,
+                 cauchy: bool = False, autorescale: bool = False, scale: float = 1., rescaled: bool = False) -> None:
         # keep all parameters and set initialize superclass for print
         self.sampler = sampler
         self.quasi_opposite = quasi_opposite
         self.middle_point = middle_point
         self.scrambled = scrambled
         self.cauchy = cauchy
-        self.supercalais = supercalais
+        self.autorescale = autorescale
         self.scale = scale
         self.rescaled = rescaled
         super().__init__()
