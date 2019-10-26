@@ -1209,10 +1209,10 @@ class _Chain(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = Chaining([LHSSearch, DE], [10])  # needs a default
         # delayed initialization
-        self._optimizers_: List[base.Optimizer, ...] = []
+        self._optimizers_: List[base.Optimizer] = []
 
     @property
-    def _optimizers(self) -> Tuple[base.Optimizer]:
+    def _optimizers(self) -> List[base.Optimizer]:
         if not self._optimizers_:
             self._optimizers_ = []
             conv = {"num_workers": self.num_workers, "dimension": self.dimension}
