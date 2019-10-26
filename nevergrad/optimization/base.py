@@ -381,7 +381,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self, cheap_constraints_checker: Any = None) -> Candidate:
+    def ask(self) -> Candidate:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
 
@@ -391,33 +391,36 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        num_tries = 0
-        while True:  # Until we satisfy cheap constraints.
+        for callback in self._callbacks.get("ask", []):
+            callback(self)
+        MAX_TENTATIVES = 1000
+        current_num_ask = self.num_ask
+        for k in range(MAX_TENTATIVES):
             # call callbacks for logging etc...
-            for callback in self._callbacks.get("ask", []):
-                callback(self)
+            is_suggestion = False
             if self._suggestions:
+                is_suggestion = True
                 candidate = self._suggestions.pop()
             else:
                 candidate = self._internal_ask_candidate()
                 # only register actual asked points
-                if candidate.uid in self._asked:
-                    raise RuntimeError(
-                        "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                        "This is to make sure that stochastic instrumentations are resampled."
-                    )
-                self._asked.add(candidate.uid)
-            assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
-            if not cheap_constraints_checker or cheap_constraints_checker(candidate.data):
-                break
-            if self._penalize_cheap_violations and not cheap_constraints_checker(candidate.data):
-                self._internal_tell_candidate(candidate, float("Inf"))
-                break
-            if num_tries > 1000:
-                self._internal_tell_candidate(candidate, float("Inf"))
-                break
-            num_tries += 1
-        self._num_ask += 1
+            if self.instrumentation.cheap_constraint_check(*candidate.args, **candidate.kwargs):
+                break  # good to go!
+            else:
+                if self._penalize_cheap_violations:
+                    self._internal_tell_candidate(candidate, float("Inf"))
+                self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
+                if k == MAX_TENTATIVES - 1:
+                    raise RuntimeError("Could not find any point satisfying the constraint")
+        if not is_suggestion:
+            if candidate.uid in self._asked:
+                raise RuntimeError(
+                    "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
+                    "This is to make sure that stochastic instrumentations are resampled."
+                )
+            self._asked.add(candidate.uid)
+        self._num_ask = current_num_ask + 1
+        assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         return candidate
 
     def provide_recommendation(self) -> Candidate:
@@ -472,7 +475,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-        cheap_constraints_checker: Any = None,  # We repeat "ask" until all these constraints are positive.
     ) -> Candidate:
         """Optimization (minimization) procedure
 
@@ -543,8 +545,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
-                    
-                    args = self.ask(cheap_constraints_checker=cheap_constraints_checker)
+                    args = self.ask()
                     self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                 if new_sugg:
                     sleeper.start_timer()
@@ -564,13 +565,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-        cheap_constraints_checker: Any = None,
     ) -> Candidate:
         """This function is deprecated and renamed "minimize".
         """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
-        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity,
-                cheap_constraints_checker=cheap_constraints_checker)
+        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
 
 
 class OptimizationPrinter:

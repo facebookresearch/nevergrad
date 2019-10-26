@@ -100,25 +100,6 @@ The [optimization documentation](docs/optimization.md) contains more information
 }
 ```
 
-## Optimization with constraints
-
-Nevergrad has a mechanism for cheap constraints. 
-``Cheap'' means that we do not try to reduce the number of calls to such constraints.
-We basically repeat mutations until we get a satisfiable point.
-Let us say that we want to minimize `(x[0]-.5)**2 + (x[1]-.5)**2` under the constraint `x[0] >= 1`.
-```python
-import nevergrad as ng
-
-def square(x):
-    return sum((x - .5)**2)
-
-optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
-recommendation = optimizer.optimize(square, cheap_constraints_checker=lambda x: x[0] >= 1.)
-print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([1.00037625, 0.50683314]),), kwargs={})
-```
-
-list_of_cheap_positivity_constraints
 ## License
 
 `nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details.
