@@ -406,7 +406,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if not cheap_constraints_checker or cheap_constraints_checker(candidate):
                 break
             if self._penalize_cheap_violations and not cheap_constraints_checker(candidate):
-                self._internal_tell(candidate, float("Inf"))
+                self._internal_tell_candidate(candidate, float("Inf"))
                 break
         self._num_ask += 1
         return candidate
