@@ -13,6 +13,8 @@ from . import base
 from . import utils
 
 # In some cases we will need the average of the k best.
+
+
 def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
     items = list(archive.items_as_array())
@@ -41,8 +43,6 @@ class OneShotOptimizer(base.Optimizer):
 # - Some variants use a rescaling depending on the budget and the dimension.
 
 
-
-
 # # # # # One-shot optimizers: all fitness evaluations are in parallel. # # # # #
 
 
@@ -54,15 +54,15 @@ class _RandomSearch(OneShotOptimizer):
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
-        if self._parameters.quasi_opposite == "quasi" and self._num_ask % 2:
+        if self._parameters.opposition_mode == "quasi" and self._num_ask % 2:
             return -self._rng.uniform(0., 1.) * self.last_guy  # type: ignore
-        if self._parameters.quasi_opposite == "opposite" and self._num_ask % 2:
+        if self._parameters.opposition_mode == "opposite" and self._num_ask % 2:
             return -self.last_guy  # type: ignore
         if self._parameters.middle_point and not self._num_ask:
             self.last_guy = np.zeros(self.dimension)
             return self.last_guy  # type: ignore
         scale = self._parameters.scale
-        if isinstance(scale, str) and scale == "super":
+        if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension.
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "random":
@@ -74,7 +74,7 @@ class _RandomSearch(OneShotOptimizer):
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
-            return self._internal_ask()        
+            return self._internal_ask()
         if self._parameters.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
         return super()._internal_provide_recommendation()
@@ -89,17 +89,18 @@ class RandomSearchMaker(base.ParametrizedFamily):
         Provides a random recommendation instead of the best point so far (for baseline)
     middle_point: bool
         enforces that the first suggested point (ask) is zero.
-    quasi_opposite: str
+    opposition_mode: str or None
         symmetrizes exploration wrt the center: (e.g. https://ieeexplore.ieee.org/document/4424748)
              - full symmetry if "opposite"
              - random * symmetric if "quasi"
     cauchy: bool
         use a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
-        scalar for multiplying the suggested point values. If "random", this
-        used a randomized pattern for the scale.
+        scalar for multiplying the suggested point values, or string:
+         - "random": uses a randomized pattern for the scale.
+         - "auto": scales in function of dimension and budget (see XXX)
     recommendation_rule: str
-        "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.        
+        "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
     """
 
     _optimizer_class = _RandomSearch
@@ -107,24 +108,25 @@ class RandomSearchMaker(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, middle_point: bool = False, stupid: bool = False,
-                 quasi_opposite: Optional[str] = None,
-                 cauchy: bool = False, scale: Union[float, str] = 1., 
+                 opposition_mode: Optional[str] = None,
+                 cauchy: bool = False, scale: Union[float, str] = 1.,
                  recommendation_rule: str = "pessimistic") -> None:
         # keep all parameters and set initialize superclass for print
-        assert quasi_opposite is None or quasi_opposite in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale == "random"
+        assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random"]
         self.middle_point = middle_point
-        self.quasi_opposite = quasi_opposite
+        self.opposition_mode = opposition_mode
         self.stupid = stupid
         self.recommendation_rule = recommendation_rule
         self.cauchy = cauchy
         self.scale = scale
         super().__init__()
 
+
 Zero = RandomSearchMaker(scale=0.).with_name("Zero", register=True)
 RandomSearch = RandomSearchMaker().with_name("RandomSearch", register=True)
-QORandomSearch = RandomSearchMaker(quasi_opposite="quasi").with_name("QORandomSearch", register=True)
-ORandomSearch = RandomSearchMaker(quasi_opposite="opposite").with_name("ORandomSearch", register=True)
+QORandomSearch = RandomSearchMaker(opposition_mode="quasi").with_name("QORandomSearch", register=True)
+ORandomSearch = RandomSearchMaker(opposition_mode="opposite").with_name("ORandomSearch", register=True)
 RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).with_name("RandomSearchPlusMiddlePoint", register=True)
 LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
     middle_point=True, scale=500.).with_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
@@ -145,7 +147,6 @@ class _SamplingSearch(OneShotOptimizer):
         self._parameters = SamplingSearch()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None
-
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -170,9 +171,9 @@ class _SamplingSearch(OneShotOptimizer):
         if self._parameters.middle_point and not self._num_ask:
             self.last_guy = np.zeros(self.dimension)
             return self.last_guy  # type: ignore
-        if self._parameters.quasi_opposite == "quasi" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
+        if self._parameters.opposition_mode == "quasi" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
             return -self._rng.uniform(0., 1.) * self.last_guy  # type: ignore
-        if self._parameters.quasi_opposite == "opposite" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
+        if self._parameters.opposition_mode == "opposite" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
             return -self.last_guy  # type: ignore
         sample = self.sampler()
         if self._rescaler is not None:
@@ -181,12 +182,11 @@ class _SamplingSearch(OneShotOptimizer):
             self._parameters.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         self.last_guy = self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
         return self.last_guy
-    
+
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
         return super()._internal_provide_recommendation()
-
 
 
 class SamplingSearch(base.ParametrizedFamily):
@@ -233,12 +233,12 @@ class SamplingSearch(base.ParametrizedFamily):
 
     # pylint: disable=unused-argument
     def __init__(self, *, sampler: str = "Halton", scrambled: bool = False, middle_point: bool = False,
-                 quasi_opposite: Optional[str] = None,
+                 opposition_mode: Optional[str] = None,
                  cauchy: bool = False, autorescale: bool = False, scale: float = 1., rescaled: bool = False,
                  recommendation_rule: str = "pessimistic") -> None:
         # keep all parameters and set initialize superclass for print
         self.sampler = sampler
-        self.quasi_opposite = quasi_opposite
+        self.opposition_mode = opposition_mode
         self.middle_point = middle_point
         self.scrambled = scrambled
         self.cauchy = cauchy
@@ -282,8 +282,10 @@ LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").with_na
 LargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True).with_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).with_name("ScrHammersleySearch", register=True)
-QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="quasi").with_name("QOScrHammersleySearch", register=True)
-OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, quasi_opposite="opposite").with_name("OScrHammersleySearch", register=True)
+QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
+                                       opposition_mode="quasi").with_name("QOScrHammersleySearch", register=True)
+OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
+                                      opposition_mode="opposite").with_name("OScrHammersleySearch", register=True)
 RescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True).with_name("RescaleScrHammersleySearch", register=True)
 CauchyScrHammersleySearch = SamplingSearch(
@@ -293,9 +295,11 @@ CauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).with_name("CauchyLH
 
 
 AvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_best").with_name("AvgHaltonSearch", register=True)
-AvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_best").with_name("AvgHaltonSearchPlusMiddlePoint", register=True)
+AvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_best").with_name(
+    "AvgHaltonSearchPlusMiddlePoint", register=True)
 AvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_best").with_name("AvgLargeHaltonSearch", register=True)
-AvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_best").with_name("AvgLargeScrHaltonSearch", register=True)
+AvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_best").with_name(
+    "AvgLargeScrHaltonSearch", register=True)
 AvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=100., middle_point=True, recommendation_rule="average_of_best").with_name("AvgLargeHaltonSearchPlusMiddlePoint", register=True)
 AvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
@@ -307,7 +311,8 @@ AvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=100., middle_point=True, scrambled=True, recommendation_rule="average_of_best").with_name("AvgLargeScrHaltonSearchPlusMiddlePoint", register=True)
 AvgSmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=.01, middle_point=True, scrambled=True, recommendation_rule="average_of_best").with_name("AvgSmallScrHaltonSearchPlusMiddlePoint", register=True)
-AvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="average_of_best").with_name("AvgHammersleySearch", register=True)
+AvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="average_of_best").with_name(
+    "AvgHammersleySearch", register=True)
 AvgHammersleySearchPlusMiddlePoint = SamplingSearch(
     sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").with_name("AvgHammersleySearchPlusMiddlePoint", register=True)
 AvgLargeHammersleySearchPlusMiddlePoint = SamplingSearch(
@@ -320,14 +325,16 @@ AvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").with_name("AvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
 AvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").with_name("AvgScrHammersleySearchPlusMiddlePoint", register=True)
-AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley", recommendation_rule="average_of_best").with_name("AvgLargeHammersleySearch", register=True)
+AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
+                                          recommendation_rule="average_of_best").with_name("AvgLargeHammersleySearch", register=True)
 AvgLargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_best").with_name("AvgLargeScrHammersleySearch", register=True)
-AvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True, recommendation_rule="average_of_best").with_name("AvgScrHammersleySearch", register=True)
+AvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
+                                        recommendation_rule="average_of_best").with_name("AvgScrHammersleySearch", register=True)
 AvgRescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_best").with_name("AvgRescaleScrHammersleySearch", register=True)
 AvgCauchyScrHammersleySearch = SamplingSearch(
     cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_best").with_name("AvgCauchyScrHammersleySearch", register=True)
 AvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_best").with_name("AvgLHSSearch", register=True)
-AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_best").with_name("AvgCauchyLHSSearch", register=True)
-
+AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_best").with_name(
+    "AvgCauchyLHSSearch", register=True)
