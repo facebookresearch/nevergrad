@@ -104,7 +104,7 @@ DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: List[str] = []
 
 
-@pytest.mark.parametrize("name", [])  # name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.OptimizerFamily):
@@ -153,7 +153,7 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
         pass
 
 
-@pytest.mark.parametrize("name", [])  # name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
     # set up environment
     optimizer_cls = registry[name]
