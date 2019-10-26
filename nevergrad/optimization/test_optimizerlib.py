@@ -319,7 +319,7 @@ def test_chaining() -> None:
     budgets = [7, 19]
     optimizer = optlib.Chaining([optlib.LHSSearch, optlib.HaltonSearch, optlib.OnePlusOne], budgets)(2, 40)
     optimizer.minimize(_square)
-    expected = [(7, 0, 0), (19, 19 + 7, 7), (14, 14 + 19 + 7, 19 + 7)]
+    expected = [(7, 7, 0), (19, 19 + 7, 7), (14, 14 + 19 + 7, 19 + 7)]
     for (ex_ask, ex_tell, ex_tell_not_asked), opt in zip(expected, optimizer._optimizers):
         assert opt.num_ask == ex_ask
         assert opt.num_tell == ex_tell
