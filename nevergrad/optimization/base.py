@@ -54,8 +54,19 @@ class Candidate:
         self._args = args
         self._kwargs = kwargs
         self.data = np.array(data, copy=False)
-        self.uuid = uuid.uuid4().hex
+        self._uid = uuid.uuid4().hex
         self._meta: Dict[str, Any] = {}
+
+    @property
+    def uid(self) -> str:  # non-writable
+        """Unique identifier of the candidate, used for identification in the algorithms
+        """
+        return self._uid
+
+    @property
+    def uuid(self) -> str:
+        warnings.warn("uuid has been renamed to uid for compatibility reasons", DeprecationWarning)
+        return self._uid
 
     @property
     def args(self) -> Tuple[Any, ...]:
@@ -266,7 +277,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return load(cls, filepath)
 
     def __repr__(self) -> str:
-        inststr = f"{self.instrumentation:short}"
+        inststr = self.instrumentation.name
         return f"Instance of {self.name}(instrumentation={inststr}, budget={self.budget}, num_workers={self.num_workers})"
 
     def register_callback(self, name: str, callback: _OptimCallBack) -> None:
@@ -334,9 +345,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
         self._update_archive_and_bests(candidate.data, value)
-        if candidate.uuid in self._asked:
+        if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
-            self._asked.remove(candidate.uuid)
+            self._asked.remove(candidate.uid)
         else:
             self._internal_tell_not_asked(candidate, value)
             self._num_tell_not_asked += 1
@@ -384,12 +395,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         else:
             candidate = self._internal_ask_candidate()
             # only register actual asked points
-            if candidate.uuid in self._asked:
+            if candidate.uid in self._asked:
                 raise RuntimeError(
                     "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
                     "This is to make sure that stochastic instrumentations are resampled."
                 )
-            self._asked.add(candidate.uuid)
+            self._asked.add(candidate.uid)
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         self._num_ask += 1
         return candidate

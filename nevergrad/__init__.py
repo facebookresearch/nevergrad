@@ -5,9 +5,9 @@
 
 from .optimization import optimizerlib as optimizers  # busy namespace, likely to be simplified
 from .optimization import families
-from .instrumentation import Instrumentation
+from .instrumentation.multivariables import Instrumentation
 from .instrumentation import variables as var
 
 __all__ = ["Instrumentation", "var", "optimizers", "families"]
 
-__version__ = "0.2.3"
+__version__ = "0.3.0"

@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional, TypeVar, Union, Sequence, Any, Type
+from typing import List, Optional, Union, Sequence, Any, Type
 from functools import reduce
 import operator
 import warnings
@@ -10,15 +10,21 @@ import numpy as np
 from . import discretization
 from ..common.typetools import ArrayLike
 from . import transforms
-from . import utils
+from .core import ArgsKwargs
+from .core import Variable
+# pylint: disable=unused-argument
 
 
 __all__ = ["SoftmaxCategorical", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
 
-X = TypeVar("X")
+
+def wrap_arg(arg: Any) -> ArgsKwargs:
+    """Wrap a unique arg into args and kwargs
+    """
+    return (arg,), {}
 
 
-class SoftmaxCategorical(utils.Variable[X]):
+class SoftmaxCategorical(Variable):
     """Discrete set of n values transformed to a n-dim continuous variable.
     Each of the dimension encodes a weight for a value, and the softmax of weights
     provide probabilities for each possible value. A random value is sampled from
@@ -35,47 +41,38 @@ class SoftmaxCategorical(utils.Variable[X]):
     functions become stochastic, hence "adding noise"
     """
 
-    def __init__(self, possibilities: List[X], deterministic: bool = False) -> None:
+    def __init__(self, possibilities: List[Any], deterministic: bool = False) -> None:
         super().__init__()
         self.deterministic = deterministic
         self.possibilities = list(possibilities)
+        name = "SC({}|{})".format(str(possibilities).strip("[]").replace(" ", ""), int(deterministic))
+        self._specs.update(dimension=len(self.possibilities), continuous=not self.deterministic, noisy=not self.deterministic, name=name)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
 
-    @property
-    def continuous(self) -> bool:
-        return not self.deterministic
-
-    @property
-    def noisy(self) -> bool:
-        return not self.deterministic
-
-    @property
-    def dimension(self) -> int:
-        return len(self.possibilities)
-
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:
-        assert len(data) == len(self.possibilities)
-        if self.deterministic:
-            random = False
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
+        random = False if deterministic or self.deterministic else self.random_state
         index = int(discretization.softmax_discretization(data, len(self.possibilities), random=random)[0])
-        return self.possibilities[index]
+        return wrap_arg(self.possibilities[index])
 
-    def argument_to_data(self, arg: X) -> ArrayLike:
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        arg = args[0]
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-        return discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
+        out = discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
+        return np.array(out, copy=False)
 
     def get_summary(self, data: ArrayLike) -> str:
-        output = self.data_to_argument(data, random=False)
-        probas = discretization.softmax_probas(np.array(data, copy=False))
+        array = np.array(data, copy=False)
+        output = self.data_to_arguments(array, deterministic=True)
+        probas = discretization.softmax_probas(np.array(array, copy=False))
         proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
-        return f"Value {output}, from data: {data} yielding probas: {proba_str}"
+        return f"Value {output[0][0]}, from data: {data} yielding probas: {proba_str}"
 
-    def _short_repr(self) -> str:
-        return "SC({}|{})".format(",".join([str(x) for x in self.possibilities]), int(self.deterministic))
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.possibilities}, {self.deterministic})"
 
 
-class OrderedDiscrete(utils.Variable[X]):
+class OrderedDiscrete(Variable):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
 
@@ -89,38 +86,33 @@ class OrderedDiscrete(utils.Variable[X]):
     The variables are assumed to be ordered.
     """
 
-    def __init__(self, possibilities: List[X]) -> None:
+    def __init__(self, possibilities: List[Any]) -> None:
         super().__init__()
         self.possibilities = list(possibilities)
+        name = "OD({})".format(str(possibilities).strip("[],").replace(" ", ""))
+        self._specs.update(continuous=False, dimension=1, name=name)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
 
-    @property
-    def continuous(self) -> bool:
-        return False
-
-    @property
-    def dimension(self) -> int:
-        return 1
-
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:  # pylint: disable=unused-argument
-        assert len(data) == 1
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
-        return self.possibilities[index]
+        return wrap_arg(self.possibilities[index])
 
-    def argument_to_data(self, arg: X) -> ArrayLike:
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        arg = args[0]
         assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
         index = self.possibilities.index(arg)
-        return discretization.inverse_threshold_discretization([index], len(self.possibilities))
+        out = discretization.inverse_threshold_discretization([index], len(self.possibilities))
+        return np.array(out, copy=False)
 
     def _short_repr(self) -> str:
         return "OD({})".format(",".join([str(x) for x in self.possibilities]))
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.possibilities})"
 
-Y = Union[int, float, np.ndarray]
 
-
-class Gaussian(utils.Variable[Y]):
+class Gaussian(Variable):
     """Gaussian variable with a mean and a standard deviation, and
     possibly a shape (when using directly in Python)
     The output will simply be mean + std * data
@@ -131,46 +123,41 @@ class Gaussian(utils.Variable[Y]):
         self.mean = mean
         self.std = std
         self.shape = shape
+        name = f"G({mean},{std})"
+        self._specs.update(dimension=1 if self.shape is None else int(np.prod(self.shape)), name=name)
 
-    @property
-    def dimension(self) -> int:
-        return 1 if self.shape is None else int(np.prod(self.shape))
-
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> Y:  # pylint: disable=unused-argument
-        assert len(data) == self.dimension
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         x = data[0] if self.shape is None else np.reshape(data, self.shape)
-        return self.std * x + self.mean
+        return wrap_arg(self.std * x + self.mean)
 
-    def argument_to_data(self, arg: Y) -> ArrayLike:
-        return [(arg - self.mean) / self.std]
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        out = (args[0] - self.mean) / self.std
+        return np.array([out]) if self.shape is None else out  # type: ignore
 
-    def _short_repr(self) -> str:
-        return f"G({self.mean},{self.std})"
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.mean},{self.std})"
 
 
-class _Constant(utils.Variable[X]):
+class _Constant(Variable):
     """Fake variable so that constant variables can fit into the
     pipeline.
     """
 
-    def __init__(self, value: X) -> None:
+    def __init__(self, value: Any) -> None:
         super().__init__()
         self.value = value
+        self._specs.update(dimension=0, name=str(value))
 
     @classmethod
-    def convert_non_instrument(cls, x: Union[X, utils.Variable[X]]) -> utils.Variable[X]:
-        return x if isinstance(x, utils.Variable) else cls(x)
+    def convert_non_instrument(cls, x: Any) -> Variable:
+        return x if isinstance(x, Variable) else cls(x)
 
-    @property
-    def dimension(self) -> int:
-        return 0
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
+        return wrap_arg(self.value)
 
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> X:  # pylint: disable=unused-argument
-        return self.value
-
-    def argument_to_data(self, arg: X) -> ArrayLike:
-        assert arg == self.value, f'{arg} != {self.value}'
-        return []
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        assert args[0] == self.value, f'{args[0]} != {self.value}'
+        return np.array([])
 
     def get_summary(self, data: ArrayLike) -> str:
         raise RuntimeError("Constant summary should not be called")
@@ -178,8 +165,11 @@ class _Constant(utils.Variable[X]):
     def _short_repr(self) -> str:
         return f"{self.value}"
 
+    def __repr__(self) -> str:
+        return f"Constant({self.value})"
 
-class Array(utils.Variable[Y]):
+
+class Array(Variable):
     """Array variable of a given shape, on which several transforms can be applied.
 
     Parameters
@@ -206,38 +196,41 @@ class Array(utils.Variable[Y]):
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
         self._dtype: Optional[Type[Union[float, int]]] = None
+        dim = reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
+        self._specs.update(dimension=dim)
 
     @property
-    def dimension(self) -> int:
-        return reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
+    def name(self) -> str:
+        if self._specs.name is not None:
+            return self._specs.name
+        # dynamic naming
+        dims = str(self.shape)[1:-1].rstrip(",").replace(" ", "")
+        transf = "" if not self.transforms else (",[" + ",".join(t.name for t in self.transforms) + "]")
+        fl = {None: "", int: "i", float: "f"}[self._dtype]
+        return f"A({dims}{transf}){fl}"
 
-    @property
-    def continuous(self) -> bool:
-        return self._dtype != int
-
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> Y:  # pylint: disable=unused-argument
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         assert len(data) == self.dimension
         array = np.array(data, copy=False)
         for transf in self.transforms:
             array = transf.forward(array)
         if self._dtype is not None:
-            return self._dtype(array[0] if self._dtype != int else round(array[0]))
-        return array.reshape(self.shape)
-
-    def argument_to_data(self, arg: Y) -> np.ndarray:
-        if self._dtype is not None:
-            output = np.array([arg], dtype=float)
+            out = self._dtype(array[0] if self._dtype != int else round(array[0]))
         else:
-            output = np.array(arg, copy=False).ravel()
+            out = array.reshape(self.shape)  # type: ignore
+        return wrap_arg(out)
+
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        if self._dtype is not None:
+            output = np.array([args[0]], dtype=float)
+        else:
+            output = np.array(args[0], copy=False).ravel()
         for transf in reversed(self.transforms):
             output = transf.backward(output)
         return output
 
-    def _short_repr(self) -> str:
-        dims = ",".join(str(d) for d in self.shape)
-        transf = "" if not self.transforms else (",[" + ",".join(f"{t:short}" for t in self.transforms) + "]")
-        fl = {None: "", int: "i", float: "f"}[self._dtype]
-        return f"A({dims}{transf}){fl}"
+    def __repr__(self) -> str:
+        return f"Array({self.shape}, {self.transforms})"
 
     def asfloat(self) -> 'Array':
         warnings.warn('Please use "asscalar" instead of "asfloat"', DeprecationWarning)
@@ -261,6 +254,7 @@ class Array(utils.Variable[Y]):
             raise RuntimeError("Only Arrays with 1 element can be cast to float")
         if dtype not in [float, int]:
             raise ValueError('"dtype" should be either float or int')
+        self._specs.update(continuous=dtype == float)
         self._dtype = dtype
         return self
 

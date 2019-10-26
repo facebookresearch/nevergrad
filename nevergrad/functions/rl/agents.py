@@ -61,7 +61,9 @@ class TorchAgent(base.Agent):
     """Agents than plays through a torch neural network
     """
 
-    def __init__(self, module: nn.Module, deterministic: bool = True, instrumentation_std: float = 0.1) -> None:
+    def __init__(self, module: nn.Module,
+                 deterministic: bool = True,
+                 instrumentation_std: float = 0.1) -> None:
         super().__init__()
         self.deterministic = deterministic
         self.module = module
@@ -73,7 +75,10 @@ class TorchAgent(base.Agent):
 
     @classmethod
     def from_module_maker(
-        cls, env: gym.Env, module_maker: Callable[[Tuple[int, ...], int], nn.Module], deterministic: bool = True
+        cls,
+        env: gym.Env,
+        module_maker: Callable[[Tuple[int, ...], int], nn.Module],
+        deterministic: bool = True
     ) -> "TorchAgent":
         assert isinstance(env.action_space, gym.spaces.Discrete)
         assert isinstance(env.observation_space, gym.spaces.Box)
@@ -87,7 +92,7 @@ class TorchAgent(base.Agent):
         if self.deterministic:
             return probas.max(0)[1].view(1, 1).item()
         else:
-            return next(iter(WeightedRandomSampler(probas, 1)))  # type: ignore
+            return next(iter(WeightedRandomSampler(probas, 1)))
 
     def copy(self) -> "TorchAgent":
         return TorchAgent(_copy.deepcopy(self.module), self.deterministic)
@@ -137,7 +142,7 @@ class Perceptron(nn.Module):
         assert len(input_shape) == 1
         self.head = nn.Linear(input_shape[0], output_size)  # type: ignore
 
-    def forward(self, *args: Any) -> Any:  # type: ignore
+    def forward(self, *args: Any) -> Any:
         assert len(args) == 1
         return self.head(args[0])
 
@@ -151,7 +156,7 @@ class DenseNet(nn.Module):
         self.lin3 = nn.Linear(16, 16)  # type: ignore
         self.head = nn.Linear(16, output_size)  # type: ignore
 
-    def forward(self, *args: Any) -> Any:  # type: ignore
+    def forward(self, *args: Any) -> Any:
         assert len(args) == 1
         x = F.relu(self.lin1(args[0]))
         x = F.relu(self.lin2(x))
