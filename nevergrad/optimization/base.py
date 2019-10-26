@@ -201,6 +201,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
+        # True ==> we penalize them (infinite values for candidates which violate the constraint).
+        # False ==> we repeat the ask until we solve the problem.
+        self._penalize_cheap_violations = False
         self.instrumentation = (
             instrumentation
             if isinstance(instrumentation, instru.Instrumentation)
@@ -387,6 +391,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
+        # TODO: should we have a limit on the loop below ?
         while True:  # Until we satisfy cheap constraints.
             # call callbacks for logging etc...
             for callback in self._callbacks.get("ask", []):
