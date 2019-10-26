@@ -408,7 +408,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.instrumentation.cheap_constraint_check(*candidate.args, **candidate.kwargs):
                 break  # good to go!
             else:
-                if self._penalize_cheap_violations:
+                if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
                     self._internal_tell_candidate(candidate, float("Inf"))
                 self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
                 if k == MAX_TENTATIVES - 1:
