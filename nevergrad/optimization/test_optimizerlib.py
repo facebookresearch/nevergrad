@@ -324,6 +324,8 @@ def test_chaining() -> None:
         assert opt.num_ask == ex_ask
         assert opt.num_tell == ex_tell
         assert opt.num_tell_not_asked == ex_tell_not_asked
+    optimizer.ask()
+    assert optimizer._optimizers[-1].num_ask == 15
 
 
 def test_instrumentation_optimizer_reproducibility() -> None:
