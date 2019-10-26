@@ -81,7 +81,7 @@ def test_xp_plotter() -> None:
     data = plotting.XpPlotter.make_data(df)
     # check data
     testing.assert_set_equal(data.keys(), {opt})
-    testing.assert_set_equal(data[opt].keys(), {"budget", "loss", "loss_std"})
+    testing.assert_set_equal(data[opt].keys(), {"budget", "loss", "loss_std", "num_eval"})
     np.testing.assert_almost_equal(data[opt]["budget"], [200, 400, 800])
     np.testing.assert_almost_equal(data[opt]["loss"], [0.4811605, 0.3920045, 0.14778369])
     np.testing.assert_almost_equal(data[opt]["loss_std"], [0.83034832, 0.73255529, 0.18551625])

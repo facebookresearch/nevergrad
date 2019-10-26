@@ -3,15 +3,40 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, List
 import numpy as np
 from ..common import testing
 from . import variables as var
-from . import core
+from . import multivariables as mvar
+from .core import Variable
+
+
+@testing.parametrized(
+    empty=([], [], [])
+)
+def test_split_data(tokens: List[Variable], data: List[float], expected: List[List[float]]) -> None:
+    instru = mvar.Instrumentation(*tokens)
+    output = instru._split_data(np.array(data))
+    testing.printed_assert_equal(output, expected)
+
+
+def test_nested_variables_data_to_arguments() -> None:
+    instru = mvar.NestedVariables(var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4))
+    values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])
+    expected: Any = (tuple(var.wrap_arg(x) for x in (1, 11)), {})
+    assert values == expected
+
+
+def test_instrumentation_data_to_arguments() -> None:
+    tokens = [var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4)]
+    instru = mvar.Instrumentation(*tokens)
+    values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])[0]
+    assert values == (1, 11)
+    np.testing.assert_raises(ValueError, instru.data_to_arguments, tokens, [0, 200, 0, 0, 0, 2, 3])
 
 
 def test_instrumentation() -> None:
-    instru = core.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
+    instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
     np.testing.assert_equal(instru.dimension, 6)
     data = instru.arguments_to_data(4, 3, a=0, b=3)
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, 0.5878], decimal=4)
@@ -29,7 +54,7 @@ def test_instrumentation() -> None:
         total += instru.data_to_arguments(data, deterministic=False)[1]["b"]
     assert total != 0
     # check duplicate
-    instru2 = core.Instrumentation(*instru.args, **instru.kwargs)
+    instru2 = mvar.Instrumentation(*instru.args, **instru.kwargs)
     data = np.random.normal(0, 1, size=6)
     testing.printed_assert_equal(instru2.data_to_arguments(data, deterministic=True), instru.data_to_arguments(data, deterministic=True))
     # check naming
@@ -38,7 +63,7 @@ def test_instrumentation() -> None:
 
 
 def test_instrumentation_copy() -> None:
-    instru = core.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical(list(range(1000)))).with_name("bidule")
+    instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical(list(range(1000)))).with_name("bidule")
     copied = instru.copy()
     assert copied.name == "bidule"
     assert copied.random_state is not instru.random_state
@@ -52,14 +77,14 @@ def test_instrumentation_copy() -> None:
 
 
 def test_instrumentation_split() -> None:
-    instru = core.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
-    splitted = instru.split_data([0, 1, 2, 3, 4, 5])
+    instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
+    splitted = instru._split_data(np.array([0, 1, 2, 3, 4, 5]))
     np.testing.assert_equal([x.tolist() for x in splitted], [[0], [], [1], [2, 3, 4, 5]])  # order of kwargs is alphabetical
 
 
 def test_instrumentation_init_error() -> None:
     variable = var.Gaussian(0, 1)
-    np.testing.assert_raises(AssertionError, core.Instrumentation, variable, variable)
+    np.testing.assert_raises(AssertionError, mvar.Instrumentation, variable, variable)
 
 
 def _arg_return(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
@@ -67,7 +92,7 @@ def _arg_return(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, A
 
 
 def test_instrumented_function() -> None:
-    ifunc = core.InstrumentedFunction(
+    ifunc = mvar.InstrumentedFunction(
         _arg_return,
         var.SoftmaxCategorical([1, 12]),
         "constant",
@@ -93,7 +118,7 @@ def test_instrumented_function() -> None:
 
 
 def test_instrumented_function_kwarg_order() -> None:
-    ifunc = core.InstrumentedFunction(
+    ifunc = mvar.InstrumentedFunction(
         _arg_return, kw4=var.SoftmaxCategorical([1, 0]), kw2="constant", kw3=var.Array(2, 2), kw1=var.Gaussian(2, 2)
     )
     np.testing.assert_equal(ifunc.dimension, 7)
@@ -108,14 +133,14 @@ class _Callable:
 
 
 def test_callable_instrumentation() -> None:
-    ifunc = core.InstrumentedFunction(lambda x: x ** 2, var.Gaussian(2, 2))
+    ifunc = mvar.InstrumentedFunction(lambda x: x ** 2, var.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
-    ifunc = core.InstrumentedFunction(_Callable(), var.Gaussian(2, 2))
+    ifunc = mvar.InstrumentedFunction(_Callable(), var.Gaussian(2, 2))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
 
 
 def test_deterministic_data_to_arguments() -> None:
-    ifunc = core.InstrumentedFunction(_Callable(), var.SoftmaxCategorical([0, 1, 2, 3]), y=var.SoftmaxCategorical([0, 1, 2, 3]))
+    ifunc = mvar.InstrumentedFunction(_Callable(), var.SoftmaxCategorical([0, 1, 2, 3]), y=var.SoftmaxCategorical([0, 1, 2, 3]))
     data = [0.01, 0, 0, 0, 0.01, 0, 0, 0]
     for _ in range(20):
         args, kwargs = ifunc.data_to_arguments(data, deterministic=True)
@@ -136,8 +161,10 @@ def test_deterministic_data_to_arguments() -> None:
     softmax_noisy=((var.SoftmaxCategorical(["blue", "red"]), var.Array(1)), True, True),
     softmax_deterministic=((var.SoftmaxCategorical(["blue", "red"], deterministic=True), var.Array(1)), False, False),
     ordered_discrete=((var.OrderedDiscrete([True, False]), var.Array(1)), False, False),
+
+
 )
-def test_instrumentation_continuous_noisy(variables: Tuple[var.utils.Variable[Any], ...], continuous: bool, noisy: bool) -> None:
-    instru = core.Instrumentation(*variables)
+def test_instrumentation_continuous_noisy(variables: Tuple[Variable, ...], continuous: bool, noisy: bool) -> None:
+    instru = mvar.Instrumentation(*variables)
     assert instru.continuous == continuous
     assert instru.noisy == noisy

@@ -13,7 +13,7 @@ from ..common import tools
 from ..common.typetools import ArrayLike
 
 
-class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
+class ArtificialVariable:
     # pylint: disable=too-many-instance-attributes,too-many-arguments
     # TODO: refactor, this is not more used for instrumentation, so using the
     # Variable framework is not necessary
@@ -28,10 +28,7 @@ class ArtificialVariable(inst.var.utils.Variable[np.ndarray]):
         self.block_dimension = block_dimension
         self.only_index_transform = only_index_transform
         self.hashing = hashing
-
-    @property
-    def dimension(self) -> int:
-        return self._dimension if not self.hashing else 1
+        self.dimension = self._dimension if not self.hashing else 1  # external dim?
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -87,7 +84,8 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
     rotation: bool
         whether the block space should be rotated (random rotation)
     hashing: bool
-        whether the input data should be hashed
+        whether the input data should be hashed. In this case, the function expects an array of size 1 with
+        string as element.
     aggregator: str
         how to aggregate the multiple block outputs
 
@@ -140,7 +138,7 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         self._func = corefuncs.registry[name]
         # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
-        only_index_transform = info.get("no_transfrom", False)
+        only_index_transform = info.get("no_transform", False)
         # variable
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
@@ -217,6 +215,6 @@ def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
             side_point = transf(x + np.random.normal(0, 1, size=len(x)))
             if noise_dissymmetry:
-                noise_level *= (1. + x_transf.ravel()[0]*100.)
+                noise_level *= (1. + x_transf.ravel()[0] * 100.)
             noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
