@@ -97,6 +97,40 @@ Or if you want something more aimed at robustly outperforming random search in h
 - Use `ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
 
+## Example of chaining, or inoculation, or initialization of an evolutionary algorithm
+
+Chaining consists in running several algorithms in turn, information being forwarded from the first to the second and so on.
+More precisely, the budget is distributed over several algorithms, and when an objective function value is computed, all algorithms are informed.
+
+Here is how to create such optimizers:
+```
+# Running LHSSearch with budget num_workers and then DE:
+DEwithLHS = Chaining([LHSSearch, DE], ["num_workers"])
+
+# Runninng LHSSearch with budget the dimension and then DE:
+DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"])
+
+# Runnning LHSSearch with budget 30 and then DE:
+DEwithLHS30 = Chaining([LHSSearch, DE], [30])
+
+# Running LHS for 100 iterations, then DE for 60,
+ = Chaining([LHSSearch, DE, CMA], [100, 60])
+```
+
+We can then minimize as usual
+```python
+import nevergrad as ng
+
+def square(x):
+    return sum((x - .5)**2)
+
+optimizer = DEwithLHS30(instrumentation=2, budget=300)
+recommendation = optimizer.minimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([0.50843113, 0.5104554 ]),), kwargs={})
+```
+
+
 ## Reproducibility
 
 Each instrumentation has its own `random_state` for generating random numbers. All optimizers pull from it when they require stochastic behaviors.

@@ -67,7 +67,7 @@ def square(x):
     return sum((x - .5)**2)
 
 optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
-recommendation = optimizer.optimize(square)
+recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs
 >>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
 ```
@@ -88,35 +88,6 @@ print(list(sorted(ng.optimizers.registry.keys())))
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
 
 
-## Example of chaining, or inoculation, or initialization of an evolutionary algorithm
-
-Chaining consists in running several algorithms in turn, information being forwarded from the first to the second and so on.
-More precisely, the budget is distributed over several algorithms, and when an objective function value is computed, all algorithms are informed.
-In optimizerlib.py, you can read the following:
-```
-DEwithLHS = chaining([LHSSearch, DE], [-1])  # Runs LHSSearch with budget num_workers and then DE.
-DEwithLHSdim = chaining([LHSSearch, DE], [-2])  # Runs LHSSearch with budget the dimension and then DE.
-DEwithLHS30 = chaining([LHSSearch, DE], [30])  # Runs LHSSearch with budget the dimension and then DE.
-```
-
-We could also do 
-```
-my_chain = chaining([LHSSearch, DE, CMA], [100, 60, 1000])
-```
-
-Using `chaining([LHSSearch, DE]` means that we ``chain'' LHS and DE (in the first case LHS is run with as budget the number of workers, and in the second case with budget equal to the dimension).
-We can then do:
-```python
-import nevergrad as ng
-
-def square(x):
-    return sum((x - .5)**2)
-
-optimizer = ng.optimizers.DEwithLHS30(instrumentation=2, budget=300)
-recommendation = optimizer.optimize(square)
-print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([0.50843113, 0.5104554 ]),), kwargs={})
-```
 
 ## Citing
 
