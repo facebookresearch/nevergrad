@@ -11,6 +11,7 @@ should only impact custom variables.o
 ### Other changes
 
 - Benchmark plots now show confidence area (using partially transparent lines).
+- `Chaining` optimizer family enables chaining of algorithms.
 - Cleaner installation.
 
 ## v0.2.2
