@@ -543,12 +543,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # # # # # Start new jobs # # # # #
             if not batch_mode or not self._running_jobs:
                 new_sugg = max(0, min(remaining_budget, self.num_workers - len(self._running_jobs)))
-                if verbosity and new_sugg:
-                    print(f"Launching {new_sugg} jobs with new suggestions")
-                for _ in range(new_sugg):
-                    args = self.ask()
-                    self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                 if new_sugg:
+                    if verbosity:
+                        print(f"Launching {new_sugg} jobs with new suggestions")
+                    for _ in range(new_sugg):
+                        args = self.ask()
+                        self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                     sleeper.start_timer()
             remaining_budget = self.budget - self.num_ask
             # split (repopulate finished and runnings in only one loop to avoid
