@@ -550,7 +550,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                         args = self.ask()
                         self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                     sleeper.start_timer()
-            remaining_budget = self.budget - self.num_ask
             # split (repopulate finished and runnings in only one loop to avoid
             # weird effects if job finishes in between two list comprehensions)
             tmp_runnings, tmp_finished = [], deque()
