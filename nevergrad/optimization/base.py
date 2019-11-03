@@ -13,7 +13,7 @@ from numbers import Real
 from collections import deque
 from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
 import numpy as np
-from ..common.typetools import ArrayLike, JobLike, ExecutorLike
+from ..common.typetools import ArrayLike, JobLike, ExecutorLike, PathLike
 from .. import instrumentation as instru
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
@@ -194,7 +194,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, instrumentation: Union[instru.Instrumentation, int], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Union[instru.Instrumentation, int], budget: Optional[int] = None, num_workers: int = 1, pickle_path: Optional[PathLike] = None) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
@@ -212,6 +212,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         )
         if not self.dimension:
             raise ValueError("No variable to optimize in this instrumentation.")
+        self.pickle_path = pickle_path
         self.create_candidate = CandidateMaker(self.instrumentation)
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
@@ -550,6 +551,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                         args = self.ask()
                         self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
                     sleeper.start_timer()
+                    if self.pickle_path is not None:
+                        self.dump(self.pickle_path)
             # split (repopulate finished and runnings in only one loop to avoid
             # weird effects if job finishes in between two list comprehensions)
             tmp_runnings, tmp_finished = [], deque()
