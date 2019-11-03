@@ -230,6 +230,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[Candidate, JobLike[float]]] = []
         self._finished_jobs: Deque[Tuple[Candidate, JobLike[float]]] = deque()
+        self._archived_jobs: List[Tuple[Candidate, JobLike[float]]] = []
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -512,7 +513,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     self.tell(x, job.result())
-                    self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
+                    self._archived_jobs.append(self._finished_jobs.popleft())  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
                 if verbosity:
