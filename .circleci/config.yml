@@ -38,7 +38,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v2-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -51,9 +51,9 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -69,7 +69,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       # Run all tests
 
