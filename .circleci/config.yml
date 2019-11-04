@@ -71,6 +71,8 @@ jobs:
             - ./venv
           key: v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
+      # Run all tests
+
       - run:
           name: "[all] Run mypy"
           command: |
@@ -78,7 +80,6 @@ jobs:
             mypy --version
             mypy nevergrad
 
-      # Run all tests
       - run:
           name: "[all] Run pytest"
           when: always
