@@ -213,9 +213,7 @@ class Array(Variable):
         assert len(data) == self.dimension
         array = np.array(data, copy=False)
         for transf in self.transforms:
-            bef = array
             array = transf.forward(array)
-            print(transf, bef, "to", array)
         if self._dtype is not None:
             out = self._dtype(array[0] if self._dtype != int else round(array[0]))
         else:
