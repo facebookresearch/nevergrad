@@ -57,7 +57,7 @@ class _RandomSearch(OneShotOptimizer):
         mode = self._parameters.opposition_mode
         if self._opposable_data is not None and mode is not None:
             data = self._opposable_data
-            data *= (self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
             self._opposable_data = None
             return data
         if self._parameters.middle_point and not self._num_ask:
@@ -174,8 +174,9 @@ class _SamplingSearch(OneShotOptimizer):
             return np.zeros(self.dimension)  # type: ignore
         mode = self._parameters.opposition_mode
         if self._opposable_data is not None and mode is not None:
+            # weird mypy error, revealed as array, but not accepting substraction
             data = self._opposable_data
-            data *= (self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
             self._opposable_data = None
             return data
         sample = self.sampler()
