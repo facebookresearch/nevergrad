@@ -21,7 +21,7 @@ from . import utils
 
 
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
-_OptimCallBack = Union[Callable[["Optimizer", ArrayLike, float], None], Callable[["Optimizer"], None]]
+_OptimCallBack = Union[Callable[["Optimizer", "Candidate", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
 
 
