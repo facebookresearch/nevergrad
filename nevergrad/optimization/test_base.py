@@ -14,6 +14,7 @@ from ..instrumentation import Instrumentation
 from . import optimizerlib
 from . import test_optimizerlib
 from . import base
+from . import callbacks
 
 
 class CounterFunction:
@@ -99,9 +100,9 @@ def test_base_optimizer() -> None:
     np.testing.assert_array_equal(zeroptim.ask().args[0], [0, 0])
 
 
-def test_optimize_and_dump() -> None:
+def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
-    optimizer.register_callback("tell", base.OptimizationPrinter(num_eval=10, num_sec=.1))
+    optimizer.register_callback("tell", callbacks.OptimizationPrinter(num_eval=10, num_sec=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -109,11 +110,10 @@ def test_optimize_and_dump() -> None:
     np.testing.assert_almost_equal(result.data[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
     # pickling
-    with tempfile.TemporaryDirectory() as folder:
-        filepath = Path(folder) / "dump_test.pkl"
-        optimizer.dump(filepath)
-        optimizer2 = optimizerlib.OnePlusOne.load(filepath)
-        np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
+    filepath = tmp_path / "dump_test.pkl"
+    optimizer.dump(filepath)
+    optimizer2 = optimizerlib.OnePlusOne.load(filepath)
+    np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
 
 
 class StupidFamily(base.OptimizerFamily):
