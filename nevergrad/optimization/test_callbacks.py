@@ -5,6 +5,7 @@
 
 from typing import Any
 from pathlib import Path
+import numpy as np
 import nevergrad as ng
 from . import optimizerlib
 from . import callbacks
@@ -12,19 +13,20 @@ from . import callbacks
 
 # pylint: disable=unused-argument
 def _func(x: Any, y: Any, blublu: str, array: Any) -> float:
-    return float(blublu == "a")
+    return 12
 
 
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
+    cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
     instrum = ng.Instrumentation(ng.var.Array(1),
                                  ng.var.Scalar(),
-                                 blublu=ng.var.SoftmaxCategorical(["a", "b"]),
+                                 blublu=ng.var.SoftmaxCategorical(cases),
                                  array=ng.var.Array(3, 2))
-    optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=10, num_workers=5)
+    optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=32, num_workers=5)
     optimizer.register_callback("tell", callbacks.ParametersLogger(filepath))
     optimizer.minimize(_func, verbosity=2)
     # pickling
     logger = callbacks.ParametersLogger(filepath)
     logs = logger.load()
-    assert len(logs) == 10
+    assert len(logs) == 32

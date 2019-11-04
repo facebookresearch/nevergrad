@@ -5,6 +5,7 @@
 
 import json
 import time
+import warnings
 import datetime
 from typing import Optional, Any, Union, List, Dict
 from pathlib import Path
@@ -52,6 +53,10 @@ class ParametersLogger:
     optimizer.register_callback("tell",  logger)
     optimizer.minimize()
     list_of_dict_of_data = logger.load()
+
+    Note
+    ----
+    Only the first value of arrays are logged.
     """
 
     def __init__(self, filepath: Union[str, Path]) -> None:
@@ -69,8 +74,11 @@ class ParametersLogger:
         params.update({f"arg{k}": arg for k, arg in enumerate(candidate.args)})
         data.update({x: y for x, y in params.items() if not isinstance(y, np.ndarray)})
         data.update({x + "_0": y.ravel()[0] for x, y in params.items() if isinstance(y, np.ndarray)})
-        with self._filepath.open("a") as f:
-            f.write(json.dumps(data) + "\n")
+        try:  # avoid bugging as much as possible
+            with self._filepath.open("a") as f:
+                f.write(json.dumps(data) + "\n")
+        except:
+            warnings.warn("Failing to json data")
 
     def load(self) -> List[Dict[str, Any]]:
         data: List[Dict[str, Any]] = []
