@@ -24,7 +24,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -38,7 +38,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v3-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -77,14 +77,6 @@ jobs:
             . venv/bin/activate
             mypy --version
             mypy nevergrad
-
-      # Run all tests
-      - run:
-          name: "[all] Run some tests"
-          when: always
-          command: |
-            . venv/bin/activate
-            pytest nevergrad/optimization --durations=20 --cov=nevergrad
 
       # Run all tests
       - run:
