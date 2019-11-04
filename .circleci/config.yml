@@ -72,11 +72,6 @@ jobs:
           key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       # Run all tests
-      - run:
-          name: "[all] Run pytest"
-          command: |
-            . venv/bin/activate
-            pytest nevergrad --durations=20 --cov=nevergrad
 
       - run:
           name: "[all] Run mypy"
@@ -86,7 +81,15 @@ jobs:
             mypy nevergrad
 
       - run:
+          name: "[all] Run pytest"
+          when: always
+          command: |
+            . venv/bin/activate
+            pytest nevergrad --durations=20 --cov=nevergrad
+
+      - run:
           name: "Run wheel and check files presence"
+          when: always
           command: |
             . venv/bin/activate
             python setup.py sdist bdist_wheel
