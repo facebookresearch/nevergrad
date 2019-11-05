@@ -59,7 +59,8 @@ class ParametersLogger:
 
     Note
     ----
-    arrays are converted to lists
+    - arrays are converted to lists
+    - this class will eventually contain display methods
     """
 
     def __init__(self, filepath: Union[str, Path]) -> None:
