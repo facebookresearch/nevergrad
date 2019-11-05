@@ -103,7 +103,7 @@ Chaining consists in running several algorithms in turn, information being forwa
 More precisely, the budget is distributed over several algorithms, and when an objective function value is computed, all algorithms are informed.
 
 Here is how to create such optimizers:
-```
+```python
 # Running LHSSearch with budget num_workers and then DE:
 DEwithLHS = Chaining([LHSSearch, DE], ["num_workers"])
 
@@ -113,8 +113,8 @@ DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"])
 # Runnning LHSSearch with budget 30 and then DE:
 DEwithLHS30 = Chaining([LHSSearch, DE], [30])
 
-# Running LHS for 100 iterations, then DE for 60,
- = Chaining([LHSSearch, DE, CMA], [100, 60])
+# Running LHS for 100 iterations, then DE for 60, then CMA:
+LHSthenDEthenCMA = Chaining([LHSSearch, DE, CMA], [100, 60])
 ```
 
 We can then minimize as usual
