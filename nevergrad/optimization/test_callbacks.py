@@ -28,7 +28,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     optimizer.minimize(_func, verbosity=2)
     # pickling
     logger = callbacks.ParametersLogger(filepath)
-    logs = logger.load()
+    logs = logger.load_flattened()
     assert len(logs) == 32
     assert isinstance(logs[-1]["#arg1"], float)
     assert len(logs[-1]) == 15

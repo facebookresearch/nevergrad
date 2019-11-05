@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import tempfile
 import warnings
 from pathlib import Path
 from typing import List, Tuple, Any, Optional, Union
@@ -102,7 +101,7 @@ def test_base_optimizer() -> None:
 
 def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
-    optimizer.register_callback("tell", callbacks.OptimizationPrinter(num_eval=10, num_sec=.1))
+    optimizer.register_callback("tell", callbacks.OptimizationPrinter(num_tell_period=10, time_period_s=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
