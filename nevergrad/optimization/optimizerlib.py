@@ -1221,7 +1221,7 @@ class _Chain(base.Optimizer):
             last_budget = None if self.budget is None else self.budget - sum(budgets)
             for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
                 self._optimizers_.append(opt(self.instrumentation, budget=budget, num_workers=self.num_workers))
-        return self._optimizers_  # type: ignore
+        return self._optimizers_
 
     def _internal_ask_candidate(self) -> base.Candidate:
         # Which algorithm are we playing with ?
