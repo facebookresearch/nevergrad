@@ -24,7 +24,6 @@ def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
     assert len(first_k_individuals) == k
-    #print("sum=",sum(p[0] for p in first_k_individuals) / k)
     return np.array(sum(p[0] for p in first_k_individuals) / k)
 
 # # # # # classes of optimizers # # # # #
@@ -51,16 +50,19 @@ class _RandomSearch(OneShotOptimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = RandomSearchMaker()  # updated by the parametrized family
+        self._opposable_data: Optional[np.ndarray] = None
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
-        if self._parameters.opposition_mode == "quasi" and self._num_ask % 2:
-            return -self._rng.uniform(0., 1.) * self.last_guy  # type: ignore
-        if self._parameters.opposition_mode == "opposite" and self._num_ask % 2:
-            return -self.last_guy  # type: ignore
+        mode = self._parameters.opposition_mode
+        if self._opposable_data is not None and mode is not None:
+            data = self._opposable_data
+            data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            self._opposable_data = None
+            return data
         if self._parameters.middle_point and not self._num_ask:
-            self.last_guy = np.zeros(self.dimension)
-            return self.last_guy  # type: ignore
+            self._opposable_data = np.zeros(self.dimension)
+            return self._opposable_data  # type: ignore
         scale = self._parameters.scale
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension.
@@ -69,8 +71,8 @@ class _RandomSearch(OneShotOptimizer):
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self._parameters.cauchy
                  else self._rng.normal(0, 1, self.dimension))
-        self.last_guy = scale * point
-        return self.last_guy  # type: ignore
+        self._opposable_data = scale * point
+        return self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
@@ -147,6 +149,7 @@ class _SamplingSearch(OneShotOptimizer):
         self._parameters = SamplingSearch()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None
+        self._opposable_data: Optional[np.ndarray] = None
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -157,9 +160,8 @@ class _SamplingSearch(OneShotOptimizer):
                         "LHS": sequences.LHSSampler,
                         }
             internal_budget = (budget + 1) // 2 if budget and (self._parameters == "quasi" or self._parameters == "opposite") else budget
-            self._sampler_instance = samplers[self._parameters.sampler](self.dimension, internal_budget, scrambling=self._parameters.scrambled,
-                                                                        random_state=self._rng)
-
+            self._sampler_instance = samplers[self._parameters.sampler](
+                self.dimension, internal_budget, scrambling=self._parameters.scrambled, random_state=self._rng)
             assert self._sampler_instance is not None
             if self._parameters.rescaled:
                 self._rescaler = sequences.Rescaler(self.sampler)
@@ -169,19 +171,23 @@ class _SamplingSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
-            self.last_guy = np.zeros(self.dimension)
-            return self.last_guy  # type: ignore
-        if self._parameters.opposition_mode == "quasi" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
-            return -self._rng.uniform(0., 1.) * self.last_guy  # type: ignore
-        if self._parameters.opposition_mode == "opposite" and (self._num_ask - (1 if self._parameters.middle_point else 0)) % 2:
-            return -self.last_guy  # type: ignore
+            return np.zeros(self.dimension)  # type: ignore
+        mode = self._parameters.opposition_mode
+        if self._opposable_data is not None and mode is not None:
+            # weird mypy error, revealed as array, but not accepting substraction
+            data = self._opposable_data
+            data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            self._opposable_data = None
+            return data
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
         if self._parameters.autorescale:
             self._parameters.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
-        self.last_guy = self._parameters.scale * (stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)  # type:ignore
-        return self.last_guy
+        self._opposable_data = self._parameters.scale * (
+            stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)
+        assert self._opposable_data is not None
+        return self._opposable_data
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.recommendation_rule == "average_of_best":
@@ -189,6 +195,7 @@ class _SamplingSearch(OneShotOptimizer):
         return super()._internal_provide_recommendation()
 
 
+# pylint: disable=too-many-instance-attributes
 class SamplingSearch(base.ParametrizedFamily):
     """This is a one-shot optimization method, hopefully better than random search
     by ensuring more uniformity.
