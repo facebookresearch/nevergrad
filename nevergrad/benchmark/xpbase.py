@@ -145,7 +145,8 @@ class Experiment:
     # pylint: disable=too-many-arguments
     def __init__(self, function: instru.InstrumentedFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
-                 batch_mode: bool = True, seed: Optional[int] = None) -> None:
+                 batch_mode: bool = True, seed: Optional[int] = None
+                 ) -> None:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
@@ -218,7 +219,7 @@ class Experiment:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
             random.seed(self.seed)
-            torch.manual_seed(self.seed)  # type: ignore
+            torch.manual_seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)

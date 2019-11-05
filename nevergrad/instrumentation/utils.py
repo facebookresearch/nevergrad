@@ -94,10 +94,10 @@ class CommandFunction:
         with subprocess.Popen(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               shell=False, cwd=self.cwd, env=self.env) as process:
             try:
-                for line in iter(process.stdout.readline, ''):
+                for line in iter(process.stdout.readline, b''):
                     if not line:
                         break
-                    outlines.append(line.decode().strip())  # type: ignore
+                    outlines.append(line.decode().strip())
                     if self.verbose:
                         print(outlines[-1], flush=True)
             except Exception:  # pylint: disable=broad-except
