@@ -219,7 +219,7 @@ class Experiment:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
             random.seed(self.seed)
-            torch.manual_seed(self.seed)  # type: ignore
+            torch.manual_seed(self.seed)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
