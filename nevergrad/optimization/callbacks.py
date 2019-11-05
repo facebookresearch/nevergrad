@@ -19,21 +19,23 @@ class OptimizationPrinter:
 
     Parameters
     ----------
-    num_eval: int
+    num_tell_period: int
         max number of evaluation before performing another print
-    num_sec: float
+    time_period_s: float
         max number of seconds before performing another print
     """
 
-    def __init__(self, num_eval: int = 0, num_sec: float = 60) -> None:
-        self._num_eval = max(0, int(num_eval))
+    def __init__(self, num_tell_period: int = 0, time_period_s: float = 60) -> None:
+        assert num_tell_period >= 0
+        self._num_tell_period = int(num_tell_period)
         self._last_time: Optional[float] = None
-        self._num_sec = num_sec
+        self._time_period_s = time_period_s
 
     def __call__(self, optimizer: base.Optimizer, *args: Any, **kwargs: Any) -> None:
         if self._last_time is None:
             self._last_time = time.time()
-        if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_tell % self._num_eval):
+        if ((time.time() - self._last_time) > self._time_period_s or
+                (self._num_tell_period and not optimizer.num_tell % self._num_tell_period)):
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
@@ -72,7 +74,7 @@ class ParametersLogger:
                 "#loss": value}
         params = dict(candidate.kwargs)
         params.update({f"#arg{k}": arg for k, arg in enumerate(candidate.args)})
-        data.update({x: y.tolist() if isinstance(y, np.ndarray) else y for x, y in params.items()})
+        data.update({k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in params.items()})
         try:  # avoid bugging as much as possible
             with self._filepath.open("a") as f:
                 f.write(json.dumps(data) + "\n")
