@@ -56,7 +56,7 @@ class ParametersLogger:
 
     Note
     ----
-    Only the first value of arrays are logged.
+    arrays are converted to lists
     """
 
     def __init__(self, filepath: Union[str, Path]) -> None:
@@ -71,18 +71,34 @@ class ParametersLogger:
                 "#num-tell-not-asked": optimizer.num_tell_not_asked,
                 "#loss": value}
         params = dict(candidate.kwargs)
-        params.update({f"arg{k}": arg for k, arg in enumerate(candidate.args)})
-        data.update({x: y for x, y in params.items() if not isinstance(y, np.ndarray)})
-        data.update({x + "_0": y.ravel()[0] for x, y in params.items() if isinstance(y, np.ndarray)})
+        params.update({f"#arg{k}": arg for k, arg in enumerate(candidate.args)})
+        data.update({x: y.tolist() if isinstance(y, np.ndarray) else y for x, y in params.items()})
         try:  # avoid bugging as much as possible
             with self._filepath.open("a") as f:
                 f.write(json.dumps(data) + "\n")
-        except:
+        except Exception:  # pylint: disable=broad-except
             warnings.warn("Failing to json data")
 
-    def load(self) -> List[Dict[str, Any]]:
+    def load(self, max_list_elements: int = 24) -> List[Dict[str, Any]]:
+        """
+
+        Parameters
+        ----------
+        max_list_elements: int
+            Maximum number of elements displayed from the array, each element is given a
+            unique id of type list_name#i1_i2_...
+        """
         data: List[Dict[str, Any]] = []
         with self._filepath.open("r") as f:
             for line in f.readlines():
                 data.append(json.loads(line))
-        return data
+        flat_data: List[Dict[str, Any]] = []
+        for element in data:
+            list_keys = {key for key, val in element.items() if isinstance(val, list)}
+            flat_data.append({key: val for key, val in element.items() if key not in list_keys})
+            for key in list_keys:
+                for k, (indices, value) in enumerate(np.ndenumerate(element[key])):
+                    if k >= max_list_elements:
+                        break
+                    flat_data[-1][key + "#" + "_".join(str(i) for i in indices)] = value
+        return flat_data

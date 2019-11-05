@@ -30,3 +30,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     logger = callbacks.ParametersLogger(filepath)
     logs = logger.load()
     assert len(logs) == 32
+    assert isinstance(logs[-1]["#arg1"], float)
+    assert len(logs[-1]) == 15
+    logs = logger.load(max_list_elements=3)
+    assert len(logs[-1]) == 12
