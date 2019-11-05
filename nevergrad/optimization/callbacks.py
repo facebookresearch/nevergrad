@@ -63,9 +63,11 @@ class ParametersLogger:
     - this class will eventually contain display methods
     """
 
-    def __init__(self, filepath: Union[str, Path]) -> None:
+    def __init__(self, filepath: Union[str, Path], delete_existing_file: bool = False) -> None:
         self._session = datetime.datetime.now().strftime("%y-%m-%d %H:%M")
         self._filepath = Path(filepath)
+        if self._filepath.exists() and delete_existing_file:
+            self._filepath.unlink()  # missing_ok argument added in python 3.8
 
     def __call__(self, optimizer: base.Optimizer, candidate: base.Candidate, value: float) -> None:
         data = {"#instrumentation": optimizer.instrumentation.name,
@@ -87,9 +89,10 @@ class ParametersLogger:
         """Loads data from the log file
         """
         data: List[Dict[str, Any]] = []
-        with self._filepath.open("r") as f:
-            for line in f.readlines():
-                data.append(json.loads(line))
+        if self._filepath.exists():
+            with self._filepath.open("r") as f:
+                for line in f.readlines():
+                    data.append(json.loads(line))
         return data
 
     def load_flattened(self, max_list_elements: int = 24) -> List[Dict[str, Any]]:
