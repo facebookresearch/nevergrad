@@ -71,6 +71,7 @@ class _DE(base.Optimizer):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
         self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])

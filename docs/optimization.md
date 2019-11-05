@@ -67,6 +67,28 @@ recommendation = optimizer.provide_recommendation()
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)
 
+
+## Optimization with constraints
+
+Nevergrad has a mechanism for cheap constraints.
+"Cheap" means that we do not try to reduce the number of calls to such constraints.
+We basically repeat mutations until we get a satisfiable point.
+Let us say that we want to minimize `(x[0]-.5)**2 + (x[1]-.5)**2` under the constraint `x[0] >= 1`.
+```python
+import nevergrad as ng
+
+def square(x):
+    return sum((x - .5)**2)
+
+optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+# define a constraint on first variable of x:
+optimizer.instrumentation.set_cheap_constraint_checker(lambda x: x[0] >= 1)
+
+recommendation = optimizer.minimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([1.00037625, 0.50683314]),), kwargs={})
+```
+
 ## Choosing an optimizer
 
 **You can print the full list of optimizers** with:

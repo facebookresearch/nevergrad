@@ -145,7 +145,8 @@ class Experiment:
     # pylint: disable=too-many-arguments
     def __init__(self, function: instru.InstrumentedFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
-                 batch_mode: bool = True, seed: Optional[int] = None) -> None:
+                 batch_mode: bool = True, seed: Optional[int] = None
+                 ) -> None:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable

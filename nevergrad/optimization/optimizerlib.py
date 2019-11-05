@@ -1182,6 +1182,7 @@ class PBIL(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
 
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         num_categories = 2
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.alpha = 0.3
@@ -1286,6 +1287,7 @@ class cGA(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         num_categories = 2
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
         self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
