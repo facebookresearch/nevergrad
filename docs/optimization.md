@@ -117,7 +117,7 @@ DEwithLHS30 = Chaining([LHSSearch, DE], [30])
 LHSthenDEthenCMA = Chaining([LHSSearch, DE, CMA], [100, 60])
 ```
 
-We can then minimize as usual
+We can then minimize as usual:
 ```python
 import nevergrad as ng
 
