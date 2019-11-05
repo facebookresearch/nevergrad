@@ -211,6 +211,9 @@ class Archive(Generic[Y]):
         raise RuntimeError(_ERROR_STR)
 
     def items_as_array(self) -> Iterator[Tuple[np.ndarray, Y]]:
+        raise RuntimeError("For consistency, items_as_array is renamed to items_as_arrays")
+
+    def items_as_arrays(self) -> Iterator[Tuple[np.ndarray, Y]]:
         """Functions that iterates on key-values but transforms keys
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
@@ -220,6 +223,9 @@ class Archive(Generic[Y]):
         return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())
 
     def keys_as_array(self) -> Iterator[np.ndarray]:
+        raise RuntimeError("For consistency, keys_as_array is renamed to keys_as_arrays")
+
+    def keys_as_arrays(self) -> Iterator[np.ndarray]:
         """Functions that iterates on keys but transforms them
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
