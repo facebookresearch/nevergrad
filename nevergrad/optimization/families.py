@@ -10,6 +10,7 @@ This module and its available classes are experimental and may change quickly in
 """
 from .optimizerlib import ParametrizedOnePlusOne
 from .optimizerlib import ParametrizedBO
+from .optimizerlib import Chaining
 from .differentialevolution import DifferentialEvolution
 from .recastlib import ScipyOptimizer
 from .oneshot import RandomSearchMaker
@@ -17,4 +18,4 @@ from .oneshot import SamplingSearch
 
 
 __all__ = ["ParametrizedOnePlusOne", "ParametrizedBO", "DifferentialEvolution",
-           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch"]
+           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining"]
