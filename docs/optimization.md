@@ -81,13 +81,13 @@ def square(x):
     return sum((x - .5)**2)
 
 optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+# define a constraint on first variable of x:
 optimizer.instrumentation.set_cheap_constraint_checker(lambda x: x[0] >= 1)
+
 recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs
 >>> Candidate(args=(array([1.00037625, 0.50683314]),), kwargs={})
 ```
-
-list_of_cheap_positivity_constraints
 
 ## Choosing an optimizer
 
