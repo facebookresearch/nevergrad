@@ -36,6 +36,7 @@ class OptimizationPrinter:
             self._last_time = time.time()
         if ((time.time() - self._last_time) > self._time_period_s or
                 (self._num_tell_period and not optimizer.num_tell % self._num_tell_period)):
+            self._last_time = time.time()
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
@@ -81,8 +82,17 @@ class ParametersLogger:
         except Exception:  # pylint: disable=broad-except
             warnings.warn("Failing to json data")
 
-    def load(self, max_list_elements: int = 24) -> List[Dict[str, Any]]:
+    def load(self) -> List[Dict[str, Any]]:
+        """Loads data from the log file
         """
+        data: List[Dict[str, Any]] = []
+        with self._filepath.open("r") as f:
+            for line in f.readlines():
+                data.append(json.loads(line))
+        return data
+
+    def load_flattened(self, max_list_elements: int = 24) -> List[Dict[str, Any]]:
+        """Loads data from the log file, and splits lists (arrays) into multiple arguments
 
         Parameters
         ----------
@@ -90,10 +100,7 @@ class ParametersLogger:
             Maximum number of elements displayed from the array, each element is given a
             unique id of type list_name#i1_i2_...
         """
-        data: List[Dict[str, Any]] = []
-        with self._filepath.open("r") as f:
-            for line in f.readlines():
-                data.append(json.loads(line))
+        data = self.load()
         flat_data: List[Dict[str, Any]] = []
         for element in data:
             list_keys = {key for key, val in element.items() if isinstance(val, list)}
