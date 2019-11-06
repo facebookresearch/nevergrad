@@ -12,6 +12,7 @@
 - Benchmark plots now show confidence area (using partially transparent lines).
 - `Chaining` optimizer family enables chaining of algorithms.
 - Cleaner installation.
+- New simplified `Log` variable for log-distributed scalars.
 - Cheap constraints can now be provided through the `Instrumentation`
 
 ## v0.2.2
