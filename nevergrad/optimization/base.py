@@ -201,6 +201,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
+        # True ==> we penalize them (infinite values for candidates which violate the constraint).
+        # False ==> we repeat the ask until we solve the problem.
+        self._penalize_cheap_violations = False
         self.instrumentation = (
             instrumentation
             if isinstance(instrumentation, instru.Instrumentation)
@@ -390,19 +394,34 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
-        if self._suggestions:
-            candidate = self._suggestions.pop()
-        else:
-            candidate = self._internal_ask_candidate()
-            # only register actual asked points
+        current_num_ask = self.num_ask
+        # tentatives if a cheap constraint is available
+        MAX_TENTATIVES = 1000
+        for k in range(MAX_TENTATIVES):
+            is_suggestion = False
+            if self._suggestions:
+                is_suggestion = True
+                candidate = self._suggestions.pop()
+            else:
+                candidate = self._internal_ask_candidate()
+                # only register actual asked points
+            if self.instrumentation.cheap_constraint_check(*candidate.args, **candidate.kwargs):
+                break  # good to go!
+            else:
+                if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
+                    self._internal_tell_candidate(candidate, float("Inf"))
+                self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
+                if k == MAX_TENTATIVES - 1:
+                    warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+        if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
                     "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
                     "This is to make sure that stochastic instrumentations are resampled."
                 )
             self._asked.add(candidate.uid)
+        self._num_ask = current_num_ask + 1
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
-        self._num_ask += 1
         return candidate
 
     def provide_recommendation(self) -> Candidate:

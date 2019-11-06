@@ -2,7 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any, Sequence, Type
 from collections import defaultdict, deque
 import warnings
 import cma
@@ -1182,6 +1182,7 @@ class PBIL(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
 
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         num_categories = 2
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.alpha = 0.3
@@ -1203,6 +1204,76 @@ class PBIL(base.Optimizer):
             self._population = []
 
 
+class _Chain(base.Optimizer):
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._parameters = Chaining([LHSSearch, DE], [10])  # needs a default
+        # delayed initialization
+        self._optimizers_: List[base.Optimizer] = []
+
+    @property
+    def _optimizers(self) -> List[base.Optimizer]:
+        if not self._optimizers_:
+            self._optimizers_ = []
+            conv = {"num_workers": self.num_workers, "dimension": self.dimension}
+            budgets = [conv[b] if isinstance(b, str) else b for b in self._parameters.budgets]
+            last_budget = None if self.budget is None else self.budget - sum(budgets)
+            for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
+                self._optimizers_.append(opt(self.instrumentation, budget=budget, num_workers=self.num_workers))
+        return self._optimizers_
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        # Which algorithm are we playing with ?
+        sum_budget = 0.0
+        opt = self._optimizers[0]
+        for opt in self._optimizers:
+            sum_budget += float("inf") if opt.budget is None else opt.budget
+            if self.num_ask < sum_budget:
+                break
+        # if we are over budget, then use the last one...
+        return opt.ask()
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        # Let us inform all concerned algorithms
+        sum_budget = 0.0
+        for opt in self._optimizers:
+            sum_budget += float("inf") if opt.budget is None else opt.budget
+            if self.num_tell < sum_budget:
+                opt.tell(candidate, value)
+
+
+class Chaining(base.ParametrizedFamily):
+    """
+    A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
+    Each algorithm is fed with what happened before it.
+
+    Parameters
+    ----------
+    optimizers: list of Optimizer classes
+        the sequence of optimizers to use
+    budgets: list of int
+        the corresponding budgets for each optimizer but the last one
+
+    """
+    _optimizer_class = _Chain
+
+    def __init__(self, optimizers: Sequence[Union[base.OptimizerFamily, Type[base.Optimizer]]],
+                 budgets: Sequence[Union[str, int]]) -> None:
+        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
+        self.budgets = tuple(budgets)
+        self.optimizers = tuple(optimizers)
+        assert len(self.optimizers) == len(self.budgets) + 1
+        assert all(x in ("dimension", "num_workers") or x > 0 for x in self.budgets)  # type: ignore
+        super().__init__()
+
+
+DEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("DEwithLHS", register=True)
+DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("DEwithLHSdim", register=True)
+DEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=True)
+PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
+
+
 @registry.register
 class cGA(base.Optimizer):
     """
@@ -1216,6 +1287,7 @@ class cGA(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         num_categories = 2
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
         self._value_candidate: Optional[Tuple[float, np.ndarray]] = None

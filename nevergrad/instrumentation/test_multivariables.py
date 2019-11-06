@@ -64,6 +64,7 @@ def test_instrumentation() -> None:
 
 def test_instrumentation_copy() -> None:
     instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical(list(range(1000)))).with_name("bidule")
+    instru.set_cheap_constraint_checker(lambda *args, **kwargs: False)
     copied = instru.copy()
     assert copied.name == "bidule"
     assert copied.random_state is not instru.random_state
@@ -74,6 +75,7 @@ def test_instrumentation_copy() -> None:
     kwargs1 = instru.data_to_arguments([0] * 1001)[1]
     kwargs2 = copied.data_to_arguments([0] * 1001)[1]
     assert kwargs1 == kwargs2
+    assert not copied.cheap_constraint_check(12)
 
 
 def test_instrumentation_split() -> None:
