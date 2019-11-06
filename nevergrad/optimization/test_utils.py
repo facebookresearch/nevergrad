@@ -68,9 +68,9 @@ def test_archive() -> None:
     y = np.frombuffer(next(iter(archive.bytesdict.keys())))
     assert data in archive
     np.testing.assert_equal(y, data)
-    items = list(archive.items_as_array())
+    items = list(archive.items_as_arrays())
     assert isinstance(items[0][0], np.ndarray)
-    keys = list(archive.keys_as_array())
+    keys = list(archive.keys_as_arrays())
     assert isinstance(keys[0], np.ndarray)
     repr(archive)
     str(archive)
@@ -131,10 +131,10 @@ def test_pruning() -> None:
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
     with pytest.warns(UserWarning):
         archive = pruning(archive)
-    testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+    testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
     # should not change anything this time
     archive = pruning(archive)
-    testing.assert_set_equal([x[0] for x in archive.keys_as_array()], [0, 3], err_msg=f"Repetition #{k+1}")
+    testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
 @pytest.mark.parametrize("dimension,expected_max", [(100, 1342177), (10000, 13421), (1000000, 1080)])  # type: ignore

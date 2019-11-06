@@ -17,7 +17,7 @@ from . import utils
 
 def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
-    items = list(archive.items_as_array())
+    items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
     k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
     k = 1 if k < 1 else k
