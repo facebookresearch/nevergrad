@@ -71,6 +71,7 @@ class ParametersLogger:
 
     def __call__(self, optimizer: base.Optimizer, candidate: base.Candidate, value: float) -> None:
         data = {"#instrumentation": optimizer.instrumentation.name,
+                "#name": optimizer.name,
                 "#session": self._session,
                 "#num-ask": optimizer.num_ask,
                 "#num-tell": optimizer.num_tell,
