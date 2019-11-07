@@ -334,3 +334,46 @@ class Scalar(Array):
     def __init__(self, dtype: Type[Union[float, int]] = float):
         super().__init__(1)
         self.asscalar(dtype=dtype)
+
+
+class Log(Variable):
+    """Implements a log distributed variable, mapped to [-width / 2, width / 2] in the optimization "data" space
+     with clipping on the boundaries.
+
+    Parameters
+    ----------
+    a_min: float
+        minimal value
+    a_max: float
+        maximal value
+    width: float
+        the width of the data space the bounds are mapped to. The width controls the mutation speed,
+        since in the optimization data space mutations follow a centred and reduced Gaussian distribution N(0, 1)
+
+
+    Note
+    ----
+    This is experimental, and is bound to evolve with improved instrumentation
+    """
+
+    def __init__(self, a_min: float, a_max: float, width: float = 20.0) -> None:
+        super().__init__()
+        assert a_min < a_max
+        self._specs.update(dimension=1, name="Log({a_min},{a_max},{width})")
+        min_log = np.log10(a_min)
+        max_log = np.log10(a_max)
+        b = (min_log + max_log) / 2.
+        a = (max_log - min_log) / width
+        self._var = Scalar().bounded(-width / 2, width / 2, transform="clipping").affined(a=a, b=b).exponentiated(10, coeff=1)
+
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
+        return self._var._data_to_arguments(data, deterministic=deterministic)
+
+    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        return self._var._arguments_to_data(*args, **kwargs)
+
+    def get_summary(self, data: ArrayLike) -> str:
+        return self._var.get_summary(data)
+
+    def __repr__(self) -> str:
+        return self.name
