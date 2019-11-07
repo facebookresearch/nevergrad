@@ -19,24 +19,24 @@ class OptimizationPrinter:
 
     Parameters
     ----------
-    num_tell_period: int
+    print_interval_tells: int
         max number of evaluation before performing another print
-    time_period_s: float
+    print_interval_seconds: float
         max number of seconds before performing another print
     """
 
-    def __init__(self, num_tell_period: int = 1, time_period_s: float = 60.0) -> None:
-        assert num_tell_period > 0
-        assert time_period_s > 0
-        self._num_tell_period = int(num_tell_period)
-        self._time_period_s = time_period_s
-        self._next_tell = self._num_tell_period
-        self._next_time = time.time() + time_period_s
+    def __init__(self, print_interval_tells: int = 1, print_interval_seconds: float = 60.0) -> None:
+        assert print_interval_tells > 0
+        assert print_interval_seconds > 0
+        self._print_interval_tells = int(print_interval_tells)
+        self._print_interval_seconds = print_interval_seconds
+        self._next_tell = self._print_interval_tells
+        self._next_time = time.time() + print_interval_seconds
 
     def __call__(self, optimizer: base.Optimizer, *args: Any, **kwargs: Any) -> None:
         if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
-            self._next_time = time.time() + self._time_period_s
-            self._next_tell = optimizer.num_tell + self._num_tell_period
+            self._next_time = time.time() + self._print_interval_seconds
+            self._next_tell = optimizer.num_tell + self._print_interval_tells
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 

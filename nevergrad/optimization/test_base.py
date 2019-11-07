@@ -101,7 +101,7 @@ def test_base_optimizer() -> None:
 
 def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
-    optimizer.register_callback("tell", callbacks.OptimizationPrinter(num_tell_period=10, time_period_s=.1))
+    optimizer.register_callback("tell", callbacks.OptimizationPrinter(print_interval_tells=10, print_interval_seconds=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
