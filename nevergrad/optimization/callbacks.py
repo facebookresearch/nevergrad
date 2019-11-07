@@ -7,7 +7,7 @@ import json
 import time
 import warnings
 import datetime
-from typing import Optional, Any, Union, List, Dict
+from typing import Any, Union, List, Dict
 from pathlib import Path
 import numpy as np
 from . import base
@@ -25,18 +25,18 @@ class OptimizationPrinter:
         max number of seconds before performing another print
     """
 
-    def __init__(self, num_tell_period: int = 0, time_period_s: float = 60) -> None:
-        assert num_tell_period >= 0
+    def __init__(self, num_tell_period: int = 1, time_period_s: float = 60.0) -> None:
+        assert num_tell_period > 0
+        assert time_period_s > 0
         self._num_tell_period = int(num_tell_period)
-        self._last_time: Optional[float] = None
         self._time_period_s = time_period_s
+        self._next_tell = self._num_tell_period
+        self._next_time = time.time() + time_period_s
 
     def __call__(self, optimizer: base.Optimizer, *args: Any, **kwargs: Any) -> None:
-        if self._last_time is None:
-            self._last_time = time.time()
-        if ((time.time() - self._last_time) > self._time_period_s or
-                (self._num_tell_period and not optimizer.num_tell % self._num_tell_period)):
-            self._last_time = time.time()
+        if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
+            self._next_time = time.time() + self._time_period_s
+            self._next_tell = optimizer.num_tell + self._num_tell_period
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
