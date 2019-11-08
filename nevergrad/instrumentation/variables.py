@@ -349,14 +349,15 @@ class Log(Variable):
     width: float
         the width of the data space the bounds are mapped to. The width controls the mutation speed,
         since in the optimization data space mutations follow a centred and reduced Gaussian distribution N(0, 1)
-
+    dtype: type
+        either int or float, the resturn type of the variable
 
     Note
     ----
     This is experimental, and is bound to evolve with improved instrumentation
     """
 
-    def __init__(self, a_min: float, a_max: float, width: float = 20.0) -> None:
+    def __init__(self, a_min: float, a_max: float, width: float = 20.0, dtype: Type[Union[float, int]] = float) -> None:
         super().__init__()
         assert a_min < a_max
         self._specs.update(dimension=1, name="Log({a_min},{a_max},{width})")
@@ -364,7 +365,7 @@ class Log(Variable):
         max_log = np.log10(a_max)
         b = (min_log + max_log) / 2.
         a = (max_log - min_log) / width
-        self._var = Scalar().bounded(-width / 2, width / 2, transform="clipping").affined(a=a, b=b).exponentiated(10, coeff=1)
+        self._var = Scalar(dtype).bounded(-width / 2, width / 2, transform="clipping").affined(a=a, b=b).exponentiated(10, coeff=1)
 
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         return self._var._data_to_arguments(data, deterministic=deterministic)

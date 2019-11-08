@@ -80,6 +80,12 @@ def test_log(value: float, expected: float) -> None:
     repr(var)
 
 
+def test_log_int() -> None:
+    var = variables.Log(300, 10000, dtype=int)
+    out = var.data_to_arguments(np.array([0]))
+    assert out[0][0] == 1732
+
+
 # note: 0.9/0.9482=0.9482/0.999
 @pytest.mark.parametrize("value,expected", [(0, 0.9482), (-11, 0.9), (10, 0.999)])  # type: ignore
 def test_log_9(value: float, expected: float) -> None:
