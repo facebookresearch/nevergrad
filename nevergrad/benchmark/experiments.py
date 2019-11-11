@@ -6,7 +6,7 @@
 from typing import Iterator, Optional, List, Union
 import nevergrad as ng
 from ..functions import ArtificialFunction
-from ..functions import multiobjective_minimization
+from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
 from ..functions import rl
@@ -29,17 +29,17 @@ def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
     functions = [
-        multiobjective_minimization([ArtificialFunction(name1, block_dimension=7),
-                                     ArtificialFunction(name2, block_dimension=7)],
-                                     bad_values=[10000.]*2)
+        MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=7)(x),
+                                     ArtificialFunction(name2, block_dimension=7)(x)),
+                                     upper_bounds=[10000.]*2)
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "cigar", "hm"]
     ]
     functions += [
-        multiobjective_minimization([ArtificialFunction(name1, block_dimension=6), 
-                                     ArtificialFunction(name2, block_dimension=6), 
-                                     ArtificialFunction(name3, block_dimension=6)],
-                                     bad_values=[10000.]*3)
+        MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x), 
+                                     ArtificialFunction(name2, block_dimension=6)(x), 
+                                     ArtificialFunction(name3, block_dimension=6)(x)),
+                                     upper_bounds=[10000.]*3)
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "ellipsoid"]
         for name3 in ["sphere", "cigar", "hm"]
