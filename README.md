@@ -87,6 +87,29 @@ print(list(sorted(ng.optimizers.registry.keys())))
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
 
+## Multiobjective minimization with Nevergrad
+
+Let us minimize x1 and x2 (two objective functions) assuming that values above 2.5 are of no interest.
+```python
+import nevergrad as ng
+import numpy as np
+
+f = ng.optimizers.multiobjective_minimization([lambda x: x[0], lambda x: x[1]], bad_values=[2.5, 2.5])
+
+# Let us work in dimension 3.
+# Let us check that it works.
+print(f(np.array([1,2,3])))
+
+# The parameter ``instrumentation`` can be replaced by a more sophisticated instrumentation (docs/instrumentation.md).
+# We here just use the dimension as we assume simple continuous rescaled variables (mean 0, std 1).
+optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 2 is the dimension, 100 is the budget.
+recommendation = optimizer.optimize(f)
+
+
+# The function embeds its Pareto-front:
+print("My Pareto front:", f())
+```
+
 ## Citing
 
 ```bibtex

@@ -10,6 +10,7 @@ import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 from ..common.typetools import ArrayLike
+from ..functions import MultiobjectiveFunction
 from ..instrumentation import transforms
 from ..instrumentation import Instrumentation
 from . import utils
