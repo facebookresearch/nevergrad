@@ -31,7 +31,7 @@ def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
     functions = [
         MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=7)(x),
                                      ArtificialFunction(name2, block_dimension=7)(x)),
-                                     upper_bounds=[10000.]*2)
+                                     upper_bounds=(50., 50.))
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "cigar", "hm"]
     ]
@@ -39,7 +39,7 @@ def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
         MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x), 
                                      ArtificialFunction(name2, block_dimension=6)(x), 
                                      ArtificialFunction(name3, block_dimension=6)(x)),
-                                     upper_bounds=[10000.]*3)
+                                     upper_bounds=(100., 100., 1000.))
         for name1 in ["sphere", "cigar"]
         for name2 in ["sphere", "ellipsoid"]
         for name3 in ["sphere", "cigar", "hm"]
