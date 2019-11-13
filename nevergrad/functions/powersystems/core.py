@@ -187,11 +187,10 @@ class PowerSystem(inst.InstrumentedFunction):
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
         self.thermal_power_prices = [c for c in list(np.random.rand(self.num_thermal_plants))]
-        
         for i in range(N):
             dam_managers += [Agent(8 + N + 2*self.num_thermal_plants, 1)]
-
+        dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
-        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(self.dimension)))
+        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
 
