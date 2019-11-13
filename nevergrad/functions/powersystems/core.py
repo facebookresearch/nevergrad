@@ -83,24 +83,18 @@ class Agent():
 class PowerSystemsVariable(Variable):
 
     def __init__(self, num_stocks:int, depth: int, width: int, dimension: int) -> None:
-        # Number of stocks (dams).
-        N = num_stocks
         
         # Simple instrumentation: just the number of params.
-        self.dimension = dimension
-    
         super().__init__()
         self.num_stocks = num_stocks
         self.depth = depth
         self.width = width
+        self._specs.update(dimension=dimension)
 
     # pylint: disable=unused-argument
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
         assert len(data) == self.dimension
         return data, {}
-
-    def data_size(self) -> int:
-        return self.dimension
 
     def __repr__(self) -> str:
         return "PowerSystems" + str(self.num_stocks) + "stocks_" + str(self.depth) + "layers_" + str(self.width) + "neurons"
@@ -115,10 +109,11 @@ class PowerSystem(inst.InstrumentedFunction):
     width: number of neurons per hidden layer
     """
 
-    def __init__(self, num_stocks = 3, depth = 3, width = 3) -> None:
+    def __init__(self, num_stocks: int = 3, depth: int = 3, width: int = 3) -> None:
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
-        dam_managers = []
-        
+        dam_managers: list[Any] = []
+        # Number of stocks (dams).
+        N = num_stocks
         # Parameters describing the problem.
         year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
         constant_to_year_ratio = N * 2.
@@ -134,7 +129,7 @@ class PowerSystem(inst.InstrumentedFunction):
         for i in range(N):
             dam_managers += [Agent(6 + N + 2*num_thermal_plants, 1)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
-        self.dimension = dimension
+        self._dimension = dimension
         super().__init__(dimension, PowerSystemsVariable(num_stocks, depth, width, dimension))
 
         def simulate_power_system(input_x):
