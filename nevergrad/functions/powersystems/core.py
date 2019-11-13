@@ -6,6 +6,7 @@
 # This code is based on a code and ideas by Emmanuel Centeno and Antoine Moreau,
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
+import copy
 from math import sqrt, tan, pi
 from typing import Any
 from typing import List
@@ -131,7 +132,7 @@ class PowerSystem(inst.InstrumentedFunction):
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
 
         def _simulate_power_system(input_x: np.ndarray):
-            x = [r for r in input_x]
+            x = copy.deepcopy(input_x)
             for a in dam_managers:
                 assert(len(x) >= a.GetParamNumbers())
                 a.SetParams(x[:a.GetParamNumbers()])
