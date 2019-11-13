@@ -130,7 +130,7 @@ class PowerSystem(inst.InstrumentedFunction):
         consumption = 0.
         hydro_prod_per_time_step: List[float] = []
         consumption_per_time_step: List[float] = []
-        for t in range(365*24*number_of_years):
+        for t in range(365*24*self.number_of_years):
     
             # Rain
             for i in range(N):
@@ -144,7 +144,7 @@ class PowerSystem(inst.InstrumentedFunction):
             needed = consumption
     
             # Setting inputs for all agents.
-            base_x = [cos(t/(365*24*self.number_of_years)), sin(t/(365*24*self.number_of_years)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+            base_x = [np.cos(t/(365*24*self.number_of_years)), np.sin(t/(365*24*self.number_of_years)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
             x = list(base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks)
     
             # Prices as a decomposition tool!
@@ -155,7 +155,7 @@ class PowerSystem(inst.InstrumentedFunction):
             volume += self.thermal_power_capacity
             dam_index += [-1] * len(price)
             
-            assert(len(price) == N + num_thermal_plants)
+            assert(len(price) == N + self.num_thermal_plants)
             hydro_prod: List[float] = [0.] * N
             for i in range(len(price)):
                 if needed == 0:
