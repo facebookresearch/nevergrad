@@ -8,6 +8,7 @@ import nevergrad as ng
 from ..functions import ArtificialFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
+from ..functions.powersystems import PowerSystem
 from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
@@ -269,6 +270,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
     # - The 007 game: 1 function, noisy.
+    # - PowerSystem: a power system simulation problem.
     
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
@@ -284,6 +286,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
     # Adding ARCoating.
     funcs += [ARCoating()]
+    funcs += [PowerSystem()]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
