@@ -1,15 +1,21 @@
+import matplotlib.pyplot as plt
 import nevergrad as ng
 import numpy as np
 import random
 import math
+pi = math.pi
 
 # Number of stocks (dams).
 N = 3
-pi = math.pi
 
-# Real life is more complicated!
+# Optimization budget.
+optim_steps = 500
+
+# Real life is more complicated! This is a very simple model.
 
 class Agent():
+    """An agent has an input size, an output size, a number of layers, a width of its internal layers 
+    (a.k.a number of neurons per hidden layer)."""
     def __init__(self, input_size, output_size, layers=2, layer_width=20):
         assert(layers >= 2)
         self.input_size = input_size
@@ -43,23 +49,26 @@ class Agent():
 
 
 
-all_agents = []
+dam_managers = []
 
-year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
-constant_to_year_ratio = 0
+# Parameters describing the problem.
+year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
+constant_to_year_ratio = N * 2.
 back_to_normal = 0.03  # How much of the gap with normal is cancelled at each iteration.
 consumption_noise = 1.
 num_thermal_plants = 7
+number_of_years = 1
+
 average_consumption = constant_to_year_ratio * year_to_day_ratio
 thermal_power_capacity = [c * average_consumption for c in list(np.random.rand(num_thermal_plants))]
 thermal_power_prices = [c for c in list(np.random.rand(num_thermal_plants))]
 
 for i in range(N):
-    all_agents += [Agent(6 + N + 2*num_thermal_plants, 1)]
+    dam_managers += [Agent(6 + N + 2*num_thermal_plants, 1)]
 
 def simulate_power_system(input_x):
     x = [r for r in input_x]
-    for a in all_agents:
+    for a in dam_managers:
         assert(len(x) >= a.GetParamNumbers())
         a.SetParams(x[:a.GetParamNumbers()])
         x = x[a.GetParamNumbers():]
@@ -72,7 +81,9 @@ def simulate_power_system(input_x):
     cost = 0
     # Loop on time steps.
     consumption=0.
-    for t in range(365*24):
+    hydro_prod_per_time_step = []
+    consumption_per_time_step = []
+    for t in range(365*24*number_of_years):
 
         # Rain
         for i in range(N):
@@ -81,6 +92,7 @@ def simulate_power_system(input_x):
         base_consumption = (constant_to_year_ratio*year_to_day_ratio*1. 
                 +0.5*year_to_day_ratio*(1.+np.cos(2*pi*t/(24*365))) + 0.5*(1.+np.cos(2*pi*t/24)))
         consumption = max(0., consumption + consumption_noise*np.random.rand() + back_to_normal * (base_consumption - consumption))
+        consumption_per_time_step += [consumption]
         # Water usage.
         needed = consumption
 
@@ -89,38 +101,54 @@ def simulate_power_system(input_x):
         x = base_x + thermal_power_capacity + thermal_power_prices + stocks
 
         # Prices as a decomposition tool!
-        price = [a.GetOutput(x)[0][0] for a in all_agents]
+        price = [a.GetOutput(x)[0][0] for a in dam_managers]
         volume = [s for s in stocks]
+        dam_index = list(range(len(price)))
         price += thermal_power_prices
         volume += thermal_power_capacity
-
-        agents = [all_agents[i] for i in sorted(range(N), key=lambda i: price[i])]
-        for i in range(N):
+        dam_index += [-1] * len(price)
+        
+        assert(len(price) == N + num_thermal_plants)
+        hydro_prod = [0.] * N
+        for i in range(len(price)):
             if needed == 0:
                 break
             production = min(volume[i], needed)
-            cost += production * price[i]
-    return cost
+            if dam_index[i] >= 0:
+                hydro_prod[dam_index[i]] += production
+            else:
+                cost += production * price[i]
+            needed -= production
+        cost += 500. * needed
+        hydro_prod_per_time_step += hydro_prod
+    return cost, hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
 
 # Simple instrumentation: just the number of params.
-instrumentation = sum([a.GetParamNumbers() for a in all_agents])
+instrumentation = sum([a.GetParamNumbers() for a in dam_managers])
 optimizer = ng.optimizers.OnePlusOne(instrumentation=instrumentation, budget=500)
 
 losses = []
-for i in range(500):
+for i in range(optim_steps):
     candidate = optimizer.ask()
-    v = simulate_power_system(candidate.data)
-    losses += [v]
+    v, hydro_prod, hydro_prod_per_ts, consumption_per_ts = simulate_power_system(candidate.data)
+    losses += [min(v, min([float("Inf")] + losses))]
     optimizer.tell(candidate, v)
 
-import matplotlib.pyplot as plt
-plt.plot(losses)
-plt.xlabel('iteration number')
-plt.ylabel('cost')
+ax = plt.subplot(1, 2, 1)
+ax.set_xlabel('iteration number')
+ax.plot(losses, label='losses') 
+ax = plt.subplot(1, 2, 2)
+ax.plot(np.linspace(0,1,len(consumption_per_ts)), consumption_per_ts, label='consumption')
+ax.plot(np.linspace(0,1,len(hydro_prod_per_ts)), hydro_prod_per_ts, label='hydro')
+for i in range(N):
+    hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
+    ax.plot(np.linspace(0,1,len(hydro_ts)), hydro_ts, label='dam ' + str(i) + ' prod')
+ax.set_xlabel('time step')
+ax.set_ylabel('production per ts')
+ax.legend() #(l1, l2))
 plt.show()
-import time
-time.sleep(30)
-
+plt.savefig("ps.png")
+plt.waitforbuttonpress()
 recommendation = optimizer.recommend()  #minimize(square)
 print(recommendation)  # optimal args and kwargs
 
