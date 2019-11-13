@@ -111,7 +111,6 @@ class PowerSystem(inst.InstrumentedFunction):
     """
 
     def __init__(self, num_stocks: int = 3, depth: int = 3, width: int = 3) -> None:
-        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
         dam_managers: List[Any] = []
         # Number of stocks (dams).
         N = num_stocks
@@ -189,3 +188,4 @@ class PowerSystem(inst.InstrumentedFunction):
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
         self._simulate_power_system = _simulate_power_system
         super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width, dimension)) 
+        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
