@@ -144,11 +144,11 @@ class PowerSystem(inst.InstrumentedFunction):
             stocks = [0.] * N   
             # Nonsense delays.
             delay = [np.cos(i) for i in range(N)]
-            cost = 0
+            cost = 0.
             # Loop on time steps.
-            consumption=0.
-            hydro_prod_per_time_step = []
-            consumption_per_time_step = []
+            consumption = 0.
+            hydro_prod_per_time_step: List[float] = []
+            consumption_per_time_step: List[float] = []
             for t in range(365*24*number_of_years):
         
                 # Rain
@@ -167,15 +167,15 @@ class PowerSystem(inst.InstrumentedFunction):
                 x = base_x + thermal_power_capacity + thermal_power_prices + stocks
         
                 # Prices as a decomposition tool!
-                price = [a.GetOutput(x)[0][0] for a in dam_managers]
-                volume = [s for s in stocks]
-                dam_index = list(range(len(price)))
+                price: List[float] = [a.GetOutput(x)[0][0] for a in dam_managers]
+                volume: List[float] = [s for s in stocks]
+                dam_index: List[int] = list(range(len(price)))
                 price += thermal_power_prices
                 volume += thermal_power_capacity
                 dam_index += [-1] * len(price)
                 
                 assert(len(price) == N + num_thermal_plants)
-                hydro_prod = [0.] * N
+                hydro_prod: List[float] = [0.] * N
                 for i in range(len(price)):
                     if needed == 0:
                         break
