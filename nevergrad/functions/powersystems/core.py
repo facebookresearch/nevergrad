@@ -135,7 +135,7 @@ class PowerSystem(inst.InstrumentedFunction):
             x = list(input_x)
             for a in dam_managers:
                 assert(len(x) >= a.GetParamNumbers())
-                a.SetParams(np.array(x[:a.GetParamNumbers())])
+                a.SetParams(np.array(x[:a.GetParamNumbers()]))
                 x = x[a.GetParamNumbers():]
             assert(len(x) == 0)
         
