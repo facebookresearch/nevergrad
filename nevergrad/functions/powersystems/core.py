@@ -81,7 +81,7 @@ class Agent():
 
 
 
-class PowerSystemsVariable(Variable):
+class PowerSystemVariable(Variable):
 
     def __init__(self, num_stocks:int, depth: int, width: int, dimension: int) -> None:
         
@@ -187,4 +187,5 @@ class PowerSystem(inst.InstrumentedFunction):
                 cost += 500. * needed
                 hydro_prod_per_time_step += hydro_prod
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
+        self._simulate_power_system = _simulate_power_system
         super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width, dimension)) 
