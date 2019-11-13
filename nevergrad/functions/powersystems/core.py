@@ -112,83 +112,87 @@ class PowerSystem(inst.InstrumentedFunction):
     width: number of neurons per hidden layer
     """
 
+    def _simulate_power_system(self, input_x: np.ndarray):
+        x = list(input_x)
+        dam_managers = self.dam_managers
+        for a in dam_managers:
+            assert(len(x) >= a.GetParamNumbers())
+            a.SetParams(np.array(x[:a.GetParamNumbers()]))
+            x = x[a.GetParamNumbers():]
+        assert(len(x) == 0)
+        N = self.N
+        # Assume empty initial stocks.
+        stocks = [0.] * N   
+        # Nonsense delays.
+        delay = [np.cos(i) for i in range(N)]
+        cost = 0.
+        # Loop on time steps.
+        consumption = 0.
+        hydro_prod_per_time_step: List[float] = []
+        consumption_per_time_step: List[float] = []
+        for t in range(365*24*number_of_years):
+    
+            # Rain
+            for i in range(N):
+                stocks[i] += 0.5*(1.+np.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
+            # Consumption model.
+            base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio*1. 
+                    +0.5*self.year_to_day_ratio*(1.+np.cos(2*pi*t/(24*365))) + 0.5*(1.+np.cos(2*pi*t/24)))
+            consumption = max(0., consumption + self.consumption_noise*np.random.rand() + self.back_to_normal * (base_consumption - consumption))
+            consumption_per_time_step += [consumption]
+            # Water usage.
+            needed = consumption
+    
+            # Setting inputs for all agents.
+            base_x = [cos(t/(365*24*self.number_of_years)), sin(t/(365*24*self.number_of_years)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+            x = list(base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks)
+    
+            # Prices as a decomposition tool!
+            price: List[float] = [a.GetOutput(np.array(x))[0][0] for a in dam_managers]
+            volume: List[float] = [s for s in stocks]
+            dam_index: List[int] = list(range(len(price)))
+            price += self.thermal_power_prices
+            volume += self.thermal_power_capacity
+            dam_index += [-1] * len(price)
+            
+            assert(len(price) == N + num_thermal_plants)
+            hydro_prod: List[float] = [0.] * N
+            for i in range(len(price)):
+                if needed == 0:
+                    break
+                production = min(volume[i], needed)
+                if dam_index[i] >= 0:
+                    hydro_prod[dam_index[i]] += production
+                else:
+                    cost += production * price[i]
+                needed -= production
+            cost += 500. * needed
+            hydro_prod_per_time_step += hydro_prod
+        return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
+        #super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width)) 
+
     def __init__(self, num_stocks: int = 3, depth: int = 3, width: int = 3) -> None:
         dam_managers: List[Any] = []
         # Number of stocks (dams).
-        N = num_stocks
+        self.N = num_stocks
+        N = self.N
         # Parameters describing the problem.
-        year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
-        constant_to_year_ratio = N * 2.
-        back_to_normal = 0.03  # How much of the gap with normal is cancelled at each iteration.
-        consumption_noise = 1.
-        num_thermal_plants = 7
-        number_of_years = 1
+        self.year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
+        self.constant_to_year_ratio = N * 2.
+        self.back_to_normal = 0.03  # How much of the gap with normal is cancelled at each iteration.
+        self.consumption_noise = 1.
+        self.num_thermal_plants = 7
+        self.number_of_years = 1
         
-        average_consumption = constant_to_year_ratio * year_to_day_ratio
-        thermal_power_capacity = [c * average_consumption for c in list(np.random.rand(num_thermal_plants))]
-        thermal_power_prices = [c for c in list(np.random.rand(num_thermal_plants))]
+        self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
+        self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
+        self.thermal_power_prices = [c for c in list(np.random.rand(self.num_thermal_plants))]
         
         for i in range(N):
-            dam_managers += [Agent(6 + N + 2*num_thermal_plants, 1)]
-        dimension = sum([a.GetParamNumbers() for a in dam_managers])
+            dam_managers += [Agent(8 + N + 2*self.num_thermal_plants, 1)]
+        self.dimension = sum([a.GetParamNumbers() for a in dam_managers])
 
-        def _simulate_power_system(input_x: np.ndarray):
-            x = list(input_x)
-            for a in dam_managers:
-                assert(len(x) >= a.GetParamNumbers())
-                a.SetParams(np.array(x[:a.GetParamNumbers()]))
-                x = x[a.GetParamNumbers():]
-            assert(len(x) == 0)
-        
-            # Assume empty initial stocks.
-            stocks = [0.] * N   
-            # Nonsense delays.
-            delay = [np.cos(i) for i in range(N)]
-            cost = 0.
-            # Loop on time steps.
-            consumption = 0.
-            hydro_prod_per_time_step: List[float] = []
-            consumption_per_time_step: List[float] = []
-            for t in range(365*24*number_of_years):
-        
-                # Rain
-                for i in range(N):
-                    stocks[i] += 0.5*(1.+np.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
-                # Consumption model.
-                base_consumption = (constant_to_year_ratio*year_to_day_ratio*1. 
-                        +0.5*year_to_day_ratio*(1.+np.cos(2*pi*t/(24*365))) + 0.5*(1.+np.cos(2*pi*t/24)))
-                consumption = max(0., consumption + consumption_noise*np.random.rand() + back_to_normal * (base_consumption - consumption))
-                consumption_per_time_step += [consumption]
-                # Water usage.
-                needed = consumption
-        
-                # Setting inputs for all agents.
-                base_x = [needed, average_consumption, year_to_day_ratio, constant_to_year_ratio, back_to_normal, consumption_noise]
-                x = list(base_x + thermal_power_capacity + thermal_power_prices + stocks)
-        
-                # Prices as a decomposition tool!
-                price: List[float] = [a.GetOutput(np.array(x))[0][0] for a in dam_managers]
-                volume: List[float] = [s for s in stocks]
-                dam_index: List[int] = list(range(len(price)))
-                price += thermal_power_prices
-                volume += thermal_power_capacity
-                dam_index += [-1] * len(price)
-                
-                assert(len(price) == N + num_thermal_plants)
-                hydro_prod: List[float] = [0.] * N
-                for i in range(len(price)):
-                    if needed == 0:
-                        break
-                    production = min(volume[i], needed)
-                    if dam_index[i] >= 0:
-                        hydro_prod[dam_index[i]] += production
-                    else:
-                        cost += production * price[i]
-                    needed -= production
-                cost += 500. * needed
-                hydro_prod_per_time_step += hydro_prod
-            return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
-        self._simulate_power_system = _simulate_power_system
-        #super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width)) 
-        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
+        self.dam_managers = dam_managers
+        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(self.dimension)))
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
+
