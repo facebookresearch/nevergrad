@@ -96,7 +96,7 @@ class PowerSystemVariable(Variable):
     # pylint: disable=unused-argument
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
         assert len(data) == self.dimension
-        return data, {}
+        return (data), {}
 
     def __repr__(self) -> str:
         return "PowerSystems" + str(self.num_stocks) + "stocks_" + str(self.depth) + "layers_" + str(self.width) + "neurons"
