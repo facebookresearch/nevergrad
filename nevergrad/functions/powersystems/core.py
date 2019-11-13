@@ -84,22 +84,22 @@ class Agent():
 
 class PowerSystemVariable(Variable):
 
-    def __init__(self, num_stocks:int, depth: int, width: int, dimension: int) -> None:
+    def __init__(self, num_stocks:int, depth: int, width: int) -> None:  #, dimension: int) -> None:
         
         # Simple instrumentation: just the number of params.
         super().__init__()
-        self.num_stocks = num_stocks
-        self.depth = depth
-        self.width = width
-        self._specs.update(dimension=dimension)
+        #self.num_stocks = num_stocks
+        #self.depth = depth
+        #self.width = width
+        #self._specs.update(dimension=dimension)
 
     # pylint: disable=unused-argument
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
-        assert len(data) == self.dimension
+        #assert len(data) == self.dimension
         return (data), {}
 
     def __repr__(self) -> str:
-        return "PowerSystems" + str(self.num_stocks) + "stocks_" + str(self.depth) + "layers_" + str(self.width) + "neurons"
+        return "PowerSystems" #+ str(self.num_stocks) + "stocks_" + str(self.depth) + "layers_" + str(self.width) + "neurons"
 
 
 class PowerSystem(inst.InstrumentedFunction):
@@ -189,5 +189,5 @@ class PowerSystem(inst.InstrumentedFunction):
                 hydro_prod_per_time_step += hydro_prod
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
         self._simulate_power_system = _simulate_power_system
-        super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width, dimension)) 
+        super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width)) 
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
