@@ -130,6 +130,7 @@ class PowerSystem(inst.InstrumentedFunction):
         for i in range(N):
             dam_managers += [Agent(6 + N + 2*num_thermal_plants, 1)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
+        self._dimension = dimension
 
         def _simulate_power_system(input_x: np.ndarray):
             x = list(input_x)
