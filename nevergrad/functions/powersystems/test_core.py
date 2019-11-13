@@ -8,7 +8,7 @@ from . import core
 
 
 def test_powersystem() -> None:
-    func = core.power_systems()
+    func = core.PowerSystem()
     x = 7 * np.random.normal(size=func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
