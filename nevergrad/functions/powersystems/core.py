@@ -111,7 +111,7 @@ class PowerSystem(inst.InstrumentedFunction):
 
     def __init__(self, num_stocks: int = 3, depth: int = 3, width: int = 3) -> None:
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
-        dam_managers: list[Any] = []
+        dam_managers: typing.List[Any] = []
         # Number of stocks (dams).
         N = num_stocks
         # Parameters describing the problem.
@@ -130,9 +130,8 @@ class PowerSystem(inst.InstrumentedFunction):
             dam_managers += [Agent(6 + N + 2*num_thermal_plants, 1)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self._dimension = dimension
-        super().__init__(dimension, PowerSystemsVariable(num_stocks, depth, width, dimension))
 
-        def simulate_power_system(input_x):
+        def simulate_power_system(input_x: np.ndarray):
             x = [r for r in input_x]
             for a in dam_managers:
                 assert(len(x) >= a.GetParamNumbers())
@@ -188,3 +187,4 @@ class PowerSystem(inst.InstrumentedFunction):
                 cost += 500. * needed
                 hydro_prod_per_time_step += hydro_prod
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
+        super().__init__(self._simulate_power_system, ARCoatingVariable(nbslab, self.epmin, self.epf))
