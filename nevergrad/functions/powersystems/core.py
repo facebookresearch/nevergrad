@@ -190,5 +190,5 @@ class PowerSystem(inst.InstrumentedFunction):
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
         self._simulate_power_system = _simulate_power_system
         #super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width)) 
-        super().__init__(self._simulate_power_system, Instrumentation(ng.var.Array(dimension)))
+        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
