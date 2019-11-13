@@ -89,20 +89,20 @@ class MultiobjectiveFunction:
     @property
     def pareto_front(self) -> List[Tuple[ArgsKwargs, np.ndarray]]:
         new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
-         for argskwargs, losses in self._points:
-             #Jshould_be_added = True
-             for other_losses in list(self.pointset.values()):
-                 print(v)
-                 if (other_losses <= losses).all() and (other_losses < losses).any():
-                     #should_be_added = False
-                     break
-             #if should_be_added:
-             #    print(p, ",", val, "should be added...")
-             #    new_pointset[p] = val
-             #else:
-             #    print(p, ",", val, "should not be added...")
-         self._points = new_points
-         return self._points
+        for argskwargs, losses in self._points:
+            #Jshould_be_added = True
+            for other_losses in list(self.pointset.values()):
+                print(v)
+                if (other_losses <= losses).all() and (other_losses < losses).any():
+                    #should_be_added = False
+                    break
+            #if should_be_added:
+            #    print(p, ",", val, "should be added...")
+            #    new_pointset[p] = val
+            #else:
+            #    print(p, ",", val, "should not be added...")
+        self._points = new_points
+        return self._points
 
 
 class _HyperVolume:
