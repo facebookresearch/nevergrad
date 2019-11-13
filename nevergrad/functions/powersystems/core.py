@@ -190,7 +190,6 @@ class PowerSystem(inst.InstrumentedFunction):
         
         for i in range(N):
             dam_managers += [Agent(8 + N + 2*self.num_thermal_plants, 1)]
-        self.dimension = sum([a.GetParamNumbers() for a in dam_managers])
 
         self.dam_managers = dam_managers
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(self.dimension)))
