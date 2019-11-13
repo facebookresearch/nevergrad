@@ -163,7 +163,7 @@ class PowerSystem(inst.InstrumentedFunction):
         
                 # Setting inputs for all agents.
                 base_x = [needed, average_consumption, year_to_day_ratio, constant_to_year_ratio, back_to_normal, consumption_noise]
-                x = base_x + thermal_power_capacity + thermal_power_prices + stocks
+                x = np.array(base_x + thermal_power_capacity + thermal_power_prices + stocks)
         
                 # Prices as a decomposition tool!
                 price: List[float] = [a.GetOutput(x)[0][0] for a in dam_managers]
