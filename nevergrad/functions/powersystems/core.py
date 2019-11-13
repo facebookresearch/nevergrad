@@ -8,6 +8,7 @@
 
 from math import sqrt, tan, pi
 from typing import Any
+from typing import List
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from ... import instrumentation as inst
@@ -111,7 +112,7 @@ class PowerSystem(inst.InstrumentedFunction):
 
     def __init__(self, num_stocks: int = 3, depth: int = 3, width: int = 3) -> None:
         self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
-        dam_managers: typing.List[Any] = []
+        dam_managers: List[Any] = []
         # Number of stocks (dams).
         N = num_stocks
         # Parameters describing the problem.
@@ -187,4 +188,4 @@ class PowerSystem(inst.InstrumentedFunction):
                 cost += 500. * needed
                 hydro_prod_per_time_step += hydro_prod
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
-        super().__init__(self._simulate_power_system, ARCoatingVariable(nbslab, self.epmin, self.epf))
+        super().__init__(self._simulate_power_system, ARCoatingVariable(num_stocks, depth, width)) 
