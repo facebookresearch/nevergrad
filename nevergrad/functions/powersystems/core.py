@@ -130,9 +130,8 @@ class PowerSystem(inst.InstrumentedFunction):
         for i in range(N):
             dam_managers += [Agent(6 + N + 2*num_thermal_plants, 1)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
-        self._dimension = dimension
 
-        def simulate_power_system(input_x: np.ndarray):
+        def _simulate_power_system(input_x: np.ndarray):
             x = [r for r in input_x]
             for a in dam_managers:
                 assert(len(x) >= a.GetParamNumbers())
@@ -188,4 +187,4 @@ class PowerSystem(inst.InstrumentedFunction):
                 cost += 500. * needed
                 hydro_prod_per_time_step += hydro_prod
             return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
-        super().__init__(self._simulate_power_system, ARCoatingVariable(num_stocks, depth, width)) 
+        super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width, dimension)) 
