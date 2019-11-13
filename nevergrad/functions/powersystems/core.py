@@ -132,10 +132,10 @@ class PowerSystem(inst.InstrumentedFunction):
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
 
         def _simulate_power_system(input_x: np.ndarray):
-            x = copy.deepcopy(input_x)
+            x = list(input_x)
             for a in dam_managers:
                 assert(len(x) >= a.GetParamNumbers())
-                a.SetParams(x[:a.GetParamNumbers()])
+                a.SetParams(np.array(x[:a.GetParamNumbers())])
                 x = x[a.GetParamNumbers():]
             assert(len(x) == 0)
         
