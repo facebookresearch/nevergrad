@@ -8,7 +8,7 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
+from typing import Dict, Union, Any, Optional, Iterator, Type, Callable, Tuple
 import torch
 import numpy as np
 from ..common import decorators
@@ -19,6 +19,29 @@ from ..optimization.optimizerlib import registry as optimizer_registry  # import
 from . import execution
 
 registry = decorators.Registry[Callable[..., Iterator['Experiment']]]()
+
+
+class IFuncWrapper(execution.PostponedObject):
+    """Simple wrapper to use encapsulate relevant parts of an InstrumentedFunction
+
+    Parameter
+    ---------
+    func: Callable
+        the callable to wrap
+    """
+
+    def __init__(self, func: instru.InstrumentedFunction) -> None:
+        self.func = func
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.func.function(*args, **kwargs)  # compute *before* updating num calls
+
+    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
+        """Propagate subfunction delay
+        """
+        if isinstance(self.func, execution.PostponedObject):
+            return self.func.get_postponing_delay(args, kwargs, value)
+        return 1.
 
 
 class OptimizerSettings:
@@ -201,14 +224,14 @@ class Experiment:
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
+        func = IFuncWrapper(self.function)  # probably useless now (= num_ask) but helps being 100% sure
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                self.recommendation = base.Optimizer.minimize(self._optimizer, self.function,
-                                                              batch_mode=executor.batch_mode, executor=executor)
+                self.recommendation = base.Optimizer.minimize(self._optimizer, func, batch_mode=executor.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(t0, self._optimizer.num_ask)
