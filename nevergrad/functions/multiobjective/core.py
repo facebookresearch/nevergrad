@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 from typing import Tuple, Any, Callable, List, Dict
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
@@ -23,14 +28,14 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: ArrayLike) -> None:
         self.multiobjective_function = multiobjective_function
-        self.upper_bounds = upper_bounds
-        self._hypervolume: Any = _HyperVolume(np.array(upper_bounds))  # type: ignore
+        self._upper_bounds = np.array(upper_bounds, copy=False)
+        self._hypervolume: Any = _HyperVolume(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
     def compute_aggregate_loss(self, losses: ArrayLike, *args: Any, **kwargs: Any) -> float:
         # We compute the hypervolume
-        arr_losses = np.minimum(np.array(losses, copy=False), np.array(self.upper_bounds, copy=False)) 
+        arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
@@ -45,7 +50,7 @@ class MultiobjectiveFunction:
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(arr_losses - stored_losses))
-            assert(distance_to_pareto >= 0.)
+            assert (distance_to_pareto >= 0).all()
             return -new_volume + distance_to_pareto
 
     def __call__(self, *args: Any, **kwargs: Any) -> float:
@@ -55,7 +60,10 @@ class MultiobjectiveFunction:
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
     @property
-    def pareto_front(self) -> List[Tuple[ArgsKwargs, np.ndarray]]:
+    def pareto_front(self) -> List[ArgsKwargs]:
+        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
+        for the function
+        """
         new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
             should_be_added = True
@@ -66,4 +74,4 @@ class MultiobjectiveFunction:
             if should_be_added:
                 new_points.append((argskwargs, losses))
         self._points = new_points
-        return self._points
+        return [p[0] for p in self._points]
