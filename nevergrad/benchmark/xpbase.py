@@ -21,9 +21,8 @@ from . import execution
 registry = decorators.Registry[Callable[..., Iterator['Experiment']]]()
 
 
-class CallCounter(execution.PostponedObject):
-    """Simple wrapper which counts the number
-    of calls to a function.
+class IFuncWrapper(execution.PostponedObject):
+    """Simple wrapper to use encapsulate relevant parts of an InstrumentedFunction
 
     Parameter
     ---------
@@ -33,12 +32,9 @@ class CallCounter(execution.PostponedObject):
 
     def __init__(self, func: instru.InstrumentedFunction) -> None:
         self.func = func
-        self.num_calls = 0
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        value = self.func.function(*args, **kwargs)  # compute *before* updating num calls
-        self.num_calls += 1
-        return value
+        return self.func.function(*args, **kwargs)  # compute *before* updating num calls
 
     def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
         """Propagate subfunction delay
@@ -228,20 +224,19 @@ class Experiment:
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
-        counter = CallCounter(self.function)  # probably useless now (= num_ask) but helps being 100% sure
-        counter.num_calls = self._optimizer.num_ask  # update in case we are resuming an optimization
+        func = IFuncWrapper(self.function)  # probably useless now (= num_ask) but helps being 100% sure
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                self.recommendation = base.Optimizer.minimize(self._optimizer, counter, batch_mode=executor.batch_mode, executor=executor)
+                self.recommendation = base.Optimizer.minimize(self._optimizer, func, batch_mode=executor.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
-                self._log_results(t0, counter.num_calls)
+                self._log_results(t0, self._optimizer.num_ask)
                 raise e
-        self._log_results(t0, counter.num_calls)
+        self._log_results(t0, self._optimizer.num_ask)
 
     def get_description(self) -> Dict[str, Union[str, float, bool]]:
         """Return the description of the experiment, as a dict.
