@@ -23,13 +23,14 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: ArrayLike) -> None:
         self.multiobjective_function = multiobjective_function
+        self.upper_bounds = upper_bounds
         self._hypervolume: Any = _HyperVolume(np.array(upper_bounds))  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
     def compute_aggregate_loss(self, losses: ArrayLike, *args: Any, **kwargs: Any) -> float:
         # We compute the hypervolume
-        arr_losses = np.array(losses, copy=False)
+        arr_losses = np.minimum(np.array(losses, copy=False), np.array(self.upper_bounds, copy=False)) 
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
@@ -42,31 +43,26 @@ class MultiobjectiveFunction:
             # Now we compute for each axis
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
-                if (stored_losses <= losses).all():
-                    distance_to_pareto = min(distance_to_pareto, min(stored_losses - arr_losses))
+                if (stored_losses <= arr_losses).all():
+                    distance_to_pareto = min(distance_to_pareto, min(arr_losses - stored_losses))
+            assert(distance_to_pareto >= 0.)
             return -new_volume + distance_to_pareto
 
     def __call__(self, *args: Any, **kwargs: Any) -> float:
-        # This part is stationary.
+        # This part is stationary. It can be distributed.
         losses = self.multiobjective_function(*args, **kwargs)
-        # The following is not. It should be call locally.
+        # The following is not. It should be called locally.
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
     @property
     def pareto_front(self) -> List[Tuple[ArgsKwargs, np.ndarray]]:
         new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
+            should_be_added = True
             for _, other_losses in self._points:
                 if (other_losses <= losses).all() and (other_losses < losses).any():
-                    should_be_added = True
-                    if not should_be_added:
-                        should_be_added = False
-                        break
-            # if should_be_added:
-            #    print(p, ",", val, "should be added...")
-            #    new_pointset[p] = val
-            # else:
-            #    print(p, ",", val, "should not be added...")
+                    should_be_added = False
+                    break
             if should_be_added:
                 new_points.append((argskwargs, losses))
         self._points = new_points
