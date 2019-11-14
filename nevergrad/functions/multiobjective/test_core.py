@@ -6,8 +6,8 @@
 from . import core
 
 
-def test_multiobjective_function():
-    mfunc = core.MultiobjectiveFunction(lambda x: x, (100, 100))
+def test_multiobjective_function() -> None:
+    mfunc = core.MultiobjectiveFunction(lambda x: x, (100, 100))  # type: ignore
     tuples = [(110, 110), (110, 90), (80, 80), (50, 50), (50, 50), (80, 80), (30, 60), (60, 30)]
     values = []
     for tup in tuples:

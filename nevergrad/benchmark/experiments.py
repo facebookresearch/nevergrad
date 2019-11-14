@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List, Union, Tuple, Any
+from typing import Iterator, Optional, List, Union, Any
 import nevergrad as ng
 import numpy as np
 from ..functions import ArtificialFunction
@@ -415,7 +415,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 class PackedFunctions(MultiobjectiveFunction):
 
-    def __init__(self, functions: List[ArtificialFunction], upper_bounds: Tuple[float, ...]) -> None:
+    def __init__(self, functions: List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
         self._functions = functions
         self._upper_bounds = upper_bounds
         super().__init__(self._mo, upper_bounds)
@@ -437,17 +437,17 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
-    mofuncs = []
+    mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
             mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
                                          ArtificialFunction(name2, block_dimension=7)],
-                                        upper_bounds=(50., 50.))]
+                                        upper_bounds=np.array((50., 50.)))]
         for name3 in ["sphere", "ellipsoid"]:
             mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
                                          ArtificialFunction(name3, block_dimension=6),
                                          ArtificialFunction(name2, block_dimension=6)],
-                                        upper_bounds=(100, 100, 1000.))]
+                                        upper_bounds=np.array((100, 100, 1000.)))]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
