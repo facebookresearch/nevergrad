@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List, Union, Tuple, Callable, Any
+from typing import Iterator, Optional, List, Union, Tuple, Any
 import nevergrad as ng
 import numpy as np
 from ..functions import ArtificialFunction
@@ -415,38 +415,41 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 class PackedFunctions(MultiobjectiveFunction):
 
-    def __init__(self, functions: List[Callable[..., float]], upper_bounds: Tuple[float, ...]) -> None:
+    def __init__(self, functions: List[ArtificialFunction], upper_bounds: Tuple[float, ...]) -> None:
         self._functions = functions
+        self._upper_bounds = upper_bounds
         super().__init__(self._mo, upper_bounds)
 
     def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
         return np.array([f(*args, **kwargs) for f in self._functions])
 
+    def to_instrumented(self) -> InstrumentedFunction:  # this is only to insure reproducibility
+        # TODO: hopefully, be able to remove it eventually
+        inst = self._functions[0].instrumentation
+        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds),
+                                     *inst.args, **inst.kwargs)
+        # TODO add descriptors?
+        return instf
 
-# @registry.register
-# def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
-#    # prepare list of parameters to sweep for independent variables
-#    seedg = create_seed_generator(seed)
-#    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
-#    functions = []
-#    for name1 in ["sphere", "cigar"]:
-#        for name2 in ["sphere", "cigar", "hm"]:
-#            dim = 7
-#            mofunc = PackedFunctions([ArtificialFunction(name1, block_dimension=dim), ArtificialFunction(name2, block_dimension=dim)],
-#                                      upper_bounds=(50., 50.))
-#            #functions.append(InstrumentedFunction(mofunc, ng.var.Array(dim)))
-#            functions.append(ArtificialFunction(name1, block_dimension=dim))
-#    # functions += [
-#    #    MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x),
-#    #                                 ArtificialFunction(name2, block_dimension=6)(x),
-#    #                                 ArtificialFunction(name3, block_dimension=6)(x)),
-#    #                                 upper_bounds=(100., 100., 1000.))
-#    #    for name1 in ["sphere", "cigar"]
-#    #    for name2 in ["sphere", "ellipsoid"]
-#    #    for name3 in ["sphere", "cigar", "hm"]
-#    # ]
-#    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
-#    for func in functions:
-#        for optim in optims:
-#            for budget in list(range(100, 2901, 400)):
-#                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+
+@registry.register
+def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
+    mofuncs = []
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "cigar", "hm"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+                                         ArtificialFunction(name2, block_dimension=7)],
+                                        upper_bounds=(50., 50.))]
+        for name3 in ["sphere", "ellipsoid"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                         ArtificialFunction(name3, block_dimension=6),
+                                         ArtificialFunction(name2, block_dimension=6)],
+                                        upper_bounds=(100, 100, 1000.))]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in list(range(100, 2901, 400)):
+                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
