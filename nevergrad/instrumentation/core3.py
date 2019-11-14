@@ -7,18 +7,25 @@ import numpy as np
 P = TypeVar("P", bound="Parameter")
 
 
+class NotSupportedError(RuntimeError):
+    pass
+
+
 class Parameter:
 
     def __init__(self, **subparameters: Any) -> None:
-        self.value: Any = None
         self.uid = uuid.uuid4().hex
         self.parents_uids: List[str] = []
         self._subparameters = None if not subparameters else ParametersDict(**subparameters)
         self._dimension: Optional[int] = None
 
     @property
+    def value(self) -> Any:
+        raise NotImplementedError
+
+    @property
     def subparameters(self) -> "ParametersDict":
-        if self._subparameters is None:
+        if self._subparameters is None:  # delayed instantiation to avoid infinte loop
             self._subparameters = ParametersDict()
         assert self._subparameters is not None
         return self._subparameters
@@ -28,30 +35,30 @@ class Parameter:
         if self._dimension is None:
             try:
                 self._dimension = self.to_std_data().size
-            except NotImplementedError:
+            except NotSupportedError:
                 self._dimension = 0
         return self._dimension
 
     def mutate(self) -> None:
         self.subparameters.mutate()
-        data = self.to_std_data()
+        data = self.to_std_data()  # pylint: disable=assignment-from-no-return
         self.with_std_data(data + np.random.normal(size=data.shape))
 
     def recombine(self: P, *others: P) -> None:
-        raise NotImplementedError
+        raise NotSupportedError
 
     def to_std_data(self) -> np.ndarray:
-        raise NotImplementedError
+        raise NotSupportedError
 
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
-        raise NotImplementedError
+        raise NotSupportedError
 
     def spawn_child(self: P) -> P:
         raise NotImplementedError
 
     def from_value(self: P, value: Any) -> P:
         child = self.spawn_child()
-        child.value = value
+        child.value = value  # type: ignore
         return child
 
 
@@ -63,6 +70,10 @@ class ParametersDict(Parameter):
         super().__init__()
         self._parameters = parameters
         self._sizes: Optional[Dict[str, int]] = None
+
+    @property
+    def value(self) -> Dict[str, Any]:
+        return {k: p.value if isinstance(p, Parameter) else p for k, p in self._parameters.items()}
 
     def to_std_data(self) -> np.ndarray:
         data = {k: p.to_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}
@@ -105,16 +116,20 @@ class Array(Parameter):
 
     def __init__(self, *dims: int) -> None:
         super().__init__()
-        self.value = np.zeros(dims)
+        self._value: np.ndarray = np.zeros(dims)
+
+    @property
+    def value(self) -> np.ndarray:
+        return self._value
 
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
-        self.value = data.reshape(self.value.shape)
+        self._value = data.reshape(self.value.shape)
 
     def to_std_data(self) -> np.ndarray:
-        return self.value.ravel()  # type: ignore
+        return self._value.ravel()
 
     def spawn_child(self) -> "Array":
         child = Array(*self.value.shape)
-        child.value = self.value
+        child._value = self.value
         child.parents_uids.append(self.uid)
         return child
