@@ -175,6 +175,8 @@ class Instrumentation(NestedVariables):
           This is therefore a very flexible type of variable.
         - `Scalar(dtype)`: casts the data from the optimization space into a float or an int. It is equivalent to `Array(1).asscalar(dtype)`
           and all `Array` methods are therefore available
+        - `Log(a_min, a_max)`: for log distributed data between two bounds. Under the hood this uses an `Scalar` with an
+          appropriate set of transforms (including clipping for the bounds).
     * Depending on the variables, `Instrumentation` can be noisy (`SoftmaxCategorical` in non-deterministic mode), and not continuous
       (`SoftmaxCategorical` in deterministic mode, `OrderedDiscrete`, `Array` with int casting). Some optimizers may not be able
       to deal with these cases properly.

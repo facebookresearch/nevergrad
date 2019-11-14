@@ -70,3 +70,25 @@ def test_array() -> None:
     output = var.data_to_arguments(data)
     np.testing.assert_almost_equal(output[0][0], [[3., 5], [4, 4]])
     np.testing.assert_almost_equal(var.arguments_to_data(*output[0], **output[1]), data)
+
+
+@pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.1), (-10, 0.001), (20, 0.1), (9, 0.07943)])  # type: ignore
+def test_log(value: float, expected: float) -> None:
+    var = variables.Log(0.001, 0.1)
+    out = var.data_to_arguments(np.array([value]))
+    np.testing.assert_approx_equal(out[0][0], expected, significant=4)
+    repr(var)
+
+
+def test_log_int() -> None:
+    var = variables.Log(300, 10000, dtype=int)
+    out = var.data_to_arguments(np.array([0]))
+    assert out[0][0] == 1732
+
+
+# note: 0.9/0.9482=0.9482/0.999
+@pytest.mark.parametrize("value,expected", [(0, 0.9482), (-11, 0.9), (10, 0.999)])  # type: ignore
+def test_log_9(value: float, expected: float) -> None:
+    var = variables.Log(0.9, 0.999)
+    out = var.data_to_arguments(np.array([value]))
+    np.testing.assert_approx_equal(out[0][0], expected, significant=4)

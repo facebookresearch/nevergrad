@@ -59,6 +59,8 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
+    # Block dimension = dimension of a block on which the function "name" is applied. There are several blocks,
+    # and possibly useless variables; so the total dimension is num_blocks * block_dimension * (1+ uv_factor).
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
