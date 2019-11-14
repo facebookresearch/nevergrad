@@ -14,16 +14,24 @@ ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 
 class MultiobjectiveFunction:
     """Given several functions, and threshold on their values (above which solutions are pointless),
-    this function returns a single-objective function, correctly instrumented, the minimization of which
+    this object can be used as a single-objective function, the minimization of which
     yields a solution to the original multiobjective problem.
 
-    multi_objective_function: objective functions, to be minimized, of the original multiobjective problem.
-    upper_bounds: upper_bounds[i] is a threshold above which x is pointless if functions[i](x) > upper_bounds[i].
+    Parameters
+    -----------
+    multi_objective_function: callable
+        objective functions, to be minimized, of the original multiobjective problem.
+    upper_bounds: Tuple of float or np.ndarray
+        upper_bounds[i] is a threshold above which x is pointless if function(x)[i] > upper_bounds[i].
 
-    Returns an objective function to be minimized (it is a single objective function).
-    Warning: this function is not stationary.
-    The minimum value obtained for this objective function is -h,
-    where h is the hypervolume of the Pareto front obtained, given upper_bounds as a reference point.
+    Notes
+    -----
+    - This function is not stationary!
+    - The minimum value obtained for this objective function is -h,
+      where h is the hypervolume of the Pareto front obtained, given upper_bounds as a reference point.
+    - The callable keeps track of the pareto_front (see attribute paretor_front) and is therefor stateful.
+      For this reasonm it cannot be distributed. A user can however call the multiobjective_function 
+      remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: ArrayLike) -> None:
@@ -34,6 +42,9 @@ class MultiobjectiveFunction:
         self._best_volume = -float("Inf")
 
     def compute_aggregate_loss(self, losses: ArrayLike, *args: Any, **kwargs: Any) -> float:
+        """Given parameters and the multiobjective loss, this computes the hypervolume
+        and update the state of the function with new points if it belongs to the pareto front
+        """
         # We compute the hypervolume
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)
