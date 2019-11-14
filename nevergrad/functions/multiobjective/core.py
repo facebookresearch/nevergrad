@@ -50,7 +50,7 @@ class MultiobjectiveFunction:
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(arr_losses - stored_losses))
-            assert (distance_to_pareto >= 0).all()
+            assert distance_to_pareto >= 0
             return -new_volume + distance_to_pareto
 
     def __call__(self, *args: Any, **kwargs: Any) -> float:

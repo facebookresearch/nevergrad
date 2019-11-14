@@ -19,7 +19,7 @@ from .xpbase import registry
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
-# pylint: disable=stop-iteration-return, too-many-nested-blocks
+# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 # for black (since lists are way too long...):
 # fmt: off
 
@@ -423,29 +423,30 @@ class PackedFunctions(MultiobjectiveFunction):
         return np.array([f(*args, **kwargs) for f in self._functions])
 
 
-@registry.register
-def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
-    functions = []
-    for name1 in ["sphere", "cigar"]:
-        for name2 in ["sphere", "cigar", "hm"]:
-            dim = 7
-            mofunc = PackedFunctions([ArtificialFunction(name1, block_dimension=dim), ArtificialFunction(name2, block_dimension=dim)],
-                                     upper_bounds=(50., 50.))
-            functions.append(InstrumentedFunction(mofunc, ng.var.Array(dim)))
-    # functions += [
-    #    MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x),
-    #                                 ArtificialFunction(name2, block_dimension=6)(x),
-    #                                 ArtificialFunction(name3, block_dimension=6)(x)),
-    #                                 upper_bounds=(100., 100., 1000.))
-    #    for name1 in ["sphere", "cigar"]
-    #    for name2 in ["sphere", "ellipsoid"]
-    #    for name3 in ["sphere", "cigar", "hm"]
-    # ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
-    for func in functions:
-        for optim in optims:
-            for budget in list(range(100, 2901, 400)):
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+# @registry.register
+# def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+#    # prepare list of parameters to sweep for independent variables
+#    seedg = create_seed_generator(seed)
+#    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
+#    functions = []
+#    for name1 in ["sphere", "cigar"]:
+#        for name2 in ["sphere", "cigar", "hm"]:
+#            dim = 7
+#            mofunc = PackedFunctions([ArtificialFunction(name1, block_dimension=dim), ArtificialFunction(name2, block_dimension=dim)],
+#                                      upper_bounds=(50., 50.))
+#            #functions.append(InstrumentedFunction(mofunc, ng.var.Array(dim)))
+#            functions.append(ArtificialFunction(name1, block_dimension=dim))
+#    # functions += [
+#    #    MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x),
+#    #                                 ArtificialFunction(name2, block_dimension=6)(x),
+#    #                                 ArtificialFunction(name3, block_dimension=6)(x)),
+#    #                                 upper_bounds=(100., 100., 1000.))
+#    #    for name1 in ["sphere", "cigar"]
+#    #    for name2 in ["sphere", "ellipsoid"]
+#    #    for name3 in ["sphere", "cigar", "hm"]
+#    # ]
+#    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+#    for func in functions:
+#        for optim in optims:
+#            for budget in list(range(100, 2901, 400)):
+#                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
