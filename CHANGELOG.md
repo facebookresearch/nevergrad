@@ -13,6 +13,7 @@
 - `Chaining` optimizer family enables chaining of algorithms.
 - Cleaner installation.
 - Cheap constraints can now be provided through the `Instrumentation`
+- Added preliminary multiobjective function support (may be buggy for the time being)
 
 ## v0.2.2
 

@@ -3,8 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List, Union
+from typing import Iterator, Optional, List, Union, Tuple, Callable, Any
 import nevergrad as ng
+import numpy as np
 from ..functions import ArtificialFunction
 from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
@@ -22,33 +23,6 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # for black (since lists are way too long...):
 # fmt: off
 
-
-@registry.register
-def moo(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
-    functions = [
-        MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=7)(x),
-                                     ArtificialFunction(name2, block_dimension=7)(x)),
-                                     upper_bounds=(50., 50.))
-        for name1 in ["sphere", "cigar"]
-        for name2 in ["sphere", "cigar", "hm"]
-    ]
-    functions += [
-        MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x), 
-                                     ArtificialFunction(name2, block_dimension=6)(x), 
-                                     ArtificialFunction(name3, block_dimension=6)(x)),
-                                     upper_bounds=(100., 100., 1000.))
-        for name1 in ["sphere", "cigar"]
-        for name2 in ["sphere", "ellipsoid"]
-        for name3 in ["sphere", "cigar", "hm"]
-    ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
-    for func in functions:
-        for optim in optims:
-            for budget in list(range(100, 2901, 400)):
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 # Discrete functions on {0,1}^d.
 @registry.register
@@ -298,7 +272,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
     # - The 007 game: 1 function, noisy.
-    
+
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -326,8 +300,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
         func._descriptors.update(archi=archi)
         funcs += [func]
-    
-    
+
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
@@ -341,7 +314,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
-                            
+
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = [
@@ -436,3 +409,41 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                         func._descriptors.update(archi=archi)
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
+
+
+class PackedFunctions(MultiobjectiveFunction):
+
+    def __init__(self, functions: List[Callable[..., float]], upper_bounds: Tuple[float, ...]) -> None:
+        self._functions = functions
+        super().__init__(self._mo, upper_bounds)
+
+    def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        return np.array([f(*args, **kwargs) for f in self._functions])
+
+
+@registry.register
+def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
+    functions = []
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "cigar", "hm"]:
+            dim = 7
+            mofunc = PackedFunctions([ArtificialFunction(name1, block_dimension=dim), ArtificialFunction(name2, block_dimension=dim)],
+                                     upper_bounds=(50., 50.))
+            functions.append(InstrumentedFunction(mofunc, ng.var.Array(dim)))
+    # functions += [
+    #    MultiobjectiveFunction(lambda x: (ArtificialFunction(name1, block_dimension=6)(x),
+    #                                 ArtificialFunction(name2, block_dimension=6)(x),
+    #                                 ArtificialFunction(name3, block_dimension=6)(x)),
+    #                                 upper_bounds=(100., 100., 1000.))
+    #    for name1 in ["sphere", "cigar"]
+    #    for name2 in ["sphere", "ellipsoid"]
+    #    for name3 in ["sphere", "cigar", "hm"]
+    # ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for func in functions:
+        for optim in optims:
+            for budget in list(range(100, 2901, 400)):
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))

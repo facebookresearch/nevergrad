@@ -24,85 +24,9 @@
 #
 #    Modified by O. Teytaud as needed for Nevergrad.
 
-from ..instrumentation import InstrumentedFunction
 from math import log, floor
 import random
-from typing import (Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator,
-                    TypeVar, Generic, Deque, Iterable)
 import warnings
-import numpy as np
-#from ..optimization import base
-from ..optimization.base import Candidate
-from ..common.typetools import ArrayLike
-from ..instrumentation import InstrumentedFunction
-
-
-ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
-
-
-class MultiobjectiveFunction:
-    """Given several functions, and threshold on their values (above which solutions are pointless),
-    this function returns a single-objective function, correctly instrumented, the minimization of which
-    yields a solution to the original multiobjective problem.
-
-    multi_objective_function: objective functions, to be minimized, of the original multiobjective problem.
-    upper_bounds: upper_bounds[i] is a threshold above which x is pointless if functions[i](x) > upper_bounds[i].
-
-    Returns an objective function to be minimized (it is a single objective function).
-    Warning: this function is not stationary.
-    The minimum value obtained for this objective function is -h,
-    where h is the hypervolume of the Pareto front obtained, given upper_bounds as a reference point.
-    """
-
-
-    def __init__(self, multiobjective_function: Callable[..., Tuple[float, ...]], upper_bounds: Tuple[float, ...]) -> None:
-        self.multiobjective_function = multiobjective_function
-        self._hypervolume: Any = _HyperVolume(np.array(upper_bounds))  # type: ignore
-        self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
-        self._best_volume = -float("Inf")
-
-    def compute_aggregate_loss(self, losses: Tuple[float, ...], *args: Any, **kwargs: Any) -> float:
-        # We compute the hypervolume
-        arr_losses = np.array(losses)
-        new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
-        if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
-            self.best_hypervolume = new_volume
-            #if tuple(x) in self.pointset:  # TODO: comparison is not quite possible, is it necessary?
-            #    assert v == self.pointset[tuple(x)]  # We work noise-free...
-            self._points.append(((args, kwargs), arr_losses))
-            #self.pointset[tuple(x)] = v
-            return -new_volume
-        else:
-            # Now we compute for each axis
-            distance_to_pareto = float("Inf")
-            for _, stored_losses in self._points:
-                if (stored_losses <= losses).all():
-                    distance_to_pareto = min(distance_to_pareto, min(stored_losses - arr_losses))
-            return -new_volume + distance_to_pareto
-
-    def __call__(self, *args: Any, **kwargs: Any) -> float:
-        # This part is stationary.
-        losses = self.multiobjective_function(*args, **kwargs)
-        # The following is not. It should be call locally.
-        return self.compute_aggregate_loss(losses, *args, **kwargs)
-
-    @property
-    def pareto_front(self) -> List[Tuple[ArgsKwargs, np.ndarray]]:
-        new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
-        for argskwargs, losses in self._points:
-            #Jshould_be_added = True
-            for other_losses in list(self.pointset.values()):
-                print(v)
-                if (other_losses <= losses).all() and (other_losses < losses).any():
-                    #should_be_added = False
-                    break
-            #if should_be_added:
-            #    print(p, ",", val, "should be added...")
-            #    new_pointset[p] = val
-            #else:
-            #    print(p, ",", val, "should not be added...")
-        self._points = new_points
-        return self._points
 
 
 class _HyperVolume:
@@ -120,7 +44,6 @@ class _HyperVolume:
         """Constructor."""
         self.referencePoint = referencePoint
         self.list = []
-
 
     def compute(self, front):
         """Returns the hypervolume that is dominated by a non-dominated front.
@@ -165,7 +88,6 @@ class _HyperVolume:
         bounds = [-1.0e308] * dimensions
         hyperVolume = self.hvRecursive(dimensions - 1, len(relevantPoints), bounds)
         return hyperVolume
-
 
     def hvRecursive(self, dimIndex, length, bounds):
         """Recursive call to hypervolume calculation.
@@ -219,7 +141,7 @@ class _HyperVolume:
                 hvol = qPrevDimIndex.volume[dimIndex] + qPrevDimIndex.area[dimIndex] * (qCargo[dimIndex] - qPrevDimIndex.cargo[dimIndex])
             else:
                 qArea[0] = 1
-                qArea[1:dimIndex+1] = [qArea[i] * -qCargo[i] for i in range(dimIndex)]
+                qArea[1:dimIndex + 1] = [qArea[i] * -qCargo[i] for i in range(dimIndex)]
             q.volume[dimIndex] = hvol
             if q.ignore >= dimIndex:
                 qArea[dimIndex] = qPrevDimIndex.area[dimIndex]
@@ -245,7 +167,6 @@ class _HyperVolume:
             hvol -= q.area[dimIndex] * q.cargo[dimIndex]
             return hvol
 
-
     def preProcess(self, front):
         """Sets up the list data structure needed for calculation."""
         dimensions = len(self.referencePoint)
@@ -256,7 +177,6 @@ class _HyperVolume:
             nodeList.extend(nodes, i)
         self.list = nodeList
 
-
     def sortByDimension(self, nodes, i):
         """Sorts the list of nodes by the i-th value of the contained points."""
         # build a list of tuples of (point[i], node)
@@ -265,7 +185,6 @@ class _HyperVolume:
         decorated.sort()
         # write back to original list
         nodes[:] = [node for (_, node) in decorated]
-
 
 
 class _MultiList:
@@ -280,7 +199,7 @@ class _MultiList:
 
         def __init__(self, numberLists, cargo=None):
             self.cargo = cargo
-            self.next  = [None] * numberLists
+            self.next = [None] * numberLists
             self.prev = [None] * numberLists
             self.ignore = 0
             self.area = [0.0] * numberLists
@@ -303,7 +222,6 @@ class _MultiList:
         self.sentinel.next = [self.sentinel] * numberLists
         self.sentinel.prev = [self.sentinel] * numberLists
 
-
     def __str__(self):
         strings = []
         for i in range(self.numberLists):
@@ -318,11 +236,9 @@ class _MultiList:
             stringRepr += string + "\n"
         return stringRepr
 
-
     def __len__(self):
         """Returns the number of lists that are included in this _MultiList."""
         return self.numberLists
-
 
     def getLength(self, i):
         """Returns the length of the i-th list."""
@@ -334,7 +250,6 @@ class _MultiList:
             node = node.next[i]
         return length
 
-
     def append(self, node, index):
         """Appends a node to the end of the list at the given index."""
         lastButOne = self.sentinel.prev[index]
@@ -343,7 +258,6 @@ class _MultiList:
         # set the last element as the new one
         self.sentinel.prev[index] = node
         lastButOne.next[index] = node
-
 
     def extend(self, nodes, index):
         """Extends the list at the given index with the nodes."""
@@ -356,7 +270,6 @@ class _MultiList:
             sentinel.prev[index] = node
             lastButOne.next[index] = node
 
-
     def remove(self, node, index, bounds):
         """Removes and returns 'node' from all lists in [0, 'index'[."""
         for i in range(index):
@@ -367,7 +280,6 @@ class _MultiList:
             if bounds[i] > node.cargo[i]:
                 bounds[i] = node.cargo[i]
         return node
-
 
     def reinsert(self, node, index, bounds):
         """

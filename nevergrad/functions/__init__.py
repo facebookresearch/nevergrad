@@ -4,5 +4,5 @@
 # LICENSE file in the root directory of this source tree.
 
 from .functionlib import ArtificialFunction
-from .multiobjective import MultiobjectiveFunction
+from .multiobjective.core import MultiobjectiveFunction
 from .utils import PostponedObject
