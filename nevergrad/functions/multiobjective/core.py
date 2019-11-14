@@ -35,6 +35,8 @@ class MultiobjectiveFunction:
 
     def compute_aggregate_loss(self, losses: ArrayLike, *args: Any, **kwargs: Any) -> float:
         # We compute the hypervolume
+        if (losses - self._upper_bounds > 0).any():
+            return np.max(losses - self._upper_bounds)
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
@@ -46,10 +48,15 @@ class MultiobjectiveFunction:
             return -new_volume
         else:
             # Now we compute for each axis
+            # First we prune.
+            self.pareto_front
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
+                print("we meet ", stored_losses)
                 if (stored_losses <= arr_losses).all():
+                    print("distance = ", min(arr_losses - stored_losses))
                     distance_to_pareto = min(distance_to_pareto, min(arr_losses - stored_losses))
+                    print("now we have ", distance_to_pareto)
             assert distance_to_pareto >= 0
             return -new_volume + distance_to_pareto
 
