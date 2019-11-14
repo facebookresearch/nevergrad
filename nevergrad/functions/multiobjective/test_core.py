@@ -23,8 +23,8 @@ def test_multiobjective_function() -> None:
 
 
 def test_readme_example() -> None:
-    f = MultiobjectiveFunction(multiobjective_function=lambda x: (x**2).sum(), upper_bounds=[2.5, 2.5])
+    f = MultiobjectiveFunction(multiobjective_function=lambda x: (x[0]**2, x[1]**2), upper_bounds=[2.5, 2.5])
     optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.
     optimizer.optimize(f)
     # The function embeds its Pareto-front:
-    assert len(f.pareto_front) == 1  # TODO: I would have expected len > 1
+    assert len(f.pareto_front) > 1
