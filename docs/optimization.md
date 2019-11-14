@@ -168,7 +168,7 @@ optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimensi
 recommendation = optimizer.optimize(f)
 
 # The function embeds its Pareto-front:
-print("My Pareto front:", f.pareto_front)
+print("My Pareto front:", [x[0][0] for x in f.pareto_front])
 ```
 
 
