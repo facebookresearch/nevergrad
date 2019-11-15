@@ -5,6 +5,11 @@ import random
 import math
 pi = math.pi
 
+# We consider a power systems problem.
+# We have N stocks.
+# Each stock is managed by an agent.
+# Agents collaborate for minimizing the total cost.
+
 # Number of stocks (dams).
 N = 3
 
