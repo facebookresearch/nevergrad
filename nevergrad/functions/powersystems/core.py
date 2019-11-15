@@ -144,7 +144,7 @@ class PowerSystem(inst.InstrumentedFunction):
             needed = consumption
     
             # Setting inputs for all agents.
-            base_x = [np.cos(t/(365*24*self.number_of_years)), np.sin(t/(365*24*self.number_of_years)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+            base_x = [np.cos(t/24.), np.sin(t/24.), np.cos(t/(365*24)), np.sin(t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
             x = list(base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks)
     
             # Prices as a decomposition tool!
@@ -188,7 +188,7 @@ class PowerSystem(inst.InstrumentedFunction):
         self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
         self.thermal_power_prices = [c for c in list(np.random.rand(self.num_thermal_plants))]
         for i in range(N):
-            dam_managers += [Agent(8 + N + 2*self.num_thermal_plants, 1)]
+            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))

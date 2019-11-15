@@ -15,7 +15,7 @@ pi = math.pi
 N = 3
 
 # Optimization budget.
-optim_steps = 50
+optim_steps = 500
 
 # Real life is more complicated! This is a very simple model.
 
@@ -70,7 +70,7 @@ thermal_power_capacity = [c * average_consumption for c in list(np.random.rand(n
 thermal_power_prices = [c for c in list(np.random.rand(num_thermal_plants))]
 
 for i in range(N):
-    dam_managers += [Agent(8 + N + 2*num_thermal_plants, 1)]
+    dam_managers += [Agent(10 + N + 2*num_thermal_plants, 1)]
 
 def simulate_power_system(input_x):
     x = [r for r in input_x]
@@ -103,7 +103,7 @@ def simulate_power_system(input_x):
         needed = consumption
 
         # Setting inputs for all agents.
-        base_x = [np.cos(t/(365.*24*number_of_years)), np.sin(t/(365.*24*number_of_years)), needed, average_consumption, year_to_day_ratio, constant_to_year_ratio, back_to_normal, consumption_noise]
+        base_x = [np.cos(t/24.), np.sin(t/24.), np.cos(t/(365.*24)), np.sin(t/(365.*24)), needed, average_consumption, year_to_day_ratio, constant_to_year_ratio, back_to_normal, consumption_noise]
         x = base_x + thermal_power_capacity + thermal_power_prices + stocks
 
         # Prices as a decomposition tool!
