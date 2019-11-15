@@ -153,6 +153,25 @@ print(recommendation)  # optimal args and kwargs
 ```
 
 
+## Multiobjective minimization with Nevergrad
+
+Let us minimize f1 and f2 (two objective functions) assuming that values above 2.5 are of no interest.
+```python
+import nevergrad as ng
+from nevergrad.functions import MultiobjectiveFunction
+import numpy as np
+
+f = MultiobjectiveFunction(multiobjective_function=lambda x: np.sum(x**2) , upper_bounds=[2.5, 2.5])
+print(f(np.array([1.,2.])))
+
+optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.
+recommendation = optimizer.optimize(f)
+
+# The function embeds its Pareto-front:
+print("My Pareto front:", [x[0][0] for x in f.pareto_front])
+```
+
+
 ## Reproducibility
 
 Each instrumentation has its own `random_state` for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
