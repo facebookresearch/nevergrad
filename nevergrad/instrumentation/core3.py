@@ -1,6 +1,6 @@
 import uuid
 from collections import OrderedDict
-from typing import TypeVar, List, Optional, Dict, Any
+from typing import TypeVar, List, Optional, Dict, Any, Callable
 import numpy as np
 
 
@@ -19,6 +19,8 @@ class Parameter:
         self.parents_uids: List[str] = []
         self._subparameters = None if not subparameters else ParametersDict(**subparameters)
         self._dimension: Optional[int] = None
+        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
+        self._constraint_checker: Optional[Callable[[Any], bool]] = None
 
     @property
     def value(self) -> Any:
@@ -61,6 +63,40 @@ class Parameter:
         child = self.spawn_child()
         child.value = value  # type: ignore
         return child
+
+    # %% Constraint management
+
+    def complies_to_constraint(self) -> bool:
+        if self._constraint_checker is None:
+            return True
+        else:
+            return self._constraint_checker(self.value)
+
+    def set_cheap_constraint_checker(self, func: Callable[[Any], bool]) -> None:
+        self._constraint_checker = func
+
+    # %% random state
+
+    @property
+    def random_state(self) -> np.random.RandomState:
+        """Random state the instrumentation and the optimizers pull from.
+        It can be seeded/replaced.
+        """
+        if self._random_state is None:
+            # use the setter, to make sure the random state is propagated to the variables
+            seed = np.random.randint(2 ** 32, dtype=np.uint32)
+            self.random_state = np.random.RandomState(seed)
+        assert self._random_state is not None
+        return self._random_state
+
+    @random_state.setter
+    def random_state(self, random_state: np.random.RandomState) -> None:
+        self._set_random_state(random_state)
+
+    def _set_random_state(self, random_state: np.random.RandomState) -> None:
+        self._random_state = random_state
+        if self._subparameters is not None:
+            self.subparameters.random_state = random_state
 
 
 class ParametersDict(Parameter):
@@ -109,6 +145,15 @@ class ParametersDict(Parameter):
         child = ParametersDict(**{k: v.spawn_child() for k, v in self._parameters.items()})
         child.parents_uids.append(self.uid)
         return child
+
+    def _set_random_state(self, random_state: np.random.RandomState) -> None:
+        self._random_state = random_state
+        for param in self._parameters.values():
+            param.random_state = random_state
+
+    def complies_to_constraint(self) -> bool:
+        compliant = super().complies_to_constraint()
+        return compliant and all(param.complies_to_constraint() for param in self._parameters.values())
 
 
 class Array(Parameter):
