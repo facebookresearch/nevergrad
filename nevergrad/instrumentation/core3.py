@@ -31,7 +31,7 @@ class Parameter:
     def name(self) -> str:
         if self._name is not None:
             return self._name
-        subparams = sorted((k, p.name) for k, p in self.subparameters.value.items())
+        subparams = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self.subparameters.value.items())
         substr = ""
         if subparams:
             subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
@@ -90,7 +90,7 @@ class Parameter:
 
     # %% Constraint management
 
-    def complies_to_constraint(self) -> bool:
+    def complies_with_constraint(self) -> bool:
         if self._constraint_checker is None:
             return True
         else:
@@ -133,7 +133,7 @@ class ParametersDict(Parameter):
         self._sizes: Optional[Dict[str, int]] = None
 
     def _get_name(self) -> str:
-        params = sorted((k, p.name) for k, p in self._parameters.items())
+        params = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self._parameters.items())
         paramsstr = "{" + ",".join(f"{k}={n}" for k, n in params) + "}"
         return f"{self.__class__.__name__}{paramsstr}"
 
@@ -180,8 +180,8 @@ class ParametersDict(Parameter):
         for param in self._parameters.values():
             param.random_state = random_state
 
-    def complies_to_constraint(self) -> bool:
-        compliant = super().complies_to_constraint()
+    def complies_with_constraint(self) -> bool:
+        compliant = super().complies_with_constraint()
         return compliant and all(param.complies_to_constraint() for param in self._parameters.values())
 
 
