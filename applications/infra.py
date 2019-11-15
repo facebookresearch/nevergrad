@@ -15,7 +15,7 @@ pi = math.pi
 N = 3
 
 # Optimization budget.
-optim_steps = 500
+optim_steps = 50
 
 # Real life is more complicated! This is a very simple model.
 
@@ -140,17 +140,54 @@ for i in range(optim_steps):
     losses += [min(v, min([float("Inf")] + losses))]
     optimizer.tell(candidate, v)
 
-ax = plt.subplot(1, 2, 1)
+# Plot the optimization run.
+ax = plt.subplot(1, 3, 1)
 ax.set_xlabel('iteration number')
 ax.plot(losses, label='losses') 
-ax = plt.subplot(1, 2, 2)
-ax.plot(np.linspace(0,1,len(consumption_per_ts)), consumption_per_ts, label='consumption')
-ax.plot(np.linspace(0,1,len(hydro_prod_per_ts)), hydro_prod_per_ts, label='hydro')
+
+# Plot consumption per day and decomposition of production.
+ax = plt.subplot(1, 3, 2)
+def block24(x):
+    result = []
+    for i in range(0, len(x), 24):
+        result += [sum(x[i*24:(i+1)*24])]
+    return result
+consumption_per_day = block24(consumption_per_ts)
+hydro_prod_per_day = block24(hydro_prod_per_ts)
+ax.plot(np.linspace(0,1,len(consumption_per_day)), consumption_per_day, label='consumption')
+ax.plot(np.linspace(0,1,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
 for i in range(N):
     hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
-    ax.plot(np.linspace(0,1,len(hydro_ts)), hydro_ts, label='dam ' + str(i) + ' prod')
+    hydro_day = block24(hydro_ts)
+    ax.plot(np.linspace(0,1,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
 ax.set_xlabel('time step')
 ax.set_ylabel('production per ts')
+
+# Plot consumption per hour of the day and decomposition of production.
+ax = plt.subplot(1, 3, 3)
+def deblock24(x):
+    result = [0] * 24
+    for i in range(0, len(x)):
+        result[i % 24] += x[i]
+    return result
+        
+consumption_per_hour = deblock24(consumption_per_ts)
+hydro_prod_per_hour = deblock24(hydro_prod_per_ts)
+ax.plot(np.linspace(0,1,len(consumption_per_hour)), consumption_per_hour, label='consumption')
+ax.plot(np.linspace(0,1,len(hydro_prod_per_hour)), hydro_prod_per_hour, label='hydro')
+for i in range(N):
+    hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
+    hydro_hour = deblock24(hydro_ts)
+    ax.plot(np.linspace(0,1,len(hydro_hour)), hydro_hour, label='dam ' + str(i) + ' prod')
+ax.set_xlabel('time step')
+ax.set_ylabel('production per ts')
+
+
+
+
+
+
+
 ax.legend() #(l1, l2))
 plt.show()
 plt.savefig("ps.png")
