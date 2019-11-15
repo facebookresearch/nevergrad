@@ -4,6 +4,7 @@ from typing import TypeVar, List, Optional, Dict, Any, Callable
 import numpy as np
 
 
+BP = TypeVar("BP", bound="BaseParameter")
 P = TypeVar("P", bound="Parameter")
 
 
@@ -13,38 +14,16 @@ class NotSupportedError(RuntimeError):
 
 
 # pylint: disable=too-many-instance-attributes
-class Parameter:
+class BaseParameter:
+    """This provides the core functionality of a parameter, aka
+    value, subparameters, mutation, recombination
+    """
 
     def __init__(self, **subparameters: Any) -> None:
         self.uid = uuid.uuid4().hex
         self.parents_uids: List[str] = []
         self._subparameters = None if not subparameters else ParametersDict(**subparameters)
         self._dimension: Optional[int] = None
-        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
-        self._constraint_checker: Optional[Callable[[Any], bool]] = None
-        self._name: Optional[str] = None
-
-    def _get_name(self) -> str:
-        return self.__class__.__name__
-
-    @property
-    def name(self) -> str:
-        if self._name is not None:
-            return self._name
-        subparams = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self.subparameters.value.items())
-        substr = ""
-        if subparams:
-            subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
-        return f"{self._get_name()}" + substr
-
-    def __repr__(self) -> str:
-        return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
-
-    def with_name(self: P, name: str) -> P:
-        """Sets a name and return the current instrumentation (for chaining)
-        """
-        self._name = name
-        return self
 
     @property
     def value(self) -> Any:
@@ -71,7 +50,12 @@ class Parameter:
         data = self.to_std_data()  # pylint: disable=assignment-from-no-return
         self.with_std_data(data + np.random.normal(size=data.shape))
 
-    def recombine(self: P, *others: P) -> None:
+    def sample(self: BP) -> BP:
+        child = self.spawn_child()
+        child.mutate()
+        return child
+
+    def recombine(self: BP, *others: BP) -> None:
         raise NotSupportedError
 
     def to_std_data(self) -> np.ndarray:
@@ -80,13 +64,50 @@ class Parameter:
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         raise NotSupportedError
 
-    def spawn_child(self: P) -> P:
+    def spawn_child(self: BP) -> BP:
         raise NotImplementedError
 
-    def from_value(self: P, value: Any) -> P:
+    def from_value(self: BP, value: Any) -> BP:
         child = self.spawn_child()
         child.value = value  # type: ignore
         return child
+
+
+# pylint: disable=abstract-method
+class Parameter(BaseParameter):
+    """This provides the core functionality of a parameter, aka
+    value, subparameters, mutation, recombination
+    and adds some additional features such as shared random state,
+    constraint check and naming.
+    """
+
+    def __init__(self, **subparameters: Any) -> None:
+        super().__init__(**subparameters)
+        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
+        self._constraint_checker: Optional[Callable[[Any], bool]] = None
+        self._name: Optional[str] = None
+
+    def _get_name(self) -> str:
+        return self.__class__.__name__
+
+    @property
+    def name(self) -> str:
+        if self._name is not None:
+            return self._name
+        subparams = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self.subparameters.value.items())
+        substr = ""
+        if subparams:
+            subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
+        return f"{self._get_name()}" + substr
+
+    def __repr__(self) -> str:
+        return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
+
+    def with_name(self: P, name: str) -> P:
+        """Sets a name and return the current instrumentation (for chaining)
+        """
+        self._name = name
+        return self
 
     # %% Constraint management
 
