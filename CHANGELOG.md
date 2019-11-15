@@ -15,6 +15,7 @@
 - Cleaner installation.
 - New simplified `Log` variable for log-distributed scalars.
 - Cheap constraints can now be provided through the `Instrumentation`
+- Added preliminary multiobjective function support (may be buggy for the time being)
 - New callback for dumping parameters and loss, and loading them back easily for display (display yet to come).
 
 ## v0.2.2

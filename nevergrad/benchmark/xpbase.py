@@ -8,7 +8,7 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Any, Optional, Iterator, Tuple, Type, Callable
+from typing import Dict, Union, Any, Optional, Iterator, Type, Callable, Tuple
 import torch
 import numpy as np
 from ..common import decorators
