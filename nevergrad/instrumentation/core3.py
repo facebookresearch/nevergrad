@@ -12,6 +12,7 @@ class NotSupportedError(RuntimeError):
     """
 
 
+# pylint: disable=too-many-instance-attributes
 class Parameter:
 
     def __init__(self, **subparameters: Any) -> None:
@@ -21,6 +22,29 @@ class Parameter:
         self._dimension: Optional[int] = None
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
         self._constraint_checker: Optional[Callable[[Any], bool]] = None
+        self._name: Optional[str] = None
+
+    def _get_name(self) -> str:
+        return self.__class__.__name__
+
+    @property
+    def name(self) -> str:
+        if self._name is not None:
+            return self._name
+        subparams = sorted((k, p.name) for k, p in self.subparameters.value.items())
+        substr = ""
+        if subparams:
+            subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
+        return f"{self._get_name()}" + substr
+
+    def __repr__(self) -> str:
+        return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
+
+    def with_name(self: P, name: str) -> P:
+        """Sets a name and return the current instrumentation (for chaining)
+        """
+        self._name = name
+        return self
 
     @property
     def value(self) -> Any:
@@ -107,6 +131,11 @@ class ParametersDict(Parameter):
         super().__init__()
         self._parameters = parameters
         self._sizes: Optional[Dict[str, int]] = None
+
+    def _get_name(self) -> str:
+        params = sorted((k, p.name) for k, p in self._parameters.items())
+        paramsstr = "{" + ",".join(f"{k}={n}" for k, n in params) + "}"
+        return f"{self.__class__.__name__}{paramsstr}"
 
     @property
     def value(self) -> Dict[str, Any]:

@@ -18,3 +18,8 @@ def test_array_basics() -> None:
     with pytest.raises(TypeError):
         var1.value = 4  # type: ignore
     var1.value = np.array([2])
+    representation = repr(d)
+    assert "ParametersDict{var1" in representation
+    d.with_name("blublu")
+    representation = repr(d)
+    assert "blublu:{'var1" in representation
