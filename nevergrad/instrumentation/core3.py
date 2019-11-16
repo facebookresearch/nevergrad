@@ -116,6 +116,10 @@ class Parameter(BaseParameter):
             subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
         return f"{self._get_name()}" + substr
 
+    @name.setter
+    def name(self, name: str) -> None:
+        self.with_name(name)  # with_name allows chaining
+
     def __repr__(self) -> str:
         return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
 

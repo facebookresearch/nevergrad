@@ -31,6 +31,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     child = param.spawn_child()
     child.mutate()
+    assert child.name == param.name
     assert child.compute_data_hash() != param.compute_data_hash()
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
