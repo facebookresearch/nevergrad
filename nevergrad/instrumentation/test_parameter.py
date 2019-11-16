@@ -26,8 +26,7 @@ def test_array_basics() -> None:
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.Array(2, 2),  # type: ignore
-                                   par.ParametersDict(blublu=par.Array((2, 3)), truc=12)])
+@pytest.mark.parametrize("param", [par.Array(2, 2), ])  # type: ignore par.ParametersDict(blublu=par.Array((2, 3)), truc=12)])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None
@@ -42,9 +41,11 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert child.compute_data_hash() != param.compute_data_hash()
     param.value = child.value
     assert param.compute_value_hash() == child.compute_value_hash()
+    param.recombine(child, child)
     # constraints
     param.register_cheap_constraint(lambda x: False)
     child2 = param.spawn_child()
     assert child.complies_with_constraint()
     assert not param.complies_with_constraint()
     assert not child2.complies_with_constraint()
+    # TODO assert to and from std data returns the same data

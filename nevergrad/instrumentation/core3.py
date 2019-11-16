@@ -244,7 +244,7 @@ class ParametersDict(Parameter):
 
     def recombine(self, *others: "ParametersDict") -> None:
         for k, param in self._parameters.items():
-            param.recombine([o._parameters[k] for o in others])
+            param.recombine(*[o._parameters[k] for o in others])
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()

@@ -17,9 +17,15 @@ class Array(Parameter):
         distribution of the data ("linear" or "log")
     """
 
-    def __init__(self, shape: Tuple[int, ...], sigma: Union[float, "Array"] = 1.0, distribution: Union[str, Parameter] = "linear") -> None:
+    def __init__(
+            self,
+            shape: Tuple[int, ...],
+            sigma: Union[float, "Array"] = 1.0,
+            distribution: Union[str, Parameter] = "linear",
+            recombination: Union[str, Parameter] = "average"
+    ) -> None:
         assert not isinstance(shape, Parameter)
-        super().__init__(shape=shape, sigma=sigma, distribution=distribution)
+        super().__init__(shape=shape, sigma=sigma, distribution=distribution, recombination=recombination)
         self._value: np.ndarray = np.zeros(shape)
 
     @property
@@ -38,10 +44,20 @@ class Array(Parameter):
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         self._value = data.reshape(self.value.shape)
 
-    def to_std_data(self) -> np.ndarray:
-        return self._value.ravel()
-
     def spawn_child(self) -> "Array":
         child = super().spawn_child()
         child._value = self.value
         return child
+
+    def to_std_data(self) -> np.ndarray:
+        sigma = self._get_parameter_value("sigma")
+        reduced = self._value / sigma
+        return reduced.ravel()  # type: ignore
+
+    def recombine(self, *others: "Array") -> None:
+        recomb = self._get_parameter_value("recombination")
+        all_p = [self] + list(others)
+        if recomb == "average":
+            self.with_std_data(np.mean([p.to_std_data() for p in all_p], axis=0))
+        else:
+            raise ValueError(f'Unknown recombination "{recomb}"')
