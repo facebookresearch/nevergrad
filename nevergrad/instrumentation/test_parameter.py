@@ -6,7 +6,7 @@ from . import parameter as par
 
 def test_array_basics() -> None:
     var1 = par.Array(1)
-    var2 = par.Array(2, 2)
+    var2 = par.Array((2, 2))
     d = par.ParametersDict(var1=var1, var2=var2, var3=12)
     data = d.to_std_data()
     assert data.size == 5

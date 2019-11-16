@@ -34,7 +34,10 @@ class BaseParameter:
         raise NotImplementedError
 
     def spawn_child(self: BP) -> BP:
-        raise NotImplementedError
+        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._parameters.items()}
+        child = self.__class__(**inputs)
+        child.parents_uids.append(self.uid)
+        return child
 
     @property
     def subparameters(self) -> "ParametersDict":
@@ -42,6 +45,10 @@ class BaseParameter:
             self._subparameters = ParametersDict()
         assert self._subparameters is not None
         return self._subparameters
+
+    def _get_parameter_value(self, name: str) -> Any:
+        param = self.subparameters._parameters[name]
+        return param.value if isinstance(param, Parameter) else param
 
     @property
     def dimension(self) -> int:
@@ -226,7 +233,7 @@ class ParametersDict(Parameter):
             param.recombine([o._parameters[k] for o in others])
 
     def spawn_child(self) -> "ParametersDict":
-        child = ParametersDict(**{k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()})
+        child = self.__class__(**{k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()})
         child.parents_uids.append(self.uid)
         return child
 

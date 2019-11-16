@@ -1,3 +1,4 @@
+from typing import Union, Tuple
 import numpy as np
 # importing ParametersDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
@@ -7,11 +8,19 @@ from .core3 import ParametersDict as ParametersDict  # noqa
 
 class Array(Parameter):
     """Array variable of a given shape, on which several transforms can be applied.
+
+    Parameters
+    ----------
+    sigma: float or Array
+        standard deviation of a mutation
+    distribution: str
+        distribution of the data ("linear" or "log")
     """
 
-    def __init__(self, *dims: int) -> None:
-        super().__init__()
-        self._value: np.ndarray = np.zeros(dims)
+    def __init__(self, shape: Tuple[int, ...], sigma: Union[float, "Array"] = 1.0, distribution: Union[str, Parameter] = "linear") -> None:
+        assert not isinstance(shape, Parameter)
+        super().__init__(shape=shape, sigma=sigma, distribution=distribution)
+        self._value: np.ndarray = np.zeros(shape)
 
     @property
     def value(self) -> np.ndarray:
@@ -33,7 +42,6 @@ class Array(Parameter):
         return self._value.ravel()
 
     def spawn_child(self) -> "Array":
-        child = Array(*self.value.shape)
+        child = super().spawn_child()
         child._value = self.value
-        child.parents_uids.append(self.uid)
         return child
