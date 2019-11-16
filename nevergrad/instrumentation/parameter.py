@@ -1,4 +1,4 @@
-from typing import Union, Tuple, Any, List
+from typing import Union, Tuple, Any, List, Optional
 import numpy as np
 # importing ParametersDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
@@ -86,3 +86,18 @@ class ParametersList(ParametersDict):
                 self._parameters[key] = val
             else:
                 param.value = val
+
+
+class Choice(Array):
+
+    def __init__(
+            self,
+            values: List[Any],
+            recombination: Union[str, Parameter] = "average",
+            deterministic: bool = False,
+    ) -> None:
+        super().__init__(shape=(len(values),), recombination=recombination)
+        self._deterministic = deterministic
+        self._choices = values
+        self._index: Optional[int] = None
+        # Work In Progress
