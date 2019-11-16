@@ -129,12 +129,12 @@ class Parameter(BaseParameter):
 
     @name.setter
     def name(self, name: str) -> None:
-        self.with_name(name)  # with_name allows chaining
+        self.set_name(name)  # with_name allows chaining
 
     def __repr__(self) -> str:
         return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
 
-    def with_name(self: P, name: str) -> P:
+    def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
         """
         self._name = name
@@ -244,7 +244,8 @@ class ParametersDict(Parameter):
 
     def recombine(self, *others: "ParametersDict") -> None:
         for k, param in self._parameters.items():
-            param.recombine(*[o._parameters[k] for o in others])
+            if isinstance(param, Parameter):
+                param.recombine(*[o._parameters[k] for o in others])
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()

@@ -21,12 +21,13 @@ def test_array_basics() -> None:
     var1.value = np.array([2])
     representation = repr(d)
     assert "ParametersDict{var1" in representation
-    d.with_name("blublu")
+    d.set_name("blublu")
     representation = repr(d)
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.Array(2, 2), ])  # type: ignore par.ParametersDict(blublu=par.Array((2, 3)), truc=12)])
+@pytest.mark.parametrize("param", [par.Array(2, 2),  # type: ignore
+                                   par.ParametersDict(blublu=par.Array((2, 3)), truc=12)])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None
@@ -48,4 +49,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert child.complies_with_constraint()
     assert not param.complies_with_constraint()
     assert not child2.complies_with_constraint()
-    # TODO assert to and from std data returns the same data
+    # array to and from with hash
+    data_hash = param.compute_data_hash()
+    param.with_std_data(param.to_std_data())
+    assert data_hash == param.compute_data_hash()

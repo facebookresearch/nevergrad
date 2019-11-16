@@ -42,7 +42,8 @@ class Array(Parameter):
 
     # pylint: disable=unused-argument
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
-        self._value = data.reshape(self.value.shape)
+        sigma = self._get_parameter_value("sigma")
+        self._value = (sigma * data).reshape(self.value.shape)
 
     def spawn_child(self) -> "Array":
         child = super().spawn_child()
