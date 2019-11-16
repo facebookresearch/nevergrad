@@ -222,7 +222,10 @@ class ParametersDict(Parameter):
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
-        return np.concatenate([data[k] for k in self._sizes])  # type: ignore
+        data_list = [data[k] for k in self._sizes]
+        if not data_list:
+            return np.array([])
+        return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         if self._sizes is None:

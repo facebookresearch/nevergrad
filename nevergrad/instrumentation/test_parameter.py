@@ -26,8 +26,17 @@ def test_array_basics() -> None:
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.Array(2, 2),  # type: ignore
-                                   par.ParametersDict(blublu=par.Array((2, 3)), truc=12)])
+@pytest.mark.parametrize("param", [par.ParametersDict(truc=12),  # type: ignore
+                                   par.ParametersList(), ])
+def test_empty_parameters(param: Parameter) -> None:
+    assert not param.dimension
+    assert not param.compute_data_hash()
+    assert not param.compute_value_hash()
+
+
+@pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
+                                   par.ParametersDict(blublu=par.Array((2, 3)), truc=12),
+                                   par.ParametersList(par.Array((2, 3)), 12), ])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None

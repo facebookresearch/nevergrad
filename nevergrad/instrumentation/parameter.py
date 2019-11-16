@@ -1,4 +1,4 @@
-from typing import Union, Tuple
+from typing import Union, Tuple, Any, List
 import numpy as np
 # importing ParametersDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
@@ -62,3 +62,27 @@ class Array(Parameter):
             self.with_std_data(np.mean([p.to_std_data() for p in all_p], axis=0))
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
+
+
+class ParametersList(ParametersDict):
+    """Handle for facilitating dict of parameters management
+    """
+
+    def __init__(self, *parameters: Any) -> None:
+        super().__init__(**{str(k): p for k, p in enumerate(parameters)})
+
+    @property  # type: ignore
+    def value(self) -> List[Any]:  # type: ignore
+        param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
+        return [p.value if isinstance(p, Parameter) else p for p in param_val]
+
+    @value.setter
+    def value(self, value: List[Any]) -> None:
+        assert isinstance(value, list)
+        for k, val in enumerate(value):
+            key = str(k)
+            param = self._parameters[key]
+            if not isinstance(param, Parameter):
+                self._parameters[key] = val
+            else:
+                param.value = val
