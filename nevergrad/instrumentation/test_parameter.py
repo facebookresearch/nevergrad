@@ -26,7 +26,8 @@ def test_array_basics() -> None:
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.Array(2, 2)])  # type: ignore
+@pytest.mark.parametrize("param", [par.Array(2, 2),
+                                   par.ParametersDict(blublu=par.Array(2, 3), truc=12)])  # type: ignore
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     child = param.spawn_child()

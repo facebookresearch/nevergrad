@@ -1,6 +1,6 @@
 import uuid
 from collections import OrderedDict
-from typing import TypeVar, List, Optional, Dict, Any, Callable, Union
+from typing import TypeVar, List, Optional, Dict, Any, Callable, Union, Tuple
 import numpy as np
 
 
@@ -91,14 +91,14 @@ class Parameter(BaseParameter):
         self._constraint_checker: Optional[Callable[[Any], bool]] = None
         self._name: Optional[str] = None
 
-    def compute_value_hash(self) -> Union[str, bytes, float, int]:
+    def compute_value_hash(self) -> Any:
         val = self.value
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
             return val.tobytes()
         else:
-            raise NotSupportedError("Value hash is not supported for object {self.name}")
+            raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def compute_data_hash(self) -> Union[str, bytes, float, int]:
         return self.to_std_data().tobytes()
@@ -184,7 +184,17 @@ class ParametersDict(Parameter):
 
     @value.setter
     def value(self, value: Dict[str, Any]) -> None:
-        raise NotSupportedError
+        if set(value) != set(self._parameters):
+            raise ValueError(f"Got input keys {set(value)} but expected {set(self._parameters)}")
+        for key, val in value.items():
+            param = self._parameters[key]
+            if isinstance(param, Parameter):
+                param.value = val
+            else:
+                self._parameters[key] = val
+
+    def compute_value_hash(self) -> Tuple[Tuple[str, Any], ...]:
+        return tuple(sorted((x, y.compute_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
 
     def to_std_data(self) -> np.ndarray:
         data = {k: p.to_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}
@@ -216,7 +226,7 @@ class ParametersDict(Parameter):
             param.recombine([o._parameters[k] for o in others])
 
     def spawn_child(self) -> "ParametersDict":
-        child = ParametersDict(**{k: v.spawn_child() for k, v in self._parameters.items()})
+        child = ParametersDict(**{k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()})
         child.parents_uids.append(self.uid)
         return child
 
