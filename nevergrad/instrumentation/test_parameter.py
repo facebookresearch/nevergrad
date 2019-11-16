@@ -35,5 +35,5 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
     assert child.compute_data_hash() != param.compute_data_hash()
-    param.with_value(child.value)
+    param.value = child.value
     assert param.compute_value_hash() == child.compute_value_hash()

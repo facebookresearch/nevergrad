@@ -17,13 +17,15 @@ class Array(Parameter):
     def value(self) -> np.ndarray:
         return self._value
 
-    def with_value(self, value: np.ndarray) -> None:
+    @value.setter
+    def value(self, value: np.ndarray) -> None:
         if not isinstance(value, np.ndarray):
             raise TypeError(f"Received a {type(value)} in place of a np.ndarray")
         if self._value.shape != value.shape:
             raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
         self._value = value
 
+    # pylint: disable=unused-argument
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         self._value = data.reshape(self.value.shape)
 

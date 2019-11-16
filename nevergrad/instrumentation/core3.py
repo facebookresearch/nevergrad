@@ -29,6 +29,10 @@ class BaseParameter:
     def value(self) -> Any:
         raise NotImplementedError
 
+    @value.setter
+    def value(self, value: Any) -> Any:
+        raise NotImplementedError
+
     def spawn_child(self: BP) -> BP:
         raise NotImplementedError
 
@@ -67,12 +71,9 @@ class BaseParameter:
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def with_value(self, value: Any) -> None:
-        raise NotSupportedError(f"Inplace value changes are not implemented for {self.name}")  # type: ignore
-
     def from_value(self: BP, value: Any) -> BP:
         child = self.spawn_child()
-        child.with_value(value)
+        child.value = value
         return child
 
 
@@ -176,6 +177,10 @@ class ParametersDict(Parameter):
     @property
     def value(self) -> Dict[str, Any]:
         return {k: p.value if isinstance(p, Parameter) else p for k, p in self._parameters.items()}
+
+    @value.setter
+    def value(self, value: Dict[str, Any]) -> None:
+        raise NotSupportedError
 
     def to_std_data(self) -> np.ndarray:
         data = {k: p.to_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}
