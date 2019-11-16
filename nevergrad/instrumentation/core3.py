@@ -43,6 +43,7 @@ class BaseParameter:
     @property
     def subparameters(self) -> "ParametersDict":
         if self._subparameters is None:  # delayed instantiation to avoid infinte loop
+            assert self.__class__ != ParametersDict, "subparameters of Parameters dict should never be called"
             self._subparameters = ParametersDict()
         assert self._subparameters is not None
         return self._subparameters
@@ -192,10 +193,6 @@ class ParametersDict(Parameter):
         super().__init__()
         self._parameters = parameters
         self._sizes: Optional[Dict[str, int]] = None
-
-    @property
-    def subparameters(self) -> "ParametersDict":
-        raise RuntimeError("This should not be called")
 
     def _get_name(self) -> str:
         params = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self._parameters.items())
