@@ -5,7 +5,7 @@ from . import parameter as par
 
 
 def test_array_basics() -> None:
-    var1 = par.Array(1)
+    var1 = par.Array((1,))
     var2 = par.Array((2, 2))
     d = par.ParametersDict(var1=var1, var2=var2, var3=12)
     data = d.to_std_data()
@@ -26,13 +26,16 @@ def test_array_basics() -> None:
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.Array(2, 2),
-                                   par.ParametersDict(blublu=par.Array(2, 3), truc=12)])  # type: ignore
+@pytest.mark.parametrize("param", [par.Array(2, 2),  # type: ignore
+                                   par.ParametersDict(blublu=par.Array((2, 3)), truc=12)])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
+    assert param._random_state is None
     child = param.spawn_child()
+    assert param._random_state is not None
     child.mutate()
     assert child.name == param.name
+    assert child.random_state is param.random_state
     assert child.compute_data_hash() != param.compute_data_hash()
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]

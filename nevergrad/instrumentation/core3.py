@@ -6,6 +6,7 @@ import numpy as np
 
 BP = TypeVar("BP", bound="BaseParameter")
 P = TypeVar("P", bound="Parameter")
+D = TypeVar("D", bound="ParametersDict")
 
 
 class NotSupportedError(RuntimeError):
@@ -62,7 +63,8 @@ class BaseParameter:
     def mutate(self) -> None:
         self.subparameters.mutate()
         data = self.to_std_data()  # pylint: disable=assignment-from-no-return
-        self.with_std_data(data + np.random.normal(size=data.shape))
+        # let's assume the random state is already there (next class)
+        self.with_std_data(data + self.random_state.normal(size=data.shape))  # type: ignore
 
     def sample(self: BP) -> BP:
         child = self.spawn_child()
@@ -117,10 +119,11 @@ class Parameter(BaseParameter):
     def name(self) -> str:
         if self._name is not None:
             return self._name
-        subparams = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self.subparameters.value.items())
         substr = ""
-        if subparams:
-            subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
+        if self._subparameters is not None:
+            subparams = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self.subparameters.value.items())
+            if subparams:
+                subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
         return f"{self._get_name()}" + substr
 
     @name.setter
@@ -157,7 +160,7 @@ class Parameter(BaseParameter):
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
             seed = np.random.randint(2 ** 32, dtype=np.uint32)
-            self.random_state = np.random.RandomState(seed)
+            self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
         return self._random_state
 
@@ -168,7 +171,17 @@ class Parameter(BaseParameter):
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
         if self._subparameters is not None:
-            self.subparameters.random_state = random_state
+            self.subparameters._set_random_state(random_state)
+
+    def spawn_child(self: P) -> P:
+        rng = self.random_state  # make sure to create one before spawning
+        child = self._internal_spawn_child()
+        child._set_random_state(rng)
+        # TODO  constraints
+        return child
+
+    def _internal_spawn_child(self: P) -> P:
+        return super().spawn_child()
 
 
 class ParametersDict(Parameter):
@@ -179,6 +192,10 @@ class ParametersDict(Parameter):
         super().__init__()
         self._parameters = parameters
         self._sizes: Optional[Dict[str, int]] = None
+
+    @property
+    def subparameters(self) -> "ParametersDict":
+        raise RuntimeError("This should not be called")
 
     def _get_name(self) -> str:
         params = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self._parameters.items())
@@ -232,15 +249,17 @@ class ParametersDict(Parameter):
         for k, param in self._parameters.items():
             param.recombine([o._parameters[k] for o in others])
 
-    def spawn_child(self) -> "ParametersDict":
-        child = self.__class__(**{k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()})
+    def _internal_spawn_child(self: D) -> D:
+        child = self.__class__()
+        child._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()}
         child.parents_uids.append(self.uid)
         return child
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
-        self._random_state = random_state
+        super()._set_random_state(random_state)
         for param in self._parameters.values():
-            param.random_state = random_state
+            if isinstance(param, Parameter):
+                param._set_random_state(random_state)
 
     def complies_with_constraint(self) -> bool:
         compliant = super().complies_with_constraint()
