@@ -1,6 +1,8 @@
 import numpy as np
-# pylint: disable=unused-import
-from .core3 import Parameter, ParametersDict  # noqa
+# importing ParametersDict to populate parameters (fake renaming for mypy explicit reimport)
+# pylint: disable=unused-import,useless-import-alias
+from .core3 import Parameter
+from .core3 import ParametersDict as ParametersDict  # noqa
 
 
 class Array(Parameter):
@@ -22,6 +24,9 @@ class Array(Parameter):
         if self._value.shape != new_value.shape:
             raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {new_value.shape}")
         self._value = new_value
+
+    def with_value(self, value: np.ndarray) -> None:
+        self._value = value
 
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         self._value = data.reshape(self.value.shape)

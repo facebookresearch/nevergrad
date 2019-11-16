@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from . import parameter as param
+from .core3 import Parameter
+from . import parameter as par
 
 
 def test_array_basics() -> None:
-    var1 = param.Array(1)
-    var2 = param.Array(2, 2)
-    d = param.ParametersDict(var1=var1, var2=var2, var3=12)
+    var1 = par.Array(1)
+    var2 = par.Array(2, 2)
+    d = par.ParametersDict(var1=var1, var2=var2, var3=12)
     data = d.to_std_data()
     assert data.size == 5
     d.with_std_data(np.array([1, 2, 3, 4, 5]))
@@ -23,3 +24,16 @@ def test_array_basics() -> None:
     d.with_name("blublu")
     representation = repr(d)
     assert "blublu:{'var1" in representation
+
+
+@pytest.mark.parametrize("param", [par.Array(2, 2)])  # type: ignore
+def test_parameters_basic_features(param: Parameter) -> None:
+    assert isinstance(param.name, str)
+    child = param.spawn_child()
+    child.mutate()
+    assert child.compute_data_hash() != param.compute_data_hash()
+    assert child.uid != param.uid
+    assert child.parents_uids == [param.uid]
+    assert child.compute_data_hash() != param.compute_data_hash()
+    param.with_value(child.value)
+    assert param.compute_value_hash() == child.compute_value_hash()

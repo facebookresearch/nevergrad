@@ -1,6 +1,6 @@
 import uuid
 from collections import OrderedDict
-from typing import TypeVar, List, Optional, Dict, Any, Callable
+from typing import TypeVar, List, Optional, Dict, Any, Callable, Union
 import numpy as np
 
 
@@ -27,6 +27,9 @@ class BaseParameter:
 
     @property
     def value(self) -> Any:
+        raise NotImplementedError
+
+    def spawn_child(self: BP) -> BP:
         raise NotImplementedError
 
     @property
@@ -56,20 +59,20 @@ class BaseParameter:
         return child
 
     def recombine(self: BP, *others: BP) -> None:
-        raise NotSupportedError
+        raise NotSupportedError(f"Recombination is not implemented for {self.name}")  # type: ignore
 
     def to_std_data(self) -> np.ndarray:
-        raise NotSupportedError
+        raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
 
     def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
-        raise NotSupportedError
+        raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def spawn_child(self: BP) -> BP:
-        raise NotImplementedError
+    def with_value(self, value: Any) -> None:
+        raise NotSupportedError(f"Inplace value changes are not implemented for {self.name}")  # type: ignore
 
     def from_value(self: BP, value: Any) -> BP:
         child = self.spawn_child()
-        child.value = value  # type: ignore
+        child.with_value(value)
         return child
 
 
@@ -78,7 +81,7 @@ class Parameter(BaseParameter):
     """This provides the core functionality of a parameter, aka
     value, subparameters, mutation, recombination
     and adds some additional features such as shared random state,
-    constraint check and naming.
+    constraint check, hashes and naming.
     """
 
     def __init__(self, **subparameters: Any) -> None:
@@ -86,6 +89,18 @@ class Parameter(BaseParameter):
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
         self._constraint_checker: Optional[Callable[[Any], bool]] = None
         self._name: Optional[str] = None
+
+    def compute_value_hash(self) -> Union[str, bytes, float, int]:
+        val = self.value
+        if isinstance(val, (str, bytes, float, int)):
+            return val
+        elif isinstance(val, np.ndarray):
+            return val.tobytes()
+        else:
+            raise NotSupportedError("Value hash is not supported for object {self.name}")
+
+    def compute_data_hash(self) -> Union[str, bytes, float, int]:
+        return self.to_std_data().tobytes()
 
     def _get_name(self) -> str:
         return self.__class__.__name__
