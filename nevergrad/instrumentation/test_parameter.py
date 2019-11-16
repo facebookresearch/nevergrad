@@ -42,3 +42,9 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert child.compute_data_hash() != param.compute_data_hash()
     param.value = child.value
     assert param.compute_value_hash() == child.compute_value_hash()
+    # constraints
+    param.register_cheap_constraint(lambda x: False)
+    child2 = param.spawn_child()
+    assert child.complies_with_constraint()
+    assert not param.complies_with_constraint()
+    assert not child2.complies_with_constraint()

@@ -98,7 +98,7 @@ class Parameter(BaseParameter):
     def __init__(self, **subparameters: Any) -> None:
         super().__init__(**subparameters)
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
-        self._constraint_checker: Optional[Callable[[Any], bool]] = None
+        self._constraint_checkers: List[Callable[[Any], bool]] = []
         self._name: Optional[str] = None
 
     def compute_value_hash(self) -> Any:
@@ -143,13 +143,13 @@ class Parameter(BaseParameter):
     # %% Constraint management
 
     def complies_with_constraint(self) -> bool:
-        if self._constraint_checker is None:
+        if not self._constraint_checkers:
             return True
-        else:
-            return self._constraint_checker(self.value)
+        val = self.value
+        return all(func(val) for func in self._constraint_checkers)
 
-    def set_cheap_constraint_checker(self, func: Callable[[Any], bool]) -> None:
-        self._constraint_checker = func
+    def register_cheap_constraint(self, func: Callable[[Any], bool]) -> None:
+        self._constraint_checkers.append(func)
 
     # %% random state
 
@@ -178,7 +178,7 @@ class Parameter(BaseParameter):
         rng = self.random_state  # make sure to create one before spawning
         child = self._internal_spawn_child()
         child._set_random_state(rng)
-        # TODO  constraints
+        child._constraint_checkers = list(self._constraint_checkers)
         return child
 
     def _internal_spawn_child(self: P) -> P:
@@ -260,4 +260,4 @@ class ParametersDict(Parameter):
 
     def complies_with_constraint(self) -> bool:
         compliant = super().complies_with_constraint()
-        return compliant and all(param.complies_to_constraint() for param in self._parameters.values())
+        return compliant and all(param.complies_with_constraint() for param in self._parameters.values() if isinstance(param, Parameter))
