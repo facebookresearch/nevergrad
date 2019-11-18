@@ -130,7 +130,7 @@ class PowerSystem(inst.InstrumentedFunction):
     def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
         # Number of stocks (dams).
         self.N = 1. * num_stocks
-        N = self.N
+        N = int(self.N)
         # Parameters describing the problem.
         self.year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
         self.constant_to_year_ratio = 1.
