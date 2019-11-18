@@ -436,7 +436,7 @@ class PackedFunctions(MultiobjectiveFunction):
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "CMA", "BO", "LhsBO", "SQP", "RSQP"]
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
