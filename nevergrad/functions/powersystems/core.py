@@ -124,7 +124,7 @@ class PowerSystem(inst.InstrumentedFunction):
             hydro_prod_per_time_step += hydro_prod
         return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
 
-    def __init__(self, num_stocks: int = 13, depth: int = 6, width: int = 3) -> None:
+    def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
         dam_managers: List[Any] = []
         # Number of stocks (dams).
         self.N = num_stocks
