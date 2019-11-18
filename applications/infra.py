@@ -63,8 +63,8 @@ class Agent():
 dam_managers = []
 
 # Parameters describing the problem.
-year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
-constant_to_year_ratio = N * 1.
+year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
+constant_to_year_ratio = 1.
 back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
 consumption_noise = 0.1
 num_thermal_plants = 7

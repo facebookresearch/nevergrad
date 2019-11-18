@@ -17,42 +17,12 @@ from ...instrumentation.core import Variable
 from ...instrumentation.multivariables import Instrumentation
 pi = np.pi
 
-#optimizer = ng.optimizers.OnePlusOne(instrumentation=instrumentation, budget=500)
-#
-#losses = []
-#for i in range(optim_steps):
-#    candidate = optimizer.ask()
-#    v, hydro_prod, hydro_prod_per_ts, consumption_per_ts = simulate_power_system(candidate.data)
-#    losses += [min(v, min([float("Inf")] + losses))]
-#    optimizer.tell(candidate, v)
-#
-#ax = plt.subplot(1, 2, 1)
-#ax.set_xlabel('iteration number')
-#ax.plot(losses, label='losses') 
-#ax = plt.subplot(1, 2, 2)
-#ax.plot(np.linspace(0,1,len(consumption_per_ts)), consumption_per_ts, label='consumption')
-#ax.plot(np.linspace(0,1,len(hydro_prod_per_ts)), hydro_prod_per_ts, label='hydro')
-#for i in range(N):
-#    hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
-#    ax.plot(np.linspace(0,1,len(hydro_ts)), hydro_ts, label='dam ' + str(i) + ' prod')
-#ax.set_xlabel('time step')
-#ax.set_ylabel('production per ts')
-#ax.legend() #(l1, l2))
-#plt.show()
-#plt.savefig("ps.png")
-#plt.waitforbuttonpress()
-#recommendation = optimizer.recommend()  #minimize(square)
-#print(recommendation)  # optimal args and kwargs
 
-
-
-
-
-# Real life is more complicated! This is a very simple model.
 class Agent():
     """An agent has an input size, an output size, a number of layers, a width of its internal layers 
     (a.k.a number of neurons per hidden layer)."""
-    def __init__(self, input_size, output_size, layers=2, layer_width=20):
+
+    def __init__(self, input_size: int, output_size: int, layers: int=3, layer_width: int=14):
         assert(layers >= 2)
         self.input_size = input_size
         self.output_size = output_size
@@ -81,6 +51,7 @@ class Agent():
         return np.matmul(output, self.layers[-1])
 
 
+# Real life is more complicated! This is a very simple model.
 class PowerSystem(inst.InstrumentedFunction):
     """
     Parameters
@@ -159,8 +130,8 @@ class PowerSystem(inst.InstrumentedFunction):
         self.N = num_stocks
         N = self.N
         # Parameters describing the problem.
-        self.year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
-        self.constant_to_year_ratio = N * 1.
+        self.year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
+        self.constant_to_year_ratio = 1.
         self.back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
         self.consumption_noise = 0.1
         self.num_thermal_plants = 7
