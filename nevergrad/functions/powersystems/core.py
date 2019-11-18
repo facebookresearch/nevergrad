@@ -144,7 +144,7 @@ class PowerSystem(inst.InstrumentedFunction):
         self.thermal_power_prices = [c for c in list(np.random.rand(int(self.num_thermal_plants)))]
         dam_managers: List[Any] = []
         for i in range(N):
-            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
+            dam_managers += [Agent(10 + N + 2*int(self.num_thermal_plants), depth, width)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
