@@ -32,10 +32,10 @@ class Agent():
         self.input_size = input_size
         self.output_size = output_size
         self.layers = []
-        self.layers += [np.random.rand(input_size, layer_width)]
+        self.layers += [np.random.rand(int(input_size), int(layer_width))]
         for i in range(layers-2):
-            self.layers += [np.random.rand(layer_width, layer_width)]
-        self.layers += [np.random.rand(layer_width, output_size)]
+            self.layers += [np.random.rand(int(layer_width), int(layer_width))]
+        self.layers += [np.random.rand(int(layer_width), int(output_size))]
         assert len(self.layers) == layers
 
     def GetParamNumbers(self):
