@@ -148,5 +148,5 @@ class PowerSystem(inst.InstrumentedFunction):
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
-        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
+        self._descriptors.update(num_stocks=float(num_stocks), depth=float(depth), width=float(width))
 
