@@ -127,15 +127,15 @@ class PowerSystem(inst.InstrumentedFunction):
     def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
         dam_managers: List[Any] = []
         # Number of stocks (dams).
-        self.N = num_stocks
+        self.N = 1. * num_stocks
         N = self.N
         # Parameters describing the problem.
         self.year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
         self.constant_to_year_ratio = 1.
         self.back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
         self.consumption_noise = 0.1
-        self.num_thermal_plants = 7
-        self.number_of_years = 1
+        self.num_thermal_plants = 7.
+        self.number_of_years = 1.
         
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
