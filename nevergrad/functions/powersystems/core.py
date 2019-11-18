@@ -62,8 +62,11 @@ class PowerSystem(inst.InstrumentedFunction):
     """
 
     def _simulate_power_system(self, input_x: np.ndarray):
+        dam_managers: List[Any] = []
+        N = int(self.N)
+        for i in range(N):
+            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
         x = list(input_x)
-        dam_managers = self.dam_managers
         for a in dam_managers:
             assert(len(x) >= a.GetParamNumbers())
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
@@ -124,8 +127,7 @@ class PowerSystem(inst.InstrumentedFunction):
             hydro_prod_per_time_step += hydro_prod
         return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
 
-    def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
-        dam_managers: List[Any] = []
+    def __init__(self, num_stocks: float = 13, depth: float = 3, width: float = 3) -> None:
         # Number of stocks (dams).
         self.N = 1. * num_stocks
         N = self.N
@@ -140,6 +142,7 @@ class PowerSystem(inst.InstrumentedFunction):
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
         self.thermal_power_prices = [c for c in list(np.random.rand(self.num_thermal_plants))]
+        dam_managers: List[Any] = []
         for i in range(N):
             dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
