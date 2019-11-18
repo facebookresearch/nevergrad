@@ -56,7 +56,7 @@ class PowerSystem(inst.InstrumentedFunction):
     """
     Parameters
     ----------
-    num_stocks: number of stocks to be managed
+    nint intaum_stocks: number of stocks to be managed
     depth: number of layers in the neural networks
     width: number of neurons per hidden layer
     """
@@ -127,7 +127,7 @@ class PowerSystem(inst.InstrumentedFunction):
             hydro_prod_per_time_step += hydro_prod
         return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
 
-    def __init__(self, num_stocks: float = 13, depth: float = 3, width: float = 3) -> None:
+    def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
         # Number of stocks (dams).
         self.N = 1. * num_stocks
         N = self.N
@@ -148,5 +148,5 @@ class PowerSystem(inst.InstrumentedFunction):
         dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
-        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
+        #self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
 
