@@ -81,28 +81,6 @@ class Agent():
         return np.matmul(output, self.layers[-1])
 
 
-
-
-class PowerSystemVariable(Variable):
-
-    def __init__(self, num_stocks:int, depth: int, width: int) -> None:  #, dimension: int) -> None:
-        
-        # Simple instrumentation: just the number of params.
-        super().__init__()
-        #self.num_stocks = num_stocks
-        #self.depth = depth
-        #self.width = width
-        #self._specs.update(dimension=dimension)
-
-    # pylint: disable=unused-argument
-    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
-        #assert len(data) == self.dimension
-        return (data), {}
-
-    def __repr__(self) -> str:
-        return "PowerSystems" #+ str(self.num_stocks) + "stocks_" + str(self.depth) + "layers_" + str(self.width) + "neurons"
-
-
 class PowerSystem(inst.InstrumentedFunction):
     """
     Parameters
@@ -136,9 +114,12 @@ class PowerSystem(inst.InstrumentedFunction):
             for i in range(N):
                 stocks[i] += 0.5*(1.+np.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
             # Consumption model.
-            base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio*1. 
+            base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio 
                     +0.5*self.year_to_day_ratio*(1.+np.cos(2*pi*t/(24*365))) + 0.5*(1.+np.cos(2*pi*t/24)))
-            consumption = max(0., consumption + self.consumption_noise*np.random.rand() + self.back_to_normal * (base_consumption - consumption))
+            if t == 0:
+                consumption = base_consumption
+            else:
+                consumption = max(0., consumption + self.consumption_noise*(np.random.rand()-.5) + self.back_to_normal * (base_consumption - consumption))
             consumption_per_time_step += [consumption]
             # Water usage.
             needed = consumption
@@ -166,21 +147,22 @@ class PowerSystem(inst.InstrumentedFunction):
                 else:
                     cost += production * price[i]
                 needed -= production
+            # Cost in case of failures -- this is
+            # harming industries and hospitals.
             cost += 500. * needed
             hydro_prod_per_time_step += hydro_prod
         return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
-        #super().__init__(self._simulate_power_system, PowerSystemVariable(num_stocks, depth, width)) 
 
-    def __init__(self, num_stocks: int = 3, depth: int = 3, width: int = 3) -> None:
+    def __init__(self, num_stocks: int = 13, depth: int = 6, width: int = 3) -> None:
         dam_managers: List[Any] = []
         # Number of stocks (dams).
         self.N = num_stocks
         N = self.N
         # Parameters describing the problem.
         self.year_to_day_ratio = 2. * N  # Ratio between variation of consumption in the year and variation of consumption in the day
-        self.constant_to_year_ratio = N * 2.
-        self.back_to_normal = 0.03  # How much of the gap with normal is cancelled at each iteration.
-        self.consumption_noise = 1.
+        self.constant_to_year_ratio = N * 1.
+        self.back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
+        self.consumption_noise = 0.1
         self.num_thermal_plants = 7
         self.number_of_years = 1
         
