@@ -27,10 +27,10 @@ class Agent():
         self.input_size = input_size
         self.output_size = output_size
         self.layers = []
-        self.layers += [np.random.rand(input_size, layer_width)]
+        self.layers += [np.random.rand(int(input_size), int(layer_width))]
         for i in range(layers-2):
-            self.layers += [np.random.rand(layer_width, layer_width)]
-        self.layers += [np.random.rand(layer_width, output_size)]
+            self.layers += [np.random.rand(int(layer_width), int(layer_width))]
+        self.layers += [np.random.rand(int(layer_width), int(output_size))]
         assert len(self.layers) == layers
 
     def GetParamNumbers(self):
@@ -62,17 +62,18 @@ class PowerSystem(inst.InstrumentedFunction):
     """
 
     def _simulate_power_system(self, input_x: np.ndarray):
-        dam_managers: List[Any] = []
-        N = int(self.N)
-        for i in range(N):
-            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
+        #dam_managers: List[Any] = []
+        #N = int(self.N)
+        #for i in range(N):
+        #    dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
+        dam_managers = self.dam_managers
         x = list(input_x)
         for a in dam_managers:
             assert(len(x) >= a.GetParamNumbers())
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
             x = x[a.GetParamNumbers():]
         assert(len(x) == 0)
-        N = self.N
+        N = int(self.N)
         # Assume empty initial stocks.
         stocks = [0.] * N   
         # Nonsense delays.
@@ -82,7 +83,7 @@ class PowerSystem(inst.InstrumentedFunction):
         consumption = 0.
         hydro_prod_per_time_step: List[float] = []
         consumption_per_time_step: List[float] = []
-        for t in range(365*24*self.number_of_years):
+        for t in range(int(365*24*self.number_of_years)):
     
             # Rain
             for i in range(N):
