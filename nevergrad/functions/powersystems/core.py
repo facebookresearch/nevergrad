@@ -96,7 +96,7 @@ class PowerSystem(inst.InstrumentedFunction):
             needed = consumption
     
             # Setting inputs for all agents.
-            base_x = [np.cos(t/24.), np.sin(t/24.), np.cos(t/(365*24)), np.sin(t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+            base_x = [np.cos(2*pi*t/24.), np.sin(2*pi*t/24.), np.cos(2*pi*t/(365*24)), np.sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
             x = list(base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks)
     
             # Prices as a decomposition tool!

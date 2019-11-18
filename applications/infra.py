@@ -110,7 +110,7 @@ def simulate_power_system(input_x):
         needed = consumption
 
         # Setting inputs for all agents.
-        base_x = [np.cos(t/24.), np.sin(t/24.), np.cos(t/(365.*24)), np.sin(t/(365.*24)), needed, average_consumption, year_to_day_ratio, constant_to_year_ratio, back_to_normal, consumption_noise]
+        base_x = [np.cos(2*pi*t/24.), np.sin(2*pi*t/24.), np.cos(2*pi*t/(365.*24)), np.sin(2*pi*t/(365.*24)), needed, average_consumption, year_to_day_ratio, constant_to_year_ratio, back_to_normal, consumption_noise]
         x = base_x + thermal_power_capacity + thermal_power_prices + stocks
 
         # Prices as a decomposition tool!
