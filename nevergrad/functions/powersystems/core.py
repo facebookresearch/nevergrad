@@ -145,8 +145,8 @@ class PowerSystem(inst.InstrumentedFunction):
         dam_managers: List[Any] = []
         for i in range(N):
             dam_managers += [Agent(10 + N + 2*int(self.num_thermal_plants), depth, width)]
-        dimension = sum([a.GetParamNumbers() for a in dam_managers])
+        the_dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
-        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(dimension)))
+        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(the_dimension)))
         self._descriptors.update(num_stocks=float(num_stocks), depth=float(depth), width=float(width))
 
