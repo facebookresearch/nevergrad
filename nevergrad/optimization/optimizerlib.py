@@ -767,7 +767,7 @@ class SPSA(base.Optimizer):
 class Splitter(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 10) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.num_optims = num_optims
         self.optims: List[Any] = []
@@ -777,7 +777,8 @@ class Splitter(base.Optimizer):
             self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             assert len(self.num_vars) > 0
             assert self.num_vars[-1] >= 0
-            self.instrumentations += inst.variables.Array(self.num_vars[-1]).affined(1, 0)#.asscalar(float)
+            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[-1]).affined(1, 0))]
+            #self.optims += [CMA(instrumentation, budget, num_workers)]  # noqa: F405
             self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
