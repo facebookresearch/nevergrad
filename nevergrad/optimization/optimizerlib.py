@@ -767,7 +767,7 @@ class SPSA(base.Optimizer):
 class Splitter(base.Optimizer):
     """Combines optimizers, each of them working on their own variables."""
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 1) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 3) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if num_optims > self.dimension:
             self.num_optims = self.dimension
