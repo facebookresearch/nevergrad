@@ -775,7 +775,7 @@ class Splitter(base.Optimizer):
         self.instrumentations: List[Any] = []
         for i in range(self.num_optims):
             self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
-            self.instrumentations[i] = inst.var.Array(self.num_vars[-1]).Gaussian(0., 1.)
+            self.instrumentations[i] = inst.var.Array(self.num_vars[-1]).asscalar(float)
             self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
