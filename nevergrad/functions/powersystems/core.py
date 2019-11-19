@@ -27,10 +27,10 @@ class Agent():
         self.input_size = input_size
         self.output_size = output_size
         self.layers = []
-        self.layers += [np.random.rand(int(input_size), int(layer_width))]
+        self.layers += [np.random.rand(input_size, layer_width)]
         for i in range(layers-2):
-            self.layers += [np.random.rand(int(layer_width), int(layer_width))]
-        self.layers += [np.random.rand(int(layer_width), int(output_size))]
+            self.layers += [np.random.rand(layer_width, layer_width)]
+        self.layers += [np.random.rand(layer_width, output_size)]
         assert len(self.layers) == layers
 
     def GetParamNumbers(self):
@@ -130,24 +130,24 @@ class PowerSystem(inst.InstrumentedFunction):
 
     def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
         # Number of stocks (dams).
-        self.N = 1. * num_stocks
-        N = int(self.N)
+        self.N = num_stocks
+        N = self.N
         # Parameters describing the problem.
         self.year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
         self.constant_to_year_ratio = 1.
         self.back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
         self.consumption_noise = 0.1
-        self.num_thermal_plants = 7.
-        self.number_of_years = 1.
+        self.num_thermal_plants = 7
+        self.number_of_years = 1
         
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
-        self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(int(self.num_thermal_plants)))]
-        self.thermal_power_prices = [c for c in list(np.random.rand(int(self.num_thermal_plants)))]
+        self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
+        self.thermal_power_prices = [c for c in list(np.random.rand(self.num_thermal_plants))]
         dam_managers: List[Any] = []
         for i in range(N):
-            dam_managers += [Agent(10 + N + 2*int(self.num_thermal_plants), depth, width)]
+            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, depth, width)]
         the_dimension = sum([a.GetParamNumbers() for a in dam_managers])
         self.dam_managers = dam_managers
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(the_dimension)))
-        self._descriptors.update(num_stocks=float(num_stocks), depth=float(depth), width=float(width))
+        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
 
