@@ -12,7 +12,7 @@ from bayes_opt import BayesianOptimization
 from ..common.typetools import ArrayLike
 from ..functions import MultiobjectiveFunction
 from ..instrumentation import transforms
-import ..instrumentation as inst
+from .. import instrumentation as inst
 from ..instrumentation import Instrumentation
 from . import utils
 from . import base
