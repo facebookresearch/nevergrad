@@ -12,6 +12,7 @@ from bayes_opt import BayesianOptimization
 from ..common.typetools import ArrayLike
 from ..functions import MultiobjectiveFunction
 from ..instrumentation import transforms
+import ..instrumentation as inst
 from ..instrumentation import Instrumentation
 from . import utils
 from . import base
@@ -773,7 +774,7 @@ class Splitter(base.Optimizer):
         self.num_vars: List[Any] = []
         self.instrumentations: List[Any] = []
         for i in range(self.num_optims):
-            self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_options > i)]
+            self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             self.instrumentations[i] = inst.var.Array(self.num_vars[-1]).Gaussian(0., 1.)
             self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
