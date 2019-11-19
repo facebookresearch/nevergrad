@@ -26,7 +26,7 @@ class Agent():
         assert(layers >= 2)
         self.input_size = input_size
         self.output_size = output_size
-        self.layers = []
+        self.layers: List[Any] = []
         self.layers += [np.random.rand(input_size, layer_width)]
         for i in range(layers-2):
             self.layers += [np.random.rand(layer_width, layer_width)]
@@ -62,10 +62,6 @@ class PowerSystem(inst.InstrumentedFunction):
     """
 
     def _simulate_power_system(self, input_x: np.ndarray):
-        #dam_managers: List[Any] = []
-        #N = int(self.N)
-        #for i in range(N):
-        #    dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, 1)]
         dam_managers = self.dam_managers
         x = list(input_x)
         for a in dam_managers:
