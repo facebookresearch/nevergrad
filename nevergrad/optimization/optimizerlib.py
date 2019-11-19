@@ -763,6 +763,44 @@ class SPSA(base.Optimizer):
 
 
 @registry.register
+class Splitter(base.Optimizer):
+    """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 10) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self.num_optims = num_optims
+        self.optims: List[Any] = []
+        self.num_vars: List[Any] = []
+        self.instrumentations: List[Any] = []
+        for i in range(self.num_optims):
+            self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_options > i)]
+            self.instrumentations[i] = inst.var.Array(self.num_vars[-1]).Gaussian(0., 1.)
+            self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        data: List[Any] = []
+        for opt in self.optims:
+            data += list(opt.ask().data)
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = candidate.data
+        n = 0
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            local_data = list(data)[n:n+self.num_vars[i]]
+            n += self.num_vars[i]
+            local_candidate = opt.create_candidate.from_data(local_data)
+            opt.tell(local_candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
+@registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
