@@ -323,7 +323,9 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = []
     funcs += [PowerSystem()]
+    funcs += [PowerSystem(5)]
     funcs += [PowerSystem(depth=9, width=9)]
+    funcs += [PowerSystem(depth=9, width=9, depth=9)]
 
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
