@@ -765,26 +765,37 @@ class SPSA(base.Optimizer):
 
 @registry.register
 class Splitter(base.Optimizer):
-    """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
+    """Combines optimizers, each of them working on their own variables."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if num_optims > self.dimension:
+            self.num_optims = self.dimension
+            super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.num_optims = num_optims
         self.optims: List[Any] = []
         self.num_vars: List[Any] = []
         self.instrumentations: List[Any] = []
+        self.num_yoyo = 0
         for i in range(self.num_optims):
             self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             assert len(self.num_vars) > 0
             assert self.num_vars[-1] >= 0
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[-1]).affined(1, 0))]
-            #self.optims += [CMA(instrumentation, budget, num_workers)]  # noqa: F405
+            assert len(self.optims) == i
             self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
-        for opt in self.optims:
+        #np.random.seed(1)
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            #print("working with optimizer ", opt, " in dim ", self.num_vars[i])
             data += list(opt.ask().data)
+        #print(data)
+        #print("ask almost over", self.num_yoyo)
+        self.num_yoyo += 1
+        assert len(data) == self.dimension
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -794,7 +805,9 @@ class Splitter(base.Optimizer):
             opt = self.optims[i]
             local_data = list(data)[n:n+self.num_vars[i]]
             n += self.num_vars[i]
+            assert len(local_data) == self.num_vars[i]
             local_candidate = opt.create_candidate.from_data(local_data)
+            #print("telling to optimizer ", opt, " in dim ", self.num_vars[i])
             opt.tell(local_candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
