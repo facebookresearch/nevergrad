@@ -16,6 +16,7 @@ from matplotlib.legend import Legend
 from matplotlib import cm
 from ..common import tools
 from ..common.typetools import PathLike
+from .exporttable import export_table
 
 # pylint: disable=too-many-locals
 
@@ -142,95 +143,53 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     num_rows = 6
 
     for orders in range(max_combsize + 1) if not competencemaps else [2]:
-        # The next line is a shame. Sorry. (TODO(oteytaud): improve this).
-        for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
-            # choice of the cases with values for the fixed variables
-            print("\n# ", fixed)
-            if orders == 2:  # With order 2 we can create a competence map.
-                # print("fixed=", fixed)
-                # print("dfunique(fixed)=", df.unique(fixed))
-                try:
-                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
-                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
-                    best_algo = []  # type: List[List[str]]
-                    for _ in range(len(xindices)):
-                        best_algo += [[]]
-                    for i in range(len(xindices)):
-                        for _ in range(len(yindices)):
-                            best_algo[i] += [str(i)]  # Stupid value, for initialization.
-                    # print("Competence maps:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
-                except:
-                    pass
-                
-            for case in df.unique(fixed) if len(fixed) > 0 else [()]:
-                print("\n# new case #", fixed, case)
-                casedf = df.select(**dict(zip(fixed, case)))
-                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-                fplotter = FightPlotter(data_df)
-                if orders == 2:
-                  try:
-                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
-                  except:
-                    pass
-                # save
-                if not competencemaps:
-                  name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-                  name = "fight_all.png" if name == "fight_.png" else name
-                  fplotter.save(str(output_folder / name), dpi=_DPI)
+      for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
+      #for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
 
-            if orders == 2:  # With order 2 we can create a competence map.
+        # choice of the cases with values for the fixed variables
+        print("\n# ", fixed)
+        if orders == 2:  # With order 2 we can create a competence map.
+            # print("fixed=", fixed)
+            # print("dfunique(fixed)=", df.unique(fixed))
+            try:
+                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                best_algo = []  # type: List[List[str]]
+                for _ in range(len(xindices)):
+                    best_algo += [[]]
+                for i in range(len(xindices)):
+                    for _ in range(len(yindices)):
+                        best_algo[i] += [str(i)]  # Stupid value, for initialization.
+                # print("Competence maps:", len(xindices), len(yindices), len(best_algo), len(best_algo[0]), len(best_algo[1]))
+            except:
+                pass
+                
+        for case in df.unique(fixed) if len(fixed) > 0 else [()]:
+            print("\n# new case #", fixed, case)
+            casedf = df.select(**dict(zip(fixed, case)))
+            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            fplotter = FightPlotter(data_df)
+            if orders == 2:
               try:
-                name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-                def export_table(filename, rows, cols, data):
-                    rows = [str(r) for r in rows]
-                    cols = [str(r) for r in cols]
-                    data = [[d.replace("%", "\%").replace("_", "") for d in datarow] for datarow in data]
-                    try:
-                      data = [[d[:d.index("(")] for d in datarow] for datarow in data]
-                    except:
-                      pass
-                    print("filename=", filename)
-                    print("rows=", rows)
-                    print("cols=", cols)
-                    print("data=", data)
-                    with open(filename, "w") as f:
-                        f.write("\\documentclass{article}\n")
-                        f.write("\\usepackage{lscape}\n")
-                        f.write("\\usepackage{array}\n")
-                        f.write("\\lccode`0=`0\n")
-                        f.write("\\lccode`1=`1\n")
-                        f.write("\\lccode`2=`2\n")
-                        f.write("\\lccode`3=`3\n")
-                        f.write("\\lccode`4=`4\n")
-                        f.write("\\lccode`5=`5\n")
-                        f.write("\\lccode`6=`6\n")
-                        f.write("\\lccode`7=`7\n")
-                        f.write("\\lccode`8=`8\n")
-                        f.write("\\lccode`9=`9\n")
-                        f.write("\\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}\n")
-                        f.write("\\begin{document}\n")
-                        f.write("\\scriptsize\n")
-                        f.write("\\renewcommand{\\arraystretch}{1.5}\n")
-                        f.write("\\sloppy\n")
-                        p = str(1./(2+len(cols)))
-                        # f.write("\\begin{landscape}\n")
-                        f.write("\\begin{tabular}{|P{" + p +"\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n")
-                        f.write("\\hline\n")
-                        f.write(" & " + "&".join(cols) + "\\\\\n")
-                        f.write("\\hline\n")
-                        for i, row in enumerate(rows):
-                            f.write(row + "&" + "&".join([re.sub("[A-Z]", lambda w: " " + w.group(), d) for d in data[i]]) + "\\\\\n")
-                        f.write("\\hline\n")
-                        f.write("\\end{tabular}\n")
-                        # f.write("\\end{landscape}\n")
-                        f.write("\\end{document}\n")
-                export_table(str(output_folder  / name), xindices, yindices, best_algo)
-                print("Competence map data:", fixed, case, best_algo)
+                best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
               except:
                 pass
+            # save
+            if not competencemaps:
+              name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+              name = "fight_all.png" if name == "fight_.png" else name
+              fplotter.save(str(output_folder / name), dpi=_DPI)
+
+        if orders == 2:  # With order 2 we can create a competence map.
+          try:
+            name = "fight_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+
+            export_table(str(output_folder  / name), xindices, yindices, best_algo)
+            print("Competence map data:", fixed, case, best_algo)
+          except:
+            pass
     plt.close("all")
     if not competencemaps:
-      #
       # xp plots
       # plot mean loss / budget for each optimizer for 1 context
       print("# Xp plots")
