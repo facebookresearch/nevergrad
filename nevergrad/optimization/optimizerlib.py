@@ -815,7 +815,7 @@ class Splitter(base.Optimizer):
             if self.num_vars[i] > 1:
                 self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
             else:
-                self.optims += [PSO(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [OnePlusOne(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
         assert sum(self.num_vars) == self.dimension
 
