@@ -801,7 +801,6 @@ class SplitOptimizer(base.Optimizer):
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
         self.instrumentations: List[Any] = []
-        self.num_yoyo = 0
         for i in range(self.num_optims):
             if not self.num_vars or len(self.num_vars) < i+1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
@@ -821,7 +820,6 @@ class SplitOptimizer(base.Optimizer):
         for i in range(self.num_optims):
             opt = self.optims[i]
             data += list(opt.ask().data)
-        self.num_yoyo += 1
         assert len(data) == self.dimension
         return self.create_candidate.from_data(data)
 
