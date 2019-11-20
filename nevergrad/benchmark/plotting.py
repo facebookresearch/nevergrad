@@ -144,11 +144,14 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
 
     # For the competence map case we just consider pairs of attributes, hence 2.
     # A competence map shows for each value of each of two attributes which algorithm was best.
+    if competencemaps:
+        print("\n# Focusing on competence maps.")
     for orders in range(max_combsize + 1) if not competencemaps else [2]:
+        print("\nOrder ", orders)
+        # "fixed" is a list of $orders parameters that will be fixed.
+        # Competence maps are 2-dimensional by nature so we consider orders 2 only for that case.
         for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
-            # choice of the cases with values for the fixed variables
-            print("\n# ", fixed)
-            if orders == 2:  # With order 2 we can create a competence map.
+            if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
                 try:  # Let us try if data are adapted to competence maps.
                 # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                 # (typically when attribute1 and attribute2 are correlated).
@@ -163,45 +166,47 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                 except:
                     pass
                 
-        for case in df.unique(fixed) if len(fixed) > 0 else [()]:
-            print("\n# new case #", fixed, case)
-            casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-            fplotter = FightPlotter(data_df)
-            if orders == 2:
-                try:  # This might be competence maps -- we can store the best algo, if that exists.
-                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+            for case in df.unique(fixed) if len(fixed) > 0 else [()]:
+                print("\n# new case #", fixed, case)
+                casedf = df.select(**dict(zip(fixed, case)))
+                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+                fplotter = FightPlotter(data_df)
+                # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
+                if orders == 2 and competencemaps:
+                    try:  # This might be competence maps -- we can store the best algo, if that exists.
+                        best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+                    except:
+                        pass
+                # save
+                if not competencemaps:  # When we plot competence maps, we plot only competence maps.
+                    name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+                    name = "fight_all.png" if name == "fight_.png" else name
+                    fplotter.save(str(output_folder / name), dpi=_DPI)
+    
+            if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
+                try:
+                    print("# Competence map")
+                    name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+    
+                    export_table(str(output_folder  / name), xindices, yindices, best_algo)
+                    print("Competence map data:", fixed, case, best_algo)
                 except:
                     pass
-            # save
-            if not competencemaps:
-                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-                name = "fight_all.png" if name == "fight_.png" else name
-                fplotter.save(str(output_folder / name), dpi=_DPI)
-
-        if orders == 2:  # With order 2 we can create a competence map.
-          try:
-            name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-
-            export_table(str(output_folder  / name), xindices, yindices, best_algo)
-            print("Competence map data:", fixed, case, best_algo)
-          except:
-            pass
     plt.close("all")
     if not competencemaps:
-      # xp plots
-      # plot mean loss / budget for each optimizer for 1 context
-      print("# Xp plots")
-      name_style = NameStyle()  # keep the same style for each algorithm
-      cases = df.unique(descriptors)
-      for case in cases:
-          subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-          description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-          out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-          data = XpPlotter.make_data(subdf)
-          xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-          xpplotter.save(out_filepath)
-      plt.close("all")
+        # xp plots: for each experimental setup, we plot curves with budget in x-axis.
+        # plot mean loss / budget for each optimizer for 1 context
+        print("# Xp plots")
+        name_style = NameStyle()  # keep the same style for each algorithm
+        cases = df.unique(descriptors)
+        for case in cases:
+            subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+            description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+            out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+            data = XpPlotter.make_data(subdf)
+            xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+            xpplotter.save(out_filepath)
+        plt.close("all")
 
 
 class LegendInfo(NamedTuple):
