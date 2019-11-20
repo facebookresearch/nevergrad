@@ -805,14 +805,15 @@ class Splitter(base.Optimizer):
         self.instrumentations: List[Any] = []
         self.num_yoyo = 0
         for i in range(self.num_optims):
-            if not self.num_vars or len(self.num_vars) < i:
+            if not self.num_vars or len(self.num_vars) < i+1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
+            
             assert len(self.num_vars) > 0
             assert self.num_vars[-1] >= 0
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
             self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
-        assert sum(num_vars) == self.dimension
+        assert sum(self.num_vars) == self.dimension
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
