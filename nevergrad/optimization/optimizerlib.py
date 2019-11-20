@@ -764,18 +764,18 @@ class SPSA(base.Optimizer):
 
 
 @registry.register
-class Splitter(base.Optimizer):
+class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
     
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
 
     E.g. for 5 optimizers, each of them working on 2 variables, we can use:
-    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
     or equivalently:
-    opt = Splitter(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
     Given that all optimizers have the same number of variables, we can also do:
-    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5)
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5)
 
     This is 5 parallel (by num_workers = 5).
 
@@ -783,52 +783,43 @@ class Splitter(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, default_multivariate_optimizer: Any = CMA, default_monovariate_optimizer: Any = RandomSearch) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
-                assert num_optims == len(num_vars)
+                assert num_optims == len(num_vars), f"The number of optimizers should match len(num_vars)."
             else:
                 num_optims = len(num_vars)
-            assert sum(num_vars) == self.dimension
+            assert sum(num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
         else:
-            if not num_optims:  # if no num_vars and no num_optims, just assume 3.
+            if not num_optims:  # if no num_vars and no num_optims, just assume 2.
                 num_optims = 2
             # num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
-            if num_vars:
-                num_vars = num_vars[:num_optims]
         self.num_optims = num_optims
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
         self.instrumentations: List[Any] = []
-        self.num_yoyo = 0
         for i in range(self.num_optims):
             if not self.num_vars or len(self.num_vars) < i+1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             
-            assert len(self.num_vars) > 0
-            assert self.num_vars[-1] >= 0
+            assert self.num_vars[i] >= 0, f"At least one variable per optimizer."
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
-                self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [default_multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
             else:
-                self.optims += [RandomSearch(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [default_monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
-        assert sum(self.num_vars) == self.dimension
+        assert sum(self.num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
-        #np.random.seed(1)
         for i in range(self.num_optims):
             opt = self.optims[i]
-            #print("working with optimizer ", opt, " in dim ", self.num_vars[i])
             data += list(opt.ask().data)
-        #print(data)
-        #print("ask almost over", self.num_yoyo)
-        self.num_yoyo += 1
         assert len(data) == self.dimension
         return self.create_candidate.from_data(data)
 
@@ -841,7 +832,6 @@ class Splitter(base.Optimizer):
             n += self.num_vars[i]
             assert len(local_data) == self.num_vars[i]
             local_candidate = opt.create_candidate.from_data(local_data)
-            #print("telling to optimizer ", opt, " in dim ", self.num_vars[i])
             opt.tell(local_candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -853,32 +843,32 @@ class Splitter(base.Optimizer):
 
 # Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
 @registry.register
-class Splitter3(Splitter):
-    """Same as Splitter, but with default at 3 optimizers.
+class SplitOptimizer3(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 3 optimizers.
     """
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
         
 @registry.register
-class Splitter5(Splitter):
-    """Same as Splitter, but with default at 5 optimizers.
+class SplitOptimizer5(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 5 optimizers.
     """
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
 @registry.register
-class Splitter9(Splitter):
-    """Same as Splitter, but with default at 9 optimizers.
+class SplitOptimizer9(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 9 optimizers.
     """
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
 @registry.register
-class Splitter13(Splitter):
-    """Same as Splitter, but with default at 13 optimizers.
+class SplitOptimizer13(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 13 optimizers.
     """
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
