@@ -793,7 +793,7 @@ class Splitter(base.Optimizer):
             assert sum(num_vars) == self.dimension
         else:
             if not num_optims:  # if no num_vars and no num_optims, just assume 3.
-                num_optims = 3
+                num_optims = 2
             # num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
@@ -815,7 +815,7 @@ class Splitter(base.Optimizer):
             if self.num_vars[i] > 1:
                 self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
             else:
-                self.optims += [OnePlusOne(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [RandomSearch(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
         assert sum(self.num_vars) == self.dimension
 
