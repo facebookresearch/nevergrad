@@ -812,7 +812,11 @@ class Splitter(base.Optimizer):
             assert self.num_vars[-1] >= 0
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
-            self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+            if self.num_vars[i] > 1:
+                self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+            else:
+                self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+
         assert sum(self.num_vars) == self.dimension
 
     def _internal_ask_candidate(self) -> base.Candidate:
