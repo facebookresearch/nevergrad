@@ -61,10 +61,10 @@ class PowerSystem(inst.InstrumentedFunction):
     width: number of neurons per hidden layer
     """
 
-    def get_num_vars(self):
+    def get_num_vars(self) -> int:
         return [m.GetParamNumbers() for m in self.dam_managers]
 
-    def _simulate_power_system(self, input_x: np.ndarray):
+    def _simulate_power_system(self, input_x: np.ndarray) -> None:
         dam_managers = self.dam_managers
         x = list(input_x)
         for a in dam_managers:
