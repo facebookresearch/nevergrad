@@ -851,6 +851,31 @@ class Splitter(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
+# Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
+@registry.register
+class Splitter3(Splitter):
+    """Same as Splitter, but with default at 3 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+        
+@registry.register
+class Splitter5(Splitter):
+    """Same as Splitter, but with default at 5 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class Splitter9(Splitter):
+    """Same as Splitter, but with default at 9 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
 @registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
