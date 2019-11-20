@@ -783,7 +783,7 @@ class Splitter(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
@@ -801,7 +801,7 @@ class Splitter(base.Optimizer):
                 num_vars = num_vars[:num_optims]
         self.num_optims = num_optims
         self.optims: List[Any] = []
-        self.num_vars = num_vars
+        self.num_vars: List[Any] = num_vars if num_vars else []
         self.instrumentations: List[Any] = []
         self.num_yoyo = 0
         for i in range(self.num_optims):
