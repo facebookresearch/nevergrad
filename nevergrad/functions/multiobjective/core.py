@@ -63,11 +63,8 @@ class MultiobjectiveFunction:
             self.pareto_front
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
-                print("we meet ", stored_losses)
                 if (stored_losses <= arr_losses).all():
-                    print("distance = ", min(arr_losses - stored_losses))
                     distance_to_pareto = min(distance_to_pareto, min(arr_losses - stored_losses))
-                    print("now we have ", distance_to_pareto)
             assert distance_to_pareto >= 0
             return -new_volume + distance_to_pareto
 
