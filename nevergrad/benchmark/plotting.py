@@ -145,23 +145,23 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     # For the competence map case we just consider pairs of attributes, hence 2.
     # A competence map shows for each value of each of two attributes which algorithm was best.
     for orders in range(max_combsize + 1) if not competencemaps else [2]:
-      for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
-        # choice of the cases with values for the fixed variables
-        print("\n# ", fixed)
-        if orders == 2:  # With order 2 we can create a competence map.
-            try:  # Let us try if data are adapted to competence maps.
-            # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
-            # (typically when attribute1 and attribute2 are correlated).
-                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
-                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
-                best_algo = []  # type: List[List[str]]
-                for _ in range(len(xindices)):
-                    best_algo += [[]]
-                for i in range(len(xindices)):
-                    for _ in range(len(yindices)):
-                        best_algo[i] += [str(i)]
-            except:
-                pass
+        for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
+            # choice of the cases with values for the fixed variables
+            print("\n# ", fixed)
+            if orders == 2:  # With order 2 we can create a competence map.
+                try:  # Let us try if data are adapted to competence maps.
+                # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
+                # (typically when attribute1 and attribute2 are correlated).
+                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                    best_algo = []  # type: List[List[str]]
+                    for _ in range(len(xindices)):
+                        best_algo += [[]]
+                    for i in range(len(xindices)):
+                        for _ in range(len(yindices)):
+                            best_algo[i] += ["none"]
+                except:
+                    pass
                 
         for case in df.unique(fixed) if len(fixed) > 0 else [()]:
             print("\n# new case #", fixed, case)
