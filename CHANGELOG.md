@@ -2,7 +2,21 @@
 
 ## master
 
-N/A
+### Breaking changes
+
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more changes are coming. This should only impact custom variables.
+- `Candidates` have now a `uid` instead of a `uuid` for compatibility reasons.
+- Update archive `keys/items_as_array` methods to `keys/items_as_arrays` for consistency.
+
+### Other changes
+
+- Benchmark plots now show confidence area (using partially transparent lines).
+- `Chaining` optimizer family enables chaining of algorithms.
+- Cleaner installation.
+- New simplified `Log` variable for log-distributed scalars.
+- Cheap constraints can now be provided through the `Instrumentation`
+- Added preliminary multiobjective function support (may be buggy for the time being)
+- New callback for dumping parameters and loss, and loading them back easily for display (display yet to come).
 
 ## v0.2.2
 

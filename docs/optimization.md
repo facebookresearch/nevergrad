@@ -67,6 +67,28 @@ recommendation = optimizer.provide_recommendation()
 
 Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)
 
+
+## Optimization with constraints
+
+Nevergrad has a mechanism for cheap constraints.
+"Cheap" means that we do not try to reduce the number of calls to such constraints.
+We basically repeat mutations until we get a satisfiable point.
+Let us say that we want to minimize `(x[0]-.5)**2 + (x[1]-.5)**2` under the constraint `x[0] >= 1`.
+```python
+import nevergrad as ng
+
+def square(x):
+    return sum((x - .5)**2)
+
+optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+# define a constraint on first variable of x:
+optimizer.instrumentation.set_cheap_constraint_checker(lambda x: x[0] >= 1)
+
+recommendation = optimizer.minimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([1.00037625, 0.50683314]),), kwargs={})
+```
+
 ## Choosing an optimizer
 
 **You can print the full list of optimizers** with:
@@ -95,6 +117,59 @@ See the [machine learning example](machinelearning.md) for more.
 Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):
 - use `OrderedDiscrete` for discrete variables, taking care that the default value is in the middle.
 - Use `ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
+
+
+## Example of chaining, or inoculation, or initialization of an evolutionary algorithm
+
+Chaining consists in running several algorithms in turn, information being forwarded from the first to the second and so on.
+More precisely, the budget is distributed over several algorithms, and when an objective function value is computed, all algorithms are informed.
+
+Here is how to create such optimizers:
+```python
+# Running LHSSearch with budget num_workers and then DE:
+DEwithLHS = Chaining([LHSSearch, DE], ["num_workers"])
+
+# Runninng LHSSearch with budget the dimension and then DE:
+DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"])
+
+# Runnning LHSSearch with budget 30 and then DE:
+DEwithLHS30 = Chaining([LHSSearch, DE], [30])
+
+# Running LHS for 100 iterations, then DE for 60, then CMA:
+LHSthenDEthenCMA = Chaining([LHSSearch, DE, CMA], [100, 60])
+```
+
+We can then minimize as usual:
+```python
+import nevergrad as ng
+
+def square(x):
+    return sum((x - .5)**2)
+
+optimizer = DEwithLHS30(instrumentation=2, budget=300)
+recommendation = optimizer.minimize(square)
+print(recommendation)  # optimal args and kwargs
+>>> Candidate(args=(array([0.50843113, 0.5104554 ]),), kwargs={})
+```
+
+
+## Multiobjective minimization with Nevergrad
+
+Let us minimize f1 and f2 (two objective functions) assuming that values above 2.5 are of no interest.
+```python
+import nevergrad as ng
+from nevergrad.functions import MultiobjectiveFunction
+import numpy as np
+
+f = MultiobjectiveFunction(multiobjective_function=lambda x: np.sum(x**2) , upper_bounds=[2.5, 2.5])
+print(f(np.array([1.,2.])))
+
+optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.
+recommendation = optimizer.optimize(f)
+
+# The function embeds its Pareto-front:
+print("My Pareto front:", [x[0][0] for x in f.pareto_front])
+```
 
 
 ## Reproducibility

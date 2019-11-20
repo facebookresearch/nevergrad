@@ -71,6 +71,7 @@ class _DE(base.Optimizer):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
         self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])
@@ -120,7 +121,7 @@ class _DE(base.Optimizer):
         particle = self.population.get_queued(remove=True)
         individual = particle.x
         # define donor
-        indiv_a, indiv_b = (self.population[self.population.uuids[self._rng.randint(self.llambda)]].x for _ in range(2))
+        indiv_a, indiv_b = (self.population[self.population.uids[self._rng.randint(self.llambda)]].x for _ in range(2))
         assert indiv_a is not None and indiv_b is not None
         donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))

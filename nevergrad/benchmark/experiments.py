@@ -3,9 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List
+from typing import Iterator, Optional, List, Union, Any
 import nevergrad as ng
+import numpy as np
 from ..functions import ArtificialFunction
+from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
 from ..functions import rl
@@ -17,9 +19,10 @@ from .xpbase import registry
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
-# pylint: disable=stop-iteration-return, too-many-nested-blocks
+# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 # for black (since lists are way too long...):
 # fmt: off
+
 
 # Discrete functions on {0,1}^d.
 @registry.register
@@ -56,6 +59,8 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
+    # Block dimension = dimension of a block on which the function "name" is applied. There are several blocks,
+    # and possibly useless variables; so the total dimension is num_blocks * block_dimension * (1+ uv_factor).
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -264,6 +269,55 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # This experiment contains:
+    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
+    # - The 007 game: 1 function, noisy.
+
+    # MLDA stuff, except the Perceptron.
+    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+    ]
+    funcs += [
+        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+        _mlda.SammonMapping.from_mlda("Employees"),
+    ]
+    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+
+    # Adding ARCoating.
+    funcs += [ARCoating()]
+
+    # 007 with 100 repetitions, both mono and multi architectures.
+    base_env = rl.envs.DoubleOSeven(verbose=False)
+    random_agent = rl.agents.Agent007(base_env)
+    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
+    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
+    for archi in ["mono", "multi"]:
+        agent = agent_mono if archi == "mono" else agent_multi
+        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+        func._descriptors.update(archi=archi)
+        funcs += [func]
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -357,3 +411,45 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                         func._descriptors.update(archi=archi)
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
+
+
+class PackedFunctions(MultiobjectiveFunction):
+
+    def __init__(self, functions: List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
+        self._functions = functions
+        self._upper_bounds = upper_bounds
+        super().__init__(self._mo, upper_bounds)
+
+    def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        return np.array([f(*args, **kwargs) for f in self._functions])
+
+    def to_instrumented(self) -> InstrumentedFunction:  # this is only to insure reproducibility
+        # TODO: hopefully, be able to remove it eventually
+        inst = self._functions[0].instrumentation
+        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds),
+                                     *inst.args, **inst.kwargs)
+        # TODO add descriptors?
+        return instf
+
+
+@registry.register
+def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch"]
+    mofuncs: List[PackedFunctions] = []
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "cigar", "hm"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+                                         ArtificialFunction(name2, block_dimension=7)],
+                                        upper_bounds=np.array((50., 50.)))]
+        for name3 in ["sphere", "ellipsoid"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                         ArtificialFunction(name3, block_dimension=6),
+                                         ArtificialFunction(name2, block_dimension=6)],
+                                        upper_bounds=np.array((100, 100, 1000.)))]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in list(range(100, 2901, 400)):
+                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))

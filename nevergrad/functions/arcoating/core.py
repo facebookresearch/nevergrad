@@ -7,10 +7,11 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 from math import sqrt, tan, pi
-from typing import Union
+from typing import Any
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from ... import instrumentation as inst
+from ...instrumentation.core import Variable
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
@@ -28,22 +29,19 @@ def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float)
     return R
 
 
-class ARCoatingVariable(inst.var.utils.Variable[np.ndarray]):
+class ARCoatingVariable(Variable):
 
     def __init__(self, dimension: int, epmin: float, epf: float) -> None:
-        self._dimension = dimension
+        super().__init__()
         self.epf = epf
         self.epmin = epmin
-
-    @property
-    def dimension(self) -> int:
-        return self._dimension
+        self._specs.update(dimension=dimension)
 
     # pylint: disable=unused-argument
-    def data_to_argument(self, data: ArrayLike, random: Union[bool, np.random.RandomState] = True) -> np.ndarray:
-        return (self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin  # type: ignore
+    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
+        return ((self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin,), {}
 
-    def _short_repr(self) -> str:
+    def __repr__(self) -> str:
         return "ARCoating"
 
 
