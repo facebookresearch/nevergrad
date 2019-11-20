@@ -764,18 +764,18 @@ class SPSA(base.Optimizer):
 
 
 @registry.register
-class Splitter(base.Optimizer):
+class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
     
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
 
     E.g. for 5 optimizers, each of them working on 2 variables, we can use:
-    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
     or equivalently:
-    opt = Splitter(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
     Given that all optimizers have the same number of variables, we can also do:
-    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5)
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5)
 
     This is 5 parallel (by num_workers = 5).
 
@@ -787,18 +787,16 @@ class Splitter(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
-                assert num_optims == len(num_vars)
+                assert num_optims == len(num_vars), f"The number of optimizers should match len(num_vars)."
             else:
                 num_optims = len(num_vars)
-            assert sum(num_vars) == self.dimension
+            assert sum(num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
         else:
-            if not num_optims:  # if no num_vars and no num_optims, just assume 3.
+            if not num_optims:  # if no num_vars and no num_optims, just assume 2.
                 num_optims = 2
             # num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
-            if num_vars:
-                num_vars = num_vars[:num_optims]
         self.num_optims = num_optims
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
@@ -808,8 +806,7 @@ class Splitter(base.Optimizer):
             if not self.num_vars or len(self.num_vars) < i+1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             
-            assert len(self.num_vars) > 0
-            assert self.num_vars[-1] >= 0
+            assert self.num_vars[i] >= 0, f"At least one variable per optimizer."
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
@@ -817,17 +814,13 @@ class Splitter(base.Optimizer):
             else:
                 self.optims += [RandomSearch(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
-        assert sum(self.num_vars) == self.dimension
+        assert sum(self.num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
-        #np.random.seed(1)
         for i in range(self.num_optims):
             opt = self.optims[i]
-            #print("working with optimizer ", opt, " in dim ", self.num_vars[i])
             data += list(opt.ask().data)
-        #print(data)
-        #print("ask almost over", self.num_yoyo)
         self.num_yoyo += 1
         assert len(data) == self.dimension
         return self.create_candidate.from_data(data)
@@ -841,7 +834,6 @@ class Splitter(base.Optimizer):
             n += self.num_vars[i]
             assert len(local_data) == self.num_vars[i]
             local_candidate = opt.create_candidate.from_data(local_data)
-            #print("telling to optimizer ", opt, " in dim ", self.num_vars[i])
             opt.tell(local_candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
