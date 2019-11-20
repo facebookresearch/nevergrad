@@ -801,7 +801,7 @@ class Splitter(base.Optimizer):
                 num_vars = num_vars[:num_optims]
         self.num_optims = num_optims
         self.optims: List[Any] = []
-        self.num_vars = num_vars
+        self.num_vars: List[Any] = num_vars if num_vars else []
         self.instrumentations: List[Any] = []
         self.num_yoyo = 0
         for i in range(self.num_optims):
