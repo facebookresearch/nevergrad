@@ -1,4 +1,4 @@
-# Utils for exporting a data table.
+# Utils for exporting a data table in latex.
 # Used in competence maps.
 
 def remove_parens(data):
