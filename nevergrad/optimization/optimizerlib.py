@@ -783,7 +783,7 @@ class SplitOptimizer(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, default_multivariate_optimizer: Any = CMA, default_monovariate_optimizer: Any = RandomSearch) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
@@ -810,9 +810,9 @@ class SplitOptimizer(base.Optimizer):
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
-                self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [default_multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
             else:
-                self.optims += [RandomSearch(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [default_monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
         assert sum(self.num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
 
