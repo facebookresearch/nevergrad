@@ -161,7 +161,7 @@ import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction
 import numpy as np
 
-f = MultiobjectiveFunction(multiobjective_function=lambda x: [sum(x**2), sum((x-1)**2)], upper_bounds=[2.5, 2.5])
+f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x-1)**2)], upper_bounds=[2.5, 2.5])
 print(f(np.array([1.,2.])))
 
 optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.
