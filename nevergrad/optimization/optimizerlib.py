@@ -778,6 +778,9 @@ class Splitter(base.Optimizer):
     opt = Splitter(instrumentation=10, num_workers=3, num_optims=5)
 
     This is 5 parallel (by num_workers = 5).
+
+    Be careful! The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
@@ -788,6 +791,10 @@ class Splitter(base.Optimizer):
             else:
                 num_optims = len(num_vars)
             assert sum(num_vars) == self.dimension
+        else:
+            if not num_optims:  # if no num_vars and no num_optims, just assume 3.
+                num_optims = 3
+            # num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
             if num_vars:
