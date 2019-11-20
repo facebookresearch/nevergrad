@@ -765,25 +765,47 @@ class SPSA(base.Optimizer):
 
 @registry.register
 class Splitter(base.Optimizer):
-    """Combines optimizers, each of them working on their own variables."""
+    """Combines optimizers, each of them working on their own variables.
+    
+    num_optims: number of optimizers
+    num_vars: number of variable per optimizer.
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = 1) -> None:
+    E.g. for 5 optimizers, each of them working on 2 variables, we can use:
+    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    or equivalently:
+    opt = Splitter(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, we can also do:
+    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5)
+
+    This is 5 parallel (by num_workers = 5).
+    """
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if num_vars:
+            if num_optims:
+                assert num_optims == len(num_vars)
+            else:
+                num_optims = len(num_vars)
+            assert sum(num_vars) == self.dimension
         if num_optims > self.dimension:
-            self.num_optims = self.dimension
-            super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+            num_optims = self.dimension
+            if num_vars:
+                num_vars = num_vars[:num_optims]
         self.num_optims = num_optims
         self.optims: List[Any] = []
-        self.num_vars: List[Any] = []
+        self.num_vars = num_vars
         self.instrumentations: List[Any] = []
         self.num_yoyo = 0
         for i in range(self.num_optims):
-            self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
+            if not self.num_vars or len(self.num_vars) < i:
+                self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             assert len(self.num_vars) > 0
             assert self.num_vars[-1] >= 0
-            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[-1]).affined(1, 0))]
+            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
             self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+        assert sum(num_vars) == self.dimension
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
