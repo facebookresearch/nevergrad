@@ -13,9 +13,15 @@ def export_table(filename, rows, cols, data):
     """Exports data in filename with rows and cols as described.
     More precisely, rows specifies the row names, cols specifies the col names,
     and data[i][j] corresponds to the data in row rows[i] and col cols[j].
+
+    For the application to competence maps,
+    - rows[i] is the ith possible value of the first parameter
+    - cols[j] is the jth possible value of the second parameter
+    - data[i][j] is the best optimizer for parameter1=rows[i] and parameter2=cols[j]
     """
     rows = [str(r) for r in rows]
     cols = [str(r) for r in cols]
+    # Latex syntax.
     data = [[d.replace("%", "\%").replace("_", "") for d in datarow] for datarow in data]
     data = remove_parens(data)
     print("filename=", filename)
@@ -48,9 +54,15 @@ def export_table(filename, rows, cols, data):
         f.write(" & " + "&".join(cols) + "\\\\\n")
         f.write("\\hline\n")
         for i, row in enumerate(rows):
-            f.write(row + "&" + "&".join([re.sub("[A-Z]", lambda w: " " + w.group(), d) for d in data[i]]) + "\\\\\n")
+            print(i, row, len(rows))
+            the_string = row
+            the_string += "&"
+            # We add "&" between cols of data.
+            the_string += "&".join(data[i])
+            the_string += "\\\\\n"
+            f.write(the_string)
         f.write("\\hline\n")
         f.write("\\end{tabular}\n")
         # f.write("\\end{landscape}\n")
         f.write("\\end{document}\n")
-
+    pass
