@@ -877,6 +877,14 @@ class Splitter9(Splitter):
 
 
 @registry.register
+class Splitter13(Splitter):
+    """Same as Splitter, but with default at 13 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 

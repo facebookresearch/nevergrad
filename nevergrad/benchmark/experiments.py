@@ -322,20 +322,23 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = []
-    funcs += [PowerSystem()]
-    funcs += [PowerSystem(depth=5, width=5)]
-    funcs += [PowerSystem(depth=9, width=9)]
+    funcs += [PowerSystem(3)]
+    funcs += [PowerSystem(num_stocks=3, depth=5, width=5)]
+    funcs += [PowerSystem(num_stocks=3, depth=9, width=9)]
     funcs += [PowerSystem(5)]
     funcs += [PowerSystem(num_stocks=5, depth=5, width=5)]
     funcs += [PowerSystem(num_stocks=5, depth=9, width=9)]
     funcs += [PowerSystem(9)]
     funcs += [PowerSystem(num_stocks=9, width=5, depth=5)]
     funcs += [PowerSystem(num_stocks=9, width=9, depth=9)]
+    funcs += [PowerSystem(13)]
+    funcs += [PowerSystem(num_stocks=13, width=5, depth=5)]
+    funcs += [PowerSystem(num_stocks=13, width=9, depth=9)]
 
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "Splitter5", "Splitter9", "Splitter"]
+             "RandomScaleRandomSearch", "MiniDE", "Splitter5", "Splitter9", "Splitter", "Splitter3", "Splitter13"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
