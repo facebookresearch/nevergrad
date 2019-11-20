@@ -12,6 +12,7 @@ from bayes_opt import BayesianOptimization
 from ..common.typetools import ArrayLike
 from ..functions import MultiobjectiveFunction
 from ..instrumentation import transforms
+from .. import instrumentation as inst
 from ..instrumentation import Instrumentation
 from . import utils
 from . import base
@@ -760,6 +761,89 @@ class SPSA(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.avg
+
+
+@registry.register
+class Splitter(base.Optimizer):
+    """Combines optimizers, each of them working on their own variables.
+    
+    num_optims: number of optimizers
+    num_vars: number of variable per optimizer.
+
+    E.g. for 5 optimizers, each of them working on 2 variables, we can use:
+    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    or equivalently:
+    opt = Splitter(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, we can also do:
+    opt = Splitter(instrumentation=10, num_workers=3, num_optims=5)
+
+    This is 5 parallel (by num_workers = 5).
+
+    Be careful! The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
+    """
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims = Optional[int] = None, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if num_vars:
+            if num_optims:
+                assert num_optims == len(num_vars)
+            else:
+                num_optims = len(num_vars)
+            assert sum(num_vars) == self.dimension
+        else:
+            if not num_optims:  # if no num_vars and no num_optims, just assume 3.
+                num_optims = 3
+            # num_vars not given: we will distribute variables equally.
+        if num_optims > self.dimension:
+            num_optims = self.dimension
+            if num_vars:
+                num_vars = num_vars[:num_optims]
+        self.num_optims = num_optims
+        self.optims: List[Any] = []
+        self.num_vars = num_vars
+        self.instrumentations: List[Any] = []
+        self.num_yoyo = 0
+        for i in range(self.num_optims):
+            if not self.num_vars or len(self.num_vars) < i:
+                self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
+            assert len(self.num_vars) > 0
+            assert self.num_vars[-1] >= 0
+            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
+            assert len(self.optims) == i
+            self.optims += [CMA(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+        assert sum(num_vars) == self.dimension
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        data: List[Any] = []
+        #np.random.seed(1)
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            #print("working with optimizer ", opt, " in dim ", self.num_vars[i])
+            data += list(opt.ask().data)
+        #print(data)
+        #print("ask almost over", self.num_yoyo)
+        self.num_yoyo += 1
+        assert len(data) == self.dimension
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = candidate.data
+        n = 0
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            local_data = list(data)[n:n+self.num_vars[i]]
+            n += self.num_vars[i]
+            assert len(local_data) == self.num_vars[i]
+            local_candidate = opt.create_candidate.from_data(local_data)
+            #print("telling to optimizer ", opt, " in dim ", self.num_vars[i])
+            opt.tell(local_candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
 
 
 @registry.register
