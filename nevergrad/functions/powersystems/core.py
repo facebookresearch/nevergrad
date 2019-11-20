@@ -61,6 +61,9 @@ class PowerSystem(inst.InstrumentedFunction):
     width: number of neurons per hidden layer
     """
 
+    def get_num_vars(self):
+        return [m.GetParamNumbers() for m in self.dam_managers]
+
     def _simulate_power_system(self, input_x: np.ndarray):
         dam_managers = self.dam_managers
         x = list(input_x)
@@ -115,6 +118,8 @@ class PowerSystem(inst.InstrumentedFunction):
                 production = min(volume[i], needed)
                 if dam_index[i] >= 0:
                     hydro_prod[dam_index[i]] += production
+                    stocks[dam_index[i]] -= production
+                    assert(stocks[dam_index[i]] >= -1e-7)
                 else:
                     cost += production * price[i]
                 needed -= production

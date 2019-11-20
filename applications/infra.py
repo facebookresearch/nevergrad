@@ -17,10 +17,10 @@ pi = math.pi
 # Agents collaborate for minimizing the total cost.
 
 # Number of stocks (dams).
-N = 13
+N = 7
 
 # Optimization budget.
-optim_steps = 400
+optim_steps = 8
 
 # Real life is more complicated! This is a very simple model.
 
@@ -63,8 +63,9 @@ class Agent():
 dam_managers = []
 
 # Parameters describing the problem.
-year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
+year_to_day_ratio = 1.  # Ratio between variation of consumption in the year and variation of consumption in the day
 constant_to_year_ratio = 1.
+dam_output_factor = 1.0
 back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
 consumption_noise = 0.1
 num_thermal_plants = 7
@@ -92,13 +93,14 @@ def simulate_power_system(input_x):
     cost = 0
     # Loop on time steps.
     consumption=0.
-    hydro_prod_per_time_step = []
+    hydro_prod_per_time_step_and_dam = []
     consumption_per_time_step = []
+    hydro_prod_per_ts = []
     for t in range(365*24*number_of_years):
 
         # Rain
         for i in range(N):
-            stocks[i] += 0.5*(1.+np.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
+            stocks[i] += 0.5*dam_output_factor*(1.+np.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
         # Consumption model.
         base_consumption = (constant_to_year_ratio*year_to_day_ratio  +0.5*year_to_day_ratio*(1.+np.cos(2*pi*t/(24*365))) + 0.5*(1.+np.cos(2*pi*t/24)))
         if t == 0:
@@ -120,21 +122,27 @@ def simulate_power_system(input_x):
         price += thermal_power_prices
         volume += thermal_power_capacity
         dam_index += [-1] * len(price)
-        
         assert(len(price) == N + num_thermal_plants)
         hydro_prod = [0.] * N
+        hydro_prod_per_ts += [0.]
         for i in range(len(price)):
             if needed == 0:
                 break
             production = min(volume[i], needed)
             if dam_index[i] >= 0:
+                stocks[dam_index[i]] -= production
+                assert stocks[dam_index[i]] >= -1e-7
                 hydro_prod[dam_index[i]] += production
+                hydro_prod_per_ts[-1] += production
             else:
                 cost += production * price[i]
             needed -= production
         cost += 500. * needed
-        hydro_prod_per_time_step += hydro_prod
-    return cost, hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
+        hydro_prod_per_time_step_and_dam += hydro_prod
+    assert len(hydro_prod_per_ts) == number_of_years * 365*24
+    assert len(hydro_prod_per_time_step_and_dam) == number_of_years * 365*24 * N
+    assert len(consumption_per_time_step) == number_of_years * 24 * 365
+    return cost, hydro_prod_per_ts, hydro_prod_per_time_step_and_dam, consumption_per_time_step
 
 # Simple instrumentation: just the number of params.
 instrumentation = sum([a.GetParamNumbers() for a in dam_managers])
@@ -143,7 +151,7 @@ optimizer = ng.optimizers.OnePlusOne(instrumentation=instrumentation, budget=500
 losses = []
 for i in range(optim_steps):
     candidate = optimizer.ask()
-    v, hydro_prod, hydro_prod_per_ts, consumption_per_ts = simulate_power_system(candidate.data)
+    v, hydro_prod_per_ts, hydro_prod_per_ts_per_dam, consumption_per_ts = simulate_power_system(candidate.data)
     losses += [min(v, min([float("Inf")] + losses))]
     optimizer.tell(candidate, v)
 
@@ -156,20 +164,41 @@ ax.legend(loc='best')
 # Plot consumption per day and decomposition of production.
 ax = plt.subplot(2, 2, 2)
 def block24(x):
+    assert len(x) % 24 == 0
     result = []
     for i in range(0, len(x), 24):
         result += [sum(x[i:i+24])]
     if len(x) != len(result) * 24:
-        print(len(x), len(result) * 24)
+        print("failure:", len(x), len(result))
+    assert len(x) == len(result) * 24
     return result
 consumption_per_day = block24(consumption_per_ts)
+assert np.abs(sum(consumption_per_day) - sum(consumption_per_ts)) < 0.0001
+assert np.abs(sum(hydro_prod_per_ts_per_dam) - sum(hydro_prod_per_ts)) < 0.0001
+print(len(hydro_prod_per_ts), ' should be divided by 24')
 hydro_prod_per_day = block24(hydro_prod_per_ts)
+assert np.abs(sum(hydro_prod_per_ts_per_dam) - sum(hydro_prod_per_day)) < 0.0001
+assert len(hydro_prod_per_day) == len(consumption_per_day)
+print('daily hydro prod=', hydro_prod_per_day[:5])
+print('daily consumption=', consumption_per_day[:5])
 ax.plot(np.linspace(1,365,len(consumption_per_day)), consumption_per_day, label='consumption')
-ax.plot(np.linspace(1,365,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
-for i in range(min(N, 3)):
-    hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
-    hydro_day = block24(hydro_ts)
-    ax.plot(np.linspace(1,365,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
+if True:
+    ax.plot(np.linspace(1,365,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
+    assert sum(consumption_per_day) >= sum(hydro_prod_per_ts_per_dam)
+    assert len(hydro_prod_per_ts_per_dam) % N == 0
+    assert len(hydro_prod_per_ts_per_dam) % (N * 24) == 0
+    assert len(hydro_prod_per_ts_per_dam) % (N * 24 * 365) == 0
+    assert abs(sum(hydro_prod_per_ts_per_dam) - sum(hydro_prod_per_ts)) < 1e-4
+    assert sum(hydro_prod_per_ts) <= sum(consumption_per_ts)
+    #hydro_ts = [0.] * (len(hydro_prod_per_ts_per_dam) // N)
+    #for j in range(len(hydro_prod_per_ts_per_dam)):
+    #    hydro_ts[j % N] += hydro_prod_per_ts_per_dam[j]
+    for i in range(min(N, 3)):
+        # Let us consider a specific dam
+        hydro_ts = [hydro_prod_per_ts_per_dam[j] for j
+                in range(i, len(hydro_prod_per_ts_per_dam), N)]
+        hydro_day = block24(hydro_ts)
+        ax.plot(np.linspace(1,365,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
 ax.set_xlabel('time step')
 ax.set_ylabel('production per day')
 ax.legend(loc='best')
@@ -179,15 +208,20 @@ ax = plt.subplot(2, 2, 3)
 def deblock24(x):
     result = [0] * 24
     for i in range(0, len(x)):
-        result[i % 24] += x[i] * 24. / len(x)
+        result[i % 24] += x[i]
+    assert len(result) == 24
     return result
         
 consumption_per_hour = deblock24(consumption_per_ts)
+print(consumption_per_hour)
 hydro_prod_per_hour = deblock24(hydro_prod_per_ts)
+print(hydro_prod_per_hour)
+assert len(consumption_per_hour) == 24
 ax.plot(np.linspace(1,24,len(consumption_per_hour)), consumption_per_hour, label='consumption')
 ax.plot(np.linspace(1,24,len(hydro_prod_per_hour)), hydro_prod_per_hour, label='hydro')
+ax.plot(np.linspace(1,24,len(hydro_prod_per_hour)), [a-b for a, b in zip(consumption_per_hour, hydro_prod_per_hour)], label='thermal')
 for i in range(min(N,3)):
-    hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
+    hydro_ts = [hydro_prod_per_ts_per_dam[j] for j in range(i, len(hydro_prod_per_ts), N)]
     hydro_hour = deblock24(hydro_ts)
     ax.plot(np.linspace(1,24,len(hydro_hour)), hydro_hour, label='dam ' + str(i) + ' prod')
 ax.set_xlabel('time step')
