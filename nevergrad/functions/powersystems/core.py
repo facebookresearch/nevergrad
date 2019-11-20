@@ -64,7 +64,7 @@ class PowerSystem(inst.InstrumentedFunction):
     def get_num_vars(self) -> List[Any]:
         return [m.GetParamNumbers() for m in self.dam_managers]
 
-    def _simulate_power_system(self, input_x: np.ndarray) -> Float:
+    def _simulate_power_system(self, input_x: np.ndarray) -> float:
         dam_managers = self.dam_managers
         x = list(input_x)
         for a in dam_managers:
