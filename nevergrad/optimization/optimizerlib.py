@@ -813,7 +813,7 @@ class SplitOptimizer(base.Optimizer):
             else:
                 self.optims += [monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
-        assert sum(self.num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
+        assert sum(self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
