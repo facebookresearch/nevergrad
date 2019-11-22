@@ -393,7 +393,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 
         # Now let us decide the fitness value of winners.
         for i, w in enumerate(winners):
-            self.archive[w.data].add_evaluation(best_fitness_value - len(winners) + i)
+            self.archive[w.data] = Value(best_fitness_value - len(winners) + i)
         
     def ask(self) -> Candidate:
         """Provides a point to explore.
