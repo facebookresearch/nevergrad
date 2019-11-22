@@ -389,11 +389,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         best_fitness_value = 0
         for l in losers:
             if l in self.archive:
-                best_fitness_value = min(best_fitness_value, self.archive[l].get_estimation("average"))
+                best_fitness_value = min(best_fitness_value, self.archive[l.data].get_estimation("average"))
                 
         # Now let us decide the fitness value of winners.
         for i, w in enumerate(winners):
-            self.archive[w].add_evaluation(best_fitness_value - len(winners) + i)
+            self.archive[w.data].add_evaluation(best_fitness_value - len(winners) + i)
         
     def ask(self) -> Candidate:
         """Provides a point to explore.
