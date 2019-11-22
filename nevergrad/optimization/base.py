@@ -381,6 +381,20 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
+    def compare(self, winners: List[Candidate], losers: List[Candidate]) -> None:
+        # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
+        # This is for cases in which we do not know fitness values, we just know comparisons.
+        
+        # Evaluate the best fitness value among losers.
+        best_fitness_value = 0
+        for l in losers:
+            if l in self.archive:
+                best_fitness_value = min(best_fitness_value, self.archive[l].get_estimation("average"))
+                
+        # Now let us decide the fitness value of winners.
+        for i, w in enumerate(winners):
+            self.archive[w].add_evaluation(best_fitness_value - len(winners) + i)
+        
     def ask(self) -> Candidate:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
