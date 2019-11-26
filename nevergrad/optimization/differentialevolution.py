@@ -257,6 +257,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)
+DDE = DifferentialEvolution(crossover="dimension").with_name("DDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
