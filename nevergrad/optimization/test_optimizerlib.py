@@ -160,7 +160,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     np.random.seed(None)
-    if optimizer_cls.recast:
+    if optimizer_cls.recast or "SplitOptimizer" in name:
         np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
