@@ -1217,7 +1217,7 @@ class _Chain(base.Optimizer):
     def _optimizers(self) -> List[base.Optimizer]:
         if not self._optimizers_:
             self._optimizers_ = []
-            conv = {"num_workers": self.num_workers, "dimension": self.dimension}
+            conv = {"num_workers": self.num_workers, "dimension": self.dimension, "sqrt": int(np.sqrt(budget)) if budget else None}
             budgets = [conv[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
             for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
@@ -1265,15 +1265,29 @@ class Chaining(base.ParametrizedFamily):
         self.budgets = tuple(budgets)
         self.optimizers = tuple(optimizers)
         assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("dimension", "num_workers") or x > 0 for x in self.budgets)  # type: ignore
+        assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
 
-DEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("DEwithLHS", register=True)
-DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("DEwithLHSdim", register=True)
-DEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=True)
-PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
+chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("DEwithLHS", register=True)
+chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("DEwithLHSsqrt", register=True)
+chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("DEwithLHSdim", register=True)
+chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=True)
 
+chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("BOwithLHS30", register=True)
+chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("BOwithLHSsqrt", register=True)
+chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("BOwithLHSdim", register=True)
+chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).with_name("BOwithLHS", register=True)
+
+chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
+chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("PSOwithLHSsqrt", register=True)
+chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("PSOwithLHSdim", register=True)
+chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("PSOwithLHS", register=True)
+
+chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("CMAwithLHS30", register=True)
+chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("CMAwithLHSsqrt", register=True)
+chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("CMAwithLHSdim", register=True)
+chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("CMAwithLHS", register=True)
 
 @registry.register
 class cGA(base.Optimizer):
