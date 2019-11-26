@@ -1217,7 +1217,7 @@ class _Chain(base.Optimizer):
     def _optimizers(self) -> List[base.Optimizer]:
         if not self._optimizers_:
             self._optimizers_ = []
-            conv = {"num_workers": self.num_workers, "dimension": self.dimension, "sqrt": int(np.sqrt(budget)) if budget else None}
+            conv = {"num_workers": self.num_workers, "dimension": self.dimension, "sqrt": int(np.sqrt(self.budget)) if self.budget else None}
             budgets = [conv[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
             for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
