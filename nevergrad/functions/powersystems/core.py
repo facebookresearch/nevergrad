@@ -85,7 +85,7 @@ class PowerSystem(inst.InstrumentedFunction):
         
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
-        self.thermal_power_prices = list(np.random.rand(num_thermal_plants)
+        self.thermal_power_prices = np.random.rand(num_thermal_plants)
         dam_managers: List[Any] = []
         for i in range(N):
             dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, depth, width)]
@@ -112,10 +112,11 @@ class PowerSystem(inst.InstrumentedFunction):
         delay = [math.cos(i) for i in range(N)]
         cost = 0.
         # Loop on time steps.
+        num_time_steps = int(365*24*self.number_of_years)
         consumption = 0.
-        hydro_prod_per_time_step: List[float] = []
+        hydro_prod_per_time_step: List[Any] = []
         consumption_per_time_step: List[float] = []
-        for t in range(int(365*24*self.number_of_years)):
+        for t in range(num_time_steps)
     
             # Rain
             for i in range(N):
@@ -145,24 +146,35 @@ class PowerSystem(inst.InstrumentedFunction):
             
             assert(len(price) == N + self.num_thermal_plants)
             hydro_prod: List[float] = [0.] * N
+
+            # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])
             price = [price[i] for i in order]
             volume = [volume[i] for i in order]
             dam_index = [dam_index[i] for i in order]
+
+            # Using power plants in their cost order, so that we use cheap power plants first.
             for i in range(len(price)):
-                if needed == 0:
+                if needed <= 0:
                     break
                 production = min(volume[i], needed)
+                # If this is a dam, producing will reduce the stock.
                 if dam_index[i] >= 0:
-                    hydro_prod[dam_index[i]] += production
+                    hydro_prod[dam_index[i]] += production  # Let us log the hydro prod for this dam.
                     stocks[dam_index[i]] -= production
                     assert(stocks[dam_index[i]] >= -1e-7)
                 else:
+                    # If this is not a dam, we pay for using thermal plants.
                     cost += production * price[i]
                 needed -= production
             # Cost in case of failures -- this is
-            # harming industries and hospitals.
+            # harming industries and hospitals, so it can be penalized.
             cost += failure_cost * needed
-            hydro_prod_per_time_step += hydro_prod
-        return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
+            hydro_prod_per_time_step += [hydro_prod]
+        # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
+        assert len(hydro_prod_per_time_step) == num_time_steps  # Each time steps has 1 value per dam.
+        assert len(consumption_per_time_step) == num_time_steps
+        self.hydro_prod_per_time_step = hydro_prod_per_time_step
+        self.consumption_per_time_step = consumption_per_time_step
+        return cost  
 
