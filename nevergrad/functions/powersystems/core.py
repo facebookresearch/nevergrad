@@ -134,18 +134,18 @@ class PowerSystem(inst.InstrumentedFunction):
     
             # Setting inputs for all agents.
             base_x = [math.cos(2*pi*t/24.), math.sin(2*pi*t/24.), math.cos(2*pi*t/(365*24)), math.sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
-            x = base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks
+            x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
     
             # Prices as a decomposition tool!
-            price: List[float] = [a.GetOutput(np.array(x))[0][0] for a in dam_managers]
-            volume: List[float] = [s for s in stocks]
-            dam_index: List[int] = list(range(len(price)))
-            price += self.thermal_power_prices
-            volume += self.thermal_power_capacity
-            dam_index += [-1] * len(price)
+            price: Array = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_managers])
+            volume: Array = np.asarray([s for s in stocks])
+            dam_index: Array = np.asarray(range(N))
+            price = np.concatenate((price, self.thermal_power_prices))
+            volume = np.concatenate((volume, self.thermal_power_capacity))
+            dam_index = np.concatenate((dam_index, [-1] * len(price)))
             
             assert(len(price) == N + self.num_thermal_plants)
-            hydro_prod: List[float] = [0.] * N
+            hydro_prod: Array = np.zeros(N)
 
             # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])
