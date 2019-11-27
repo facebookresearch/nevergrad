@@ -134,7 +134,7 @@ class PowerSystem(inst.InstrumentedFunction):
     
             # Setting inputs for all agents.
             base_x = [math.cos(2*pi*t/24.), math.sin(2*pi*t/24.), math.cos(2*pi*t/(365*24)), math.sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
-            x = list(base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks)
+            x = base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks
     
             # Prices as a decomposition tool!
             price: List[float] = [a.GetOutput(np.array(x))[0][0] for a in dam_managers]
