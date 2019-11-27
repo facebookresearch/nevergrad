@@ -115,6 +115,20 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
     np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
 
 
+def test_compare(tmp_path: Path) -> None:
+    optimizer = optimizerlib.CMA(instrumentation=3, budget=1000, num_workers=5)
+    optimizerlib.addCompare(optimizer)
+    for i in range(1000):
+        x = []
+        for j in range(6):
+            x += [optimizer.ask()]
+        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data-np.array((1.,1.,1.))))
+        optimizer.compare(winners[:3], winners[3:])
+    result = optimizer.provide_recommendation()
+    print(result)
+    np.testing.assert_almost_equal(result.data[0], 1., decimal=2)
+
+
 class StupidFamily(base.OptimizerFamily):
 
     def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
