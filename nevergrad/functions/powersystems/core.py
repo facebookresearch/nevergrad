@@ -28,10 +28,10 @@ class Agent():
         self.input_size = input_size
         self.output_size = output_size
         self.layers: List[Any] = []
-        self.layers += [np.random.rand(input_size, layer_width)]
+        self.layers += [np.zeros(input_size, layer_width)]
         for i in range(layers-2):
-            self.layers += [np.random.rand(layer_width, layer_width)]
-        self.layers += [np.random.rand(layer_width, output_size)]
+            self.layers += [np.zeros(layer_width, layer_width)]
+        self.layers += [np.zeros(layer_width, output_size)]
         assert len(self.layers) == layers
 
     def GetParamNumbers(self):
@@ -62,11 +62,43 @@ class PowerSystem(inst.InstrumentedFunction):
     width: number of neurons per hidden layer
     """
 
+    def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3, 
+            year_to_day_ratio: float = 2.,  # Ratio between std of consumption in the year and std of consumption in the day.
+            constant_to_year_ratio: float = 1.,  # Ratio between constant baseline consumption and std of consumption in the year.
+            back_to_normal: float = 0.5,  # Part of the variability which is forgotten at each time step.
+            consumption_noise: float = 0.1,  # Instantaneous variability.
+            num_thermal_plants: int = 7,  # Number of thermal plants.
+            num_years: int = 1,  # Number of years.
+            failure_cost: float = 500.,  # Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
+            ) -> None:
+        # Number of stocks (dams).
+        self.N = num_stocks
+        N = self.N
+        # Parameters describing the problem.
+        self.year_to_day_ratio = year_to_day_ratio
+        self.constant_to_year_ratio = constant_to_year
+        self.back_to_normal = back_to_normal
+        self.consumption_noise = consumption_noise
+        self.num_thermal_plants = num_thermal_plants
+        self.number_of_years = num_years 
+        self.failure_cost = failure_cost
+        
+        self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
+        self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
+        self.thermal_power_prices = list(np.random.rand(num_thermal_plants)
+        dam_managers: List[Any] = []
+        for i in range(N):
+            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, depth, width)]
+        the_dimension = sum([a.GetParamNumbers() for a in dam_managers])
+        self.dam_managers = dam_managers
+        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(the_dimension)))
+        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
+
     def get_num_vars(self) -> List[Any]:
         return [m.GetParamNumbers() for m in self.dam_managers]
 
     def _simulate_power_system(self, x: np.ndarray) -> float:
-        failure_cost = 500.  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
+        failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_managers = self.dam_managers
         for a in dam_managers:
             assert(len(x) >= a.GetParamNumbers())
@@ -133,27 +165,4 @@ class PowerSystem(inst.InstrumentedFunction):
             cost += failure_cost * needed
             hydro_prod_per_time_step += hydro_prod
         return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
-
-    def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3) -> None:
-        # Number of stocks (dams).
-        self.N = num_stocks
-        N = self.N
-        # Parameters describing the problem.
-        self.year_to_day_ratio = 2.  # Ratio between variation of consumption in the year and variation of consumption in the day
-        self.constant_to_year_ratio = 1.
-        self.back_to_normal = 0.5  # How much of the gap with normal is cancelled at each iteration.
-        self.consumption_noise = 0.1
-        self.num_thermal_plants = 7
-        self.number_of_years = 1
-        
-        self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
-        self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
-        self.thermal_power_prices = list(np.random.rand(num_thermal_plants)
-        dam_managers: List[Any] = []
-        for i in range(N):
-            dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, depth, width)]
-        the_dimension = sum([a.GetParamNumbers() for a in dam_managers])
-        self.dam_managers = dam_managers
-        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(the_dimension)))
-        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
 
