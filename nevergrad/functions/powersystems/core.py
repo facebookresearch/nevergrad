@@ -138,15 +138,15 @@ class PowerSystem(inst.InstrumentedFunction):
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
     
             # Prices as a decomposition tool!
-            price: Array = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_managers])
-            volume: Array = np.asarray([s for s in stocks])
-            dam_index: Array = np.asarray(range(N))
+            price: np.ndarray = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_managers])
+            volume: np.ndarray = np.asarray([s for s in stocks])
+            dam_index: np.ndarray = np.asarray(range(N))
             price = np.concatenate((price, self.thermal_power_prices))
             volume = np.concatenate((volume, self.thermal_power_capacity))
             dam_index = np.concatenate((dam_index, [-1] * len(price)))
             
             assert(len(price) == N + self.num_thermal_plants)
-            hydro_prod: Array = np.zeros(N)
+            hydro_prod: np.ndarray = np.zeros(N)
 
             # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])
