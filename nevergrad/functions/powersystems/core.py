@@ -116,7 +116,7 @@ class PowerSystem(inst.InstrumentedFunction):
         consumption = 0.
         hydro_prod_per_time_step: List[Any] = []
         consumption_per_time_step: List[float] = []
-        for t in range(num_time_steps)
+        for t in range(num_time_steps):
     
             # Rain
             for i in range(N):
