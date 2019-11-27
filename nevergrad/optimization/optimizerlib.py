@@ -783,14 +783,14 @@ class SplitOptimizer(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, default_multivariate_optimizer: Any = CMA, default_monovariate_optimizer: Any = RandomSearch) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, multivariate_optimizer: base.OptimizerFamily = CMA, monovariate_optimizer: base.OptimizerFamily = RandomSearch) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
-                assert num_optims == len(num_vars), f"The number of optimizers should match len(num_vars)."
+                assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
             else:
                 num_optims = len(num_vars)
-            assert sum(num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
+            assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
         else:
             if not num_optims:  # if no num_vars and no num_optims, just assume 2.
                 num_optims = 2
@@ -805,15 +805,16 @@ class SplitOptimizer(base.Optimizer):
             if not self.num_vars or len(self.num_vars) < i+1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             
-            assert self.num_vars[i] >= 0, f"At least one variable per optimizer."
+
+            assert self.num_vars[i] >= 1, "At least one variable per optimizer."
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
-                self.optims += [default_multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
             else:
-                self.optims += [default_monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
-        assert sum(self.num_vars) == self.dimension, f"sum(num_vars) should be equal to the dimension."
+        assert sum(self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
