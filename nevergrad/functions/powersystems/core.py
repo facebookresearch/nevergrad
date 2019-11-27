@@ -64,9 +64,8 @@ class PowerSystem(inst.InstrumentedFunction):
     def get_num_vars(self) -> List[Any]:
         return [m.GetParamNumbers() for m in self.dam_managers]
 
-    def _simulate_power_system(self, input_x: np.ndarray) -> float:
+    def _simulate_power_system(self, x: np.ndarray) -> float:
         dam_managers = self.dam_managers
-        x = list(input_x)
         for a in dam_managers:
             assert(len(x) >= a.GetParamNumbers())
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
@@ -112,6 +111,10 @@ class PowerSystem(inst.InstrumentedFunction):
             
             assert(len(price) == N + self.num_thermal_plants)
             hydro_prod: List[float] = [0.] * N
+            order = sorted(range(len(price)), key=lambda x: price[x])
+            price = [price[i] for i in order]
+            volume = [volume[i] for i in order]
+            dam_index = [dam_index[i] for i in order]
             for i in range(len(price)):
                 if needed == 0:
                     break
@@ -142,8 +145,8 @@ class PowerSystem(inst.InstrumentedFunction):
         self.number_of_years = 1
         
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
-        self.thermal_power_capacity = [c * self.average_consumption for c in list(np.random.rand(self.num_thermal_plants))]
-        self.thermal_power_prices = [c for c in list(np.random.rand(self.num_thermal_plants))]
+        self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
+        self.thermal_power_prices = list(np.random.rand(num_thermal_plants)
         dam_managers: List[Any] = []
         for i in range(N):
             dam_managers += [Agent(10 + N + 2*self.num_thermal_plants, depth, width)]
