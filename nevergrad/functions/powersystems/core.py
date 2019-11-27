@@ -66,6 +66,7 @@ class PowerSystem(inst.InstrumentedFunction):
         return [m.GetParamNumbers() for m in self.dam_managers]
 
     def _simulate_power_system(self, x: np.ndarray) -> float:
+        failure_cost = 500.  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_managers = self.dam_managers
         for a in dam_managers:
             assert(len(x) >= a.GetParamNumbers())
@@ -129,7 +130,7 @@ class PowerSystem(inst.InstrumentedFunction):
                 needed -= production
             # Cost in case of failures -- this is
             # harming industries and hospitals.
-            cost += 500. * needed
+            cost += failure_cost * needed
             hydro_prod_per_time_step += hydro_prod
         return cost  # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
 
