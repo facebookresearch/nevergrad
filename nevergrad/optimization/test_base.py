@@ -119,11 +119,11 @@ def test_compare(tmp_path: Path) -> None:
     optimizer = optimizerlib.CMA(instrumentation=3, budget=1000, num_workers=5)
     optimizerlib.addCompare(optimizer)
     for i in range(1000):
-        x = []
+        x: List[Any] = []
         for j in range(6):
             x += [optimizer.ask()]
         winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data-np.array((1.,1.,1.))))
-        optimizer.compare(winners[:3], winners[3:])
+        optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
     print(result)
     np.testing.assert_almost_equal(result.data[0], 1., decimal=2)
