@@ -9,6 +9,7 @@
 import copy
 from math import sqrt, tan, pi
 import math
+import matplotlib.pyplot as plt
 from typing import Any
 from typing import List
 import numpy as np
@@ -178,3 +179,56 @@ class PowerSystem(inst.InstrumentedFunction):
         self.consumption_per_time_step = consumption_per_time_step
         return cost  
 
+    def makeplots(self, filename="ps.png"):
+        N = self.num_stocks
+        consumption_per_ts = self.consumption_per_time_step
+        hydro_prod_per_ts = self.hydro_prod_per_time_step
+        num_time_steps = int(365*24*self.number_of_years)
+
+        # Plot the optimization run.
+        ax = plt.subplot(2, 2, 1)
+        ax.set_xlabel('iteration number')
+        ax.plot(losses, label='losses') 
+        ax.legend(loc='best')
+        
+        # Plot consumption per day and decomposition of production.
+        ax = plt.subplot(2, 2, 2)
+        def block24(x):
+            result = []
+            for i in range(0, len(x), 24):
+                result += [sum(x[i:i+24])]
+            if len(x) != len(result) * 24:
+                print(len(x), len(result) * 24)
+            return result
+        consumption_per_day = block24(consumption_per_ts)
+        hydro_prod_per_day = block24(hydro_prod_per_ts)
+        ax.plot(np.linspace(1,365,len(consumption_per_day)), consumption_per_day, label='consumption')
+        ax.plot(np.linspace(1,365,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
+        for i in range(min(N, 3)):
+            hydro_ts = [hydro_prod_per_ts[j][i] for j in range(num_time_steps)]
+            hydro_day = block24(hydro_ts)
+            ax.plot(np.linspace(1,365,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
+        ax.set_xlabel('time step')
+        ax.set_ylabel('production per day')
+        ax.legend(loc='best')
+        
+        # Plot consumption per hour of the day and decomposition of production.
+        ax = plt.subplot(2, 2, 3)
+        def deblock24(x):
+            result = [0] * 24
+            for i in range(0, len(x)):
+                result[i % 24] += x[i] * 24. / len(x)
+            return result
+                
+        consumption_per_hour = deblock24(consumption_per_ts)
+        hydro_prod_per_hour = deblock24(hydro_prod_per_ts)
+        ax.plot(np.linspace(1,24,len(consumption_per_hour)), consumption_per_hour, label='consumption')
+        ax.plot(np.linspace(1,24,len(hydro_prod_per_hour)), hydro_prod_per_hour, label='hydro')
+        for i in range(min(N,3)):
+            hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), N)]
+            hydro_hour = deblock24(hydro_ts)
+            ax.plot(np.linspace(1,24,len(hydro_hour)), hydro_hour, label='dam ' + str(i) + ' prod')
+        ax.set_xlabel('time step')
+        ax.set_ylabel('production per hour')
+        ax.legend(loc='best')
+        plt.savefig(filename)
