@@ -8,6 +8,7 @@
 
 import copy
 from math import sqrt, tan, pi
+import math
 from typing import Any
 from typing import List
 import numpy as np
@@ -75,7 +76,7 @@ class PowerSystem(inst.InstrumentedFunction):
         # Assume empty initial stocks.
         stocks = [0.] * N   
         # Nonsense delays.
-        delay = [np.cos(i) for i in range(N)]
+        delay = [math.cos(i) for i in range(N)]
         cost = 0.
         # Loop on time steps.
         consumption = 0.
@@ -85,10 +86,10 @@ class PowerSystem(inst.InstrumentedFunction):
     
             # Rain
             for i in range(N):
-                stocks[i] += 0.5*(1.+np.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
+                stocks[i] += 0.5*(1.+math.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
             # Consumption model.
             base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio 
-                    +0.5*self.year_to_day_ratio*(1.+np.cos(2*pi*t/(24*365))) + 0.5*(1.+np.cos(2*pi*t/24)))
+                    +0.5*self.year_to_day_ratio*(1.+math.cos(2*pi*t/(24*365))) + 0.5*(1.+math.cos(2*pi*t/24)))
             if t == 0:
                 consumption = base_consumption
             else:
@@ -98,7 +99,7 @@ class PowerSystem(inst.InstrumentedFunction):
             needed = consumption
     
             # Setting inputs for all agents.
-            base_x = [np.cos(2*pi*t/24.), np.sin(2*pi*t/24.), np.cos(2*pi*t/(365*24)), np.sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+            base_x = [math.cos(2*pi*t/24.), math.sin(2*pi*t/24.), math.cos(2*pi*t/(365*24)), math.sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
             x = list(base_x + self.thermal_power_capacity + self.thermal_power_prices + stocks)
     
             # Prices as a decomposition tool!
