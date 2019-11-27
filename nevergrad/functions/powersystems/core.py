@@ -150,9 +150,9 @@ class PowerSystem(inst.InstrumentedFunction):
 
             # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])
-            price = [price[i] for i in order]
-            volume = [volume[i] for i in order]
-            dam_index = [dam_index[i] for i in order]
+            price = price[order]
+            volume = volume[order]
+            dam_index = dam_index[order]
 
             # Using power plants in their cost order, so that we use cheap power plants first.
             for i in range(len(price)):
