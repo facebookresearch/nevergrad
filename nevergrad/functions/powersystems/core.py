@@ -28,10 +28,10 @@ class Agent():
         self.input_size = input_size
         self.output_size = output_size
         self.layers: List[Any] = []
-        self.layers += [np.zeros(input_size, layer_width)]
+        self.layers += [np.zeros((input_size, layer_width))]
         for i in range(layers-2):
-            self.layers += [np.zeros(layer_width, layer_width)]
-        self.layers += [np.zeros(layer_width, output_size)]
+            self.layers += [np.zeros((layer_width, layer_width))]
+        self.layers += [np.zeros((layer_width, output_size))]
         assert len(self.layers) == layers
 
     def GetParamNumbers(self):
@@ -76,7 +76,7 @@ class PowerSystem(inst.InstrumentedFunction):
         N = self.N
         # Parameters describing the problem.
         self.year_to_day_ratio = year_to_day_ratio
-        self.constant_to_year_ratio = constant_to_year
+        self.constant_to_year_ratio = constant_to_year_ratio
         self.back_to_normal = back_to_normal
         self.consumption_noise = consumption_noise
         self.num_thermal_plants = num_thermal_plants
