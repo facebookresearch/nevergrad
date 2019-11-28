@@ -168,6 +168,7 @@ def rosenbrock(x: np.ndarray) -> float:
     return float(100 * x_diff.dot(x_diff) + x_m_1.dot(x_m_1))
 
 
+@registry.register
 def ackley(x: np.ndarray) -> float:
     dim = x.size
     sum_cos = np.sum(np.cos(2 * np.pi * x))
