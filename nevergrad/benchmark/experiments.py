@@ -77,7 +77,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def chaindeceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
+def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
@@ -177,6 +177,51 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
+@registry.register
+def chain_multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley"]
+    # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x):
+            for budget in [30, 100, 3000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+
+@registry.register
+def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley"]
+    # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
+              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"]
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+
+
 
 @registry.register
 def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
@@ -195,7 +240,7 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def chainillcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
+def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
