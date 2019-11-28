@@ -18,6 +18,7 @@ from . import utils
 from . import base
 from . import mutations
 from .base import registry
+from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
 
