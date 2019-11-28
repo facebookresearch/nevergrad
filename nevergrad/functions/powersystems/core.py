@@ -139,10 +139,9 @@ class PowerSystem(inst.InstrumentedFunction):
     
             # Prices as a decomposition tool!
             price: np.ndarray = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_managers])
-            volume: np.ndarray = np.asarray([s for s in stocks])
             dam_index: np.ndarray = np.asarray(range(N))
             price = np.concatenate((price, self.thermal_power_prices))
-            volume = np.concatenate((volume, self.thermal_power_capacity))
+            capacity = np.concatenate((np.asarray(stocks), self.thermal_power_capacity))
             dam_index = np.concatenate((dam_index, [-1] * len(price)))
             
             assert(len(price) == N + self.num_thermal_plants)
@@ -151,14 +150,14 @@ class PowerSystem(inst.InstrumentedFunction):
             # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])
             price = price[order]
-            volume = volume[order]
+            capacity = capacity[order]
             dam_index = dam_index[order]
 
             # Using power plants in their cost order, so that we use cheap power plants first.
             for i in range(len(price)):
                 if needed <= 0:
                     break
-                production = min(volume[i], needed)
+                production = min(capacity[i], needed)
                 # If this is a dam, producing will reduce the stock.
                 if dam_index[i] >= 0:
                     hydro_prod[dam_index[i]] += production  # Let us log the hydro prod for this dam.
