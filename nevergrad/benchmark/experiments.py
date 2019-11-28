@@ -199,7 +199,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in optims:
             for budget in [30, 100, 300, 1000, 3000, 10000]:
                 # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
