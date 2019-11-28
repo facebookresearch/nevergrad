@@ -130,7 +130,7 @@ class PowerSystem(inst.InstrumentedFunction):
             else:
                 consumption = max(0., consumption + self.consumption_noise*(np.random.rand()-.5) + self.back_to_normal * (base_consumption - consumption))
             consumption_per_time_step += [consumption]
-            # Water usage.
+            # "Needed" stores what we need, and will decrease as we use various power plants for producing.
             needed = consumption
     
             # Setting inputs for all agents.
