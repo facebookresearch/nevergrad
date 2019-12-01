@@ -6,7 +6,7 @@ import numpy as np
 
 BP = TypeVar("BP", bound="BaseParameter")
 P = TypeVar("P", bound="Parameter")
-D = TypeVar("D", bound="ParametersDict")
+D = TypeVar("D", bound="NgDict")
 
 
 class NotSupportedError(RuntimeError):
@@ -23,7 +23,7 @@ class BaseParameter:
     def __init__(self, **subparameters: Any) -> None:
         self.uid = uuid.uuid4().hex
         self.parents_uids: List[str] = []
-        self._subparameters = None if not subparameters else ParametersDict(**subparameters)
+        self._subparameters = None if not subparameters else NgDict(**subparameters)
         self._dimension: Optional[int] = None
 
     @property
@@ -41,10 +41,10 @@ class BaseParameter:
         return child
 
     @property
-    def subparameters(self) -> "ParametersDict":
+    def subparameters(self) -> "NgDict":
         if self._subparameters is None:  # delayed instantiation to avoid infinte loop
-            assert self.__class__ != ParametersDict, "subparameters of Parameters dict should never be called"
-            self._subparameters = ParametersDict()
+            assert self.__class__ != NgDict, "subparameters of Parameters dict should never be called"
+            self._subparameters = NgDict()
         assert self._subparameters is not None
         return self._subparameters
 
@@ -56,16 +56,16 @@ class BaseParameter:
     def dimension(self) -> int:
         if self._dimension is None:
             try:
-                self._dimension = self.to_std_data().size
+                self._dimension = self.get_std_data().size
             except NotSupportedError:
                 self._dimension = 0
         return self._dimension
 
     def mutate(self) -> None:
         self.subparameters.mutate()
-        data = self.to_std_data()  # pylint: disable=assignment-from-no-return
+        data = self.get_std_data()  # pylint: disable=assignment-from-no-return
         # let's assume the random state is already there (next class)
-        self.with_std_data(data + self.random_state.normal(size=data.shape))  # type: ignore
+        self.set_std_data(data + self.random_state.normal(size=data.shape))  # type: ignore
 
     def sample(self: BP) -> BP:
         child = self.spawn_child()
@@ -75,10 +75,10 @@ class BaseParameter:
     def recombine(self: BP, *others: BP) -> None:
         raise NotSupportedError(f"Recombination is not implemented for {self.name}")  # type: ignore
 
-    def to_std_data(self) -> np.ndarray:
+    def get_std_data(self) -> np.ndarray:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
     def from_value(self: BP, value: Any) -> BP:
@@ -111,7 +111,7 @@ class Parameter(BaseParameter):
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def compute_data_hash(self) -> Union[str, bytes, float, int]:
-        return self.to_std_data().tobytes()
+        return self.get_std_data().tobytes()
 
     def _get_name(self) -> str:
         return self.__class__.__name__
@@ -185,7 +185,7 @@ class Parameter(BaseParameter):
         return super().spawn_child()
 
 
-class ParametersDict(Parameter):
+class NgDict(Parameter):
     """Handle for facilitating dict of parameters management
     """
 
@@ -212,13 +212,14 @@ class ParametersDict(Parameter):
             if isinstance(param, Parameter):
                 param.value = val
             else:
-                self._parameters[key] = val
+                if not param == val:  # safer this way
+                    raise ValueError(f"Trying to set frozen value {key}={param} to {val}")  # TODO test this
 
     def compute_value_hash(self) -> Tuple[Tuple[str, Any], ...]:
         return tuple(sorted((x, y.compute_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
 
-    def to_std_data(self) -> np.ndarray:
-        data = {k: p.to_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}
+    def get_std_data(self) -> np.ndarray:
+        data = {k: p.get_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
@@ -227,16 +228,16 @@ class ParametersDict(Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         if self._sizes is None:
-            self.to_std_data()
+            self.get_std_data()
         assert self._sizes is not None
         assert data.size == sum(v for v in self._sizes.values())
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._parameters[name].with_std_data(data[start: end], deterministic)
+            self._parameters[name].set_std_data(data[start: end], deterministic)
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 
@@ -245,7 +246,7 @@ class ParametersDict(Parameter):
             if isinstance(param, Parameter):
                 param.mutate()
 
-    def recombine(self, *others: "ParametersDict") -> None:
+    def recombine(self, *others: "NgDict") -> None:
         for k, param in self._parameters.items():
             if isinstance(param, Parameter):
                 param.recombine(*[o._parameters[k] for o in others])

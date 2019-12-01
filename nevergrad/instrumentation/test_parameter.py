@@ -7,10 +7,10 @@ from . import parameter as par
 def test_array_basics() -> None:
     var1 = par.Array((1,))
     var2 = par.Array((2, 2))
-    d = par.ParametersDict(var1=var1, var2=var2, var3=12)
-    data = d.to_std_data()
+    d = par.NgDict(var1=var1, var2=var2, var3=12)
+    data = d.get_std_data()
     assert data.size == 5
-    d.with_std_data(np.array([1, 2, 3, 4, 5]))
+    d.set_std_data(np.array([1, 2, 3, 4, 5]))
     assert var1.value[0] == 1
     np.testing.assert_array_equal(d.value["var2"], np.array([[2, 3], [4, 5]]))
     # setting value on arrays
@@ -20,14 +20,14 @@ def test_array_basics() -> None:
         var1.value = 4  # type: ignore
     var1.value = np.array([2])
     representation = repr(d)
-    assert "ParametersDict{var1" in representation
+    assert "NgDict{var1" in representation
     d.set_name("blublu")
     representation = repr(d)
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.ParametersDict(truc=12),  # type: ignore
-                                   par.ParametersList(), ])
+@pytest.mark.parametrize("param", [par.NgDict(truc=12),  # type: ignore
+                                   par.NgList(), ])
 def test_empty_parameters(param: Parameter) -> None:
     assert not param.dimension
     assert not param.compute_data_hash()
@@ -35,8 +35,8 @@ def test_empty_parameters(param: Parameter) -> None:
 
 
 @pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
-                                   par.ParametersDict(blublu=par.Array((2, 3)), truc=12),
-                                   par.ParametersList(par.Array((2, 3)), 12), ])
+                                   par.NgDict(blublu=par.Array((2, 3)), truc=12),
+                                   par.NgList(par.Array((2, 3)), 12), ])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None
@@ -60,5 +60,5 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert not child2.complies_with_constraint()
     # array to and from with hash
     data_hash = param.compute_data_hash()
-    param.with_std_data(param.to_std_data())
+    param.set_std_data(param.get_std_data())
     assert data_hash == param.compute_data_hash()

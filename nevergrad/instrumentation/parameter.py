@@ -1,9 +1,10 @@
-from typing import Union, Tuple, Any, List, Optional
+from typing import Union, Tuple, Any, List, Iterable
 import numpy as np
-# importing ParametersDict to populate parameters (fake renaming for mypy explicit reimport)
+# importing NgDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
+from . import discretization
 from .core3 import Parameter
-from .core3 import ParametersDict as ParametersDict  # noqa
+from .core3 import NgDict as NgDict  # noqa
 
 
 class Array(Parameter):
@@ -41,7 +42,7 @@ class Array(Parameter):
         self._value = value
 
     # pylint: disable=unused-argument
-    def with_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         sigma = self._get_parameter_value("sigma")
         self._value = (sigma * data).reshape(self.value.shape)
 
@@ -50,7 +51,7 @@ class Array(Parameter):
         child._value = self.value
         return child
 
-    def to_std_data(self) -> np.ndarray:
+    def get_std_data(self) -> np.ndarray:
         sigma = self._get_parameter_value("sigma")
         reduced = self._value / sigma
         return reduced.ravel()  # type: ignore
@@ -59,12 +60,12 @@ class Array(Parameter):
         recomb = self._get_parameter_value("recombination")
         all_p = [self] + list(others)
         if recomb == "average":
-            self.with_std_data(np.mean([p.to_std_data() for p in all_p], axis=0))
+            self.set_std_data(np.mean([p.get_std_data() for p in all_p], axis=0))
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
 
-class ParametersList(ParametersDict):
+class NgList(NgDict):
     """Handle for facilitating dict of parameters management
     """
 
@@ -88,16 +89,57 @@ class ParametersList(ParametersDict):
                 param.value = val
 
 
-class Choice(Array):
+class Choice(Parameter):
 
     def __init__(
             self,
-            values: List[Any],
+            choices: Iterable[Any],
             recombination: Union[str, Parameter] = "average",
             deterministic: bool = False,
     ) -> None:
-        super().__init__(shape=(len(values),), recombination=recombination)
+        assert not isinstance(choices, NgList)
+        lchoices = list(choices)  # for iterables
+        super().__init__(probabilities=Array(shape=(len(lchoices),), recombination=recombination),
+                         choices=NgList(*lchoices))
         self._deterministic = deterministic
-        self._choices = values
-        self._index: Optional[int] = None
-        # Work In Progress
+        self._index = 0
+        self._draw(deterministic=False)
+
+    @property
+    def value(self) -> Any:
+        val = self.subparameters._parameters["choices"][str(self._index)]
+        return val.value if isinstance(val, Parameter) else val
+
+    @value.setter
+    def value(self, value: Any) -> None:
+        index = -1
+        # try to find where to put this
+        choices = self.subparameters._parameters["choices"]
+        nums = sorted(choices)
+        for k in nums:
+            choice = choices[k]
+            if isinstance(choice, Parameter):
+                try:
+                    choice.value = value
+                except Exception:  # pylint: disable=broad-except
+                    pass
+                else:
+                    index = int(k)
+                    break
+            else:
+                if not value != choice:  # slighly safer this way
+                    index = int(k)
+                    break
+        if index == -1:
+            raise ValueError(f"Could not figure out where to put value {value}")
+        out = discretization.inverse_softmax_discretization(index, len(nums))
+        self.set_std_data(out, deterministic=True)
+
+    def _draw(self, deterministic: bool = True) -> None:
+        probas = self._get_parameter_value("probabilities")
+        random = False if deterministic or self._deterministic else self.random_state
+        self._index = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
+
+    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+        super().set_std_data(data, deterministic=deterministic)
+        self._draw(deterministic=deterministic)
