@@ -38,6 +38,8 @@ def test_instrumentation_data_to_arguments() -> None:
 def test_instrumentation() -> None:
     instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
     np.testing.assert_equal(instru.dimension, 6)
+    instru2 = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.UnorderedDiscrete([0, 1, 2, 3]))
+    np.testing.assert_equal(instru2.dimension, 6)
     data = instru.arguments_to_data(4, 3, a=0, b=3)
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, 0.5878], decimal=4)
     args, kwargs = instru.data_to_arguments(data, deterministic=True)
