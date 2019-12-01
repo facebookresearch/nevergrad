@@ -1356,7 +1356,7 @@ PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", regist
 
 
 @registry.register
-class cGA(base.Optimizer):
+class old_cGA(base.Optimizer):
     """
     Implementation of the discrete cGA algorithm
 
@@ -1371,6 +1371,44 @@ class cGA(base.Optimizer):
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
+        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        unif = self._rng.uniform(size=self.dimension)
+        data = (unif > 1 - self.p[0]).astype(float)
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        if self._value_candidate is None:
+            self._value_candidate = (value, candidate.data)
+        else:
+            winner, loser = self._value_candidate[1], candidate.data
+            if self._value_candidate[0] > value:
+                winner, loser = loser, winner
+
+            self.p[0] = self.p[0] + (winner != loser) * (2 * winner - 1) / self.llambda
+            self.p[0] = np.clip(self.p[0], 0, 1)
+            self._value_candidate = None
+
+
+            @registry.register
+          
+        
+class cGA(base.Optimizer):
+    """
+    Implementation of the discrete cGA algorithm
+
+    https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: int=2) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._arity = arity
+        self._penalize_cheap_violations = True  # Not sure this is the optimal decision.
+        self.p: np.ndarray = np.ones((arity, self.dimension)) / arity
+        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))  # FIXME
         self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
     def _internal_ask_candidate(self) -> base.Candidate:
