@@ -1403,8 +1403,10 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: int=2) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: Optinonal[int] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if arity is None:
+            TODO instrumentation else 2
         self._arity = arity
         self._penalize_cheap_violations = True  # Not sure this is the optimal decision.
         self.p: np.ndarray = np.ones((arity, self.dimension)) / arity
