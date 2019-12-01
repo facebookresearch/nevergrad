@@ -72,7 +72,7 @@ class SoftmaxCategorical(Variable):
         return f"{self.__class__.__name__}({self.possibilities}, {self.deterministic})"
 
 
-class OrderedDiscrete(Variable):
+class UnorderedDiscrete(Variable):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
 
@@ -111,6 +111,13 @@ class OrderedDiscrete(Variable):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.possibilities})"
 
+# The ordered discrete variables are a special case of unordered discrete.
+# Basically they are represented the exact same way, as Gaussian quantiles:
+# the i^th (i=0,...,i=k-1) possible value of a discrete variable with k values is represented by the quantile
+# (i+.5)/k of the standard normal distribution.
+# The optimization algorithm can check the instrumentation to know which kind of data this is.
+class OrderedDiscrete(UnorderedDiscrete):
+    pass
 
 class Gaussian(Variable):
     """Gaussian variable with a mean and a standard deviation, and
