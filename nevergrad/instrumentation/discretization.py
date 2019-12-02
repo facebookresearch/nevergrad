@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Union
+from typing import List, Union, Any
 import warnings
 import numpy as np
 import scipy.stats
@@ -42,11 +42,11 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> Arra
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
 
 
-def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> ArrayLike:
+def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2, gen: Any = None) -> ArrayLike:
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take a random point in the bin.
-    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + np.random.rand() * pdf_bin_size)  # type: ignore
+    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + gen.rand() * pdf_bin_size)  # type: ignore
 
 
 def softmax_discretization(x: ArrayLike, arity: int = 2, random: Union[bool, np.random.RandomState] = True) -> List[int]:

@@ -1385,7 +1385,7 @@ class cGA(base.Optimizer):
         values = np.zeros(len(self.p))
         for i, w in enumerate(self.p):
             values[i] += sum(self._rng.uniform() > np.cumsum(w))
-        data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity)
+        data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
