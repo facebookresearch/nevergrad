@@ -15,7 +15,7 @@ from .core import Variable
 # pylint: disable=unused-argument
 
 
-__all__ = ["SoftmaxCategorical", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
+__all__ = ["SoftmaxCategorical", "UnorderedDiscrete", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
 
 
 def wrap_arg(arg: Any) -> ArgsKwargs:
