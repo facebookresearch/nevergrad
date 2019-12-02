@@ -437,7 +437,9 @@ class MPCEDA(EDA):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
-
+            
+# We have seen that NaiveTBPSA is a great extension of TBPSA for the noise-free case.
+# ARF1 suggested that something similar could happen for MPCEDA.
 @registry.register
 class NaiveMPCEDA(MPCEDA):
     def _internal_provide_recommendation(self) -> ArrayLike:
