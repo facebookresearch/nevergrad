@@ -62,7 +62,7 @@ class PowerSystem(inst.InstrumentedFunction):
     width: number of neurons per hidden layer
     """
 
-    def __init__(self, num_stocks: int = 13, depth: int = 3, width: int = 3, 
+    def __init__(self, num_dams: int = 13, depth: int = 3, width: int = 3, 
             year_to_day_ratio: float = 2.,  # Ratio between std of consumption in the year and std of consumption in the day.
             constant_to_year_ratio: float = 1.,  # Ratio between constant baseline consumption and std of consumption in the year.
             back_to_normal: float = 0.5,  # Part of the variability which is forgotten at each time step.
@@ -72,7 +72,7 @@ class PowerSystem(inst.InstrumentedFunction):
             failure_cost: float = 500.,  # Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
             ) -> None:
         # Number of stocks (dams).
-        self.num_stocks = num_stocks
+        self.num_dams = num_dams
         # Parameters describing the problem.
         self.year_to_day_ratio = year_to_day_ratio
         self.constant_to_year_ratio = constant_to_year_ratio
@@ -85,30 +85,30 @@ class PowerSystem(inst.InstrumentedFunction):
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
         self.thermal_power_prices = np.random.rand(num_thermal_plants)
-        dam_managers: List[Any] = []
-        for i in range(num_stocks):
-            dam_managers += [Agent(10 + num_stocks + 2*self.num_thermal_plants, depth, width)]
-        the_dimension = sum([a.GetParamNumbers() for a in dam_managers])
-        self.dam_managers = dam_managers
+        dam_agents: List[Any] = []
+        for i in range(num_dams):
+            dam_agents += [Agent(10 + num_dams + 2*self.num_thermal_plants, depth, width)]
+        the_dimension = sum([a.GetParamNumbers() for a in dam_agents])
+        self.dam_agents = dam_agents
         super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(the_dimension)))
-        self._descriptors.update(num_stocks=num_stocks, depth=depth, width=width)
+        self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
     def get_num_vars(self) -> List[Any]:
-        return [m.GetParamNumbers() for m in self.dam_managers]
+        return [m.GetParamNumbers() for m in self.dam_agents]
 
     def _simulate_power_system(self, x: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
-        dam_managers = self.dam_managers
-        for a in dam_managers:
+        dam_agents = self.dam_agents
+        for a in dam_agents:
             assert(len(x) >= a.GetParamNumbers())
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
             x = x[a.GetParamNumbers():]
         assert(len(x) == 0)
-        num_stocks = int(self.num_stocks)
+        num_dams = int(self.num_dams)
         # Assume empty initial stocks.
-        stocks = [0.] * num_stocks
+        stocks = [0.] * num_dams
         # Nonsense delays.
-        delay = [math.cos(i) for i in range(num_stocks)]
+        delay = [math.cos(i) for i in range(num_dams)]
         cost = 0.
         # Loop on time steps.
         num_time_steps = int(365*24*self.number_of_years)
@@ -118,8 +118,8 @@ class PowerSystem(inst.InstrumentedFunction):
         for t in range(num_time_steps):
     
             # Rain
-            for i in range(num_stocks):
-                stocks[i] += 0.5*(1.+math.cos(2*pi*t/(24*365) + delay[i])) * np.random.rand()
+            for dam_index in range(num_dams):
+                stocks[dam_index] += 0.5*(1.+math.cos(2*pi*t/(24*365) + delay[dam_index])) * np.random.rand()
             # Consumption model.
             base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio 
                     +0.5*self.year_to_day_ratio*(1.+math.cos(2*pi*t/(24*365))) + 0.5*(1.+math.cos(2*pi*t/24)))
@@ -136,14 +136,14 @@ class PowerSystem(inst.InstrumentedFunction):
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
     
             # Prices as a decomposition tool!
-            price: np.ndarray = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_managers])
-            dam_index: np.ndarray = np.asarray(range(num_stocks))
+            price: np.ndarray = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_agents])
+            dam_index: np.ndarray = np.asarray(range(num_dams))
             price = np.concatenate((price, self.thermal_power_prices))
             capacity = np.concatenate((np.asarray(stocks), self.thermal_power_capacity))
             dam_index = np.concatenate((dam_index, [-1] * len(price)))
             
-            assert(len(price) == num_stocks + self.num_thermal_plants)
-            hydro_prod: np.ndarray = np.zeros(num_stocks)
+            assert(len(price) == num_dams + self.num_thermal_plants)
+            hydro_prod: np.ndarray = np.zeros(num_dams)
 
             # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])
@@ -177,7 +177,7 @@ class PowerSystem(inst.InstrumentedFunction):
         return cost  
 
     def makeplots(self, filename="ps.png"):
-        num_stocks = self.num_stocks
+        num_dams = self.num_dams
         consumption_per_ts = self.consumption_per_time_step
         hydro_prod_per_ts = self.hydro_prod_per_time_step
         num_time_steps = int(365*24*self.number_of_years)
@@ -201,7 +201,7 @@ class PowerSystem(inst.InstrumentedFunction):
         hydro_prod_per_day = block24(hydro_prod_per_ts)
         ax.plot(np.linspace(1,365,len(consumption_per_day)), consumption_per_day, label='consumption')
         ax.plot(np.linspace(1,365,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
-        for i in range(min(num_stocks, 3)):
+        for i in range(min(num_dams, 3)):
             hydro_ts = [hydro_prod_per_ts[j][i] for j in range(num_time_steps)]
             hydro_day = block24(hydro_ts)
             ax.plot(np.linspace(1,365,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
@@ -221,8 +221,8 @@ class PowerSystem(inst.InstrumentedFunction):
         hydro_prod_per_hour = deblock24(hydro_prod_per_ts)
         ax.plot(np.linspace(1,24,len(consumption_per_hour)), consumption_per_hour, label='consumption')
         ax.plot(np.linspace(1,24,len(hydro_prod_per_hour)), hydro_prod_per_hour, label='hydro')
-        for i in range(min(num_stocks,3)):
-            hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), num_stocks)]
+        for i in range(min(num_dams,3)):
+            hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), num_dams)]
             hydro_hour = deblock24(hydro_ts)
             ax.plot(np.linspace(1,24,len(hydro_hour)), hydro_hour, label='dam ' + str(i) + ' prod')
         ax.set_xlabel('time step')
