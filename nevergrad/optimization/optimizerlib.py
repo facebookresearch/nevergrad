@@ -103,7 +103,7 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
         Method for handling the noise. The name can be:
 
         - `"random"`: a random point is reevaluated regularly
-        - `"optimistic"`: the best optimistic point is reevaluated regularly, optimism in front of uncertainty
+        - `"optimistic"`: the best optimistic point is reevaluated regularly, optimism in front of uncertaintyinst
         - a coefficient can to tune the regularity of these reevaluations (default .05)
     mutation: str
         One of the available mutations from:
@@ -1414,15 +1414,15 @@ class cGA(base.Optimizer):
         self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1 - self.p[0]).astype(float)
+        values = (self._rng.choices(range(arity), w) for w in self.p)
+        data = inst.discretization.inverse_threshold_discretization(values, arity=self._arity)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        if self._value_candidate is None:
-            self._value_candidate = (value, candidate.data)
+        if self._previous_value_candidate is None:
+            self._previous_value_candidate = (value, candidate.data)
         else:
-            winner, loser = self._value_candidate[1], candidate.data
+            winner, loser = self._previous_value_candidate[1], candidate.data
             if self._value_candidate[0] > value:
                 winner, loser = loser, winner
 
