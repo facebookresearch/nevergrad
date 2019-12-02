@@ -7,8 +7,7 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 import copy
-from math import sqrt, tan, pi
-import math
+from math import sqrt, tan, pi, cos, sin
 import matplotlib.pyplot as plt
 from typing import Any
 from typing import List
@@ -73,6 +72,7 @@ class PowerSystem(inst.InstrumentedFunction):
             ) -> None:
         self.num_dams = num_dams
         self.losses: List[float] = []
+        self.marginal_costs: List[float] = []
         # Parameters describing the problem.
         self.year_to_day_ratio = year_to_day_ratio
         self.constant_to_year_ratio = constant_to_year_ratio
@@ -104,11 +104,12 @@ class PowerSystem(inst.InstrumentedFunction):
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
             x = x[a.GetParamNumbers():]
         assert(len(x) == 0)
+        self.marginal_costs = []
         num_dams = int(self.num_dams)
         # Assume empty initial stocks.
         stocks = [0.] * num_dams
         # Nonsense delays.
-        delay = [math.cos(i) for i in range(num_dams)]
+        delay = [cos(i) for i in range(num_dams)]
         cost = 0.
         # Loop on time steps.
         num_time_steps = int(365*24*self.number_of_years)
@@ -119,10 +120,10 @@ class PowerSystem(inst.InstrumentedFunction):
     
             # Rain
             for dam_index in range(num_dams):
-                stocks[dam_index] += 0.5*(1.+math.cos(2*pi*t/(24*365) + delay[dam_index])) * np.random.rand()
+                stocks[dam_index] += 0.5*(1.+cos(2*pi*t/(24*365) + delay[dam_index])) * np.random.rand()
             # Consumption model.
             base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio 
-                    +0.5*self.year_to_day_ratio*(1.+math.cos(2*pi*t/(24*365))) + 0.5*(1.+math.cos(2*pi*t/24)))
+                    +0.5*self.year_to_day_ratio*(1.+cos(2*pi*t/(24*365))) + 0.5*(1.+cos(2*pi*t/24)))
             if t == 0:
                 consumption = base_consumption
             else:
@@ -132,7 +133,7 @@ class PowerSystem(inst.InstrumentedFunction):
             needed = consumption
     
             # Setting inputs for all agents.
-            base_x = [math.cos(2*pi*t/24.), math.sin(2*pi*t/24.), math.cos(2*pi*t/(365*24)), math.sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+            base_x = [cos(2*pi*t/24.), sin(2*pi*t/24.), cos(2*pi*t/(365*24)), sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
     
             # Prices as a decomposition tool!
@@ -152,6 +153,7 @@ class PowerSystem(inst.InstrumentedFunction):
             dam_index = dam_index[order]
 
             # Using power plants in their cost order, so that we use cheap power plants first.
+            marginal_cost = 0
             for i in range(len(price)):
                 if needed <= 0:
                     break
@@ -164,10 +166,15 @@ class PowerSystem(inst.InstrumentedFunction):
                 else:
                     # If this is not a dam, we pay for using thermal plants.
                     cost += production * price[i]
+                    if production > 1e-7:
+                        marginal_cost = price[i]
                 needed -= production
             # Cost in case of failures -- this is
             # harming industries and hospitals, so it can be penalized.
             cost += failure_cost * needed
+            if needed > 1e-7:
+                marginal_cost = failure_cost
+            self.marginal_costs += [marginal_cost]
             hydro_prod_per_time_step += [hydro_prod]
         # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
         assert len(hydro_prod_per_time_step) == num_time_steps  # Each time steps has 1 value per dam.
@@ -182,6 +189,7 @@ class PowerSystem(inst.InstrumentedFunction):
         num_dams = self.num_dams
         consumption_per_ts = self.consumption_per_time_step
         hydro_prod_per_ts = self.hydro_prod_per_time_step
+        total_hydro_prod_per_ts = [sum(h) for h in hydro_prod_per_ts]
         num_time_steps = int(365*24*self.number_of_years)
 
         # Plot the optimization run.
@@ -190,8 +198,7 @@ class PowerSystem(inst.InstrumentedFunction):
         ax.plot(losses, label='losses') 
         ax.legend(loc='best')
         
-        # Plot consumption per day and decomposition of production.
-        ax = plt.subplot(2, 2, 2)
+        # Utility function for plotting per year or per day.
         def block24(x):
             result = []
             for i in range(0, len(x), 24):
@@ -199,12 +206,27 @@ class PowerSystem(inst.InstrumentedFunction):
             if len(x) != len(result) * 24:
                 print(len(x), len(result) * 24)
             return result
+        def deblock24(x):
+            result = [0] * 24
+            for i in range(0, len(x)):
+                result[i % 24] += x[i] * 24. / len(x)
+            return result
+                
+        # Plotting marginal costs.
+        ax = plt.subplot(2, 3, 4)
+        marginal_cost_per_day = deblock24(self.marginal_costs)
+        marginal_cost_per_year = block24(self.marginal_costs)
+        ax.plot(np.linspace(1,24,len(marginal_cost_per_hour)), marginal_cost_per_hour, label='marginal cost per hour')
+        ax.plot(np.linspace(1,365,len(marginal_cost_per_day)), marginal_cost_per_day, label='marginal cost per day')
+
+        # Plot consumption per day and decomposition of production.
+        ax = plt.subplot(2, 2, 2)
         consumption_per_day = block24(consumption_per_ts)
-        hydro_prod_per_day = block24(hydro_prod_per_ts)
+        hydro_prod_per_day = block24(total_hydro_prod_per_ts)
         ax.plot(np.linspace(1,365,len(consumption_per_day)), consumption_per_day, label='consumption')
         ax.plot(np.linspace(1,365,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
         for i in range(min(num_dams, 3)):
-            hydro_ts = [hydro_prod_per_ts[j][i] for j in range(num_time_steps)]
+            hydro_ts = [h[i] for h in hydro_prod_per_ts]
             hydro_day = block24(hydro_ts)
             ax.plot(np.linspace(1,365,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
         ax.set_xlabel('time step')
@@ -213,18 +235,12 @@ class PowerSystem(inst.InstrumentedFunction):
         
         # Plot consumption per hour of the day and decomposition of production.
         ax = plt.subplot(2, 2, 3)
-        def deblock24(x):
-            result = [0] * 24
-            for i in range(0, len(x)):
-                result[i % 24] += x[i] * 24. / len(x)
-            return result
-                
         consumption_per_hour = deblock24(consumption_per_ts)
-        hydro_prod_per_hour = deblock24(hydro_prod_per_ts)
+        hydro_prod_per_hour = deblock24(total_hydro_prod_per_ts)
         ax.plot(np.linspace(1,24,len(consumption_per_hour)), consumption_per_hour, label='consumption')
         ax.plot(np.linspace(1,24,len(hydro_prod_per_hour)), hydro_prod_per_hour, label='hydro')
         for i in range(min(num_dams,3)):
-            hydro_ts = [hydro_prod_per_ts[j] for j in range(i, len(hydro_prod_per_ts), num_dams)]
+            hydro_ts = [h[i] for h in hydro_prod_per_ts]
             hydro_hour = deblock24(hydro_ts)
             ax.plot(np.linspace(1,24,len(hydro_hour)), hydro_hour, label='dam ' + str(i) + ' prod')
         ax.set_xlabel('time step')

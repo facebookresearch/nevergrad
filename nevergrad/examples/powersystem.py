@@ -14,7 +14,7 @@ depth = 3
 
 power_system_loss = PowerSystem(num_dams=3, depth=3, width=3)
 
-optimizer = optimizerlib.SplitOptimizer3(instrumentation=power_system_loss.dimension, budget=20, num_workers=4)
+optimizer = optimizerlib.SplitOptimizer3(instrumentation=power_system_loss.dimension, budget=200, num_workers=10)
 
 optimizer.minimize(power_system_loss)
 
