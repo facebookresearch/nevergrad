@@ -103,7 +103,7 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
         Method for handling the noise. The name can be:
 
         - `"random"`: a random point is reevaluated regularly
-        - `"optimistic"`: the best optimistic point is reevaluated regularly, optimism in front of uncertaintyinst
+        - `"optimistic"`: the best optimistic point is reevaluated regularly, optimism in front of uncertainty
         - a coefficient can to tune the regularity of these reevaluations (default .05)
     mutation: str
         One of the available mutations from:
@@ -1354,44 +1354,6 @@ DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("DEwithLHSdim"
 DEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=True)
 PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
 
-
-class old_cGA(base.Optimizer):
-    """
-    Implementation of the discrete cGA algorithm
-
-    https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        num_categories = 2
-        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
-        self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
-        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
-        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
-
-    def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1 - self.p[0]).astype(float)
-        return self.create_candidate.from_data(data)
-
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        if self._value_candidate is None:
-            self._value_candidate = (value, candidate.data)
-        else:
-            winner, loser = self._value_candidate[1], candidate.data
-            if self._value_candidate[0] > value:
-                winner, loser = loser, winner
-
-            self.p[0] = self.p[0] + (winner != loser) * (2 * winner - 1) / self.llambda
-            self.p[0] = np.clip(self.p[0], 0, 1)
-            self._value_candidate = None
-
-
-            @registry.register
-          
         
 @registry.register
 class cGA(base.Optimizer):
@@ -1409,13 +1371,19 @@ class cGA(base.Optimizer):
             arity = len(self.possibilities) if hasattr(self, possibilities) else 2
         self._arity = arity
         self._penalize_cheap_violations = True  # Not sure this is the optimal decision.
+        # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
         self.p: np.ndarray = np.ones((self.dimension, arity)) / arity
-        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))  # FIXME
-        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
+        # Probability increments are of order 1./self.llambda
+        # and lower bounded by something of order 1./self.llambda.
+        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))  # FIXME: no good heuristic ?
+        # CGA generates a candidate, then a second candidate;
+        # then updates depending on the comparison with the first one. We therefore have to store the previous candidate.
+        self._previous_value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
     def _internal_ask_candidate(self) -> base.Candidate:
+        # Multinomial.
         values = (self._rng.choices(range(arity), w) for w in self.p)
-        data = inst.discretization.inverse_threshold_discretization(values, arity=self._arity)
+        data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -1425,10 +1393,14 @@ class cGA(base.Optimizer):
             winner, loser = self._previous_value_candidate[1], candidate.data
             if self._value_candidate[0] > value:
                 winner, loser = loser, winner
-
-            self.p[0] = self.p[0] + (winner != loser) * (2 * winner - 1) / self.llambda
-            self.p[0] = np.clip(self.p[0], 0, 1)
-            self._value_candidate = None
+            winner_data = inst.discretization.threshold_discretization(winner.data ,arity=self._arity)
+            loser_data = inst.discretization.threshold_discretization(loser.data ,arity=self._arity)
+            for i in range(len(winner_data)):
+                if w[i] != l[i]:
+                    self.p[i] = np.max(self.p[i], .5/self.llambda)
+                    self.p[i][w[i]] += 1. / self.llambda
+                    self.p[i] /= sum(self.p[i])
+            self._previous_value_candidate = None
 
 
 __all__ = list(registry.keys())
