@@ -1354,7 +1354,7 @@ DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("DEwithLHSdim"
 DEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=True)
 PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
 
-        
+
 @registry.register
 class cGA(base.Optimizer):
     """
