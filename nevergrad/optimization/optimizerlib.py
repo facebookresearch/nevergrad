@@ -1355,7 +1355,6 @@ DEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=
 PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
 
 
-@registry.register
 class old_cGA(base.Optimizer):
     """
     Implementation of the discrete cGA algorithm
@@ -1394,6 +1393,7 @@ class old_cGA(base.Optimizer):
             @registry.register
           
         
+@registry.register
 class cGA(base.Optimizer):
     """
     Implementation of the discrete cGA algorithm
@@ -1406,10 +1406,10 @@ class cGA(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: Optinonal[int] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if arity is None:
-            TODO instrumentation else 2
+            arity = len(self.possibilities) if hasattr(self, possibilities) else 2
         self._arity = arity
         self._penalize_cheap_violations = True  # Not sure this is the optimal decision.
-        self.p: np.ndarray = np.ones((arity, self.dimension)) / arity
+        self.p: np.ndarray = np.ones((self.dimension, arity)) / arity
         self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))  # FIXME
         self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
