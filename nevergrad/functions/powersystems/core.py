@@ -71,8 +71,8 @@ class PowerSystem(inst.InstrumentedFunction):
             num_years: int = 1,  # Number of years.
             failure_cost: float = 500.,  # Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
             ) -> None:
-        # Number of stocks (dams).
         self.num_dams = num_dams
+        self.losses: List[float] = []
         # Parameters describing the problem.
         self.year_to_day_ratio = year_to_day_ratio
         self.constant_to_year_ratio = constant_to_year_ratio
@@ -174,9 +174,11 @@ class PowerSystem(inst.InstrumentedFunction):
         assert len(consumption_per_time_step) == num_time_steps
         self.hydro_prod_per_time_step = hydro_prod_per_time_step
         self.consumption_per_time_step = consumption_per_time_step
+        self.losses += [cost]
         return cost  
 
-    def makeplots(self, filename="ps.png"):
+    def make_plots(self, filename="ps.png"):
+        losses = self.losses
         num_dams = self.num_dams
         consumption_per_ts = self.consumption_per_time_step
         hydro_prod_per_ts = self.hydro_prod_per_time_step
