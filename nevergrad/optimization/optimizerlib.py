@@ -1396,7 +1396,7 @@ class cGA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         # Multinomial.
-        values = []
+        values: List[int] = []
         for i, w in enumerate(self.p):
             values += [sum(self._rng.uniform() > np.cumsum(w))]
         data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
@@ -1409,8 +1409,8 @@ class cGA(base.Optimizer):
             winner, loser = self._previous_value_candidate[1], candidate.data
             if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
-            winner_data = [int(d) for d in winner_data]
-            loser_data = [int(d) for d in loser_data]
+            winner_data: ArrayLike = [int(d) for d in winner_data]
+            loser_data: ArrayLike = [int(d) for d in loser_data]
             winner_data = inst.discretization.threshold_discretization(winner_data ,arity=self._arity)
             loser_data = inst.discretization.threshold_discretization(loser_data ,arity=self._arity)
             for i in range(len(winner_data)):
