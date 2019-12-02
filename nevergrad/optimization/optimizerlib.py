@@ -439,6 +439,12 @@ class MPCEDA(EDA):
 
 
 @registry.register
+class NaiveMPCEDA(MPCEDA):
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["optimistic"].x
+
+    
+@registry.register
 class MEDA(EDA):
     """Test-based population-size adaptation.
 
