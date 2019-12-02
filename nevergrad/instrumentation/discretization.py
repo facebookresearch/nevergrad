@@ -42,6 +42,13 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> Arra
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
 
 
+def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> ArrayLike:
+    indexes_arr = np.array(indexes, copy=True)
+    pdf_bin_size = 1 / arity
+    # We take a random point in the bin.
+    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + np.random.rand() * pdf_bin_size)  # type: ignore
+
+
 def softmax_discretization(x: ArrayLike, arity: int = 2, random: Union[bool, np.random.RandomState] = True) -> List[int]:
     """Discretize a list of floats to a list of ints based on softmax probabilities.
     For arity n, a softmax is applied to the first n values, and the result
