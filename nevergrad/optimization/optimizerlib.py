@@ -1368,7 +1368,7 @@ class cGA(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         if arity is None:
-            arity = len(instrumentation.possibilities) if hasattr(instrumentation, "possibilities") else 2
+            arity = len(instrumentation.possibilities) if hasattr(instrumentation, "possibilities") else 2  # type: ignore
         self._arity = arity
         self._penalize_cheap_violations = True  # Not sure this is the optimal decision.
         # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
@@ -1382,9 +1382,9 @@ class cGA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         # Multinomial.
-        values = np.zeros(len(self.p))
+        values = []
         for i, w in enumerate(self.p):
-            values[i] += sum(self._rng.uniform() > np.cumsum(w))
+            values += [sum(self._rng.uniform() > np.cumsum(w))]
         data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.create_candidate.from_data(data)
 
@@ -1395,8 +1395,10 @@ class cGA(base.Optimizer):
             winner, loser = self._previous_value_candidate[1], candidate.data
             if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
-            winner_data = inst.discretization.threshold_discretization(winner.data ,arity=self._arity)
-            loser_data = inst.discretization.threshold_discretization(loser.data ,arity=self._arity)
+            winner_data = [int(d) for d in winner_data]
+            loser_data = [int(d) for d in loser_data]
+            winner_data = inst.discretization.threshold_discretization(winner_data ,arity=self._arity)
+            loser_data = inst.discretization.threshold_discretization(loser_data ,arity=self._arity)
             for i in range(len(winner_data)):
                 if winner_data[i] != loser_data[i]:
                     for j in range(len(self.p[i])):
