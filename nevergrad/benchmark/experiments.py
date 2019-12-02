@@ -77,6 +77,26 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
+    functions = [
+        ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
+        for name in names
+        for rotation in [False, True]
+        for n_blocks in [1, 2, 8, 16]
+        for aggregator in ["sum", "max"]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for func in functions:
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
+            for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+
+@registry.register
 def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
@@ -158,6 +178,31 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
+    # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
+              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"] + list(
+                      sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 300, 1000, 3000, 10000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
@@ -171,6 +216,22 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
+              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    functions = [
+        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
+    ]
+    for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
+       for function in functions:
+           for budget in [400, 4000, 40000]:
+               yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -189,6 +250,24 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
+              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"]
+    functions = [
+        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg), cheap_constraint_checker=lambda x: np.sum(x) > 0)
 
 
 @registry.register
@@ -215,7 +294,7 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
 
 @registry.register
 def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """All noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
     optims = sorted(
@@ -239,14 +318,14 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """All Bayesian optimization methods on various functions.
     """
     seedg = create_seed_generator(seed)
-    for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
+    for budget in [25, 31, 37, 43, 50, 60]:
         for optim in sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x):
             for rotation in [False]:
                 for d in [20]:
-                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:
                         for u in [0]:
                             function = ArtificialFunction(
                                 name=name, rotation=rotation, block_dimension=d, useless_variables=d * u, translation_factor=1.0
@@ -413,6 +492,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
 
 
+# Intermediate definition for building a multiobjective problem.
 class PackedFunctions(MultiobjectiveFunction):
 
     def __init__(self, functions: List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
