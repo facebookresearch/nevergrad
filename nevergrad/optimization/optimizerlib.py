@@ -1411,8 +1411,8 @@ class cGA(base.Optimizer):
                 winner, loser = loser, winner
             winner_data: ArrayLike = [int(d) for d in winner_data]
             loser_data: ArrayLike = [int(d) for d in loser_data]
-            winner_data = inst.discretization.threshold_discretization(winner_data ,arity=self._arity)
-            loser_data = inst.discretization.threshold_discretization(loser_data ,arity=self._arity)
+            winner_data = [float(d) for d in inst.discretization.threshold_discretization(winner_data ,arity=self._arity)]
+            loser_data = [float(d) for d in inst.discretization.threshold_discretization(loser_data ,arity=self._arity)]
             for i in range(len(winner_data)):
                 if winner_data[i] != loser_data[i]:
                     for j in range(len(self.p[i])):
