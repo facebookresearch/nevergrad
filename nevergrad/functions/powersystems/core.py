@@ -213,7 +213,8 @@ class PowerSystem(inst.InstrumentedFunction):
             for i in range(0, len(x)):
                 result[i % 24] += x[i] / 24.
             return result
-                
+         
+        plt.clf()
         # Plot the optimization run.
         ax = plt.subplot(2, 2, 1)
         ax.set_xlabel('iteration number')
