@@ -402,17 +402,17 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = []
     funcs += [PowerSystem(3)]
-    funcs += [PowerSystem(num_stocks=3, depth=5, width=5)]
-    funcs += [PowerSystem(num_stocks=3, depth=9, width=9)]
+    funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
     funcs += [PowerSystem(5)]
-    funcs += [PowerSystem(num_stocks=5, depth=5, width=5)]
-    funcs += [PowerSystem(num_stocks=5, depth=9, width=9)]
+    funcs += [PowerSystem(num_dams=5, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=5, depth=9, width=9)]
     funcs += [PowerSystem(9)]
-    funcs += [PowerSystem(num_stocks=9, width=5, depth=5)]
-    funcs += [PowerSystem(num_stocks=9, width=9, depth=9)]
+    funcs += [PowerSystem(num_dams=9, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=9, width=9, depth=9)]
     funcs += [PowerSystem(13)]
-    funcs += [PowerSystem(num_stocks=13, width=5, depth=5)]
-    funcs += [PowerSystem(num_stocks=13, width=9, depth=9)]
+    funcs += [PowerSystem(num_dams=13, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
 
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",

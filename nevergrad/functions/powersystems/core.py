@@ -119,8 +119,8 @@ class PowerSystem(inst.InstrumentedFunction):
         for t in range(num_time_steps):
     
             # Rain
-            for dam_index in range(num_dams):
-                stocks[dam_index] += 0.5*(1.+cos(2*pi*t/(24*365) + delay[dam_index])) * np.random.rand()
+            for dam_idx in range(num_dams):
+                stocks[dam_idx] += 0.5*(1.+cos(2*pi*t/(24*365) + delay[dam_idx])) * np.random.rand()
             # Consumption model.
             base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio 
                     +0.5*self.year_to_day_ratio*(1.+cos(2*pi*t/(24*365))) + 0.5*(1.+cos(2*pi*t/24)))
