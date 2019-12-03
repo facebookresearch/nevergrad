@@ -1389,7 +1389,7 @@ class cGA(base.Optimizer):
         self.p: np.ndarray = np.ones((self.dimension, arity)) / arity
         # Probability increments are of order 1./self.llambda
         # and lower bounded by something of order 1./self.llambda.
-        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))  # FIXME: no good heuristic ?
+        self.llambda = max(num_workers, 40)  # FIXME: no good heuristic ?
         # CGA generates a candidate, then a second candidate;
         # then updates depending on the comparison with the first one. We therefore have to store the previous candidate.
         self._previous_value_candidate: Optional[Tuple[float, np.ndarray]] = None
