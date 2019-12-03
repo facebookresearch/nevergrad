@@ -53,7 +53,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
             candidate = optimizer.minimize(fitness)
-        if verify_value:
+        if verify_value and "chain" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
             except AssertionError as e:
