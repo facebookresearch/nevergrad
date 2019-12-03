@@ -40,7 +40,7 @@ def threshold_discretization(x: ArrayLike, arity: int = 2) -> List[int]:
         return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 
 # The function below is the opposite of the function above.
-def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> ArrayLike:
+def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
@@ -48,7 +48,7 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> Arra
 
 # The discretization is, by nature, not one to one.
 # In the function below, we randomly draw one of the possible inverse values - this is therefore noisy.
-def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2, gen: Any = None) -> ArrayLike:
+def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2, gen: Any = None) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take a random point in the bin.
