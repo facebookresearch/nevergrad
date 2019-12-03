@@ -192,32 +192,43 @@ class PowerSystem(inst.InstrumentedFunction):
         total_hydro_prod_per_ts = [sum(h) for h in hydro_prod_per_ts]
         num_time_steps = int(365*24*self.number_of_years)
 
-        # Plot the optimization run.
-        ax = plt.subplot(2, 2, 1)
-        ax.set_xlabel('iteration number')
-        ax.plot(losses, label='losses') 
-        ax.legend(loc='best')
-        
         # Utility function for plotting per year or per day.
+        def block(x):
+            result = []
+            step = int(np.sqrt(len(x)))
+            for i in range(0, len(x), step):
+                result += [sum(x[i:i+step])/len(x[i:i+step])]
+            return result
+
         def block24(x):
             result = []
             for i in range(0, len(x), 24):
-                result += [sum(x[i:i+24])]
+                result += [sum(x[i:i+24])/len(x[i:i+24])]
             if len(x) != len(result) * 24:
                 print(len(x), len(result) * 24)
             return result
+
         def deblock24(x):
             result = [0] * 24
             for i in range(0, len(x)):
-                result[i % 24] += x[i] * 24. / len(x)
+                result[i % 24] += x[i] / 24.
             return result
                 
+        # Plot the optimization run.
+        ax = plt.subplot(2, 2, 1)
+        ax.set_xlabel('iteration number')
+        smoothed_losses = block(losses)
+        ax.plot(np.linspace(0,1,len(losses)), losses, label='losses') 
+        ax.plot(np.linspace(0,1,len(smoothed_losses)), smoothed_losses, label='smoothed losses') 
+        ax.legend(loc='best')
+        
         # Plotting marginal costs.
-        ax = plt.subplot(2, 3, 4)
-        marginal_cost_per_day = deblock24(self.marginal_costs)
-        marginal_cost_per_year = block24(self.marginal_costs)
-        ax.plot(np.linspace(1,24,len(marginal_cost_per_hour)), marginal_cost_per_hour, label='marginal cost per hour')
-        ax.plot(np.linspace(1,365,len(marginal_cost_per_day)), marginal_cost_per_day, label='marginal cost per day')
+        ax = plt.subplot(2, 2, 4)
+        marginal_cost_per_hour = deblock24(self.marginal_costs)
+        marginal_cost_per_day = block24(self.marginal_costs)
+        ax.plot(np.linspace(0,.5,len(marginal_cost_per_hour)), marginal_cost_per_hour, label='marginal cost per hour')
+        ax.plot(np.linspace(0.5,1,len(marginal_cost_per_day)), marginal_cost_per_day, label='marginal cost per day')
+        ax.legend(loc='best')
 
         # Plot consumption per day and decomposition of production.
         ax = plt.subplot(2, 2, 2)
