@@ -1384,7 +1384,7 @@ class cGA(base.Optimizer):
         if arity is None:
             arity = len(instrumentation.possibilities) if hasattr(instrumentation, "possibilities") else 2  # type: ignore
         self._arity = arity
-        self._penalize_cheap_violations = True  # Not sure this is the optimal decision.
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
         self.p: np.ndarray = np.ones((self.dimension, arity)) / arity
         # Probability increments are of order 1./self.llambda
