@@ -806,6 +806,7 @@ class SplitOptimizer(base.Optimizer):
             if not self.num_vars or len(self.num_vars) < i+1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
             
+
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
             assert len(self.optims) == i
@@ -840,6 +841,39 @@ class SplitOptimizer(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
+
+
+# Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
+@registry.register
+class SplitOptimizer3(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 3 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+        
+@registry.register
+class SplitOptimizer5(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 5 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class SplitOptimizer9(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 9 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class SplitOptimizer13(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 13 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
 @registry.register

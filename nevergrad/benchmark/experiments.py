@@ -10,6 +10,7 @@ from ..functions import ArtificialFunction
 from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
+from ..functions.powersystems import PowerSystem
 from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
@@ -353,7 +354,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
     # - The 007 game: 1 function, noisy.
-
+    # - PowerSystem: a power system simulation problem.
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -368,6 +369,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
     # Adding ARCoating.
     funcs += [ARCoating()]
+    funcs += [PowerSystem()]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
@@ -386,6 +388,36 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[InstrumentedFunction] = []
+    funcs += [PowerSystem(3)]
+    funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
+    funcs += [PowerSystem(5)]
+    funcs += [PowerSystem(num_dams=5, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=5, depth=9, width=9)]
+    funcs += [PowerSystem(9)]
+    funcs += [PowerSystem(num_dams=9, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=9, width=9, depth=9)]
+    funcs += [PowerSystem(13)]
+    funcs += [PowerSystem(num_dams=13, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
