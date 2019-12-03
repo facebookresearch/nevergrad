@@ -153,7 +153,7 @@ class PowerSystem(inst.InstrumentedFunction):
             dam_index = dam_index[order]
 
             # Using power plants in their cost order, so that we use cheap power plants first.
-            marginal_cost = 0
+            marginal_cost = 0.
             for i in range(len(price)):
                 if needed <= 0:
                     break
