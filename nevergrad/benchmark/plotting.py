@@ -13,7 +13,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
 from ..common import tools
 from ..common.typetools import PathLike
 
