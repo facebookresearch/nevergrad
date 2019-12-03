@@ -13,6 +13,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from ..common import tools
 from ..common.typetools import PathLike
 
@@ -373,7 +374,10 @@ class FightPlotter:
         y_names = self.winrates.index
         self._ax.set_yticks(list(range(len(y_names))))
         self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
-        self._fig.colorbar(self._cax)  # , orientation='horizontal')
+        divider = make_axes_locatable(self._ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        #self._fig.colorbar(im, cax=cax)
+        self._fig.colorbar(self._cax, cax=cax)  # , orientation='horizontal')
         plt.tight_layout()
 
     @staticmethod

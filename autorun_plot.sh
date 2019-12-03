@@ -5,6 +5,7 @@ listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' 
 
 touch allxps
 rm -rf allxps
+mkdir -p allxps
 echo '<html><head><title>nevergrad xps</title></head><body>' > allxps/list.html
 for xp in $listxp
 do
