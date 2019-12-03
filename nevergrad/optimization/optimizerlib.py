@@ -1413,8 +1413,8 @@ class cGA(base.Optimizer):
             loser_data = inst.discretization.threshold_discretization(loser.data, arity=self._arity)
             for i in range(len(winner_data)):
                 if winner_data[i] != loser_data[i]:
-                    self.p[i][winner_data[i]] += .5 / self.llambda
-                    self.p[i][loser_data[i]] -= .5 / self.llambda
+                    self.p[i][winner_data[i]] += 1. / self.llambda
+                    self.p[i][loser_data[i]] -= 1. / self.llambda
                     for j in range(len(self.p[i])):
                         self.p[i][j] = max(self.p[i][j], 1. / self.llambda)
                     self.p[i] /= sum(self.p[i])
