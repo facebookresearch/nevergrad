@@ -1396,9 +1396,7 @@ class cGA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         # Multinomial.
-        values: List[int] = []
-        for i, w in enumerate(self.p):
-            values += [sum(self._rng.uniform() > np.cumsum(w))]
+        values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
         data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.create_candidate.from_data(data)
 
