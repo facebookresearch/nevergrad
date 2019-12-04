@@ -1,8 +1,12 @@
 #!/bin/bash 
 
-# FIXME: Should we include the module load here ?
+echo 'If an argument is given, this script launches the corresponding experiment.'
+echo 'Example: ./autorun.sh powersystems'
+echo 'By default, this script launches all experiments.'
+
 listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
 
+listxp=${1:-$listxp}
 touch allxps
 rm -rf allxps
 T=3600
@@ -15,7 +19,7 @@ do
     # is fine.
     # Using learnfair queue is risky; this will also be discussed
     rm -rf outputs/${xp}
-    python -m dfoptim.benchmark.slurm $xp --seed=1 --repetitions=7 --num_workers=111 --partition=learnfair  &
+    python -m dfoptim.benchmark.slurm $xp --seed=1 --repetitions=7 --num_workers=222 --partition=learnfair  &
     sleep $T
     popd
 done
