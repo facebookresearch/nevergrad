@@ -1409,8 +1409,8 @@ class cGA(base.Optimizer):
             winner, loser = self._previous_value_candidate[1], candidate.data
             if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
-            winner_data = inst.discretization.threshold_discretization(winner.data, arity=self._arity)
-            loser_data = inst.discretization.threshold_discretization(loser.data, arity=self._arity)
+            winner_data = inst.discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
+            loser_data = inst.discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
             for i in range(len(winner_data)):
                 if winner_data[i] != loser_data[i]:
                     self.p[i][winner_data[i]] += 1. / self.llambda
