@@ -53,7 +53,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
             candidate = optimizer.minimize(fitness)
-        if verify_value:
+        if verify_value and "chain" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
             except AssertionError as e:
@@ -160,7 +160,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     np.random.seed(None)
-    if optimizer_cls.recast:
+    if optimizer_cls.recast or "SplitOptimizer" in name:
         np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
@@ -186,7 +186,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
-    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 7
+    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
     np.testing.assert_array_almost_equal(
         candidate.data,
         recomkeeper.recommendations.loc[name, :][:dimension],

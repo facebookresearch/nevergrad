@@ -80,4 +80,6 @@ RPowell = ScipyOptimizer(method="Powell", random_restart=True).with_name("RPowel
 Cobyla = ScipyOptimizer(method="COBYLA").with_name("Cobyla", register=True)
 RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).with_name("RCobyla", register=True)
 SQP = ScipyOptimizer(method="SLSQP").with_name("SQP", register=True)
+SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).with_name("RSQP", register=True)
+RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
