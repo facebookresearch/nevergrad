@@ -8,6 +8,7 @@
 
 import copy
 from math import sqrt, tan, pi, cos, sin
+from math import sqrt, tan, pi
 import matplotlib.pyplot as plt
 from typing import Any
 from typing import List
@@ -105,6 +106,7 @@ class PowerSystem(inst.InstrumentedFunction):
             x = x[a.GetParamNumbers():]
         assert(len(x) == 0)
         self.marginal_costs = []
+
         num_dams = int(self.num_dams)
         # Assume empty initial stocks.
         stocks = [0.] * num_dams
@@ -124,6 +126,7 @@ class PowerSystem(inst.InstrumentedFunction):
             # Consumption model.
             base_consumption = (self.constant_to_year_ratio*self.year_to_day_ratio 
                     +0.5*self.year_to_day_ratio*(1.+cos(2*pi*t/(24*365))) + 0.5*(1.+cos(2*pi*t/24)))
+
             if t == 0:
                 consumption = base_consumption
             else:
@@ -134,6 +137,7 @@ class PowerSystem(inst.InstrumentedFunction):
     
             # Setting inputs for all agents.
             base_x = [cos(2*pi*t/24.), sin(2*pi*t/24.), cos(2*pi*t/(365*24)), sin(2*pi*t/(365*24)), needed, self.average_consumption, self.year_to_day_ratio, self.constant_to_year_ratio, self.back_to_normal, self.consumption_noise]
+
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
     
             # Prices as a decomposition tool!
@@ -168,6 +172,7 @@ class PowerSystem(inst.InstrumentedFunction):
                     cost += production * price[i]
                     if production > 1e-7:
                         marginal_cost = price[i]
+
                 needed -= production
             # Cost in case of failures -- this is
             # harming industries and hospitals, so it can be penalized.
@@ -175,6 +180,7 @@ class PowerSystem(inst.InstrumentedFunction):
             if needed > 1e-7:
                 marginal_cost = failure_cost
             self.marginal_costs += [marginal_cost]
+
             hydro_prod_per_time_step += [hydro_prod]
         # Other data of interest: , hydro_prod, hydro_prod_per_time_step, consumption_per_time_step
         assert len(hydro_prod_per_time_step) == num_time_steps  # Each time steps has 1 value per dam.
@@ -239,6 +245,7 @@ class PowerSystem(inst.InstrumentedFunction):
         ax.plot(np.linspace(1,365,len(hydro_prod_per_day)), hydro_prod_per_day, label='hydro')
         for i in range(min(num_dams, 3)):
             hydro_ts = [h[i] for h in hydro_prod_per_ts]
+
             hydro_day = block24(hydro_ts)
             ax.plot(np.linspace(1,365,len(hydro_day)), hydro_day, label='dam ' + str(i) + ' prod')
         ax.set_xlabel('time step')
