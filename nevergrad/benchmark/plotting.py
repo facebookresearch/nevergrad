@@ -147,21 +147,21 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     if competencemaps:
         max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
-
-        if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
-            try:  # Let us try if data are adapted to competence maps.             
+        best_algo: List[List[str]] = []
+        orders = [len(c) for c in df.unique(fixed)]
+        assert min(orders) == max(orders)
+        order = min(orders)
+        if order == 2 and competencemaps:  # With order 2 we can create a competence map.
+            if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.             
                   # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                   # (typically when attribute1 and attribute2 are correlated).
                 xindices = sorted(set([c[0] for c in df.unique(fixed)]))
                 yindices = sorted(set([c[1] for c in df.unique(fixed)]))
-                best_algo = []  # type: List[List[str]]
                 for _ in range(len(xindices)):
                     best_algo += [[]]
                 for i in range(len(xindices)):
                     for _ in range(len(yindices)):
                         best_algo[i] += ["none"]
-            except:
-                pass  # Ok, something goes wrong for competence map, no problem.
 
         # Let us loop over all combinations of variables.
         for case in df.unique(fixed) if fixed else [()]:
@@ -170,25 +170,19 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
-            if orders == 2 and competencemaps:
-                try:  # This might be competence maps -- we can store the best algo, if that exists.
-                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
-                except:
-                    pass
+            if orders == 2 and competencemaps and best_algo:
+                best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
             fplotter.save(str(output_folder / name), dpi=_DPI)
     
-        if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
-            try:
-                print("# Competence map")
-                name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-                export_table(str(output_folder  / name), xindices, yindices, best_algo)
-                print("Competence map data:", fixed, case, best_algo)
-            except:
-                pass
-
+        if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.       
+            print("# Competence map")
+            name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+            export_table(str(output_folder  / name), xindices, yindices, best_algo)
+            print("Competence map data:", fixed, case, best_algo)
+            
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
