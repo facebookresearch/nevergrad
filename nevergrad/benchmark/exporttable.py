@@ -2,11 +2,8 @@
 # Used in competence maps.
 
 def remove_parens(data):
-    try:
-        data = [[d[:d.index("(")] for d in datarow] for datarow in data]
-    except:
-        pass
-    return data
+    # If data[i][j] contains a "(", we keep only the part before that "(".
+    return [[d[:d.index("(")] if "(" in d else d for d in datarow] for datarow in data]
     
 
 def export_table(filename, rows, cols, data):
