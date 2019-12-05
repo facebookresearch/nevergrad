@@ -142,11 +142,11 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
 
-    # For the competence map case we just consider pairs of attributes, hence 2.
+    # For the competence map case we must consider pairs of attributes, hence maxcomb_size >= 2.
     # A competence map shows for each value of each of two attributes which algorithm was best.
     if competencemaps:
-        print("\n# Focusing on competence maps.")
-    for orders in range(max_combsize + 1) if not competencemaps else [2]:
+        max_combsize = max(max_combsize, 2)
+    for orders in range(max_combsize + 1):
         print("\nOrder ", orders)
         # "fixed" is a list of $orders parameters that will be fixed.
         # Competence maps are 2-dimensional by nature so we consider orders 2 only for that case.
@@ -164,8 +164,9 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                         for _ in range(len(yindices)):
                             best_algo[i] += ["none"]
                 except:
-                    pass
-                
+                    pass  # Ok, something goes wrong for competence map, no problem.
+
+            # Let us loop over all combinations of variables.
             for case in df.unique(fixed) if len(fixed) > 0 else [()]:
                 print("\n# new case #", fixed, case)
                 casedf = df.select(**dict(zip(fixed, case)))
@@ -178,10 +179,9 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                     except:
                         pass
                 # save
-                if not competencemaps:  # When we plot competence maps, we plot only competence maps.
-                    name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-                    name = "fight_all.png" if name == "fight_.png" else name
-                    fplotter.save(str(output_folder / name), dpi=_DPI)
+                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+                name = "fight_all.png" if name == "fight_.png" else name
+                fplotter.save(str(output_folder / name), dpi=_DPI)
     
             if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
                 try:
@@ -194,7 +194,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                     pass
 
     plt.close("all")
-    if not competencemaps:
+    if not competencemaps:  # When we plot competence maps, we do not plot individual curves; this is big enough.
         # xp plots: for each experimental setup, we plot curves with budget in x-axis.
         # plot mean loss / budget for each optimizer for 1 context
         print("# Xp plots")
