@@ -147,11 +147,11 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     if competencemaps:
         max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
-        best_algo: List[List[str]] = []
         orders = [len(c) for c in df.unique(fixed)]
         assert min(orders) == max(orders)
-        order = min(orders)
-        if order == 2 and competencemaps:  # With order 2 we can create a competence map.
+        order = min(orders)        
+        best_algo: List[List[str]] = []
+        if competencemaps and order == 2:  # With order 2 we can create a competence map. 
             if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.             
                   # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                   # (typically when attribute1 and attribute2 are correlated).
