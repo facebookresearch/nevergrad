@@ -2,7 +2,6 @@
 
 # FIXME: Should we include the module load here ?
 listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
-
 touch allxps
 rm -rf allxps
 mkdir -p allxps
@@ -11,7 +10,7 @@ for xp in $listxp
 do
     echo "<br> $xp </br><p>" >> allxps/list.html
     pushd ..
-    python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=1 
+    python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=2 --competencemaps
     # FIXME add --competencemaps=True
     mkdir -p nevergrad_repository/allxps/${xp}
     tar -xzf outputs/${xp}.tar.gz ./data.csv
