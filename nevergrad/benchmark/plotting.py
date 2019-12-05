@@ -164,7 +164,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                 pass  # Ok, something goes wrong for competence map, no problem.
 
         # Let us loop over all combinations of variables.
-        for case in df.unique(fixed) if len(fixed) > 0 else [()]:
+        for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
@@ -190,20 +190,19 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                 pass
 
     plt.close("all")
-    if not competencemaps:  # When we plot competence maps, we do not plot individual curves; this is big enough.
-        # xp plots: for each experimental setup, we plot curves with budget in x-axis.
-        # plot mean loss / budget for each optimizer for 1 context
-        print("# Xp plots")
-        name_style = NameStyle()  # keep the same style for each algorithm
-        cases = df.unique(descriptors)
-        for case in cases:
-            subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-            description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-            out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-            data = XpPlotter.make_data(subdf)
-            xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-            xpplotter.save(out_filepath)
-        plt.close("all")
+    # xp plots: for each experimental setup, we plot curves with budget in x-axis.
+    # plot mean loss / budget for each optimizer for 1 context
+    print("# Xp plots")
+    name_style = NameStyle()  # keep the same style for each algorithm
+    cases = df.unique(descriptors)
+    for case in cases:
+        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+        data = XpPlotter.make_data(subdf)
+        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+        xpplotter.save(out_filepath)
+    plt.close("all")
 
 
 class LegendInfo(NamedTuple):
