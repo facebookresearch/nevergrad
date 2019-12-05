@@ -2,6 +2,7 @@
 
 # FIXME: Should we include the module load here ?
 listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
+listxp="hardmultimodal_perf multimodal_perf photonics war preliminary_asynchronous $listxp"
 touch allxps
 rm -rf allxps
 mkdir -p allxps
