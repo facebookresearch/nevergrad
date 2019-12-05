@@ -10,7 +10,7 @@ for xp in $listxp
 do
     echo "<br> $xp </br><p>" >> allxps/list.html
     pushd ..
-    python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=2 --competencemaps
+    python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=2 --competencemaps=True
     # FIXME add --competencemaps=True
     mkdir -p nevergrad_repository/allxps/${xp}
     tar -xzf outputs/${xp}.tar.gz ./data.csv

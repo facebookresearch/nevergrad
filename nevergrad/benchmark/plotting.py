@@ -149,13 +149,17 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         orders = [len(c) for c in df.unique(fixed)]
-        assert min(orders) == max(orders)
-        order = min(orders)        
+        if len(orders):
+            assert min(orders) == max(orders)
+            order = min(orders)
+        else:
+            order = 0
         best_algo: List[List[str]] = []
         if competencemaps and order == 2:  # With order 2 we can create a competence map. 
+            print("\n#trying to competence-map")
             if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.             
-                  # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
-                  # (typically when attribute1 and attribute2 are correlated).
+                # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
+                # (typically when attribute1 and attribute2 are correlated).
                 xindices = sorted(set([c[0] for c in df.unique(fixed)]))
                 yindices = sorted(set([c[1] for c in df.unique(fixed)]))
                 for _ in range(len(xindices)):
@@ -171,7 +175,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
-            if orders == 2 and competencemaps and best_algo:
+            if order == 2 and competencemaps and best_algo:
+                print("\n#storing data for competence-map")
                 best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
@@ -179,7 +184,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             fplotter.save(str(output_folder / name), dpi=_DPI)
     
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.       
-            print("# Competence map")
+            print("\n# Competence map")
             name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
             export_table(str(output_folder  / name), xindices, yindices, best_algo)
             print("Competence map data:", fixed, case, best_algo)
