@@ -6,6 +6,8 @@ touch allxps
 rm -rf allxps
 mkdir -p allxps
 echo '<html><head><title>nevergrad xps</title></head><body>' > allxps/list.html
+echo '<a href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py"> experiments details</a>'
+echo '<a href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/frozen^ments.py"> frozen^ments details</a>'
 for xp in $listxp
 do
     echo "<br> $xp </br><p>" >> allxps/list.html
@@ -23,6 +25,7 @@ do
     echo '<font size="-6">' >> allxps/list.html
     ls allxps/${xp}/*.png | grep -v fight_all | sed 's/.*/<a href="https:\/\/dl.fbaipublicfiles.com\/nevergrad\/&">&<\/a><br>/g' >> allxps/list.html
     ls allxps/${xp}/*.csv* | sed 's/.*/<a href="https:\/\/dl.fbaipublicfiles.com\/nevergrad\/&">&<\/a>/g' >> allxps/list.html
+    ls allxps/${xp}/*.tex* | sed 's/.*/<a href="https:\/\/dl.fbaipublicfiles.com\/nevergrad\/&">&<\/a>/g' >> allxps/list.html
     echo '</font>' >> allxps/list.html
 done
 echo '</body></html>' >> allxps/list.html
