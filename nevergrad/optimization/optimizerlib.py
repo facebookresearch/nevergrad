@@ -2,26 +2,30 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any
+from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any, Sequence, Type
 from collections import defaultdict, deque
 import warnings
 import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
+from ..common.typetools import ArrayLike
+from ..functions import MultiobjectiveFunction
 from ..instrumentation import transforms
+from .. import instrumentation as inst
 from ..instrumentation import Instrumentation
 from . import utils
 from . import base
 from . import mutations
 from .base import registry
+from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
 
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *  # noqa: F403
-from .oneshot import *  # noqa: F403
+from .rescaledoneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 
@@ -42,7 +46,7 @@ class _OnePlusOne(base.Optimizer):
         self._parameters = ParametrizedOnePlusOne()
         self._sigma: float = 1
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self._parameters.noise_handling
         if not self._num_ask:
@@ -63,19 +67,19 @@ class _OnePlusOne(base.Optimizer):
             return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
         # mutating
         mutation = self._parameters.mutation
+        pessimistic = self.current_bests["pessimistic"].x
+
         if mutation == "gaussian":  # standard case
-            # type: ignore
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)
+            return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
-            # type: ignore
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)
+            return pessimistic + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
+                return mutator.portfolio_discrete_mutation(pessimistic)
             else:
-                return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
+                return mutator.crossover(pessimistic, mutator.get_roulette(self.archive, num=2))
         else:
-            func: Callable[[base.ArrayLike], base.ArrayLike] = {  # type: ignore
+            func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
                 "discrete": mutator.discrete_mutation,
                 "fastga": mutator.doerr_discrete_mutation,
                 "doublefastga": mutator.doubledoerr_discrete_mutation,
@@ -83,7 +87,7 @@ class _OnePlusOne(base.Optimizer):
             }[mutation]
             return func(self.current_bests["pessimistic"].x)
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
 
@@ -189,7 +193,7 @@ class _CMA(base.Optimizer):
         self._parameters = ParametrizedCMA()
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
-        self.listx: List[base.ArrayLike] = []
+        self.listx: List[ArrayLike] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
 
@@ -202,12 +206,12 @@ class _CMA(base.Optimizer):
             self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._parameters.scale, inopts=inopts)
         return self._es
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         if not self.to_be_asked:
             self.to_be_asked.extend(self.es.ask())
         return self.to_be_asked.popleft()
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.listx += [x]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
@@ -219,7 +223,7 @@ class _CMA(base.Optimizer):
                 self.listx = []
                 self.listy = []
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         if self._es is None:
             raise RuntimeError("Either ask or tell method should have been called before")
         if self.es.result.xbest is None:
@@ -272,19 +276,19 @@ class EDA(base.Optimizer):
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # Evaluated population
-        self.evaluated_population: List[base.ArrayLike] = []
+        self.evaluated_population: List[ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
         self.evaluated_population_fitness: List[float] = []
         # Unevaluated population
-        self.unevaluated_population: List[base.ArrayLike] = []
+        self.unevaluated_population: List[ArrayLike] = []
         self.unevaluated_population_sigma: List[float] = []
         # Archive
         self.archive_fitness: List[float] = []
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         individual = tuple(mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance))
@@ -292,7 +296,7 @@ class EDA(base.Optimizer):
         self.unevaluated_population += [tuple(individual)]
         return individual
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         idx = self.unevaluated_population.index(tuple(x))
         self.evaluated_population += [x]
         self.evaluated_population_fitness += [value]
@@ -310,9 +314,8 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = (  # type: ignore
-                sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
-            )
+            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -332,7 +335,7 @@ class PCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -370,9 +373,8 @@ class PCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = (  # type: ignore
-                sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
-            )
+            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -389,7 +391,7 @@ class MPCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -428,9 +430,8 @@ class MPCEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = (  # type: ignore
-                sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
-            )
+            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -447,7 +448,7 @@ class MEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         idx = self.unevaluated_population.index(tuple(x))
         self.evaluated_population += [x]
         self.evaluated_population_fitness += [value]
@@ -466,9 +467,8 @@ class MEDA(EDA):
             self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
             self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
             # Computing the new parent.
-            self.current_center = (  # type: ignore
-                sum([np.asarray(self.evaluated_population[i]) for i in range(self.mu)]) / self.mu
-            )
+            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            self.current_center = sum(arrays) / self.mu  # type: ignore
             self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
             self.evaluated_population = []
             self.evaluated_population_sigma = []
@@ -498,10 +498,10 @@ class TBPSA(base.Optimizer):
         self._evaluated_population: List[base.utils.Individual] = []
         self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
         part = base.utils.Individual(individual)
@@ -509,7 +509,7 @@ class TBPSA(base.Optimizer):
         self._unevaluated_population[individual.tobytes()] = part
         return individual  # type: ignore
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -554,7 +554,7 @@ class TBPSA(base.Optimizer):
 
 @registry.register
 class NaiveTBPSA(TBPSA):
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x
 
 
@@ -566,7 +566,7 @@ class NoisyBandit(base.Optimizer):
     Infinite arms: we add one arm when `20 * #ask >= #arms ** 3`.
     """
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
             return self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
@@ -658,7 +658,7 @@ class PSO(base.Optimizer):
         # only remove at the last minute (safer for checkpointing)
         return candidate
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self._PARTICULE.transform.forward(self.best_x)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -743,7 +743,7 @@ class SPSA(base.Optimizer):
         "a_k is the learning rate."
         return self.a / (k // 2 + 1 + self.A) ** 0.602
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> ArrayLike:
         k = self.idx
         if k % 2 == 0:
             if not self.init:
@@ -754,14 +754,126 @@ class SPSA(base.Optimizer):
             return self.t - self._ck(k) * self.delta  # type:ignore
         return self.t + self._ck(k) * self.delta  # type: ignore
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
         setattr(self, ("ym" if self.idx % 2 == 0 else "yp"), np.array(value, copy=True))
         self.idx += 1
         if self.init and self.yp is not None and self.ym is not None:
             self.init = False
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.avg
+
+
+@registry.register
+class SplitOptimizer(base.Optimizer):
+    """Combines optimizers, each of them working on their own variables.
+    
+    num_optims: number of optimizers
+    num_vars: number of variable per optimizer.
+
+    E.g. for 5 optimizers, each of them working on 2 variables, we can use:
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    or equivalently:
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, we can also do:
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5)
+
+    This is 5 parallel (by num_workers = 5).
+
+    Be careful! The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
+    """
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, multivariate_optimizer: base.OptimizerFamily = CMA, monovariate_optimizer: base.OptimizerFamily = RandomSearch) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if num_vars:
+            if num_optims:
+                assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
+            else:
+                num_optims = len(num_vars)
+            assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
+        else:
+            if not num_optims:  # if no num_vars and no num_optims, just assume 2.
+                num_optims = 2
+            # num_vars not given: we will distribute variables equally.
+        if num_optims > self.dimension:
+            num_optims = self.dimension
+        self.num_optims = num_optims
+        self.optims: List[Any] = []
+        self.num_vars: List[Any] = num_vars if num_vars else []
+        self.instrumentations: List[Any] = []
+        for i in range(self.num_optims):
+            if not self.num_vars or len(self.num_vars) < i+1:
+                self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
+            
+
+            assert self.num_vars[i] >= 1, "At least one variable per optimizer."
+            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
+            assert len(self.optims) == i
+            if self.num_vars[i] > 1:
+                self.optims += [multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+            else:
+                self.optims += [monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+
+        assert sum(self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        data: List[Any] = []
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            data += list(opt.ask().data)
+        assert len(data) == self.dimension
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = candidate.data
+        n = 0
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            local_data = list(data)[n:n+self.num_vars[i]]
+            n += self.num_vars[i]
+            assert len(local_data) == self.num_vars[i]
+            local_candidate = opt.create_candidate.from_data(local_data)
+            opt.tell(local_candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
+# Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
+@registry.register
+class SplitOptimizer3(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 3 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+        
+@registry.register
+class SplitOptimizer5(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 5 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class SplitOptimizer9(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 9 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class SplitOptimizer13(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 13 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
 @registry.register
@@ -792,7 +904,7 @@ class Portfolio(base.Optimizer):
         del self.who_asked[tx][0]
         self.optims[optim_index].tell(candidate, value)
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
@@ -1100,7 +1212,7 @@ class _BO(base.Optimizer):
         # so we should clean the "fake" function
         self._fake_function._registered.clear()
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> ArrayLike:
         return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
 
 
@@ -1185,6 +1297,7 @@ class PBIL(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
 
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         num_categories = 2
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.alpha = 0.3
@@ -1206,6 +1319,90 @@ class PBIL(base.Optimizer):
             self._population = []
 
 
+class _Chain(base.Optimizer):
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._parameters = Chaining([LHSSearch, DE], [10])  # needs a default
+        # delayed initialization
+        self._optimizers_: List[base.Optimizer] = []
+
+    @property
+    def _optimizers(self) -> List[base.Optimizer]:
+        if not self._optimizers_:
+            self._optimizers_ = []
+            converter = {"num_workers": self.num_workers, "dimension": self.dimension, "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
+            budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
+            last_budget = None if self.budget is None else self.budget - sum(budgets)
+            for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
+                self._optimizers_.append(opt(self.instrumentation, budget=budget, num_workers=self.num_workers))
+        return self._optimizers_
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        # Which algorithm are we playing with ?
+        sum_budget = 0.0
+        opt = self._optimizers[0]
+        for opt in self._optimizers:
+            sum_budget += float("inf") if opt.budget is None else opt.budget
+            if self.num_ask < sum_budget:
+                break
+        # if we are over budget, then use the last one...
+        return opt.ask()
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        # Let us inform all concerned algorithms
+        sum_budget = 0.0
+        for opt in self._optimizers:
+            sum_budget += float("inf") if opt.budget is None else opt.budget
+            if self.num_tell < sum_budget:
+                opt.tell(candidate, value)
+
+
+class Chaining(base.ParametrizedFamily):
+    """
+    A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
+    Each algorithm is fed with what happened before it.
+
+    Parameters
+    ----------
+    optimizers: list of Optimizer classes
+        the sequence of optimizers to use
+    budgets: list of int
+        the corresponding budgets for each optimizer but the last one
+
+    """
+    _optimizer_class = _Chain
+
+    def __init__(self, optimizers: Sequence[Union[base.OptimizerFamily, Type[base.Optimizer]]],
+                 budgets: Sequence[Union[str, int]]) -> None:
+        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
+        self.budgets = tuple(budgets)
+        self.optimizers = tuple(optimizers)
+        assert len(self.optimizers) == len(self.budgets) + 1
+        assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
+        super().__init__()
+
+
+chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwithLHS", register=True)
+chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
+chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
+chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("chainDEwithLHS30", register=True)
+
+chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
+chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
+chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
+chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).with_name("chainBOwithLHS", register=True)
+
+chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS30", register=True)
+chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
+chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
+chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("chainPSOwithLHS", register=True)
+
+chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS30", register=True)
+chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
+chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
+chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
+
 @registry.register
 class cGA(base.Optimizer):
     """
@@ -1219,6 +1416,7 @@ class cGA(base.Optimizer):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         num_categories = 2
+        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
         self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
         self._value_candidate: Optional[Tuple[float, np.ndarray]] = None

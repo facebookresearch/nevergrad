@@ -211,6 +211,9 @@ class Archive(Generic[Y]):
         raise RuntimeError(_ERROR_STR)
 
     def items_as_array(self) -> Iterator[Tuple[np.ndarray, Y]]:
+        raise RuntimeError("For consistency, items_as_array is renamed to items_as_arrays")
+
+    def items_as_arrays(self) -> Iterator[Tuple[np.ndarray, Y]]:
         """Functions that iterates on key-values but transforms keys
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
@@ -220,6 +223,9 @@ class Archive(Generic[Y]):
         return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())
 
     def keys_as_array(self) -> Iterator[np.ndarray]:
+        raise RuntimeError("For consistency, keys_as_array is renamed to keys_as_arrays")
+
+    def keys_as_arrays(self) -> Iterator[np.ndarray]:
         """Functions that iterates on keys but transforms them
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
@@ -296,7 +302,7 @@ class Individual:
 
     def __init__(self, x: ArrayLike) -> None:
         self.x = np.array(x, copy=False)
-        self.uuid = uuid4().hex
+        self.uid = uuid4().hex
         self.value: Optional[float] = None
         self._parameters = np.array([])
         self._active = True
@@ -314,24 +320,24 @@ class Population(Generic[X]):
     """
 
     def __init__(self, particles: Iterable[X]) -> None:
-        self._particles = OrderedDict({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
+        self._particles = OrderedDict({p.uid: p for p in particles})  # dont modify manually (needs updated uid to index)
         self._queue = Deque[str]()
-        self._uuids: List[str] = []
+        self._uids: List[str] = []
         self.extend(self._particles.values())
 
     @property
-    def uuids(self) -> List[str]:
+    def uids(self) -> List[str]:
         """Don't modify manually
         """
-        return self._uuids
+        return self._uids
 
     def __repr__(self) -> str:
         particles = [p for p in self._particles.values()]
         return f"Population({particles})"
 
-    def __getitem__(self, uuid: str) -> X:
-        parti = self._particles[uuid]
-        if parti.uuid != uuid:
+    def __getitem__(self, uid: str) -> X:
+        parti = self._particles[uid]
+        if parti.uid != uid:
             raise RuntimeError("Something went horribly wrong in the Population structure")
         return parti
 
@@ -343,9 +349,9 @@ class Population(Generic[X]):
         The new particles are queued left (first out of queue)
         """
         particles = list(particles)
-        self._uuids.extend(p.uuid for p in particles)
-        self._particles.update({p.uuid: p for p in particles})  # dont modify manually (needs updated uuid to index)
-        self._queue.extendleft(p.uuid for p in reversed(particles))
+        self._uids.extend(p.uid for p in particles)
+        self._particles.update({p.uid: p for p in particles})  # dont modify manually (needs updated uid to index)
+        self._queue.extendleft(p.uid for p in reversed(particles))
 
     def __len__(self) -> int:
         return len(self._particles)
@@ -356,30 +362,30 @@ class Population(Generic[X]):
     def get_queued(self, remove: bool = False) -> X:
         if not self._queue:
             raise RuntimeError("Queue is empty, you tried to ask more than population size")
-        uuid = self._queue[0]  # pylint: disable=unsubscriptable-object
+        uid = self._queue[0]  # pylint: disable=unsubscriptable-object
         if remove:
             self._queue.popleft()
-        return self._particles[uuid]
+        return self._particles[uid]
 
     def set_queued(self, particle: X) -> None:
-        if particle.uuid not in self._particles:
+        if particle.uid not in self._particles:
             raise ValueError("Individual is not part of the population")
-        self._queue.append(particle.uuid)
+        self._queue.append(particle.uid)
 
     def replace(self, oldie: X, newbie: X) -> None:
         """Replaces an old particle by a new particle.
         The new particle is queue left (first out of queue)
         """
-        if oldie.uuid not in self._particles:
+        if oldie.uid not in self._particles:
             raise ValueError("Individual is not part of the population")
-        if newbie.uuid in self._particles:
+        if newbie.uid in self._particles:
             raise ValueError("Individual is already in the population")
-        del self._particles[oldie.uuid]
-        self._particles[newbie.uuid] = newbie
-        self._uuids = [newbie.uuid if u == oldie.uuid else u for u in self._uuids]
+        del self._particles[oldie.uid]
+        self._particles[newbie.uid] = newbie
+        self._uids = [newbie.uid if u == oldie.uid else u for u in self._uids]
         # update queue
         try:
-            self._queue.remove(oldie.uuid)
+            self._queue.remove(oldie.uid)
         except ValueError:
             pass
-        self._queue.appendleft(newbie.uuid)
+        self._queue.appendleft(newbie.uid)

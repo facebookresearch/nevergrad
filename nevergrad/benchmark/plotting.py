@@ -192,6 +192,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                     print("Competence map data:", fixed, case, best_algo)
                 except:
                     pass
+
     plt.close("all")
     if not competencemaps:
         # xp plots: for each experimental setup, we plot curves with budget in x-axis.
@@ -268,6 +269,9 @@ class XpPlotter:
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
+            # confidence lines
+            for conf in self._get_confidence_arrays(vals, log=logplot):
+                plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=.1)
             text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
@@ -283,6 +287,16 @@ class XpPlotter:
         self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis="both", which="both")
         # self._fig.tight_layout()
+
+    @staticmethod
+    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+        loss = vals["loss"]
+        conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
+        if not log:
+            return loss - conf, loss + conf
+        lloss = np.log10(loss)
+        lstd = 0.434 * conf / loss
+        return tuple(10**(lloss + x) for x in [-lstd, lstd])  # type: ignore
 
     def add_legends(self, legend_infos: List[LegendInfo]) -> None:
         """Adds the legends
@@ -336,6 +350,7 @@ class XpPlotter:
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
@@ -363,7 +378,7 @@ def split_long_title(title: str) -> str:
     if not comma_indices.size:
         return title
     best_index = comma_indices[np.argmin(abs(comma_indices - len(title) // 2))]
-    title = title[: (best_index + 1)] + "\n" + title[(best_index + 1) :]
+    title = title[: (best_index + 1)] + "\n" + title[(best_index + 1):]
     return title
 
 
@@ -521,7 +536,7 @@ def compute_best_placements(positions: List[float], min_diff: float) -> List[flo
                 # which will provide new non-overlapping positions around the mean of initial positions
                 new_groups.append(groups[k].combine_with(groups[k + 1]))
                 # copy the rest of the groups and start over from the first group
-                new_groups.extend(groups[k + 2 :])
+                new_groups.extend(groups[k + 2:])
                 groups = new_groups
                 new_groups = []
                 ready = False

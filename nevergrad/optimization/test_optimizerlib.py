@@ -19,7 +19,7 @@ from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
-from . import optimizerlib
+from . import optimizerlib as optlib
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 
@@ -41,7 +41,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
     optimum = [0.5, -0.8]
-    if optimizer_cls in (optimizerlib.cGA, optimizerlib.PBIL):
+    if optimizer_cls in (optlib.cGA, optlib.PBIL):
         optimum = [0, 1, 0, 1, 0, 1]
     fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
@@ -53,7 +53,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
             candidate = optimizer.minimize(fitness)
-        if verify_value:
+        if verify_value and "chain" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
             except AssertionError as e:
@@ -108,7 +108,7 @@ UNSEEDABLE: List[str] = []
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.OptimizerFamily):
-        assert hasattr(optimizerlib, name)  # make sure registration matches name in optimizerlib
+        assert hasattr(optlib, name)  # make sure registration matches name in optlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
@@ -160,12 +160,12 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     np.random.seed(None)
-    if optimizer_cls.recast:
+    if optimizer_cls.recast or "SplitOptimizer" in name:
         np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
     budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
-    if isinstance(optimizer_cls, optimizerlib.DifferentialEvolution):
+    if isinstance(optimizer_cls, optlib.DifferentialEvolution):
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
@@ -186,7 +186,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
-    decimal = 2 if isinstance(optimizer_cls, optimizerlib.ParametrizedBO) else 7
+    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
     np.testing.assert_array_almost_equal(
         candidate.data,
         recomkeeper.recommendations.loc[name, :][:dimension],
@@ -216,19 +216,19 @@ def test_portfolio_budget() -> None:
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         for k in range(3, 13):
-            optimizer = optimizerlib.Portfolio(instrumentation=2, budget=k)
+            optimizer = optlib.Portfolio(instrumentation=2, budget=k)
             np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
 def test_optimizer_families_repr() -> None:
-    Cls = optimizerlib.DifferentialEvolution
+    Cls = optlib.DifferentialEvolution
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization="LHS")), "DifferentialEvolution(initialization='LHS')")
     #
-    optimrs = optimizerlib.RandomSearchMaker(cauchy=True)
+    optimrs = optlib.RandomSearchMaker(cauchy=True)
     np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(cauchy=True)")
     #
-    optimso = optimizerlib.ScipyOptimizer(method="COBYLA")
+    optimso = optlib.ScipyOptimizer(method="COBYLA")
     np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
     assert optimso.no_parallelization
 
@@ -241,7 +241,7 @@ def test_tell_not_asked(name: str) -> None:
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        opt = optimizerlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
+        opt = optlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
     if name == "PSO":
         opt.llambda = 2  # type: ignore
     else:
@@ -263,7 +263,7 @@ def test_tbpsa_recom_with_update() -> None:
     budget = 20
     # set up problem
     fitness = Fitness([0.5, -0.8, 0, 4])
-    optim = optimizerlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
+    optim = optlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
     optim.instrumentation.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.minimize(fitness)
@@ -276,7 +276,7 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 
 def test_optimization_doc_instrumentation_example() -> None:
     instrum = inst.Instrumentation(inst.var.Array(2), y=inst.var.Array(1).asscalar())
-    optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=100)
+    optimizer = optlib.OnePlusOne(instrumentation=instrum, budget=100)
     recom = optimizer.minimize(_square)
     assert len(recom.args) == 1
     testing.assert_set_equal(recom.kwargs, ["y"])
@@ -285,7 +285,7 @@ def test_optimization_doc_instrumentation_example() -> None:
 
 
 def test_optimization_discrete_with_one_sample() -> None:
-    optimizer = optimizerlib.PortfolioDiscreteOnePlusOne(instrumentation=1, budget=10)
+    optimizer = optlib.PortfolioDiscreteOnePlusOne(instrumentation=1, budget=10)
     optimizer.minimize(_square)
 
 
@@ -306,18 +306,40 @@ def test_bo_instrumentation_and_parameters() -> None:
     # instrumentation
     instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
-        optimizerlib.QRBO(instrumentation, budget=10)
+        optlib.QRBO(instrumentation, budget=10)
     with pytest.warns(None) as record:
-        opt = optimizerlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
+        opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
     assert not record, record.list  # no warning
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
     opt.tell(opt.create_candidate.from_call(True), 0.0)
 
 
+def test_chaining() -> None:
+    budgets = [7, 19]
+    optimizer = optlib.Chaining([optlib.LHSSearch, optlib.HaltonSearch, optlib.OnePlusOne], budgets)(2, 40)
+    optimizer.minimize(_square)
+    expected = [(7, 7, 0), (19, 19 + 7, 7), (14, 14 + 19 + 7, 19 + 7)]
+    for (ex_ask, ex_tell, ex_tell_not_asked), opt in zip(expected, optimizer._optimizers):  # type: ignore
+        assert opt.num_ask == ex_ask
+        assert opt.num_tell == ex_tell
+        assert opt.num_tell_not_asked == ex_tell_not_asked
+    optimizer.ask()
+    assert optimizer._optimizers[-1].num_ask == 15  # type: ignore
+
+
 def test_instrumentation_optimizer_reproducibility() -> None:
     instrumentation = inst.Instrumentation(inst.var.Array(1), y=inst.var.SoftmaxCategorical(list(range(100))))
     instrumentation.random_state.seed(12)
-    optimizer = optimizerlib.RandomSearch(instrumentation, budget=10)
+    optimizer = optlib.RandomSearch(instrumentation, budget=10)
     recom = optimizer.minimize(_square)
     np.testing.assert_equal(recom.kwargs["y"], 67)
+
+
+def test_constrained_optimization() -> None:
+    instrumentation = inst.Instrumentation(x=inst.var.Array(1), y=inst.var.Scalar())
+    optimizer = optlib.OnePlusOne(instrumentation, budget=100)
+    optimizer.instrumentation.random_state.seed(12)
+    optimizer.instrumentation.set_cheap_constraint_checker(lambda x, y: x[0] >= 1)  # type:ignore
+    recom = optimizer.minimize(_square)
+    np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
