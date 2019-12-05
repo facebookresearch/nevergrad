@@ -146,52 +146,48 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     # A competence map shows for each value of each of two attributes which algorithm was best.
     if competencemaps:
         max_combsize = max(max_combsize, 2)
-    for orders in range(max_combsize + 1):
-        print("\nOrder ", orders)
-        # "fixed" is a list of $orders parameters that will be fixed.
-        # Competence maps are 2-dimensional by nature so we consider orders 2 only for that case.
-        for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in [orders])):
-            if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
-                try:  # Let us try if data are adapted to competence maps.
-                # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
-                # (typically when attribute1 and attribute2 are correlated).
-                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
-                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
-                    best_algo = []  # type: List[List[str]]
-                    for _ in range(len(xindices)):
-                        best_algo += [[]]
-                    for i in range(len(xindices)):
-                        for _ in range(len(yindices)):
-                            best_algo[i] += ["none"]
-                except:
-                    pass  # Ok, something goes wrong for competence map, no problem.
+    for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
 
-            # Let us loop over all combinations of variables.
-            for case in df.unique(fixed) if len(fixed) > 0 else [()]:
-                print("\n# new case #", fixed, case)
-                casedf = df.select(**dict(zip(fixed, case)))
-                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-                fplotter = FightPlotter(data_df)
-                # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
-                if orders == 2 and competencemaps:
-                    try:  # This might be competence maps -- we can store the best algo, if that exists.
-                        best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
-                    except:
-                        pass
-                # save
-                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-                name = "fight_all.png" if name == "fight_.png" else name
-                fplotter.save(str(output_folder / name), dpi=_DPI)
-    
-            if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
-                try:
-                    print("# Competence map")
-                    name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-    
-                    export_table(str(output_folder  / name), xindices, yindices, best_algo)
-                    print("Competence map data:", fixed, case, best_algo)
+        if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
+            try:  # Let us try if data are adapted to competence maps.             
+                  # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
+                  # (typically when attribute1 and attribute2 are correlated).
+                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                best_algo = []  # type: List[List[str]]
+                for _ in range(len(xindices)):
+                    best_algo += [[]]
+                for i in range(len(xindices)):
+                    for _ in range(len(yindices)):
+                        best_algo[i] += ["none"]
+            except:
+                pass  # Ok, something goes wrong for competence map, no problem.
+
+        # Let us loop over all combinations of variables.
+        for case in df.unique(fixed) if len(fixed) > 0 else [()]:
+            print("\n# new case #", fixed, case)
+            casedf = df.select(**dict(zip(fixed, case)))
+            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            fplotter = FightPlotter(data_df)
+            # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
+            if orders == 2 and competencemaps:
+                try:  # This might be competence maps -- we can store the best algo, if that exists.
+                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
                 except:
                     pass
+            # save
+            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+            name = "fight_all.png" if name == "fight_.png" else name
+            fplotter.save(str(output_folder / name), dpi=_DPI)
+    
+        if orders == 2 and competencemaps:  # With order 2 we can create a competence map.
+            try:
+                print("# Competence map")
+                name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+                export_table(str(output_folder  / name), xindices, yindices, best_algo)
+                print("Competence map data:", fixed, case, best_algo)
+            except:
+                pass
 
     plt.close("all")
     if not competencemaps:  # When we plot competence maps, we do not plot individual curves; this is big enough.
