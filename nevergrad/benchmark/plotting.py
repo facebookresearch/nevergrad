@@ -195,6 +195,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     print("# Xp plots")
     name_style = NameStyle()  # keep the same style for each algorithm
     cases = df.unique(descriptors)
+    if not cases:
+        cases = [()]
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
