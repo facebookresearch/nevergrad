@@ -1413,30 +1413,44 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        num_categories = 2
+        if arity is None:
+            arity = len(instrumentation.possibilities) if hasattr(instrumentation, "possibilities") else 2  # type: ignore
+        self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
-        self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
-        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
-        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
+        # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
+        self.p: np.ndarray = np.ones((self.dimension, arity)) / arity
+        # Probability increments are of order 1./self.llambda
+        # and lower bounded by something of order 1./self.llambda.
+        self.llambda = max(num_workers, 40)  # FIXME: no good heuristic ?
+        # CGA generates a candidate, then a second candidate;
+        # then updates depending on the comparison with the first one. We therefore have to store the previous candidate.
+        self._previous_value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1 - self.p[0]).astype(float)
+        # Multinomial.
+        values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
+        data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        if self._value_candidate is None:
-            self._value_candidate = (value, candidate.data)
+        if self._previous_value_candidate is None:
+            self._previous_value_candidate = (value, candidate.data)
         else:
-            winner, loser = self._value_candidate[1], candidate.data
-            if self._value_candidate[0] > value:
+            winner, loser = self._previous_value_candidate[1], candidate.data
+            if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
-
-            self.p[0] = self.p[0] + (winner != loser) * (2 * winner - 1) / self.llambda
-            self.p[0] = np.clip(self.p[0], 0, 1)
-            self._value_candidate = None
+            winner_data = inst.discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
+            loser_data = inst.discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
+            for i in range(len(winner_data)):
+                if winner_data[i] != loser_data[i]:
+                    self.p[i][winner_data[i]] += 1. / self.llambda
+                    self.p[i][loser_data[i]] -= 1. / self.llambda
+                    for j in range(len(self.p[i])):
+                        self.p[i][j] = max(self.p[i][j], 1. / self.llambda)
+                    self.p[i] /= sum(self.p[i])
+            self._previous_value_candidate = None
 
 
 __all__ = list(registry.keys())
