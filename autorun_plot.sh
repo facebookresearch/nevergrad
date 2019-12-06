@@ -19,10 +19,10 @@ do
     if [ -d "../outputs/$xp" ]; then
         pushd ..
         python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=2 --competencemaps=True
-        # FIXME add --competencemaps=True
         mkdir -p nevergrad_repository/allxps/${xp}
         tar -xzf outputs/${xp}.tar.gz ./data.csv
         tar --wildcards -xzf outputs/${xp}.tar.gz ./fight_*.png
+        tar --wildcards -xzf outputs/${xp}.tar.gz ./*.tex
         mv fight*.png data.csv nevergrad_repository/allxps/${xp}/
         gzip nevergrad_repository/allxps/${xp}/*.csv
         popd
