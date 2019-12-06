@@ -23,7 +23,7 @@ do
         tar -xzf outputs/${xp}.tar.gz ./data.csv
         tar --wildcards -xzf outputs/${xp}.tar.gz ./fight_*.png
         tar --wildcards -xzf outputs/${xp}.tar.gz ./*.tex
-        mv fight*.png data.csv nevergrad_repository/allxps/${xp}/
+        mv fight*.png data.csv *.tex nevergrad_repository/allxps/${xp}/
         gzip nevergrad_repository/allxps/${xp}/*.csv
         popd
         echo "<h1> Section ${xp} </h1>" >> allxps/list.html
