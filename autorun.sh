@@ -2,7 +2,8 @@
 
 echo 'If an argument is given, this script launches the corresponding experiment.'
 echo 'Example: ./autorun.sh powersystems'
-echo 'By default, this script launches all experiments.'
+echo 'By default, this script launches all experiments in experiments, frozenexperiments, and a few ones in Dfoptim.'
+echo 'Results are exported to https://dl.fbaipublicfiles.com/nevergrad/allxps/list.html'
 
 listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
 listxp="hardmultimodal_perf multimodal_perf photonics war preliminary_asynchronous $listxp"
