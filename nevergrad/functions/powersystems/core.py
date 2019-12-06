@@ -8,7 +8,6 @@
 
 import copy
 from math import sqrt, tan, pi, cos, sin
-from math import sqrt, tan, pi
 import matplotlib.pyplot as plt
 from typing import Any
 from typing import List
