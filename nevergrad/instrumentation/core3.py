@@ -92,16 +92,23 @@ class Parameter(BaseParameter):
     """This provides the core functionality of a parameter, aka
     value, subparameters, mutation, recombination
     and adds some additional features such as shared random state,
-    constraint check, hashes and naming.
+    constraint check, hashes, generation and naming.
     """
 
     def __init__(self, **subparameters: Any) -> None:
         super().__init__(**subparameters)
         self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
+        self._generation = 0
         self._constraint_checkers: List[Callable[[Any], bool]] = []
         self._name: Optional[str] = None
 
-    def compute_value_hash(self) -> Any:
+    @property
+    def generation(self) -> int:
+        """generation of the parameter
+        """
+        return self._generation
+
+    def get_value_hash(self) -> Any:
         val = self.value
         if isinstance(val, (str, bytes, float, int)):
             return val
@@ -110,7 +117,7 @@ class Parameter(BaseParameter):
         else:
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
-    def compute_data_hash(self) -> Union[str, bytes, float, int]:
+    def get_data_hash(self) -> Union[str, bytes, float, int]:
         return self.get_std_data().tobytes()
 
     def _get_name(self) -> str:
@@ -179,6 +186,7 @@ class Parameter(BaseParameter):
         child = self._internal_spawn_child()
         child._set_random_state(rng)
         child._constraint_checkers = list(self._constraint_checkers)
+        child._generation = self.generation + 1
         return child
 
     def _internal_spawn_child(self: P) -> P:
@@ -215,8 +223,8 @@ class NgDict(Parameter):
                 if not param == val:  # safer this way
                     raise ValueError(f"Trying to set frozen value {key}={param} to {val}")  # TODO test this
 
-    def compute_value_hash(self) -> Tuple[Tuple[str, Any], ...]:
-        return tuple(sorted((x, y.compute_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
+    def get_value_hash(self) -> Tuple[Tuple[str, Any], ...]:
+        return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
 
     def get_std_data(self) -> np.ndarray:
         data = {k: p.get_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}

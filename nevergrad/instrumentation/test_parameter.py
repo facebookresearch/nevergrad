@@ -30,8 +30,8 @@ def test_array_basics() -> None:
                                    par.NgList(), ])
 def test_empty_parameters(param: Parameter) -> None:
     assert not param.dimension
-    assert not param.compute_data_hash()
-    assert not param.compute_value_hash()
+    assert not param.get_data_hash()
+    assert not param.get_value_hash()
 
 
 @pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
@@ -40,17 +40,19 @@ def test_empty_parameters(param: Parameter) -> None:
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None
+    assert param.generation == 0
     child = param.spawn_child()
+    assert child.generation == 1
     assert param._random_state is not None
     child.mutate()
     assert child.name == param.name
     assert child.random_state is param.random_state
-    assert child.compute_data_hash() != param.compute_data_hash()
+    assert child.get_data_hash() != param.get_data_hash()
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
-    assert child.compute_data_hash() != param.compute_data_hash()
+    assert child.get_data_hash() != param.get_data_hash()
     param.value = child.value
-    assert param.compute_value_hash() == child.compute_value_hash()
+    assert param.get_value_hash() == child.get_value_hash()
     param.recombine(child, child)
     # constraints
     param.register_cheap_constraint(lambda x: False)
@@ -59,6 +61,6 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert not param.complies_with_constraint()
     assert not child2.complies_with_constraint()
     # array to and from with hash
-    data_hash = param.compute_data_hash()
+    data_hash = param.get_data_hash()
     param.set_std_data(param.get_std_data())
-    assert data_hash == param.compute_data_hash()
+    assert data_hash == param.get_data_hash()
