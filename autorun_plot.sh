@@ -24,7 +24,7 @@ do
         tar --wildcards -xzf outputs/${xp}.tar.gz ./fight_*.png
         tar --wildcards -xzf outputs/${xp}.tar.gz ./*.tex
         mv fight*.png data.csv *.tex nevergrad_repository/allxps/${xp}/
-        gzip nevergrad_repository/allxps/${xp}/*.csv
+        gzip -f nevergrad_repository/allxps/${xp}/*.csv
         popd
         echo "<h1> Section ${xp} </h1>" >> allxps/list.html
         ls allxps/${xp}/fight_all.png | sed 's/.*/<img src="https:\/\/dl.fbaipublicfiles.com\/nevergrad\/&">&<p>/g' >> allxps/list.html
