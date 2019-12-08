@@ -64,3 +64,11 @@ def test_parameters_basic_features(param: Parameter) -> None:
     data_hash = param.get_data_hash()
     param.set_std_data(param.get_std_data())
     assert data_hash == param.get_data_hash()
+
+
+def test_choices() -> None:
+    param1 = par.Array((2, 2), sigma=2)
+    param2 = par.Array((2,), sigma=1)
+    choice = par.Choice([param1, param2, "blublu"])
+    choice.value = "blublu"
+    np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0, 0.69314718])

@@ -4,6 +4,7 @@ import numpy as np
 # pylint: disable=unused-import,useless-import-alias
 from . import discretization
 from .core3 import Parameter
+from .core3 import _as_parameter
 from .core3 import NgDict as NgDict  # noqa
 
 
@@ -72,6 +73,9 @@ class NgList(NgDict):
     def __init__(self, *parameters: Any) -> None:
         super().__init__(**{str(k): p for k, p in enumerate(parameters)})
 
+    def __getitem__(self, ind: Any) -> Any:
+        return super().__getitem__(str(ind))
+
     @property  # type: ignore
     def value(self) -> List[Any]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
@@ -89,7 +93,7 @@ class NgList(NgDict):
                 param.value = val
 
 
-class Choice(Parameter):
+class Choice(NgDict):
 
     def __init__(
             self,
@@ -106,40 +110,45 @@ class Choice(Parameter):
         self._draw(deterministic=False)
 
     @property
+    def probabilities(self) -> Array:
+        return self._parameters["probabilities"]  # type: ignore
+
+    @property
     def value(self) -> Any:
-        val = self.subparameters._parameters["choices"][str(self._index)]
-        return val.value if isinstance(val, Parameter) else val
+        return _as_parameter(self._parameters["choices"][str(self._index)]).value
 
     @value.setter
     def value(self, value: Any) -> None:
         index = -1
         # try to find where to put this
-        choices = self.subparameters._parameters["choices"]
-        nums = sorted(choices)
+        choices = self._parameters["choices"]
+        nums = list(choices._parameters)
         for k in nums:
-            choice = choices[k]
-            if isinstance(choice, Parameter):
-                try:
-                    choice.value = value
-                except Exception:  # pylint: disable=broad-except
-                    pass
-                else:
-                    index = int(k)
-                    break
+            choice = _as_parameter(choices[k])
+            try:
+                choice.value = value
+            except Exception:  # pylint: disable=broad-except
+                pass
             else:
-                if not value != choice:  # slighly safer this way
-                    index = int(k)
-                    break
+                index = int(k)
+                break
         if index == -1:
             raise ValueError(f"Could not figure out where to put value {value}")
         out = discretization.inverse_softmax_discretization(index, len(nums))
-        self.set_std_data(out, deterministic=True)
+        self._parameters["probabilities"].set_std_data(out, deterministic=True)
 
     def _draw(self, deterministic: bool = True) -> None:
-        probas = self._get_parameter_value("probabilities")
+        probas = self._parameters["probabilities"].value
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
 
     def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         super().set_std_data(data, deterministic=deterministic)
         self._draw(deterministic=deterministic)
+
+    def mutate(self) -> None:
+        self._parameters["probabilities"].mutate()
+        self._draw(deterministic=self._deterministic)
+        param = self._parameters["choices"][str(self._index)]
+        if isinstance(param, Parameter):
+            param.mutate()

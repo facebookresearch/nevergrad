@@ -193,6 +193,44 @@ class Parameter(BaseParameter):
         return super().spawn_child()
 
 
+class Constant(Parameter):
+
+    def __init__(self, value: Any) -> None:
+        super().__init__()
+        if isinstance(value, Parameter):
+            raise TypeError("Only non-parameters can be wrapped in a Constant")
+        self._value = value
+
+    def _get_name(self) -> str:
+        return str(self._value)
+
+    @property
+    def value(self) -> Any:
+        return self._value
+
+    @value.setter
+    def value(self, value: Any) -> None:
+        if not value == self._value:
+            raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
+
+    def get_std_data(self) -> np.ndarray:
+        return np.array([])
+
+    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+        if data.size:
+            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
+
+    def spawn_child(self: P) -> P:
+        return self  # no need to create another instance for a constant
+
+
+def _as_parameter(param: Any) -> Parameter:
+    if isinstance(param, Parameter):
+        return param
+    else:
+        return Constant(param)
+
+
 class NgDict(Parameter):
     """Handle for facilitating dict of parameters management
     """
@@ -202,6 +240,9 @@ class NgDict(Parameter):
         self._parameters = parameters
         self._sizes: Optional[Dict[str, int]] = None
 
+    def __getitem__(self, name: Any) -> Any:
+        return self._parameters[name]
+
     def _get_name(self) -> str:
         params = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self._parameters.items())
         paramsstr = "{" + ",".join(f"{k}={n}" for k, n in params) + "}"
@@ -209,19 +250,14 @@ class NgDict(Parameter):
 
     @property
     def value(self) -> Dict[str, Any]:
-        return {k: p.value if isinstance(p, Parameter) else p for k, p in self._parameters.items()}
+        return {k: _as_parameter(p).value for k, p in self._parameters.items()}
 
     @value.setter
     def value(self, value: Dict[str, Any]) -> None:
         if set(value) != set(self._parameters):
             raise ValueError(f"Got input keys {set(value)} but expected {set(self._parameters)}")
         for key, val in value.items():
-            param = self._parameters[key]
-            if isinstance(param, Parameter):
-                param.value = val
-            else:
-                if not param == val:  # safer this way
-                    raise ValueError(f"Trying to set frozen value {key}={param} to {val}")  # TODO test this
+            _as_parameter(self._parameters[key]).value = val
 
     def get_value_hash(self) -> Tuple[Tuple[str, Any], ...]:
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
