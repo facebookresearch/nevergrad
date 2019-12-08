@@ -72,3 +72,12 @@ def test_choices() -> None:
     choice = par.Choice([param1, param2, "blublu"])
     choice.value = "blublu"
     np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0, 0.69314718])
+    choice.probabilities.value = np.array([1000.0, 0, 0])
+    choice.mutate()
+    # TODO this access should be simplified
+    assert np.abs(choice._parameters["choices"]._parameters["0"].value).ravel().sum()
+    assert not np.abs(choice._parameters["choices"]._parameters["1"].value).ravel().sum(), "Only selection should mutate"
+    with pytest.raises(ValueError):
+        choice.value = "hop"
+    choice.value = np.array([1, 1])
+    np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0.69314718, 0])
