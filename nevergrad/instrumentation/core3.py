@@ -237,7 +237,7 @@ class NgDict(Parameter):
 
     def __init__(self, **parameters: Any) -> None:
         super().__init__()
-        self._parameters = parameters
+        self._parameters: Dict[Any, Any] = parameters
         self._sizes: Optional[Dict[str, int]] = None
 
     def __getitem__(self, name: Any) -> Any:
@@ -291,6 +291,7 @@ class NgDict(Parameter):
                 param.mutate()
 
     def recombine(self, *others: "NgDict") -> None:
+        assert all(isinstance(o, self.__class__) for o in others)
         for k, param in self._parameters.items():
             if isinstance(param, Parameter):
                 param.recombine(*[o[k] for o in others])

@@ -71,11 +71,8 @@ class NgList(NgDict):
     """
 
     def __init__(self, *parameters: Any) -> None:
-        super().__init__(**{str(k): p for k, p in enumerate(parameters)})
-
-    def __getitem__(self, ind: Any) -> Any:
-        assert isinstance(ind, int)
-        return super().__getitem__(str(ind))
+        super().__init__()
+        self._parameters.update({k: p for k, p in enumerate(parameters)})
 
     @property  # type: ignore
     def value(self) -> List[Any]:  # type: ignore
@@ -86,12 +83,7 @@ class NgList(NgDict):
     def value(self, value: List[Any]) -> None:
         assert isinstance(value, list)
         for k, val in enumerate(value):
-            key = str(k)
-            param = self[key]
-            if not isinstance(param, Parameter):
-                self._parameters[key] = val
-            else:
-                param.value = val
+            _as_parameter(self[k]).value = val
 
 
 class Choice(NgDict):
@@ -126,7 +118,7 @@ class Choice(NgDict):
     def value(self, value: Any) -> None:
         index = -1
         # try to find where to put this
-        nums = list(self.choices._parameters)
+        nums = sorted(int(k) for k in self.choices._parameters)
         for k in nums:
             choice = _as_parameter(self.choices[k])
             try:
