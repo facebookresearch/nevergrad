@@ -1,4 +1,9 @@
-from typing import Union, Tuple, Any, List, Iterable
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+from typing import Union, Tuple, Any, List, Iterable, Optional, TypeVar
 import numpy as np
 # importing NgDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
@@ -86,6 +91,9 @@ class NgList(NgDict):
             _as_parameter(self[k]).value = val
 
 
+C = TypeVar("C", bound="Choice")
+
+
 class Choice(NgDict):
 
     def __init__(
@@ -99,8 +107,14 @@ class Choice(NgDict):
         super().__init__(probabilities=Array(shape=(len(lchoices),), recombination=recombination),
                          choices=NgList(*lchoices))
         self._deterministic = deterministic
-        self._index = 0
-        self._draw(deterministic=False)
+        self._index_: Optional[int] = None
+
+    @property
+    def _index(self) -> int:  # delayed choice
+        if self._index_ is None:
+            self._draw(deterministic=self._deterministic)
+        assert self._index_ is not None
+        return self._index_
 
     @property
     def probabilities(self) -> Array:
@@ -136,7 +150,7 @@ class Choice(NgDict):
     def _draw(self, deterministic: bool = True) -> None:
         probas = self.probabilities.value
         random = False if deterministic or self._deterministic else self.random_state
-        self._index = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
+        self._index_ = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
 
     def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         super().set_std_data(data, deterministic=deterministic)
@@ -148,3 +162,10 @@ class Choice(NgDict):
         param = self.choices[self._index]
         if isinstance(param, Parameter):
             param.mutate()
+
+    def _internal_spawn_child(self: C) -> C:
+        child = self.__class__(choices=[], deterministic=self._deterministic)
+        child._parameters["choices"] = self.choices.spawn_child()
+        child._parameters["probabilities"] = self.probabilities.spawn_child()
+        child.parents_uids.append(self.uid)
+        return child

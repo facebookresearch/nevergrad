@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import pytest
 import numpy as np
 from .core3 import Parameter
@@ -36,7 +41,8 @@ def test_empty_parameters(param: Parameter) -> None:
 
 @pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
                                    par.NgDict(blublu=par.Array((2, 3)), truc=12),
-                                   par.NgList(par.Array((2, 3)), 12), ])
+                                   par.NgList(par.Array((2, 3)), 12),
+                                   par.Choice([par.Array((2,)), "blublu"])])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None
