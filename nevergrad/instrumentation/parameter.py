@@ -74,6 +74,7 @@ class NgList(NgDict):
         super().__init__(**{str(k): p for k, p in enumerate(parameters)})
 
     def __getitem__(self, ind: Any) -> Any:
+        assert isinstance(ind, int)
         return super().__getitem__(str(ind))
 
     @property  # type: ignore
@@ -119,7 +120,7 @@ class Choice(NgDict):
 
     @property
     def value(self) -> Any:
-        return _as_parameter(self["choices"][str(self._index)]).value
+        return _as_parameter(self.choices[self._index]).value
 
     @value.setter
     def value(self, value: Any) -> None:
