@@ -86,7 +86,7 @@ class NgList(NgDict):
         assert isinstance(value, list)
         for k, val in enumerate(value):
             key = str(k)
-            param = self._parameters[key]
+            param = self[key]
             if not isinstance(param, Parameter):
                 self._parameters[key] = val
             else:
@@ -111,20 +111,23 @@ class Choice(NgDict):
 
     @property
     def probabilities(self) -> Array:
-        return self._parameters["probabilities"]  # type: ignore
+        return self["probabilities"]  # type: ignore
+
+    @property
+    def choices(self) -> NgList:
+        return self["choices"]  # type: ignore
 
     @property
     def value(self) -> Any:
-        return _as_parameter(self._parameters["choices"][str(self._index)]).value
+        return _as_parameter(self["choices"][str(self._index)]).value
 
     @value.setter
     def value(self, value: Any) -> None:
         index = -1
         # try to find where to put this
-        choices = self._parameters["choices"]
-        nums = list(choices._parameters)
+        nums = list(self.choices._parameters)
         for k in nums:
-            choice = _as_parameter(choices[k])
+            choice = _as_parameter(self.choices[k])
             try:
                 choice.value = value
             except Exception:  # pylint: disable=broad-except
@@ -135,10 +138,10 @@ class Choice(NgDict):
         if index == -1:
             raise ValueError(f"Could not figure out where to put value {value}")
         out = discretization.inverse_softmax_discretization(index, len(nums))
-        self._parameters["probabilities"].set_std_data(out, deterministic=True)
+        self.probabilities.set_std_data(out, deterministic=True)
 
     def _draw(self, deterministic: bool = True) -> None:
-        probas = self._parameters["probabilities"].value
+        probas = self.probabilities.value
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
 
@@ -147,8 +150,8 @@ class Choice(NgDict):
         self._draw(deterministic=deterministic)
 
     def mutate(self) -> None:
-        self._parameters["probabilities"].mutate()
+        self.probabilities.mutate()
         self._draw(deterministic=self._deterministic)
-        param = self._parameters["choices"][str(self._index)]
+        param = self.choices[self._index]
         if isinstance(param, Parameter):
             param.mutate()

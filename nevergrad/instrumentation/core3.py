@@ -49,7 +49,7 @@ class BaseParameter:
         return self._subparameters
 
     def _get_parameter_value(self, name: str) -> Any:
-        param = self.subparameters._parameters[name]
+        param = self.subparameters[name]
         return param.value if isinstance(param, Parameter) else param
 
     @property
@@ -293,7 +293,7 @@ class NgDict(Parameter):
     def recombine(self, *others: "NgDict") -> None:
         for k, param in self._parameters.items():
             if isinstance(param, Parameter):
-                param.recombine(*[o._parameters[k] for o in others])
+                param.recombine(*[o[k] for o in others])
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()
