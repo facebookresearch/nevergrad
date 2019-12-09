@@ -146,6 +146,10 @@ class Choice(NgDict):
             raise ValueError(f"Could not figure out where to put value {value}")
         out = discretization.inverse_softmax_discretization(index, len(nums))
         self.probabilities.set_std_data(out, deterministic=True)
+        self._index_ = index
+
+    def get_value_hash(self) -> Any:
+        return (self._index, _as_parameter(self.choices[self._index]).get_value_hash())
 
     def _draw(self, deterministic: bool = True) -> None:
         probas = self.probabilities.value
