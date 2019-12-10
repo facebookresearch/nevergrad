@@ -3,7 +3,7 @@ extension-pkg-whitelist=numpy,nose,nose.tools,numpy.testing, pathlib.PurePath, p
 
 [MESSAGES CONTROL]
 # disabled messages
-disable=invalid-name,missing-docstring,too-few-public-methods, protected-access, import-error, no-self-use, fixme, no-else-return, no-member
+disable=invalid-name,missing-docstring,too-few-public-methods, protected-access, import-error, no-self-use, fixme, no-else-return, no-member, useless-import-alias
 
 [TYPECHECK]
 ignored-modules = numpy, numpy.testing

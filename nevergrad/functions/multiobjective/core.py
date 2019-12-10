@@ -30,7 +30,7 @@ class MultiobjectiveFunction:
     - The minimum value obtained for this objective function is -h,
       where h is the hypervolume of the Pareto front obtained, given upper_bounds as a reference point.
     - The callable keeps track of the pareto_front (see attribute paretor_front) and is therefor stateful.
-      For this reasonm it cannot be distributed. A user can however call the multiobjective_function 
+      For this reason it cannot be distributed. A user can however call the multiobjective_function
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
@@ -47,7 +47,7 @@ class MultiobjectiveFunction:
         """
         # We compute the hypervolume
         if (losses - self._upper_bounds > 0).any():
-            return np.max(losses - self._upper_bounds)
+            return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
@@ -60,7 +60,7 @@ class MultiobjectiveFunction:
         else:
             # Now we compute for each axis
             # First we prune.
-            self.pareto_front
+            self.pareto_front  # pylint: disable=pointless-statement
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
