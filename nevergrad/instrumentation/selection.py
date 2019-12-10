@@ -8,7 +8,7 @@ import numpy as np
 from . import discretization
 from .core3 import Parameter
 from .core3 import _as_parameter
-from .container import NgDict
+from .core3 import NgDict
 from .container import NgTuple
 from .data import Array
 

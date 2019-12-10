@@ -47,12 +47,13 @@ class Array(Parameter):
 
     # pylint: disable=unused-argument
     def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+        assert isinstance(data, np.ndarray)
         sigma = self._get_parameter_value("sigma")
-        self._value = (sigma * data).reshape(self.value.shape)
+        self._value = (sigma * data).reshape(self._value.shape)
 
     def _internal_spawn_child(self) -> "Array":
         child = super()._internal_spawn_child()
-        child._value = self.value
+        child.value = self.value
         return child
 
     def get_std_data(self) -> np.ndarray:
@@ -67,3 +68,31 @@ class Array(Parameter):
             self.set_std_data(np.mean([p.get_std_data() for p in all_p], axis=0))
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
+
+
+class Scalar(Array):
+
+    def __init__(
+            self,
+            sigma: t.Union[float, "Array"] = 1.0,
+            distribution: t.Union[str, Parameter] = "linear",
+            recombination: t.Union[str, Parameter] = "average",
+    ) -> None:
+        super().__init__(shape=(1,), sigma=sigma, distribution=distribution, recombination=recombination)  # , bounds=bounds)
+
+    @property  # type: ignore
+    def value(self) -> float:  # type: ignore
+        return self._value[0]  # type: ignore
+
+    @value.setter
+    def value(self, value: float) -> None:
+        if not isinstance(value, (float, int, np.float, np.int)):
+            raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
+        self._value = np.array([value], dtype=float)
+
+    def _internal_spawn_child(self) -> "Scalar":
+        child = Scalar()
+        child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
+                                           for k, v in self.subparameters._parameters.items()}
+        child.value = self.value
+        return child
