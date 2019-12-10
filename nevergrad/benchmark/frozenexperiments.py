@@ -5,8 +5,8 @@
 
 from typing import Iterator, Optional, List, Union
 import numpy as np
-from .. import optimization
-from ..optimization import optimizerlib
+from nevergrad import optimizers
+from ..optimization.base import OptimizerFamily
 from ..functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
@@ -32,7 +32,7 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
-    optims: List[Union[str, optimizerlib.base.OptimizerFamily]] = ["OnePlusOne", optimizerlib.DifferentialEvolution()]
+    optims: List[Union[str, OptimizerFamily]] = ["OnePlusOne", optimizers.DifferentialEvolution()]
     for _ in range(5):
         for optim in optims:
             yield Experiment(function.duplicate(), optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
@@ -43,7 +43,7 @@ def small_discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["hardonemax5", "hardjump5", "hardleadingones5"]
-    optims = sorted(x for x, y in optimization.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x
+    optims = sorted(x for x, y in optimizers.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x
                     and "SSNEA" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [30] for uv_factor in [5, 10] for n_blocks in [1]]
@@ -86,7 +86,7 @@ def noise(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in optimization.registry.items()
+    optims = sorted(x for x, y in optimizers.registry.items()
                     if ("TBPSA" in x or "ois" in x or "CMA" in x or "epea" in x) and "iscr" not in x)
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
@@ -101,7 +101,7 @@ def dim10_smallbudget(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [10] for uv_factor in [0] for n_blocks in [1]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
@@ -117,7 +117,7 @@ def dim10_select_two_features(seed: Optional[int] = None) -> Iterator[Experiment
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [2] for uv_factor in [5] for n_blocks in [1]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
@@ -133,7 +133,7 @@ def dim10_select_one_feature(seed: Optional[int] = None) -> Iterator[Experiment]
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [1] for uv_factor in [10] for n_blocks in [1]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
@@ -149,7 +149,7 @@ def doe_dim4(seed: Optional[int] = None) -> Iterator[Experiment]:  # Here, QR pe
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]  # n for n in ArtificialFunction.list_sorted_function_names() if "sphere" in n]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [4] for uv_factor in [0] for n_blocks in [1]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
@@ -166,7 +166,7 @@ def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
     # in the name.
     seedg = create_seed_generator(seed)
     names = ["sphere", "cigar", "ellipsoid", "rosenbrock", "rastrigin"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [1, 4, 20] for uv_factor in [0, 10] for n_blocks in [1]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
@@ -183,7 +183,7 @@ def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
     # in the name.
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd) for name in names for bd in [4, 20]]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
@@ -198,7 +198,7 @@ def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Experiment comparing one-shot optimizers in the context of useless vars vs critical vars.
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
-    optims = sorted(x for x, y in optimization.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=2, num_blocks=1, useless_variables=20) for name in names]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
@@ -214,13 +214,13 @@ def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
-        for optim in sorted(x for x, y in optimization.registry.items() if "BO" in x):
+        for optim in sorted(x for x, y in optimizers.registry.items() if "BO" in x):
             for rotation in [False]:
                 for d in [20]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
                         for u in [0]:
                             function = ArtificialFunction(name=name, rotation=rotation, block_dimension=d,
-                                                          useless_variables=d*u, translation_factor=1.)
+                                                          useless_variables=d * u, translation_factor=1.)
                             yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 

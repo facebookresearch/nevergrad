@@ -15,12 +15,12 @@ from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
 from .xpbase import create_seed_generator
-from .xpbase import registry
+from .xpbase import registry as registry  # noqa
 
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
-# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
+# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
 # for black (since lists are way too long...):
 # fmt: off
 
@@ -94,7 +94,6 @@ def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
             for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
-
 
 
 @registry.register
@@ -184,12 +183,12 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
-    optims = ["NaiveTBPSA", "TBPSA", 
+    optims = ["NaiveTBPSA", "TBPSA",
               "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"] + list(
-                      sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+        sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -225,15 +224,13 @@ def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
-              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
     for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
-       for function in functions:
-           for budget in [400, 4000, 40000]:
-               yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
