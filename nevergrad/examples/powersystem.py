@@ -1,12 +1,17 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+#
 # run this with:
-# echo 'import nevergrad.examples.powersystem' | python 
+# echo 'import nevergrad.examples.powersystem' | python
 # or (e.g. MacOS):
-# echo 'import nevergrad.examples.powersystem' | pythonw 
+# echo 'import nevergrad.examples.powersystem' | pythonw
 
+import nevergrad as ng
 from nevergrad.functions.powersystems.core import PowerSystem
-from nevergrad.optimization import optimizerlib
 
-budget=3500
+budget = 3500
 width = 6
 depth = 6
 num_dams = 6
@@ -23,12 +28,11 @@ constant_to_year_ratio = 4.
 #     num_years: int = 1,  # Number of years.
 #     failure_cost: float = 500.,  # Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
 
-                    power_system_loss = PowerSystem(num_dams=num_dams, depth=depth, width=width, year_to_day_ratio=year_to_day_ratio, back_to_normal=back_to_normal, num_thermal_plants=num_thermal_plants, constant_to_year_ratio=constant_to_year_ratio) 
-                    optimizer = optimizerlib.SplitOptimizer9(instrumentation=power_system_loss.dimension, budget=budget, num_workers=10) 
-                    optimizer.minimize(power_system_loss)
-                    power_system_loss(optimizer.provide_recommendation().data)
-                    power_system_loss.make_plots(f"ps_{num_dams}dams_{depth}_{width}_ytdr{year_to_day_ratio}_btn{back_to_normal}_num_thermal_plants{num_thermal_plants}_ctyr{constant_to_year_ratio}_budget{budget}.png")
-
-
-
-
+power_system_loss = PowerSystem(num_dams=num_dams, depth=depth, width=width, year_to_day_ratio=year_to_day_ratio,
+                                back_to_normal=back_to_normal, num_thermal_plants=num_thermal_plants,
+                                constant_to_year_ratio=constant_to_year_ratio)
+optimizer = ng.optimizers.SplitOptimizer(instrumentation=power_system_loss.dimension, budget=budget, num_workers=10)
+optimizer.minimize(power_system_loss)
+power_system_loss(optimizer.provide_recommendation().data)
+power_system_loss.make_plots(f"ps_{num_dams}dams_{depth}_{width}_ytdr{year_to_day_ratio}_btn{back_to_normal}"
+                             f"_num_thermal_plants{num_thermal_plants}_ctyr{constant_to_year_ratio}_budget{budget}.png")
