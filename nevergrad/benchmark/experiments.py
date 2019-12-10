@@ -20,7 +20,7 @@ from .xpbase import registry as registry  # noqa
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
-# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
+# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
 # for black (since lists are way too long...):
 # fmt: off
 
@@ -224,8 +224,6 @@ def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
-              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -551,7 +549,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                         func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
                         func._descriptors.update(archi=archi)
                         opt_budget = env_budget // num_repetitions
-                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))
+                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
 
 
 # Intermediate definition for building a multiobjective problem.
