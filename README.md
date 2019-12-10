@@ -85,7 +85,10 @@ import nevergrad as ng
 print(list(sorted(ng.optimizers.registry.keys())))
 ```
 
-The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
+The [optimization documentation](docs/optimization.md) contains more information on how to use several workers,
+take full control of the optimization through the `ask` and `tell` interface, perform multiobjective optimization,
+as well as pieces of advice on how to choose the proper optimizer for your problem.
+
 
 ## Citing
 
@@ -102,4 +105,5 @@ The [optimization documentation](docs/optimization.md) contains more information
 
 ## License
 
-`nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details.
+`nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details about it.
+LGPL code is however also included in the multiobjective subpackage.

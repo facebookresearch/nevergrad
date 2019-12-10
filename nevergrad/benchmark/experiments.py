@@ -3,11 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List, Union
+from typing import Iterator, Optional, List, Union, Any
 import nevergrad as ng
+import numpy as np
 from ..functions import ArtificialFunction
+from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
+from ..functions.powersystems import PowerSystem
 from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
@@ -17,9 +20,10 @@ from .xpbase import registry
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
-# pylint: disable=stop-iteration-return, too-many-nested-blocks
+# pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 # for black (since lists are way too long...):
 # fmt: off
+
 
 # Discrete functions on {0,1}^d.
 @registry.register
@@ -71,6 +75,26 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
             for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
                            1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
+    functions = [
+        ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
+        for name in names
+        for rotation in [False, True]
+        for n_blocks in [1, 2, 8, 16]
+        for aggregator in ["sum", "max"]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for func in functions:
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
+            for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
 
 
 @registry.register
@@ -155,6 +179,32 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
+    # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+    optims = ["NaiveTBPSA", "TBPSA", 
+              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
+              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"] + list(
+                      sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
+    ]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 300, 1000, 3000, 10000]:
+                # duplicate -> each Experiment has different randomness
+                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
@@ -168,6 +218,22 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
+              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    functions = [
+        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
+    ]
+    for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
+       for function in functions:
+           for budget in [400, 4000, 40000]:
+               yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -186,6 +252,24 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """All optimizers on ill cond problems
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
+              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"]
+    functions = [
+        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg), cheap_constraint_checker=lambda x: np.sum(x) > 0)
 
 
 @registry.register
@@ -212,7 +296,7 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
 
 @registry.register
 def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """All noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
     optims = sorted(
@@ -236,14 +320,14 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """All Bayesian optimization methods on various functions.
     """
     seedg = create_seed_generator(seed)
-    for budget in [25, 31, 37, 43, 50, 60]:  # , 4000, 8000, 16000, 32000]:
+    for budget in [25, 31, 37, 43, 50, 60]:
         for optim in sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x):
             for rotation in [False]:
                 for d in [20]:
-                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:  # , "hm"]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:
                         for u in [0]:
                             function = ArtificialFunction(
                                 name=name, rotation=rotation, block_dimension=d, useless_variables=d * u, translation_factor=1.0
@@ -271,7 +355,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
     # - The 007 game: 1 function, noisy.
-    
+    # - PowerSystem: a power system simulation problem.
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -286,6 +370,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
     # Adding ARCoating.
     funcs += [ARCoating()]
+    funcs += [PowerSystem()]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
@@ -299,8 +384,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
         func._descriptors.update(archi=archi)
         funcs += [func]
-    
-    
+
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
@@ -314,7 +398,67 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
-                            
+
+@registry.register
+def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[InstrumentedFunction] = []
+    funcs += [PowerSystem(3)]
+    funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
+    funcs += [PowerSystem(5)]
+    funcs += [PowerSystem(num_dams=5, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=5, depth=9, width=9)]
+    funcs += [PowerSystem(9)]
+    funcs += [PowerSystem(num_dams=9, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=9, width=9, depth=9)]
+    funcs += [PowerSystem(13)]
+    funcs += [PowerSystem(num_dams=13, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
+    for budget in [1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[InstrumentedFunction] = []
+    funcs += [PowerSystem(3)]
+    funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
+    funcs += [PowerSystem(5)]
+    funcs += [PowerSystem(num_dams=5, depth=5, width=5)]
+    funcs += [PowerSystem(num_dams=5, depth=9, width=9)]
+    funcs += [PowerSystem(9)]
+    funcs += [PowerSystem(num_dams=9, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=9, width=9, depth=9)]
+    funcs += [PowerSystem(13)]
+    funcs += [PowerSystem(num_dams=13, width=5, depth=5)]
+    funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
+    for budget in [25600, 51200, 102400]:
+        for num_workers in [1]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = [
@@ -409,3 +553,46 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                         func._descriptors.update(archi=archi)
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
+
+
+# Intermediate definition for building a multiobjective problem.
+class PackedFunctions(MultiobjectiveFunction):
+
+    def __init__(self, functions: List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
+        self._functions = functions
+        self._upper_bounds = upper_bounds
+        super().__init__(self._mo, upper_bounds)
+
+    def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        return np.array([f(*args, **kwargs) for f in self._functions])
+
+    def to_instrumented(self) -> InstrumentedFunction:  # this is only to insure reproducibility
+        # TODO: hopefully, be able to remove it eventually
+        inst = self._functions[0].instrumentation
+        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds),
+                                     *inst.args, **inst.kwargs)
+        # TODO add descriptors?
+        return instf
+
+
+@registry.register
+def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    mofuncs: List[PackedFunctions] = []
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "cigar", "hm"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+                                         ArtificialFunction(name2, block_dimension=7)],
+                                        upper_bounds=np.array((50., 50.)))]
+        for name3 in ["sphere", "ellipsoid"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                         ArtificialFunction(name3, block_dimension=6),
+                                         ArtificialFunction(name2, block_dimension=6)],
+                                        upper_bounds=np.array((100, 100, 1000.)))]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in list(range(100, 2901, 400)):
+                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))

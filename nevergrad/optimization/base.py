@@ -519,6 +519,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
         first_iteration = True
+        # multiobjective hack
+        func = objective_function
+        multiobjective = hasattr(func, "multiobjective_function")
+        if multiobjective:
+            func = func.multiobjective_function  # type: ignore
+        #
         while remaining_budget or self._running_jobs or self._finished_jobs:
             # # # # # Update optimizer with finished jobs # # # # #
             # this is the first thing to do when resuming an existing optimization run
@@ -530,7 +536,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     sleeper.stop_timer()
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
-                    self.tell(x, job.result())
+                    result = job.result()
+                    if multiobjective:  # hack
+                        result = objective_function.compute_aggregate_loss(job.result(), *x.args, **x.kwargs)  # type: ignore
+                    self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
@@ -547,7 +556,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
                     args = self.ask()
-                    self._running_jobs.append((args, executor.submit(objective_function, *args.args, **args.kwargs)))
+                    self._running_jobs.append((args, executor.submit(func, *args.args, **args.kwargs)))
                 if new_sugg:
                     sleeper.start_timer()
             remaining_budget = self.budget - self.num_ask
@@ -571,6 +580,27 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
         return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
+
+
+# Adding a comparison-only functionality to an optimizer.
+def addCompare(optimizer):
+
+    def compare(self, winners: List[Candidate], losers: List[Candidate]) -> None:
+        # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
+        # This is for cases in which we do not know fitness values, we just know comparisons.
+        
+        # Evaluate the best fitness value among losers.
+        best_fitness_value = 0.
+        for l in losers:
+            if l.data in self.archive:
+                best_fitness_value = min(best_fitness_value, self.archive[l.data].get_estimation("average"))
+                
+        # Now let us decide the fitness value of winners.
+        for i, w in enumerate(winners):
+            self.tell(w, best_fitness_value - len(winners) + i)
+            self.archive[w.data] = utils.Value(best_fitness_value - len(winners) + i)
+
+    setattr(optimizer.__class__, 'compare', compare)
 
 
 class OptimizationPrinter:

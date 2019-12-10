@@ -10,12 +10,15 @@ import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 from ..common.typetools import ArrayLike
+from ..functions import MultiobjectiveFunction
 from ..instrumentation import transforms
+from .. import instrumentation as inst
 from ..instrumentation import Instrumentation
 from . import utils
 from . import base
 from . import mutations
 from .base import registry
+from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
 
@@ -762,6 +765,118 @@ class SPSA(base.Optimizer):
 
 
 @registry.register
+class SplitOptimizer(base.Optimizer):
+    """Combines optimizers, each of them working on their own variables.
+    
+    num_optims: number of optimizers
+    num_vars: number of variable per optimizer.
+
+    E.g. for 5 optimizers, each of them working on 2 variables, we can use:
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    or equivalently:
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, we can also do:
+    opt = SplitOptimizer(instrumentation=10, num_workers=3, num_optims=5)
+
+    This is 5 parallel (by num_workers = 5).
+
+    Be careful! The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
+    """
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, multivariate_optimizer: base.OptimizerFamily = CMA, monovariate_optimizer: base.OptimizerFamily = RandomSearch) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if num_vars:
+            if num_optims:
+                assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
+            else:
+                num_optims = len(num_vars)
+            assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
+        else:
+            if not num_optims:  # if no num_vars and no num_optims, just assume 2.
+                num_optims = 2
+            # num_vars not given: we will distribute variables equally.
+        if num_optims > self.dimension:
+            num_optims = self.dimension
+        self.num_optims = num_optims
+        self.optims: List[Any] = []
+        self.num_vars: List[Any] = num_vars if num_vars else []
+        self.instrumentations: List[Any] = []
+        for i in range(self.num_optims):
+            if not self.num_vars or len(self.num_vars) < i+1:
+                self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
+            
+
+            assert self.num_vars[i] >= 1, "At least one variable per optimizer."
+            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
+            assert len(self.optims) == i
+            if self.num_vars[i] > 1:
+                self.optims += [multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+            else:
+                self.optims += [monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+
+        assert sum(self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        data: List[Any] = []
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            data += list(opt.ask().data)
+        assert len(data) == self.dimension
+        return self.create_candidate.from_data(data)
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = candidate.data
+        n = 0
+        for i in range(self.num_optims):
+            opt = self.optims[i]
+            local_data = list(data)[n:n+self.num_vars[i]]
+            n += self.num_vars[i]
+            assert len(local_data) == self.num_vars[i]
+            local_candidate = opt.create_candidate.from_data(local_data)
+            opt.tell(local_candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["pessimistic"].x
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
+# Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
+@registry.register
+class SplitOptimizer3(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 3 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+        
+@registry.register
+class SplitOptimizer5(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 5 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class SplitOptimizer9(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 9 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
+class SplitOptimizer13(SplitOptimizer):
+    """Same as SplitOptimizer, but with default at 13 optimizers.
+    """
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+
+
+@registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
@@ -1216,8 +1331,8 @@ class _Chain(base.Optimizer):
     def _optimizers(self) -> List[base.Optimizer]:
         if not self._optimizers_:
             self._optimizers_ = []
-            conv = {"num_workers": self.num_workers, "dimension": self.dimension}
-            budgets = [conv[b] if isinstance(b, str) else b for b in self._parameters.budgets]
+            converter = {"num_workers": self.num_workers, "dimension": self.dimension, "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
+            budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
             for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
                 self._optimizers_.append(opt(self.instrumentation, budget=budget, num_workers=self.num_workers))
@@ -1264,15 +1379,29 @@ class Chaining(base.ParametrizedFamily):
         self.budgets = tuple(budgets)
         self.optimizers = tuple(optimizers)
         assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("dimension", "num_workers") or x > 0 for x in self.budgets)  # type: ignore
+        assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
 
-DEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("DEwithLHS", register=True)
-DEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("DEwithLHSdim", register=True)
-DEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("DEwithLHS30", register=True)
-PSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("PSOwithLHS30", register=True)
+chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwithLHS", register=True)
+chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
+chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
+chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("chainDEwithLHS30", register=True)
 
+chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
+chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
+chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
+chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).with_name("chainBOwithLHS", register=True)
+
+chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS30", register=True)
+chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
+chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
+chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("chainPSOwithLHS", register=True)
+
+chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS30", register=True)
+chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
+chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
+chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
 
 @registry.register
 class cGA(base.Optimizer):
@@ -1284,30 +1413,44 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        num_categories = 2
+        if arity is None:
+            arity = len(instrumentation.possibilities) if hasattr(instrumentation, "possibilities") else 2  # type: ignore
+        self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
-        self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
-        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
-        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
+        # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
+        self.p: np.ndarray = np.ones((self.dimension, arity)) / arity
+        # Probability increments are of order 1./self.llambda
+        # and lower bounded by something of order 1./self.llambda.
+        self.llambda = max(num_workers, 40)  # FIXME: no good heuristic ?
+        # CGA generates a candidate, then a second candidate;
+        # then updates depending on the comparison with the first one. We therefore have to store the previous candidate.
+        self._previous_value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
     def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1 - self.p[0]).astype(float)
+        # Multinomial.
+        values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
+        data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        if self._value_candidate is None:
-            self._value_candidate = (value, candidate.data)
+        if self._previous_value_candidate is None:
+            self._previous_value_candidate = (value, candidate.data)
         else:
-            winner, loser = self._value_candidate[1], candidate.data
-            if self._value_candidate[0] > value:
+            winner, loser = self._previous_value_candidate[1], candidate.data
+            if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
-
-            self.p[0] = self.p[0] + (winner != loser) * (2 * winner - 1) / self.llambda
-            self.p[0] = np.clip(self.p[0], 0, 1)
-            self._value_candidate = None
+            winner_data = inst.discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
+            loser_data = inst.discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
+            for i in range(len(winner_data)):
+                if winner_data[i] != loser_data[i]:
+                    self.p[i][winner_data[i]] += 1. / self.llambda
+                    self.p[i][loser_data[i]] -= 1. / self.llambda
+                    for j in range(len(self.p[i])):
+                        self.p[i][j] = max(self.p[i][j], 1. / self.llambda)
+                    self.p[i] /= sum(self.p[i])
+            self._previous_value_candidate = None
 
 
 __all__ = list(registry.keys())

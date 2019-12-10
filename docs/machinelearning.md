@@ -7,7 +7,7 @@ def myfunction(lr, num_layers, arg3, arg4, other_anything):
     return -accuracy  # something to minimize
 ```
 
-You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete` for all discrete variables (yes, even if they are not ordered), `Array` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne` as optimizer.
+You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete`, `UnorderedDiscrete` for all discrete variables, `Array` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne` as optimizer.
 
 ```python
 import nevergrad as ng

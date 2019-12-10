@@ -3,13 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Union
+from typing import List, Union, Any
 import warnings
 import numpy as np
 import scipy.stats
 from ..common.typetools import ArrayLike
 
 
+# Nevergrad, in the most fundamental layer, uses continuous variables only.
+# Discrete variables are handled in one of the following ways:
+# - by a softmax transformation, a k-valued categorical variable is converted into k continuous variables.
+# - by a discretization - as we often use Gaussian random values, we discretize according to quantiles of the normal
+#   distribution.
 def threshold_discretization(x: ArrayLike, arity: int = 2) -> List[int]:
     """Discretize by casting values from 0 to arity -1, assuming that x values
     follow a normal distribution.
@@ -35,11 +40,20 @@ def threshold_discretization(x: ArrayLike, arity: int = 2) -> List[int]:
         return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 
 
+# The function below is the opposite of the function above.
 def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+
+# The discretization is, by nature, not one to one.
+# In the function below, we randomly draw one of the possible inverse values - this is therefore noisy.
+def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2, gen: Any = None) -> np.ndarray:
+    indexes_arr = np.array(indexes, copy=True)
+    pdf_bin_size = 1 / arity
+    # We take a random point in the bin.
+    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + gen.rand() * pdf_bin_size)  # type: ignore
 
 
 def softmax_discretization(x: ArrayLike, arity: int = 2, random: Union[bool, np.random.RandomState] = True) -> List[int]:
