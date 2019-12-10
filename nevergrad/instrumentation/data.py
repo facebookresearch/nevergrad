@@ -48,8 +48,8 @@ class Array(Parameter):
         sigma = self._get_parameter_value("sigma")
         self._value = (sigma * data).reshape(self.value.shape)
 
-    def spawn_child(self) -> "Array":
-        child = super().spawn_child()
+    def _internal_spawn_child(self) -> "Array":
+        child = super()._internal_spawn_child()
         child._value = self.value
         return child
 

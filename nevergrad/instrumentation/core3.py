@@ -35,10 +35,7 @@ class BaseParameter:
         raise NotImplementedError
 
     def spawn_child(self: BP) -> BP:
-        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._parameters.items()}
-        child = self.__class__(**inputs)
-        child.parents_uids.append(self.uid)
-        return child
+        raise NotImplementedError
 
     @property
     def subparameters(self) -> "NgDict":
@@ -187,10 +184,14 @@ class Parameter(BaseParameter):
         child._set_random_state(rng)
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
+        child.parents_uids.append(self.uid)
         return child
 
     def _internal_spawn_child(self: P) -> P:
-        return super().spawn_child()
+        # default implem just forwards params
+        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._parameters.items()}
+        child = self.__class__(**inputs)
+        return child
 
 
 class Constant(Parameter):
@@ -299,7 +300,6 @@ class NgDict(Parameter):
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()
         child._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()}
-        child.parents_uids.append(self.uid)
         return child
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:

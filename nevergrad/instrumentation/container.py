@@ -1,7 +1,7 @@
 import typing as t
 from .core3 import Parameter
 from .core3 import _as_parameter
-from .core3 import NgDict  # Dict needs to be implemented in core since it's used in the base class
+from .core3 import NgDict as NgDict  # Dict needs to be implemented in core since it's used in the base class
 
 
 class NgTuple(NgDict):
