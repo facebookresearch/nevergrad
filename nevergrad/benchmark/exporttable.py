@@ -1,12 +1,19 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+#
 # Utils for exporting a data table in latex.
 # Used in competence maps.
+import typing as t
 
-def remove_parens(data):
+
+def remove_parens(data: t.List[t.List[str]]) -> t.List[t.List[str]]:
     # If data[i][j] contains a "(", we keep only the part before that "(".
     return [[d[:d.index("(")] if "(" in d else d for d in datarow] for datarow in data]
-    
 
-def export_table(filename, rows, cols, data):
+
+def export_table(filename: str, rows: t.List[t.Any], cols: t.List[t.Any], data: t.List[t.List[str]]) -> None:
     """Exports data in filename with rows and cols as described.
     More precisely, rows specifies the row names, cols specifies the col names,
     and data[i][j] corresponds to the data in row rows[i] and col cols[j].
@@ -19,7 +26,7 @@ def export_table(filename, rows, cols, data):
     rows = [str(r) for r in rows]
     cols = [str(r) for r in cols]
     # Latex syntax.
-    data = [[d.replace("%", "\%").replace("_", "") for d in datarow] for datarow in data]
+    data = [[d.replace("%", r"\%").replace("_", "") for d in datarow] for datarow in data]
     data = remove_parens(data)
     print("filename=", filename)
     print("rows=", rows)
@@ -39,14 +46,14 @@ def export_table(filename, rows, cols, data):
         f.write("\\lccode`7=`7\n")
         f.write("\\lccode`8=`8\n")
         f.write("\\lccode`9=`9\n")
-        f.write("\\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}\n")
+        f.write(r"\\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}\n")
         f.write("\\begin{document}\n")
         f.write("\\scriptsize\n")
         f.write("\\renewcommand{\\arraystretch}{1.5}\n")
         f.write("\\sloppy\n")
-        p = str(1./(2+len(cols)))
+        p = str(1.0 / (2 + len(cols)))
         # f.write("\\begin{landscape}\n")
-        f.write("\\begin{tabular}{|P{" + p +"\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n")
+        f.write("\\begin{tabular}{|P{" + p + "\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n")
         f.write("\\hline\n")
         f.write(" & " + "&".join(cols) + "\\\\\n")
         f.write("\\hline\n")
@@ -62,4 +69,3 @@ def export_table(filename, rows, cols, data):
         f.write("\\end{tabular}\n")
         # f.write("\\end{landscape}\n")
         f.write("\\end{document}\n")
-    pass
