@@ -1,11 +1,14 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import typing as t
 import numpy as np
-# importing NgDict to populate parameters (fake renaming for mypy explicit reimport)
-# pylint: disable=unused-import,useless-import-alias
 from . import discretization
 from .core3 import Parameter
 from .core3 import _as_parameter
-from .core3 import NgDict
+from .container import NgDict
 from .container import NgTuple
 from .data import Array
 

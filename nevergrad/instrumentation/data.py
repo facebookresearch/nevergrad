@@ -9,6 +9,7 @@ import numpy as np
 from .core3 import Parameter
 
 
+# pylint: disable=too-many-arguments
 class Array(Parameter):
     """Array variable of a given shape, on which several transforms can be applied.
 
@@ -25,10 +26,11 @@ class Array(Parameter):
             shape: t.Tuple[int, ...],
             sigma: t.Union[float, "Array"] = 1.0,
             distribution: t.Union[str, Parameter] = "linear",
-            recombination: t.Union[str, Parameter] = "average"
+            recombination: t.Union[str, Parameter] = "average",
+            # bounds: t.Tuple[t.Union[float, np.ndarray], t.Union[float, np.ndarray]] = (-float("inf"), float("inf")),
     ) -> None:
         assert not isinstance(shape, Parameter)
-        super().__init__(shape=shape, sigma=sigma, distribution=distribution, recombination=recombination)
+        super().__init__(shape=shape, sigma=sigma, distribution=distribution, recombination=recombination)  # , bounds=bounds)
         self._value: np.ndarray = np.zeros(shape)
 
     @property

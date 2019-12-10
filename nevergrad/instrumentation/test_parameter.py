@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pickle
 import pytest
 import numpy as np
 from .core3 import Parameter
@@ -71,6 +72,9 @@ def test_parameters_basic_features(param: Parameter) -> None:
     data_hash = param.get_data_hash()
     param.set_std_data(param.get_std_data())
     assert data_hash == param.get_data_hash()
+    # picklable
+    string = pickle.dumps(child)
+    pickle.loads(string)
 
 
 def test_choices() -> None:
