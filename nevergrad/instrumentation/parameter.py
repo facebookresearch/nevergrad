@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union, Tuple, Any, List, Iterable, Optional, TypeVar, Hashable
+import typing as t
 import numpy as np
 # importing NgDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
@@ -26,10 +26,10 @@ class Array(Parameter):
 
     def __init__(
             self,
-            shape: Tuple[int, ...],
-            sigma: Union[float, "Array"] = 1.0,
-            distribution: Union[str, Parameter] = "linear",
-            recombination: Union[str, Parameter] = "average"
+            shape: t.Tuple[int, ...],
+            sigma: t.Union[float, "Array"] = 1.0,
+            distribution: t.Union[str, Parameter] = "linear",
+            recombination: t.Union[str, Parameter] = "average"
     ) -> None:
         assert not isinstance(shape, Parameter)
         super().__init__(shape=shape, sigma=sigma, distribution=distribution, recombination=recombination)
@@ -75,31 +75,31 @@ class NgTuple(NgDict):
     """Handle for facilitating dict of parameters management
     """
 
-    def __init__(self, *parameters: Any) -> None:
+    def __init__(self, *parameters: t.Any) -> None:
         super().__init__()
         self._parameters.update({k: p for k, p in enumerate(parameters)})
 
     @property  # type: ignore
-    def value(self) -> Tuple[Any, ...]:  # type: ignore
+    def value(self) -> t.Tuple[t.Any, ...]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
         return tuple(p.value if isinstance(p, Parameter) else p for p in param_val)
 
     @value.setter
-    def value(self, value: List[Any]) -> None:
+    def value(self, value: t.Tuple[t.Any]) -> None:
         assert isinstance(value, tuple), "Value must be a tuple"
         for k, val in enumerate(value):
             _as_parameter(self[k]).value = val
 
 
-C = TypeVar("C", bound="Choice")
+C = t.TypeVar("C", bound="Choice")
 
 
 class Choice(NgDict):
 
     def __init__(
             self,
-            choices: Iterable[Any],
-            recombination: Union[str, Parameter] = "average",
+            choices: t.Iterable[t.Any],
+            recombination: t.Union[str, Parameter] = "average",
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, NgTuple)
@@ -107,7 +107,7 @@ class Choice(NgDict):
         super().__init__(probabilities=Array(shape=(len(lchoices),), recombination=recombination),
                          choices=NgTuple(*lchoices))
         self._deterministic = deterministic
-        self._index_: Optional[int] = None
+        self._index_: t.Optional[int] = None
 
     @property
     def _index(self) -> int:  # delayed choice
@@ -125,11 +125,11 @@ class Choice(NgDict):
         return self["choices"]  # type: ignore
 
     @property
-    def value(self) -> Any:
+    def value(self) -> t.Any:
         return _as_parameter(self.choices[self._index]).value
 
     @value.setter
-    def value(self, value: Any) -> None:
+    def value(self, value: t.Any) -> None:
         index = -1
         # try to find where to put this
         nums = sorted(int(k) for k in self.choices._parameters)
@@ -148,7 +148,7 @@ class Choice(NgDict):
         self.probabilities.set_std_data(out, deterministic=True)
         self._index_ = index
 
-    def get_value_hash(self) -> Hashable:
+    def get_value_hash(self) -> t.Hashable:
         return (self._index, _as_parameter(self.choices[self._index]).get_value_hash())
 
     def _draw(self, deterministic: bool = True) -> None:
@@ -173,3 +173,19 @@ class Choice(NgDict):
         child._parameters["probabilities"] = self.probabilities.spawn_child()
         child.parents_uids.append(self.uid)
         return child
+
+
+class Instrumentation(NgTuple):
+    """Handle for facilitating dict of parameters management
+    """
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(NgTuple(*args), NgDict(**kwargs))
+
+    @property
+    def args(self) -> t.Tuple[t.Any, ...]:
+        return self[0].value  # type: ignore
+
+    @property
+    def kwargs(self) -> t.Dict[str, t.Any]:
+        return self[1].value  # type: ignore

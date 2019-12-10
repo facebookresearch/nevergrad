@@ -42,6 +42,7 @@ def test_empty_parameters(param: Parameter) -> None:
 @pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
                                    par.NgDict(blublu=par.Array((2, 3)), truc=12),
                                    par.NgTuple(par.Array((2, 3)), 12),
+                                   par.Instrumentation(par.Array((2,)), string="blublu", truc=par.Array((1, 3))),
                                    par.Choice([par.Array((2,)), "blublu"])])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
@@ -86,3 +87,10 @@ def test_choices() -> None:
         choice.value = "hop"
     choice.value = np.array([1, 1])
     np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0.69314718, 0])
+
+
+def test_instrumentation() -> None:
+    inst = par.Instrumentation(par.Array((2,)), string="blublu", truc=par.Array((1, 3)))
+    inst.mutate()
+    assert len(inst.args) == 1
+    assert len(inst.kwargs) == 2
