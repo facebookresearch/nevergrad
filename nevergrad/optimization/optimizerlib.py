@@ -17,7 +17,7 @@ from ..instrumentation import Instrumentation
 from . import utils
 from . import base
 from . import mutations
-from .base import registry
+from .base import registry as registry
 from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
@@ -25,6 +25,7 @@ from . import sequences
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *  # noqa: F403
+from .oneshot import *  # noqa: F403
 from .rescaledoneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
@@ -767,7 +768,7 @@ class SPSA(base.Optimizer):
 @registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
-    
+
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
 
@@ -803,9 +804,8 @@ class SplitOptimizer(base.Optimizer):
         self.num_vars: List[Any] = num_vars if num_vars else []
         self.instrumentations: List[Any] = []
         for i in range(self.num_optims):
-            if not self.num_vars or len(self.num_vars) < i+1:
+            if not self.num_vars or len(self.num_vars) < i + 1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
-            
 
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
             self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
@@ -815,7 +815,8 @@ class SplitOptimizer(base.Optimizer):
             else:
                 self.optims += [monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
 
-        assert sum(self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
+        assert sum(
+            self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
 
     def _internal_ask_candidate(self) -> base.Candidate:
         data: List[Any] = []
@@ -830,7 +831,7 @@ class SplitOptimizer(base.Optimizer):
         n = 0
         for i in range(self.num_optims):
             opt = self.optims[i]
-            local_data = list(data)[n:n+self.num_vars[i]]
+            local_data = list(data)[n:n + self.num_vars[i]]
             n += self.num_vars[i]
             assert len(local_data) == self.num_vars[i]
             local_candidate = opt.create_candidate.from_data(local_data)
@@ -848,14 +849,16 @@ class SplitOptimizer(base.Optimizer):
 class SplitOptimizer3(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 3 optimizers.
     """
+
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
-        
+
 @registry.register
 class SplitOptimizer5(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 5 optimizers.
     """
+
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -864,6 +867,7 @@ class SplitOptimizer5(SplitOptimizer):
 class SplitOptimizer9(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 9 optimizers.
     """
+
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -872,6 +876,7 @@ class SplitOptimizer9(SplitOptimizer):
 class SplitOptimizer13(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 13 optimizers.
     """
+
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -931,7 +936,7 @@ class ParaPortfolio(Portfolio):
         self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
-        self.optims = [
+        self.optims: List[base.Optimizer] = [
             CMA(self.instrumentation, num_workers=nw1),  # share instrumentation and its rng
             TwoPointsDE(self.instrumentation, num_workers=nw2),  # noqa: F405
             PSO(self.instrumentation, num_workers=nw3),
@@ -1331,7 +1336,8 @@ class _Chain(base.Optimizer):
     def _optimizers(self) -> List[base.Optimizer]:
         if not self._optimizers_:
             self._optimizers_ = []
-            converter = {"num_workers": self.num_workers, "dimension": self.dimension, "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
+            converter = {"num_workers": self.num_workers, "dimension": self.dimension,
+                         "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
             for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
@@ -1402,6 +1408,7 @@ chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS3
 chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
 chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
 chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
+
 
 @registry.register
 class cGA(base.Optimizer):

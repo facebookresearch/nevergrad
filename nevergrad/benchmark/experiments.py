@@ -15,7 +15,7 @@ from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
 from .xpbase import create_seed_generator
-from .xpbase import registry
+from .xpbase import registry as registry  # noqa
 
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
@@ -94,7 +94,6 @@ def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
             for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
-
 
 
 @registry.register
@@ -184,12 +183,12 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
-    optims = ["NaiveTBPSA", "TBPSA", 
+    optims = ["NaiveTBPSA", "TBPSA",
               "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"] + list(
-                      sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+        sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -231,9 +230,9 @@ def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
     for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
-       for function in functions:
-           for budget in [400, 4000, 40000]:
-               yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+        for function in functions:
+            for budget in [400, 4000, 40000]:
+                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -552,7 +551,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                         func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
                         func._descriptors.update(archi=archi)
                         opt_budget = env_budget // num_repetitions
-                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
+                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))
 
 
 # Intermediate definition for building a multiobjective problem.
