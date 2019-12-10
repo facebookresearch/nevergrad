@@ -1,6 +1,6 @@
 import uuid
 from collections import OrderedDict
-from typing import TypeVar, List, Optional, Dict, Any, Callable, Union, Tuple
+from typing import TypeVar, List, Optional, Dict, Any, Callable, Hashable
 import numpy as np
 
 
@@ -108,7 +108,7 @@ class Parameter(BaseParameter):
         """
         return self._generation
 
-    def get_value_hash(self) -> Any:
+    def get_value_hash(self) -> Hashable:
         val = self.value
         if isinstance(val, (str, bytes, float, int)):
             return val
@@ -117,7 +117,7 @@ class Parameter(BaseParameter):
         else:
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
-    def get_data_hash(self) -> Union[str, bytes, float, int]:
+    def get_data_hash(self) -> Hashable:
         return self.get_std_data().tobytes()
 
     def _get_name(self) -> str:
@@ -259,7 +259,7 @@ class NgDict(Parameter):
         for key, val in value.items():
             _as_parameter(self._parameters[key]).value = val
 
-    def get_value_hash(self) -> Tuple[Tuple[str, Any], ...]:
+    def get_value_hash(self) -> Hashable:
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
 
     def get_std_data(self) -> np.ndarray:

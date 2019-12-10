@@ -32,7 +32,7 @@ def test_array_basics() -> None:
 
 
 @pytest.mark.parametrize("param", [par.NgDict(truc=12),  # type: ignore
-                                   par.NgList(), ])
+                                   par.NgTuple(), ])
 def test_empty_parameters(param: Parameter) -> None:
     assert not param.dimension
     assert not param.get_data_hash()
@@ -41,7 +41,7 @@ def test_empty_parameters(param: Parameter) -> None:
 
 @pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
                                    par.NgDict(blublu=par.Array((2, 3)), truc=12),
-                                   par.NgList(par.Array((2, 3)), 12),
+                                   par.NgTuple(par.Array((2, 3)), 12),
                                    par.Choice([par.Array((2,)), "blublu"])])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)

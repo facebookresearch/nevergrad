@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union, Tuple, Any, List, Iterable, Optional, TypeVar
+from typing import Union, Tuple, Any, List, Iterable, Optional, TypeVar, Hashable
 import numpy as np
 # importing NgDict to populate parameters (fake renaming for mypy explicit reimport)
 # pylint: disable=unused-import,useless-import-alias
@@ -71,7 +71,7 @@ class Array(Parameter):
             raise ValueError(f'Unknown recombination "{recomb}"')
 
 
-class NgList(NgDict):
+class NgTuple(NgDict):
     """Handle for facilitating dict of parameters management
     """
 
@@ -80,13 +80,13 @@ class NgList(NgDict):
         self._parameters.update({k: p for k, p in enumerate(parameters)})
 
     @property  # type: ignore
-    def value(self) -> List[Any]:  # type: ignore
+    def value(self) -> Tuple[Any, ...]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
-        return [p.value if isinstance(p, Parameter) else p for p in param_val]
+        return tuple(p.value if isinstance(p, Parameter) else p for p in param_val)
 
     @value.setter
     def value(self, value: List[Any]) -> None:
-        assert isinstance(value, list)
+        assert isinstance(value, tuple), "Value must be a tuple"
         for k, val in enumerate(value):
             _as_parameter(self[k]).value = val
 
@@ -102,10 +102,10 @@ class Choice(NgDict):
             recombination: Union[str, Parameter] = "average",
             deterministic: bool = False,
     ) -> None:
-        assert not isinstance(choices, NgList)
+        assert not isinstance(choices, NgTuple)
         lchoices = list(choices)  # for iterables
         super().__init__(probabilities=Array(shape=(len(lchoices),), recombination=recombination),
-                         choices=NgList(*lchoices))
+                         choices=NgTuple(*lchoices))
         self._deterministic = deterministic
         self._index_: Optional[int] = None
 
@@ -121,7 +121,7 @@ class Choice(NgDict):
         return self["probabilities"]  # type: ignore
 
     @property
-    def choices(self) -> NgList:
+    def choices(self) -> NgTuple:
         return self["choices"]  # type: ignore
 
     @property
@@ -148,7 +148,7 @@ class Choice(NgDict):
         self.probabilities.set_std_data(out, deterministic=True)
         self._index_ = index
 
-    def get_value_hash(self) -> Any:
+    def get_value_hash(self) -> Hashable:
         return (self._index, _as_parameter(self.choices[self._index]).get_value_hash())
 
     def _draw(self, deterministic: bool = True) -> None:
