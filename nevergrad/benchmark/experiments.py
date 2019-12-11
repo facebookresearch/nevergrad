@@ -204,7 +204,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def yabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
@@ -222,10 +222,29 @@ def yabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in optims:
         for function in functions:
             for budget in [400, 4000, 40000]:
-                for nw in [1, 400]:
-                    xp = Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+                xp = Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
+
+@registry.register
+def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, parallel=False, big=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yaparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, parallel=True, big=False)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yabigparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, parallel=True, big=True)
+    for xp in internal_generator:
+        yield xp
 
 
 @registry.register
