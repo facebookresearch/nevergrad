@@ -223,31 +223,7 @@ def yabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 for nw in [1, 400]:
-                    if nw == 1 or not optim.no_parallelization:
-                        yield Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
-
-
-@registry.register
-def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """Yet Another Black-Box Optimization Benchmark.
-    """
-    seedg = create_seed_generator(seed)
-    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
-              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
-    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin"]
-    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
-    names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus"]
-    functions = [
-        ArtificialFunction(name, block_dimension=500, rotation=rotation) for name in names 
-        for rotation in [True, False]
-        for num_blocks in [1,3]
-    ]
-    for optim in optims:
-        for function in functions:
-            for budget in [400, 4000, 40000]:
-                for nw in [1, 400]:
-                    if nw == 1 or not optim.no_parallelization:
-                        yield Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
+                    yield Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 @registry.register
