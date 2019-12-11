@@ -63,10 +63,13 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
     assert child.get_data_hash() != param.get_data_hash()
+    child_hash = param.spawn_child()
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
     if isinstance(param, par.Array):
-        assert param.get_data_hash() == child.get_data_hash()
+        assert param.get_value_hash() != child_hash.get_value_hash()
+        child_hash.value = param.value
+        assert param.get_data_hash() == child_hash.get_data_hash()
     param.recombine(child, child)
     # constraints
     param.register_cheap_constraint(lambda x: False)
@@ -121,7 +124,7 @@ def test_scalar() -> None:
 
 def test_log() -> None:
     with pytest.warns(UserWarning) as record:
-        par.Log(0.001, 0.1, init=0.01, exponent=2)
+        par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=2.0)
         assert not record
-        par.Log(0.001, 0.1, init=0.01, exponent=10)
+        par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=10.0)
         assert len(record) == 1

@@ -21,12 +21,11 @@ class Choice(NgDict):
     def __init__(
             self,
             choices: t.Iterable[t.Any],
-            recombination: t.Union[str, Parameter] = "average",
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, NgTuple)
         lchoices = list(choices)  # for iterables
-        super().__init__(probabilities=Array(shape=(len(lchoices),), recombination=recombination),
+        super().__init__(probabilities=Array(shape=(len(lchoices),), mutable_sigma=False),
                          choices=NgTuple(*lchoices))
         self._deterministic = deterministic
         self._index: t.Optional[int] = None

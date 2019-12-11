@@ -8,6 +8,7 @@ import typing as t
 import numpy as np
 # importing NgDict to populate parameters (fake renaming for mypy explicit reimport)
 from .core3 import Parameter
+from .core3 import _as_parameter
 
 
 BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]
@@ -37,16 +38,21 @@ class Array(Parameter):
     def __init__(
             self,
             shape: t.Tuple[int, ...],
-            recombination: t.Union[str, Parameter] = "average",
+            mutable_sigma: bool = True
     ) -> None:
         assert isinstance(shape, tuple)
         self.shape = shape
-        super().__init__(sigma=1.0, recombination=recombination)
+        sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
+        super().__init__(sigma=sigma, recombination="average")
         self._value: np.ndarray = np.zeros(shape)
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
         self.bounding_method: t.Optional[str] = None
         self.full_range_sampling = False
+
+    @property
+    def sigma(self) -> t.Union[np.ndarray, float]:
+        return _as_parameter(self._subparameters["sigma"]).value  # type: ignore
 
     @property
     def value(self) -> np.ndarray:
@@ -93,9 +99,10 @@ class Array(Parameter):
     def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
         if sigma is not None:
             self.subparameters._parameters["sigma"] = sigma
-        if self.exponent is None and exponent is not None:
+        if exponent is not None:
+            if self.exponent is None:  # TODO: decide if this is something we want
+                self._value = exponent**self._value
             self.exponent = exponent
-            self._value = exponent**self._value
         return self
 
     # pylint: disable=unused-argument
@@ -135,8 +142,8 @@ class Array(Parameter):
 
 class Scalar(Array):
 
-    def __init__(self) -> None:
-        super().__init__(shape=(1,))
+    def __init__(self, mutable_sigma: bool = True) -> None:
+        super().__init__(shape=(1,), mutable_sigma=mutable_sigma)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
@@ -161,12 +168,15 @@ class Log(Scalar):
 
     def __init__(
         self,
-        a_min: t.Optional[float],
-        a_max: t.Optional[float],
-        exponent: float = 2.0,
+        *,
         init: float = 1.0,
+        exponent: float = 2.0,
+        a_min: t.Optional[float] = None,
+        a_max: t.Optional[float] = None,
+        mutable_sigma: bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         self.value = init
-        self.set_bounds(a_min, a_max, method="clipping")
+        if any(a is not None for a in (a_min, a_max)):
+            self.set_bounds(a_min, a_max, method="clipping")
