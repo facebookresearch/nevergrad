@@ -44,7 +44,7 @@ class Array(Parameter):
         super().__init__(sigma=1.0, recombination=recombination)
         self._value: np.ndarray = np.zeros(shape)
         self.exponent: t.Optional[float] = None
-        self.bounds: t.Tuple[np.ndarray, np.ndarray] = (None, None)
+        self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
         self.bounding_method: t.Optional[str] = None
         self.full_range_sampling = False
 
@@ -69,9 +69,9 @@ class Array(Parameter):
         assert method in ["clipping"]  # , "constraint"]
         if not _check_bounds(self.value, self.bounds):
             raise ValueError("Current value is not within bounds, please update it first")
-        bounds = tuple(a if isinstance(a, np.ndarray) else np.array([a], dtype=float) for a in (a_min, a_max))
+        bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (a_min, a_max))
         if not (a_min is None or a_max is None):
-            if (bounds[0] >= bounds[1]).any():
+            if (bounds[0] >= bounds[1]).any():  # type: ignore
                 raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")
         self.bounds = bounds  # type: ignore
         if method not in ["clipping", "constraint"]:
