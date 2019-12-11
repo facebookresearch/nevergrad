@@ -204,7 +204,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False) -> Iterator[Experiment]:
+def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
@@ -245,8 +245,8 @@ def yaparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def yabigparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
-    internal_generator = yabbob(seed, parallel=True, big=True)
+def yanoisybbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, noisy=True)
     for xp in internal_generator:
         yield xp
 
