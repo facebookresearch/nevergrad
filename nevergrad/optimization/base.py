@@ -13,7 +13,8 @@ from numbers import Real
 from collections import deque
 from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
 import numpy as np
-from ..common.typetools import ArrayLike, JobLike, ExecutorLike
+from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
+from ..common.typetools import JobLike, ExecutorLike
 from .. import instrumentation as instru
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
@@ -583,18 +584,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
 
 # Adding a comparison-only functionality to an optimizer.
-def addCompare(optimizer):
+def addCompare(optimizer: Optimizer) -> None:
 
-    def compare(self, winners: List[Candidate], losers: List[Candidate]) -> None:
+    def compare(self: Optimizer, winners: List[Candidate], losers: List[Candidate]) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.
-        
+
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
         for l in losers:
             if l.data in self.archive:
                 best_fitness_value = min(best_fitness_value, self.archive[l.data].get_estimation("average"))
-                
+
         # Now let us decide the fitness value of winners.
         for i, w in enumerate(winners):
             self.tell(w, best_fitness_value - len(winners) + i)
