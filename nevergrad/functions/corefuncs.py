@@ -143,7 +143,7 @@ def bentcigar(x: np.ndarray) -> float:
 
 
 @registry.register
-def multipeak(x: ndarray) -> float:
+def multipeak(x: np.ndarray) -> float:
     """Inspired by M. Gallagher's Gaussian peaks function."""
     v = 10000.
     for a in range(101):
