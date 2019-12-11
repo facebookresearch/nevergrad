@@ -213,6 +213,9 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
+    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
+    # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation) for name in names 
         for rotation in [True, False]
@@ -221,8 +224,8 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     ]
     for optim in optims:
         for function in functions:
-            for budget in [400, 4000, 40000]:
-                xp = Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
+            for budget in [400, 800, 1600] if not big else [40000, 80000]:
+                xp = Experiment(function.duplicate(), optim, num_workers=200 if parallel else 1, budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
 
