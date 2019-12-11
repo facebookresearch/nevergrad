@@ -125,9 +125,9 @@ def test_scalar_and_mutable_sigma() -> None:
     assert param.sigma != 5
 
 
-@pytest.mark.parametrize("param,expected", [(par.Scalar(), False),  # type: ignore
-                                            (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)]
-                         )
+@pytest.mark.parametrize(  # type: ignore
+    "param,expected", [(par.Scalar(), False), (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)]
+)
 def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
     assert not any(np.abs(param.spawn_child().value) > 100 for _ in range(10))
     assert any(np.abs(param.sample().value) > 100 for _ in range(10)) == expected
