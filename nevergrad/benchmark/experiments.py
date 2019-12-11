@@ -223,10 +223,9 @@ def yabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 for nw in [1, 400]:
-                    try:
-                        yield Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
-                    except AssertionError:
-                        pass
+                    xp = Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
