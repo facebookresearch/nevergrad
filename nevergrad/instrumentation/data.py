@@ -9,6 +9,10 @@ import numpy as np
 from .core3 import Parameter
 
 
+BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]
+A = t.TypeVar("A", bound="Array")
+
+
 # pylint: disable=too-many-arguments
 class Array(Parameter):
     """Array variable of a given shape, on which several transforms can be applied.
@@ -25,13 +29,15 @@ class Array(Parameter):
             self,
             shape: t.Tuple[int, ...],
             sigma: t.Union[float, "Array"] = 1.0,
-            distribution: t.Union[str, Parameter] = "linear",
             recombination: t.Union[str, Parameter] = "average",
-            # bounds: t.Tuple[t.Union[float, np.ndarray], t.Union[float, np.ndarray]] = (-float("inf"), float("inf")),
     ) -> None:
         assert not isinstance(shape, Parameter)
-        super().__init__(shape=shape, sigma=sigma, distribution=distribution, recombination=recombination)  # , bounds=bounds)
+        super().__init__(shape=shape, sigma=sigma, recombination=recombination)
         self._value: np.ndarray = np.zeros(shape)
+        self.exponent: t.Optional[float] = None
+        self.bounds: t.Tuple[BoundValue, BoundValue] = (None, None)
+        self.bounding_method: t.Optional[str] = None
+        self.full_range_sampling = False
 
     @property
     def value(self) -> np.ndarray:
@@ -45,11 +51,30 @@ class Array(Parameter):
             raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
         self._value = value
 
+    def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
+                   method: str = "clipping", full_range_sampling: bool = False) -> A:
+        self.bounds = (a_min, a_max)
+        if method not in ["clipping", "constraint"]:
+            if self.exponent is not None:
+                raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
+            self.bounding_method = method
+        if full_range_sampling and any(a is None for a in (a_min, a_max)):
+            raise ValueError("Cannot use full range sampling if both bounds are not set")
+        self.full_range_sampling = full_range_sampling
+        return self
+
+    def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
+        if sigma is not None:
+            self.subparameters._parameters["sigma"] = sigma
+        self.exponent = exponent
+        return self
+
     # pylint: disable=unused-argument
     def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
         assert isinstance(data, np.ndarray)
         sigma = self._get_parameter_value("sigma")
-        self._value = (sigma * data).reshape(self._value.shape)
+        data_reduc = (sigma * data).reshape(self._value.shape)
+        self._value = data_reduc if self.exponent is None else self.exponent**data_reduc
 
     def _internal_spawn_child(self) -> "Array":
         child = super()._internal_spawn_child()
@@ -58,7 +83,8 @@ class Array(Parameter):
 
     def get_std_data(self) -> np.ndarray:
         sigma = self._get_parameter_value("sigma")
-        reduced = self._value / sigma
+        distribval = self._value if self.exponent is None else np.log(self._value) / np.log(self.exponent)
+        reduced = distribval / sigma
         return reduced.ravel()  # type: ignore
 
     def recombine(self, *others: "Array") -> None:
@@ -75,10 +101,9 @@ class Scalar(Array):
     def __init__(
             self,
             sigma: t.Union[float, "Array"] = 1.0,
-            distribution: t.Union[str, Parameter] = "linear",
             recombination: t.Union[str, Parameter] = "average",
     ) -> None:
-        super().__init__(shape=(1,), sigma=sigma, distribution=distribution, recombination=recombination)  # , bounds=bounds)
+        super().__init__(shape=(1,), sigma=sigma, recombination=recombination)  # , bounds=bounds)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore

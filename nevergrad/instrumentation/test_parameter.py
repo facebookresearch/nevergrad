@@ -42,6 +42,7 @@ def test_empty_parameters(param: Parameter) -> None:
 
 @pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
                                    par.Scalar(),
+                                   par.Scalar().set_mutation(exponent=2.),  # should bug so far (exponent not propagated)
                                    par.NgDict(blublu=par.Array((2, 3)), truc=12),
                                    par.NgTuple(par.Array((2, 3)), 12),
                                    par.Instrumentation(par.Array((2,)), string="blublu", truc=par.Array((1, 3))),
