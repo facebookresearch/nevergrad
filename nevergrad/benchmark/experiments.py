@@ -212,7 +212,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
               "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
-    names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus"]
+    names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation) for name in names 
         for rotation in [True, False]

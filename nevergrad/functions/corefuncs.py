@@ -136,6 +136,13 @@ def cigar(x: np.ndarray) -> float:
 
 
 @registry.register
+def bentcigar(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function, but bent."""
+    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i-1) / (len(x)-1)) if x[i] > 0. else x[i] for i in range(len(x))])
+    return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
+
+
+@registry.register
 def altellipsoid(y: np.ndarray) -> float:
     """Similar to Ellipsoid, but variables in inverse order.
 
