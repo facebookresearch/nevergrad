@@ -13,7 +13,8 @@ from numbers import Real
 from collections import deque
 from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
 import numpy as np
-from ..common.typetools import ArrayLike, JobLike, ExecutorLike
+from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
+from ..common.typetools import JobLike, ExecutorLike
 from .. import instrumentation as instru
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
