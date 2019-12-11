@@ -75,7 +75,7 @@ class BaseParameter:
     def get_std_data(self) -> np.ndarray:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self: BP, data: np.ndarray, deterministic: bool = True) -> BP:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
     def from_value(self: BP, value: Any) -> BP:
@@ -217,9 +217,10 @@ class Constant(Parameter):
     def get_std_data(self) -> np.ndarray:
         return np.array([])
 
-    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self: P, data: np.ndarray, deterministic: bool = True) -> P:
         if data.size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
+        return self
 
     def spawn_child(self: P) -> P:
         return self  # no need to create another instance for a constant
@@ -273,7 +274,7 @@ class NgDict(Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self: D, data: np.ndarray, deterministic: bool = True) -> D:
         if self._sizes is None:
             self.get_std_data()
         assert self._sizes is not None
@@ -285,6 +286,7 @@ class NgDict(Parameter):
             self._parameters[name].set_std_data(data[start: end], deterministic)
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
+        return self
 
     def mutate(self) -> None:
         for param in self._parameters.values():

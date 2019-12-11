@@ -113,7 +113,7 @@ def test_instrumentation() -> None:
     assert len(inst.kwargs) == 2
 
 
-def test_scalar_ant_mutable_sigma() -> None:
+def test_scalar_and_mutable_sigma() -> None:
     param = par.Scalar(mutable_sigma=True).set_mutation(exponent=2., sigma=5)
     assert param.value == 1
     data = param.get_std_data()
@@ -123,6 +123,14 @@ def test_scalar_ant_mutable_sigma() -> None:
     assert param.sigma == 5
     param.mutate()
     assert param.sigma != 5
+
+
+@pytest.mark.parametrize("param,expected", [(par.Scalar(), False),  # type: ignore
+                                            (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)]
+                         )
+def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
+    assert not any(np.abs(param.spawn_child().value) > 100 for _ in range(10))
+    assert any(np.abs(param.sample().value) > 100 for _ in range(10)) == expected
 
 
 def test_log() -> None:

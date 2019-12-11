@@ -70,6 +70,15 @@ class Array(Parameter):
             raise ValueError("Logirithmic values cannot be negative")
         self._value = value
 
+    def sample(self: A) -> A:
+        if not self.full_range_sampling:
+            return super().sample()
+        child = self.spawn_child()
+        std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
+        diff = std_bounds[1] - std_bounds[0]
+        child.set_std_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff)
+        return child
+
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
                    method: str = "clipping", full_range_sampling: bool = False) -> A:
         assert method in ["clipping"]  # , "constraint"]
@@ -110,13 +119,14 @@ class Array(Parameter):
         return self
 
     # pylint: disable=unused-argument
-    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self: A, data: np.ndarray, deterministic: bool = True) -> A:
         assert isinstance(data, np.ndarray)
         sigma = self._get_parameter_value("sigma")
         data_reduc = (sigma * data).reshape(self._value.shape)
         self._value = data_reduc if self.exponent is None else self.exponent**data_reduc
         if self.bounding_method == "clipping":
             self._value = np.clip(self._value, self.bounds[0], self.bounds[1])
+        return self
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(self.shape)
