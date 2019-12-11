@@ -211,7 +211,7 @@ def yabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
               "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin"]
-    names += ["sphere", "linearslope", "stepdoublelinearslope"]
+    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus"]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation) for name in names 
@@ -234,7 +234,7 @@ def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
               "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin"]
-    names += ["sphere", "linearslope", "stepdoublelinearslope"]
+    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus"]
     functions = [
         ArtificialFunction(name, block_dimension=500, rotation=rotation) for name in names 
