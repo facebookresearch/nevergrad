@@ -168,7 +168,8 @@ def step(s: float) -> float:
 def stepellipsoid(x: np.ndarray) -> float:
     """Classical example of ill conditioned function.
 
-    The other classical example is cigar.
+    But we add a 'step', i.e. we set the gradient to zero everywhere.
+    Compared to some existing testbeds, we decided to have infinitely many steps.
     """
     dim = x.size
     weights = 10 ** np.linspace(0, 6, dim)
@@ -203,6 +204,8 @@ def bucherastrigin(x: np.ndarray) -> float:
 
 @registry.register
 def doublelinearslope(x: np.ndarray) -> float:
+    """We decided to use two linear slopes rather than having a constraint artificially added for
+    not having the optimum at infinity."""
     return np.abs(np.sum(x))
 
 
