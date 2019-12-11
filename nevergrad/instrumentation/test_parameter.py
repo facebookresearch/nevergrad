@@ -124,4 +124,4 @@ def test_log() -> None:
         par.Log(0.001, 0.1, init=0.01, exponent=2)
         assert not record
         par.Log(0.001, 0.1, init=0.01, exponent=10)
-        assert len(record) == 2
+        assert len(record) == 1

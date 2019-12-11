@@ -82,15 +82,12 @@ class Array(Parameter):
             raise ValueError("Cannot use full range sampling if both bounds are not set")
         self.full_range_sampling = full_range_sampling
         # check sigma is small enough
-        for name, bound in zip(("Lower", "Upper"), self.bounds):
-            if bound is not None:
-                std_data = self.get_std_data()
-                std_bound = self._to_std_space(bound if isinstance(bound, np.ndarray) else np.array([bound]))
-                min_dist = np.min(np.abs(std_data - std_bound).ravel())
-                if min_dist < 2.0:
-                    warnings.warn(f"{name} bound is {min_dist} sigma away from current value, "
-                                  "you should aim for about 3 for better quality.")
-
+        if not any(b is None for b in bounds):
+            std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
+            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
+            if min_dist < 3.0:
+                warnings.warn(f"Bounds are {min_dist} sigma away from each other at the closest, "
+                              "you should aim for at least 3 for better quality.")
         return self
 
     def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
