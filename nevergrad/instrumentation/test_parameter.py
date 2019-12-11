@@ -113,13 +113,16 @@ def test_instrumentation() -> None:
     assert len(inst.kwargs) == 2
 
 
-def test_scalar() -> None:
-    param = par.Scalar().set_mutation(exponent=2., sigma=5)
+def test_scalar_ant_mutable_sigma() -> None:
+    param = par.Scalar(mutable_sigma=True).set_mutation(exponent=2., sigma=5)
     assert param.value == 1
     data = param.get_std_data()
     assert data[0] == 0.0
     param.set_std_data(np.array([-0.2]))
     assert param.value == 0.5
+    assert param.sigma == 5
+    param.mutate()
+    assert param.sigma != 5
 
 
 def test_log() -> None:

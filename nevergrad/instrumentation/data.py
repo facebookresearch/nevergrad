@@ -38,7 +38,7 @@ class Array(Parameter):
     def __init__(
             self,
             shape: t.Tuple[int, ...],
-            mutable_sigma: bool = True
+            mutable_sigma: bool = False
     ) -> None:
         assert isinstance(shape, tuple)
         self.shape = shape
@@ -98,7 +98,11 @@ class Array(Parameter):
 
     def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
         if sigma is not None:
-            self.subparameters._parameters["sigma"] = sigma
+            # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
+            if isinstance(sigma, Parameter) or isinstance(self.subparameters._parameters["sigma"], float):
+                self.subparameters._parameters["sigma"] = sigma
+            else:
+                self.subparameters._parameters["sigma"].value = sigma
         if exponent is not None:
             if self.exponent is None:  # TODO: decide if this is something we want
                 self._value = exponent**self._value
@@ -173,7 +177,7 @@ class Log(Scalar):
         exponent: float = 2.0,
         a_min: t.Optional[float] = None,
         a_max: t.Optional[float] = None,
-        mutable_sigma: bool = True,
+        mutable_sigma: bool = False,
     ) -> None:
         super().__init__(mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
