@@ -143,6 +143,16 @@ def bentcigar(x: np.ndarray) -> float:
 
 
 @registry.register
+def multipeak(x: ndarray) -> float:
+    """Inspired by M. Gallagher's Gaussian peaks function."""
+    v = 10000.
+    for a in range(101):
+        x_ = np.asarray([np.cos(a+np.sqrt(i)) for i in range(len(x))])
+        v = min(v, np.exp(sphere(x-x_)))
+    return v
+
+
+@registry.register
 def altellipsoid(y: np.ndarray) -> float:
     """Similar to Ellipsoid, but variables in inverse order.
 

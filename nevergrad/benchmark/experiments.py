@@ -210,12 +210,13 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     seedg = create_seed_generator(seed)
     optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
               "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
-    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin"]
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
+    # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation) for name in names 
         for rotation in [True, False]
