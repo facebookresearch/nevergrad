@@ -123,7 +123,7 @@ def altcigar(x: np.ndarray) -> float:
 @registry.register
 def discus(x: np.ndarray) -> float:
     """Only one variable is very penalized."""
-    return sphere(x[1:]) + 1000000.0 * sphere(x[0])
+    return sphere(x[1:]) + 1000000.0 * float(x[0]) ** 2
 
 
 @registry.register
@@ -179,7 +179,7 @@ def rastrigin(x: np.ndarray) -> float:
 @registry.register
 def bucherastrigin(x: np.ndarray) -> float:
     """Classical multimodal function. No box-constraint penalization here."""
-    s = np.ndassary([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i-1)/(2*(len(x)-1)))) for i in range(len(x))])
+    s = np.asarray(x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i-1)/(2*(len(x)-1)))) for i in range(len(x)))
     cosi = float(np.sum(np.cos(2 * np.pi * s)))
     return float(10 * (len(x) - cosi) + sphere(s))
 
