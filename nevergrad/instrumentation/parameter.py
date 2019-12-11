@@ -10,4 +10,5 @@ from .container import NgTuple as NgTuple  # noqa
 from .container import Instrumentation as Instrumentation  # noqa
 from .data import Array as Array  # noqa
 from .data import Scalar as Scalar  # noqa
+from .data import Log as Log  # noqa
 from .selection import Choice as Choice  # noqa
