@@ -218,7 +218,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation) for name in names 
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
         for rotation in [True, False]
         for num_blocks in [1,3]
         for d in [2, 10, 50]
@@ -227,7 +227,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
         for function in functions:
             for budget in [400, 800, 1600] if not big else [40000, 80000]:
                 xp = Experiment(function.duplicate(), optim, num_workers=200 if parallel else 1,
-                        budget=budget, seed=next(seedg), noise_level=100 if noise else 0)
+                        budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
 
