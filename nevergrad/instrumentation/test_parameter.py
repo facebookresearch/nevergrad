@@ -40,7 +40,8 @@ def test_empty_parameters(param: Parameter) -> None:
     assert not param.get_value_hash()
 
 
-@pytest.mark.parametrize("param", [par.Array((2, 2), sigma=2),  # type: ignore
+@pytest.mark.parametrize("param", [par.Array((2, 2)),  # type: ignore
+                                   par.Array((3,)).set_mutation(sigma=3, exponent=5),
                                    par.Scalar(),
                                    par.Scalar().set_mutation(exponent=2.),  # should bug so far (exponent not propagated)
                                    par.NgDict(blublu=par.Array((2, 3)), truc=12),
@@ -52,6 +53,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert param._random_state is None
     assert param.generation == 0
     child = param.spawn_child()
+    assert isinstance(child, type(param))
     assert child.generation == 1
     assert param._random_state is not None
     child.mutate()
@@ -63,6 +65,8 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert child.get_data_hash() != param.get_data_hash()
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
+    if isinstance(param, par.Array):
+        assert param.get_data_hash() == child.get_data_hash()
     param.recombine(child, child)
     # constraints
     param.register_cheap_constraint(lambda x: False)
@@ -77,11 +81,15 @@ def test_parameters_basic_features(param: Parameter) -> None:
     # picklable
     string = pickle.dumps(child)
     pickle.loads(string)
+    # array info transfer:
+    if isinstance(param, par.Array):
+        for name in ("exponent", "bounds", "bounding_method", "full_range_sampling"):
+            assert getattr(param, name) == getattr(child, name)
 
 
 def test_choices() -> None:
-    param1 = par.Array((2, 2), sigma=2)
-    param2 = par.Array((2,), sigma=1)
+    param1 = par.Array((2, 2)).set_mutation(sigma=2.0)
+    param2 = par.Array((2,))
     choice = par.Choice([param1, param2, "blublu"])
     choice.value = "blublu"
     np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0, 0.69314718])
@@ -100,3 +108,12 @@ def test_instrumentation() -> None:
     inst.mutate()
     assert len(inst.args) == 1
     assert len(inst.kwargs) == 2
+
+
+def test_scalar() -> None:
+    param = par.Scalar().set_mutation(exponent=2., sigma=5)
+    assert param.value == 1
+    data = param.get_std_data()
+    assert data[0] == 0.0
+    param.set_std_data(np.array([-0.2]))
+    assert param.value == 0.5

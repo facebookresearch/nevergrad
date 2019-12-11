@@ -28,11 +28,11 @@ class Array(Parameter):
     def __init__(
             self,
             shape: t.Tuple[int, ...],
-            sigma: t.Union[float, "Array"] = 1.0,
             recombination: t.Union[str, Parameter] = "average",
     ) -> None:
-        assert not isinstance(shape, Parameter)
-        super().__init__(shape=shape, sigma=sigma, recombination=recombination)
+        assert isinstance(shape, tuple)
+        self.shape = shape
+        super().__init__(sigma=1.0, recombination=recombination)
         self._value: np.ndarray = np.zeros(shape)
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[BoundValue, BoundValue] = (None, None)
@@ -66,7 +66,9 @@ class Array(Parameter):
     def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
         if sigma is not None:
             self.subparameters._parameters["sigma"] = sigma
-        self.exponent = exponent
+        if self.exponent is None and exponent is not None:
+            self.exponent = exponent
+            self._value = exponent**self._value
         return self
 
     # pylint: disable=unused-argument
@@ -77,7 +79,10 @@ class Array(Parameter):
         self._value = data_reduc if self.exponent is None else self.exponent**data_reduc
 
     def _internal_spawn_child(self) -> "Array":
-        child = super()._internal_spawn_child()
+        child = self.__class__(self.shape)
+        child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
+                                           for k, v in self.subparameters._parameters.items()}
+        child.exponent = self.exponent
         child.value = self.value
         return child
 
@@ -100,10 +105,9 @@ class Scalar(Array):
 
     def __init__(
             self,
-            sigma: t.Union[float, "Array"] = 1.0,
             recombination: t.Union[str, Parameter] = "average",
     ) -> None:
-        super().__init__(shape=(1,), sigma=sigma, recombination=recombination)  # , bounds=bounds)
+        super().__init__(shape=(1,), recombination=recombination)  # , bounds=bounds)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
@@ -116,8 +120,9 @@ class Scalar(Array):
         self._value = np.array([value], dtype=float)
 
     def _internal_spawn_child(self) -> "Scalar":
-        child = Scalar()
+        child = self.__class__()
         child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
                                            for k, v in self.subparameters._parameters.items()}
+        child.exponent = self.exponent
         child.value = self.value
         return child
