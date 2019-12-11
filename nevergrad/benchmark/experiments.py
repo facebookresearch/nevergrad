@@ -226,7 +226,8 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     for optim in optims:
         for function in functions:
             for budget in [400, 800, 1600] if not big else [40000, 80000]:
-                xp = Experiment(function.duplicate(), optim, num_workers=200 if parallel else 1, budget=budget, seed=next(seedg))
+                xp = Experiment(function.duplicate(), optim, num_workers=200 if parallel else 1,
+                        budget=budget, seed=next(seedg), noise_level=100 if noise else 0)
                 if not xp.is_incoherent:
                     yield xp
 
@@ -246,7 +247,7 @@ def yaparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def yanoisybbob(seed: Optional[int] = None) -> Iterator[Experiment]:
-    internal_generator = yabbob(seed, noisy=True)
+    internal_generator = yabbob(seed, noise=True)
     for xp in internal_generator:
         yield xp
 
