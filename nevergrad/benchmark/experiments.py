@@ -245,7 +245,7 @@ def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for function in functions:
             for budget in [400, 4000, 40000]:
                 for nw in [1, 400]:
-                    yield Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, num_workers=1, seed=next(seedg))
+                    yield Experiment(function.duplicate(), optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 @registry.register
