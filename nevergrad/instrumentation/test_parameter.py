@@ -14,7 +14,7 @@ from . import parameter as par
 def test_array_basics() -> None:
     var1 = par.Array(shape=(1,))
     var2 = par.Array(shape=(2, 2))
-    d = par.NgDict(var1=var1, var2=var2, var3=12)
+    d = par.Dict(var1=var1, var2=var2, var3=12)
     data = d.get_std_data()
     assert data.size == 5
     d.set_std_data(np.array([1, 2, 3, 4, 5]))
@@ -27,14 +27,14 @@ def test_array_basics() -> None:
         var1.value = 4  # type: ignore
     var1.value = np.array([2])
     representation = repr(d)
-    assert "NgDict{var1" in representation
+    assert "Dict{var1" in representation
     d.set_name("blublu")
     representation = repr(d)
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize("param", [par.NgDict(truc=12),  # type: ignore
-                                   par.NgTuple(), ])
+@pytest.mark.parametrize("param", [par.Dict(truc=12),  # type: ignore
+                                   par.Tuple(), ])
 def test_empty_parameters(param: Parameter) -> None:
     assert not param.dimension
     assert not param.get_data_hash()
@@ -49,8 +49,8 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
                                    par.Array(shape=(3,)).set_mutation(sigma=3, exponent=5),
                                    par.Scalar(),
                                    par.Scalar().set_mutation(exponent=2.),  # should bug so far (exponent not propagated)
-                                   par.NgDict(blublu=par.Array(shape=(2, 3)), truc=12),
-                                   par.NgTuple(par.Array(shape=(2, 3)), 12),
+                                   par.Dict(blublu=par.Array(shape=(2, 3)), truc=12),
+                                   par.Tuple(par.Array(shape=(2, 3)), 12),
                                    par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc=par.Array(shape=(1, 3))),
                                    par.Choice([par.Array(shape=(2,)), "blublu"])])
 def test_parameters_basic_features(param: Parameter) -> None:
@@ -133,8 +133,8 @@ def test_scalar_and_mutable_sigma() -> None:
 
 
 def test_array_recombination() -> None:
-    param = par.NgTuple(par.Scalar(mutable_sigma=True).set_mutation(sigma=5))
-    param2 = par.NgTuple(par.Scalar(mutable_sigma=True).set_mutation(sigma=1))
+    param = par.Tuple(par.Scalar(mutable_sigma=True).set_mutation(sigma=5))
+    param2 = par.Tuple(par.Scalar(mutable_sigma=True).set_mutation(sigma=1))
     param.value = (1,)
     param2.value = (3,)
     param.recombine(param2)

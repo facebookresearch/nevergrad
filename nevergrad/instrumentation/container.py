@@ -1,10 +1,10 @@
 import typing as t
 from .core3 import Parameter
 from .core3 import _as_parameter
-from .core3 import NgDict as NgDict  # Dict needs to be implemented in core since it's used in the base class
+from .core3 import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 
 
-class NgTuple(NgDict):
+class Tuple(Dict):
     """Handle for facilitating dict of parameters management
     """
 
@@ -24,12 +24,12 @@ class NgTuple(NgDict):
             _as_parameter(self[k]).value = val
 
 
-class Instrumentation(NgTuple):
+class Instrumentation(Tuple):
     """Handle for facilitating dict of parameters management
     """
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-        super().__init__(NgTuple(*args), NgDict(**kwargs))
+        super().__init__(Tuple(*args), Dict(**kwargs))
 
     @property
     def args(self) -> t.Tuple[t.Any, ...]:

@@ -8,25 +8,25 @@ import numpy as np
 from . import discretization
 from .core3 import Parameter
 from .core3 import _as_parameter
-from .core3 import NgDict
-from .container import NgTuple
+from .core3 import Dict
+from .container import Tuple
 from .data import Array
 
 
 C = t.TypeVar("C", bound="Choice")
 
 
-class Choice(NgDict):
+class Choice(Dict):
 
     def __init__(
             self,
             choices: t.Iterable[t.Any],
             deterministic: bool = False,
     ) -> None:
-        assert not isinstance(choices, NgTuple)
+        assert not isinstance(choices, Tuple)
         lchoices = list(choices)  # for iterables
         super().__init__(probabilities=Array(shape=(len(lchoices),), mutable_sigma=False),
-                         choices=NgTuple(*lchoices))
+                         choices=Tuple(*lchoices))
         self._deterministic = deterministic
         self._index: t.Optional[int] = None
 
@@ -42,7 +42,7 @@ class Choice(NgDict):
         return self["probabilities"]  # type: ignore
 
     @property
-    def choices(self) -> NgTuple:
+    def choices(self) -> Tuple:
         return self["choices"]  # type: ignore
 
     @property

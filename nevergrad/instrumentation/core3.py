@@ -7,7 +7,7 @@ import numpy as np
 
 BP = t.TypeVar("BP", bound="BaseParameter")
 P = t.TypeVar("P", bound="Parameter")
-D = t.TypeVar("D", bound="NgDict")
+D = t.TypeVar("D", bound="Dict")
 
 
 class NotSupportedError(RuntimeError):
@@ -24,7 +24,7 @@ class BaseParameter:
     def __init__(self, **subparameters: t.Any) -> None:
         self.uid = uuid.uuid4().hex
         self.parents_uids: t.List[str] = []
-        self._subparameters = None if not subparameters else NgDict(**subparameters)
+        self._subparameters = None if not subparameters else Dict(**subparameters)
         self._dimension: t.Optional[int] = None
 
     @property
@@ -39,10 +39,10 @@ class BaseParameter:
         raise NotImplementedError
 
     @property
-    def subparameters(self) -> "NgDict":
+    def subparameters(self) -> "Dict":
         if self._subparameters is None:  # delayed instantiation to avoid infinte loop
-            assert self.__class__ != NgDict, "subparameters of Parameters dict should never be called"
-            self._subparameters = NgDict()
+            assert self.__class__ != Dict, "subparameters of Parameters dict should never be called"
+            self._subparameters = Dict()
         assert self._subparameters is not None
         return self._subparameters
 
@@ -245,7 +245,7 @@ def _as_parameter(param: t.Any) -> Parameter:
         return Constant(param)
 
 
-class NgDict(Parameter):
+class Dict(Parameter):
     """Handle for facilitating dict of parameters management
     """
 
@@ -305,7 +305,7 @@ class NgDict(Parameter):
             if isinstance(param, Parameter):
                 param.mutate()
 
-    def recombine(self, *others: "NgDict") -> None:
+    def recombine(self, *others: "Dict") -> None:
         assert all(isinstance(o, self.__class__) for o in others)
         for k, param in self._parameters.items():
             if isinstance(param, Parameter):
