@@ -77,9 +77,10 @@ class Choice(NgDict):
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
 
-    def set_std_data(self, data: np.ndarray, deterministic: bool = True) -> None:
+    def set_std_data(self: C, data: np.ndarray, deterministic: bool = True) -> C:
         super().set_std_data(data, deterministic=deterministic)
         self._draw(deterministic=deterministic)
+        return self
 
     def mutate(self) -> None:
         self.probabilities.mutate()
