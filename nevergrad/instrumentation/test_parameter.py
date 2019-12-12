@@ -144,6 +144,18 @@ def test_array_recombination() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
+    "name", ["clipping", "arctan", "tanh", "constraint"]
+)
+def test_constraints(name: str) -> None:
+    param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, a_min=-100, a_max=100)
+    param.set_std_data(param.get_std_data())
+    np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
+    param.set_std_data(np.array([100000.0]))
+    if param.complies_with_constraint():
+        np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
+
+
+@pytest.mark.parametrize(  # type: ignore
     "param,expected", [(par.Scalar(), False), (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)]
 )
 def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:

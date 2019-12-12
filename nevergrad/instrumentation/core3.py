@@ -163,7 +163,7 @@ class Parameter(BaseParameter):
         return all(func(val) for func in self._constraint_checkers)
 
     def register_cheap_constraint(self, func: t.Callable[[t.Any], bool]) -> None:
-        if func.__name__ == "<lambda>":  # LambdaType does not work :(
+        if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
             warnings.warn("Lambda as constraint is not advice because it may not be picklable")
         self._constraint_checkers.append(func)
 
