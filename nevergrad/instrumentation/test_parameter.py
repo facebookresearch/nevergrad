@@ -114,7 +114,7 @@ def test_instrumentation() -> None:
 
 
 def test_scalar_and_mutable_sigma() -> None:
-    param = par.Scalar(mutable_sigma=True).set_mutation(exponent=2., sigma=5)
+    param = par.Scalar(mutable_sigma=True).set_mutation(exponent=2.0, sigma=5)
     assert param.value == 1
     data = param.get_std_data()
     assert data[0] == 0.0
@@ -123,6 +123,17 @@ def test_scalar_and_mutable_sigma() -> None:
     assert param.sigma == 5
     param.mutate()
     assert param.sigma != 5
+
+
+def test_array_recombination() -> None:
+    param = par.NgTuple(par.Scalar(mutable_sigma=True).set_mutation(sigma=5))
+    param2 = par.NgTuple(par.Scalar(mutable_sigma=True).set_mutation(sigma=1))
+    param.value = (1,)
+    param2.value = (3,)
+    param.recombine(param2)
+    assert param.value[0] == 2.0
+    param2.set_std_data((param.get_std_data() + param2.get_std_data()) / 2)
+    assert param2.value[0] == 1.0
 
 
 @pytest.mark.parametrize(  # type: ignore
