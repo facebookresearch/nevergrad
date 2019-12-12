@@ -12,8 +12,8 @@ from . import parameter as par
 
 
 def test_array_basics() -> None:
-    var1 = par.Array((1,))
-    var2 = par.Array((2, 2))
+    var1 = par.Array(shape=(1,))
+    var2 = par.Array(shape=(2, 2))
     d = par.NgDict(var1=var1, var2=var2, var3=12)
     data = d.get_std_data()
     assert data.size == 5
@@ -45,14 +45,14 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
     return True
 
 
-@pytest.mark.parametrize("param", [par.Array((2, 2)),  # type: ignore
-                                   par.Array((3,)).set_mutation(sigma=3, exponent=5),
+@pytest.mark.parametrize("param", [par.Array(shape=(2, 2)),  # type: ignore
+                                   par.Array(shape=(3,)).set_mutation(sigma=3, exponent=5),
                                    par.Scalar(),
                                    par.Scalar().set_mutation(exponent=2.),  # should bug so far (exponent not propagated)
-                                   par.NgDict(blublu=par.Array((2, 3)), truc=12),
-                                   par.NgTuple(par.Array((2, 3)), 12),
-                                   par.Instrumentation(par.Array((2,)), string="blublu", truc=par.Array((1, 3))),
-                                   par.Choice([par.Array((2,)), "blublu"])])
+                                   par.NgDict(blublu=par.Array(shape=(2, 3)), truc=12),
+                                   par.NgTuple(par.Array(shape=(2, 3)), 12),
+                                   par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc=par.Array(shape=(1, 3))),
+                                   par.Choice([par.Array(shape=(2,)), "blublu"])])
 def test_parameters_basic_features(param: Parameter) -> None:
     assert isinstance(param.name, str)
     assert param._random_state is None
@@ -98,8 +98,8 @@ def test_parameters_basic_features(param: Parameter) -> None:
 
 
 def test_choices() -> None:
-    param1 = par.Array((2, 2)).set_mutation(sigma=2.0)
-    param2 = par.Array((2,))
+    param1 = par.Array(shape=(2, 2)).set_mutation(sigma=2.0)
+    param2 = par.Array(shape=(2,))
     choice = par.Choice([param1, param2, "blublu"])
     choice.value = "blublu"
     np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0, 0.69314718])
@@ -114,7 +114,7 @@ def test_choices() -> None:
 
 
 def test_instrumentation() -> None:
-    inst = par.Instrumentation(par.Array((2,)), string="blublu", truc=par.Array((1, 3)))
+    inst = par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc=par.Array(shape=(1, 3)))
     inst.mutate()
     assert len(inst.args) == 1
     assert len(inst.kwargs) == 2

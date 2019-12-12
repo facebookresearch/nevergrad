@@ -42,14 +42,18 @@ class Array(Parameter):
 
     def __init__(
             self,
-            shape: t.Tuple[int, ...],
+            *,
+            init: t.Optional[np.ndarray] = None,
+            shape: t.Optional[t.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
-        assert isinstance(shape, tuple)
-        self.shape = shape
+        assert shape is None or isinstance(shape, tuple)
+        assert init is None or isinstance(init, np.ndarray)
+        if sum(x is None for x in (init, shape)) != 1:
+            raise ValueError('Exactly one of "init" or "shape" must be provided')
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average")
-        self._value: np.ndarray = np.zeros(shape)
+        self._value: np.ndarray = init if init is not None else np.zeros(shape)
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
         self.bounding_method: t.Optional[str] = None
@@ -134,11 +138,12 @@ class Array(Parameter):
         return instance
 
     def _internal_spawn_child(self) -> "Array":
-        child = self.__class__(self.shape)
+        child = self.__class__(init=self.value)
         child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
                                            for k, v in self.subparameters._parameters.items()}
         child.exponent = self.exponent
         child.value = self.value
+        child.bounds = self.bounds
         return child
 
     def _internal_get_std_data(self: A, instance: A) -> np.ndarray:
@@ -163,8 +168,8 @@ class Array(Parameter):
 
 class Scalar(Array):
 
-    def __init__(self, mutable_sigma: bool = True) -> None:
-        super().__init__(shape=(1,), mutable_sigma=mutable_sigma)
+    def __init__(self, init: float = 0.0, mutable_sigma: bool = True) -> None:
+        super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
@@ -175,14 +180,6 @@ class Scalar(Array):
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
         self._value = np.array([value], dtype=float)
-
-    def _internal_spawn_child(self) -> "Scalar":
-        child = self.__class__()
-        child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
-                                           for k, v in self.subparameters._parameters.items()}
-        child.exponent = self.exponent
-        child.value = self.value
-        return child
 
 
 class Log(Scalar):
@@ -196,8 +193,7 @@ class Log(Scalar):
         a_max: t.Optional[float] = None,
         mutable_sigma: bool = False,
     ) -> None:
-        super().__init__(mutable_sigma=mutable_sigma)
+        super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
-        self.value = init
         if any(a is not None for a in (a_min, a_max)):
             self.set_bounds(a_min, a_max, method="clipping")
