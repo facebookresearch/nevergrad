@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
+import typing as t
 import pytest
 import numpy as np
 from .core3 import Parameter
@@ -40,6 +41,10 @@ def test_empty_parameters(param: Parameter) -> None:
     assert not param.get_value_hash()
 
 
+def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
+    return True
+
+
 @pytest.mark.parametrize("param", [par.Array((2, 2)),  # type: ignore
                                    par.Array((3,)).set_mutation(sigma=3, exponent=5),
                                    par.Scalar(),
@@ -72,7 +77,9 @@ def test_parameters_basic_features(param: Parameter) -> None:
         assert param.get_data_hash() == child_hash.get_data_hash()
     param.recombine(child, child)
     # constraints
-    param.register_cheap_constraint(lambda x: False)
+    param.register_cheap_constraint(_true)
+    with pytest.warns(UserWarning):
+        param.register_cheap_constraint(lambda *args, **kwargs: False)
     child2 = param.spawn_child()
     assert child.complies_with_constraint()
     assert not param.complies_with_constraint()
@@ -133,7 +140,7 @@ def test_array_recombination() -> None:
     param.recombine(param2)
     assert param.value[0] == 2.0
     param2.set_std_data((param.get_std_data() + param2.get_std_data()) / 2)
-    assert param2.value[0] == 1.0
+    assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
 
 
 @pytest.mark.parametrize(  # type: ignore

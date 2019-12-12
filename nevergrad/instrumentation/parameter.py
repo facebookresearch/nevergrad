@@ -4,11 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 # pylint: disable=unused-import
-from .core3 import Parameter as Parameter  # noqa
-from .core3 import NgDict as NgDict  # noqa
-from .container import NgTuple as NgTuple  # noqa
-from .container import Instrumentation as Instrumentation  # noqa
-from .data import Array as Array  # noqa
-from .data import Scalar as Scalar  # noqa
-from .data import Log as Log  # noqa
-from .selection import Choice as Choice  # noqa
+# import with "as" to explicitely allow reexport (mypy)
+from .core3 import Parameter as Parameter
+from .core3 import NgDict as NgDict
+from .container import NgTuple as NgTuple
+from .container import Instrumentation as Instrumentation
+from .data import Array as Array
+from .data import Scalar as Scalar
+from .data import Log as Log
+from .selection import Choice as Choice

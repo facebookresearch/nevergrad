@@ -15,12 +15,17 @@ BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]
 A = t.TypeVar("A", bound="Array")
 
 
-def _check_bounds(value: np.ndarray, bounds: t.Tuple[BoundValue, BoundValue]) -> bool:
-    for k, bound in enumerate(bounds):
-        if bound is not None:
-            if np.any((value > bound) if k else (value < bound)):
-                return False
-    return True
+class BoundChecker:
+
+    def __init__(self, a_min: BoundValue = None, a_max: BoundValue = None) -> None:
+        self.bounds = (a_min, a_max)
+
+    def __call__(self, value: np.ndarray) -> bool:
+        for k, bound in enumerate(self.bounds):
+            if bound is not None:
+                if np.any((value > bound) if k else (value < bound)):
+                    return False
+        return True
 
 
 # pylint: disable=too-many-arguments
@@ -64,7 +69,7 @@ class Array(Parameter):
             raise TypeError(f"Received a {type(value)} in place of a np.ndarray")
         if self._value.shape != value.shape:
             raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
-        if not _check_bounds(value, self.bounds):
+        if not BoundChecker(*self.bounds)(self.value):
             raise ValueError("New value does not comply with bounds")
         if self.exponent is not None and np.min(value.ravel()) <= 0:
             raise ValueError("Logirithmic values cannot be negative")
@@ -82,7 +87,7 @@ class Array(Parameter):
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
                    method: str = "clipping", full_range_sampling: bool = False) -> A:
         assert method in ["clipping"]  # , "constraint"]
-        if not _check_bounds(self.value, self.bounds):
+        if not BoundChecker(*self.bounds)(self.value):
             raise ValueError("Current value is not within bounds, please update it first")
         bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (a_min, a_max))
         if not (a_min is None or a_max is None):
