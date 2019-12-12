@@ -116,7 +116,7 @@ class Array(Parameter):
         self.bounds = bounds  # type: ignore
         self.full_range_sampling = full_range_sampling
         # warn if sigma is too large for range
-        if both_bounds:
+        if both_bounds and method != "tanh":  # tanh goes to infinity anyway
             std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
             min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
             if min_dist < 3.0:
