@@ -122,8 +122,8 @@ class Array(Parameter):
                 self.subparameters._parameters["sigma"].value = sigma
         if exponent is not None:
             assert exponent > 1.0, "Only exponents strictly higher than 1.0 are allowed"
-            if self.exponent is None:  # TODO: decide if this is something we want
-                self._value = exponent**self._value
+            if np.min(self._value.ravel()) <= 0:
+                raise RuntimeError("Cannot convert to logarithmic mode with current non-positive value, please update it first.")
             self.exponent = exponent
         return self
 
