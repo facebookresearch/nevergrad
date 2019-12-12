@@ -119,14 +119,14 @@ class Array(Parameter):
         return self
 
     # pylint: disable=unused-argument
-    def set_std_data(self: A, data: np.ndarray, deterministic: bool = True) -> A:
+    def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = True) -> A:
         assert isinstance(data, np.ndarray)
         sigma = self._get_parameter_value("sigma")
-        data_reduc = (sigma * data).reshape(self._value.shape)
-        self._value = data_reduc if self.exponent is None else self.exponent**data_reduc
-        if self.bounding_method == "clipping":
-            self._value = np.clip(self._value, self.bounds[0], self.bounds[1])
-        return self
+        data_reduc = (sigma * data).reshape(instance._value.shape)
+        instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
+        if instance.bounding_method == "clipping":
+            instance._value = np.clip(instance._value, instance.bounds[0], instance.bounds[1])
+        return instance
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(self.shape)
@@ -136,10 +136,12 @@ class Array(Parameter):
         child.value = self.value
         return child
 
-    def get_std_data(self) -> np.ndarray:
-        return self._to_std_space(self._value)
+    def _internal_get_std_data(self: A, instance: A) -> np.ndarray:
+        return self._to_std_space(instance._value)
 
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
+        """Converts any data to the standard space of this instance
+        """
         sigma = self._get_parameter_value("sigma")
         distribval = data if self.exponent is None else np.log(data) / np.log(self.exponent)
         reduced = distribval / sigma

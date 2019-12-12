@@ -1,12 +1,12 @@
 import uuid
 from collections import OrderedDict
-from typing import TypeVar, List, Optional, Dict, Any, Callable, Hashable
+import typing as t
 import numpy as np
 
 
-BP = TypeVar("BP", bound="BaseParameter")
-P = TypeVar("P", bound="Parameter")
-D = TypeVar("D", bound="NgDict")
+BP = t.TypeVar("BP", bound="BaseParameter")
+P = t.TypeVar("P", bound="Parameter")
+D = t.TypeVar("D", bound="NgDict")
 
 
 class NotSupportedError(RuntimeError):
@@ -20,18 +20,18 @@ class BaseParameter:
     value, subparameters, mutation, recombination
     """
 
-    def __init__(self, **subparameters: Any) -> None:
+    def __init__(self, **subparameters: t.Any) -> None:
         self.uid = uuid.uuid4().hex
-        self.parents_uids: List[str] = []
+        self.parents_uids: t.List[str] = []
         self._subparameters = None if not subparameters else NgDict(**subparameters)
-        self._dimension: Optional[int] = None
+        self._dimension: t.Optional[int] = None
 
     @property
-    def value(self) -> Any:
+    def value(self) -> t.Any:
         raise NotImplementedError
 
     @value.setter
-    def value(self, value: Any) -> Any:
+    def value(self, value: t.Any) -> t.Any:
         raise NotImplementedError
 
     def spawn_child(self: BP) -> BP:
@@ -45,7 +45,7 @@ class BaseParameter:
         assert self._subparameters is not None
         return self._subparameters
 
-    def _get_parameter_value(self, name: str) -> Any:
+    def _get_parameter_value(self, name: str) -> t.Any:
         param = self.subparameters[name]
         return param.value if isinstance(param, Parameter) else param
 
@@ -72,13 +72,22 @@ class BaseParameter:
     def recombine(self: BP, *others: BP) -> None:
         raise NotSupportedError(f"Recombination is not implemented for {self.name}")  # type: ignore
 
-    def get_std_data(self) -> np.ndarray:
+    def get_std_data(self: BP, instance: t.Optional[BP] = None) -> np.ndarray:
+        assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
+        return self._internal_get_std_data(self if instance is None else instance)
+
+    def _internal_get_std_data(self: BP, instance: BP) -> np.ndarray:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def set_std_data(self: BP, data: np.ndarray, deterministic: bool = True) -> BP:
+    def set_std_data(self: BP, data: np.ndarray, instance: t.Optional[BP] = None, deterministic: bool = True) -> BP:
+        assert isinstance(deterministic, bool)
+        assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
+        return self._internal_set_std_data(data, instance=self if instance is None else instance, deterministic=deterministic)
+
+    def _internal_set_std_data(self: BP, data: np.ndarray, instance: BP, deterministic: bool = True) -> BP:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def from_value(self: BP, value: Any) -> BP:
+    def from_value(self: BP, value: t.Any) -> BP:
         child = self.spawn_child()
         child.value = value
         return child
@@ -92,12 +101,12 @@ class Parameter(BaseParameter):
     constraint check, hashes, generation and naming.
     """
 
-    def __init__(self, **subparameters: Any) -> None:
+    def __init__(self, **subparameters: t.Any) -> None:
         super().__init__(**subparameters)
-        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
+        self._random_state: t.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        self._constraint_checkers: List[Callable[[Any], bool]] = []
-        self._name: Optional[str] = None
+        self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
+        self._name: t.Optional[str] = None
 
     @property
     def generation(self) -> int:
@@ -105,7 +114,7 @@ class Parameter(BaseParameter):
         """
         return self._generation
 
-    def get_value_hash(self) -> Hashable:
+    def get_value_hash(self) -> t.Hashable:
         val = self.value
         if isinstance(val, (str, bytes, float, int)):
             return val
@@ -114,7 +123,7 @@ class Parameter(BaseParameter):
         else:
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
-    def get_data_hash(self) -> Hashable:
+    def get_data_hash(self) -> t.Hashable:
         return self.get_std_data().tobytes()
 
     def _get_name(self) -> str:
@@ -152,7 +161,7 @@ class Parameter(BaseParameter):
         val = self.value
         return all(func(val) for func in self._constraint_checkers)
 
-    def register_cheap_constraint(self, func: Callable[[Any], bool]) -> None:
+    def register_cheap_constraint(self, func: t.Callable[[t.Any], bool]) -> None:
         self._constraint_checkers.append(func)
 
     # %% random state
@@ -196,7 +205,7 @@ class Parameter(BaseParameter):
 
 class Constant(Parameter):
 
-    def __init__(self, value: Any) -> None:
+    def __init__(self, value: t.Any) -> None:
         super().__init__()
         if isinstance(value, Parameter):
             raise TypeError("Only non-parameters can be wrapped in a Constant")
@@ -206,27 +215,27 @@ class Constant(Parameter):
         return str(self._value)
 
     @property
-    def value(self) -> Any:
+    def value(self) -> t.Any:
         return self._value
 
     @value.setter
-    def value(self, value: Any) -> None:
+    def value(self, value: t.Any) -> None:
         if not value == self._value:
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
-    def get_std_data(self) -> np.ndarray:
+    def _internal_get_std_data(self: BP, instance: BP) -> np.ndarray:
         return np.array([])
 
-    def set_std_data(self: P, data: np.ndarray, deterministic: bool = True) -> P:
+    def _internal_set_std_data(self: P, data: np.ndarray, instance: P, deterministic: bool = True) -> P:
         if data.size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return self
+        return instance
 
     def spawn_child(self: P) -> P:
         return self  # no need to create another instance for a constant
 
 
-def _as_parameter(param: Any) -> Parameter:
+def _as_parameter(param: t.Any) -> Parameter:
     if isinstance(param, Parameter):
         return param
     else:
@@ -237,12 +246,12 @@ class NgDict(Parameter):
     """Handle for facilitating dict of parameters management
     """
 
-    def __init__(self, **parameters: Any) -> None:
+    def __init__(self, **parameters: t.Any) -> None:
         super().__init__()
-        self._parameters: Dict[Any, Any] = parameters
-        self._sizes: Optional[Dict[str, int]] = None
+        self._parameters: t.Dict[t.Any, t.Any] = parameters
+        self._sizes: t.Optional[t.Dict[str, int]] = None
 
-    def __getitem__(self, name: Any) -> Any:
+    def __getitem__(self, name: t.Any) -> t.Any:
         return self._parameters[name]
 
     def _get_name(self) -> str:
@@ -251,21 +260,21 @@ class NgDict(Parameter):
         return f"{self.__class__.__name__}{paramsstr}"
 
     @property
-    def value(self) -> Dict[str, Any]:
+    def value(self) -> t.Dict[str, t.Any]:
         return {k: _as_parameter(p).value for k, p in self._parameters.items()}
 
     @value.setter
-    def value(self, value: Dict[str, Any]) -> None:
+    def value(self, value: t.Dict[str, t.Any]) -> None:
         if set(value) != set(self._parameters):
             raise ValueError(f"Got input keys {set(value)} but expected {set(self._parameters)}")
         for key, val in value.items():
             _as_parameter(self._parameters[key]).value = val
 
-    def get_value_hash(self) -> Hashable:
+    def get_value_hash(self) -> t.Hashable:
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
 
-    def get_std_data(self) -> np.ndarray:
-        data = {k: p.get_std_data() for k, p in self._parameters.items() if isinstance(p, Parameter)}
+    def _internal_get_std_data(self: D, instance: D) -> np.ndarray:
+        data = {k: self[k].get_std_data(p) for k, p in instance._parameters.items() if isinstance(p, Parameter)}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
@@ -274,7 +283,7 @@ class NgDict(Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def set_std_data(self: D, data: np.ndarray, deterministic: bool = True) -> D:
+    def _internal_set_std_data(self: D, data: np.ndarray, instance: D, deterministic: bool = True) -> D:
         if self._sizes is None:
             self.get_std_data()
         assert self._sizes is not None
@@ -283,10 +292,10 @@ class NgDict(Parameter):
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._parameters[name].set_std_data(data[start: end], deterministic)
+            self._parameters[name].set_std_data(data[start: end], instance=instance[name], deterministic=deterministic)
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
-        return self
+        return instance
 
     def mutate(self) -> None:
         for param in self._parameters.values():
