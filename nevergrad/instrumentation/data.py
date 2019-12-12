@@ -8,6 +8,7 @@ import typing as t
 import numpy as np
 from .core3 import Parameter
 from .core3 import _as_parameter
+from . import transforms as trans
 
 
 BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]
@@ -55,7 +56,7 @@ class Array(Parameter):
         self._value: np.ndarray = init if init is not None else np.zeros(shape)
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
-        self.bounding_method: t.Optional[str] = None
+        self.bound_transform: t.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
 
     @property
@@ -89,23 +90,33 @@ class Array(Parameter):
 
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
                    method: str = "clipping", full_range_sampling: bool = False) -> A:
-        assert method in ["clipping"]  # , "constraint"]
-        if not BoundChecker(*self.bounds)(self.value):
-            raise ValueError("Current value is not within bounds, please update it first")
         bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (a_min, a_max))
+        both_bounds = all(b is not None for b in bounds)
+        # preliminary checks
+        if self.bound_transform is not None:
+            raise RuntimeError("A bounding method has already been set")
+        if full_range_sampling and not both_bounds:
+            raise ValueError("Cannot use full range sampling if both bounds are not set")
+        checker = BoundChecker(*bounds)
+        if not checker(self.value):
+            raise ValueError("Current value is not within bounds, please update it first")
         if not (a_min is None or a_max is None):
             if (bounds[0] >= bounds[1]).any():  # type: ignore
                 raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")
-        self.bounds = bounds  # type: ignore
-        if method not in ["clipping", "constraint"]:
-            if self.exponent is not None:
+        # update instance
+        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound)
+        if method in transforms:
+            if self.exponent is not None and method != "clipping":
                 raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
-            self.bounding_method = method
-        if full_range_sampling and any(a is None for a in (a_min, a_max)):
-            raise ValueError("Cannot use full range sampling if both bounds are not set")
+            self.bound_transform = transforms[method](*bounds)
+        elif method == "constraint":
+            self.register_cheap_constraint(checker)
+        else:
+            raise ValueError(f"Unknown method {method}")
+        self.bounds = bounds  # type: ignore
         self.full_range_sampling = full_range_sampling
-        # check sigma is small enough
-        if not any(b is None for b in bounds):
+        # warn if sigma is too large for range
+        if both_bounds:
             std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
             min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
             if min_dist < 3.0:
@@ -121,7 +132,11 @@ class Array(Parameter):
             else:
                 self.subparameters._parameters["sigma"].value = sigma
         if exponent is not None:
-            assert exponent > 1.0, "Only exponents strictly higher than 1.0 are allowed"
+            if self.bound_transform is not None and not self.bound_transform.name.startswith("Cl"):
+                raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
+                                   "only clipping and constraint bounding methods can accept it.")
+            if exponent <= 1.0:
+                raise ValueError("Only exponents strictly higher than 1.0 are allowed")
             if np.min(self._value.ravel()) <= 0:
                 raise RuntimeError("Cannot convert to logarithmic mode with current non-positive value, please update it first.")
             self.exponent = exponent
@@ -133,17 +148,16 @@ class Array(Parameter):
         sigma = self._get_parameter_value("sigma")
         data_reduc = (sigma * data).reshape(instance._value.shape)
         instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
-        if instance.bounding_method == "clipping":
-            instance._value = np.clip(instance._value, instance.bounds[0], instance.bounds[1])
+        if instance.bound_transform is not None:
+            instance._value = instance.bound_transform.forward(instance._value)
         return instance
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(init=self.value)
         child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
                                            for k, v in self.subparameters._parameters.items()}
-        child.exponent = self.exponent
-        child.value = self.value
-        child.bounds = self.bounds
+        for name in ["exponent", "bounds", "bound_transform", "full_range_sampling"]:
+            setattr(child, name, getattr(self, name))
         return child
 
     def _internal_get_std_data(self: A, instance: A) -> np.ndarray:
@@ -153,6 +167,8 @@ class Array(Parameter):
         """Converts array with appropriate shapes to the standard space of this instance
         """
         sigma = self._get_parameter_value("sigma")
+        if self.bound_transform is not None:
+            data = self.bound_transform.backward(data)
         distribval = data if self.exponent is None else np.log(data) / np.log(self.exponent)
         reduced = distribval / sigma
         return reduced.ravel()  # type: ignore

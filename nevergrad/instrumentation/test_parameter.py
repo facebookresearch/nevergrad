@@ -93,7 +93,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     pickle.loads(string)
     # array info transfer:
     if isinstance(param, par.Array):
-        for name in ("exponent", "bounds", "bounding_method", "full_range_sampling"):
+        for name in ("exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
 
 
