@@ -140,18 +140,18 @@ class Array(Parameter):
         return self._to_std_space(instance._value)
 
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
-        """Converts any data to the standard space of this instance
+        """Converts array with appropriate shapes to the standard space of this instance
         """
         sigma = self._get_parameter_value("sigma")
         distribval = data if self.exponent is None else np.log(data) / np.log(self.exponent)
         reduced = distribval / sigma
         return reduced.ravel()  # type: ignore
 
-    def recombine(self, *others: "Array") -> None:
+    def recombine(self: A, *others: A) -> None:
         recomb = self._get_parameter_value("recombination")
         all_p = [self] + list(others)
         if recomb == "average":
-            self.set_std_data(np.mean([p.get_std_data() for p in all_p], axis=0))
+            self.set_std_data(np.mean([self.get_std_data(p) for p in all_p], axis=0))
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
