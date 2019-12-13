@@ -204,6 +204,55 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False) -> Iterator[Experiment]:
+    """Yet Another Black-Box Optimization Benchmark.
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
+              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
+    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
+    names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
+    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
+    # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
+    # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
+        for rotation in [True, False]
+        for num_blocks in [1,3]
+        for d in [2, 10, 50]
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [400, 800, 1600] if not big else [40000, 80000]:
+                xp = Experiment(function.duplicate(), optim, num_workers=200 if parallel else 1,
+                        budget=budget, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
+
+@registry.register
+def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, parallel=False, big=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yaparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, parallel=True, big=False)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yanoisybbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, noise=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
 def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
