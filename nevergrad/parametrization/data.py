@@ -53,7 +53,7 @@ class Array(Parameter):
             raise ValueError('Exactly one of "init" or "shape" must be provided')
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average")
-        self._value: np.ndarray = init if init is not None else np.zeros(shape)  # type: ignore
+        self._value: np.ndarray = init if init is not None else np.zeros(shape)
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
         self.bound_transform: t.Optional[trans.BoundTransform] = None
