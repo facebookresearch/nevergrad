@@ -41,6 +41,13 @@ class BaseParameter:
         raise NotImplementedError
 
     def spawn_child(self: BP) -> BP:
+        """Creates a new which only shares the same random generator than its parent
+
+        Returns
+        -------
+        Parameter
+            a new instance of the same class, with same value/parameters/subparameters/...
+        """
         raise NotImplementedError
 
     @property
@@ -95,6 +102,30 @@ class BaseParameter:
         raise NotSupportedError(f"Recombination is not implemented for {self.name}")  # type: ignore
 
     def get_std_data(self: BP, instance: t.Optional[BP] = None) -> np.ndarray:
+        """Get the standardized data representing the value of the instance as an array in the optimization space.
+        In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
+        The data only represent the value of this instance, not the subparameters (eg.: mutable sigma), hence it does not
+        fully represent the state of the instance. Also, in stochastic cases, the value can be non-deterministically
+        deduced from the data (eg.: categorical variable, for which data includes sampling weights for each value)
+
+        Parameters
+        ----------
+        instance: Parameter
+            the instance to represent in the standardized data space. By default this is "self", but other
+            instances of the same type can be passed so as to be able to perform operations between them in the
+            standardized data space (see note below)
+
+        Returns
+        -------
+        np.ndarray
+            the representation of the value in the optimization space
+
+        Note
+        ----
+        Operations between different standardized data should only be performed if at least one of these conditions apply:
+        - subparameters do not mutate (eg: sigma is constant)
+        - each array was produced by the same instance in the exact same state (no mutation)
+        """
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_get_std_data(self if instance is None else instance)
 
@@ -102,6 +133,22 @@ class BaseParameter:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
 
     def set_std_data(self: BP, data: np.ndarray, instance: t.Optional[BP] = None, deterministic: bool = False) -> BP:
+        """Updates the value of the provided instance (or self) using the standardized data.
+
+        Parameters
+        ----------
+        np.ndarray
+            the representation of the value in the optimization space
+        instance: Parameter
+            the instance to update ("self", if not provided)
+        deterministic: bool
+            whether the value should be deterministically drawn (max probability) in the case of stochastic parameters
+
+        Returns
+        -------
+        Parameter
+            the updated instance (self, or the provided instance)
+        """
         assert isinstance(deterministic, bool)
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_set_std_data(data, instance=self if instance is None else instance, deterministic=deterministic)
@@ -110,6 +157,19 @@ class BaseParameter:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
     def from_value(self: BP, value: t.Any) -> BP:
+        """Creates a new instance with the provided value
+        This is only a shortcut for spawning a child and updated the value
+
+        Parameter
+        ---------
+        value: Any
+            the value of the new instance
+
+        Returns
+        -------
+        Parameter
+            the new instance, with the given value
+        """
         child = self.spawn_child()
         child.value = value
         return child
@@ -132,7 +192,7 @@ class Parameter(BaseParameter):
 
     @property
     def generation(self) -> int:
-        """generation of the parameter (children are current generation + 1)
+        """Generation of the parameter (children are current generation + 1)
         """
         return self._generation
 
@@ -163,6 +223,11 @@ class Parameter(BaseParameter):
 
     @property
     def name(self) -> str:
+        """Name of the parameter
+        This is used to keep track of how this Parameter is configured, mostly for reproducibility
+        A default version is always provided, but can be overriden directly through the attribute, or through
+        the set_name method (which allows chaining)
+        """
         if self._name is not None:
             return self._name
         substr = ""
@@ -181,6 +246,11 @@ class Parameter(BaseParameter):
 
     def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
+
+        Parameter
+        ---------
+        name: str
+            new name to use to represent the Parameter
         """
         self._name = name
         return self
@@ -188,8 +258,13 @@ class Parameter(BaseParameter):
     # %% Constraint management
 
     def satisfies_constraint(self) -> bool:
-        """Whether the instance complies with the constraints added through
+        """Whether the instance satisfies the constraints added through
         the "register_cheap_constraint" method
+
+        Returns
+        -------
+        bool
+            True iff the constraint is satisfied
         """
         if not self._constraint_checkers:
             return True
