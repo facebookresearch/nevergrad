@@ -10,7 +10,20 @@ from .core import Dict as Dict  # Dict needs to be implemented in core since it'
 
 
 class Tuple(Dict):
-    """Handle for facilitating dict of parameters management
+    """Tuple-valued parameter. This Parameter can contain other Parameters,
+    its value is tuple which values are either directly the provided values
+    if they are not Parameter instances, or the value of those Parameters.
+    It also implements a getter to access the Parameters directly if need be.
+
+    Parameters
+    ----------
+    **parameters: Any
+        the objects or Parameter which will provide values for the tuple
+
+    Note
+    ----
+    This is the base structure for all container Parameters, and it is
+    used to hold the subparameters for all Parameter classes.
     """
 
     def __init__(self, *parameters: t.Any) -> None:
@@ -30,7 +43,25 @@ class Tuple(Dict):
 
 
 class Instrumentation(Tuple):
-    """Handle for facilitating dict of parameters management
+    """Parameter holding args and kwargs:
+    The parameter provided as input are used to provide values for
+    an arg tuple and a kwargs dict.
+    "value" attribue returns (args, kwargs), but each can be independantly
+    accessed through the "args" and "kwargs" methods
+
+    Parameters
+    ----------
+    *args
+         values or Parameters to be used to fill the tuple of args
+    *kwargs
+         values or Parameters to be used to fill the dict of kwargs
+
+    Note
+    ----
+    When used in conjonction with the "minimize" method of an optimizer,
+    functions call use func(*param.args, **param.kwargs) instead of
+    func(param.value). This is for simplifying the parametrization of
+    multiparameter functions.
     """
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:

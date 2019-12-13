@@ -328,6 +328,15 @@ class Parameter(BaseParameter):
 
 
 class Constant(Parameter):
+    """Parameter-like object for to simplify management of constant parameters:
+    mutation/recombination do nothing, value canot be changed, standardize data is an empty array,
+    child is the same instance.
+
+    Parameter
+    ---------
+    value: Any
+        the value that this parameter will always provide
+    """
 
     def __init__(self, value: t.Any) -> None:
         super().__init__()
@@ -360,6 +369,10 @@ class Constant(Parameter):
 
 
 def _as_parameter(param: t.Any) -> Parameter:
+    """Returns a Parameter from anything:
+    either the input if it is already a parameter, or a Constant if not
+    This is convenient for iterating over Parameter and other objects alike
+    """
     if isinstance(param, Parameter):
         return param
     else:
@@ -367,7 +380,20 @@ def _as_parameter(param: t.Any) -> Parameter:
 
 
 class Dict(Parameter):
-    """Handle for facilitating dict of parameters management
+    """Dictionary-valued parameter. This Parameter can contain other Parameters,
+    its value is a dict, with keys the ones provided as input, and corresponding values are
+    either directly the provided values if they are not Parameter instances, or the value of those
+    Parameters. It also implements a getter to access the Parameters directly if need be.
+
+    Parameters
+    ----------
+    **parameters: Any
+        the objects or Parameter which will provide values for the dict
+
+    Note
+    ----
+    This is the base structure for all container Parameters, and it is
+    used to hold the subparameters for all Parameter classes.
     """
 
     def __init__(self, **parameters: t.Any) -> None:

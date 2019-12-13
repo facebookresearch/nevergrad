@@ -102,15 +102,15 @@ def test_choices() -> None:
     param2 = par.Array(shape=(2,))
     choice = par.Choice([param1, param2, "blublu"])
     choice.value = "blublu"
-    np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0, 0.69314718])
-    choice.probabilities.value = np.array([1000.0, 0, 0])
+    np.testing.assert_array_almost_equal(choice.weights.value, [0, 0, 0.69314718])
+    choice.weights.value = np.array([1000.0, 0, 0])
     choice.mutate()
     assert np.abs(choice.choices[0].value).ravel().sum()
     assert not np.abs(choice.choices[1].value).ravel().sum(), "Only selection should mutate"
     with pytest.raises(ValueError):
         choice.value = "hop"
     choice.value = np.array([1, 1])
-    np.testing.assert_array_almost_equal(choice.probabilities.value, [0, 0.69314718, 0])
+    np.testing.assert_array_almost_equal(choice.weights.value, [0, 0.69314718, 0])
 
 
 def test_instrumentation() -> None:
