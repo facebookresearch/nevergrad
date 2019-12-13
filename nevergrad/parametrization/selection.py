@@ -9,6 +9,7 @@ from ..instrumentation import discretization  # TODO move along
 from .core import Parameter
 from .core import _as_parameter
 from .core import Dict
+from .core import Tags
 from .container import Tuple
 from .data import Array
 
@@ -16,6 +17,7 @@ from .data import Array
 C = t.TypeVar("C", bound="Choice")
 
 
+# TODO deterministic in name + Ordered + ordered tag
 class Choice(Dict):
     """Parameter which choses one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
@@ -49,6 +51,11 @@ class Choice(Dict):
                          choices=Tuple(*lchoices))
         self._deterministic = deterministic
         self._index: t.Optional[int] = None
+
+    @property
+    def tags(self) -> Tags:
+        return Tags(deterministic=self._deterministic & self.choices.tags.deterministic,
+                    continuous=self.choices.tags.continuous & (not self._deterministic))
 
     @property
     def index(self) -> int:  # delayed choice

@@ -111,6 +111,20 @@ def test_parameter_names(param: Parameter, name: str) -> None:
     assert param.name == name
 
 
+@pytest.mark.parametrize(  # type: ignore
+    "param,continuous,deterministic",
+    [(par.Array(shape=(2, 2)), True, True),
+     (par.Choice([True, False]), True, False),
+     (par.Choice([True, False], deterministic=True), False, True),
+     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False),
+     (par.Dict(constant=12, array=par.Scalar().set_integer_casting()), False, True),
+     ]
+)
+def test_parameter_tags(param: Parameter, continuous: bool, deterministic: bool) -> None:
+    assert param.tags.continuous == continuous
+    assert param.tags.deterministic == deterministic
+
+
 def test_instrumentation() -> None:
     inst = par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc=par.Array(shape=(1, 3)))
     inst.mutate()

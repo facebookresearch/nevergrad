@@ -7,6 +7,7 @@ import warnings
 import typing as t
 import numpy as np
 from .core import Parameter
+from .core import Tags
 from .core import _as_parameter
 from ..instrumentation import transforms as trans  # TODO move along
 
@@ -98,6 +99,10 @@ class Array(Parameter):
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
         self.bound_transform: t.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
+
+    @property
+    def tags(self) -> Tags:
+        return Tags(deterministic=True, continuous=not self.integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__

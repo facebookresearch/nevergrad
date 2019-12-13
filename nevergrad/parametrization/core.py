@@ -15,6 +15,11 @@ P = t.TypeVar("P", bound="Parameter")
 D = t.TypeVar("D", bound="Dict")
 
 
+class Tags(t.NamedTuple):
+    deterministic: bool = True
+    continuous: bool = True
+
+
 class NotSupportedError(RuntimeError):
     """This type of operation is not supported by the parameter.
     """
@@ -31,6 +36,10 @@ class BaseParameter:
         self.parents_uids: t.List[str] = []
         self._subparameters = None if not subparameters else Dict(**subparameters)
         self._dimension: t.Optional[int] = None
+
+    @property
+    def tags(self) -> Tags:
+        return Tags(deterministic=True, continuous=True)
 
     @property
     def value(self) -> t.Any:
@@ -401,6 +410,11 @@ class Dict(Parameter):
         super().__init__()
         self._parameters: t.Dict[t.Any, t.Any] = parameters
         self._sizes: t.Optional[t.Dict[str, int]] = None
+
+    @property
+    def tags(self) -> Tags:
+        return Tags(**{name: all(getattr(_as_parameter(p).tags, name) for p in self._parameters.values())
+                       for name in ("deterministic", "continuous")})
 
     def __getitem__(self, name: t.Any) -> t.Any:
         return self._parameters[name]
