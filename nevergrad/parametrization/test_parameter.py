@@ -27,7 +27,7 @@ def test_array_basics() -> None:
         var1.value = 4  # type: ignore
     var1.value = np.array([2])
     representation = repr(d)
-    assert "Dict{var1" in representation
+    assert "Dict(var1" in representation
     d.set_name("blublu")
     representation = repr(d)
     assert "blublu:{'var1" in representation
@@ -48,7 +48,7 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
 @pytest.mark.parametrize("param", [par.Array(shape=(2, 2)),  # type: ignore
                                    par.Array(init=np.ones(3)).set_mutation(sigma=3, exponent=5),
                                    par.Scalar(),
-                                   par.Scalar(1.0).set_mutation(exponent=2.),  # should bug so far (exponent not propagated)
+                                   par.Scalar(1.0).set_mutation(exponent=2.),
                                    par.Dict(blublu=par.Array(shape=(2, 3)), truc=12),
                                    par.Tuple(par.Array(shape=(2, 3)), 12),
                                    par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc=par.Array(shape=(1, 3))),
@@ -97,20 +97,18 @@ def test_parameters_basic_features(param: Parameter) -> None:
             assert getattr(param, name) == getattr(child, name)
 
 
-def test_choices() -> None:
-    param1 = par.Array(shape=(2, 2)).set_mutation(sigma=2.0)
-    param2 = par.Array(shape=(2,))
-    choice = par.Choice([param1, param2, "blublu"])
-    choice.value = "blublu"
-    np.testing.assert_array_almost_equal(choice.weights.value, [0, 0, 0.69314718])
-    choice.weights.value = np.array([1000.0, 0, 0])
-    choice.mutate()
-    assert np.abs(choice.choices[0].value).ravel().sum()
-    assert not np.abs(choice.choices[1].value).ravel().sum(), "Only selection should mutate"
-    with pytest.raises(ValueError):
-        choice.value = "hop"
-    choice.value = np.array([1, 1])
-    np.testing.assert_array_almost_equal(choice.weights.value, [0, 0.69314718, 0])
+@pytest.mark.parametrize(  # type: ignore
+    "param,name",
+    [(par.Array(shape=(2, 2)), "Array{(2,2)}[recombination=average,sigma=1.0]"),
+     (par.Tuple(12), "Tuple(12)"),
+     (par.Dict(constant=12), "Dict(constant=12)"),
+     (par.Scalar(), "Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]]"),
+     (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
+      "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict(string=blublu,truc=plop))"),
+     ]
+)
+def test_parameter_names(param: Parameter, name: str) -> None:
+    assert param.name == name
 
 
 def test_instrumentation() -> None:

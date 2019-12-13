@@ -99,6 +99,18 @@ class Array(Parameter):
         self.bound_transform: t.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
 
+    def _get_name(self) -> str:
+        cls = self.__class__.__name__
+        descriptors: t.List[str] = ["int"] if self.integer else []
+        descriptors += [str(self.value.shape).replace(" ", "")] if self.value.shape != () else []
+        descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
+        descriptors += [f"{self.bound_transform}"] if self.bound_transform is not None else []
+        descriptors += ["constr"] if self._constraint_checkers else []
+        description = ""
+        if descriptors:
+            description = "{{{}}}".format(",".join(descriptors))
+        return f"{cls}{description}"
+
     @property
     def sigma(self) -> t.Union[np.ndarray, float]:
         """Value for the standard deviation used to mutate the parameter

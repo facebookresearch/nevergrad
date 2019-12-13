@@ -219,22 +219,23 @@ class Parameter(BaseParameter):
         return self.get_std_data().tobytes()
 
     def _get_name(self) -> str:
+        """Internal implementation of parameter name. This should be value independant, and should not account
+        for subparameters.
+        """
         return self.__class__.__name__
 
     @property
     def name(self) -> str:
         """Name of the parameter
-        This is used to keep track of how this Parameter is configured, mostly for reproducibility
-        A default version is always provided, but can be overriden directly through the attribute, or through
-        the set_name method (which allows chaining)
+        This is used to keep track of how this Parameter is configured (included through subparameters),
+        mostly for reproducibility A default version is always provided, but can be overriden directly
+        through the attribute, or through the set_name method (which allows chaining).
         """
         if self._name is not None:
             return self._name
         substr = ""
-        if self._subparameters is not None:
-            subparams = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self.subparameters.value.items())
-            if subparams:
-                subparams = "[" + ",".join(f"{k}={n}" for k, n in subparams) + "]"  # type:ignore
+        if self._subparameters is not None and self.subparameters:
+            substr = f"[{self.subparameters._get_parameters_str()}]"
         return f"{self._get_name()}" + substr
 
     @name.setter
@@ -404,10 +405,15 @@ class Dict(Parameter):
     def __getitem__(self, name: t.Any) -> t.Any:
         return self._parameters[name]
 
+    def __len__(self) -> int:
+        return len(self._parameters)
+
+    def _get_parameters_str(self) -> str:
+        params = sorted((k, _as_parameter(p).name) for k, p in self._parameters.items())
+        return ",".join(f"{k}={n}" for k, n in params)
+
     def _get_name(self) -> str:
-        params = sorted((k, p.name if isinstance(p, Parameter) else p) for k, p in self._parameters.items())
-        paramsstr = "{" + ",".join(f"{k}={n}" for k, n in params) + "}"
-        return f"{self.__class__.__name__}{paramsstr}"
+        return f"{self.__class__.__name__}({self._get_parameters_str()})"
 
     @property
     def value(self) -> t.Dict[str, t.Any]:

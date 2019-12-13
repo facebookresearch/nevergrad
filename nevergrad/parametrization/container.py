@@ -30,6 +30,10 @@ class Tuple(Dict):
         super().__init__()
         self._parameters.update({k: p for k, p in enumerate(parameters)})
 
+    def _get_parameters_str(self) -> str:
+        params = sorted((k, _as_parameter(p).name) for k, p in self._parameters.items())
+        return ",".join(f"{n}" for _, n in params)
+
     @property  # type: ignore
     def value(self) -> t.Tuple[t.Any, ...]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
