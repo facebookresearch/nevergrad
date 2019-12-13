@@ -6,9 +6,9 @@
 import warnings
 import typing as t
 import numpy as np
-from .core3 import Parameter
-from .core3 import _as_parameter
-from . import transforms as trans
+from .core import Parameter
+from .core import _as_parameter
+from ..instrumentation import transforms as trans  # TODO move along
 
 
 BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]

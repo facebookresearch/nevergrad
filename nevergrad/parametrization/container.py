@@ -1,7 +1,12 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import typing as t
-from .core3 import Parameter
-from .core3 import _as_parameter
-from .core3 import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
+from .core import Parameter
+from .core import _as_parameter
+from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 
 
 class Tuple(Dict):

@@ -5,10 +5,10 @@
 
 import typing as t
 import numpy as np
-from . import discretization
-from .core3 import Parameter
-from .core3 import _as_parameter
-from .core3 import Dict
+from ..instrumentation import discretization  # TODO move along
+from .core import Parameter
+from .core import _as_parameter
+from .core import Dict
 from .container import Tuple
 from .data import Array
 

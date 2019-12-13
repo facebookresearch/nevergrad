@@ -7,7 +7,7 @@ import pickle
 import typing as t
 import pytest
 import numpy as np
-from .core3 import Parameter
+from .core import Parameter
 from . import parameter as par
 
 
