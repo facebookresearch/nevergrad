@@ -47,13 +47,19 @@ class Array(Parameter):
             shape: t.Optional[t.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
-        assert shape is None or isinstance(shape, tuple)
-        assert init is None or isinstance(init, np.ndarray)
-        if sum(x is None for x in (init, shape)) != 1:
-            raise ValueError('Exactly one of "init" or "shape" must be provided')
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average")
-        self._value: np.ndarray = init if init is not None else np.zeros(shape)
+        err_msg = 'Exactly one of "init" or "shape" must be provided'
+        if init is not None:
+            if shape is not None:
+                raise ValueError(err_msg)
+            assert isinstance(init, np.ndarray)
+            self._value: np.ndarray = init
+        elif shape is not None:
+            assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape)
+            self._value = np.zeros(shape)
+        else:
+            raise ValueError(err_msg)
         self.integer = False
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
