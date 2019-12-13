@@ -54,6 +54,7 @@ class Array(Parameter):
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average")
         self._value: np.ndarray = init if init is not None else np.zeros(shape)
+        self.integer = False
         self.exponent: t.Optional[float] = None
         self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
         self.bound_transform: t.Optional[trans.BoundTransform] = None
@@ -65,6 +66,8 @@ class Array(Parameter):
 
     @property
     def value(self) -> np.ndarray:
+        if self.integer:
+            return np.round(self._value)  # type: ignore
         return self._value
 
     @value.setter
@@ -90,6 +93,25 @@ class Array(Parameter):
 
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
                    method: str = "clipping", full_range_sampling: bool = False) -> A:
+        """Bounds all real values into [a_min, a_max] using a provided method
+
+        Parameters
+        ----------
+        a_min: float or None
+            minimum value
+        a_max: float or None
+            maximum value
+        method: str
+            "clipping", "constraint", "tanh" or "arctan"
+        full_range_sampling: bool
+            whether calling the "sample" method of the parameter should sample uniformly (or log-uniformly) on the whole
+            range of the bounds instead of sampling using a mutation on the current value
+
+        Notes
+        -----
+        - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
+        - only "clipping" accepts partial bounds (None values)
+        """  # TODO improve description of methods
         bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (a_min, a_max))
         both_bounds = all(b is not None for b in bounds)
         # preliminary checks
@@ -125,6 +147,22 @@ class Array(Parameter):
         return self
 
     def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
+        """Output will be cast to integer(s) through deterministic rounding.
+
+        Parameters
+        ----------
+        sigma: Array/Log or float
+            The standard deviation of the mutation. If a Parameter is provided, it will replace the current
+            value. If a float is provided, it will either replace a previous float value, or update the value
+            of the Parameter.
+        exponent: float
+            exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
+            x2 or /2 "on average" on the value at each mutation.
+
+        Returns
+        -------
+        self
+        """
         if sigma is not None:
             # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
             if isinstance(sigma, Parameter) or isinstance(self.subparameters._parameters["sigma"], float):
@@ -142,6 +180,16 @@ class Array(Parameter):
             self.exponent = exponent
         return self
 
+    def set_integer_casting(self: A) -> A:
+        """Output will be cast to integer(s) through deterministic rounding.
+
+        Returns
+        -------
+        self
+        """
+        self.integer = True
+        return self
+
     # pylint: disable=unused-argument
     def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = True) -> A:
         assert isinstance(data, np.ndarray)
@@ -156,7 +204,7 @@ class Array(Parameter):
         child = self.__class__(init=self.value)
         child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
                                            for k, v in self.subparameters._parameters.items()}
-        for name in ["exponent", "bounds", "bound_transform", "full_range_sampling"]:
+        for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
             setattr(child, name, getattr(self, name))
         return child
 
@@ -189,7 +237,7 @@ class Scalar(Array):
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
-        return self._value[0]  # type: ignore
+        return self._value[0] if not self.integer else int(self._value[0])  # type: ignore
 
     @value.setter
     def value(self, value: float) -> None:

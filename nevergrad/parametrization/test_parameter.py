@@ -81,9 +81,9 @@ def test_parameters_basic_features(param: Parameter) -> None:
     with pytest.warns(UserWarning):
         param.register_cheap_constraint(lambda *args, **kwargs: False)
     child2 = param.spawn_child()
-    assert child.complies_with_constraint()
-    assert not param.complies_with_constraint()
-    assert not child2.complies_with_constraint()
+    assert child.satisfies_constraint()
+    assert not param.satisfies_constraint()
+    assert not child2.satisfies_constraint()
     # array to and from with hash
     data_hash = param.get_data_hash()
     param.set_std_data(param.get_std_data())
@@ -93,7 +93,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     pickle.loads(string)
     # array info transfer:
     if isinstance(param, par.Array):
-        for name in ("exponent", "bounds", "bound_transform", "full_range_sampling"):
+        for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
 
 
@@ -130,6 +130,8 @@ def test_scalar_and_mutable_sigma() -> None:
     assert param.sigma == 5
     param.mutate()
     assert param.sigma != 5
+    param.set_integer_casting()
+    assert isinstance(param.value, int)
 
 
 def test_array_recombination() -> None:
@@ -151,7 +153,7 @@ def test_constraints(name: str) -> None:
     param.set_std_data(param.get_std_data())
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_std_data(np.array([100000.0]))
-    if param.complies_with_constraint():
+    if param.satisfies_constraint():
         np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
 
 

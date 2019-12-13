@@ -57,6 +57,9 @@ class BaseParameter:
 
     @property
     def dimension(self) -> int:
+        """Dimension of the standardized space for this parameter
+        i.e size of the vector returned by get_std_data()
+        """
         if self._dimension is None:
             try:
                 self._dimension = self.get_std_data().size
@@ -65,17 +68,30 @@ class BaseParameter:
         return self._dimension
 
     def mutate(self) -> None:
+        """Mutate subparameters of the instance, and then its value
+        """
         self.subparameters.mutate()
         data = self.get_std_data()  # pylint: disable=assignment-from-no-return
         # let's assume the random state is already there (next class)
         self.set_std_data(data + self.random_state.normal(size=data.shape))  # type: ignore
 
     def sample(self: BP) -> BP:
+        """Sample a new instance of the parameter.
+        This usually means spawning a child and mutating it.
+        """
         child = self.spawn_child()
         child.mutate()
         return child
 
     def recombine(self: BP, *others: BP) -> None:
+        """Update value and subparameters of this instance by combining it with
+        other instances.
+
+        Parameters
+        ----------
+        *others: Parameter
+            other instances of the same type than this instance.
+        """
         raise NotSupportedError(f"Recombination is not implemented for {self.name}")  # type: ignore
 
     def get_std_data(self: BP, instance: t.Optional[BP] = None) -> np.ndarray:
@@ -116,11 +132,13 @@ class Parameter(BaseParameter):
 
     @property
     def generation(self) -> int:
-        """generation of the parameter
+        """generation of the parameter (children are current generation + 1)
         """
         return self._generation
 
     def get_value_hash(self) -> t.Hashable:
+        """Hashable object representing the current value of the instance
+        """
         val = self.value
         if isinstance(val, (str, bytes, float, int)):
             return val
@@ -130,6 +148,14 @@ class Parameter(BaseParameter):
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def get_data_hash(self) -> t.Hashable:
+        """Hashable object representing the current standardized data of the object.
+
+        Note
+        ----
+        - this differs from the value hash, since the value is sometimes randomly sampled from the data
+        - standardized data does not account for the full state of the instance (it does not contain
+          data from subparameters)
+        """
         return self.get_std_data().tobytes()
 
     def _get_name(self) -> str:
@@ -161,13 +187,28 @@ class Parameter(BaseParameter):
 
     # %% Constraint management
 
-    def complies_with_constraint(self) -> bool:
+    def satisfies_constraint(self) -> bool:
+        """Whether the instance complies with the constraints added through
+        the "register_cheap_constraint" method
+        """
         if not self._constraint_checkers:
             return True
         val = self.value
         return all(func(val) for func in self._constraint_checkers)
 
     def register_cheap_constraint(self, func: t.Callable[[t.Any], bool]) -> None:
+        """Registers a new constraint on the parameter values.
+
+        Parameter
+        ---------
+        func: Callable
+            function which, given the value of the instance, returns whether it satisfies the constraint.
+
+        Note
+        - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
+          The constraint is not used in those processes.
+        - constraints should be fast to compute.
+        """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
             warnings.warn("Lambda as constraint is not advice because it may not be picklable")
         self._constraint_checkers.append(func)
@@ -327,6 +368,6 @@ class Dict(Parameter):
             if isinstance(param, Parameter):
                 param._set_random_state(random_state)
 
-    def complies_with_constraint(self) -> bool:
-        compliant = super().complies_with_constraint()
-        return compliant and all(param.complies_with_constraint() for param in self._parameters.values() if isinstance(param, Parameter))
+    def satisfies_constraint(self) -> bool:
+        compliant = super().satisfies_constraint()
+        return compliant and all(param.satisfies_constraint() for param in self._parameters.values() if isinstance(param, Parameter))
