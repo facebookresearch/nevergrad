@@ -94,7 +94,7 @@ class Array(Parameter):
         child = self.spawn_child()
         std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
         diff = std_bounds[1] - std_bounds[0]
-        child.set_std_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff)
+        child.set_std_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
         return child
 
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
@@ -197,7 +197,7 @@ class Array(Parameter):
         return self
 
     # pylint: disable=unused-argument
-    def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = True) -> A:
+    def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
         assert isinstance(data, np.ndarray)
         sigma = self._get_parameter_value("sigma")
         data_reduc = (sigma * data).reshape(instance._value.shape)
@@ -231,7 +231,7 @@ class Array(Parameter):
         recomb = self._get_parameter_value("recombination")
         all_p = [self] + list(others)
         if recomb == "average":
-            self.set_std_data(np.mean([self.get_std_data(p) for p in all_p], axis=0))
+            self.set_std_data(np.mean([self.get_std_data(p) for p in all_p], axis=0), deterministic=False)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

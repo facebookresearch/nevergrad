@@ -77,7 +77,7 @@ class Choice(Dict):
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(probas, probas.size, random=random)[0])
 
-    def _internal_set_std_data(self: C, data: np.ndarray, instance: C, deterministic: bool = True) -> C:
+    def _internal_set_std_data(self: C, data: np.ndarray, instance: C, deterministic: bool = False) -> C:
         super()._internal_set_std_data(data, instance=instance, deterministic=deterministic)
         instance._draw(deterministic=deterministic)
         return instance

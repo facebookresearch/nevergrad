@@ -73,7 +73,7 @@ class BaseParameter:
         self.subparameters.mutate()
         data = self.get_std_data()  # pylint: disable=assignment-from-no-return
         # let's assume the random state is already there (next class)
-        self.set_std_data(data + self.random_state.normal(size=data.shape))  # type: ignore
+        self.set_std_data(data + self.random_state.normal(size=data.shape), deterministic=False)  # type: ignore
 
     def sample(self: BP) -> BP:
         """Sample a new instance of the parameter.
@@ -101,12 +101,12 @@ class BaseParameter:
     def _internal_get_std_data(self: BP, instance: BP) -> np.ndarray:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
 
-    def set_std_data(self: BP, data: np.ndarray, instance: t.Optional[BP] = None, deterministic: bool = True) -> BP:
+    def set_std_data(self: BP, data: np.ndarray, instance: t.Optional[BP] = None, deterministic: bool = False) -> BP:
         assert isinstance(deterministic, bool)
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_set_std_data(data, instance=self if instance is None else instance, deterministic=deterministic)
 
-    def _internal_set_std_data(self: BP, data: np.ndarray, instance: BP, deterministic: bool = True) -> BP:
+    def _internal_set_std_data(self: BP, data: np.ndarray, instance: BP, deterministic: bool = False) -> BP:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
 
     def from_value(self: BP, value: t.Any) -> BP:
@@ -275,7 +275,7 @@ class Constant(Parameter):
     def _internal_get_std_data(self: BP, instance: BP) -> np.ndarray:
         return np.array([])
 
-    def _internal_set_std_data(self: P, data: np.ndarray, instance: P, deterministic: bool = True) -> P:
+    def _internal_set_std_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
         if data.size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return instance
@@ -332,7 +332,7 @@ class Dict(Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def _internal_set_std_data(self: D, data: np.ndarray, instance: D, deterministic: bool = True) -> D:
+    def _internal_set_std_data(self: D, data: np.ndarray, instance: D, deterministic: bool = False) -> D:
         if self._sizes is None:
             self.get_std_data()
         assert self._sizes is not None
