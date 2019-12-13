@@ -16,11 +16,37 @@ A = t.TypeVar("A", bound="Array")
 
 
 class BoundChecker:
+    """Simple object for checking whether an array lies
+    between provided bounds.
+
+    Parameter
+    ---------
+    a_min: float or None
+        minimum value
+    a_max: float or None
+        maximum value
+
+    Note
+    -----
+    Not all bounds are necessary (data can be partially bounded, or not at all actually)
+    """
 
     def __init__(self, a_min: BoundValue = None, a_max: BoundValue = None) -> None:
         self.bounds = (a_min, a_max)
 
     def __call__(self, value: np.ndarray) -> bool:
+        """Checks whether the array lies within the bounds
+
+        Parameter
+        ---------
+        value: np.ndarray
+            array to check
+
+        Returns
+        -------
+        bool
+            True iff the array lies within the bounds
+        """
         for k, bound in enumerate(self.bounds):
             if bound is not None:
                 if np.any((value > bound) if k else (value < bound)):
@@ -30,14 +56,21 @@ class BoundChecker:
 
 # pylint: disable=too-many-arguments
 class Array(Parameter):
-    """Array variable of a given shape, on which several transforms can be applied.
+    """Array variable of a given shape.
 
     Parameters
     ----------
-    sigma: float or Array
-        standard deviation of a mutation
-    distribution: str
-        distribution of the data ("linear" or "log")
+    init: np.ndarray, or None
+        initial value of the array (defaults to 0, with a provided shape)
+    shape: tuple of ints, or None
+        shape of the array, to be provided iff init is not provided
+    mutable_sigma: bool
+        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
+
+    Note
+    ----
+    More specific behaviors can be obtained throught the following methods:
+    set_bounds, set_mutation, set_integer_casting
     """
 
     def __init__(
@@ -68,6 +101,8 @@ class Array(Parameter):
 
     @property
     def sigma(self) -> t.Union[np.ndarray, float]:
+        """Value for the standard deviation used to mutate the parameter
+        """
         return _as_parameter(self._subparameters["sigma"]).value  # type: ignore
 
     @property
@@ -237,6 +272,20 @@ class Array(Parameter):
 
 
 class Scalar(Array):
+    """Parameter representing a scalar
+
+    Parameters
+    ----------
+    init: float
+        initial value of the scalar
+    mutable_sigma: bool
+        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
+
+    Note
+    ----
+    More specific behaviors can be obtained throught the following methods:
+    set_bounds, set_mutation
+    """
 
     def __init__(self, init: float = 0.0, mutable_sigma: bool = True) -> None:
         super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
@@ -253,6 +302,26 @@ class Scalar(Array):
 
 
 class Log(Scalar):
+    """Parameter representing a log distributed value between 0 and infinity
+
+    Parameters
+    ----------
+    init: float
+        initial value of the variable
+    exponent: float
+        exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
+    a_min: float or None
+        minimum value if any (> 0)
+    a_max: float or None
+        maximum value if any
+    mutable_sigma: bool
+        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
+
+    Note
+    ----
+    More specific behaviors can be obtained throught the following methods:
+    set_bounds, set_mutation
+    """
 
     def __init__(
         self,
