@@ -13,5 +13,5 @@ from .container import Instrumentation as Instrumentation
 from .data import Array as Array
 from .data import Scalar as Scalar
 from .data import Log as Log
-from .selection import Choice as Choice
-from .selection import TransitionChoice as TransitionChoice
+from .choice import Choice as Choice
+from .choice import TransitionChoice as TransitionChoice
