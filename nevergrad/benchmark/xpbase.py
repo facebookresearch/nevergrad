@@ -143,9 +143,12 @@ class Experiment:
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
+                 is_noisy_objective_function: bool = False,
                  ) -> None:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
+        self.function.instrumentation._is_noisy_objective_function = (
+            self.function.instrumentation._is_noisy_objective_function or is_noisy_objective_function)
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
