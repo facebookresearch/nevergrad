@@ -18,7 +18,7 @@ do
     # is fine.
     # Using learnfair queue is risky; this will also be discussed
     rm -rf outputs/${xp}
-    python -m dfoptim.benchmark.slurm $xp --seed=1 --time 2400 --repetitions=7 --num_workers=444 --partition=learnfair  &
+    python -m dfoptim.benchmark.slurm $xp --seed=1 --time 4320 --repetitions=1 --num_workers=800 --partition=learnfair  &
     sleep $T
     popd
 done
