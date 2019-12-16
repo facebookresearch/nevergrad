@@ -4,9 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as t
-from .core import Parameter
-from .core import _as_parameter
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
+from . import core
 
 
 class Tuple(Dict):
@@ -31,19 +30,19 @@ class Tuple(Dict):
         self._parameters.update({k: p for k, p in enumerate(parameters)})
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, _as_parameter(p).name) for k, p in self._parameters.items())
+        params = sorted((k, core.as_parameter(p).name) for k, p in self._parameters.items())
         return ",".join(f"{n}" for _, n in params)
 
     @property  # type: ignore
     def value(self) -> t.Tuple[t.Any, ...]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
-        return tuple(p.value if isinstance(p, Parameter) else p for p in param_val)
+        return tuple(p.value if isinstance(p, core.Parameter) else p for p in param_val)
 
     @value.setter
     def value(self, value: t.Tuple[t.Any]) -> None:
         assert isinstance(value, tuple), "Value must be a tuple"
         for k, val in enumerate(value):
-            _as_parameter(self[k]).value = val
+            core.as_parameter(self[k]).value = val
 
 
 class Instrumentation(Tuple):

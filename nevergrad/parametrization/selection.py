@@ -6,10 +6,7 @@
 import typing as t
 import numpy as np
 from ..instrumentation import discretization  # TODO move along
-from .core import Parameter
-from .core import _as_parameter
-from .core import Dict
-from .core import Tags
+from . import core
 from .container import Tuple
 from .data import Array
 
@@ -18,7 +15,7 @@ C = t.TypeVar("C", bound="Choice")
 
 
 # TODO deterministic in name + Ordered + ordered tag
-class Choice(Dict):
+class Choice(core.Dict):
     """Parameter which choses one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn randomly from the softmax of weights which are
@@ -53,9 +50,9 @@ class Choice(Dict):
         self._index: t.Optional[int] = None
 
     @property
-    def tags(self) -> Tags:
-        return Tags(deterministic=self._deterministic & self.choices.tags.deterministic,
-                    continuous=self.choices.tags.continuous & (not self._deterministic))
+    def descriptors(self) -> core.Descriptors:
+        return core.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
+                                continuous=self.choices.descriptors.continuous & (not self._deterministic))
 
     @property
     def index(self) -> int:  # delayed choice
@@ -80,7 +77,7 @@ class Choice(Dict):
 
     @property
     def value(self) -> t.Any:
-        return _as_parameter(self.choices[self.index]).value
+        return core.as_parameter(self.choices[self.index]).value
 
     @value.setter
     def value(self, value: t.Any) -> None:
@@ -88,7 +85,7 @@ class Choice(Dict):
         # try to find where to put this
         nums = sorted(int(k) for k in self.choices._parameters)
         for k in nums:
-            choice = _as_parameter(self.choices[k])
+            choice = core.as_parameter(self.choices[k])
             try:
                 choice.value = value
             except Exception:  # pylint: disable=broad-except
@@ -103,7 +100,7 @@ class Choice(Dict):
         self._index = index
 
     def get_value_hash(self) -> t.Hashable:
-        return (self.index, _as_parameter(self.choices[self.index]).get_value_hash())
+        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
 
     def _draw(self, deterministic: bool = True) -> None:
         weights = self.weights.value
@@ -119,7 +116,7 @@ class Choice(Dict):
         self.weights.mutate()
         self._draw(deterministic=self._deterministic)
         param = self.choices[self.index]
-        if isinstance(param, Parameter):
+        if isinstance(param, core.Parameter):
             param.mutate()
 
     def _internal_spawn_child(self: C) -> C:

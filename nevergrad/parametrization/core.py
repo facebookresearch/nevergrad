@@ -15,7 +15,7 @@ P = t.TypeVar("P", bound="Parameter")
 D = t.TypeVar("D", bound="Dict")
 
 
-class Tags(t.NamedTuple):
+class Descriptors(t.NamedTuple):
     deterministic: bool = True
     continuous: bool = True
 
@@ -38,8 +38,8 @@ class BaseParameter:
         self._dimension: t.Optional[int] = None
 
     @property
-    def tags(self) -> Tags:
-        return Tags(deterministic=True, continuous=True)
+    def descriptors(self) -> Descriptors:
+        return Descriptors(deterministic=True, continuous=True)
 
     @property
     def value(self) -> t.Any:
@@ -378,7 +378,7 @@ class Constant(Parameter):
         return self  # no need to create another instance for a constant
 
 
-def _as_parameter(param: t.Any) -> Parameter:
+def as_parameter(param: t.Any) -> Parameter:
     """Returns a Parameter from anything:
     either the input if it is already a parameter, or a Constant if not
     This is convenient for iterating over Parameter and other objects alike
@@ -412,9 +412,9 @@ class Dict(Parameter):
         self._sizes: t.Optional[t.Dict[str, int]] = None
 
     @property
-    def tags(self) -> Tags:
-        return Tags(**{name: all(getattr(_as_parameter(p).tags, name) for p in self._parameters.values())
-                       for name in ("deterministic", "continuous")})
+    def descriptors(self) -> Descriptors:
+        return Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
+                              for name in ("deterministic", "continuous")})
 
     def __getitem__(self, name: t.Any) -> t.Any:
         return self._parameters[name]
@@ -423,7 +423,7 @@ class Dict(Parameter):
         return len(self._parameters)
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, _as_parameter(p).name) for k, p in self._parameters.items())
+        params = sorted((k, as_parameter(p).name) for k, p in self._parameters.items())
         return ",".join(f"{k}={n}" for k, n in params)
 
     def _get_name(self) -> str:
@@ -431,14 +431,14 @@ class Dict(Parameter):
 
     @property
     def value(self) -> t.Dict[str, t.Any]:
-        return {k: _as_parameter(p).value for k, p in self._parameters.items()}
+        return {k: as_parameter(p).value for k, p in self._parameters.items()}
 
     @value.setter
     def value(self, value: t.Dict[str, t.Any]) -> None:
         if set(value) != set(self._parameters):
             raise ValueError(f"Got input keys {set(value)} but expected {set(self._parameters)}")
         for key, val in value.items():
-            _as_parameter(self._parameters[key]).value = val
+            as_parameter(self._parameters[key]).value = val
 
     def get_value_hash(self) -> t.Hashable:
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))

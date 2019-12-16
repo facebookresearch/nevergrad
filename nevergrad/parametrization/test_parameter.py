@@ -103,6 +103,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
      (par.Tuple(12), "Tuple(12)"),
      (par.Dict(constant=12), "Dict(constant=12)"),
      (par.Scalar(), "Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]]"),
+     (par.Scalar().set_integer_casting(), "Scalar{int}[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict(string=blublu,truc=plop))"),
      ]
@@ -117,12 +118,12 @@ def test_parameter_names(param: Parameter, name: str) -> None:
      (par.Choice([True, False]), True, False),
      (par.Choice([True, False], deterministic=True), False, True),
      (par.Choice([True, par.Scalar().set_integer_casting()]), False, False),
-     (par.Dict(constant=12, array=par.Scalar().set_integer_casting()), False, True),
+     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True),
      ]
 )
-def test_parameter_tags(param: Parameter, continuous: bool, deterministic: bool) -> None:
-    assert param.tags.continuous == continuous
-    assert param.tags.deterministic == deterministic
+def test_parameter_descriptors(param: Parameter, continuous: bool, deterministic: bool) -> None:
+    assert param.descriptors.continuous == continuous
+    assert param.descriptors.deterministic == deterministic
 
 
 def test_instrumentation() -> None:

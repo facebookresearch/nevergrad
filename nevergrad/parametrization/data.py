@@ -6,9 +6,7 @@
 import warnings
 import typing as t
 import numpy as np
-from .core import Parameter
-from .core import Tags
-from .core import _as_parameter
+from . import core
 from ..instrumentation import transforms as trans  # TODO move along
 
 
@@ -56,7 +54,7 @@ class BoundChecker:
 
 
 # pylint: disable=too-many-arguments
-class Array(Parameter):
+class Array(core.Parameter):
     """Array variable of a given shape.
 
     Parameters
@@ -101,13 +99,12 @@ class Array(Parameter):
         self.full_range_sampling = False
 
     @property
-    def tags(self) -> Tags:
-        return Tags(deterministic=True, continuous=not self.integer)
+    def descriptors(self) -> core.Descriptors:
+        return core.Descriptors(deterministic=True, continuous=not self.integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
-        descriptors: t.List[str] = ["int"] if self.integer else []
-        descriptors += [str(self.value.shape).replace(" ", "")] if self.value.shape != () else []
+        descriptors: t.List[str] = ["int"] if self.integer else ([str(self.value.shape).replace(" ", "")] if self.value.shape != () else [])
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
         descriptors += [f"{self.bound_transform}"] if self.bound_transform is not None else []
         descriptors += ["constr"] if self._constraint_checkers else []
@@ -120,7 +117,7 @@ class Array(Parameter):
     def sigma(self) -> t.Union[np.ndarray, float]:
         """Value for the standard deviation used to mutate the parameter
         """
-        return _as_parameter(self._subparameters["sigma"]).value  # type: ignore
+        return core.as_parameter(self._subparameters["sigma"]).value  # type: ignore
 
     @property
     def value(self) -> np.ndarray:
@@ -223,10 +220,10 @@ class Array(Parameter):
         """
         if sigma is not None:
             # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
-            if isinstance(sigma, Parameter) or isinstance(self.subparameters._parameters["sigma"], float):
+            if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._parameters["sigma"], float):
                 self.subparameters._parameters["sigma"] = sigma
             else:
-                self.subparameters._parameters["sigma"].value = sigma
+                self.subparameters["sigma"].value = sigma
         if exponent is not None:
             if self.bound_transform is not None and not self.bound_transform.name.startswith("Cl"):
                 raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
@@ -260,7 +257,7 @@ class Array(Parameter):
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(init=self.value)
-        child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v
+        child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
                                            for k, v in self.subparameters._parameters.items()}
         for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
             setattr(child, name, getattr(self, name))
