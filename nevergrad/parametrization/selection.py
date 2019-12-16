@@ -71,7 +71,7 @@ class BaseChoice(core.Dict):
         return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
 
 
-# TODO deterministic in name + ordered tag
+# TODO ordered tag
 class Choice(BaseChoice):
     """Parameter which choses one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
@@ -165,13 +165,16 @@ class Choice(BaseChoice):
 class TransitionChoice(BaseChoice):
     """Parameter which choses one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
-    The chosen parameter is drawn randomly from the softmax of weights which are
-    updated during the optimization.
+    The chosen parameter is drawn using transitions between current choice and the next/previous ones.
 
     Parameters
     ----------
     choices: list
         a list of possible values or Parameters for the variable.
+    transitions: np.ndarray or Array
+        the transition weights. During transition, the direction (forward or backward will be drawn with
+        equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
+        the probability to remain in the same state, the second to move one step (backward or forward) and so on.
 
     Note
     ----
