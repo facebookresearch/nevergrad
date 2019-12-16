@@ -6,9 +6,10 @@ paired up for the Open Optimization Competition 2020.
 
 
 # Overview 
-Key features of the Open Optimization Competition 2020:
-## Two tracks: 
-### PERFORMANCE TRACK: Algorithms for any of the following performance tracks
+All kind of contributions (under the form of pull requests) to Nevergrad an IOHProfiler are eligible.
+For example, we distinguish two (non exclusive) categories for submission.
+
+## Performance: Improvements for any of the following performance tracks
 (classic competition, with existing baselines that are meant to be outperformed)
 - One-shot optimization
 - Low budget optimization
@@ -18,15 +19,15 @@ Key features of the Open Optimization Competition 2020:
 - Constrained optimization
 We explicitly allow portfolio-based algorithms such as landscape-aware algorithm selection techniques, etc. 
 
-### IDEAS TRACK: Contributions to the experimental routines, including 
+## New ideas & others: contributions to the experimental routines, including 
 - suggestions for performance measures and statistics, 
 - good benchmark problems, 
 - visualization of data, 
 - parallelization, 
 - reproducibility, etc. 
 
-## Submissions: 
-All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. 
+# Submission: 
+All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. You do not have to do anything else than a pull request.
 https://github.com/facebookresearch/nevergrad for Nevergrad 
 https://github.com/IOHprofiler/ for IOHprofiler [for IOHprofiler, please use the competition branch for your submissions]
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.  
