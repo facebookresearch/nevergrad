@@ -5,6 +5,7 @@
 
 import typing as t
 import numpy as np
+from nevergrad.common.typetools import ArrayLike
 from ..instrumentation import discretization  # TODO move along
 from . import core
 from .container import Tuple
@@ -12,6 +13,7 @@ from .data import Array
 
 
 C = t.TypeVar("C", bound="Choice")
+OC = t.TypeVar("OC", bound="OrderedChoice")
 
 
 # TODO deterministic in name + Ordered + ordered tag
@@ -123,4 +125,103 @@ class Choice(core.Dict):
         child = self.__class__(choices=[], deterministic=self._deterministic)
         child._parameters["choices"] = self.choices.spawn_child()
         child._parameters["weights"] = self.weights.spawn_child()
+        return child
+
+
+class OrderedChoice(core.Dict):
+    """Parameter which choses one of the provided choice options as a value.
+    The choices can be Parameters, in which case there value will be returned instead.
+    The chosen parameter is drawn randomly from the softmax of weights which are
+    updated during the optimization.
+
+    Parameters
+    ----------
+    choices: list
+        a list of possible values or Parameters for the variable.
+
+    Note
+    ----
+    - the "mutate" method only mutates the weights and the chosen Parameter (if it is not constant),
+      leaving others untouched
+    """
+
+    def __init__(
+            self,
+            choices: t.Iterable[t.Any],
+            transitions: t.Union[ArrayLike, Array] = (1.0, 1.0),
+    ) -> None:
+        assert not isinstance(choices, Tuple)
+        lchoices = list(choices)  # for iterables
+        super().__init__(transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
+                         choices=Tuple(*lchoices))
+        assert core.as_parameter(self.transitions).value.ndim == 1
+        self._index = (len(self.choices) - 1) // 2  # middle or just below
+
+    @property
+    def descriptors(self) -> core.Descriptors:
+        return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
+                                continuous=self.choices.descriptors.continuous)
+
+    @property
+    def transitions(self) -> t.Union[np.ndarray, Array]:
+        """The weights used to draw the value
+        """
+        return self["transitions"]  # type: ignore
+
+    @property
+    def index(self) -> int:  # delayed choice
+        """Index of the chosen option
+        """
+        return self._index
+
+    @property
+    def choices(self) -> Tuple:
+        """The different options, as a Tuple Parameter
+        """
+        return self["choices"]  # type: ignore
+
+    @property
+    def value(self) -> t.Any:
+        return core.as_parameter(self.choices[self.index]).value
+
+    @value.setter
+    def value(self, value: t.Any) -> None:
+        index = -1
+        # try to find where to put this
+        nums = sorted(int(k) for k in self.choices._parameters)
+        for k in nums:
+            choice = core.as_parameter(self.choices[k])
+            try:
+                choice.value = value
+            except Exception:  # pylint: disable=broad-except
+                pass
+            else:
+                index = int(k)
+                break
+        if index == -1:
+            raise ValueError(f"Could not figure out where to put value {value}")
+        self._index = index
+
+    def get_value_hash(self) -> t.Hashable:
+        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
+
+    def mutate(self) -> None:
+        transitions = core.as_parameter(self.transitions)
+        transitions.mutate()
+        probas = np.exp(transitions.value)
+        probas /= np.sum(probas)
+        move = self.random_state.choice(list(range(probas.size)), p=probas)
+        sign = 1 if self.random_state.randint(2) else -1
+        self._index = max(0, min(len(self.choices), self._index + sign * move))
+        # mutate corresponding parameter
+        param = self.choices[self.index]
+        if isinstance(param, core.Parameter):
+            param.mutate()
+
+    def _internal_spawn_child(self: OC) -> OC:
+        child = self.__class__(choices=[])
+        child._parameters["choices"] = self.choices.spawn_child()
+        child._parameters["transitions"] = (np.array(self.transitions) if not isinstance(self.transitions, Array)
+                                            else self.transitions.spawn_child())
+        child._index = self._index
         return child

@@ -6,6 +6,7 @@
 # pylint: disable=unused-import
 # import with "as" to explicitely allow reexport (mypy)
 from .core import Parameter as Parameter
+from .core import NotSupportedError as NotSupportedError
 from .core import Dict as Dict
 from .container import Tuple as Tuple
 from .container import Instrumentation as Instrumentation
@@ -13,3 +14,4 @@ from .data import Array as Array
 from .data import Scalar as Scalar
 from .data import Log as Log
 from .selection import Choice as Choice
+from .selection import OrderedChoice as OrderedChoice

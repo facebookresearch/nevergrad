@@ -6,6 +6,7 @@
 import warnings
 import typing as t
 import numpy as np
+from nevergrad.common.typetools import ArrayLike
 from . import core
 from ..instrumentation import transforms as trans  # TODO move along
 
@@ -75,7 +76,7 @@ class Array(core.Parameter):
     def __init__(
             self,
             *,
-            init: t.Optional[np.ndarray] = None,
+            init: t.Optional[ArrayLike] = None,
             shape: t.Optional[t.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
@@ -85,8 +86,7 @@ class Array(core.Parameter):
         if init is not None:
             if shape is not None:
                 raise ValueError(err_msg)
-            assert isinstance(init, np.ndarray)
-            self._value: np.ndarray = init
+            self._value = np.array(init, copy=False)
         elif shape is not None:
             assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape)
             self._value = np.zeros(shape)
