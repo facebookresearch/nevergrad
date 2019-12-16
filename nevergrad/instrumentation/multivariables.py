@@ -189,7 +189,7 @@ class Instrumentation(NestedVariables):
         self.keywords: Tuple[Optional[str], ...] = ()
         self.variables: List[Variable] = []
         self._set_args_kwargs(args, kwargs)
-        self._objective_function_is_noiy: Bool = False
+        self._objective_function_is_noiy: bool = False
 
     def _set_args_kwargs(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> None:
         super()._set_args_kwargs(args, kwargs)
