@@ -180,6 +180,7 @@ class TransitionChoice(BaseChoice):
     ----
     - the "mutate" method only mutates the weights and the chosen Parameter (if it is not constant),
       leaving others untouched
+    - currently, transitions are computed through softmax, this may evolve since this is somehow impractical
     """
 
     def __init__(
@@ -201,7 +202,7 @@ class TransitionChoice(BaseChoice):
         transitions = core.as_parameter(self.transitions)
         transitions.mutate()
         probas = np.exp(transitions.value)
-        probas /= np.sum(probas)
+        probas /= np.sum(probas)  # TODO decide if softmax is the best way to go...
         move = self.random_state.choice(list(range(probas.size)), p=probas)
         sign = 1 if self.random_state.randint(2) else -1
         self._index = max(0, min(len(self.choices), self._index + sign * move))
