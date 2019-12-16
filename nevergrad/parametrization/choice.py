@@ -10,6 +10,7 @@ from ..instrumentation import discretization  # TODO move along
 from . import core
 from .container import Tuple
 from .data import Array
+from .data import Scalar
 # weird pylint issue on "Descriptors"
 # pylint: disable=no-value-for-parameter
 
@@ -24,7 +25,6 @@ class BaseChoice(core.Dict):
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)  # for iterables
         super().__init__(choices=Tuple(*lchoices), **kwargs)
-        self._index: t.Optional[int] = None
 
     @property
     def descriptors(self) -> core.Descriptors:
@@ -33,8 +33,7 @@ class BaseChoice(core.Dict):
 
     @property
     def index(self) -> int:
-        assert self._index is not None
-        return self._index
+        raise Exception
 
     @property
     def choices(self) -> Tuple:
@@ -50,7 +49,7 @@ class BaseChoice(core.Dict):
     def value(self, value: t.Any) -> None:
         self._find_and_set_value(value)
 
-    def _find_and_set_value(self, value: t.Any) -> None:
+    def _find_and_set_value(self, value: t.Any) -> int:
         index = -1
         # try to find where to put this
         nums = sorted(int(k) for k in self.choices._parameters)
@@ -65,7 +64,7 @@ class BaseChoice(core.Dict):
                 break
         if index == -1:
             raise ValueError(f"Could not figure out where to put value {value}")
-        self._index = index
+        return index
 
     def get_value_hash(self) -> t.Hashable:
         return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
@@ -103,6 +102,7 @@ class Choice(BaseChoice):
         lchoices = list(choices)
         super().__init__(choices=lchoices, weights=Array(shape=(len(lchoices),), mutable_sigma=False))
         self._deterministic = deterministic
+        self._index: t.Optional[int] = None
 
     def _get_name(self) -> str:
         name = super()._get_name()
@@ -132,11 +132,13 @@ class Choice(BaseChoice):
         """
         return self["weights"]  # type: ignore
 
-    def _find_and_set_value(self, value: t.Any) -> None:
-        super()._find_and_set_value(value)
+    def _find_and_set_value(self, value: t.Any) -> int:
+        index = super()._find_and_set_value(value)
+        self._index = index
         # force new probabilities
         out = discretization.inverse_softmax_discretization(self.index, len(self))
         self.weights.set_std_data(out, deterministic=True)
+        return index
 
     def _draw(self, deterministic: bool = True) -> None:
         weights = self.weights.value
@@ -180,6 +182,8 @@ class TransitionChoice(BaseChoice):
     ----
     - the "mutate" method only mutates the weights and the chosen Parameter (if it is not constant),
       leaving others untouched
+    - in order to support export to standardized space, the index is encoded as a scalar. A normal distribution N(O,1)
+      on this scalar yields a uniform choice of index. This may come to evolve for simplicity's sake.
     - currently, transitions are computed through softmax, this may evolve since this is somehow impractical
     """
 
@@ -188,15 +192,35 @@ class TransitionChoice(BaseChoice):
             choices: t.Iterable[t.Any],
             transitions: t.Union[ArrayLike, Array] = (1.0, 1.0),
     ) -> None:
-        super().__init__(choices=choices, transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
+        super().__init__(choices=choices,
+                         position=Scalar(),
+                         transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
         assert core.as_parameter(self.transitions).value.ndim == 1
-        self._index = (len(self.choices) - 1) // 2  # middle or just below
+
+    @property
+    def index(self) -> int:
+        return discretization.threshold_discretization(np.array([self.position.value]), arity=len(self.choices))[0]
+
+    def _find_and_set_value(self, value: t.Any) -> int:
+        index = super()._find_and_set_value(value)
+        self._set_index(index)
+        return index
+
+    def _set_index(self, index: int) -> None:
+        out = discretization.inverse_threshold_discretization([index], len(self.choices))
+        self.position.value = out[0]
 
     @property
     def transitions(self) -> t.Union[np.ndarray, Array]:
         """The weights used to draw the value
         """
         return self["transitions"]  # type: ignore
+
+    @property
+    def position(self) -> Scalar:
+        """The weights used to draw the value
+        """
+        return self["position"]  # type: ignore
 
     def mutate(self) -> None:
         transitions = core.as_parameter(self.transitions)
@@ -205,7 +229,8 @@ class TransitionChoice(BaseChoice):
         probas /= np.sum(probas)  # TODO decide if softmax is the best way to go...
         move = self.random_state.choice(list(range(probas.size)), p=probas)
         sign = 1 if self.random_state.randint(2) else -1
-        self._index = max(0, min(len(self.choices), self._index + sign * move))
+        new_index = max(0, min(len(self.choices), self.index + sign * move))
+        self._set_index(new_index)
         # mutate corresponding parameter
         param = self.choices[self.index]
         if isinstance(param, core.Parameter):
@@ -214,7 +239,7 @@ class TransitionChoice(BaseChoice):
     def _internal_spawn_child(self: T) -> T:
         child = self.__class__(choices=[])
         child._parameters["choices"] = self.choices.spawn_child()
+        child._parameters["position"] = self.position.spawn_child()
         child._parameters["transitions"] = (np.array(self.transitions) if not isinstance(self.transitions, Array)
                                             else self.transitions.spawn_child())
-        child._index = self._index
         return child

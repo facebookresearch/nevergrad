@@ -47,6 +47,7 @@ def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> np.n
     # We take the center of each bin (in the pdf space)
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
 
+
 # The discretization is, by nature, not one to one.
 # In the function below, we randomly draw one of the possible inverse values - this is therefore noisy.
 def noisy_inverse_threshold_discretization(indexes: List[int], arity: int = 2, gen: Any = None) -> np.ndarray:

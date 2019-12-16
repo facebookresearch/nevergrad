@@ -118,7 +118,8 @@ def test_parameters_basic_features(param: Parameter) -> None:
       "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict(string=blublu,truc=plop))"),
      (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0])"),
      (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0])"),
-     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),transitions=[1. 1.])")
+     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar[recombination=average,"
+                                     "sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.])")
      ]
 )
 def test_parameter_names(param: Parameter, name: str) -> None:
@@ -199,10 +200,13 @@ def test_log() -> None:
         assert len(record) == 1
 
 
-def test_ordered_chocie() -> None:
+def test_ordered_choice() -> None:
     choice = par.TransitionChoice([0, 1, 2, 3], transitions=[-1000000, 10])
-    assert choice.value == 1
-    choice.value = 2
     assert choice.value == 2
+    choice.value = 1
+    assert choice.value == 1
     choice.mutate()
-    assert choice.value in [1, 3]
+    assert choice.value in [0, 2]
+    assert choice.get_std_data().size
+    choice.set_std_data(np.array([12.0]))
+    assert choice.value == 3

@@ -16,6 +16,9 @@ D = t.TypeVar("D", bound="Dict")
 
 
 class Descriptors(t.NamedTuple):
+    """Provides access to a set of descriptors for the parametrization
+    This can be used within optimizers.
+    """
     deterministic: bool = True
     continuous: bool = True
 
