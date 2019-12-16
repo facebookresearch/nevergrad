@@ -10,14 +10,69 @@ from ..instrumentation import discretization  # TODO move along
 from . import core
 from .container import Tuple
 from .data import Array
+# weird pylint issue on "Descriptors"
+# pylint: disable=no-value-for-parameter
 
 
 C = t.TypeVar("C", bound="Choice")
-OC = t.TypeVar("OC", bound="OrderedChoice")
+T = t.TypeVar("T", bound="TransitionChoice")
 
 
-# TODO deterministic in name + Ordered + ordered tag
-class Choice(core.Dict):
+class BaseChoice(core.Dict):
+
+    def __init__(self, *, choices: t.Iterable[t.Any], **kwargs: t.Any) -> None:
+        assert not isinstance(choices, Tuple)
+        lchoices = list(choices)  # for iterables
+        super().__init__(choices=Tuple(*lchoices), **kwargs)
+        self._index: t.Optional[int] = None
+
+    @property
+    def descriptors(self) -> core.Descriptors:
+        return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
+                                continuous=self.choices.descriptors.continuous)
+
+    @property
+    def index(self) -> int:
+        assert self._index is not None
+        return self._index
+
+    @property
+    def choices(self) -> Tuple:
+        """The different options, as a Tuple Parameter
+        """
+        return self["choices"]  # type: ignore
+
+    @property
+    def value(self) -> t.Any:
+        return core.as_parameter(self.choices[self.index]).value
+
+    @value.setter
+    def value(self, value: t.Any) -> None:
+        self._find_and_set_value(value)
+
+    def _find_and_set_value(self, value: t.Any) -> None:
+        index = -1
+        # try to find where to put this
+        nums = sorted(int(k) for k in self.choices._parameters)
+        for k in nums:
+            choice = core.as_parameter(self.choices[k])
+            try:
+                choice.value = value
+            except Exception:  # pylint: disable=broad-except
+                pass
+            else:
+                index = int(k)
+                break
+        if index == -1:
+            raise ValueError(f"Could not figure out where to put value {value}")
+        self._index = index
+
+    def get_value_hash(self) -> t.Hashable:
+        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
+
+
+# TODO deterministic in name + ordered tag
+class Choice(BaseChoice):
     """Parameter which choses one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn randomly from the softmax of weights which are
@@ -45,11 +100,9 @@ class Choice(core.Dict):
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
-        lchoices = list(choices)  # for iterables
-        super().__init__(weights=Array(shape=(len(lchoices),), mutable_sigma=False),
-                         choices=Tuple(*lchoices))
+        lchoices = list(choices)
+        super().__init__(choices=lchoices, weights=Array(shape=(len(lchoices),), mutable_sigma=False))
         self._deterministic = deterministic
-        self._index: t.Optional[int] = None
 
     @property
     def descriptors(self) -> core.Descriptors:
@@ -71,38 +124,11 @@ class Choice(core.Dict):
         """
         return self["weights"]  # type: ignore
 
-    @property
-    def choices(self) -> Tuple:
-        """The different options, as a Tuple Parameter
-        """
-        return self["choices"]  # type: ignore
-
-    @property
-    def value(self) -> t.Any:
-        return core.as_parameter(self.choices[self.index]).value
-
-    @value.setter
-    def value(self, value: t.Any) -> None:
-        index = -1
-        # try to find where to put this
-        nums = sorted(int(k) for k in self.choices._parameters)
-        for k in nums:
-            choice = core.as_parameter(self.choices[k])
-            try:
-                choice.value = value
-            except Exception:  # pylint: disable=broad-except
-                pass
-            else:
-                index = int(k)
-                break
-        if index == -1:
-            raise ValueError(f"Could not figure out where to put value {value}")
-        out = discretization.inverse_softmax_discretization(index, len(nums))
+    def _find_and_set_value(self, value: t.Any) -> None:
+        super()._find_and_set_value(value)
+        # force new probabilities
+        out = discretization.inverse_softmax_discretization(self.index, len(self))
         self.weights.set_std_data(out, deterministic=True)
-        self._index = index
-
-    def get_value_hash(self) -> t.Hashable:
-        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
 
     def _draw(self, deterministic: bool = True) -> None:
         weights = self.weights.value
@@ -128,7 +154,7 @@ class Choice(core.Dict):
         return child
 
 
-class OrderedChoice(core.Dict):
+class TransitionChoice(BaseChoice):
     """Parameter which choses one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn randomly from the softmax of weights which are
@@ -150,60 +176,15 @@ class OrderedChoice(core.Dict):
             choices: t.Iterable[t.Any],
             transitions: t.Union[ArrayLike, Array] = (1.0, 1.0),
     ) -> None:
-        assert not isinstance(choices, Tuple)
-        lchoices = list(choices)  # for iterables
-        super().__init__(transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
-                         choices=Tuple(*lchoices))
+        super().__init__(choices=choices, transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
         assert core.as_parameter(self.transitions).value.ndim == 1
         self._index = (len(self.choices) - 1) // 2  # middle or just below
-
-    @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous)
 
     @property
     def transitions(self) -> t.Union[np.ndarray, Array]:
         """The weights used to draw the value
         """
         return self["transitions"]  # type: ignore
-
-    @property
-    def index(self) -> int:  # delayed choice
-        """Index of the chosen option
-        """
-        return self._index
-
-    @property
-    def choices(self) -> Tuple:
-        """The different options, as a Tuple Parameter
-        """
-        return self["choices"]  # type: ignore
-
-    @property
-    def value(self) -> t.Any:
-        return core.as_parameter(self.choices[self.index]).value
-
-    @value.setter
-    def value(self, value: t.Any) -> None:
-        index = -1
-        # try to find where to put this
-        nums = sorted(int(k) for k in self.choices._parameters)
-        for k in nums:
-            choice = core.as_parameter(self.choices[k])
-            try:
-                choice.value = value
-            except Exception:  # pylint: disable=broad-except
-                pass
-            else:
-                index = int(k)
-                break
-        if index == -1:
-            raise ValueError(f"Could not figure out where to put value {value}")
-        self._index = index
-
-    def get_value_hash(self) -> t.Hashable:
-        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
 
     def mutate(self) -> None:
         transitions = core.as_parameter(self.transitions)
@@ -218,7 +199,7 @@ class OrderedChoice(core.Dict):
         if isinstance(param, core.Parameter):
             param.mutate()
 
-    def _internal_spawn_child(self: OC) -> OC:
+    def _internal_spawn_child(self: T) -> T:
         child = self.__class__(choices=[])
         child._parameters["choices"] = self.choices.spawn_child()
         child._parameters["transitions"] = (np.array(self.transitions) if not isinstance(self.transitions, Array)

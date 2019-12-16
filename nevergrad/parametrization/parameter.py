@@ -14,4 +14,4 @@ from .data import Array as Array
 from .data import Scalar as Scalar
 from .data import Log as Log
 from .selection import Choice as Choice
-from .selection import OrderedChoice as OrderedChoice
+from .selection import TransitionChoice as TransitionChoice
