@@ -35,6 +35,13 @@ def launch(experiment: str, num_workers: int = 1, seed: Optional[int] = None,
         core.save_or_append_to_csv(df, csvpath)
     else:
         print(f"Saved data to {csvpath}")
+        print("Simple plots: python -m nevergrad.benchmark.plotting <csv_file>")
+        print("Users might want to explore their experimental data with IOH Profiler:")
+        print("1. Go to http://iohprofiler.liacs.nl/")
+        print("2. Upload the CSV file, possibly compressed as a zip file.")
+        print("3. User manual: please visit: https://iohprofiler.github.io/.")
+        print("4. Maintenance: iohprofiler@liacs.leidenuniv.nl.")
+        print("see https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/ioh.md."
     return csvpath
 
 
