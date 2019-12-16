@@ -18,15 +18,7 @@ do
     # is fine.
     # Using learnfair queue is risky; this will also be discussed
     rm -rf outputs/${xp}
-    python -m dfoptim.benchmark.slurm $xp --seed=1 --time 960 --repetitions=7 --num_workers=222 --partition=learnfair  &
+    python -m dfoptim.benchmark.slurm $xp --seed=1 --time 4320 --repetitions=1 --num_workers=800 --partition=learnfair  &
     sleep $T
     popd
 done
-# FIXME: 3600 is not enough for big xps.
-sleep $T
-sleep $T
-sleep $T
-sleep $T
-sleep $T
-sleep $T
-./autorun_plot.sh
