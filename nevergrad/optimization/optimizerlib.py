@@ -1397,11 +1397,19 @@ chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwi
 chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
 chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
 chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("chainDEwithLHS30", register=True)
+chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwithLHS", register=True)
+chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
+chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
+chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("chainDEwithLHS30", register=True)
 
 chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).with_name("chainBOwithR", register=True)
 chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).with_name("chainBOwithRsqrt", register=True)
 chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).with_name("chainBOwithRdim", register=True)
 chainBOwithR30 = Chaining([RandomSearch, BO], [30]).with_name("chainBOwithR30", register=True) 
+chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
+chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
+chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
+chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).with_name("chainBOwithLHS", register=True)
 chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
 chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
 chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
@@ -1415,6 +1423,10 @@ chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS3
 chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
 chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
 chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("chainPSOwithLHS", register=True)
+chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS30", register=True)
+chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
+chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
+chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("chainPSOwithLHS", register=True)
 
 chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).with_name("chainCMAwithR", register=True)
 chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).with_name("chainCMAwithRsqrt", register=True)
@@ -1424,7 +1436,10 @@ chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS3
 chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
 chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
 chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
-
+chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS30", register=True)
+chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
+chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
+chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
 
 @registry.register
 class cGA(base.Optimizer):
