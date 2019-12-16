@@ -116,6 +116,9 @@ def test_parameters_basic_features(param: Parameter) -> None:
      (par.Scalar().set_integer_casting(), "Scalar{int}[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict(string=blublu,truc=plop))"),
+     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0])"),
+     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0])"),
+     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),transitions=[1. 1.])")
      ]
 )
 def test_parameter_names(param: Parameter, name: str) -> None:

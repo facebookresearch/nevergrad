@@ -104,6 +104,14 @@ class Choice(BaseChoice):
         super().__init__(choices=lchoices, weights=Array(shape=(len(lchoices),), mutable_sigma=False))
         self._deterministic = deterministic
 
+    def _get_name(self) -> str:
+        name = super()._get_name()
+        cls = self.__class__.__name__
+        assert name.startswith(cls)
+        if self._deterministic:
+            name = cls + "{det}" + name[len(cls):]
+        return name
+
     @property
     def descriptors(self) -> core.Descriptors:
         return core.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
