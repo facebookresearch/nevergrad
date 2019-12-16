@@ -41,7 +41,7 @@ def launch(experiment: str, num_workers: int = 1, seed: Optional[int] = None,
         print("2. Upload the CSV file, possibly compressed as a zip file.")
         print("3. User manual: please visit: https://iohprofiler.github.io/.")
         print("4. Maintenance: iohprofiler@liacs.leidenuniv.nl.")
-        print("see https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/ioh.md."
+        print("see https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/ioh.md.")
     return csvpath
 
 
