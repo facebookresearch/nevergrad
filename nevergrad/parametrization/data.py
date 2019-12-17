@@ -115,7 +115,7 @@ class Array(core.Parameter):
         return f"{cls}{description}"
 
     @property
-    def sigma(self) -> "Array":
+    def sigma(self) -> t.Union["Array", "Scalar"]:
         """Value for the standard deviation used to mutate the parameter
         """
         return self.subparameters["sigma"]  # type: ignore
@@ -224,7 +224,7 @@ class Array(core.Parameter):
             if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._parameters["sigma"], core.Constant):
                 self.subparameters._parameters["sigma"] = core.as_parameter(sigma)
             else:
-                self.sigma.value = sigma
+                self.sigma.value = sigma  # type: ignore
         if exponent is not None:
             if self.bound_transform is not None and not self.bound_transform.name.startswith("Cl"):
                 raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
