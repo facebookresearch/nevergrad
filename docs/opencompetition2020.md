@@ -47,6 +47,7 @@ All pull requests not yet merged on December 1 2019 and opened before June 1, 20
 The type of awards, if any, will be announced later.
 
 ## About Nevergrad and IOHprofiler
+
 ### Nevergrad
 Nevergrad is an open source platform for derivative-free optimization:  it contains a wide range of optimizers, test cases, supports multiobjective optimization and handles constraints. It automatically updates results of all experiments merged in the codebase, hence users do not need computational power for participating and getting results.
 
@@ -84,7 +85,7 @@ All submissions are based on pull request, which are directly made to either one
 ## Recommended topics (non-exhaustive list)
 We identify the following list of topics for which we feel that great contributions are possible.
 
-## Improvements in any of the following optimization categories:
+### Improvements in any of the following optimization categories:
 - One-shot optimization
 - Low budget optimization
 - Multi-objective optimization
