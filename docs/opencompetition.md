@@ -6,7 +6,7 @@ paired up for the Open Optimization Competition 2020.
 
 
 ## Overview 
-All kind of contributions (under the form of pull requests) to Nevergrad an IOHProfiler are eligible.
+All kind of contributions (under the form of pull requests) to Nevergrad and IOHprofiler are eligible.
 For example, we distinguish two (non exclusive) categories for submission.
 
 ### Performance: Improvements for any of the following performance tracks
@@ -22,16 +22,19 @@ We explicitly allow portfolio-based algorithms such as landscape-aware algorithm
 ### New ideas & others: contributions to the experimental routines, including 
 - suggestions for performance measures and statistics, 
 - good benchmark problems, 
+- modular algorithm frameworks, 
 - visualization of data, 
 - parallelization, 
-- reproducibility, etc. 
+- reproducibility, 
+- etc. 
 
 ## Submission: 
-All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. You do not have to do anything else than a pull request.
-https://github.com/facebookresearch/nevergrad for Nevergrad 
-https://github.com/IOHprofiler/ for IOHprofiler [for IOHprofiler, please use the competition branch for your submissions]
+All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. You do not have to do anything else than a pull request: 
+- https://github.com/facebookresearch/nevergrad for Nevergrad 
+- https://github.com/IOHprofiler/ for IOHprofiler [for IOHprofiler, please use the competition branch for your submissions]
+
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.  
-All pull requests not yet merged on December 1 2019 or opened before June 1, 2020 are eligible for  the competition
+All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
 
 ## Key principles:
 - Open source: no matter how good are the results, if they can not be reproduced or the code can not be checked this is not in the scope.
@@ -70,14 +73,13 @@ The award committee members are:
 - Marc Schoenauer (Inria, France)
 - Thomas Weise (Hefei University, China)
 
-
-Policy re. possible conflict of interest: Award committee members can not propose as winner a person with whom they worked directly during the previous 12 months. There is no restriction for coworkers of other committee members than oneself.
+Our policy re. possible conflict of interest: Award committee members can not propose as winner a person with whom they worked directly during the previous 12 months. There is no restriction for coworkers of other committee members than oneself.
 Submissions made by members of the organizing committee or by employees of Facebook can not be awarded. Their coworkers can be rewarded (but only for work that does not involve organizers nor Facebook employees).
 
 ## Details about the Submissions 
 All submissions are based on pull request, which are directly made to either one of the tools, via
-https://github.com/facebookresearch/nevergrad for Nevergrad 
-https://github.com/IOHprofiler/ for IOHprofiler. For submissions to IOHprofiler, please use the competition branch 
+- https://github.com/facebookresearch/nevergrad for Nevergrad 
+- https://github.com/IOHprofiler/ for IOHprofiler. For submissions to IOHprofiler, please use the competition branch 
 
 ## Recommended topics (non-exhaustive list)
 We identify the following list of topics for which we feel that great contributions are possible.
@@ -109,8 +111,10 @@ The awards will be separated in two tracks:
 
 ## Organizers
 In case of questions, please do not hesitate to contact the organizers of the competition. Please send all inquiries to Carola (Carola.Doerr@lip6.fr) and Olivier (oteytaud@fb.com), who will coordinate your request. 
-- Thomas Bäck (Leiden University)
-- Carola Doerr (CNRS)
+- Thomas Bäck (Leiden University, The Netherlands)
+- Carola Doerr (CNRS, Sorbonne Université, Paris, France)
 - Antoine Moreau (Université Clermont Auvergne)
 - Jeremy Rapin (Facebook Artificial Intelligence Research, Paris, France)
+- Baptiste Roziere (Facebook Artificial Intelligence Research, Paris, France)
+- Ofer M. Shir (Tel-Hai College and Migal Institute, Israel)
 - Olivier Teytaud (Facebook Artificial Intelligence Research, Paris, France)
