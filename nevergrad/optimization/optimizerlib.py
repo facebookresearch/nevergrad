@@ -1524,15 +1524,21 @@ class JNGO(NGO):
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
                 if self.has_discrete_not_softmax:
-                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
-                else:
-                    if num_workers > budget / 5:  # type: ignore
-                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    if budget < 10 * self.dimension:
+                        self.optims = [PortfolioDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
                     else:
-                        if num_workers == 1 and budget > 3000:  # type: ignore
-                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                else:
+                    if num_workers == 1:
+                        if budget / self.dimension < 300:
+                            self.optims = [MiniDE(self.instrumentation, budget, num_workers)]
                         else:
-                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            self.optims = [PSO(self.instrumentation, budget, num_workers)]
+                    else:
+                        if dimension > budget:
+                            self.optims = [CMA(self.instrumentation, budget, num_workers)] 
+                        else:
+                            self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  
 
 
 __all__ = list(registry.keys())
