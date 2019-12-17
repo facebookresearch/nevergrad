@@ -28,7 +28,7 @@ We explicitly allow portfolio-based algorithms such as landscape-aware algorithm
 - reproducibility, 
 - etc. 
 
-## Submission: 
+## Submission
 All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. You do not have to do anything else than a pull request: 
 - https://github.com/facebookresearch/nevergrad for Nevergrad 
 - https://github.com/IOHprofiler/ for IOHprofiler [for IOHprofiler, please use the competition branch for your submissions]
@@ -36,12 +36,12 @@ All contributions are directly made to either one of the tools, Nevergrad or IOH
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.  
 All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
 
-## Key principles:
+## Key principles
 - Open source: no matter how good are the results, if they can not be reproduced or the code can not be checked this is not in the scope.
 - Reproducibility: if the code can not be run easily, it is also not in the scope.
 
-## Dates: 
-		**Submission deadline is June 1, 2020, AoE**
+## Dates
+**Submission deadline is June 1, 2020, AoE**
 
 ## Awards:
 The type of awards, if any, will be announced later.
