@@ -17,7 +17,7 @@ do
     # Quite small scale for the moment. More repetitions and more workers later, when it will be clear that everything
     # is fine.
     # Using learnfair queue is risky; this will also be discussed
-    rm -rf outputs/${xp}
+    #rm -rf outputs/${xp}
     python -m dfoptim.benchmark.slurm $xp --seed=1 --time 4320 --repetitions=1 --num_workers=800 --partition=learnfair  &
     sleep $T
     popd
