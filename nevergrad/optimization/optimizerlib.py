@@ -1530,7 +1530,7 @@ class JNGO(NGO):
                         self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
                     if num_workers == 1:
-                        if budget / self.dimension < 300:
+                        if budget < self.dimension * 300:
                             self.optims = [MiniDE(self.instrumentation, budget, num_workers)]
                         else:
                             self.optims = [PSO(self.instrumentation, budget, num_workers)]
