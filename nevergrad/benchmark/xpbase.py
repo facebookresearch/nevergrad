@@ -148,7 +148,8 @@ class Experiment:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         self.function.instrumentation._objective_function_is_noiy = (
-            self.function.instrumentation._objective_function_is_noiy or objective_function_is_noiy)
+            self.function.instrumentation._objective_function_is_noiy or objective_function_is_noiy
+            or self.function.instrumentation.noisy)
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
