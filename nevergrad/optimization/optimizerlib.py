@@ -1535,7 +1535,7 @@ class JNGO(NGO):
                         else:
                             self.optims = [PSO(self.instrumentation, budget, num_workers)]
                     else:
-                        if dimension > budget:
+                        if self.dimension > budget:
                             self.optims = [CMA(self.instrumentation, budget, num_workers)] 
                         else:
                             self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  
