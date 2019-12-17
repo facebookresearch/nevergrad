@@ -1473,7 +1473,6 @@ class NGO(base.Optimizer):
             self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
         self.has_discrete_not_softmax = False
-        print(self.instrumentation.variables)
         self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
@@ -1511,4 +1510,29 @@ class NGO(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
         
+@registry.register
+class JNGO(NGO):
+    """Nevergrad optimizer by competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and self.has_discrete_not_softmax:
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+        else:
+            if self.has_noise:
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.has_discrete_not_softmax:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                else:
+                    if num_workers > budget / 5:  # type: ignore
+                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    else:
+                        if num_workers == 1 and budget > 3000:  # type: ignore
+                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+
 __all__ = list(registry.keys())
