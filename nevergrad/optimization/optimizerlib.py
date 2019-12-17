@@ -925,7 +925,13 @@ class NGO(base.Optimizer):
         assert budget is not None
         self.has_noise = self.instrumentation.noisy
         self.fully_continuous = self.instrumentation.continuous
-        #self.has_discrete_not_softmax = "rderedDiscr" in str(instru
+        self.has_discrete_not_softmax = False
+        try:
+            print("args:", str(instrumentation.args), "kwargs:", str(instrumentation.kwargs))
+            dfnvdskjfvs
+            self.has_discrete_not_softmax = "rderedDiscr" in str(instrumentation.args) + str(instrumentation.kwargs)
+        except AttributeError:
+            pass
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
@@ -938,7 +944,10 @@ class NGO(base.Optimizer):
                     if num_workers > budget / 5:
                         self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
-                        self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        if num_workers == 1 and budget > 3000:
+                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0
@@ -953,11 +962,7 @@ class NGO(base.Optimizer):
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        if not self.has_noise:
-            return self.current_bests["pessimistic"].x
-        if self.has_noise and self.fully_continuous:
-            return self.optims[0].provide_recommendation()
-        return self.current_bests["pessimistic"].x
+        return self.optims[0].provide_recommendation()
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
