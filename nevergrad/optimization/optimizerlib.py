@@ -925,7 +925,7 @@ class NGO(base.Optimizer):
         assert budget is not None
         self.has_noise = self.instrumentation.noisy
         self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmat = TODO
+        #self.has_discrete_not_softmax = "rderedDiscr" in str(instru
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
