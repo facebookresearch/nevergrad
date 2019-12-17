@@ -1477,9 +1477,9 @@ class NGO(base.Optimizer):
         self.fully_continuous = self.instrumentation.continuous
         self.has_discrete_not_softmax = False
         try:
-            print("args:", str(instrumentation.args), "kwargs:", str(instrumentation.kwargs))
-            dfnvdskjfvs
-            self.has_discrete_not_softmax = "rderedDiscr" in str(instrumentation.args) + str(instrumentation.kwargs)
+            print(instrumentation.variables)
+            djknvdkjsvndfjks
+            self.has_discrete_not_softmax = "rderedDiscr" in str(instrumentation.variables)
         except AttributeError:
             pass
         if self.has_noise and self.has_discrete_not_softmax:
