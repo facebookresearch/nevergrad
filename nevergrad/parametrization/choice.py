@@ -153,9 +153,7 @@ class Choice(BaseChoice):
     def mutate(self) -> None:
         self.weights.mutate()
         self._draw(deterministic=self._deterministic)
-        param = self.choices[self.index]
-        if isinstance(param, core.Parameter):
-            param.mutate()
+        self.choices[self.index].mutate()
 
     def _internal_spawn_child(self: C) -> C:
         child = self.__class__(choices=[], deterministic=self._deterministic)
@@ -195,7 +193,7 @@ class TransitionChoice(BaseChoice):
         super().__init__(choices=choices,
                          position=Scalar(),
                          transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
-        assert core.as_parameter(self.transitions).value.ndim == 1
+        assert self.transitions.value.ndim == 1
 
     @property
     def index(self) -> int:
@@ -211,7 +209,7 @@ class TransitionChoice(BaseChoice):
         self.position.value = out[0]
 
     @property
-    def transitions(self) -> t.Union[np.ndarray, Array]:
+    def transitions(self) -> Array:
         """The weights used to draw the value
         """
         return self["transitions"]  # type: ignore
@@ -232,14 +230,11 @@ class TransitionChoice(BaseChoice):
         new_index = max(0, min(len(self.choices), self.index + sign * move))
         self._set_index(new_index)
         # mutate corresponding parameter
-        param = self.choices[self.index]
-        if isinstance(param, core.Parameter):
-            param.mutate()
+        self.choices[self.index].mutate()
 
     def _internal_spawn_child(self: T) -> T:
         child = self.__class__(choices=[])
         child._parameters["choices"] = self.choices.spawn_child()
         child._parameters["position"] = self.position.spawn_child()
-        child._parameters["transitions"] = (np.array(self.transitions) if not isinstance(self.transitions, Array)
-                                            else self.transitions.spawn_child())
+        child._parameters["transitions"] = self.transitions.spawn_child()
         return child

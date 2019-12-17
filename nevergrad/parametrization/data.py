@@ -9,6 +9,7 @@ import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import core
 from ..instrumentation import transforms as trans  # TODO move along
+# pylint: disable=no-value-for-parameter
 
 
 BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]
@@ -114,10 +115,10 @@ class Array(core.Parameter):
         return f"{cls}{description}"
 
     @property
-    def sigma(self) -> t.Union[np.ndarray, float]:
+    def sigma(self) -> "Array":
         """Value for the standard deviation used to mutate the parameter
         """
-        return core.as_parameter(self._subparameters["sigma"]).value  # type: ignore
+        return self.subparameters["sigma"]  # type: ignore
 
     @property
     def value(self) -> np.ndarray:
@@ -220,10 +221,10 @@ class Array(core.Parameter):
         """
         if sigma is not None:
             # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
-            if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._parameters["sigma"], float):
-                self.subparameters._parameters["sigma"] = sigma
+            if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._parameters["sigma"], core.Constant):
+                self.subparameters._parameters["sigma"] = core.as_parameter(sigma)
             else:
-                self.subparameters["sigma"].value = sigma
+                self.sigma.value = sigma
         if exponent is not None:
             if self.bound_transform is not None and not self.bound_transform.name.startswith("Cl"):
                 raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
@@ -248,7 +249,7 @@ class Array(core.Parameter):
     # pylint: disable=unused-argument
     def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
         assert isinstance(data, np.ndarray)
-        sigma = self._get_parameter_value("sigma")
+        sigma = self.sigma.value
         data_reduc = (sigma * data).reshape(instance._value.shape)
         instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
         if instance.bound_transform is not None:
@@ -269,7 +270,7 @@ class Array(core.Parameter):
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
         """Converts array with appropriate shapes to the standard space of this instance
         """
-        sigma = self._get_parameter_value("sigma")
+        sigma = self.sigma.value
         if self.bound_transform is not None:
             data = self.bound_transform.backward(data)
         distribval = data if self.exponent is None else np.log(data) / np.log(self.exponent)
@@ -277,7 +278,7 @@ class Array(core.Parameter):
         return reduced.ravel()  # type: ignore
 
     def recombine(self: A, *others: A) -> None:
-        recomb = self._get_parameter_value("recombination")
+        recomb = self.subparameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
             self.set_std_data(np.mean([self.get_std_data(p) for p in all_p], axis=0), deterministic=False)

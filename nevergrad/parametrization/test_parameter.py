@@ -154,9 +154,9 @@ def test_scalar_and_mutable_sigma() -> None:
     assert data[0] == 0.0
     param.set_std_data(np.array([-0.2]))
     assert param.value == 0.5
-    assert param.sigma == 5
+    assert param.sigma.value == 5
     param.mutate()
-    assert param.sigma != 5
+    assert param.sigma.value != 5
     param.set_integer_casting()
     assert isinstance(param.value, int)
 
