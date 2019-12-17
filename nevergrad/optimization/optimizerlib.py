@@ -1469,19 +1469,12 @@ class NGO(base.Optimizer):
         assert budget is not None
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.has_noise = self.instrumentation.noisy
-        try:
-            if self.instrumentation.probably_noisy:
-                self.has_noise = True
-        except AttributeError:
-            pass
+        if self.instrumentation.probably_noisy:
+            self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
         self.has_discrete_not_softmax = False
-        try:
-            print(instrumentation.variables)
-            djknvdkjsvndfjks
-            self.has_discrete_not_softmax = "rderedDiscr" in str(instrumentation.variables)
-        except AttributeError:
-            pass
+        print(self.instrumentation.variables)
+        self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
