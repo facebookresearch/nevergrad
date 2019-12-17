@@ -1516,6 +1516,7 @@ class JNGO(NGO):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
@@ -1525,10 +1526,10 @@ class JNGO(NGO):
                 if self.has_discrete_not_softmax:
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
-                    if num_workers > budget / 5:
+                    if num_workers > budget / 5:  # type: ignore
                         self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
-                        if num_workers == 1 and budget > 3000:
+                        if num_workers == 1 and budget > 3000:  # type: ignore
                             self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
                             self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
