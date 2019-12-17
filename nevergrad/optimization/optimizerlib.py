@@ -917,6 +917,47 @@ class Portfolio(base.Optimizer):
 
 
 @registry.register
+class NGO(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [
+            CMA(self.instrumentation, budget // 3 + (budget % 3 > 0), num_workers),  # share instrumentation and its rng
+            TwoPointsDE(self.instrumentation, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
+            ScrHammersleySearch(self.instrumentation, budget // 3, num_workers),
+        ]  # noqa: F405
+        if budget < 12 * num_workers:
+            self.optims = [ScrHammersleySearch(self.instrumentation, budget, num_workers)]  # noqa: F405
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        optim_index = TODO  # self._num_ask % len(self.optims)
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
+        return individual
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        tx = tuple(candidate.data)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        TODO
+        self.optims[optim_index].tell(candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        if no noise:
+            return self.current_bests["pessimistic"].x
+        if there is noise and all is continuous
+            return self.optims[1].provide_recommendation()
+        if there is noise and there is discrete
+            return self.current_bests["pessimistic"].x
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+        
+@registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
