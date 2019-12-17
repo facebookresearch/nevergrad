@@ -90,7 +90,7 @@ class UnorderedDiscrete(Variable):
         super().__init__()
         self.possibilities = list(possibilities)
         name = "OD({})".format(str(possibilities).strip("[],").replace(" ", ""))
-        self._specs.update(continuous=False, dimension=1, name=name)
+        self._specs.update(continuous=False, dimension=1, name=name, contains_unsmoothed_discrete=True)
         assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
                                         "for the Instrumentation intialization")
 
