@@ -41,7 +41,7 @@ All pull requests not yet merged on December 1 2019 and opened before June 1, 20
 - Reproducibility: if the code can not be run easily, it is also not in the scope.
 
 ## Dates: 
-		Submission deadline is June 1, 2020, AoE
+		**Submission deadline is June 1, 2020, AoE**
 
 ## Awards:
 The type of awards, if any, will be announced later.
@@ -83,7 +83,8 @@ All submissions are based on pull request, which are directly made to either one
 
 ## Recommended topics (non-exhaustive list)
 We identify the following list of topics for which we feel that great contributions are possible.
-##Improvements in any of the following optimization categories:
+
+## Improvements in any of the following optimization categories:
 - One-shot optimization
 - Low budget optimization
 - Multi-objective optimization
