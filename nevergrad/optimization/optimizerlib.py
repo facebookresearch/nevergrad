@@ -917,58 +917,6 @@ class Portfolio(base.Optimizer):
 
 
 @registry.register
-class NGO(base.Optimizer):
-    """Nevergrad optimizer by competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.has_noise = self.instrumentation.noisy
-        self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmax = False
-        try:
-            print("args:", str(instrumentation.args), "kwargs:", str(instrumentation.kwargs))
-            dfnvdskjfvs
-            self.has_discrete_not_softmax = "rderedDiscr" in str(instrumentation.args) + str(instrumentation.kwargs)
-        except AttributeError:
-            pass
-        if self.has_noise and self.has_discrete_not_softmax:
-            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
-        else:
-            if self.has_noise:
-                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
-            else:
-                if self.has_discrete_not_softmax:
-                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
-                else:
-                    if num_workers > budget / 5:
-                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
-                    else:
-                        if num_workers == 1 and budget > 3000:
-                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
-                        else:
-                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
-
-    def _internal_ask_candidate(self) -> base.Candidate:
-        optim_index = 0
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
-
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        tx = tuple(candidate.data)
-        optim_index = self.who_asked[tx][0]
-        del self.who_asked[tx][0]
-        self.optims[optim_index].tell(candidate, value)
-
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.optims[0].provide_recommendation()
-
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
-
-        
-@registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
@@ -1512,4 +1460,62 @@ class cGA(base.Optimizer):
             self._previous_value_candidate = None
 
 
+@registry.register
+class NGO(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.has_noise = self.instrumentation.noisy
+        try:
+            if self.instrumentation.probably_noisy:
+                self.has_noise = True
+        except AttributeError:
+            pass
+        self.fully_continuous = self.instrumentation.continuous
+        self.has_discrete_not_softmax = False
+        try:
+            print("args:", str(instrumentation.args), "kwargs:", str(instrumentation.kwargs))
+            dfnvdskjfvs
+            self.has_discrete_not_softmax = "rderedDiscr" in str(instrumentation.args) + str(instrumentation.kwargs)
+        except AttributeError:
+            pass
+        if self.has_noise and self.has_discrete_not_softmax:
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+        else:
+            if self.has_noise:
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.has_discrete_not_softmax:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                else:
+                    if num_workers > budget / 5:
+                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    else:
+                        if num_workers == 1 and budget > 3000:
+                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        optim_index = 0
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
+        return individual
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        tx = tuple(candidate.data)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.optims[0].provide_recommendation().data
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+        
 __all__ = list(registry.keys())
