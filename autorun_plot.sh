@@ -15,8 +15,8 @@ echo '<a href="https://github.com/facebookresearch/nevergrad/blob/master/nevergr
 for xp in $listxp
 do
     echo working on $xp
-    echo "<br> $xp </br><p>" >> allxps/list.html
     if [ -d "../outputs/$xp" ]; then
+        echo "<br> $xp </br><p>" >> allxps/list.html
         pushd ..
         python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=2 --competencemaps=True
         mkdir -p nevergrad_repository/allxps/${xp}
