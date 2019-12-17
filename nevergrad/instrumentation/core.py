@@ -29,6 +29,7 @@ class VarSpecs:
                kwargs_keys: Optional[Set[str]] = None,
                continuous: Optional[bool] = None,
                noisy: Optional[bool] = None,
+               contains_unsmoothed_discrete: Optional[bool] = None,
                name: Optional[str] = None
                ) -> None:
         for key, value in locals().items():
