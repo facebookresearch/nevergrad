@@ -2,8 +2,8 @@
 
 # See doc in autorun.sh: this script launches the computations, as well as autorun_plot creates the figures.
 
-listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
-listxp="multimodal_perf photonics war preliminary_asynchronous $listxp"
+listxp=`grep -iH1 "^def" nevergrad/benchmark/experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
+#listxp="multimodal_perf photonics war preliminary_asynchronous $listxp"
 
 listxp=${1:-$listxp}
 touch allxps
