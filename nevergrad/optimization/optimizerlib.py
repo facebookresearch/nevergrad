@@ -1517,6 +1517,13 @@ class JNGO(NGO):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.has_noise = self.instrumentation.noisy
+        if self.instrumentation.probably_noisy:
+            self.has_noise = True
+        self.fully_continuous = self.instrumentation.continuous
+        self.has_discrete_not_softmax = False
+        self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
@@ -1538,7 +1545,25 @@ class JNGO(NGO):
                         if self.dimension > budget:
                             self.optims = [CMA(self.instrumentation, budget, num_workers)] 
                         else:
-                            self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  
+                            self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        optim_index = 0
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
+        return individual
+    
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        tx = tuple(candidate.data)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.optims[0].provide_recommendation().data
+    
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
 
 
 __all__ = list(registry.keys())
