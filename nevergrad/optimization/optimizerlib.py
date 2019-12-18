@@ -953,7 +953,7 @@ class ParaPortfolio(Portfolio):
 
 
 @registry.register
-class ParaSQPCMA(ParaPortfolio):
+class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -1337,6 +1337,7 @@ class _Chain(base.Optimizer):
         if not self._optimizers_:
             self._optimizers_ = []
             converter = {"num_workers": self.num_workers, "dimension": self.dimension,
+                         "half": self.budget // 2 if self.budget else self.num_workers,  # type: ignore
                          "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
@@ -1385,9 +1386,11 @@ class Chaining(base.ParametrizedFamily):
         self.budgets = tuple(budgets)
         self.optimizers = tuple(optimizers)
         assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
+        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
+chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
+chainCMASQP.no_parallelization = True
 
 chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
 chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)
@@ -1489,6 +1492,81 @@ class cGA(base.Optimizer):
                         self.p[i][j] = max(self.p[i][j], 1. / self.llambda)
                     self.p[i] /= sum(self.p[i])
             self._previous_value_candidate = None
+
+
+@registry.register
+class NGO(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.has_noise = self.instrumentation.noisy
+        if self.instrumentation.probably_noisy:
+            self.has_noise = True
+        self.fully_continuous = self.instrumentation.continuous
+        self.has_discrete_not_softmax = False
+        self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
+        if self.has_noise and self.has_discrete_not_softmax:
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+        else:
+            if self.has_noise:
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.has_discrete_not_softmax:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                else:
+                    if num_workers > budget / 5:
+                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    else:
+                        if num_workers == 1 and budget > 3000:
+                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+    def _internal_ask_candidate(self) -> base.Candidate:
+        optim_index = 0
+        individual = self.optims[optim_index].ask()
+        self.who_asked[tuple(individual.data)] += [optim_index]
+        return individual
+
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        tx = tuple(candidate.data)
+        optim_index = self.who_asked[tx][0]
+        del self.who_asked[tx][0]
+        self.optims[optim_index].tell(candidate, value)
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.optims[0].provide_recommendation().data
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+        
+@registry.register
+class JNGO(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and self.has_discrete_not_softmax:
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+        else:
+            if self.has_noise:
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.has_discrete_not_softmax:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                else:
+                    if num_workers > budget / 5:  # type: ignore
+                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    else:
+                        if num_workers == 1 and budget > 3000:  # type: ignore
+                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
 
 
 __all__ = list(registry.keys())

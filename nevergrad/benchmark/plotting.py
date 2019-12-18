@@ -71,10 +71,11 @@ def _make_winners_df(df: pd.DataFrame, all_optimizers: List[str]) -> tools.Selec
 def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
     """Converts a dataframe counting number of victories into a sorted
     winrate dataframe. The algorithm which performs better than all other
-    algorithms comes first.
+    algorithms comes first. When you do not play in a category, you are
+    considered as having lost all comparisons in that category.
     """
     assert all(x == y for x, y in zip(victories.index, victories.columns))
-    winrates = victories / (victories + victories.T)
+    winrates = victories / (victories + victories.T).max(axis=1)
     # mean_win = winrates.quantile(.05, axis=1).sort_values(ascending=False)
     mean_win = winrates.mean(axis=1).sort_values(ascending=False)
     return winrates.loc[mean_win.index, mean_win.index]
