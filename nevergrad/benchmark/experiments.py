@@ -28,7 +28,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # Discrete functions on {0,1}^d.
 @registry.register
 def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    # Discrete test bed, including useless variables, binary only.
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names()
              if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
@@ -53,7 +53,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    # Discrete test bed, including useless variables, 5 values or 2 values per character.
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
     optims = sorted(
@@ -184,7 +184,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["NaiveTBPSA", "TBPSA",
-              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "ParaSQP", "ParaCobyla", "ParaPowell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"] + list(
@@ -208,9 +208,9 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "ParaSQP", "ParaCobyla",
+    optims = ["chainCMASQP", "NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "ParaSQP", "ParaCobyla",
               "ParaPowell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
-    optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
+    #optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
@@ -221,13 +221,13 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
         for rotation in [True, False]
-        for num_blocks in [1,3]
+        for num_blocks in [1]
         for d in [2, 10, 50]
     ]
     for optim in optims:
         for function in functions:
-            for budget in [400, 800, 1600] if not big else [40000, 80000]:
-                xp = Experiment(function.duplicate(), optim, num_workers=200 if parallel else 1,
+            for budget in [200, 400, 800] if not big else [40000, 80000]:
+                xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
                         budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
@@ -265,7 +265,7 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for optim in optims:
         for function in functions:
-            for budget in [400, 4000, 40000]:
+            for budget in [100, 1000, 10000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -279,7 +279,7 @@ def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
         for function in functions:
-            for budget in [400, 4000, 40000]:
+            for budget in [100, 1000, 10000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -288,7 +288,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "ParaSQP", "ParaCobyla", "ParaPowell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "ParaSQPCMA"]
@@ -297,7 +297,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for optim in optims:
         for function in functions:
-            for budget in [400, 4000, 40000]:
+            for budget in [100, 1000, 10000]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 

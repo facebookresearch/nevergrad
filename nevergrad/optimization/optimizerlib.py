@@ -1373,6 +1373,7 @@ class _Chain(base.Optimizer):
         if not self._optimizers_:
             self._optimizers_ = []
             converter = {"num_workers": self.num_workers, "dimension": self.dimension,
+                         "half": self.budget // 2 if budget else self.num_workers,
                          "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
@@ -1424,6 +1425,7 @@ class Chaining(base.ParametrizedFamily):
         assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
+chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
 
 chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
 chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)
