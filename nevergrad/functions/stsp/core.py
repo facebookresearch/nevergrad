@@ -33,9 +33,10 @@ class STSP(inst.InstrumentedFunction):
     def _simulate_stsp(self, x: np.ndarray) -> float:
         order = np.argsort(x)
         self.order = order
-        x = self.x
-        y = self.y
-        return np.sqrt((x[0]-x[-1])**2+(y[0]-y[-1])**2) + sum(np.sqrt((x[i]-x[i+1])**2 + (y[i]-y[i+1])**2) for i in order[:-1])
+        x = self.x[order]
+        y = self.y[order]
+        return np.sqrt((x[0]-x[-1])**2+(y[0]-y[-1])**2) + sum(np.sqrt((x[i]-x[i+1])**2 + (y[i]-y[i+1])**2)
+                for i in range(self.dimension - 1))
 
     def make_plots(self, filename: str = "stsp.png") -> None:
         plt.clf()
