@@ -7,9 +7,9 @@ from functools import reduce
 import operator
 import warnings
 import numpy as np
-from . import discretization
-from ..common.typetools import ArrayLike
-from . import transforms
+from nevergrad.parametrization import discretization
+from nevergrad.parametrization import transforms
+from nevergrad.common.typetools import ArrayLike
 from .core import ArgsKwargs
 from .core import Variable as Variable
 # pylint: disable=unused-argument

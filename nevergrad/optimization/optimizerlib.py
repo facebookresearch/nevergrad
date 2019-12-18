@@ -9,16 +9,17 @@ import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
-from ..common.typetools import ArrayLike
-from ..functions import MultiobjectiveFunction
-from ..instrumentation import transforms
-from .. import instrumentation as inst
-from ..instrumentation import Instrumentation
+from nevergrad.parametrization import transforms
+from nevergrad.common.typetools import ArrayLike
+from nevergrad import instrumentation as inst
+from nevergrad.instrumentation import Instrumentation
+from nevergrad.parametrization import discretization
 from . import utils
 from . import base
+# pylint: disable=unused-import
+from .base import addCompare   # noqa
 from . import mutations
 from .base import registry as registry
-from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
 
@@ -1438,7 +1439,7 @@ class cGA(base.Optimizer):
     def _internal_ask_candidate(self) -> base.Candidate:
         # Multinomial.
         values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
-        data = inst.discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
+        data = discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
@@ -1448,9 +1449,9 @@ class cGA(base.Optimizer):
             winner, loser = self._previous_value_candidate[1], candidate.data
             if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
-            winner_data = inst.discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
-            loser_data = inst.discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
-            for i in range(len(winner_data)):
+            winner_data = discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
+            loser_data = discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
+            for i, _ in enumerate(winner_data):
                 if winner_data[i] != loser_data[i]:
                     self.p[i][winner_data[i]] += 1. / self.llambda
                     self.p[i][loser_data[i]] -= 1. / self.llambda

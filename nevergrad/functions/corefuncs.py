@@ -6,9 +6,9 @@
 from typing import Dict, Any, Tuple, List, Callable
 from math import exp, sqrt, tanh
 import numpy as np
+from nevergrad.parametrization import discretization
+from nevergrad.common.decorators import Registry
 from .utils import PostponedObject
-from ..instrumentation import discretization
-from ..common.decorators import Registry
 
 
 registry = Registry[Callable[[np.ndarray], float]]()

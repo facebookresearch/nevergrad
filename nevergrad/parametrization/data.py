@@ -8,7 +8,7 @@ import typing as t
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import core
-from ..instrumentation import transforms as trans  # TODO move along
+from . import transforms as trans  # TODO move along
 
 
 BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]

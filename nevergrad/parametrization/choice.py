@@ -6,7 +6,7 @@
 import typing as t
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from ..instrumentation import discretization  # TODO move along
+from . import discretization
 from . import core
 from .container import Tuple
 from .data import Array
