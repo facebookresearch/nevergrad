@@ -1521,7 +1521,7 @@ class NGO(base.Optimizer):
                         if num_workers > budget / 2. or budget < self.dimension / 2:
                             self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            self.optims = [naiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
                         if num_workers == 1 and budget > 6000:
                             self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
