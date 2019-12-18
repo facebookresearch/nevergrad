@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+cd ..
+
 # See doc in autorun.sh: this script launches the computations, as well as autorun_plot creates the figures.
 
 listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
