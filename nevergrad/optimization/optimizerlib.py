@@ -1389,7 +1389,8 @@ class Chaining(base.ParametrizedFamily):
         assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
-#chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
+chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
+chainCMASQP.no_parallelization = True
 
 chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
 chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)

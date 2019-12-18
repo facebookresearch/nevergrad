@@ -19,6 +19,13 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: Optional[base.ArrayLike] = None
 
+#    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        """Called whenever calling "tell" on a candidate that was not "asked".
+        Defaults to the standard tell pipeline.
+        """
+        pass  # We do not do anything; this just updates the current best.
+
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
@@ -30,7 +37,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
-        best_x: np.ndarray = np.zeros(self.dimension)
+        best_x: np.ndarray = self.current_bests["average"].x  #np.zeros(self.dimension)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
@@ -73,6 +80,7 @@ class ScipyOptimizer(base.ParametrizedFamily):
         self.random_restart = random_restart
         super().__init__()
 
+        
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").with_name("NelderMead", register=True)
 Powell = ScipyOptimizer(method="Powell").with_name("Powell", register=True)
