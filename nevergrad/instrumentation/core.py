@@ -4,12 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
+import warnings
 from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
 import numpy as np
-from ..common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
+from nevergrad.common.typetools import ArrayLike
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 T = TypeVar('T', bound="Variable")
+VL = TypeVar('VL', bound="VariableLayer")
 
 
 class VarSpecs:
@@ -157,3 +160,102 @@ class Variable:
     def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
         output = self.data_to_arguments(np.array(data, copy=False), deterministic=True)
         return f"Value {output[0][0]}, from data: {data}"
+
+
+class VariableLayer(p.Instrumentation):
+
+    def __init__(self, parameter: p.Parameter) -> None:
+        super().__init__(parameter)
+        self._specs = VarSpecs()
+        self._compatibility_parameter: Optional[p.Parameter] = None
+        self._constraint_checker = _default_checker  # TODO remove
+
+    @property
+    def compatibility_parameter(self) -> p.Parameter:
+        if self._compatibility_parameter is None:
+            self._compatibility_parameter = self[0][0].spawn_child()  # type: ignore
+        return self._compatibility_parameter
+
+    def set_cheap_constraint_checker(self, func: Callable[..., bool]) -> None:
+        self._constraint_checker = func
+
+    def cheap_constraint_check(self, *args: Any, **kwargs: Any) -> bool:
+        return self._constraint_checker(*args, **kwargs)
+
+    def with_name(self: VL, name: str) -> VL:
+        """Sets a name and return the current instrumentation (for chaining)
+        """
+        warnings.warn("Use set_name instead", DeprecationWarning)
+        return self.set_name(name)
+
+    def copy(self: VL) -> VL:  # TODO, use deepcopy directly in the code if it works?
+        """Return a new instrumentation with the same variable and same name
+        (but a different random state)
+        """
+        instru = self.spawn_child()
+        instru._random_state = None
+        instru._compatibility_parameter = None
+        return instru
+
+    @property
+    def nargs(self) -> int:
+        return len(self.args)
+
+    @property
+    def kwargs_keys(self) -> Set[str]:
+        return set(self.kwargs)
+
+    @property
+    def continuous(self) -> bool:
+        return self.descriptors.continuous
+
+    @property
+    def noisy(self) -> bool:
+        return not self.descriptors.deterministic
+
+    def arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        """Converts args and kwargs into data in np.ndarray format
+        """
+        if len(args) != self.nargs:
+            raise TypeError(f"Expected {self.nargs} arguments ({len(args)} given: {args})")
+        if self.kwargs_keys != set(kwargs.keys()):
+            raise TypeError(f"Expected arguments {self.kwargs_keys} ({set(kwargs.keys())} given: {kwargs})")
+        self.compatibility_parameter.value = args[0]
+        return self.compatibility_parameter.get_std_data()
+
+    def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
+        """Converts data to arguments
+
+        Parameters
+        ----------
+        data: ArrayLike (list/tuple of floats, np.ndarray)
+            the data in the optimization space
+        deterministic: bool
+            whether the conversion should be deterministic (some variables can be stochastic, if deterministic=True
+            the most likely output will be used)
+
+        Returns
+        -------
+        args: Tuple[Any]
+            the positional arguments corresponding to the instance initialization positional arguments
+        kwargs: Dict[str, Any]
+            the keyword arguments corresponding to the instance initialization keyword arguments
+        """
+        # trigger random_state creation (may require to be propagated to sub-variables
+        assert self.random_state is not None
+        array = np.array(data, copy=False)
+        if array.shape != (self.dimension,):
+            raise ValueError(f"Unexpected shape {array.shape} of {array} for {self} with dimension {self.dimension}")
+        self.compatibility_parameter.set_std_data(np.asarray(data), deterministic=deterministic)
+        return (self.compatibility_parameter.value,), {}
+
+    def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
+        warnings.warn("get_summary will disappear since new parameters are easier to analyze directly")
+        output = self.data_to_arguments(np.array(data, copy=False), deterministic=True)
+        return f"Value {output[0][0]}, from data: {data}"
+
+    def mutate(self) -> None:
+        raise RuntimeError("Not supported")
+
+    def recombine(self: p.Dict, *others: p.Dict) -> None:
+        raise RuntimeError("Not supported")

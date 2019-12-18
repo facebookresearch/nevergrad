@@ -43,6 +43,8 @@ class BaseChoice(core.Dict):
 
     @property
     def value(self) -> t.Any:
+        print("inside", self.choices[self.index])
+        print("returning", core.as_parameter(self.choices[self.index]).value)
         return core.as_parameter(self.choices[self.index]).value
 
     @value.setter
@@ -112,6 +114,11 @@ class Choice(BaseChoice):
             name = cls + "{det}" + name[len(cls):]
         return name
 
+    def __len__(self) -> int:
+        """Number of choices
+        """
+        return len(self.choices)
+
     @property
     def descriptors(self) -> core.Descriptors:
         return core.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
@@ -134,9 +141,12 @@ class Choice(BaseChoice):
 
     def _find_and_set_value(self, value: t.Any) -> int:
         index = super()._find_and_set_value(value)
+        print("found index", index)
         self._index = index
         # force new probabilities
         out = discretization.inverse_softmax_discretization(self.index, len(self))
+        print(self.choices)
+        print(out, len(self))
         self.weights.set_std_data(out, deterministic=True)
         return index
 
