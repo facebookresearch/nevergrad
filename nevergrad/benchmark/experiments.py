@@ -209,7 +209,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+    optims = ["NaiveTBPSA", "TBPSA", "NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     if not parallel:
         optims += ["SQP", "Cobyla", "Powell", "chainCMASQP"]
@@ -229,7 +229,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     ]
     for optim in optims:
         for function in functions:
-            for budget in [200, 400, 800] if not big else [40000, 80000]:
+            for budget in [200, 400, 800] if (not big and not noise) else [40000, 80000]:
                 xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
                         budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
