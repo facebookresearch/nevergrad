@@ -10,6 +10,7 @@ touch allxps
 rm -rf allxps
 mkdir -p allxps
 echo '<html><head><title>nevergrad xps</title></head><body>' > allxps/list.html
+echo "<br> BETA version, this can vary a lot, experiments can be stop at any time and poor partial results can be plotted. Use at your own risk!</br><p>" >> allxps/list.html
 echo '<a href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py"> experiments details</a>'>> allxps/list.html
 echo '<a href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/frozenexperiments.py"> frozenexperiments details</a>'>> allxps/list.html
 for xp in $listxp
