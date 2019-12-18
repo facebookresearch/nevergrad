@@ -24,10 +24,10 @@ class STSP(inst.InstrumentedFunction):
     def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
         state = np.random.get_state()
         np.random.seed(seed)
-        self.x = np.random.normal(size=the_dimension // 2)
-        self.y = np.random.normal(size=the_dimension // 2)
+        self.x = np.random.normal(size=the_dimension)
+        self.y = np.random.normal(size=the_dimension)
         np.random.set_state(state)
-        super().__init__(self._simulate_stsp, Instrumentation(inst.var.Array(the_dimension - (the_dimension % 2))))
+        super().__init__(self._simulate_stsp, Instrumentation(inst.var.Array(the_dimension)))
         self._descriptors.update(seed=seed)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
