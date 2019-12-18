@@ -1511,7 +1511,7 @@ class NGO(base.Optimizer):
 
         
 @registry.register
-class JNGO(NGO):
+class JNGO(base.Optimizer):
     """Nevergrad optimizer by competence map."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
