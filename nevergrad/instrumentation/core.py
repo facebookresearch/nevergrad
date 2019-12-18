@@ -168,6 +168,7 @@ class VariableLayer(p.Instrumentation):
         super().__init__(parameter)
         self._specs = VarSpecs()
         self._compatibility_parameter: Optional[p.Parameter] = None
+        self._bias = self.get_std_data()
         self._constraint_checker = _default_checker  # TODO remove
 
     @property
@@ -221,7 +222,7 @@ class VariableLayer(p.Instrumentation):
         if self.kwargs_keys != set(kwargs.keys()):
             raise TypeError(f"Expected arguments {self.kwargs_keys} ({set(kwargs.keys())} given: {kwargs})")
         self.compatibility_parameter.value = args[0]
-        return self.compatibility_parameter.get_std_data()
+        return self.compatibility_parameter.get_std_data() - self._bias  # type: ignore
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
         """Converts data to arguments
@@ -243,10 +244,10 @@ class VariableLayer(p.Instrumentation):
         """
         # trigger random_state creation (may require to be propagated to sub-variables
         assert self.random_state is not None
-        array = np.array(data, copy=False)
+        array = np.array(data, copy=False) + self._bias
         if array.shape != (self.dimension,):
             raise ValueError(f"Unexpected shape {array.shape} of {array} for {self} with dimension {self.dimension}")
-        self.compatibility_parameter.set_std_data(np.asarray(data), deterministic=deterministic)
+        self.compatibility_parameter.set_std_data(array, deterministic=deterministic)
         return (self.compatibility_parameter.value,), {}
 
     def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
