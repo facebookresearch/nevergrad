@@ -18,7 +18,7 @@ from ...instrumentation.multivariables import Instrumentation
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
 class STSP(inst.InstrumentedFunction):
 
-    def __init__(self, seed: int = 0, int the_dimension = 500) -> None:
+    def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
         the_dimension = dimension
         state = np.random.get_state()
         np.random.set_state(seed)
