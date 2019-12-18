@@ -923,7 +923,7 @@ class ParaCobyla(Portfolio):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.which_optim = list(range(num_workers))
-        self.optims: List[base.Optimizer] = [Cobyla(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
+        self.optims: List[base.Optimizer] = [Cobyla(self.instrumentation, 1)] + [CMA(self.instrumentation, 1) for _ in range(num_workers - 1)  # noqa: F405
         ]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
@@ -935,7 +935,7 @@ class ParaSQP(Portfolio):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.which_optim = list(range(num_workers))
-        self.optims: List[base.Optimizer] = [SQP(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
+        self.optims: List[base.Optimizer] = [SQP(self.instrumentation, 1)] + [CMA(self.instrumentation, 1) for _ in range(num_workers - 1)  # noqa: F405
         ]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
@@ -947,7 +947,7 @@ class ParaPowell(Portfolio):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.which_optim = list(range(num_workers))
-        self.optims: List[base.Optimizer] = [Powell(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
+        self.optims: List[base.Optimizer] = [Powerll(self.instrumentation, 1)] + [CMA(self.instrumentation, 1) for _ in range(num_workers - 1)  # noqa: F405
         ]
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
