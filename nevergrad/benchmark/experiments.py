@@ -208,8 +208,8 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
-              "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "ParaSQP", "ParaCobyla",
+              "ParaPowell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
@@ -433,7 +433,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         funcs += [func]
 
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "ParaSQP", "ParaPowell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -463,7 +463,7 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
 
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "ParaSQP", "ParaPowell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
     for budget in [1600, 3200, 6400, 12800]:
@@ -519,7 +519,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "ParaSQP", "ParaPowell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -566,7 +566,7 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
 def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
     func = ARCoating()
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
+    algos = ["NaiveTBPSA", "Cobyla", "ParaSQP", "ParaPowell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
              "OnePlusOne", "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
     # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
     for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
@@ -626,7 +626,7 @@ class PackedFunctions(MultiobjectiveFunction):
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "ParaSQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
