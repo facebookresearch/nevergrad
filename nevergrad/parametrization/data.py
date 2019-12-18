@@ -249,6 +249,7 @@ class Array(core.Parameter):
     # pylint: disable=unused-argument
     def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
         assert isinstance(data, np.ndarray)
+        print("in", data)
         sigma = self.sigma.value
         data_reduc = (sigma * data).reshape(instance._value.shape)
         instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
@@ -270,6 +271,7 @@ class Array(core.Parameter):
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
         """Converts array with appropriate shapes to the standard space of this instance
         """
+        print("input", data)
         sigma = self.sigma.value
         if self.bound_transform is not None:
             data = self.bound_transform.backward(data)

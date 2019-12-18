@@ -283,6 +283,10 @@ class Array(VariableLayer):
         param = p.Array(shape=dims) if self.__class__.__name__ == "Array" else p.Scalar()
         super().__init__(param)
 
+    @property
+    def _var(self) -> p.Array:
+        return self[0][0]  # type: ignore
+
     def asfloat(self) -> 'Array':
         raise Exception("Use Scalar class directly")
 
@@ -298,7 +302,9 @@ class Array(VariableLayer):
         base: float
         coeff: float
         """
-        return self.with_transform(transforms.Exponentiate(base=base, coeff=coeff))
+        self._var.set_mutation(exponent=base)
+        self._compatibility_parameter = None
+        return self
 
     def affined(self, a: float, b: float = 0.) -> 'Array':
         """Affine transform a * x + b
@@ -308,7 +314,10 @@ class Array(VariableLayer):
         a: float
         b: float
         """
-        return self.with_transform(transforms.Affine(a=a, b=b))
+        self._var.value = b if isinstance(self._var, p.Scalar) else b * np.ones(self._var.value.shape)
+        self._var.set_mutation(sigma=a)
+        self._compatibility_parameter = None
+        return self
 
     def bounded(self, a_min: Optional[float] = None, a_max: Optional[float] = None, transform: str = "arctan") -> 'Array':
         """Bounds all real values into [a_min, a_max] using a tanh transform.
@@ -330,12 +339,9 @@ class Array(VariableLayer):
         """
         if transform not in ["tanh", "arctan", "clipping"]:
             raise ValueError("Only 'tanh', 'clipping' and 'arctan' are allowed as transform")
-        if transform in ["arctan", "tanh"]:
-            Transf = transforms.ArctanBound if transform == "arctan" else transforms.TanhBound
-            assert a_min is not None and a_max is not None, "Only 'clipping' can be used for partial bounds"
-            return self.with_transform(Transf(a_min=a_min, a_max=a_max))
-        else:
-            return self.with_transform(transforms.Clipping(a_min, a_max))
+        self._var.set_bounds(a_min=a_min, a_max=a_max, method=transform)
+        self._compatibility_parameter = None
+        return self
 
 
 class Scalar(Array):
@@ -361,7 +367,7 @@ class Scalar(Array):
     def __init__(self, dtype: Type[Union[float, int]] = float):
         super().__init__(1)
         if dtype == int:
-            self[0][0].set_integer_casting()
+            self._var.set_integer_casting()
 
 
 class ScalarOld(ArrayOld):

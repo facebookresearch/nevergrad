@@ -99,7 +99,10 @@ def test_log_9(value: float, expected: float) -> None:
     "var,data,expected",
     [
         (variables.Log(0.9, 0.999), [0], 0.9482),
+        (variables.ArrayOld(2).affined(10, 100), [0, 3], [100, 130]),
+        (variables.Array(2).affined(10, 100), [0, 3], [100, 130]),
         (variables.ScalarOld().affined(10, 100).bounded(-200, 200), [0], 198.7269),
+        #(variables.Scalar().affined(10, 100).bounded(-200, 200), [0], 198.7269),
         (variables.ScalarOld(int).affined(10, 100).bounded(-200, 200), [0], 199),
         (variables.ScalarOld().exponentiated(10, -1), [1], 0.1),
         (variables.ScalarOld().exponentiated(2, 3), [4], 4096),
