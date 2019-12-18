@@ -19,7 +19,6 @@ from ...instrumentation.multivariables import Instrumentation
 class STSP(inst.InstrumentedFunction):
 
     def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
-        the_dimension = dimension
         state = np.random.get_state()
         np.random.set_state(seed)
         self.x = np.random.normal(the_dimension // 2)
@@ -41,5 +40,7 @@ class STSP(inst.InstrumentedFunction):
         ax = plt.subplot(1, 1, 1)
         ax.set_xlabel('iteration number')
         order = self.order
+        x = self.x
+        y = self.y
         ax.plot((x[o] for o in order), (y[o] for o in order))
         plt.savefig(filename)
