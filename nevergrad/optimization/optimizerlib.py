@@ -916,40 +916,40 @@ class Portfolio(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-@registry.register
-class ParaCobyla(Portfolio):
-    """Passive portfolio of Cobyla."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.which_optim = list(range(num_workers))
-        self.optims: List[base.Optimizer] = [Cobyla(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
-        ]
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-
-
-@registry.register
-class ParaSQP(Portfolio):
-    """Passive portfolio of SQP."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.which_optim = list(range(num_workers))
-        self.optims: List[base.Optimizer] = [SQP(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
-        ]
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-
-
-@registry.register
-class ParaPowell(Portfolio):
-    """Passive portfolio of Powell."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self.which_optim = list(range(num_workers))
-        self.optims: List[base.Optimizer] = [Powell(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
-        ]
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+#@registry.register
+#class Cobyla(Portfolio):
+#    """Passive portfolio of Cobyla."""
+#
+#    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+#        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+#        self.which_optim = list(range(num_workers))
+#        self.optims: List[base.Optimizer] = [Cobyla(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
+#        ]
+#        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+#
+#
+#@registry.register
+#class SQP(Portfolio):
+#    """Passive portfolio of SQP."""
+#
+#    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+#        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+#        self.which_optim = list(range(num_workers))
+#        self.optims: List[base.Optimizer] = [SQP(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
+#        ]
+#        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+#
+#
+#@registry.register
+#class Powell(Portfolio):
+#    """Passive portfolio of Powell."""
+#
+#    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+#        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+#        self.which_optim = list(range(num_workers))
+#        self.optims: List[base.Optimizer] = [Powell(self.instrumentation, 1) for _ in range(num_workers)  # noqa: F405
+#        ]
+#        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
 
 @registry.register
@@ -989,7 +989,7 @@ class ParaPortfolio(Portfolio):
 
 
 @registry.register
-class ParaSQPCMA(ParaPortfolio):
+class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
