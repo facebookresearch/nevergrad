@@ -1422,7 +1422,7 @@ class Chaining(base.ParametrizedFamily):
         self.budgets = tuple(budgets)
         self.optimizers = tuple(optimizers)
         assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
+        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
 chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
