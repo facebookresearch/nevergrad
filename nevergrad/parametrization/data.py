@@ -264,8 +264,10 @@ class Array(core.Parameter):
         sigma = self.sigma.value
         data_reduc = (sigma * data).reshape(instance._value.shape)
         instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
+        print("in red", instance._value)
         if instance.bound_transform is not None:
             instance._value = instance.bound_transform.forward(instance._value)
+            print(f"bounded after {instance.bound_transform}", instance._value)
         return instance
 
     def _internal_spawn_child(self) -> "Array":
@@ -282,7 +284,6 @@ class Array(core.Parameter):
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
         """Converts array with appropriate shapes to the standard space of this instance
         """
-        print("input", data)
         sigma = self.sigma.value
         if self.bound_transform is not None:
             data = self.bound_transform.backward(data)

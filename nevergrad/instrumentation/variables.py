@@ -157,9 +157,11 @@ class ArrayOld(Variable):
 
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
         assert len(data) == self.dimension
+        print("input old", data)
         array = np.array(data, copy=False)
         for transf in self.transforms:
             array = transf.forward(array)
+            print(f"input old after {transf}", array)
         if self._dtype is not None:
             out = self._dtype(array[0] if self._dtype != int else round(array[0]))
         else:
