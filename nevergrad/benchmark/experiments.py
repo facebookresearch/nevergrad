@@ -11,6 +11,7 @@ from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
 from ..functions.powersystems import PowerSystem
+from ..functions.stsp import STSP
 from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
@@ -32,7 +33,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names()
              if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
-    optims = sorted(
+    optims = ["NGO"] + sorted(
         x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
         ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
@@ -56,7 +57,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Discrete test bed, including useless variables, 5 values or 2 values per character.
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
-    optims = sorted(
+    optims = ["NGO"] + sorted(
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
@@ -101,7 +102,7 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    optims = ["PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "NGO", "CMA", "QrDE", "DE", "LhsDE"]
+    optims = ["NGO", "PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
     functions = [
         ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
         for name in names
@@ -208,7 +209,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+    optims = ["NaiveTBPSA", "TBPSA", "NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
     if not parallel:
         optims += ["SQP", "Cobyla", "Powell", "chainCMASQP"]
@@ -228,7 +229,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     ]
     for optim in optims:
         for function in functions:
-            for budget in [200, 400, 800] if not big else [40000, 80000]:
+            for budget in [200, 400, 800] if (not big and not noise) else [40000, 80000]:
                 xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
                         budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
@@ -405,6 +406,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
     # - The 007 game: 1 function, noisy.
     # - PowerSystem: a power system simulation problem.
+    # - STSP: a simple TSP problem.
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -420,6 +422,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Adding ARCoating.
     funcs += [ARCoating()]
     funcs += [PowerSystem()]
+    funcs += [STSP()]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)

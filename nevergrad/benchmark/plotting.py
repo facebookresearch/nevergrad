@@ -249,7 +249,7 @@ class XpPlotter:
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
-        logplot = not any(x < 0 for ov in optim_vals.values() for x in ov["loss"] if x < np.inf)
+        logplot = not any(x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"])  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
             for ov in optim_vals.values():
