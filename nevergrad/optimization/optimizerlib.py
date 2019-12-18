@@ -1518,12 +1518,17 @@ class NGO(base.Optimizer):
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
                     if num_workers > budget / 5:
-                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        if num_workers > budget / 2. or budget < self.dimension / 2:
+                            self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [naiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
-                        if num_workers == 1 and budget > 3000:
+                        if num_workers == 1 and budget > 6000:
                             self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            if self.dimension > 2000:
+                                self.optims = [chainDEwithMetaRecenteringsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            self.optims = [chainCMAwithMetaRecenteringsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0
