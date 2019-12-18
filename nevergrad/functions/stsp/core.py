@@ -25,13 +25,14 @@ class STSP(inst.InstrumentedFunction):
         self.x = np.random.normal(the_dimension // 2)
         self.y = np.random.normal(the_dimension // 2)
         np.random.set_state(state)
-        super().__init__(self._simulate_stsp, Instrumentation(inst.var.Array(the_dimension)))
+        super().__init__(self._simulate_stsp, Instrumentation(inst.var.Array(the_dimension - (the_dimension % 2))))
         self._descriptors.update(seed=seed)
-
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
         order = np.argsort(x)
         self.order = order
+        x = self.x
+        y = self.y
         return sum(np.sqrt((x[i]-x[i+1])**2 + (y[i]-y[i+1])**2) for i in order[:-1])
 
     def make_plots(self, filename: str = "stsp.png") -> None:
@@ -39,7 +40,6 @@ class STSP(inst.InstrumentedFunction):
         # Plot the optimization run.
         ax = plt.subplot(1, 1, 1)
         ax.set_xlabel('iteration number')
-        smoothed_losses = block(losses)
         order = self.order
         ax.plot((x[o] for o in order), (y[o] for o in order))
         plt.savefig(filename)
