@@ -8,6 +8,7 @@ import warnings
 from collections import OrderedDict
 import typing as t
 import numpy as np
+# pylint: disable=no-value-for-parameter
 
 
 BP = t.TypeVar("BP", bound="BaseParameter")
@@ -69,10 +70,6 @@ class BaseParameter:
             self._subparameters = Dict()
         assert self._subparameters is not None
         return self._subparameters
-
-    def _get_parameter_value(self, name: str) -> t.Any:
-        param = self.subparameters[name]
-        return param.value if isinstance(param, Parameter) else param
 
     @property
     def dimension(self) -> int:
@@ -360,6 +357,12 @@ class Constant(Parameter):
     def _get_name(self) -> str:
         return str(self._value)
 
+    def get_value_hash(self) -> t.Hashable:
+        try:
+            return super().get_value_hash()
+        except NotSupportedError:
+            return "#non-hashable-constant#"
+
     @property
     def value(self) -> t.Any:
         return self._value
@@ -379,6 +382,12 @@ class Constant(Parameter):
 
     def spawn_child(self: P) -> P:
         return self  # no need to create another instance for a constant
+
+    def recombine(self: P, *others: P) -> None:
+        pass
+
+    def mutate(self) -> None:
+        pass
 
 
 def as_parameter(param: t.Any) -> Parameter:
@@ -411,7 +420,7 @@ class Dict(Parameter):
 
     def __init__(self, **parameters: t.Any) -> None:
         super().__init__()
-        self._parameters: t.Dict[t.Any, t.Any] = parameters
+        self._parameters: t.Dict[t.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: t.Optional[t.Dict[str, int]] = None
 
     @property
@@ -419,14 +428,14 @@ class Dict(Parameter):
         return Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
                               for name in ("deterministic", "continuous")})
 
-    def __getitem__(self, name: t.Any) -> t.Any:
+    def __getitem__(self, name: t.Any) -> Parameter:
         return self._parameters[name]
 
     def __len__(self) -> int:
         return len(self._parameters)
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, as_parameter(p).name) for k, p in self._parameters.items())
+        params = sorted((k, p.name) for k, p in self._parameters.items())
         return ",".join(f"{k}={n}" for k, n in params)
 
     def _get_name(self) -> str:
@@ -444,10 +453,10 @@ class Dict(Parameter):
             as_parameter(self._parameters[key]).value = val
 
     def get_value_hash(self) -> t.Hashable:
-        return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if isinstance(y, Parameter)))
+        return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items()))
 
     def _internal_get_std_data(self: D, instance: D) -> np.ndarray:
-        data = {k: self[k].get_std_data(p) for k, p in instance._parameters.items() if isinstance(p, Parameter)}
+        data = {k: self[k].get_std_data(p) for k, p in instance._parameters.items()}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
@@ -472,18 +481,16 @@ class Dict(Parameter):
 
     def mutate(self) -> None:
         for param in self._parameters.values():
-            if isinstance(param, Parameter):
-                param.mutate()
+            param.mutate()
 
     def recombine(self, *others: "Dict") -> None:
         assert all(isinstance(o, self.__class__) for o in others)
         for k, param in self._parameters.items():
-            if isinstance(param, Parameter):
-                param.recombine(*[o[k] for o in others])
+            param.recombine(*[o[k] for o in others])
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()
-        child._parameters = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self._parameters.items()}
+        child._parameters = {k: v.spawn_child() for k, v in self._parameters.items()}
         return child
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
