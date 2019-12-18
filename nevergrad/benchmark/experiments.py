@@ -11,6 +11,7 @@ from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
 from ..functions.powersystems import PowerSystem
+from ..functions.stsp import STSP
 from ..functions import rl
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
@@ -403,6 +404,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
     # - The 007 game: 1 function, noisy.
     # - PowerSystem: a power system simulation problem.
+    # - STSP: a simple TSP problem.
     # MLDA stuff, except the Perceptron.
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
@@ -418,6 +420,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Adding ARCoating.
     funcs += [ARCoating()]
     funcs += [PowerSystem()]
+    funcs += [STSP()]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
