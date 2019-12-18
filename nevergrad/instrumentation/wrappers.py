@@ -18,8 +18,17 @@ class VariableWrapper(p.Instrumentation):
     def __init__(self, variable: Variable) -> None:
         super().__init__()
         self._variable = variable
-        self._data: np.ndarray = np.zeros(self._variable)
+        self._data: np.ndarray = np.zeros((self._variable.dimension,))
         self._value = self.data_to_arguments(self._data)
+
+    def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
+        return self._variable._constraint_checker(*args, **kwargs)
+
+    def set_cheap_constraint_checker(self, func: tp.Callable[..., bool]) -> None:
+        self._variable._constraint_checker = func
+
+    def _get_name(self) -> str:
+        return self._variable.name
 
     @property  # type: ignore
     def value(self) -> ArgsKwargs:  # type: ignore

@@ -16,6 +16,7 @@ import numpy as np
 from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
 from ..common.typetools import JobLike, ExecutorLike
 from .. import instrumentation as instru
+from ..instrumentation.wrappers import VariableWrapper
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
 from . import utils
@@ -117,7 +118,7 @@ class CandidateMaker:
     and/or optimizer.create_candidate.from_call(*args, **kwargs).
     """
 
-    def __init__(self, instrumentation: instru.Instrumentation) -> None:
+    def __init__(self, instrumentation: VariableWrapper) -> None:
         self._instrumentation = instrumentation
 
     def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> Candidate:
@@ -206,7 +207,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
         self._penalize_cheap_violations = False
-        self.instrumentation = (
+        self.instrumentation = VariableWrapper(
             instrumentation
             if isinstance(instrumentation, instru.Instrumentation)
             else instru.Instrumentation(instru.var.Array(instrumentation))
