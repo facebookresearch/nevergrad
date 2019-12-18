@@ -2,8 +2,8 @@
 
 #set -x -e 
 # FIXME: Should we include the module load here ?
-listxp=`grep -i1 "^def" nevergrad/benchmark/*experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
-listxp="hardmultimodal_perf multimodal_perf photonics war preliminary_asynchronous $listxp"
+listxp=`grep -iH1 "^def" nevergrad/benchmark/experiments.py | grep -i1 '@regis' | grep ':def' | sed 's/.*:def //g' | sed 's/(.*//g'`
+#listxp="hardmultimodal_perf multimodal_perf photonics war preliminary_asynchronous $listxp"
 
 echo working on $listxp
 touch allxps
@@ -15,8 +15,8 @@ echo '<a href="https://github.com/facebookresearch/nevergrad/blob/master/nevergr
 for xp in $listxp
 do
     echo working on $xp
-    echo "<br> $xp </br><p>" >> allxps/list.html
     if [ -d "../outputs/$xp" ]; then
+        echo "<br> $xp </br><p>" >> allxps/list.html
         pushd ..
         python -m dfoptim.benchmark.slurmplot outputs/$xp --max_combsize=2 --competencemaps=True
         mkdir -p nevergrad_repository/allxps/${xp}

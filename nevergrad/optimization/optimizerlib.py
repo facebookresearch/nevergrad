@@ -953,7 +953,7 @@ class ParaPortfolio(Portfolio):
 
 
 @registry.register
-class ParaSQPCMA(ParaPortfolio):
+class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -1337,6 +1337,7 @@ class _Chain(base.Optimizer):
         if not self._optimizers_:
             self._optimizers_ = []
             converter = {"num_workers": self.num_workers, "dimension": self.dimension,
+                         "half": self.budget // 2 if self.budget else self.num_workers,  # type: ignore
                          "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
@@ -1385,30 +1386,63 @@ class Chaining(base.ParametrizedFamily):
         self.budgets = tuple(budgets)
         self.optimizers = tuple(optimizers)
         assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
+        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
+chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
+chainCMASQP.no_parallelization = True
 
+chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
+chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)
+chainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).with_name("chainDEwithRdim", register=True)
+chainDEwithR30 = Chaining([RandomSearch, DE], [30]).with_name("chainDEwithR30", register=True) 
 chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwithLHS", register=True)
 chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
 chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
 chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("chainDEwithLHS30", register=True)
+chainDEwithMetaRecentering = Chaining([MetaRecentering, DE], ["num_workers"]).with_name("chainDEwithMetaRecentering", register=True)
+chainDEwithMetaRecenteringsqrt = Chaining([MetaRecentering, DE], ["sqrt"]).with_name("chainDEwithMetaRecenteringsqrt", register=True)
+chainDEwithMetaRecenteringdim = Chaining([MetaRecentering, DE], ["dimension"]).with_name("chainDEwithMetaRecenteringdim", register=True)
+chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).with_name("chainDEwithMetaRecentering30", register=True)
 
+chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).with_name("chainBOwithR", register=True)
+chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).with_name("chainBOwithRsqrt", register=True)
+chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).with_name("chainBOwithRdim", register=True)
+chainBOwithR30 = Chaining([RandomSearch, BO], [30]).with_name("chainBOwithR30", register=True) 
 chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
 chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
 chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
 chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).with_name("chainBOwithLHS", register=True)
+chainBOwithMetaRecentering30 = Chaining([MetaRecentering, BO], [30]).with_name("chainBOwithMetaRecentering30", register=True)
+chainBOwithMetaRecenteringsqrt = Chaining([MetaRecentering, BO], ["sqrt"]).with_name("chainBOwithMetaRecenteringsqrt", register=True)
+chainBOwithMetaRecenteringdim = Chaining([MetaRecentering, BO], ["dimension"]).with_name("chainBOwithMetaRecenteringdim", register=True)
+chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).with_name("chainBOwithMetaRecentering", register=True)
 
+chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).with_name("chainPSOwithR", register=True)
+chainPSOwithRsqrt = Chaining([RandomSearch, PSO], ["sqrt"]).with_name("chainPSOwithRsqrt", register=True)
+chainPSOwithRdim = Chaining([RandomSearch, PSO], ["dimension"]).with_name("chainPSOwithRdim", register=True)
+chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).with_name("chainPSOwithR30", register=True) 
 chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS30", register=True)
 chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
 chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
 chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("chainPSOwithLHS", register=True)
+chainPSOwithMetaRecentering30 = Chaining([MetaRecentering, PSO], [30]).with_name("chainPSOwithMetaRecentering30", register=True)
+chainPSOwithMetaRecenteringsqrt = Chaining([MetaRecentering, PSO], ["sqrt"]).with_name("chainPSOwithMetaRecenteringsqrt", register=True)
+chainPSOwithMetaRecenteringdim = Chaining([MetaRecentering, PSO], ["dimension"]).with_name("chainPSOwithMetaRecenteringdim", register=True)
+chainPSOwithMetaRecentering = Chaining([MetaRecentering, PSO], ["num_workers"]).with_name("chainPSOwithMetaRecentering", register=True)
 
+chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).with_name("chainCMAwithR", register=True)
+chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).with_name("chainCMAwithRsqrt", register=True)
+chainCMAwithRdim = Chaining([RandomSearch, CMA], ["dimension"]).with_name("chainCMAwithRdim", register=True)
+chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).with_name("chainCMAwithR30", register=True) 
 chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS30", register=True)
 chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
 chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
 chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
-
+chainCMAwithMetaRecentering30 = Chaining([MetaRecentering, CMA], [30]).with_name("chainCMAwithMetaRecentering30", register=True)
+chainCMAwithMetaRecenteringsqrt = Chaining([MetaRecentering, CMA], ["sqrt"]).with_name("chainCMAwithMetaRecenteringsqrt", register=True)
+chainCMAwithMetaRecenteringdim = Chaining([MetaRecentering, CMA], ["dimension"]).with_name("chainCMAwithMetaRecenteringdim", register=True)
+chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).with_name("chainCMAwithMetaRecentering", register=True)
 
 @registry.register
 class cGA(base.Optimizer):
@@ -1511,19 +1545,12 @@ class NGO(base.Optimizer):
 
         
 @registry.register
-class JNGO(base.Optimizer):
-    """Nevergrad optimizer by competence map."""
+class JNGO(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        self.has_noise = self.instrumentation.noisy
-        if self.instrumentation.probably_noisy:
-            self.has_noise = True
-        self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmax = False
-        self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
@@ -1546,24 +1573,6 @@ class JNGO(base.Optimizer):
                             self.optims = [CMA(self.instrumentation, budget, num_workers)] 
                         else:
                             self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]
-
-    def _internal_ask_candidate(self) -> base.Candidate:
-        optim_index = 0
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
-    
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        tx = tuple(candidate.data)
-        optim_index = self.who_asked[tx][0]
-        del self.who_asked[tx][0]
-        self.optims[optim_index].tell(candidate, value)
-
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.optims[0].provide_recommendation().data
-    
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
 
 
 __all__ = list(registry.keys())
