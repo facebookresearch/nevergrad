@@ -27,7 +27,7 @@ class Tuple(Dict):
 
     def __init__(self, *parameters: t.Any) -> None:
         super().__init__()
-        self._parameters.update({k: p for k, p in enumerate(parameters)})
+        self._parameters.update({k: core.as_parameter(p) for k, p in enumerate(parameters)})
 
     def _get_parameters_str(self) -> str:
         params = sorted((k, core.as_parameter(p).name) for k, p in self._parameters.items())

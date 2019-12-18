@@ -35,10 +35,11 @@ def test_array_basics() -> None:
 
 @pytest.mark.parametrize("param", [par.Dict(truc=12),  # type: ignore
                                    par.Tuple(), ])
-def test_empty_parameters(param: Parameter) -> None:
+def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
     assert not param.get_data_hash()
-    assert not param.get_value_hash()
+    if not param:  # Dict is not empty even though it is constant
+        assert not param.get_value_hash()
 
 
 def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
@@ -51,7 +52,7 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
                                    par.Scalar(1.0).set_mutation(exponent=2.),
                                    par.Dict(blublu=par.Array(shape=(2, 3)), truc=12),
                                    par.Tuple(par.Array(shape=(2, 3)), 12),
-                                   par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc=par.Array(shape=(1, 3))),
+                                   par.Instrumentation(par.Array(shape=(2,)), nonhash=[1, 2], truc=par.Array(shape=(1, 3))),
                                    par.Choice([par.Array(shape=(2,)), "blublu"]),
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
                                    ],
@@ -154,9 +155,9 @@ def test_scalar_and_mutable_sigma() -> None:
     assert data[0] == 0.0
     param.set_std_data(np.array([-0.2]))
     assert param.value == 0.5
-    assert param.sigma == 5
+    assert param.sigma.value == 5
     param.mutate()
-    assert param.sigma != 5
+    assert param.sigma.value != 5
     param.set_integer_casting()
     assert isinstance(param.value, int)
 
