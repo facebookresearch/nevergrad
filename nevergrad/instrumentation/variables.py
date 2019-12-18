@@ -7,14 +7,13 @@ from functools import reduce
 import operator
 import warnings
 import numpy as np
-from nevergrad.parametrization import discretization
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import parameter as p
 from nevergrad.common.typetools import ArrayLike
 from .core import ArgsKwargs
 from .core import Variable as Variable
 from .core import VariableLayer
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,too-many-ancestors
 
 
 __all__ = ["SoftmaxCategorical", "UnorderedDiscrete", "OrderedDiscrete", "Gaussian", "Array", "Scalar"]
@@ -32,7 +31,7 @@ class SoftmaxCategorical(VariableLayer):
         super().__init__(p.Choice(choices=possibilities, deterministic=deterministic))
 
 
-class UnorderedDiscrete(Variable):
+class UnorderedDiscrete(VariableLayer):
     """Discrete list of n values transformed to a 1-dim discontinuous variable.
     A gaussian input yields a uniform distribution on the list of variables.
 
@@ -47,29 +46,8 @@ class UnorderedDiscrete(Variable):
     """
 
     def __init__(self, possibilities: List[Any]) -> None:
-        super().__init__()
-        self.possibilities = list(possibilities)
-        name = "OD({})".format(str(possibilities).strip("[],").replace(" ", ""))
-        self._specs.update(continuous=False, dimension=1, name=name)
-        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
-                                        "for the Instrumentation intialization")
+        super().__init__(p.TransitionChoice(choices=possibilities))
 
-    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
-        index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
-        return wrap_arg(self.possibilities[index])
-
-    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
-        arg = args[0]
-        assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-        index = self.possibilities.index(arg)
-        out = discretization.inverse_threshold_discretization([index], len(self.possibilities))
-        return np.array(out, copy=False)
-
-    def _short_repr(self) -> str:
-        return "OD({})".format(",".join([str(x) for x in self.possibilities]))
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.possibilities})"
 
 # The ordered discrete variables are a special case of unordered discrete.
 # Basically they are represented the exact same way, as Gaussian quantiles:

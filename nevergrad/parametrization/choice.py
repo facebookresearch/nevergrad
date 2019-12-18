@@ -43,8 +43,6 @@ class BaseChoice(core.Dict):
 
     @property
     def value(self) -> t.Any:
-        print("inside", self.choices[self.index])
-        print("returning", core.as_parameter(self.choices[self.index]).value)
         return core.as_parameter(self.choices[self.index]).value
 
     @value.setter
