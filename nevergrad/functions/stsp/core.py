@@ -23,8 +23,8 @@ class STSP(inst.InstrumentedFunction):
 
     def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
         instrumentation = Instrumentation(inst.var.Array(the_dimension))
-        self.x = instrumentation.random.normal(size=the_dimension)
-        self.y = instrumentation.random.normal(size=the_dimension)
+        self.x = instrumentation.random_state.normal(size=the_dimension)
+        self.y = instrumentation.random_state.normal(size=the_dimension)
         super().__init__(self._simulate_stsp, instrumentation)
         self._descriptors.update(seed=seed)
 
