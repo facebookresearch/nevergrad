@@ -8,7 +8,7 @@ listxp="hardmultimodal_perf multimodal_perf photonics war preliminary_asynchrono
 listxp=${1:-$listxp}
 touch allxps
 rm -rf allxps
-T=3600
+T=7200
 for xp in $listxp
 do  
     pushd ..
