@@ -22,12 +22,10 @@ from ...instrumentation.multivariables import Instrumentation
 class STSP(inst.InstrumentedFunction):
 
     def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
-        state = np.random.get_state()
-        np.random.seed(seed)
-        self.x = np.random.normal(size=the_dimension)
-        self.y = np.random.normal(size=the_dimension)
-        np.random.set_state(state)
-        super().__init__(self._simulate_stsp, Instrumentation(inst.var.Array(the_dimension)))
+        instrumentation = Instrumentation(inst.var.Array(the_dimension))
+        self.x = instrumentation.random.normal(size=the_dimension)
+        self.y = instrumentation.random.normal(size=the_dimension)
+        super().__init__(self._simulate_stsp, instrumentation)
         self._descriptors.update(seed=seed)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:

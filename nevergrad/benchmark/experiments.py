@@ -33,7 +33,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names()
              if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
-    optims = sorted(
+    optims = ["NGO"] + sorted(
         x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
         ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
@@ -57,7 +57,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
-    optims = sorted(
+    optims = ["NGO"] + sorted(
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
@@ -102,7 +102,7 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    optims = ["PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
+    optims = ["NGO", "PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
     functions = [
         ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
         for name in names
