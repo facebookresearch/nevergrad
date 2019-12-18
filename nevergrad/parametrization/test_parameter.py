@@ -203,6 +203,7 @@ def test_log() -> None:
 
 def test_ordered_choice() -> None:
     choice = par.TransitionChoice([0, 1, 2, 3], transitions=[-1000000, 10])
+    assert len(choice) == 4
     assert choice.value == 2
     choice.value = 1
     assert choice.value == 1

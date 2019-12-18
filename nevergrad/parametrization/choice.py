@@ -26,6 +26,11 @@ class BaseChoice(core.Dict):
         lchoices = list(choices)  # for iterables
         super().__init__(choices=Tuple(*lchoices), **kwargs)
 
+    def __len__(self) -> int:
+        """Number of choices
+        """
+        return len(self.choices)
+
     @property
     def descriptors(self) -> core.Descriptors:
         return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
