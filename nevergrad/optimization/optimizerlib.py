@@ -1373,7 +1373,7 @@ class _Chain(base.Optimizer):
         if not self._optimizers_:
             self._optimizers_ = []
             converter = {"num_workers": self.num_workers, "dimension": self.dimension,
-                         "half": self.budget // 2 if budget else self.num_workers,
+                         "half": self.budget // 2 if budget else self.num_workers,  # type: ignore
                          "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
