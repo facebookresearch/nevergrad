@@ -357,6 +357,12 @@ class Constant(Parameter):
     def _get_name(self) -> str:
         return str(self._value)
 
+    def get_value_hash(self) -> t.Hashable:
+        try:
+            return super().get_value_hash()
+        except NotSupportedError:
+            return "#non-hashable-constant#"
+
     @property
     def value(self) -> t.Any:
         return self._value
@@ -447,7 +453,7 @@ class Dict(Parameter):
             as_parameter(self._parameters[key]).value = val
 
     def get_value_hash(self) -> t.Hashable:
-        return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items() if not isinstance(y, Constant)))
+        return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items()))
 
     def _internal_get_std_data(self: D, instance: D) -> np.ndarray:
         data = {k: self[k].get_std_data(p) for k, p in instance._parameters.items()}
