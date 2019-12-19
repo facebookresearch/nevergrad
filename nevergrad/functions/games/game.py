@@ -220,10 +220,7 @@ class _Game(object):
             np.random.set_state(np_state)
             return result
         else:
-            np_state = np.random.get_state()
-            np.random.seed()
             result = np.random.randint(board.NN)
-            np.random.set_state(np_state)
             return result
 
     def phantomgo_play_game(self, policy1, policy2, size=7):
