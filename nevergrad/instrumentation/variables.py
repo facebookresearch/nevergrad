@@ -209,8 +209,7 @@ class Array(Variable):
         dim = reduce(operator.mul, self.shape, 1)  # muuuch faster than numpy version (which converts to array)
         self._specs.update(dimension=dim)
 
-    @property
-    def name(self) -> str:
+    def _get_name(self) -> str:
         if self._specs.name is not None:
             return self._specs.name
         # dynamic naming

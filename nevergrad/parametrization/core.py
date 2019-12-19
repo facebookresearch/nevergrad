@@ -520,7 +520,7 @@ class Dict(Parameter):
         """
         child = self.spawn_child()
         if self.__class__.__name__ == "Instrumentation":
-            child.value = (args, kwargs)
+            child.value = (args, kwargs)  # type: ignore
         else:
             child.value = args[0]
         return child.get_std_data()
@@ -546,6 +546,6 @@ class Dict(Parameter):
         if self.__class__.__name__ == "Instrumentation":
             return child.value  # type: ignore
         else:
-            return (child.value), {}
+            return (child.value,), {}
 
 # # # END OF COMPATIBILITY REQUIREMENT
