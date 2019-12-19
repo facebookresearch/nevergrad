@@ -1,5 +1,8 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # We have two versions of the game:
 # version 1: oteytaud's version, simple.
 # version 2: version as in https://stackoverflow.com/questions/1631414/what-is-the-best-battleship-ai
