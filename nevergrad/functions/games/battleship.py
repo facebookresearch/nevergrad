@@ -65,12 +65,11 @@ class battleship(object):
             for j in range(self.N):
                 if candidate_board.board[i][j] == "o" and self.board[i][j] != "x":
                     possible_shoots += [(i, j)]
-        random.seed()
         s = random.choice(possible_shoots)
         self.shoot(s[0], s[1])
 
     def good_shoot(self, policy):
-        random.seed()
+        state = random.get_state()
         if policy is not None:
             index = 0
             random.seed(17)
@@ -112,6 +111,7 @@ class battleship(object):
                 max_num = possible_shoots[s]
                 best_shoot = s
         self.shoot(best_shoot[0], best_shoot[1])
+        random.set_state(state)
 
     def compliant_board(self):
         # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -186,7 +186,7 @@ class battleship(object):
                 print(candidate)
                 print(" ... should cover:")
                 print(self)
-                print("Available ships:", available_ships)
+                print(f"Remaining ships : {available_ships}")
 
             # Now let us put the remaining ships!
             while available_ships and not failed:
@@ -257,7 +257,7 @@ class battleship(object):
         # return [5, 4, 3, 2, 2] # [5] + [4]*2 + [3]*7 + [2]*4
 
     def fill(self, s=None):
-        random.seed()
+        state = random.get_state()
         if s is not None:
             s = random.choice([s[i] for i in range(self.short_policy)])
             random.seed(s)
@@ -284,6 +284,7 @@ class battleship(object):
                         self.board[x+i*dx][y+i*dy] = 'o'
                         self.alive += 1
                     break
+        random.set_state(state)
 
     def shoot(self, x, y):
         assert x >= 0
