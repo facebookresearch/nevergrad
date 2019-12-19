@@ -155,7 +155,7 @@ class _Constant(Variable):
 
     def __init__(self, value: Any) -> None:
         super().__init__()
-        self.value = value
+        self._c_value = value
         self._specs.update(dimension=0, name=str(value))
 
     @classmethod
@@ -163,20 +163,20 @@ class _Constant(Variable):
         return x if isinstance(x, Variable) else cls(x)
 
     def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
-        return wrap_arg(self.value)
+        return wrap_arg(self._c_value)
 
     def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
-        assert args[0] == self.value, f'{args[0]} != {self.value}'
+        assert args[0] == self._c_value, f'{args[0]} != {self._c_value}'
         return np.array([])
 
     def get_summary(self, data: ArrayLike) -> str:
         raise RuntimeError("Constant summary should not be called")
 
     def _short_repr(self) -> str:
-        return f"{self.value}"
+        return f"{self._c_value}"
 
     def __repr__(self) -> str:
-        return f"Constant({self.value})"
+        return f"Constant({self._c_value})"
 
 
 class Array(Variable):
