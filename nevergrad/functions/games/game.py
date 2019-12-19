@@ -424,6 +424,7 @@ class Game(inst.InstrumentedFunction):
         # We play a game as player 1.
         np_state = np.random.get_state()
         np.random.seed(self.instrumentation.random_state.randint(2**32, dtype=np.uint32))
+        np.random.seed(3)
         p1 = x[:(self.dimension // 2)]
         p2 = self.instrumentation.random_state.normal(size=self.dimension // 2)
         r = self.game_object.play_game(self.game, p1, p2)
