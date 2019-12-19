@@ -19,7 +19,7 @@ class VariableWrapper(p.Instrumentation):
         super().__init__()
         self._variable: Variable = variable._variable if isinstance(variable, VariableWrapper) else variable
         self._data: np.ndarray = np.zeros((self._variable.dimension,))
-        self._value = self.data_to_arguments(self._data)
+        self._value: tp.Optional[ArgsKwargs] = None
 
     def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
         return self._variable._constraint_checker(*args, **kwargs)
@@ -32,6 +32,8 @@ class VariableWrapper(p.Instrumentation):
 
     @property  # type: ignore
     def value(self) -> ArgsKwargs:  # type: ignore
+        if self._value is None:
+            self._value = self.data_to_arguments(self._data)
         return self._value
 
     @value.setter

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict, Union
+from typing import Optional, Callable, Dict
 import numpy as np
 from scipy import optimize as scipyoptimize
 from . import base
