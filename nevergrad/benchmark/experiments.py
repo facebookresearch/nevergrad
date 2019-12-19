@@ -474,7 +474,7 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 # BETA --- use at your own risk.
 # FIXME: not registered for now, as it's slow and not much tested.
 # @registry.register
-def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
+def slowgames(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = []
     funcs += [game.Game("phantomgo")]
     funcs += [game.Game("phantomgo9")]
