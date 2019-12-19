@@ -1,4 +1,14 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 from __future__ import absolute_import, division, print_function, unicode_literals
+from typing import Any
+from typing import List
+#import matplotlib.pyplot as plt
+from ... import instrumentation as inst
+from ...instrumentation.multivariables import Instrumentation
 import numpy as np
 from .board import Position as Position7
 from .board import EMPTY_BOARD as EMPTY_BOARD7
@@ -19,6 +29,21 @@ class Game(object):
         self.history1 = []
         self.history2 = []
         self.batawaf = False
+        self.converter = {
+                "flip": lambda p1, p2: self.flip_play_game(p1, p2),
+                "batawaf": lambda p1, p2: self.war_play_game(p1, p2, batawaf=True),
+                "war": lambda p1, p2: self.war_play_game(p1, p2),
+                "guesswho": lambda p1, p2: self.guesswho_play_game(p1, p2),
+                "bigguesswho": lambda p1, p2: self.guesswho_play_game(p1, p2, init=96),
+                "phamtomgo": lambda p1, p2: self.phantomgo_play_game(p1, p2),
+                "phamtomgo9": lambda p1, p2: self.phantomgo_play_game(p1, p2, 9),
+                "phamtomgo19": lambda p1, p2: self.phantomgo_play_game(p1, p2, 19),
+                "battleship": lambda p1, p2: battleship.play_game(p1, p2),
+                "battleship2": lambda p1, p2: battleship.play_game(p1, p2, version=2),
+                }
+
+    def get_list_of_games(self):
+        return self.converter.keys()
 
     # If both policies are None, then we return the length of a policy (which is a list of float).
     # Otherwise we return 1 if policy1 wins, 2 if policy2 wins, and 0 in case of draw.
@@ -26,27 +51,9 @@ class Game(object):
         # pylint: disable=too-many-return-statements
         self.history1 = []
         self.history2 = []
-        if game == "flip":
-            return self.flip_play_game(policy1, policy2)
-        if game == "batawaf":
-            return self.war_play_game(policy1, policy2, batawaf=True)
-        if game == "war":
-            return self.war_play_game(policy1, policy2)
-        if game == "guesswho":
-            return self.guesswho_play_game(policy1, policy2)
-        if game == "bigguesswho":
-            return self.guesswho_play_game(policy1, policy2, init=96)
-        if game == "phantomgo":
-            return self.phantomgo_play_game(policy1, policy2)
-        if game == "phantomgo9":
-            return self.phantomgo_play_game(policy1, policy2, 9)
-        if game == "phantomgo19":
-            return self.phantomgo_play_game(policy1, policy2, 19)
-        if game == "battleship":
-            return battleship.play_game(policy1, policy2)
-        if game == "battleship2":
-            return battleship.play_game(policy1, policy2, version=2)
-        raise NotImplementedError(game)
+        if game not in self.converter:
+            raise NotImplementedError(game)
+        return converter[game](policy1, policy2)
 
     def guesswho_play_noturn(self, decks, policy):
         assert decks[0] > 0
@@ -390,15 +397,38 @@ class Game(object):
         return [c for c in cards]
 
 
-def test():
-    np.random.seed()
-    game = "war"
-    game = "phantomgo"
-    game = "flip"
-    dimension = Game().play_game(game)
-    res = []
-    for _ in range(10000):
-        res += [Game().play_game(game, np.random.uniform(0, 0, dimension), None)]
-        print(float(sum(1 if r == 2 else 0 if r == 1 else 0.5 for r in res)) / len(res))
+# Real life is more complicated! This is a very simple model.
+# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
+class PowerSystem(inst.InstrumentedFunction):
+    """
+    Parameters
+    ----------
+    nint intaum_stocks: number of stocks to be managed
+    depth: number of layers in the neural networks
+    width: number of neurons per hidden layer
+    """
+
+    def __init__(self, game: str = "war") -> None:
+        self.game = game
+        self.game_object = Game()
+        the_dimension = self.game_object.play_game(self.game) * 2
+        instrumentation = Instrumentation(inst.var.Array(the_dimension))
+        super().__init__(self._simulate_game, instrumentation)
+        self._descriptors.update(game=game)
+
+    def _simulate_game(self, x: np.ndarray) -> float:
+        # We play a game as player 1.
+        p1 = x[:(self.dimension / 2)]
+        p2 = self.instrumentation.random.state.normal(self.dimension / 2)
+        r = self.game_object.play_game(self.game, p1, p2)
+        result =  0. if r == 1 else 0.5 if r == 0 else 1.
+        # We play a game as player 2.
+        p1 = self.instrumentation.random.state.normal(self.dimension / 2)
+        p2 = x[(self.dimension / 2):]
+        r = self.game_object.play_game(self.game, p1, p2)
+        return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
+
+
+
 
 
