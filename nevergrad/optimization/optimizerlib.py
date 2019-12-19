@@ -1497,6 +1497,7 @@ class cGA(base.Optimizer):
 @registry.register
 class NGO(base.Optimizer):
     """Nevergrad optimizer by competence map."""
+    one_shot = True
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
@@ -1506,29 +1507,31 @@ class NGO(base.Optimizer):
         if self.instrumentation.probably_noisy:
             self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmax = False
         self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
+            # noise and discrete: let us merge evolution and bandits.
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
         else:
-            if self.has_noise:
+            if self.has_noise and self.fully_continuous:
+                # This is the real of population control. FIXME: should we pair with a bandit ?
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
-                if self.has_discrete_not_softmax or self.instrumentation.scrambled:
+                if self.has_discrete_not_softmax or self.instrumentation.scrambled or not self.fully_continuous:
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
                     if num_workers > budget / 5:
-                        if num_workers > budget / 2. or budget < self.dimension / 2:
+                        if num_workers > budget / 2. or budget < self.dimension:
                             self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
                             self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
-                        if num_workers == 1 and budget > 6000:
-                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        if num_workers == 1 and budget > 6000:  # Let us go memetic.
+                            self.optims = [chainCMASQP(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            if self.dimension > 2000:
-                                self.optims = [chainDEwithMetaRecenteringsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
-                            self.optims = [chainCMAwithMetaRecenteringsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            if self.dimension > 2000:  # DE is great in such a case.
+                                self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            else:
+                                self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0
