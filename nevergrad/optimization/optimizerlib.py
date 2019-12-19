@@ -1494,6 +1494,8 @@ class cGA(base.Optimizer):
             self._previous_value_candidate = None
 
 
+# Discussions with Jialin Liu and Fabien Teytaud helped the following development.
+# This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
 @registry.register
 class NGO(base.Optimizer):
     """Nevergrad optimizer by competence map."""

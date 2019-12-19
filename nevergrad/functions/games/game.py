@@ -3,6 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# Discussions with Tristan Cazenave, Bruno Bouzy, have been helpful.
+# Dagstuhl's 2019 seminar on games has been helpful (seminar 19511).
+
 from typing import Any
 from typing import List
 #import matplotlib.pyplot as plt
