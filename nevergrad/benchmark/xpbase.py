@@ -9,11 +9,11 @@ import random
 import warnings
 import traceback
 from typing import Dict, Union, Any, Optional, Iterator, Type, Callable, Tuple
-import torch
 import numpy as np
 from ..common import decorators
 from .. import instrumentation as instru
 from ..functions import utils as futils
+from ..functions.rl.agents import torch
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
