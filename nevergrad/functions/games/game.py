@@ -103,7 +103,6 @@ class _Game(object):
     def flip_play_game(self, policy1, policy2):
         if policy1 is None and policy2 is None:
             return 57*57
-        np.random.seed()
         if np.random.uniform(0., 1.) > .5:
             r = self.flip_play_game_nosym(policy2, policy1)
             return 1 if r == 2 else 2 if r == 1 else 0
@@ -215,15 +214,21 @@ class _Game(object):
 
     def phantomgo_choose(self, policy, history):
         if policy is not None and history < len(policy):
+            np_state = np.random.get_state()
             np.random.seed(hash(policy[history]))
+            result = np.random.randint(board.NN)
+            np.random.set_state(np_state)
+            return result
         else:
+            np_state = np.random.get_state()
             np.random.seed()
-        return np.random.randint(board.NN)
+            result = np.random.randint(board.NN)
+            np.random.set_state(np_state)
+            return result
 
     def phantomgo_play_game(self, policy1, policy2, size=7):
         if policy1 is None and policy2 is None:
             return 20000
-        np.random.seed()
         if np.random.uniform(0., 1.) < .5:
             result = self.internal_phantomgo_play_game(policy2, policy1, size)
             return 1 if result == 2 else 2 if result == 1 else 0
@@ -256,7 +261,6 @@ class _Game(object):
         history1 = 1  # Player 1 starts.
         history2 = 2
 
-        np.random.seed()
         random_rot = np.random.randint(8)
 
         def transformation(x):
