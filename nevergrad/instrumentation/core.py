@@ -5,8 +5,12 @@
 
 import copy
 from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
+import typing as tp
 import numpy as np
-from ..common.typetools import ArrayLike
+from nevergrad.common.typetools import ArrayLike
+from ..parametrization.core import Descriptors
+from ..parametrization import parameter as p
+# pylint: disable=no-value-for-parameter
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 T = TypeVar('T', bound="Variable")
@@ -40,12 +44,21 @@ def _default_checker(*args: Any, **kwargs: Any) -> bool:  # pylint: disable=unus
     return True
 
 
-class Variable:
+class Variable(p.Instrumentation):
 
     def __init__(self) -> None:
-        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
+        super().__init__()
         self._specs = VarSpecs()
         self._constraint_checker = _default_checker
+        # compatibility
+        self._data: tp.Optional[np.ndarray] = None
+        self._value: tp.Optional[ArgsKwargs] = None
+
+    @property
+    def data(self) -> np.ndarray:
+        if self._data is None:
+            self._data = np.zeros((self.dimension,))
+        return self._data
 
     def set_cheap_constraint_checker(self, func: Callable[..., bool]) -> None:
         self._constraint_checker = func
@@ -53,38 +66,18 @@ class Variable:
     def cheap_constraint_check(self, *args: Any, **kwargs: Any) -> bool:
         return self._constraint_checker(*args, **kwargs)
 
-    @property
-    def random_state(self) -> np.random.RandomState:
-        """Random state the instrumentation and the optimizers pull from.
-        It can be seeded/replaced.
-        """
-        if self._random_state is None:
-            # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)
-            self._set_random_state(np.random.RandomState(seed))
-        assert self._random_state is not None
-        return self._random_state
-
-    @random_state.setter
-    def random_state(self, random_state: np.random.RandomState) -> None:
-        self._set_random_state(random_state)
-
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
+
+    def _get_name(self) -> str:
+        if self._specs.name is not None:
+            return self._specs.name
+        return repr(self)
 
     def with_name(self: T, name: str) -> T:
         """Sets a name and return the current instrumentation (for chaining)
         """
-        self._specs.update(name=name)
-        return self
-
-    @property
-    def name(self) -> str:
-        """Short identifier for the variables
-        """
-        if self._specs.name is not None:
-            return self._specs.name
-        return repr(self)
+        return self.set_name(name)
 
     def copy(self: T) -> T:  # TODO, use deepcopy directly in the code if it works?
         """Return a new instrumentation with the same variable and same name
@@ -157,3 +150,44 @@ class Variable:
     def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
         output = self.data_to_arguments(np.array(data, copy=False), deterministic=True)
         return f"Value {output[0][0]}, from data: {data}"
+
+    # compatibility
+    @property  # type: ignore
+    def value(self) -> ArgsKwargs:  # type: ignore
+        if self._value is None:
+            self._value = self.data_to_arguments(self.data)
+        return self._value
+
+    @value.setter
+    def value(self, value: ArgsKwargs) -> None:
+        self._value = value
+        self._data = self.arguments_to_data(*value[0], **value[1])
+
+    @property
+    def args(self) -> tp.Tuple[tp.Any, ...]:
+        return self.value[0]
+
+    @property
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
+        return self.value[1]
+
+    def _internal_get_std_data(self: T, instance: T) -> np.ndarray:
+        return instance.data
+
+    def _internal_set_std_data(self: T, data: np.ndarray, instance: T, deterministic: bool = False) -> T:
+        instance._data = data
+        self._value = instance.data_to_arguments(self.data, deterministic=deterministic)
+        return instance
+
+    def _internal_spawn_child(self: T) -> T:
+        return copy.deepcopy(self)
+
+    @property
+    def descriptors(self) -> Descriptors:
+        return Descriptors(continuous=self.continuous, deterministic=not self.noisy)
+
+    def mutate(self) -> None:
+        raise p.NotSupportedError("Please port your code to new parametrization")
+
+    def recombine(self: T, *others: T) -> None:  # type: ignore
+        raise p.NotSupportedError("Please port your code to new parametrization")
