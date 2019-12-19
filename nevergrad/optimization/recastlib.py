@@ -7,12 +7,13 @@ from typing import Optional, Callable, Dict, Union
 import numpy as np
 from scipy import optimize as scipyoptimize
 from . import base
+from .base import Parameter
 from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
-        self, instrumentation: Union[int, base.instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ScipyOptimizer()

@@ -24,6 +24,7 @@ from . import utils
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "Candidate", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
+Parameter = Union[instru.Instrumentation, int]
 
 
 def load(cls: Type[X], filepath: Union[str, Path]) -> X:
