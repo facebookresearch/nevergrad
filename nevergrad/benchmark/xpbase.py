@@ -151,7 +151,7 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.Candidate] = None
         self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
-        self._cheap_constraint_checker = cheap_constraint_checker
+        self._cheap_constraint_checker = cheap_constraint_checker  # TODO: remove, and only use (future) parameter
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
