@@ -142,7 +142,7 @@ class Choice(BaseChoice):
         self._index = index
         # force new probabilities
         out = discretization.inverse_softmax_discretization(self.index, len(self))
-        self.weights.set_std_data(out, deterministic=True)
+        self.weights.set_standardized_data(out, deterministic=True)
         return index
 
     def _draw(self, deterministic: bool = True) -> None:
@@ -150,8 +150,8 @@ class Choice(BaseChoice):
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(weights, weights.size, random=random)[0])
 
-    def _internal_set_std_data(self: C, data: np.ndarray, instance: C, deterministic: bool = False) -> C:
-        super()._internal_set_std_data(data, instance=instance, deterministic=deterministic)
+    def _internal_set_standardized_data(self: C, data: np.ndarray, instance: C, deterministic: bool = False) -> C:
+        super()._internal_set_standardized_data(data, instance=instance, deterministic=deterministic)
         instance._draw(deterministic=deterministic)
         return instance
 
