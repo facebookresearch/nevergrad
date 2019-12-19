@@ -200,10 +200,8 @@ class _Game:
 
     def phantomgo_choose(self, policy, history):
         if policy is not None and history < len(policy):
-            np_state = np.random.get_state()
-            np.random.seed(hash(policy[history]))
-            result = np.random.randint(board.NN)
-            np.random.set_state(np_state)
+            state = np.random.RandomState(hash(policy[history]))
+            result = state.randint(board.NN)
             return result
         else:
             result = np.random.randint(board.NN)
