@@ -14,7 +14,7 @@ from ...instrumentation.multivariables import Instrumentation
 import numpy as np
 
 
-class _Game(object):
+class _Game:
     def __init__(self):
         self.verbose = False
         self.history1 = []
