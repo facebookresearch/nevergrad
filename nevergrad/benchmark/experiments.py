@@ -11,7 +11,7 @@ from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
 from ..functions import rl
-from ..games import game
+from ..functions.games import game
 from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment
 from .xpbase import create_seed_generator
