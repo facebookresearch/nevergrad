@@ -387,9 +387,9 @@ class _Game(object):
         c = cards[0]  # at most 13
         # print(a, b, c, a*26*13+b*13+c, len(policy))
         if self.batawaf:
-            seed = policy[a*18*6+b*6+c]
+            seed = policy[a*18*6+b*6+c]  # type: ignore
         else:
-            seed = policy[a*26*13+b*13+c]
+            seed = policy[a*26*13+b*13+c]  # type: ignore
         if seed == 0.:
             return cards
         state = np.random.RandomState(hash(seed) % (2**32))
