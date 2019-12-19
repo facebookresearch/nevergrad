@@ -411,7 +411,7 @@ class Game(inst.InstrumentedFunction):
     def __init__(self, game: str = "war") -> None:
         self.game = game
         self.game_object = _Game()
-        the_dimension = self.game_object.play_game(self.game) * 2
+        the_dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
         instrumentation = Instrumentation(inst.var.Array(the_dimension))
         super().__init__(self._simulate_game, instrumentation)
         self.instrumentation.probably_noisy = True
@@ -422,11 +422,11 @@ class Game(inst.InstrumentedFunction):
         # FIXME: an adaptive opponent, e.g. bandit, would be better.
         # We play a game as player 1.
         p1 = x[:(self.dimension // 2)]
-        p2 = self.instrumentation.random_state.normal(size=self.dimension / 2)
+        p2 = self.instrumentation.random_state.normal(size=self.dimension // 2)
         r = self.game_object.play_game(self.game, p1, p2)
         result =  0. if r == 1 else 0.5 if r == 0 else 1.
         # We play a game as player 2.
-        p1 = self.instrumentation.random_state.normal(size=self.dimension / 2)
+        p1 = self.instrumentation.random_state.normal(size=self.dimension // 2)
         p2 = x[(self.dimension // 2):]
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
