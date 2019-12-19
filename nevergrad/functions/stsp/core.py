@@ -21,11 +21,12 @@ from ...instrumentation.multivariables import Instrumentation
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
 class STSP(inst.InstrumentedFunction):
 
-    def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
-        instrumentation = Instrumentation(inst.var.Array(the_dimension))
-        self.x = instrumentation.random_state.normal(size=the_dimension)
-        self.y = instrumentation.random_state.normal(size=the_dimension)
+    def __init__(self, seed: int = 0, dimension: int = 500) -> None:
+        instrumentation = Instrumentation(inst.var.Array(dimension))
+        self.x = instrumentation.random_state.normal(size=dimension)
+        self.y = instrumentation.random_state.normal(size=dimension)
         super().__init__(self._simulate_stsp, instrumentation)
+        self.order = np.argsort(self.x)  # heuristic order.
         self._descriptors.update(seed=seed)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
