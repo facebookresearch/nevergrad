@@ -58,6 +58,10 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
                                    ],
                          )
 def test_parameters_basic_features(param: Parameter) -> None:
+    check_parameter_features(param)
+
+
+def check_parameter_features(param: Parameter) -> None:
     seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
@@ -67,14 +71,19 @@ def test_parameters_basic_features(param: Parameter) -> None:
     child = param.spawn_child()
     assert isinstance(child, type(param))
     assert child.generation == 1
-    assert param._random_state is not None
-    child.mutate()
+    assert child.get_data_hash() == param.get_data_hash()
     assert child.name == param.name
+    assert param._random_state is not None
     assert child.random_state is param.random_state
-    assert child.get_data_hash() != param.get_data_hash()
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
-    assert child.get_data_hash() != param.get_data_hash()  # Could be the same, for TransitionChoice with constants for instance
+    mutable = True
+    try:
+        child.mutate()
+    except par.NotSupportedError:
+        mutable = False
+    else:
+        assert child.get_data_hash() != param.get_data_hash()  # Could be the same, for TransitionChoice with constants for instance
     child_hash = param.spawn_child()
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
@@ -82,7 +91,8 @@ def test_parameters_basic_features(param: Parameter) -> None:
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
         assert param.get_data_hash() == child_hash.get_data_hash()
-    param.recombine(child, child)
+    if mutable:
+        param.recombine(child, child)
     # constraints
     param.register_cheap_constraint(_true)
     with pytest.warns(UserWarning):

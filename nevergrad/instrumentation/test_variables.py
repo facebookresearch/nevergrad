@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 import pytest
 import numpy as np
 from . import variables
 from .variables import wrap_arg
+from ..parametrization.test_parameter import check_parameter_features
 
 
 def test_softmax_categorical_deterministic() -> None:
@@ -92,3 +94,28 @@ def test_log_9(value: float, expected: float) -> None:
     var = variables.Log(0.9, 0.999)
     out = var.data_to_arguments(np.array([value]))
     np.testing.assert_approx_equal(out[0][0], expected, significant=4)
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "var,data,expected",
+    [
+        (variables.Log(0.9, 0.999), [0], 0.9482),
+        (variables.Array(2).affined(10, 100), [0, 3], [100, 130]),
+        (variables.Scalar().affined(10, 100).bounded(-200, 200), [0], 198.7269),
+        (variables.Scalar(int).affined(10, 100).bounded(-200, 200), [0], 199),
+        (variables.Scalar().exponentiated(10, -1), [1], 0.1),
+        (variables.Scalar().exponentiated(2, 3), [4], 4096),
+        (variables.Scalar().affined(10, 100).bounded(-200, 200), [-10], 0),
+        (variables.Scalar().affined(10, 100).bounded(-200, 200, transform="clipping"), [1], 110),
+        (variables.Gaussian(3, 5, shape=(2,)), [-2, 1], [-7, 8]),
+        (variables.Gaussian(3, 5), [-2], -7),
+        (variables.OrderedDiscrete(list(range(100))), [1.4], 91),
+    ]
+)
+def test_expected_value(var: variables.Variable, data: tp.List[float], expected: tp.Any) -> None:
+    check_parameter_features(var)
+    out = var.data_to_arguments(np.array(data))[0][0]
+    if isinstance(out, np.ndarray):
+        np.testing.assert_array_almost_equal(out, expected)
+    else:
+        np.testing.assert_approx_equal(out, expected, significant=4)

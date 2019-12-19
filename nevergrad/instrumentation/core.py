@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import uuid
 import copy
 from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
 import typing as tp
@@ -10,7 +11,7 @@ import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from ..parametrization.core import Descriptors
 from ..parametrization import parameter as p
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter,too-many-ancestors
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 T = TypeVar('T', bound="Variable")
@@ -180,7 +181,10 @@ class Variable(p.Instrumentation):
         return instance
 
     def _internal_spawn_child(self: T) -> T:
-        return copy.deepcopy(self)
+        child = copy.deepcopy(self)
+        child.uid = uuid.uuid4().hex
+        child.parents_uids = []
+        return child
 
     @property
     def descriptors(self) -> Descriptors:

@@ -8,12 +8,14 @@ import warnings
 from collections import OrderedDict
 import typing as t
 import numpy as np
+from nevergrad.common.typetools import ArrayLike
 # pylint: disable=no-value-for-parameter
 
 
 BP = t.TypeVar("BP", bound="BaseParameter")
 P = t.TypeVar("P", bound="Parameter")
 D = t.TypeVar("D", bound="Dict")
+ArgsKwargs = t.Tuple[t.Tuple[t.Any, ...], t.Dict[str, t.Any]]
 
 
 class Descriptors(t.NamedTuple):
@@ -502,3 +504,48 @@ class Dict(Parameter):
     def satisfies_constraint(self) -> bool:
         compliant = super().satisfies_constraint()
         return compliant and all(param.satisfies_constraint() for param in self._parameters.values() if isinstance(param, Parameter))
+
+    # # # THE FOLLOWING IS ONLY FOR TEMPORARY (PARTIAL) COMPATIBILITY
+
+    @property
+    def continuous(self) -> bool:
+        return self.descriptors.continuous
+
+    @property
+    def noisy(self) -> bool:
+        return not self.descriptors.deterministic
+
+    def arguments_to_data(self, *args: t.Any, **kwargs: t.Any) -> np.ndarray:
+        """Converts args and kwargs into data in np.ndarray format
+        """
+        child = self.spawn_child()
+        if self.__class__.__name__ == "Instrumentation":
+            child.value = (args, kwargs)
+        else:
+            child.value = args[0]
+        return child.get_std_data()
+
+    def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
+        """Converts data to arguments
+        Parameters
+        ----------
+        data: ArrayLike (list/tuple of floats, np.ndarray)
+            the data in the optimization space
+        deterministic: bool
+            whether the conversion should be deterministic (some variables can be stochastic, if deterministic=True
+            the most likely output will be used)
+        Returns
+        -------
+        args: Tuple[Any]
+            the positional arguments corresponding to the instance initialization positional arguments
+        kwargs: Dict[str, Any]
+            the keyword arguments corresponding to the instance initialization keyword arguments
+        """
+        child = self.spawn_child()
+        child.set_std_data(np.array(data, copy=False), deterministic=deterministic)
+        if self.__class__.__name__ == "Instrumentation":
+            return child.value  # type: ignore
+        else:
+            return (child.value), {}
+
+# # # END OF COMPATIBILITY REQUIREMENT
