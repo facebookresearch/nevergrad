@@ -9,12 +9,6 @@ from typing import List
 from ... import instrumentation as inst
 from ...instrumentation.multivariables import Instrumentation
 import numpy as np
-from .board import Position as Position7
-from .board import EMPTY_BOARD as EMPTY_BOARD7
-from .board9 import Position as Position9
-from .board9 import EMPTY_BOARD as EMPTY_BOARD9
-from .board19 import Position as Position19
-from .board19 import EMPTY_BOARD as EMPTY_BOARD19
 
 
 class _Game(object):
