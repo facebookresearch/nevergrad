@@ -4,8 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as t
+import numpy as np
+from nevergrad.common.typetools import ArrayLike
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
+
+
+ArgsKwargs = t.Tuple[t.Tuple[t.Any, ...], t.Dict[str, t.Any]]
 
 
 class Tuple(Dict):
@@ -77,3 +82,47 @@ class Instrumentation(Tuple):
     @property
     def kwargs(self) -> t.Dict[str, t.Any]:
         return self[1].value  # type: ignore
+
+    # # # THE FOLLOWING IS ONLY FOR TEMPORARY (PARTIAL) COMPATIBILITY
+
+    def cheap_constraint_check(self, *args: t.Any, **kwargs: t.Any) -> bool:
+        child = self.spawn_child()
+        child.value = (args, kwargs)
+        return child.satisfies_constraint()
+
+    @property
+    def continuous(self) -> bool:
+        return self.descriptors.continuous
+
+    @property
+    def noisy(self) -> bool:
+        return not self.descriptors.deterministic
+
+    def arguments_to_data(self, *args: t.Any, **kwargs: t.Any) -> np.ndarray:
+        """Converts args and kwargs into data in np.ndarray format
+        """
+        child = self.spawn_child()
+        child.value = (args, kwargs)  # type: ignore
+        return child.get_std_data()
+
+    def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
+        """Converts data to arguments
+        Parameters
+        ----------
+        data: ArrayLike (list/tuple of floats, np.ndarray)
+            the data in the optimization space
+        deterministic: bool
+            whether the conversion should be deterministic (some variables can be stochastic, if deterministic=True
+            the most likely output will be used)
+        Returns
+        -------
+        args: Tuple[Any]
+            the positional arguments corresponding to the instance initialization positional arguments
+        kwargs: Dict[str, Any]
+            the keyword arguments corresponding to the instance initialization keyword arguments
+        """
+        child = self.spawn_child()
+        child.set_std_data(np.array(data, copy=False), deterministic=deterministic)
+        return child.value
+
+# # # END OF COMPATIBILITY REQUIREMENT

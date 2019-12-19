@@ -13,6 +13,7 @@ from numbers import Real
 from collections import deque
 from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
 import numpy as np
+from nevergrad.parametrization import parameter
 from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
 from ..common.typetools import JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -24,7 +25,7 @@ from . import utils
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "Candidate", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
-Parameter = Union[instru.Instrumentation, int]
+Parameter = Union[parameter.Instrumentation, int]
 
 
 def load(cls: Type[X], filepath: Union[str, Path]) -> X:
@@ -118,7 +119,7 @@ class CandidateMaker:
     and/or optimizer.create_candidate.from_call(*args, **kwargs).
     """
 
-    def __init__(self, instrumentation: instru.Instrumentation) -> None:
+    def __init__(self, instrumentation: parameter.Instrumentation) -> None:
         self._instrumentation = instrumentation
 
     def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> Candidate:
@@ -196,7 +197,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, instrumentation: Union[instru.Instrumentation, int], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
@@ -207,9 +208,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
         self._penalize_cheap_violations = False
-        self.instrumentation = (
+        self.instrumentation: Union[parameter.Instrumentation, instru.Instrumentation] = (
             instrumentation
-            if isinstance(instrumentation, instru.Instrumentation)
+            if not isinstance(instrumentation, (int, np.int))
             else instru.Instrumentation(instru.var.Array(instrumentation))
         )
         if not self.dimension:
@@ -660,7 +661,7 @@ class OptimizerFamily:
         return self
 
     def __call__(
-        self, instrumentation: Union[int, instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         raise NotImplementedError
 
@@ -691,7 +692,7 @@ class ParametrizedFamily(OptimizerFamily):
         super().__init__(**different)
 
     def __call__(
-        self, instrumentation: Union[int, instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         """Creates an optimizer from the parametrization
 

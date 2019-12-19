@@ -15,6 +15,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
+from nevergrad.parametrization import parameter as p
 from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
@@ -153,8 +154,12 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
         pass
 
 
+# pylint: disable=redefined-outer-name
+@pytest.mark.parametrize("with_parameter", [True, False])  # type: ignore
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
-def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+def test_optimizers_recommendation(with_parameter: bool,
+                                   name: str,
+                                   recomkeeper: RecommendationKeeper) -> None:
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
@@ -173,7 +178,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
+        param: Union[int, p.Instrumentation] = dimension if not with_parameter else p.Instrumentation(p.Array(shape=(dimension,)))
+        optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
     optim.instrumentation.random_state.seed(12)
     np.testing.assert_equal(optim.name, name)
     # the following context manager speeds up BO tests
