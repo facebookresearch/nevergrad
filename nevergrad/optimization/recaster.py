@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Optional, List, Union
 import numpy as np
 from ..common.typetools import ArrayLike
 from ..instrumentation import Instrumentation
+from .base import Parameter
 from . import base
 
 
@@ -166,7 +167,7 @@ class RecastOptimizer(base.Optimizer):
 
     recast = True
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget, num_workers=num_workers)
         self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001

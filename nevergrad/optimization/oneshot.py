@@ -10,6 +10,7 @@ from ..common.typetools import ArrayLike
 from ..instrumentation import Instrumentation
 from . import sequences
 from . import base
+from .base import Parameter
 from . import utils
 
 # In some cases we will need the average of the k best.
@@ -47,7 +48,7 @@ class OneShotOptimizer(base.Optimizer):
 
 class _RandomSearch(OneShotOptimizer):
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = RandomSearchMaker()  # updated by the parametrized family
         self._opposable_data: Optional[np.ndarray] = None
@@ -144,7 +145,7 @@ RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
 
 class _SamplingSearch(OneShotOptimizer):
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = SamplingSearch()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None

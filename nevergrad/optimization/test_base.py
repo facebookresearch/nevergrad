@@ -5,14 +5,14 @@
 
 import warnings
 from pathlib import Path
-from typing import List, Tuple, Any, Optional, Union
+from typing import List, Tuple, Any, Optional
 import pytest
 import numpy as np
 from ..common import testing
-from ..instrumentation import Instrumentation
 from . import optimizerlib
 from . import test_optimizerlib
 from . import base
+from .base import Parameter
 from . import callbacks
 
 
@@ -122,7 +122,7 @@ def test_compare(tmp_path: Path) -> None:
         x: List[Any] = []
         for j in range(6):
             x += [optimizer.ask()]
-        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data-np.array((1.,1.,1.))))
+        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data - np.array((1., 1., 1.))))
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
     print(result)
@@ -131,7 +131,7 @@ def test_compare(tmp_path: Path) -> None:
 
 class StupidFamily(base.OptimizerFamily):
 
-    def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+    def __call__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
         run = class_(instrumentation=instrumentation, budget=budget, num_workers=num_workers)
         run.name = self._repr

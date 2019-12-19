@@ -25,6 +25,7 @@ from . import utils
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "Candidate", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
+Parameter = Union[int, instru.Instrumentation, VariableWrapper]  # eventually, that will be the actual Variable
 
 
 def load(cls: Type[X], filepath: Union[str, Path]) -> X:
@@ -196,7 +197,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, instrumentation: Union[instru.Instrumentation, int], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
@@ -209,7 +210,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._penalize_cheap_violations = False
         self.instrumentation = VariableWrapper(
             instrumentation
-            if isinstance(instrumentation, instru.Instrumentation)
+            if not isinstance(instrumentation, int)
             else instru.Instrumentation(instru.var.Array(instrumentation))
         )
         if not self.dimension:
@@ -660,7 +661,7 @@ class OptimizerFamily:
         return self
 
     def __call__(
-        self, instrumentation: Union[int, instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         raise NotImplementedError
 
@@ -691,7 +692,7 @@ class ParametrizedFamily(OptimizerFamily):
         super().__init__(**different)
 
     def __call__(
-        self, instrumentation: Union[int, instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         """Creates an optimizer from the parametrization
 

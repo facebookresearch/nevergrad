@@ -15,9 +15,9 @@ class VariableWrapper(p.Instrumentation):
     """Wrap a Variable to give it the Parameter interface
     """
 
-    def __init__(self, variable: Variable) -> None:
+    def __init__(self, variable: tp.Union[Variable, "VariableWrapper"]) -> None:
         super().__init__()
-        self._variable = variable
+        self._variable: Variable = variable._variable if isinstance(variable, VariableWrapper) else variable
         self._data: np.ndarray = np.zeros((self._variable.dimension,))
         self._value = self.data_to_arguments(self._data)
 
@@ -61,8 +61,12 @@ class VariableWrapper(p.Instrumentation):
         inst._value = self.data_to_arguments(self._data)
         return inst
 
-    def _set_random_state(self, random_state: np.random.RandomState) -> None:
-        super()._set_random_state(random_state)
+    @property
+    def random_state(self) -> np.random.RandomState:
+        return self._variable.random_state
+
+    @random_state.setter
+    def random_state(self, random_state: np.random.RandomState) -> None:
         self._variable.random_state = random_state
 
     @property
@@ -110,5 +114,5 @@ class VariableWrapper(p.Instrumentation):
     def mutate(self) -> None:
         raise p.NotSupportedError("Please port your code to new parametrization")
 
-    def recombine(self: VW, *others: VW) -> None:
+    def recombine(self: VW, *others: VW) -> None:  # type: ignore
         raise p.NotSupportedError("Please port your code to new parametrization")
