@@ -23,7 +23,7 @@ from . import board19
 from . import battleship
 
 
-class Game(object):
+class _Game(object):
     def __init__(self):
         self.verbose = False
         self.history1 = []
@@ -399,7 +399,7 @@ class Game(object):
 
 # Real life is more complicated! This is a very simple model.
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class PowerSystem(inst.InstrumentedFunction):
+class Game(inst.InstrumentedFunction):
     """
     Parameters
     ----------
@@ -410,13 +410,15 @@ class PowerSystem(inst.InstrumentedFunction):
 
     def __init__(self, game: str = "war") -> None:
         self.game = game
-        self.game_object = Game()
+        self.game_object = _Game()
         the_dimension = self.game_object.play_game(self.game) * 2
         instrumentation = Instrumentation(inst.var.Array(the_dimension))
         super().__init__(self._simulate_game, instrumentation)
+        self.instrumentation.probably_noisy = True
         self._descriptors.update(game=game)
 
     def _simulate_game(self, x: np.ndarray) -> float:
+        # FIXME: an adaptive opponent, e.g. bandit, would be better.
         # We play a game as player 1.
         p1 = x[:(self.dimension // 2)]
         p2 = self.instrumentation.random_state.normal(self.dimension / 2)
@@ -427,8 +429,4 @@ class PowerSystem(inst.InstrumentedFunction):
         p2 = x[(self.dimension // 2):]
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
-
-
-
-
 
