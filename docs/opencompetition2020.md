@@ -69,9 +69,9 @@ The award committee members are:
 - Tobias Glasmachers (Ruhr-Universität Bochum, Germany)
 - Manuel Lopez-Ibanez (University of Manchester, UK)
 - Katherine Mary Malan  (University of South Africa)
-- Luís Paquete (Coimbra, Portugal)
+- Luís Paquete (University of Coimbra, Portugal)
 - Jan van Rijn (Leiden University, The Netherlands)
-- Marc Schoenauer (Inria, France)
+- Marc Schoenauer (Inria Saclay, France)
 - Thomas Weise (Hefei University, China)
 
 Our policy re. possible conflict of interest: Award committee members can not propose as winner a person with whom they worked directly during the previous 12 months. There is no restriction for coworkers of other committee members than oneself.
