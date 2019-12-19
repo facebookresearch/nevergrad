@@ -5,7 +5,8 @@
 import heapq
 from collections import deque
 from typing import List, Callable, Any, NamedTuple, Tuple, Dict, Optional, Deque
-from ..functions import PostponedObject  # this object only serves to provide delays that the executor must use to order jobs
+# this object only serves to provide delays that the executor must use to order jobs
+from ..functions import PostponedObject as PostponedObject
 
 
 class MockedTimedJob:
