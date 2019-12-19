@@ -1,10 +1,12 @@
-from . import game
-import numpy as np
+
 from typing import Any
 from typing import List
+import numpy as np
+from . import game
 
-np.random.seed()
-for g in ["war", "flip", "batawaf", "guesswho", "bigguesswho"]:
+@pytest.mark.parametrize("name", ["war", "flip", "batawaf", "guesswho", "bigguesswho"])
+def test_games(name: str) -> None
+    np.random.seed()  # TODO REMOVE THIS, IT SHOULD NEVER BE NEEDED
     dimension = game._Game().play_game(g)
     res: List[Any] = []
     for _ in range(200):
