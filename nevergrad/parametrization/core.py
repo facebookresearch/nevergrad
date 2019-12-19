@@ -33,6 +33,11 @@ class NotSupportedError(RuntimeError):
 class BaseParameter:
     """This provides the core functionality of a parameter, aka
     value, subparameters, mutation, recombination
+    
+    THIS CLASS IS ONLY INTENDED TO BE INHERITED BY "Parameter"
+    IT PROVIDES THE CORE FUNCTIONALITIES OF "Parameter"
+    AND "Parameter" ADDS SOME SECONDARY FUNCTIONALITIES.
+    IT'S ONLY TO SPLIT THE CODE FOR BETTER VISIBILITY
     """
 
     def __init__(self, **subparameters: t.Any) -> None:
