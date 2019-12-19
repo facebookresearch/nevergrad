@@ -125,4 +125,17 @@ class Instrumentation(Tuple):
         child.set_std_data(np.array(data, copy=False), deterministic=deterministic)
         return child.value  # type: ignore
 
+    def set_cheap_constraint_checker(self, func: t.Callable[..., bool]) -> None:
+        self.register_cheap_constraint(FunctionPack(func))
+
+
+class FunctionPack:
+
+    def __init__(self, func: t.Callable[..., bool]) -> None:
+        self.func = func
+
+    def __call__(self, value: ArgsKwargs) -> bool:
+        return self.func(*value[0], **value[1])
+
+
 # # # END OF COMPATIBILITY REQUIREMENT
