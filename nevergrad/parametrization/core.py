@@ -11,7 +11,6 @@ import numpy as np
 # pylint: disable=no-value-for-parameter
 
 
-BP = t.TypeVar("BP", bound="BaseParameter")
 P = t.TypeVar("P", bound="Parameter")
 D = t.TypeVar("D", bound="Dict")
 
@@ -30,21 +29,24 @@ class NotSupportedError(RuntimeError):
 
 
 # pylint: disable=too-many-instance-attributes
-class BaseParameter:
+class Parameter:
     """This provides the core functionality of a parameter, aka
     value, subparameters, mutation, recombination
-    
-    THIS CLASS IS ONLY INTENDED TO BE INHERITED BY "Parameter"
-    IT PROVIDES THE CORE FUNCTIONALITIES OF "Parameter"
-    AND "Parameter" ADDS SOME SECONDARY FUNCTIONALITIES.
-    IT'S ONLY TO SPLIT THE CODE FOR BETTER VISIBILITY
+    and additional features such as shared random state,
+    constraint check, hashes, generation and naming.
     """
 
     def __init__(self, **subparameters: t.Any) -> None:
+        # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: t.List[str] = []
         self._subparameters = None if not subparameters else Dict(**subparameters)
         self._dimension: t.Optional[int] = None
+        # Additional convenient features
+        self._random_state: t.Optional[np.random.RandomState] = None  # lazy initialization
+        self._generation = 0
+        self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
+        self._name: t.Optional[str] = None
 
     @property
     def descriptors(self) -> Descriptors:
@@ -56,16 +58,6 @@ class BaseParameter:
 
     @value.setter
     def value(self, value: t.Any) -> t.Any:
-        raise NotImplementedError
-
-    def spawn_child(self: BP) -> BP:
-        """Creates a new which only shares the same random generator than its parent
-
-        Returns
-        -------
-        Parameter
-            a new instance of the same class, with same value/parameters/subparameters/...
-        """
         raise NotImplementedError
 
     @property
@@ -94,9 +86,9 @@ class BaseParameter:
         self.subparameters.mutate()
         data = self.get_std_data()  # pylint: disable=assignment-from-no-return
         # let's assume the random state is already there (next class)
-        self.set_std_data(data + self.random_state.normal(size=data.shape), deterministic=False)  # type: ignore
+        self.set_std_data(data + self.random_state.normal(size=data.shape), deterministic=False)
 
-    def sample(self: BP) -> BP:
+    def sample(self: P) -> P:
         """Sample a new instance of the parameter.
         This usually means spawning a child and mutating it.
         """
@@ -104,7 +96,7 @@ class BaseParameter:
         child.mutate()
         return child
 
-    def recombine(self: BP, *others: BP) -> None:
+    def recombine(self: P, *others: P) -> None:
         """Update value and subparameters of this instance by combining it with
         other instances.
 
@@ -113,9 +105,9 @@ class BaseParameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise NotSupportedError(f"Recombination is not implemented for {self.name}")  # type: ignore
+        raise NotSupportedError(f"Recombination is not implemented for {self.name}")
 
-    def get_std_data(self: BP, instance: t.Optional[BP] = None) -> np.ndarray:
+    def get_std_data(self: P, instance: t.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
         The data only represent the value of this instance, not the subparameters (eg.: mutable sigma), hence it does not
@@ -143,10 +135,10 @@ class BaseParameter:
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_get_std_data(self if instance is None else instance)
 
-    def _internal_get_std_data(self: BP, instance: BP) -> np.ndarray:
-        raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")  # type: ignore
+    def _internal_get_std_data(self: P, instance: P) -> np.ndarray:
+        raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_std_data(self: BP, data: np.ndarray, instance: t.Optional[BP] = None, deterministic: bool = False) -> BP:
+    def set_std_data(self: P, data: np.ndarray, instance: t.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided instance (or self) using the standardized data.
 
         Parameters
@@ -167,10 +159,10 @@ class BaseParameter:
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_set_std_data(data, instance=self if instance is None else instance, deterministic=deterministic)
 
-    def _internal_set_std_data(self: BP, data: np.ndarray, instance: BP, deterministic: bool = False) -> BP:
-        raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")  # type: ignore
+    def _internal_set_std_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
+        raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
 
-    def from_value(self: BP, value: t.Any) -> BP:
+    def from_value(self: P, value: t.Any) -> P:
         """Creates a new instance with the provided value
         This is only a shortcut for spawning a child and updated the value
 
@@ -188,21 +180,7 @@ class BaseParameter:
         child.value = value
         return child
 
-
-# pylint: disable=abstract-method
-class Parameter(BaseParameter):
-    """This provides the core functionality of a parameter, aka
-    value, subparameters, mutation, recombination
-    and adds some additional features such as shared random state,
-    constraint check, hashes, generation and naming.
-    """
-
-    def __init__(self, **subparameters: t.Any) -> None:
-        super().__init__(**subparameters)
-        self._random_state: t.Optional[np.random.RandomState] = None  # lazy initialization
-        self._generation = 0
-        self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
-        self._name: t.Optional[str] = None
+    # PART 2 - Additional features
 
     @property
     def generation(self) -> int:
@@ -327,6 +305,13 @@ class Parameter(BaseParameter):
             self.subparameters._set_random_state(random_state)
 
     def spawn_child(self: P) -> P:
+        """Creates a new which only shares the same random generator than its parent
+
+        Returns
+        -------
+        Parameter
+            a new instance of the same class, with same value/parameters/subparameters/...
+        """
         rng = self.random_state  # make sure to create one before spawning
         child = self._internal_spawn_child()
         child._set_random_state(rng)
@@ -377,7 +362,7 @@ class Constant(Parameter):
         if not value == self._value:
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
-    def _internal_get_std_data(self: BP, instance: BP) -> np.ndarray:
+    def _internal_get_std_data(self: P, instance: P) -> np.ndarray:
         return np.array([])
 
     def _internal_set_std_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
