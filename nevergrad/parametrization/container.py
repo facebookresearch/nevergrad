@@ -102,7 +102,7 @@ class Instrumentation(Tuple):
         """Converts args and kwargs into data in np.ndarray format
         """
         child = self.spawn_child()
-        child.value = (args, kwargs)  # type: ignore
+        child.value = (args, kwargs)
         return child.get_std_data()
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
@@ -123,6 +123,6 @@ class Instrumentation(Tuple):
         """
         child = self.spawn_child()
         child.set_std_data(np.array(data, copy=False), deterministic=deterministic)
-        return child.value
+        return child.value  # type: ignore
 
 # # # END OF COMPATIBILITY REQUIREMENT
