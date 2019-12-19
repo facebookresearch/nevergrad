@@ -215,13 +215,13 @@ class TransitionChoice(BaseChoice):
 
     @property
     def transitions(self) -> Array:
-        """The weights used to draw the value
+        """The weights used to draw the step to the next value
         """
         return self["transitions"]  # type: ignore
 
     @property
     def position(self) -> Scalar:
-        """The weights used to draw the value
+        """The continuous version of the index (used when working with standardized space)
         """
         return self["position"]  # type: ignore
 
