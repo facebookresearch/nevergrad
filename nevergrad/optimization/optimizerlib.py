@@ -1518,7 +1518,7 @@ class NGO(base.Optimizer):
                 # This is the real of population control. FIXME: should we pair with a bandit ?
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
-                if self.has_discrete_not_softmax or self.instrumentation.scrambled or not self.fully_continuous:
+                if self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable or not self.fully_continuous:
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
                     if num_workers > budget / 5:
