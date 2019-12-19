@@ -6,6 +6,7 @@
 import os
 import argparse
 import itertools
+import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
@@ -13,8 +14,10 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
 from ..common import tools
 from ..common.typetools import PathLike
+from .exporttable import export_table
 
 # pylint: disable=too-many-locals
 
@@ -68,10 +71,11 @@ def _make_winners_df(df: pd.DataFrame, all_optimizers: List[str]) -> tools.Selec
 def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
     """Converts a dataframe counting number of victories into a sorted
     winrate dataframe. The algorithm which performs better than all other
-    algorithms comes first.
+    algorithms comes first. When you do not play in a category, you are
+    considered as having lost all comparisons in that category.
     """
     assert all(x == y for x, y in zip(victories.index, victories.columns))
-    winrates = victories / (victories + victories.T)
+    winrates = victories / (victories + victories.T).max(axis=1)
     # mean_win = winrates.quantile(.05, axis=1).sort_values(ascending=False)
     mean_win = winrates.mean(axis=1).sort_values(ascending=False)
     return winrates.loc[mean_win.index, mean_win.index]
@@ -101,7 +105,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget") -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget", competencemaps: bool=False) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -139,21 +143,55 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
+
+    # For the competence map case we must consider pairs of attributes, hence maxcomb_size >= 2.
+    # A competence map shows for each value of each of two attributes which algorithm was best.
+    if competencemaps:
+        max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
-        # choice of the cases with values for the fixed variables
+        orders = [len(c) for c in df.unique(fixed)]
+        if len(orders):
+            assert min(orders) == max(orders)
+            order = min(orders)
+        else:
+            order = 0
+        best_algo: List[List[str]] = []
+        if competencemaps and order == 2:  # With order 2 we can create a competence map. 
+            print("\n#trying to competence-map")
+            if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.             
+                # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
+                # (typically when attribute1 and attribute2 are correlated).
+                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                for _ in range(len(xindices)):
+                    best_algo += [[]]
+                for i in range(len(xindices)):
+                    for _ in range(len(yindices)):
+                        best_algo[i] += ["none"]
+
+        # Let us loop over all combinations of variables.
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            assert (len(casedf) == len(df)) != bool(case), "The full data should be used iff when notheing is fixed"  # safeguard
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
             fplotter = FightPlotter(data_df)
+            # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
+            if order == 2 and competencemaps and best_algo:
+                print("\n#storing data for competence-map")
+                best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
             fplotter.save(str(output_folder / name), dpi=_DPI)
+    
+        if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.       
+            print("\n# Competence map")
+            name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+            export_table(str(output_folder  / name), xindices, yindices, best_algo)
+            print("Competence map data:", fixed, case, best_algo)
+            
     plt.close("all")
-    #
-    # xp plots
+    # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
     print("# Xp plots")
     name_style = NameStyle()  # keep the same style for each algorithm
@@ -373,7 +411,10 @@ class FightPlotter:
         y_names = self.winrates.index
         self._ax.set_yticks(list(range(len(y_names))))
         self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
-        self._fig.colorbar(self._cax)  # , orientation='horizontal')
+        divider = make_axes_locatable(self._ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        #self._fig.colorbar(im, cax=cax)
+        self._fig.colorbar(self._cax, cax=cax)  # , orientation='horizontal')
         plt.tight_layout()
 
     @staticmethod
@@ -404,7 +445,8 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
-        data = np.array(winrates.iloc[:num_rows, :])
+        sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
+        data = np.array(winrates.iloc[:num_rows, :len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [(f"{name} ({100 * val:2.1f}%)").replace("Search", "") for name, val in zip(mean_win.index[:num_rows], mean_win)]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
@@ -518,12 +560,14 @@ def main() -> None:
         "--max_combsize", type=int, default=0, help="maximum number of parameters to fix (combinations) when creating experiment plots"
     )
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
+    parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize, xpaxis="pseudotime" if args.pseudotime else "budget")
+    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize if not args.competencemaps else 2,
+                 xpaxis="pseudotime" if args.pseudotime else "budget", competencemaps=args.competencemaps)
 
 
 if __name__ == "__main__":

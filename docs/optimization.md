@@ -22,8 +22,8 @@ print(recommendation)
 `recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
 In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
 
-`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
-Defining the following instrumentation instead will optimize on both `x` and `y`.
+`instrumentation=n` is a shortcut to state that the function has only one variable, continuous, of dimension `n`,
+Defining the following instrumentation instead will optimize on both `x` (continuous, dimension 2) and `y` (continuous, dimension 1).
 ```python
 instrum = ng.Instrumentation(ng.var.Array(2), y=ng.var.Array(1).asscalar())
 optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
@@ -161,7 +161,7 @@ import nevergrad as ng
 from nevergrad.functions import MultiobjectiveFunction
 import numpy as np
 
-f = MultiobjectiveFunction(multiobjective_function=lambda x: np.sum(x**2) , upper_bounds=[2.5, 2.5])
+f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x-1)**2)], upper_bounds=[2.5, 2.5])
 print(f(np.array([1.,2.])))
 
 optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.

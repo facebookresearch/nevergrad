@@ -187,6 +187,7 @@ class Instrumentation(NestedVariables):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         self.keywords: Tuple[Optional[str], ...] = ()
+        self.probably_noisy = False  # True if for some reason we conjecture that the objective function is noisy.
         self.variables: List[Variable] = []
         self._set_args_kwargs(args, kwargs)
 
