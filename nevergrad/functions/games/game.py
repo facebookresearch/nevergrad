@@ -35,9 +35,9 @@ class Game(object):
                 "war": lambda p1, p2: self.war_play_game(p1, p2),
                 "guesswho": lambda p1, p2: self.guesswho_play_game(p1, p2),
                 "bigguesswho": lambda p1, p2: self.guesswho_play_game(p1, p2, init=96),
-                "phamtomgo": lambda p1, p2: self.phantomgo_play_game(p1, p2),
-                "phamtomgo9": lambda p1, p2: self.phantomgo_play_game(p1, p2, 9),
-                "phamtomgo19": lambda p1, p2: self.phantomgo_play_game(p1, p2, 19),
+                "phantomgo": lambda p1, p2: self.phantomgo_play_game(p1, p2),
+                "phantomgo9": lambda p1, p2: self.phantomgo_play_game(p1, p2, 9),
+                "phantomgo19": lambda p1, p2: self.phantomgo_play_game(p1, p2, 19),
                 "battleship": lambda p1, p2: battleship.play_game(p1, p2),
                 "battleship2": lambda p1, p2: battleship.play_game(p1, p2, version=2),
                 }
@@ -51,9 +51,9 @@ class Game(object):
         # pylint: disable=too-many-return-statements
         self.history1 = []
         self.history2 = []
-        if game not in self.converter:
+        if game not in self.converter.keys():
             raise NotImplementedError(game)
-        return converter[game](policy1, policy2)
+        return self.converter[game](policy1, policy2)
 
     def guesswho_play_noturn(self, decks, policy):
         assert decks[0] > 0
@@ -418,13 +418,13 @@ class PowerSystem(inst.InstrumentedFunction):
 
     def _simulate_game(self, x: np.ndarray) -> float:
         # We play a game as player 1.
-        p1 = x[:(self.dimension / 2)]
-        p2 = self.instrumentation.random.state.normal(self.dimension / 2)
+        p1 = x[:(self.dimension // 2)]
+        p2 = self.instrumentation.random_state.normal(self.dimension / 2)
         r = self.game_object.play_game(self.game, p1, p2)
         result =  0. if r == 1 else 0.5 if r == 0 else 1.
         # We play a game as player 2.
-        p1 = self.instrumentation.random.state.normal(self.dimension / 2)
-        p2 = x[(self.dimension / 2):]
+        p1 = self.instrumentation.random_state.normal(self.dimension / 2)
+        p2 = x[(self.dimension // 2):]
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
 
