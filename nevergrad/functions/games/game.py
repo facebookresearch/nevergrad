@@ -402,7 +402,7 @@ class Game(inst.InstrumentedFunction):
         instrumentation = Instrumentation(inst.var.Array(the_dimension))
         super().__init__(self._simulate_game, instrumentation)
         self.instrumentation.probably_noisy = True
-        self.instrumentation.scrambled = True
+        self.instrumentation.is_nonmetrizable = True
         self._descriptors.update(game=game)
 
     def _simulate_game(self, x: np.ndarray) -> float:
