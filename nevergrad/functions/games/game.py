@@ -15,11 +15,6 @@ from .board9 import Position as Position9
 from .board9 import EMPTY_BOARD as EMPTY_BOARD9
 from .board19 import Position as Position19
 from .board19 import EMPTY_BOARD as EMPTY_BOARD19
-from . import board
-# pylint: disable=unused-import
-from . import board9
-from . import board19
-from . import battleship
 
 
 class _Game(object):
@@ -34,11 +29,6 @@ class _Game(object):
                 "war": lambda p1, p2: self.war_play_game(p1, p2),
                 "guesswho": lambda p1, p2: self.guesswho_play_game(p1, p2),
                 "bigguesswho": lambda p1, p2: self.guesswho_play_game(p1, p2, init=96),
-                "phantomgo": lambda p1, p2: self.phantomgo_play_game(p1, p2),
-                "phantomgo9": lambda p1, p2: self.phantomgo_play_game(p1, p2, 9),
-                "phantomgo19": lambda p1, p2: self.phantomgo_play_game(p1, p2, 19),
-                "battleship": lambda p1, p2: battleship.play_game(p1, p2),
-                "battleship2": lambda p1, p2: battleship.play_game(p1, p2, version=2),
                 }
 
     def get_list_of_games(self):
