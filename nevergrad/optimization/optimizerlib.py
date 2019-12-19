@@ -1514,7 +1514,7 @@ class NGO(base.Optimizer):
             if self.has_noise:
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
-                if self.has_discrete_not_softmax:
+                if self.has_discrete_not_softmax or self.instrumentation.scrambled:
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
                     if num_workers > budget / 5:
