@@ -146,6 +146,9 @@ def test_instrumentation() -> None:
     inst.mutate()
     assert len(inst.args) == 1
     assert len(inst.kwargs) == 2
+    scal = par.Scalar()
+    with pytest.raises(ValueError):
+        inst = par.Instrumentation(scal, blublu=scal)
 
 
 def test_scalar_and_mutable_sigma() -> None:

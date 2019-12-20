@@ -28,6 +28,7 @@ class Tuple(Dict):
     def __init__(self, *parameters: t.Any) -> None:
         super().__init__()
         self._parameters.update({k: core.as_parameter(p) for k, p in enumerate(parameters)})
+        self._sanity_check(list(self._parameters.values()))
 
     def _get_parameters_str(self) -> str:
         params = sorted((k, core.as_parameter(p).name) for k, p in self._parameters.items())
@@ -69,6 +70,7 @@ class Instrumentation(Tuple):
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(Tuple(*args), Dict(**kwargs))
+        self._sanity_check(list(self[0]._parameters.values()) + list(self[1]._parameters.values()))  # type: ignore
 
     @property
     def args(self) -> t.Tuple[t.Any, ...]:

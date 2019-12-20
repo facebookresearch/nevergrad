@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -414,6 +414,14 @@ class Dict(Parameter):
         super().__init__()
         self._parameters: t.Dict[t.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: t.Optional[t.Dict[str, int]] = None
+        self._sanity_check(list(parameters.values()))
+
+    def _sanity_check(self, parameters: t.List[Parameter]) -> None:
+        """Check that all subparameters are different
+        """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
+        ids = {id(p) for p in parameters}
+        if len(ids) != len(parameters):
+            raise ValueError("Don't repeat twice the same parameter")
 
     @property
     def descriptors(self) -> Descriptors:
