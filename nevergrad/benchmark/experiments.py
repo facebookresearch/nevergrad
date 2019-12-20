@@ -401,6 +401,54 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # This experiment contains:
+    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
+    # - The 007 game: 1 function, noisy.
+    # - PowerSystem: a power system simulation problem.
+    # - STSP: a simple TSP problem.
+    # MLDA stuff, except the Perceptron.
+    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+    ]
+    funcs += [
+        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+        _mlda.SammonMapping.from_mlda("Employees"),
+    ]
+    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+
+    # Adding ARCoating.
+    funcs += [ARCoating()]
+    funcs += [PowerSystem()]
+    funcs += [STSP()]
+
+    # 007 with 100 repetitions, both mono and multi architectures.
+    base_env = rl.envs.DoubleOSeven(verbose=False)
+    random_agent = rl.agents.Agent007(base_env)
+    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
+    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
+    for archi in ["mono", "multi"]:
+        agent = agent_mono if archi == "mono" else agent_multi
+        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
+        func._descriptors.update(archi=archi)
+        funcs += [func]
+
+    seedg = create_seed_generator(seed)
+    algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [budget]:
+            for algo in algos:
+                for fu in funcs:
+                    xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
 def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
@@ -417,7 +465,6 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
         _mlda.SammonMapping.from_mlda("Employees"),
     ]
-    # funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 
     # Adding ARCoating.
