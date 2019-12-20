@@ -1506,7 +1506,7 @@ class NGO(base.Optimizer):
         assert budget is not None
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.has_noise = self.instrumentation.noisy
-        if self.instrumentation.probably_noisy:
+        if self.instrumentation.handled_as_noisy:
             self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
         self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)

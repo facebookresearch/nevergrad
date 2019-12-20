@@ -399,7 +399,7 @@ class Game(inst.InstrumentedFunction):
         the_dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
         instrumentation = Instrumentation(inst.var.Array(the_dimension))
         super().__init__(self._simulate_game, instrumentation)
-        self.instrumentation.probably_noisy = True
+        self.instrumentation.handled_as_noisy = True
         self.instrumentation.is_nonmetrizable = True
         self._descriptors.update(game=game)
 

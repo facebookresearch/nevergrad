@@ -147,12 +147,12 @@ class Experiment:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         # Conjecture on the noise level.
-        if not self.function.instrumentation.probably_noisy:
+        if not self.function.instrumentation.handled_as_noisy:
             if hasattr(self.function, "_parameters") and "noise_level" in self.function._parameters and self.function._parameters["noise_level"] > 0:  # type: ignore
-                self.function.instrumentation.probably_noisy = True
+                self.function.instrumentation.handled_as_noisy = True
             if hasattr(self.function, "name") and ("nois" in str(self.function.name) or "Nois" in  # type: ignore
                 str(self.function.name) or "nois" in str(self.function) or "Nois" in str(self.function)):  # type: ignore
-                    self.function.instrumentation.probably_noisy = True
+                    self.function.instrumentation.handled_as_noisy = True
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
