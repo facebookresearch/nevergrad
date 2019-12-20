@@ -139,7 +139,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, instance: t.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: np.ndarray, *, instance: t.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided instance (or self) using the standardized data.
 
         Parameters
@@ -319,6 +319,7 @@ class Parameter:
         child._set_random_state(rng)
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
+        child._name = self._name
         child.parents_uids.append(self.uid)
         return child
 
@@ -326,6 +327,14 @@ class Parameter:
         # default implem just forwards params
         inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._parameters.items()}
         child = self.__class__(**inputs)
+        return child
+
+    def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
+        """Create a child, but remove the random state
+        This is used to run multiple experiments
+        """
+        child = self.spawn_child()
+        child.random_state = None
         return child
 
 
@@ -414,14 +423,18 @@ class Dict(Parameter):
         super().__init__()
         self._parameters: t.Dict[t.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: t.Optional[t.Dict[str, int]] = None
-        self._sanity_check(list(parameters.values()))
+        self._sanity_check(list(self._parameters.values()))
 
     def _sanity_check(self, parameters: t.List[Parameter]) -> None:
         """Check that all subparameters are different
         """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
-        ids = {id(p) for p in parameters}
-        if len(ids) != len(parameters):
-            raise ValueError("Don't repeat twice the same parameter")
+        if parameters:
+            assert all(isinstance(p, Parameter) for p in parameters)
+            print("params", parameters)
+            print([type(x) for x in parameters])
+            ids = {id(p) for p in parameters}
+            if len(ids) != len(parameters):
+                raise ValueError("Don't repeat twice the same parameter")
 
     @property
     def descriptors(self) -> Descriptors:
@@ -469,7 +482,8 @@ class Dict(Parameter):
         if self._sizes is None:
             self.get_standardized_data()
         assert self._sizes is not None
-        assert data.size == sum(v for v in self._sizes.values())
+        if data.size != sum(v for v in self._sizes.values()):
+            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}")
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():
@@ -480,6 +494,8 @@ class Dict(Parameter):
         return instance
 
     def mutate(self) -> None:
+        # pylint: disable=pointless-statement
+        self.random_state  # make sure to create one before using
         for param in self._parameters.values():
             param.mutate()
 
@@ -489,6 +505,8 @@ class Dict(Parameter):
         return child  # TODO check
 
     def recombine(self, *others: "Dict") -> None:
+        # pylint: disable=pointless-statement
+        self.random_state  # make sure to create one before using
         assert all(isinstance(o, self.__class__) for o in others)
         for k, param in self._parameters.items():
             param.recombine(*[o[k] for o in others])

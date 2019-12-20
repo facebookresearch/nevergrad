@@ -64,6 +64,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     check_parameter_features(param)
 
 
+# pylint: disable=too-many-statements
 def check_parameter_features(param: Parameter) -> None:
     seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
@@ -87,7 +88,9 @@ def check_parameter_features(param: Parameter) -> None:
         mutable = False
     else:
         assert child.get_data_hash() != param.get_data_hash()  # Could be the same, for TransitionChoice with constants for instance
+    param.set_name("blublu")
     child_hash = param.spawn_child()
+    assert child_hash.name == "blublu"
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
     if isinstance(param, par.Array):

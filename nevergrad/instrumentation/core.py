@@ -153,7 +153,7 @@ class Variable(p.Instrumentation):
         return f"Value {output[0][0]}, from data: {data}"
 
     # compatibility
-    @property  # type: ignore
+    @property
     def value(self) -> tp.Any:
         if self._value is None:
             self._value = self.data_to_arguments(self.data)
@@ -161,7 +161,7 @@ class Variable(p.Instrumentation):
 
     @value.setter
     def value(self, value: tp.Any) -> None:
-        self._value = value
+        self._value = (value,), {}
         self._data = self.arguments_to_data(value)
 
     @property
@@ -172,10 +172,10 @@ class Variable(p.Instrumentation):
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return {}
 
-    def _internal_get_std_data(self: T, instance: T) -> np.ndarray:
+    def _internal_get_standardized_data(self: T, instance: T) -> np.ndarray:
         return instance.data
 
-    def _internal_set_std_data(self: T, data: np.ndarray, instance: T, deterministic: bool = False) -> T:
+    def _internal_set_standardized_data(self: T, data: np.ndarray, instance: T, deterministic: bool = False) -> T:
         instance._data = data
         self._value = instance.data_to_arguments(self.data, deterministic=deterministic)
         return instance

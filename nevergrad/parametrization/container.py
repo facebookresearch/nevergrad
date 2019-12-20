@@ -10,6 +10,7 @@ from .core import Dict as Dict  # Dict needs to be implemented in core since it'
 from . import core
 
 
+Ins = t.TypeVar("Ins", bound="Instrumentation")
 ArgsKwargs = t.Tuple[t.Tuple[t.Any, ...], t.Dict[str, t.Any]]
 
 
@@ -87,6 +88,9 @@ class Instrumentation(Tuple):
 
     # # # THE FOLLOWING IS ONLY FOR TEMPORARY (PARTIAL) COMPATIBILITY
 
+    def with_name(self: Ins, name: str) -> Ins:
+        return self.set_name(name)
+
     def cheap_constraint_check(self, *args: t.Any, **kwargs: t.Any) -> bool:
         child = self.spawn_child()
         child.value = (args, kwargs)
@@ -105,7 +109,7 @@ class Instrumentation(Tuple):
         """
         child = self.spawn_child()
         child.value = (args, kwargs)
-        return child.get_std_data()
+        return child.get_standardized_data()
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
         """Converts data to arguments
@@ -124,11 +128,14 @@ class Instrumentation(Tuple):
             the keyword arguments corresponding to the instance initialization keyword arguments
         """
         child = self.spawn_child()
-        child.set_std_data(np.array(data, copy=False), deterministic=deterministic)
+        child.set_standardized_data(np.array(data, copy=False), deterministic=deterministic)
         return child.value  # type: ignore
 
     def set_cheap_constraint_checker(self, func: t.Callable[..., bool]) -> None:
         self.register_cheap_constraint(FunctionPack(func))
+
+    def get_summary(self, data: ArrayLike) -> str:
+        raise RuntimeError("Summary is now suppressed because new parametrization is easier to analyze")
 
 
 class FunctionPack:
