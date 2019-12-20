@@ -237,7 +237,7 @@ class Array(core.Parameter):
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
-            if self.bound_transform is not None and not self.bound_transform.name.startswith("Cl"):
+            if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
                 raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
                                    "only clipping and constraint bounding methods can accept it.")
             if exponent <= 1.0:
