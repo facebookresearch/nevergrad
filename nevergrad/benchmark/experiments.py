@@ -448,6 +448,24 @@ def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
                         yield xp
 
 
+
+@registry.register
+def simple_tsp(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[InstrumentedFunction] = [STSP(0), STSP(1), STSP(2), STSP(3)]
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "NGO", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers <= budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+                        
 @registry.register
 def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # This experiment contains:
@@ -486,7 +504,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         funcs += [func]
 
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NGO", "NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
