@@ -144,7 +144,7 @@ class Array(core.Parameter):
         child = self.spawn_child()
         std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
         diff = std_bounds[1] - std_bounds[0]
-        child.set_std_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
+        child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
         return child
 
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
@@ -158,10 +158,21 @@ class Array(core.Parameter):
         a_max: float or None
             maximum value
         method: str
-            "clipping", "constraint", "tanh" or "arctan"
+            One of the following choices:
+            - "clipping": clips the values inside the bounds. This is efficient but leads
+              to over-sampling on the bounds.
+            - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
+              reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
+              dimension.
+            - "arctan": maps the space [a_min, a_max] to to all [-inf, inf] using arctan transform. This is efficient
+              but it completely reshapes the space (a mutation in the center of the space will be larger than a mutation
+              close to the bounds), and reaching the bounds is equivalent to reaching the infinity.
+            - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
+              to unexpected behaviors.
         full_range_sampling: bool
-            whether calling the "sample" method of the parameter should sample uniformly (or log-uniformly) on the whole
-            range of the bounds instead of sampling using a mutation on the current value
+            this changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
+            to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
+            "sample" method is used by some algorithms to create an initial population.
 
         Notes
         -----
@@ -226,7 +237,7 @@ class Array(core.Parameter):
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
-            if self.bound_transform is not None and not self.bound_transform.name.startswith("Cl"):
+            if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
                 raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
                                    "only clipping and constraint bounding methods can accept it.")
             if exponent <= 1.0:
@@ -247,7 +258,7 @@ class Array(core.Parameter):
         return self
 
     # pylint: disable=unused-argument
-    def _internal_set_std_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
+    def _internal_set_standardized_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
         assert isinstance(data, np.ndarray)
         print("in", data)
         sigma = self.sigma.value
@@ -265,7 +276,7 @@ class Array(core.Parameter):
             setattr(child, name, getattr(self, name))
         return child
 
-    def _internal_get_std_data(self: A, instance: A) -> np.ndarray:
+    def _internal_get_standardized_data(self: A, instance: A) -> np.ndarray:
         return self._to_std_space(instance._value)
 
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
@@ -283,7 +294,7 @@ class Array(core.Parameter):
         recomb = self.subparameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
-            self.set_std_data(np.mean([self.get_std_data(p) for p in all_p], axis=0), deterministic=False)
+            self.set_standardized_data(np.mean([self.get_standardized_data(p) for p in all_p], axis=0), deterministic=False)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

@@ -15,9 +15,9 @@ def test_array_basics() -> None:
     var1 = par.Array(shape=(1,))
     var2 = par.Array(shape=(2, 2))
     d = par.Dict(var1=var1, var2=var2, var3=12)
-    data = d.get_std_data()
+    data = d.get_standardized_data()
     assert data.size == 5
-    d.set_std_data(np.array([1, 2, 3, 4, 5]))
+    d.set_standardized_data(np.array([1, 2, 3, 4, 5]))
     assert var1.value[0] == 1
     np.testing.assert_array_equal(d.value["var2"], np.array([[2, 3], [4, 5]]))
     # setting value on arrays
@@ -93,7 +93,7 @@ def test_parameters_basic_features(param: Parameter) -> None:
     assert not child2.satisfies_constraint()
     # array to and from with hash
     data_hash = param.get_data_hash()
-    param.set_std_data(param.get_std_data())
+    param.set_standardized_data(param.get_standardized_data())
     try:
         assert data_hash == param.get_data_hash()
     except AssertionError:
@@ -146,14 +146,17 @@ def test_instrumentation() -> None:
     inst.mutate()
     assert len(inst.args) == 1
     assert len(inst.kwargs) == 2
+    scal = par.Scalar()
+    with pytest.raises(ValueError):
+        inst = par.Instrumentation(scal, blublu=scal)
 
 
 def test_scalar_and_mutable_sigma() -> None:
     param = par.Scalar(init=1.0, mutable_sigma=True).set_mutation(exponent=2.0, sigma=5)
     assert param.value == 1
-    data = param.get_std_data()
+    data = param.get_standardized_data()
     assert data[0] == 0.0
-    param.set_std_data(np.array([-0.2]))
+    param.set_standardized_data(np.array([-0.2]))
     assert param.value == 0.5
     assert param.sigma.value == 5
     param.mutate()
@@ -169,7 +172,7 @@ def test_array_recombination() -> None:
     param2.value = (3,)
     param.recombine(param2)
     assert param.value[0] == 2.0
-    param2.set_std_data((param.get_std_data() + param2.get_std_data()) / 2)
+    param2.set_standardized_data((param.get_standardized_data() + param2.get_standardized_data()) / 2)
     assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
 
 
@@ -178,9 +181,9 @@ def test_array_recombination() -> None:
 )
 def test_constraints(name: str) -> None:
     param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, a_min=-100, a_max=100)
-    param.set_std_data(param.get_std_data())
+    param.set_standardized_data(param.get_standardized_data())
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
-    param.set_std_data(np.array([100000.0]))
+    param.set_standardized_data(np.array([100000.0]))
     if param.satisfies_constraint():
         np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
 
@@ -203,11 +206,12 @@ def test_log() -> None:
 
 def test_ordered_choice() -> None:
     choice = par.TransitionChoice([0, 1, 2, 3], transitions=[-1000000, 10])
+    assert len(choice) == 4
     assert choice.value == 2
     choice.value = 1
     assert choice.value == 1
     choice.mutate()
     assert choice.value in [0, 2]
-    assert choice.get_std_data().size
-    choice.set_std_data(np.array([12.0]))
+    assert choice.get_standardized_data().size
+    choice.set_standardized_data(np.array([12.0]))
     assert choice.value == 3
