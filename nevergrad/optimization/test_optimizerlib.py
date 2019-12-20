@@ -70,19 +70,19 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     assert optimizer.current_bests["pessimistic"].pessimistic_confidence_bound == min(
                                                                                       v.pessimistic_confidence_bound for v in archive.values()
                                                                                       )
-# add a random point to test tell_not_asked
-assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
-try:
-    candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
-    optimizer.tell(candidate, 12.0)
-except Exception as e:  # pylint: disable=broad-except
-    if not isinstance(e, base.TellNotAskedNotSupportedError):
-        raise AssertionError(
-                             "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
-                             ) from e
-    else:
-        assert optimizer.num_tell == budget + 1
-        assert optimizer.num_tell_not_asked == 1
+    # add a random point to test tell_not_asked
+    assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
+    try:
+        candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+        optimizer.tell(candidate, 12.0)
+    except Exception as e:  # pylint: disable=broad-except
+        if not isinstance(e, base.TellNotAskedNotSupportedError):
+            raise AssertionError(
+                                 "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
+                                 ) from e
+        else:
+            assert optimizer.num_tell == budget + 1
+            assert optimizer.num_tell_not_asked == 1
 
 
 SLOW = [
