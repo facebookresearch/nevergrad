@@ -430,8 +430,6 @@ class Dict(Parameter):
         """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
         if parameters:
             assert all(isinstance(p, Parameter) for p in parameters)
-            print("params", parameters)
-            print([type(x) for x in parameters])
             ids = {id(p) for p in parameters}
             if len(ids) != len(parameters):
                 raise ValueError("Don't repeat twice the same parameter")
