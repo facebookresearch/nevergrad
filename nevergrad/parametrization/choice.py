@@ -62,11 +62,10 @@ class BaseChoice(core.Dict):
             choice = core.as_parameter(self.choices[k])
             try:
                 choice.value = value
+                index = k
+                break
             except Exception:  # pylint: disable=broad-except
                 pass
-            else:
-                index = int(k)
-                break
         if index == -1:
             raise ValueError(f"Could not figure out where to put value {value}")
         return index
