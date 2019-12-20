@@ -440,13 +440,12 @@ def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [1]: #, 10, 100]:
-            if num_workers < budget:
-                for algo in algos:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+        for num_workers in [budget]:
+            for algo in algos:
+                for fu in funcs:
+                    xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
