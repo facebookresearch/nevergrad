@@ -26,11 +26,11 @@ from .optimizerlib import registry
 
 class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4
-    """
-
+        """
+    
     def __init__(self, x0: ArrayLike) -> None:
         self.x0 = np.array(x0, copy=True)
-
+    
     def __call__(self, x: ArrayLike) -> float:
         assert len(self.x0) == len(x)
         return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))
@@ -38,8 +38,7 @@ class Fitness:
 
 def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]], budget: int = 300, verify_value: bool = True) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
-    ##num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
-    num_workers = 1 if optimizer_cls.no_parallelization else 2
+    num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
     optimum = [0.5, -0.8]
     if optimizer_cls in (optlib.PBIL,):
@@ -69,38 +68,38 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     # make sure we are correctly tracking the best values
     archive = optimizer.archive
     assert optimizer.current_bests["pessimistic"].pessimistic_confidence_bound == min(
-        v.pessimistic_confidence_bound for v in archive.values()
-    )
-    # add a random point to test tell_not_asked
-    assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
+                                                                                      v.pessimistic_confidence_bound for v in archive.values()
+                                                                                      )
+# add a random point to test tell_not_asked
+assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
         optimizer.tell(candidate, 12.0)
-    except Exception as e:  # pylint: disable=broad-except
-        if not isinstance(e, base.TellNotAskedNotSupportedError):
-            raise AssertionError(
-                "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
-            ) from e
+except Exception as e:  # pylint: disable=broad-except
+    if not isinstance(e, base.TellNotAskedNotSupportedError):
+        raise AssertionError(
+                             "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
+                             ) from e
     else:
         assert optimizer.num_tell == budget + 1
         assert optimizer.num_tell_not_asked == 1
 
 
 SLOW = [
-    "NoisyDE",
-    "NoisyBandit",
-    "SPSA",
-    "NoisyOnePlusOne",
-    "OptimisticNoisyOnePlusOne",
-    "ASCMADEthird",
-    "ASCMA2PDEthird",
-    "MultiScaleCMA",
-    "PCEDA",
-    "MPCEDA",
-    "EDA",
-    "MEDA",
-    "MicroCMA",
-]
+        "NoisyDE",
+        "NoisyBandit",
+        "SPSA",
+        "NoisyOnePlusOne",
+        "OptimisticNoisyOnePlusOne",
+        "ASCMADEthird",
+        "ASCMA2PDEthird",
+        "MultiScaleCMA",
+        "PCEDA",
+        "MPCEDA",
+        "EDA",
+        "MEDA",
+        "MicroCMA",
+        ]
 DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: List[str] = []
 
@@ -124,13 +123,13 @@ class RecommendationKeeper:
         if filepath.exists():
             self.recommendations = pd.read_csv(filepath, index_col=0)
 
-    def save(self) -> None:
-        # sort and remove unused names
-        # then update recommendation file
-        names = sorted(x for x in self.recommendations.index if x in registry)
-        recom = self.recommendations.loc[names, :]
-        recom.iloc[:, :] = np.round(recom, 10)
-        recom.to_csv(self.filepath)
+def save(self) -> None:
+    # sort and remove unused names
+    # then update recommendation file
+    names = sorted(x for x in self.recommendations.index if x in registry)
+    recom = self.recommendations.loc[names, :]
+    recom.iloc[:, :] = np.round(recom, 10)
+    recom.to_csv(self.filepath)
 
 
 @pytest.fixture(scope="module")  # type: ignore
@@ -189,24 +188,24 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     # BO slightly differs from a computer to another
     decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
     np.testing.assert_array_almost_equal(
-        candidate.data,
-        recomkeeper.recommendations.loc[name, :][:dimension],
-        decimal=decimal,
-        err_msg="Something has changed, if this is normal, delete the following "
-        f"file and rerun to update the values:\n{recomkeeper.filepath}",
-    )
+                                         candidate.data,
+                                         recomkeeper.recommendations.loc[name, :][:dimension],
+                                         decimal=decimal,
+                                         err_msg="Something has changed, if this is normal, delete the following "
+                                         f"file and rerun to update the values:\n{recomkeeper.filepath}",
+                                         )
 
 
 @testing.parametrized(
-    de=("DE", 10, 10, 30),
-    de_w=("DE", 50, 40, 40),
-    de1=("OnePointDE", 10, 10, 30),
-    de1_w=("OnePointDE", 50, 40, 40),
-    dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
-    dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
-    dim_d_rot=("RotationInvariantDE", 50, 40, 51),
-    large=("BPRotationInvariantDE", 10, 40, 70),
-)
+                      de=("DE", 10, 10, 30),
+                      de_w=("DE", 50, 40, 40),
+                      de1=("OnePointDE", 10, 10, 30),
+                      de1_w=("OnePointDE", 50, 40, 40),
+                      dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
+                      dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
+                      dim_d_rot=("RotationInvariantDE", 50, 40, 51),
+                      large=("BPRotationInvariantDE", 10, 40, 70),
+                      )
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
     optim = registry[name](instrumentation=dimension, budget=100, num_workers=num_workers)
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
