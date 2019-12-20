@@ -72,9 +72,9 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
                                                                                       )
 # add a random point to test tell_not_asked
 assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
-    try:
-        candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
-        optimizer.tell(candidate, 12.0)
+try:
+    candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+    optimizer.tell(candidate, 12.0)
 except Exception as e:  # pylint: disable=broad-except
     if not isinstance(e, base.TellNotAskedNotSupportedError):
         raise AssertionError(
