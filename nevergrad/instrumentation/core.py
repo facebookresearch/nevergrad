@@ -154,23 +154,23 @@ class Variable(p.Instrumentation):
 
     # compatibility
     @property  # type: ignore
-    def value(self) -> ArgsKwargs:  # type: ignore
+    def value(self) -> tp.Any:
         if self._value is None:
             self._value = self.data_to_arguments(self.data)
-        return self._value
+        return self._value[0][0]
 
     @value.setter
-    def value(self, value: ArgsKwargs) -> None:
+    def value(self, value: tp.Any) -> None:
         self._value = value
-        self._data = self.arguments_to_data(*value[0], **value[1])
+        self._data = self.arguments_to_data(value)
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
-        return self.value[0]
+        return (self.value,)
 
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
-        return self.value[1]
+        return {}
 
     def _internal_get_std_data(self: T, instance: T) -> np.ndarray:
         return instance.data

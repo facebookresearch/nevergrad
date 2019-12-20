@@ -7,6 +7,7 @@ from functools import reduce
 import operator
 import warnings
 import numpy as np
+from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import transforms
 from nevergrad.common.typetools import ArrayLike
@@ -22,6 +23,10 @@ def wrap_arg(arg: Any) -> ArgsKwargs:
     """Wrap a unique arg into args and kwargs
     """
     return (arg,), {}
+
+
+# def SoftmaxCategorical(possibilities: List[Any], deterministic: bool = False) -> p.Instrumentation:
+#    return p.Instrumentation(p.Choice(choices=possibilities, deterministic=deterministic))
 
 
 class SoftmaxCategorical(Variable):

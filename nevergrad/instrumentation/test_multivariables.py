@@ -11,22 +11,6 @@ from . import multivariables as mvar
 from .core import Variable
 
 
-@testing.parametrized(
-    empty=([], [], [])
-)
-def test_split_data(tokens: List[Variable], data: List[float], expected: List[List[float]]) -> None:
-    instru = mvar.Instrumentation(*tokens)
-    output = instru._split_data(np.array(data))
-    testing.printed_assert_equal(output, expected)
-
-
-def test_nested_variables_data_to_arguments() -> None:
-    instru = mvar.NestedVariables(var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4))
-    values = instru.data_to_arguments([0, 200, 0, 0, 0, 2])
-    expected: Any = (tuple(var.wrap_arg(x) for x in (1, 11)), {})
-    assert values == expected
-
-
 def test_instrumentation_data_to_arguments() -> None:
     tokens = [var.SoftmaxCategorical(list(range(5))), var.Gaussian(3, 4)]
     instru = mvar.Instrumentation(*tokens)
@@ -80,12 +64,6 @@ def test_instrumentation_copy() -> None:
     assert not copied.cheap_constraint_check(12)
 
 
-def test_instrumentation_split() -> None:
-    instru = mvar.Instrumentation(var.Gaussian(0, 1), 3, b=var.SoftmaxCategorical([0, 1, 2, 3]), a=var.OrderedDiscrete([0, 1, 2, 3]))
-    splitted = instru._split_data(np.array([0, 1, 2, 3, 4, 5]))
-    np.testing.assert_equal([x.tolist() for x in splitted], [[0], [], [1], [2, 3, 4, 5]])  # order of kwargs is alphabetical
-
-
 def test_instrumentation_init_error() -> None:
     variable = var.Gaussian(0, 1)
     np.testing.assert_raises(AssertionError, mvar.Instrumentation, variable, variable)
@@ -115,10 +93,9 @@ def test_instrumented_function() -> None:
             "dimension": 8,
             "name": "_arg_return",
             "function_class": "InstrumentedFunction",
-            "instrumentation": "SC(1,12|0),constant,G(0,1),constkwarg=blublu,plop=SC(3,4|0)",
+            "instrumentation": "Instrumentation(Tuple(SC(1,12|0),constant,G(0,1)),Dict(constkwarg=blublu,plop=SC(3,4|0)))",
         },
     )
-    print(ifunc.get_summary(data))
 
 
 def test_instrumented_function_kwarg_order() -> None:

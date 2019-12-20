@@ -34,7 +34,10 @@ def test_array_basics() -> None:
 
 
 @pytest.mark.parametrize("param", [par.Dict(truc=12),  # type: ignore
-                                   par.Tuple(), ])
+                                   par.Tuple(),
+                                   par.Instrumentation(12),
+                                   ]
+                         )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
     assert not param.get_data_hash()
