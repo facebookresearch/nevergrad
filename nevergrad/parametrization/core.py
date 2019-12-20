@@ -91,6 +91,7 @@ class Parameter:
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
         This usually means spawning a child and mutating it.
+        This function should be used in optimizers when creating an initial population
         """
         child = self.spawn_child()
         child.mutate()
@@ -473,6 +474,11 @@ class Dict(Parameter):
     def mutate(self) -> None:
         for param in self._parameters.values():
             param.mutate()
+
+    def sample(self: D) -> D:
+        child = self.spawn_child()
+        child._parameters = {k: p.sample() for k, p in self._parameters.items()}
+        return child  # TODO check
 
     def recombine(self, *others: "Dict") -> None:
         assert all(isinstance(o, self.__class__) for o in others)

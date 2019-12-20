@@ -158,10 +158,21 @@ class Array(core.Parameter):
         a_max: float or None
             maximum value
         method: str
-            "clipping", "constraint", "tanh" or "arctan"
+            One of the following choices:
+            - "clipping": clips the values inside the bounds. This is efficient but leads
+              to over-sampling on the bounds.
+            - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
+              reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
+              dimension.
+            - "arctan": maps the space [a_min, a_max] to to all [-inf, inf] using arctan transform. This is efficient
+              but it completely reshapes the space (a mutation in the center of the space will be larger than a mutation
+              close to the bounds), and reaching the bounds is equivalent to reaching the infinity.
+            - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
+              to unexpected behaviors.
         full_range_sampling: bool
-            whether calling the "sample" method of the parameter should sample uniformly (or log-uniformly) on the whole
-            range of the bounds instead of sampling using a mutation on the current value
+            this changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
+            to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
+            "sample" method is used by some algorithms to create an initial population.
 
         Notes
         -----
