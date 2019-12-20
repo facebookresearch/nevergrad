@@ -114,7 +114,7 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         self.agent = agent.copy()
         self.runner = env_runner
         self.reward_postprocessing = reward_postprocessing
-        super().__init__(self.compute, **self.agent.instrumentation.kwargs)
+        super().__init__(self.compute, **self.agent.instrumentation[1]._parameters)  # TODO: fix ugly hack
         self._descriptors.update(num_repetitions=self.runner.num_repetitions, instrumentation="")
 
     def compute(self, **kwargs: np.ndarray) -> float:

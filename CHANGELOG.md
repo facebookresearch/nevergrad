@@ -4,6 +4,9 @@
 
 - instrumentation names are changed
 - performance loss to investigate
+- silent fail on Instrumented functions: `InstrumentedFunction(func, *inst.args, **inst.kwargs)`
+- renamed to `ParametrizedFunction` 
+
 
 ### Breaking changes
 
