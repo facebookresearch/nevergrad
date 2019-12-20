@@ -200,7 +200,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 300, 1000, 3000, 10000]:
+            for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -230,7 +230,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     ]
     for optim in optims:
         for function in functions:
-            for budget in [200, 400, 800] if (not big and not noise) else [40000, 80000]:
+            for budget in [50, 200, 800, 3200, 12800] if (not big and not noise) else [40000, 80000]:
                 xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
                         budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
