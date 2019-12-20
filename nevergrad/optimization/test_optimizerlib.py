@@ -123,13 +123,13 @@ class RecommendationKeeper:
         if filepath.exists():
             self.recommendations = pd.read_csv(filepath, index_col=0)
 
-def save(self) -> None:
-    # sort and remove unused names
-    # then update recommendation file
-    names = sorted(x for x in self.recommendations.index if x in registry)
-    recom = self.recommendations.loc[names, :]
-    recom.iloc[:, :] = np.round(recom, 10)
-    recom.to_csv(self.filepath)
+    def save(self) -> None:
+        # sort and remove unused names
+        # then update recommendation file
+        names = sorted(x for x in self.recommendations.index if x in registry)
+        recom = self.recommendations.loc[names, :]
+        recom.iloc[:, :] = np.round(recom, 10)
+        recom.to_csv(self.filepath)
 
 
 @pytest.fixture(scope="module")  # type: ignore
