@@ -3,6 +3,7 @@
 ## master
 
 - instrumentation names are changed
+- performance loss to investigate
 
 ### Breaking changes
 

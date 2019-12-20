@@ -208,10 +208,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
         self._penalize_cheap_violations = False
-        self.instrumentation: Union[parameter.Instrumentation, instru.Instrumentation] = (
+        self.instrumentation = (
             instrumentation
             if not isinstance(instrumentation, (int, np.int))
-            else instru.Instrumentation(instru.var.Array(instrumentation))
+            else instru.Instrumentation(parameter.Array(shape=(instrumentation,)))
         )
         if not self.dimension:
             raise ValueError("No variable to optimize in this instrumentation.")

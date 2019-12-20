@@ -127,9 +127,11 @@ class Array(core.Parameter):
         return self._value
 
     @value.setter
-    def value(self, value: np.ndarray) -> None:
-        if not isinstance(value, np.ndarray):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray")
+    def value(self, value: ArrayLike) -> None:
+        if not isinstance(value, (np.ndarray, tuple, list)):
+            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
+        value = np.asarray(value)
+        assert isinstance(value, np.ndarray)
         if self._value.shape != value.shape:
             raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
         if not BoundChecker(*self.bounds)(self.value):
