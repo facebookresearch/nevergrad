@@ -7,6 +7,7 @@ import typing as t
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import discretization
+from . import utils
 from . import core
 from .container import Tuple
 from .data import Array
@@ -32,9 +33,9 @@ class BaseChoice(core.Dict):
         return len(self.choices)
 
     @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous)
+    def descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors(deterministic=self.choices.descriptors.deterministic,
+                                 continuous=self.choices.descriptors.continuous)
 
     @property
     def index(self) -> int:
@@ -118,9 +119,9 @@ class Choice(BaseChoice):
         return name
 
     @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous & (not self._deterministic))
+    def descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
+                                 continuous=self.choices.descriptors.continuous & (not self._deterministic))
 
     @property
     def index(self) -> int:  # delayed choice

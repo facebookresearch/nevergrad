@@ -9,7 +9,7 @@ from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
 import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from ..parametrization.core import Descriptors
+from ..parametrization.utils import Descriptors
 from ..parametrization import parameter as p
 # pylint: disable=no-value-for-parameter,too-many-ancestors, too-many-instance-attributes
 

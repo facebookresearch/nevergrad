@@ -8,24 +8,12 @@ import warnings
 from collections import OrderedDict
 import typing as t
 import numpy as np
+from . import utils
 # pylint: disable=no-value-for-parameter
 
 
 P = t.TypeVar("P", bound="Parameter")
 D = t.TypeVar("D", bound="Dict")
-
-
-class Descriptors(t.NamedTuple):
-    """Provides access to a set of descriptors for the parametrization
-    This can be used within optimizers.
-    """
-    deterministic: bool = True
-    continuous: bool = True
-
-
-class NotSupportedError(RuntimeError):
-    """This type of operation is not supported by the parameter.
-    """
 
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -48,10 +36,7 @@ class Parameter:
         self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
         self._name: t.Optional[str] = None
         self._frozen = False
-
-    @property
-    def descriptors(self) -> Descriptors:
-        return Descriptors(deterministic=True, continuous=True)
+        self.descriptors = utils.Descriptors()
 
     @property
     def value(self) -> t.Any:
@@ -77,7 +62,7 @@ class Parameter:
         if self._dimension is None:
             try:
                 self._dimension = self.get_standardized_data().size
-            except NotSupportedError:
+            except utils.NotSupportedError:
                 self._dimension = 0
         return self._dimension
 
@@ -108,7 +93,7 @@ class Parameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise NotSupportedError(f"Recombination is not implemented for {self.name}")
+        raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
 
     def get_standardized_data(self: P, instance: t.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -139,7 +124,7 @@ class Parameter:
         return self._internal_get_standardized_data(self if instance is None else instance)
 
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
-        raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
+        raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
     def set_standardized_data(self: P, data: np.ndarray, *, instance: t.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided instance (or self) using the standardized data.
@@ -165,7 +150,7 @@ class Parameter:
         return self._internal_set_standardized_data(data, sent_instance, deterministic=deterministic)
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
-        raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
+        raise utils.NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
 
     def from_value(self: P, value: t.Any) -> P:
         """Creates a new instance with the provided value
@@ -202,7 +187,7 @@ class Parameter:
         elif isinstance(val, np.ndarray):
             return val.tobytes()
         else:
-            raise NotSupportedError(f"Value hash is not supported for object {self.name}")
+            raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def get_data_hash(self) -> t.Hashable:
         """Hashable object representing the current standardized data of the object.
@@ -376,7 +361,7 @@ class Constant(Parameter):
     def get_value_hash(self) -> t.Hashable:
         try:
             return super().get_value_hash()
-        except NotSupportedError:
+        except utils.NotSupportedError:
             return "#non-hashable-constant#"
 
     @property
@@ -450,9 +435,9 @@ class Dict(Parameter):
                 raise ValueError("Don't repeat twice the same parameter")
 
     @property
-    def descriptors(self) -> Descriptors:
-        return Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
-                              for name in ("deterministic", "continuous")})
+    def descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
+                                    for name in ("deterministic", "continuous")})
 
     def __getitem__(self, name: t.Any) -> Parameter:
         return self._parameters[name]

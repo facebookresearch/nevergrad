@@ -136,7 +136,7 @@ def check_parameter_freezable(param: Parameter) -> None:
         param.value = value
     with pytest.raises(RuntimeError):
         param.set_standardized_data(data)
-    param.set_standardized_data(data, child)
+    param.set_standardized_data(data, instance=child)
     with pytest.raises(RuntimeError):
         param.recombine(child)
 

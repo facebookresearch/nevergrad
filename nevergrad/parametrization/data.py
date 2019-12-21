@@ -8,6 +8,7 @@ import typing as t
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import core
+from . import utils
 from . import transforms as trans
 # pylint: disable=no-value-for-parameter
 
@@ -100,8 +101,8 @@ class Array(core.Parameter):
         self.full_range_sampling = False
 
     @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=True, continuous=not self.integer)
+    def descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors(deterministic=True, continuous=not self.integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
