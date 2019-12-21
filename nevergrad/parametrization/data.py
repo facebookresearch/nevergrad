@@ -100,9 +100,8 @@ class Array(core.Parameter):
         self.bound_transform: t.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
 
-    @property
-    def descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(deterministic=True, continuous=not self.integer)
+    def _compute_descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors(continuous=not self.integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__

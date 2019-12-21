@@ -8,6 +8,7 @@ import typing as t
 import pytest
 import numpy as np
 from .core import Parameter
+from . import utils
 from . import parameter as par
 
 
@@ -123,6 +124,10 @@ def check_parameter_features(param: Parameter) -> None:
     if isinstance(param, par.Array):
         for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
+    # set descriptor
+    assert param.descriptors.deterministic_function
+    param.descriptors.deterministic_function = False
+    assert not param.descriptors.deterministic_function
 
 
 def check_parameter_freezable(param: Parameter) -> None:
@@ -248,3 +253,11 @@ def test_ordered_choice() -> None:
     assert choice.get_standardized_data().size
     choice.set_standardized_data(np.array([12.0]))
     assert choice.value == 3
+
+
+def test_descriptors() -> None:
+    d1 = utils.Descriptors()
+    d2 = utils.Descriptors(continuous=False)
+    d3 = d1 & d2
+    assert d3.continuous is False
+    assert d3.deterministic is True

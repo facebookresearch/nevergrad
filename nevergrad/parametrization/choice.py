@@ -27,15 +27,15 @@ class BaseChoice(core.Dict):
         lchoices = list(choices)  # for iterables
         super().__init__(choices=Tuple(*lchoices), **kwargs)
 
+    def _compute_descriptors(self) -> utils.Descriptors:
+        deterministic = getattr(self, "_deterministic", True)
+        internal = utils.Descriptors(deterministic=deterministic, continuous=not deterministic)
+        return self.choices.descriptors & internal
+
     def __len__(self) -> int:
         """Number of choices
         """
         return len(self.choices)
-
-    @property
-    def descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(deterministic=self.choices.descriptors.deterministic,
-                                 continuous=self.choices.descriptors.continuous)
 
     @property
     def index(self) -> int:
@@ -117,11 +117,6 @@ class Choice(BaseChoice):
         if self._deterministic:
             name = cls + "{det}" + name[len(cls):]
         return name
-
-    @property
-    def descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
-                                 continuous=self.choices.descriptors.continuous & (not self._deterministic))
 
     @property
     def index(self) -> int:  # delayed choice

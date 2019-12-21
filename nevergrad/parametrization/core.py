@@ -5,6 +5,8 @@
 
 import uuid
 import warnings
+import operator
+import functools
 from collections import OrderedDict
 import typing as t
 import numpy as np
@@ -36,7 +38,7 @@ class Parameter:
         self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
         self._name: t.Optional[str] = None
         self._frozen = False
-        self.descriptors = utils.Descriptors()
+        self._descriptors: t.Optional[utils.Descriptors] = None
 
     @property
     def value(self) -> t.Any:
@@ -337,6 +339,16 @@ class Parameter:
         child.random_state = None
         return child
 
+    def _compute_descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors()
+
+    @property
+    def descriptors(self) -> utils.Descriptors:
+        if self._descriptors is None:
+            self._compute_descriptors()
+            self._descriptors = self._compute_descriptors()
+        return self._descriptors
+
 
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
@@ -434,10 +446,8 @@ class Dict(Parameter):
             if len(ids) != len(parameters):
                 raise ValueError("Don't repeat twice the same parameter")
 
-    @property
-    def descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
-                                    for name in ("deterministic", "continuous")})
+    def _compute_descriptors(self) -> utils.Descriptors:
+        return functools.reduce(operator.and_, [p.descriptors for p in self._parameters.values()])
 
     def __getitem__(self, name: t.Any) -> Parameter:
         return self._parameters[name]

@@ -187,8 +187,7 @@ class Variable(p.Instrumentation):
         child.parents_uids = []
         return child
 
-    @property
-    def descriptors(self) -> Descriptors:
+    def _compute_descriptors(self) -> Descriptors:
         return Descriptors(continuous=self.continuous, deterministic=not self.noisy)
 
     def mutate(self) -> None:
