@@ -58,6 +58,11 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
                                    ],
                          )
 def test_parameters_basic_features(param: Parameter) -> None:
+    check_parameter_features(param)
+    check_parameter_freezable(param)
+
+
+def check_parameter_features(param: Parameter) -> None:
     seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
@@ -106,6 +111,22 @@ def test_parameters_basic_features(param: Parameter) -> None:
     if isinstance(param, par.Array):
         for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
+
+
+def check_parameter_freezable(param: Parameter) -> None:
+    param.freeze()
+    value = param.value
+    data = param.get_standardized_data()
+    child = param.spawn_child()
+    child.mutate()
+    child.recombine(param)
+    with pytest.raises(RuntimeError):
+        param.value = value
+    with pytest.raises(RuntimeError):
+        param.set_standardized_data(data)
+    param.set_standardized_data(data, child)
+    with pytest.raises(RuntimeError):
+        param.recombine(child)
 
 
 @pytest.mark.parametrize(  # type: ignore

@@ -47,6 +47,7 @@ class Parameter:
         self._generation = 0
         self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
         self._name: t.Optional[str] = None
+        self._frozen = False
 
     @property
     def descriptors(self) -> Descriptors:
@@ -83,6 +84,7 @@ class Parameter:
     def mutate(self) -> None:
         """Mutate subparameters of the instance, and then its value
         """
+        self._check_frozen()
         self.subparameters.mutate()
         data = self.get_standardized_data()  # pylint: disable=assignment-from-no-return
         # let's assume the random state is already there (next class)
@@ -157,8 +159,10 @@ class Parameter:
             the updated instance (self, or the provided instance)
         """
         assert isinstance(deterministic, bool)
-        assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
-        return self._internal_set_standardized_data(data, instance=self if instance is None else instance, deterministic=deterministic)
+        sent_instance = self if instance is None else instance
+        assert isinstance(sent_instance, self.__class__), f"Expected {type(self)} but got {type(sent_instance)} as instance"
+        sent_instance._check_frozen()
+        return self._internal_set_standardized_data(data, sent_instance, deterministic=deterministic)
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
         raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
@@ -321,6 +325,17 @@ class Parameter:
         child._generation = self.generation + 1
         child.parents_uids.append(self.uid)
         return child
+
+    def freeze(self) -> None:
+        """Prevents the parameter from changing value again (through value, mutate etc...)
+        """
+        self._frozen = True
+        if self._subparameters is not None:
+            self._subparameters.freeze()
+
+    def _check_frozen(self) -> None:
+        if self._frozen and not isinstance(self, Constant):  # nevermind constants (since they dont spawn children)
+            raise RuntimeError(f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead")
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params
@@ -507,3 +522,8 @@ class Dict(Parameter):
     def satisfies_constraint(self) -> bool:
         compliant = super().satisfies_constraint()
         return compliant and all(param.satisfies_constraint() for param in self._parameters.values() if isinstance(param, Parameter))
+
+    def freeze(self) -> None:
+        super().freeze()
+        for p in self._parameters.values():
+            p.freeze()

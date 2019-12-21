@@ -128,6 +128,7 @@ class Array(core.Parameter):
 
     @value.setter
     def value(self, value: np.ndarray) -> None:
+        self._check_frozen()
         if not isinstance(value, np.ndarray):
             raise TypeError(f"Received a {type(value)} in place of a np.ndarray")
         if self._value.shape != value.shape:
@@ -322,6 +323,7 @@ class Scalar(Array):
 
     @value.setter
     def value(self, value: float) -> None:
+        self._check_frozen()
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
         self._value = np.array([value], dtype=float)

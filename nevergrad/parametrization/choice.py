@@ -55,6 +55,7 @@ class BaseChoice(core.Dict):
         self._find_and_set_value(value)
 
     def _find_and_set_value(self, value: t.Any) -> int:
+        self._check_frozen()
         index = -1
         # try to find where to put this
         nums = sorted(int(k) for k in self.choices._parameters)
