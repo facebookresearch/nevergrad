@@ -213,6 +213,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if not isinstance(instrumentation, (int, np.int))
             else instru.Instrumentation(parameter.Array(shape=(instrumentation,)))
         )
+        self.instrumentation.freeze()  # avoids issues!
         if not self.dimension:
             raise ValueError("No variable to optimize in this instrumentation.")
         self.create_candidate = CandidateMaker(self.instrumentation)

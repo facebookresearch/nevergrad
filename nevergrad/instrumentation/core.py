@@ -11,7 +11,7 @@ import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from ..parametrization.core import Descriptors
 from ..parametrization import parameter as p
-# pylint: disable=no-value-for-parameter,too-many-ancestors
+# pylint: disable=no-value-for-parameter,too-many-ancestors, too-many-instance-attributes
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 T = TypeVar('T', bound="Variable")
@@ -182,6 +182,7 @@ class Variable(p.Instrumentation):
 
     def _internal_spawn_child(self: T) -> T:
         child = copy.deepcopy(self)
+        child._frozen = False
         child.uid = uuid.uuid4().hex
         child.parents_uids = []
         return child

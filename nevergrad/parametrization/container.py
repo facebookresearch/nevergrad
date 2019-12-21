@@ -77,6 +77,7 @@ class Instrumentation(Tuple):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(Tuple(*args), Dict(**kwargs))
         self._sanity_check(list(self[0]._parameters.values()) + list(self[1]._parameters.values()))  # type: ignore
+        self._compatibility_: t.Optional["Instrumentation"] = None  # TODO remove when compatibility is over
 
     @property
     def args(self) -> t.Tuple[t.Any, ...]:
@@ -104,12 +105,17 @@ class Instrumentation(Tuple):
     def noisy(self) -> bool:
         return not self.descriptors.deterministic
 
+    @property
+    def _compatibility(self) -> "Instrumentation":
+        if self._compatibility_ is None:
+            self._compatibility_ = self.spawn_child()
+        return self._compatibility_
+
     def arguments_to_data(self, *args: t.Any, **kwargs: t.Any) -> np.ndarray:
         """Converts args and kwargs into data in np.ndarray format
         """
-        child = self.spawn_child()
-        child.value = (args, kwargs)
-        return child.get_standardized_data()
+        self._compatibility.value = (args, kwargs)
+        return self._compatibility.get_standardized_data()
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
         """Converts data to arguments
@@ -127,9 +133,8 @@ class Instrumentation(Tuple):
         kwargs: Dict[str, Any]
             the keyword arguments corresponding to the instance initialization keyword arguments
         """
-        child = self.spawn_child()
-        child.set_standardized_data(np.array(data, copy=False), deterministic=deterministic)
-        return child.value  # type: ignore
+        self._compatibility.set_standardized_data(np.array(data, copy=False), deterministic=deterministic)
+        return self._compatibility.value  # type: ignore
 
     def set_cheap_constraint_checker(self, func: t.Callable[..., bool]) -> None:
         self.register_cheap_constraint(FunctionPack(func))
