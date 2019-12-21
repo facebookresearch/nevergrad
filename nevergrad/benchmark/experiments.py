@@ -350,7 +350,7 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(
+    optims = ("NGO") + sorted(
         x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     )
     for budget in [50000]:
