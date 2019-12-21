@@ -1579,11 +1579,11 @@ class JNGO(NGO):
                             self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
 
 @base.registry.register
-class FabienCradeTODO(base.Optimizer):
+class Fabienosaur(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(dimension, budget=budget, num_workers=num_workers)
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.sigma = 1
         self.mu = dimension
         self.llambda = 4 * dimension
@@ -1686,7 +1686,7 @@ class FTNGO(NGO):
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
                 else:
                     if num_workers > budget / 10:  # type: ignore
-                        self.optims = [FabienCradeTODO(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        self.optims = [Fabienosaur(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
