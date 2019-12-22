@@ -21,6 +21,7 @@ from .base import registry as registry
 from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
+import sys
 
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
@@ -308,7 +309,8 @@ class EDA(base.Optimizer):
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
                 (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))
+                # for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))
+                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key = lambda t: t[0])
             ]
             self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
             self.covariance = 0.1 * np.cov(np.array(self.evaluated_population).T)
