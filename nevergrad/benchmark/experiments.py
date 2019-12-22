@@ -204,6 +204,33 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
+@registry.register
+def testingEDA(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False) -> Iterator[Experiment]:
+    """Yet Another Black-Box Optimization Benchmark.
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["EDA"]
+    #optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
+    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
+    names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
+    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
+    # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
+    # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
+        for rotation in [True, False]
+        for num_blocks in [1]
+        for d in [2, 10, 50]
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [200, 400, 800] if (not big and not noise) else [40000, 80000]:
+                xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
+                        budget=budget, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
 
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False) -> Iterator[Experiment]:
