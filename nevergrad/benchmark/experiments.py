@@ -200,7 +200,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 300, 1000, 3000, 10000]:
+            for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000]:
                 # duplicate -> each Experiment has different randomness
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -230,7 +230,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     ]
     for optim in optims:
         for function in functions:
-            for budget in [200, 400, 800] if (not big and not noise) else [40000, 80000]:
+            for budget in [50, 200, 800, 3200, 12800] if (not big and not noise) else [40000, 80000]:
                 xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
                         budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
@@ -350,7 +350,7 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(
+    optims = ["NGO"] + sorted(
         x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     )
     for budget in [50000]:
@@ -487,7 +487,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1]: #, 10, 100]:
@@ -540,7 +540,8 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer",
+             "NGO", "SplitOptimizer3", "SplitOptimizer13"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -568,7 +569,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
 
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
     for budget in [25600, 51200, 102400]:
@@ -596,7 +597,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE"]
+             "RandomScaleRandomSearch", "MiniDE", "NGO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
