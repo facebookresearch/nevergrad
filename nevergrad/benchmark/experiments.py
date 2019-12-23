@@ -521,6 +521,29 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield xp
 
 
+
+@registry.register
+def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[InstrumentedFunction] = []
+    funcs += [game.Game("war")]
+    funcs += [game.Game("batawaf")]
+    funcs += [game.Game("flip")]
+    funcs += [game.Game("guesswho")]
+    funcs += [game.Game("bigguesswho")]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO"]
+    for budget in [25600, 51200, 102400]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
 @registry.register
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = []
