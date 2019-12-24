@@ -233,7 +233,7 @@ class Parameter:
         self.set_name(name)  # with_name allows chaining
 
     def __repr__(self) -> str:
-        return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
+        return f"{self.name}:{self.value}"
 
     def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
