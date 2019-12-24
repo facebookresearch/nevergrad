@@ -295,7 +295,7 @@ class Array(core.Parameter):
         recomb = self.subparameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
-            self.set_standardized_data(np.mean([self.get_standardized_data(p) for p in all_p], axis=0), deterministic=False)
+            self.set_standardized_data(np.mean([self.get_standardized_data(instance=p) for p in all_p], axis=0), deterministic=False)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

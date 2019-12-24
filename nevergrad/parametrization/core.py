@@ -97,7 +97,7 @@ class Parameter:
         """
         raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
 
-    def get_standardized_data(self: P, instance: t.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(self: P, *, instance: t.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
         The data only represent the value of this instance, not the subparameters (eg.: mutable sigma), hence it does not
@@ -121,6 +121,7 @@ class Parameter:
         Operations between different standardized data should only be performed if at least one of these conditions apply:
         - subparameters do not mutate (eg: sigma is constant)
         - each array was produced by the same instance in the exact same state (no mutation)
+        - to make the code more explicit, the "instance" parameter is enforced as a keyword-only parameter.
         """
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_get_standardized_data(self if instance is None else instance)
@@ -144,6 +145,11 @@ class Parameter:
         -------
         Parameter
             the updated instance (self, or the provided instance)
+
+        Note
+        ----
+        To make the code more explicit, the "instance" and "deterministic" parameters are enforced
+        as keyword-only parameters.
         """
         assert isinstance(deterministic, bool)
         sent_instance = self if instance is None else instance
@@ -477,7 +483,7 @@ class Dict(Parameter):
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items()))
 
     def _internal_get_standardized_data(self: D, instance: D) -> np.ndarray:
-        data = {k: self[k].get_standardized_data(p) for k, p in instance._parameters.items()}
+        data = {k: self[k].get_standardized_data(instance=p) for k, p in instance._parameters.items()}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
