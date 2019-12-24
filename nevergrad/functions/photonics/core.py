@@ -124,7 +124,9 @@ class Photonics(inst.InstrumentedFunction):
         self._func = inst.CommandFunction(["octave-cli", "--no-gui", "--no-history", "--norc", "--quiet", "--no-window-system", path.name],
                                           cwd=path.parent, verbose=False,
                                           env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"))
-        super().__init__(self._compute, *_make_instrumentation(name=name, dimension=dimension, transform=transform).args)
+        super().__init__(self._compute)
+        instru = _make_instrumentation(name=name, dimension=dimension, transform=transform)
+        self.instrumentation = instru
         self._descriptors.update(name=name)
 
     def _compute(self, *x: np.ndarray) -> float:

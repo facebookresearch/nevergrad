@@ -11,8 +11,8 @@ from typing import Any
 from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
-from ... import instrumentation as inst
-from ...instrumentation.multivariables import Instrumentation
+from nevergrad import instrumentation as inst
+from nevergrad.parametrization import parameter as p
 
 
 class Agent():
@@ -89,9 +89,9 @@ class PowerSystem(inst.InstrumentedFunction):
         dam_agents: List[Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        the_dimension = sum([a.GetParamNumbers() for a in dam_agents])
+        dimension = int(sum([a.GetParamNumbers() for a in dam_agents]))
         self.dam_agents = dam_agents
-        super().__init__(self._simulate_power_system, Instrumentation(inst.var.Array(the_dimension)))
+        super().__init__(self._simulate_power_system, p.Array(shape=(dimension,)))
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
     def get_num_vars(self) -> List[Any]:
@@ -101,6 +101,7 @@ class PowerSystem(inst.InstrumentedFunction):
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
         for a in dam_agents:
+            print(len(x), a.GetParamNumbers())
             assert len(x) >= a.GetParamNumbers()
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
             x = x[a.GetParamNumbers():]

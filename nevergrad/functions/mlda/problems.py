@@ -11,8 +11,9 @@
 from typing import Optional
 import numpy as np
 import scipy.spatial
-from ...common.typetools import ArrayLike
-from ... import instrumentation as inst
+from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
+from nevergrad import instrumentation as inst
 from . import datasets
 
 
@@ -43,7 +44,7 @@ class Clustering(inst.InstrumentedFunction):
         if rescale:
             self._points -= np.mean(self._points, axis=0, keepdims=True)
             self._points /= np.std(self._points, axis=0, keepdims=True)
-        super().__init__(self._compute_distance, inst.var.Array(num_clusters, points.shape[1]))
+        super().__init__(self._compute_distance, p.Array(shape=(num_clusters, points.shape[1])))
         self._descriptors.update(num_clusters=num_clusters, rescale=rescale)
 
     @classmethod
@@ -92,7 +93,7 @@ class Perceptron(inst.InstrumentedFunction):
         assert y.ndim == 1
         self._x = x
         self._y = y
-        super().__init__(self._compute_loss, inst.var.Array(10))
+        super().__init__(self._compute_loss, p.Array(shape=(10,)))
 
     @classmethod
     def from_mlda(cls, name: str) -> "Perceptron":
@@ -149,7 +150,7 @@ class SammonMapping(inst.InstrumentedFunction):
         self._proximity = proximity_array
         self._proximity_2 = self._proximity**2
         self._proximity_2[self._proximity_2 == 0] = 1  # avoid ZeroDivision (for diagonal terms, or identical points)
-        super().__init__(self._compute_distance, inst.var.Array(self._proximity.shape[0], 2))
+        super().__init__(self._compute_distance, p.Array(shape=(self._proximity.shape[0], 2)))
 
     @classmethod
     def from_mlda(cls, name: str, rescale: bool = False) -> "SammonMapping":
@@ -225,7 +226,7 @@ class Landscape(inst.InstrumentedFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.var.Array(1).asscalar(), inst.var.Array(1).asscalar())
+        super().__init__(self._get_pixel_value, p.Scalar(), p.Scalar())
         self.instrumentation = self.instrumentation.with_name("standard")  # force descriptor update
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
