@@ -130,6 +130,8 @@ def check_parameter_features(param: Parameter) -> None:
     assert param.descriptors.deterministic_function
     param.descriptors.deterministic_function = False
     assert not param.descriptors.deterministic_function
+    descr_child = param.spawn_child()
+    assert not descr_child.descriptors.deterministic_function
 
 
 def check_parameter_freezable(param: Parameter) -> None:

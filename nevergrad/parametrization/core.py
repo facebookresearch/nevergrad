@@ -316,6 +316,7 @@ class Parameter:
         child._set_random_state(rng)
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
+        child._descriptors = self._descriptors
         child._name = self._name
         child.parents_uids.append(self.uid)
         return child
