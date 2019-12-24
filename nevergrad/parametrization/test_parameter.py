@@ -259,6 +259,14 @@ def test_ordered_choice() -> None:
     assert choice.value == 3
 
 
+def test_ordered_choice_weird_values() -> None:
+    choice = par.TransitionChoice([0, np.nan, np.inf])
+    choice.value = np.nan
+    assert choice.value is np.nan
+    choice.value = np.inf
+    assert choice.value == np.inf
+
+
 def test_descriptors() -> None:
     d1 = utils.Descriptors()
     d2 = utils.Descriptors(continuous=False)

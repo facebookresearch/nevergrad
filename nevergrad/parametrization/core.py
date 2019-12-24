@@ -389,7 +389,7 @@ class Constant(Parameter):
 
     @value.setter
     def value(self, value: t.Any) -> None:
-        if not value == self._value:
+        if not (value == self._value or value is self._value):
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
