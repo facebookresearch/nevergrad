@@ -5,8 +5,23 @@
 
 import warnings
 import operator
+import site
+import glob
+import ctypes
 import copy as _copy
 from typing import Dict, Any, Optional, Callable, Tuple
+
+
+# Hackfix needed before pytorch import ("dlopen: cannot load any more object with static TLS")
+# See issue #305
+try:
+    for packages in site.getsitepackages():
+        for lib in glob.glob(f'{packages}/torch/lib/libgomp*.so*'):
+            ctypes.cdll.LoadLibrary(lib)
+except:
+    pass
+
+
 import gym
 import numpy as np
 import torch

@@ -121,6 +121,12 @@ def altcigar(x: np.ndarray) -> float:
 
 
 @registry.register
+def discus(x: np.ndarray) -> float:
+    """Only one variable is very penalized."""
+    return sphere(x[1:]) + 1000000.0 * float(x[0]) ** 2
+
+
+@registry.register
 def cigar(x: np.ndarray) -> float:
     """Classical example of ill conditioned function.
 
@@ -130,11 +136,44 @@ def cigar(x: np.ndarray) -> float:
 
 
 @registry.register
+def bentcigar(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function, but bent."""
+    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0. else x[i] for i in range(len(x))])
+    return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
+
+
+@registry.register
+def multipeak(x: np.ndarray) -> float:
+    """Inspired by M. Gallagher's Gaussian peaks function."""
+    v = 10000.
+    for a in range(101):
+        x_ = np.asarray([np.cos(a + np.sqrt(i)) for i in range(len(x))])
+        v = min(v, a / 101. + np.exp(sphere(x - x_)))
+    return v
+
+
+@registry.register
 def altellipsoid(y: np.ndarray) -> float:
     """Similar to Ellipsoid, but variables in inverse order.
 
     E.g. for pointing out algorithms not invariant to the order of variables."""
     return ellipsoid(y[::-1])
+
+
+def step(s: float) -> float:
+    return np.exp(int(np.log(s)))
+
+
+@registry.register
+def stepellipsoid(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function.
+
+    But we add a 'step', i.e. we set the gradient to zero everywhere.
+    Compared to some existing testbeds, we decided to have infinitely many steps.
+    """
+    dim = x.size
+    weights = 10 ** np.linspace(0, 6, dim)
+    return float(step(weights.dot(x ** 2)))
 
 
 @registry.register
@@ -153,6 +192,26 @@ def rastrigin(x: np.ndarray) -> float:
     """Classical multimodal function."""
     cosi = float(np.sum(np.cos(2 * np.pi * x)))
     return float(10 * (len(x) - cosi) + sphere(x))
+
+
+@registry.register
+def bucherastrigin(x: np.ndarray) -> float:
+    """Classical multimodal function. No box-constraint penalization here."""
+    s = np.asarray([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i - 1) / (2 * (len(x) - 1)))) for i in range(len(x))])
+    cosi = float(np.sum(np.cos(2 * np.pi * s)))
+    return float(10 * (len(x) - cosi) + sphere(s))
+
+
+@registry.register
+def doublelinearslope(x: np.ndarray) -> float:
+    """We decided to use two linear slopes rather than having a constraint artificially added for
+    not having the optimum at infinity."""
+    return np.abs(np.sum(x))
+
+
+@registry.register
+def stepdoublelinearslope(x: np.ndarray) -> float:
+    return step(np.abs(np.sum(x)))
 
 
 @registry.register
@@ -175,6 +234,7 @@ def ackley(x: np.ndarray) -> float:
     return -20.0 * exp(-0.2 * sqrt(sphere(x) / dim)) - exp(sum_cos / dim) + 20 + exp(1)
 
 
+@registry.register
 def schwefel_1_2(x: np.ndarray) -> float:
     cx = np.cumsum(x)
     return sphere(cx)

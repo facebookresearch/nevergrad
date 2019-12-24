@@ -106,6 +106,14 @@ class Instrumentation(Tuple):
         return not self.descriptors.deterministic
 
     @property
+    def probably_noisy(self) -> bool:
+        return not self.descriptors.deterministic_function
+
+    @property
+    def is_nonmetrizable(self) -> bool:
+        return not self.descriptors.metrizable
+
+    @property
     def _compatibility(self) -> "Instrumentation":
         if self._compatibility_ is None:
             self._compatibility_ = self.spawn_child()
