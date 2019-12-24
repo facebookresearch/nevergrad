@@ -566,8 +566,8 @@ class PackedFunctions(MultiobjectiveFunction):
     def to_instrumented(self) -> InstrumentedFunction:  # this is only to insure reproducibility
         # TODO: hopefully, be able to remove it eventually
         inst = self._functions[0].instrumentation
-        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds),
-                                     *inst.args, **inst.kwargs)   # TODO THIS FAILS
+        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds))
+        instf.instrumentation = inst
         # TODO add descriptors?
         return instf
 
