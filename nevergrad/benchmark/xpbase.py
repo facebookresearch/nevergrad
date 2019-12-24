@@ -9,11 +9,11 @@ import random
 import warnings
 import traceback
 from typing import Dict, Union, Any, Optional, Iterator, Type, Callable, Tuple
-import torch
 import numpy as np
 from ..common import decorators
 from .. import instrumentation as instru
 from ..functions import utils as futils
+from ..functions.rl.agents import torch
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
@@ -146,6 +146,10 @@ class Experiment:
                  ) -> None:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
+        # Conjecture on the noise level.
+        if not self.function.instrumentation.probably_noisy:
+            if hasattr(self.function, "_parameters") and "noise_level" in self.function._parameters and self.function._parameters["noise_level"] > 0:  # type: ignore
+                self.function.instrumentation.probably_noisy = True
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}

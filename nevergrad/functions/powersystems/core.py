@@ -36,9 +36,9 @@ class Agent():
     def SetParams(self, ww: Any) -> None:
         w = [w for w in ww]
         assert len(w) == self.GetParamNumbers()
-        for l in self.layers:
-            s = np.prod(l.shape)
-            l = np.reshape(np.array(w[:s]), l.shape)  # TODO @oteytaud new name?
+        for i in range(len(self.layers)):
+            s = np.prod(self.layers[i].shape)
+            self.layers[i] = np.reshape(np.array(w[:s]), self.layers[i].shape)  # TODO @oteytaud new name?
             w = w[s:]
 
     def GetOutput(self, inp: Any) -> np.ndarray:

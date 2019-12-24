@@ -46,7 +46,7 @@ def test_make_sorted_winrates() -> None:
     expected_data = [[.5, 1, 1, -1.],
                      [0, .5, .75, -1],
                      [0, .25, .5, -1],
-                     [-1, -1, -1, -1]]
+                     [0, 0, 0, -1]]
     winrates = winrates.fillna(-1)
     salgos = [f"alg{k}" for k in [1, 3, 2, 0]]
     expected = pd.DataFrame(index=salgos, columns=salgos, data=expected_data)
