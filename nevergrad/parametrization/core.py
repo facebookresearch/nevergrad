@@ -453,7 +453,8 @@ class Dict(Parameter):
                 raise ValueError("Don't repeat twice the same parameter")
 
     def _compute_descriptors(self) -> utils.Descriptors:
-        return functools.reduce(operator.and_, [p.descriptors for p in self._parameters.values()])
+        init = utils.Descriptors()
+        return functools.reduce(operator.and_, [p.descriptors for p in self._parameters.values()], init)
 
     def __getitem__(self, name: t.Any) -> Parameter:
         return self._parameters[name]

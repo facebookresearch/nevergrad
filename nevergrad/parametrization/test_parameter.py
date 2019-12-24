@@ -44,6 +44,8 @@ def test_empty_parameters(param: par.Dict) -> None:
     assert not param.get_data_hash()
     if not param:  # Dict is not empty even though it is constant
         assert not param.get_value_hash()
+    assert param.descriptors.continuous
+    assert param.descriptors.deterministic
 
 
 def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
