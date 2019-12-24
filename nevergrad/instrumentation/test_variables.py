@@ -6,25 +6,26 @@
 import typing as tp
 import pytest
 import numpy as np
+from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.test_parameter import check_parameter_features
 from . import variables
 from .variables import wrap_arg
-from ..parametrization.test_parameter import check_parameter_features
 
 
 def test_softmax_categorical_deterministic() -> None:
-    token = variables.SoftmaxCategorical(["blu", "blublu", "blublublu"], deterministic=True)
+    token = p.Instrumentation(variables.SoftmaxCategorical(["blu", "blublu", "blublublu"], deterministic=True))
     assert token.data_to_arguments([1, 1, 1.01], deterministic=False) == wrap_arg("blublublu")
 
 
 def test_softmax_categorical() -> None:
     np.random.seed(12)
-    token = variables.SoftmaxCategorical(["blu", "blublu", "blublublu"])
+    token = p.Instrumentation(variables.SoftmaxCategorical(["blu", "blublu", "blublublu"]))
     assert token.data_to_arguments([0.5, 1.0, 1.5]) == wrap_arg("blublu")
     assert token.data_to_arguments(token.arguments_to_data("blu"), deterministic=True) == wrap_arg("blu")
 
 
 def test_ordered_discrete() -> None:
-    token = variables.OrderedDiscrete(["blu", "blublu", "blublublu"])
+    token = p.Instrumentation(variables.OrderedDiscrete(["blu", "blublu", "blublublu"]))
     assert token.data_to_arguments([5]) == wrap_arg("blublublu")
     assert token.data_to_arguments([0]) == wrap_arg("blublu")
     assert token.data_to_arguments(token.arguments_to_data("blu"), deterministic=True) == wrap_arg("blu")
@@ -109,7 +110,7 @@ def test_log_9(value: float, expected: float) -> None:
         (variables.Scalar().affined(10, 100).bounded(-200, 200, transform="clipping"), [1], 110),
         (variables.Gaussian(3, 5, shape=(2,)), [-2, 1], [-7, 8]),
         (variables.Gaussian(3, 5), [-2], -7),
-        (variables.OrderedDiscrete(list(range(100))), [1.4], 91),
+        (p.Instrumentation(variables.OrderedDiscrete(list(range(100)))), [1.4], 91),
     ]
 )
 def test_expected_value(var: variables.Variable, data: tp.List[float], expected: tp.Any) -> None:

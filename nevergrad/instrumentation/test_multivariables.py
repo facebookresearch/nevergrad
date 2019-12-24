@@ -28,7 +28,7 @@ def test_instrumentation() -> None:
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, 0.5878], decimal=4)
     args, kwargs = instru.data_to_arguments(data, deterministic=True)
     testing.printed_assert_equal((args, kwargs), ((4.0, 3), {"a": 0, "b": 3}))
-    assert "3),Dict(a=OD(0,1,2,3)," in repr(instru), f"Erroneous representation {instru}"
+    assert "3),Dict(a=OrderedDiscrete(choices=Tuple(0,1,2,3)," in repr(instru), f"Erroneous representation {instru}"
     # check deterministic
     data = np.array([0.0, 0, 0, 0, 0, 0])
     total = 0
@@ -45,7 +45,10 @@ def test_instrumentation() -> None:
     data = np.random.normal(0, 1, size=6)
     testing.printed_assert_equal(instru2.data_to_arguments(data, deterministic=True), instru.data_to_arguments(data, deterministic=True))
     # check naming
-    testing.printed_assert_equal("Instrumentation(Tuple(G(0,1),3),Dict(a=OD(0,1,2,3),b=SC(0,1,2,3|0)))", instru.name)
+    instru_str = ("Instrumentation(Tuple(G(0,1),3),Dict(a=OrderedDiscrete(choices=Tuple(0,1,2,3),"
+                  "position=Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.]),"
+                  "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(4,)}[recombination=average,sigma=1.0])))")
+    testing.printed_assert_equal(instru.name, instru_str)
     testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
 
 
@@ -87,13 +90,15 @@ def test_instrumented_function() -> None:
     args, kwargs = ifunc(np.array(data))
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
+    instru_str = ("Instrumentation(Tuple(Choice(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,G(0,1)),"
+                  "Dict(constkwarg=blublu,plop=Choice(choices=Tuple(3,4),weights=Array{(2,)}[recombination=average,sigma=1.0])))")
     testing.printed_assert_equal(
         ifunc.descriptors,
         {
             "dimension": 8,
             "name": "_arg_return",
             "function_class": "InstrumentedFunction",
-            "instrumentation": "Instrumentation(Tuple(SC(1,12|0),constant,G(0,1)),Dict(constkwarg=blublu,plop=SC(3,4|0)))",
+            "instrumentation": instru_str,
         },
     )
 
