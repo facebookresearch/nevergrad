@@ -9,17 +9,20 @@ class Descriptors:
     This can be used within optimizers.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         deterministic: bool = True,
         deterministic_function: bool = True,
         continuous: bool = True,
-        metrizable: bool = True
+        metrizable: bool = True,
+        ordered: bool = True,
     ) -> None:
         self.deterministic = deterministic
         self.deterministic_function = deterministic_function
         self.continuous = continuous
         self.metrizable = metrizable
+        self.ordered = ordered
 
     def __and__(self, other: "Descriptors") -> "Descriptors":
         values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}

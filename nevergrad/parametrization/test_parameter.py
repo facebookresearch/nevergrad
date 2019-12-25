@@ -183,17 +183,18 @@ def test_list_parameter_instances(param: par.Parameter, classes: t.List[t.Type[p
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,continuous,deterministic",
-    [(par.Array(shape=(2, 2)), True, True),
-     (par.Choice([True, False]), True, False),
-     (par.Choice([True, False], deterministic=True), False, True),
-     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False),
-     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True),
+    "param,continuous,deterministic,ordered",
+    [(par.Array(shape=(2, 2)), True, True, True),
+     (par.Choice([True, False]), True, False, False),
+     (par.Choice([True, False], deterministic=True), False, True, False),
+     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False, False),
+     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True, True),
      ]
 )
-def test_parameter_descriptors(param: par.Parameter, continuous: bool, deterministic: bool) -> None:
+def test_parameter_descriptors(param: par.Parameter, continuous: bool, deterministic: bool, ordered: bool) -> None:
     assert param.descriptors.continuous == continuous
     assert param.descriptors.deterministic == deterministic
+    assert param.descriptors.ordered == ordered
 
 
 def test_instrumentation() -> None:

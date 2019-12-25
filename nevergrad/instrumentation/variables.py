@@ -2,6 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 from typing import List, Optional, Union, Sequence, Any, Type
 from functools import reduce
 import operator
@@ -24,104 +25,21 @@ def wrap_arg(arg: Any) -> ArgsKwargs:
     return (arg,), {}
 
 
-SoftmaxCategorical = p.Choice
+class SoftmaxCategorical(p.Choice):
+
+    def __init__(self, choices: tp.Iterable[tp.Any], deterministic: bool = False) -> None:
+        warnings.warn("SoftmaxCategorical will disappear in the next version, "
+                      "please update your code to use ng.p.Choice instead.", DeprecationWarning)
+        super().__init__(choices, deterministic=deterministic)
 
 
-# class SoftmaxCategorical(Variable):
-#    """Discrete set of n values transformed to a n-dim continuous variable.
-#    Each of the dimension encodes a weight for a value, and the softmax of weights
-#    provide probabilities for each possible value. A random value is sampled from
-#    this distribution.
-#
-#    Parameters
-#    ----------
-#    possibilities: list
-#        a list of possible values for the variable.
-#
-#    Note
-#    ----
-#    Since the chosen value is drawn randomly, the use of this variable makes deterministic
-#    functions become stochastic, hence "adding noise"
-#    """
-#
-#    def __init__(self, possibilities: List[Any], deterministic: bool = False) -> None:
-#        super().__init__()
-#        self.deterministic = deterministic
-#        self.possibilities = list(possibilities)
-#        name = "SC({}|{})".format(str(possibilities).strip("[]").replace(" ", ""), int(deterministic))
-#        self._specs.update(dimension=len(self.possibilities), continuous=not self.deterministic, noisy=not self.deterministic, name=name)
-#        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
-#                                        "for the Instrumentation intialization")
-#
-#    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
-#        random = False if deterministic or self.deterministic else self.random_state
-#        index = int(discretization.softmax_discretization(data, len(self.possibilities), random=random)[0])
-#        return wrap_arg(self.possibilities[index])
-#
-#    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
-#        arg = args[0]
-#        assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-#        out = discretization.inverse_softmax_discretization(self.possibilities.index(arg), len(self.possibilities))
-#        return np.array(out, copy=False)
-#
-#    def get_summary(self, data: ArrayLike) -> str:
-#        array = np.array(data, copy=False)
-#        output = self.data_to_arguments(array, deterministic=True)
-#        probas = discretization.softmax_probas(np.array(array, copy=False))
-#        proba_str = ", ".join([f'"{s}": {round(100 * p)}%' for s, p in zip(self.possibilities, probas)])
-#        return f"Value {output[0][0]}, from data: {data} yielding probas: {proba_str}"
-#
-#    def __repr__(self) -> str:
-#        return f"{self.__class__.__name__}({self.possibilities}, {self.deterministic})"
+class UnorderedDiscrete(p.TransitionChoice):
 
-
-UnorderedDiscrete = p.TransitionChoice
-
-
-# class UnorderedDiscrete(Variable):
-#    """Discrete list of n values transformed to a 1-dim discontinuous variable.
-#    A gaussian input yields a uniform distribution on the list of variables.
-#
-#    Parameters
-#    ----------
-#    possibilities: list
-#        a list of possible values for the variable.
-#
-#    Note
-#    ----
-#    The variables are assumed to be ordered.
-#    """
-#
-#    def __init__(self, possibilities: List[Any]) -> None:
-#        super().__init__()
-#        self.possibilities = list(possibilities)
-#        name = "OD({})".format(str(possibilities).strip("[],").replace(" ", ""))
-#        self._specs.update(continuous=False, dimension=1, name=name)
-#        assert len(possibilities) > 1, ("Variable needs at least 2 values to choose from (constant values can be directly used as input "
-#                                        "for the Instrumentation intialization")
-#
-#    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> ArgsKwargs:
-#        index = discretization.threshold_discretization(data, arity=len(self.possibilities))[0]
-#        return wrap_arg(self.possibilities[index])
-#
-#    def _arguments_to_data(self, *args: Any, **kwargs: Any) -> np.ndarray:
-#        arg = args[0]
-#        assert arg in self.possibilities, f'{arg} not in allowed values: {self.possibilities}'
-#        index = self.possibilities.index(arg)
-#        out = discretization.inverse_threshold_discretization([index], len(self.possibilities))
-#        return np.array(out, copy=False)
-#
-#    def _short_repr(self) -> str:
-#        return "OD({})".format(",".join([str(x) for x in self.possibilities]))
-#
-#    def __repr__(self) -> str:
-#        return f"{self.__class__.__name__}({self.possibilities})"
-#
-# # The ordered discrete variables are a special case of unordered discrete.
-# # Basically they are represented the exact same way, as Gaussian quantiles:
-# # the i^th (i=0,...,i=k-1) possible value of a discrete variable with k values is represented by the quantile
-# # (i+.5)/k of the standard normal distribution.
-# The optimization algorithm can check the instrumentation to know which kind of data this is.
+    def __init__(self, choices: List[Any]) -> None:
+        warnings.warn("OrderedDiscrete and UnorderedDiscrete will disappear in the next version, "
+                      "please update your code to use ng.p.TransitionChoice instead.", DeprecationWarning)
+        super().__init__(choices)
+        self.descriptors.ordered = isinstance(self, OrderedDiscrete)
 
 
 class OrderedDiscrete(UnorderedDiscrete):

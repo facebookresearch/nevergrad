@@ -47,7 +47,7 @@ def test_instrumentation() -> None:
     # check naming
     instru_str = ("Instrumentation(Tuple(G(0,1),3),Dict(a=OrderedDiscrete(choices=Tuple(0,1,2,3),"
                   "position=Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.]),"
-                  "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(4,)}[recombination=average,sigma=1.0])))")
+                  "b=SoftmaxCategorical(choices=Tuple(0,1,2,3),weights=Array{(4,)}[recombination=average,sigma=1.0])))")
     testing.printed_assert_equal(instru.name, instru_str)
     testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
 
@@ -90,8 +90,10 @@ def test_instrumented_function() -> None:
     args, kwargs = ifunc(np.array(data))
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
-    instru_str = ("Instrumentation(Tuple(Choice(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,G(0,1)),"
-                  "Dict(constkwarg=blublu,plop=Choice(choices=Tuple(3,4),weights=Array{(2,)}[recombination=average,sigma=1.0])))")
+    instru_str = ("Instrumentation(Tuple(SoftmaxCategorical(choices=Tuple(1,12),"
+                  "weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,G(0,1)),"
+                  "Dict(constkwarg=blublu,plop=SoftmaxCategorical(choices=Tuple(3,4),"
+                  "weights=Array{(2,)}[recombination=average,sigma=1.0])))")
     testing.printed_assert_equal(
         ifunc.descriptors,
         {

@@ -29,7 +29,8 @@ class BaseChoice(core.Dict):
 
     def _compute_descriptors(self) -> utils.Descriptors:
         deterministic = getattr(self, "_deterministic", True)
-        internal = utils.Descriptors(deterministic=deterministic, continuous=not deterministic)
+        ordered = not hasattr(self, "_deterministic")
+        internal = utils.Descriptors(deterministic=deterministic, continuous=not deterministic, ordered=ordered)
         return self.choices.descriptors & internal
 
     def __len__(self) -> int:
