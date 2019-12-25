@@ -206,7 +206,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False) -> Iterator[Experiment]:
+def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
@@ -226,7 +226,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
         for rotation in [True, False]
         for num_blocks in [1]
-        for d in [2, 10, 50]
+        for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
     for optim in optims:
         for function in functions:
@@ -239,6 +239,13 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
 @registry.register
 def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     internal_generator = yabbob(seed, parallel=False, big=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yahdbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = yabbob(seed, hd=True)
     for xp in internal_generator:
         yield xp
 
