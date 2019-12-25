@@ -7,9 +7,10 @@ import pickle
 import typing as t
 import pytest
 import numpy as np
-from .core import Parameter
+from .core import Constant
 from . import utils
 from . import parameter as par
+from . import helpers
 
 
 def test_array_basics() -> None:
@@ -63,13 +64,13 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
                                    ],
                          )
-def test_parameters_basic_features(param: Parameter) -> None:
+def test_parameters_basic_features(param: par.Parameter) -> None:
     check_parameter_features(param)
     check_parameter_freezable(param)
 
 
 # pylint: disable=too-many-statements
-def check_parameter_features(param: Parameter) -> None:
+def check_parameter_features(param: par.Parameter) -> None:
     seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
@@ -134,7 +135,7 @@ def check_parameter_features(param: Parameter) -> None:
     assert not descr_child.descriptors.deterministic_function
 
 
-def check_parameter_freezable(param: Parameter) -> None:
+def check_parameter_freezable(param: par.Parameter) -> None:
     param.freeze()
     value = param.value
     data = param.get_standardized_data()
@@ -165,8 +166,20 @@ def check_parameter_freezable(param: Parameter) -> None:
                                      "sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.])")
      ]
 )
-def test_parameter_names(param: Parameter, name: str) -> None:
+def test_parameter_names(param: par.Parameter, name: str) -> None:
     assert param.name == name
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "param,classes",
+    [(par.Array(shape=(2, 2)), [par.Array]),
+     (par.Tuple(12), [par.Tuple, Constant]),
+     (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
+     ]
+)
+def test_list_parameter_instances(param: par.Parameter, classes: t.List[t.Type[par.Parameter]]) -> None:
+    outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
+    assert outputs == classes
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -178,7 +191,7 @@ def test_parameter_names(param: Parameter, name: str) -> None:
      (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True),
      ]
 )
-def test_parameter_descriptors(param: Parameter, continuous: bool, deterministic: bool) -> None:
+def test_parameter_descriptors(param: par.Parameter, continuous: bool, deterministic: bool) -> None:
     assert param.descriptors.continuous == continuous
     assert param.descriptors.deterministic == deterministic
 

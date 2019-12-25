@@ -11,6 +11,7 @@ from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
+from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad import instrumentation as inst
@@ -1513,7 +1514,9 @@ class NGO(base.Optimizer):
         if self.instrumentation.probably_noisy:
             self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmax = any(isinstance(x, inst.var.OrderedDiscrete) for x in self.instrumentation._parameters.values())
+        all_params = paramhelpers.list_parameter_instances(self.instrumentation)
+        self.has_discrete_not_softmax = any(isinstance(x, inst.var.OrderedDiscrete) for x in all_params)
+        # pylint: disable=too-many-nested-blocks
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
