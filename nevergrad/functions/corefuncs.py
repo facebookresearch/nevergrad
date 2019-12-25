@@ -161,7 +161,7 @@ def altellipsoid(y: np.ndarray) -> float:
 
 
 def step(s: float) -> float:
-    return np.exp(int(np.log(s)))
+    return float(np.exp(int(np.log(s))))
 
 
 @registry.register
@@ -206,7 +206,7 @@ def bucherastrigin(x: np.ndarray) -> float:
 def doublelinearslope(x: np.ndarray) -> float:
     """We decided to use two linear slopes rather than having a constraint artificially added for
     not having the optimum at infinity."""
-    return np.abs(np.sum(x))
+    return float(np.abs(np.sum(x)))
 
 
 @registry.register
