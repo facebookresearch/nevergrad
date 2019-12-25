@@ -6,7 +6,6 @@
 # Discussions with Tristan Cazenave, Bruno Bouzy, have been helpful.
 # Dagstuhl's 2019 seminar on games has been helpful (seminar 19511).
 
-# import matplotlib.pyplot as plt
 import numpy as np
 from nevergrad import instrumentation as inst
 from nevergrad.parametrization import parameter as p
@@ -369,7 +368,6 @@ class _Game:
         b = len(cards) // 2  # at most 26
         c = cards[0]  # at most 13
         # print(a, b, c, a*26*13+b*13+c, len(policy))
-        print(policy.shape)
         if self.batawaf:
             seed = policy[a * 18 * 6 + b * 6 + c]  # type: ignore
         else:

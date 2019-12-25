@@ -101,7 +101,6 @@ class PowerSystem(inst.InstrumentedFunction):
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
         for a in dam_agents:
-            print(len(x), a.GetParamNumbers())
             assert len(x) >= a.GetParamNumbers()
             a.SetParams(np.array(x[:a.GetParamNumbers()]))
             x = x[a.GetParamNumbers():]

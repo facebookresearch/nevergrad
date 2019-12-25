@@ -25,6 +25,7 @@ from .base import InefficientSettingsWarning
 from .base import Parameter
 from . import sequences
 
+
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *  # noqa: F403
@@ -1534,10 +1535,17 @@ class NGO(base.Optimizer):
                         else:
                             self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
-                        if num_workers == 1 and budget > 6000:  # Let us go memetic.
-                            self.optims = [chainCMASQP(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                        # if num_workers == 1 and budget > 6000:  # Let us go memetic.
+                        #    self.optims = [chainCMASQP(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        # else
+                        if num_workers == 1 and budget < self.dimension * 30:
+                            if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            else:
+                                self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            if self.dimension > 2000:  # DE is great in such a case.
+                            if self.dimension > 2000:  # DE is great in such a case (?).
                                 self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
                             else:
                                 self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
