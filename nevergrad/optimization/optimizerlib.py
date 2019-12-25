@@ -1532,7 +1532,7 @@ class NGO(base.Optimizer):
                         #    self.optims = [chainCMASQP(self.instrumentation, budget, num_workers)]  # noqa: F405
                         #else 
                         if num_workers == 1 and budget < self.dimension * 30:
-                            if dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                            if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
                                 self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
                             else:
                                 self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
