@@ -9,9 +9,6 @@
 # - Guenter Rudolph
 # - Jialin Liu
 
-from math import pi, cos, sin
-from typing import Any
-from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 from ... import instrumentation as inst
@@ -33,8 +30,8 @@ class STSP(inst.InstrumentedFunction):
         self.order = order
         x = self.x[order]
         y = self.y[order]
-        return np.sqrt((x[0]-x[-1])**2+(y[0]-y[-1])**2) + sum(np.sqrt((x[i]-x[i+1])**2 + (y[i]-y[i+1])**2)
-                for i in range(self.dimension - 1))
+        return np.sqrt((x[0] - x[-1])**2 + (y[0] - y[-1])**2) + sum(np.sqrt((x[i] - x[i + 1])**2 + (y[i] - y[i + 1])**2)
+                                                                    for i in range(self.dimension - 1))
 
     def make_plots(self, filename: str = "stsp.png") -> None:
         plt.clf()
