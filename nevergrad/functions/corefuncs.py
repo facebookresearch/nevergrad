@@ -138,7 +138,7 @@ def cigar(x: np.ndarray) -> float:
 @registry.register
 def bentcigar(x: np.ndarray) -> float:
     """Classical example of ill conditioned function, but bent."""
-    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i-1) / (len(x)-1)) if x[i] > 0. else x[i] for i in range(len(x))])
+    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0. else x[i] for i in range(len(x))])
     return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
 
 
@@ -147,8 +147,8 @@ def multipeak(x: np.ndarray) -> float:
     """Inspired by M. Gallagher's Gaussian peaks function."""
     v = 10000.
     for a in range(101):
-        x_ = np.asarray([np.cos(a+np.sqrt(i)) for i in range(len(x))])
-        v = min(v, a/101. + np.exp(sphere(x-x_)))
+        x_ = np.asarray([np.cos(a + np.sqrt(i)) for i in range(len(x))])
+        v = min(v, a / 101. + np.exp(sphere(x - x_)))
     return v
 
 
@@ -197,7 +197,7 @@ def rastrigin(x: np.ndarray) -> float:
 @registry.register
 def bucherastrigin(x: np.ndarray) -> float:
     """Classical multimodal function. No box-constraint penalization here."""
-    s = np.asarray([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i-1)/(2*(len(x)-1)))) for i in range(len(x))])
+    s = np.asarray([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i - 1) / (2 * (len(x) - 1)))) for i in range(len(x))])
     cosi = float(np.sum(np.cos(2 * np.pi * s)))
     return float(10 * (len(x) - cosi) + sphere(s))
 

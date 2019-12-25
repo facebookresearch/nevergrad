@@ -14,17 +14,19 @@ from typing import Dict, Any, Optional, Callable, Tuple
 
 # Hackfix needed before pytorch import ("dlopen: cannot load any more object with static TLS")
 # See issue #305
+
 try:
     for packages in site.getsitepackages():
         for lib in glob.glob(f'{packages}/torch/lib/libgomp*.so*'):
             ctypes.cdll.LoadLibrary(lib)
-except:
+except Exception:  # pylint: disable=broad-except
     pass
 
 
+# pylint: disable=wrong-import-position
 import gym
 import numpy as np
-import torch
+import torch as torch
 import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import WeightedRandomSampler
