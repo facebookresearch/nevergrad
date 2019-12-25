@@ -25,7 +25,7 @@ In this example, the optimal value will be found in `recommendation.args[0]` and
 `instrumentation=n` is a shortcut to state that the function has only one variable, continuous, of dimension `n`,
 Defining the following instrumentation instead will optimize on both `x` (continuous, dimension 2) and `y` (continuous, dimension 1).
 ```python
-instrum = ng.Instrumentation(ng.var.Array(2), y=ng.var.Array(1).asscalar())
+instrum = ng.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
 optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.minimize(square)
 print(recommendation)
@@ -82,7 +82,7 @@ def square(x):
 
 optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
 # define a constraint on first variable of x:
-optimizer.instrumentation.set_cheap_constraint_checker(lambda x: x[0] >= 1)
+optimizer.instrumentation.register_cheap_constraint(lambda x: x[0] >= 1)
 
 recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs

@@ -2,11 +2,10 @@
 
 ## master
 
-- instrumentation names are changed
-- performance loss to investigate
-- silent fail on Instrumented functions: `InstrumentedFunction(func, *inst.args, **inst.kwargs)`
-- renamed to `ParametrizedFunction` 
-
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+- Instrumented functions may silently failed when initialized as: `InstrumentedFunction(func, *inst.args, **inst.kwargs)`,
+  because `args` and `kwargs` are now actual parameter values (new parametrization)
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
 
 ### Breaking changes
 
