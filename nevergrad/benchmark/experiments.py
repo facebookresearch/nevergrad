@@ -226,7 +226,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
         for rotation in [True, False]
         for num_blocks in [1]
-        for d in [2, 10, 50] if not hd else [100, 1000, 3000]
+        for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
     for optim in optims:
         for function in functions:
