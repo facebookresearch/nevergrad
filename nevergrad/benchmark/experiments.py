@@ -34,7 +34,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names()
              if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
-    optims = ["NGO"] + sorted(
+    optims = ["NGO", "CMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
         ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
@@ -58,7 +58,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Discrete test bed, including useless variables, 5 values or 2 values per character.
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
-    optims = ["NGO"] + sorted(
+    optims = ["NGO", "CMA"] + sorted(
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )

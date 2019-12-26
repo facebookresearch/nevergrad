@@ -23,14 +23,16 @@ class STSP(inst.InstrumentedFunction):
         self.x = self.instrumentation.random_state.normal(size=the_dimension)
         self.y = self.instrumentation.random_state.normal(size=the_dimension)
         self._descriptors.update(seed=seed)
+        self.order = np.arange(0, self.instrumentation.dimension)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
         order = np.argsort(x)
         self.order = order
         x = self.x[order]
         y = self.y[order]
-        return np.sqrt((x[0] - x[-1])**2 + (y[0] - y[-1])**2) + sum(np.sqrt((x[i] - x[i + 1])**2 + (y[i] - y[i + 1])**2)
-                                                                    for i in range(self.dimension - 1))
+        output = np.sqrt((x[0] - x[-1])**2 + (y[0] - y[-1])**2) + sum(np.sqrt((x[i] - x[i + 1])**2 + (y[i] - y[i + 1])**2)
+                                                                      for i in range(self.dimension - 1))
+        return float(output)
 
     def make_plots(self, filename: str = "stsp.png") -> None:
         plt.clf()

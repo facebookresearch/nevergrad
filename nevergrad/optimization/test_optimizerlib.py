@@ -144,14 +144,14 @@ def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
 def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
     with warnings.catch_warnings():
         # tests do not need to be efficient
-        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
         optimizer = registry[name](instrumentation=4, budget=2)
-    optimizer.suggest(np.array([12.0] * 4))
-    candidate = optimizer.ask()
-    try:
-        optimizer.tell(candidate, 12)
-    except base.TellNotAskedNotSupportedError:
-        pass
+        optimizer.suggest(np.array([12.0] * 4))
+        candidate = optimizer.ask()
+        try:
+            optimizer.tell(candidate, 12)
+        except base.TellNotAskedNotSupportedError:
+            pass
 
 
 # pylint: disable=redefined-outer-name
@@ -180,14 +180,14 @@ def test_optimizers_recommendation(with_parameter: bool,
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         param: Union[int, p.Instrumentation] = dimension if not with_parameter else p.Instrumentation(p.Array(shape=(dimension,)))
         optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
-    optim.instrumentation.random_state.seed(12)
-    np.testing.assert_equal(optim.name, name)
-    # the following context manager speeds up BO tests
-    # BEWARE: BO tests are deterministic but can get different results from a computer to another.
-    # Reducing the precision could help in this regard.
-    patched = partial(acq_max, n_warmup=10000, n_iter=2)
-    with patch("bayes_opt.bayesian_optimization.acq_max", patched):
-        candidate = optim.minimize(fitness)
+        optim.instrumentation.random_state.seed(12)
+        np.testing.assert_equal(optim.name, name)
+        # the following context manager speeds up BO tests
+        # BEWARE: BO tests are deterministic but can get different results from a computer to another.
+        # Reducing the precision could help in this regard.
+        patched = partial(acq_max, n_warmup=10000, n_iter=2)
+        with patch("bayes_opt.bayesian_optimization.acq_max", patched):
+            candidate = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')

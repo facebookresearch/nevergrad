@@ -193,6 +193,9 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 
 class _CMA(base.Optimizer):
+
+    one_shot = True
+
     def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedCMA()
@@ -1341,7 +1344,7 @@ class _Chain(base.Optimizer):
         if not self._optimizers_:
             self._optimizers_ = []
             converter = {"num_workers": self.num_workers, "dimension": self.dimension,
-                         "half": self.budget // 2 if self.budget else self.num_workers,  # type: ignore
+                         "half": self.budget // 2 if self.budget else self.num_workers,
                          "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
@@ -1585,10 +1588,10 @@ class JNGO(NGO):
                 if self.has_discrete_not_softmax:
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
                 else:
-                    if num_workers > budget / 5:  # type: ignore
+                    if num_workers > budget / 5:
                         self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
-                        if num_workers == 1 and budget > 3000:  # type: ignore
+                        if num_workers == 1 and budget > 3000:
                             self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
                             self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
