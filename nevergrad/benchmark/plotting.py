@@ -6,7 +6,6 @@
 import os
 import argparse
 import itertools
-import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
