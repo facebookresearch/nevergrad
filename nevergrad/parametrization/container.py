@@ -100,18 +100,22 @@ class Instrumentation(Tuple):
 
     @property
     def continuous(self) -> bool:
+        warnings.warn('"continuous" is deprecated, please use "descriptors.continuous" instead', DeprecationWarning)
         return self.descriptors.continuous
 
     @property
     def noisy(self) -> bool:
+        warnings.warn('"noisy" is deprecated, please use "not descriptors.deterministic" instead', DeprecationWarning)
         return not self.descriptors.deterministic
 
     @property
     def probably_noisy(self) -> bool:
+        warnings.warn('"probably_noisy" is deprecated, please use "not descriptors.deterministic_function" instead', DeprecationWarning)
         return not self.descriptors.deterministic_function
 
     @property
     def is_nonmetrizable(self) -> bool:
+        warnings.warn('"is_nonmetrizable" is deprecated, please use "not descriptors.metrizable" instead', DeprecationWarning)
         return not self.descriptors.metrizable
 
     @property

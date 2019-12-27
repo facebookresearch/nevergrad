@@ -1276,8 +1276,8 @@ class ParametrizedBO(base.ParametrizedFamily):
     def __call__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         gp_params = {} if self.gp_parameters is None else self.gp_parameters
         if isinstance(instrumentation, Instrumentation) and gp_params.get("alpha", 0) == 0:
-            noisy = instrumentation.noisy
-            cont = instrumentation.continuous
+            noisy = not instrumentation.descriptors.deterministic
+            cont = instrumentation.descriptors.continuous
             if noisy or not cont:
                 warnings.warn(
                     "Dis-continuous and noisy instrumentation require gp_parameters['alpha'] > 0 "
@@ -1514,10 +1514,9 @@ class NGO(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        self.has_noise = self.instrumentation.noisy
-        if self.instrumentation.probably_noisy:
-            self.has_noise = True
-        self.fully_continuous = self.instrumentation.continuous
+        descr = self.instrumentation.descriptors
+        self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        self.fully_continuous = descr.continuous
         all_params = paramhelpers.list_parameter_instances(self.instrumentation)
         self.has_discrete_not_softmax = any(isinstance(x, inst.var.OrderedDiscrete) for x in all_params)
         # pylint: disable=too-many-nested-blocks
@@ -1529,7 +1528,7 @@ class NGO(base.Optimizer):
                 # This is the real of population control. FIXME: should we pair with a bandit ?
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
-                if self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable or not self.fully_continuous:
+                if self.has_discrete_not_softmax or not self.instrumentation.descriptors.metrizable or not self.fully_continuous:
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
                 else:
                     if num_workers > budget / 5:

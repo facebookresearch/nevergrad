@@ -155,5 +155,5 @@ def test_deterministic_data_to_arguments() -> None:
 )
 def test_instrumentation_continuous_noisy(variables: tp.Tuple[Variable, ...], continuous: bool, noisy: bool) -> None:
     instru = mvar.Instrumentation(*variables)
-    assert instru.continuous == continuous
-    assert instru.noisy == noisy
+    assert instru.descriptors.continuous == continuous
+    assert instru.descriptors.deterministic == (not noisy)
