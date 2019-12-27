@@ -17,6 +17,7 @@ For example, we distinguish two (non exclusive) categories for submission.
 - Discrete optimization
 - Structured optimization 
 - Constrained optimization
+
 We explicitly allow portfolio-based algorithms such as landscape-aware algorithm selection techniques, etc. 
 
 ### New ideas & others: contributions to the experimental routines, including 
@@ -37,7 +38,7 @@ All supporting material should be uploaded together with the pull request. Links
 All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
 
 ## Key principles
-- Open source: no matter how good are the results, if they can not be reproduced or the code can not be checked this is not in the scope.
+- Open source: no matter how good the results are, if they can not be reproduced or the code can not be checked, this is not in the scope.
 - Reproducibility: if the code can not be run easily, it is also not in the scope.
 
 ## Dates
@@ -69,9 +70,9 @@ The award committee members are:
 - Tobias Glasmachers (Ruhr-Universität Bochum, Germany)
 - Manuel Lopez-Ibanez (University of Manchester, UK)
 - Katherine Mary Malan  (University of South Africa)
-- Luís Paquete (Coimbra, Portugal)
+- Luís Paquete (University of Coimbra, Portugal)
 - Jan van Rijn (Leiden University, The Netherlands)
-- Marc Schoenauer (Inria, France)
+- Marc Schoenauer (Inria Saclay, France)
 - Thomas Weise (Hefei University, China)
 
 Our policy re. possible conflict of interest: Award committee members can not propose as winner a person with whom they worked directly during the previous 12 months. There is no restriction for coworkers of other committee members than oneself.

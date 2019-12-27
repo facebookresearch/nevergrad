@@ -22,6 +22,7 @@ from .base import addCompare
 from .base import InefficientSettingsWarning
 from . import sequences
 
+
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *  # noqa: F403
@@ -189,6 +190,7 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 
 class _CMA(base.Optimizer):
+    one_shot = True
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedCMA()
@@ -308,7 +310,7 @@ class EDA(base.Optimizer):
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
                 (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))
+                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
             ]
             self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
             self.covariance = 0.1 * np.cov(np.array(self.evaluated_population).T)
@@ -367,7 +369,7 @@ class PCEDA(EDA):
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
                 (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))
+                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
             ]
             self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
             self.covariance = np.cov(np.array(self.evaluated_population).T)
@@ -423,7 +425,7 @@ class MPCEDA(EDA):
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
                 (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))
+                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
             ]
             self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
             self.covariance *= 0.9
@@ -460,7 +462,7 @@ class MEDA(EDA):
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
                 (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma))
+                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
             ]
             self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
             self.covariance *= 0.9
@@ -1337,7 +1339,7 @@ class _Chain(base.Optimizer):
         if not self._optimizers_:
             self._optimizers_ = []
             converter = {"num_workers": self.num_workers, "dimension": self.dimension,
-                         "half": self.budget // 2 if self.budget else self.num_workers,  # type: ignore
+                         "half": self.budget // 2 if self.budget else self.num_workers,
                          "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
             budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
             last_budget = None if self.budget is None else self.budget - sum(budgets)
@@ -1389,13 +1391,14 @@ class Chaining(base.ParametrizedFamily):
         assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
         super().__init__()
 
+
 chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
 chainCMASQP.no_parallelization = True
 
 chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
 chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)
 chainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).with_name("chainDEwithRdim", register=True)
-chainDEwithR30 = Chaining([RandomSearch, DE], [30]).with_name("chainDEwithR30", register=True) 
+chainDEwithR30 = Chaining([RandomSearch, DE], [30]).with_name("chainDEwithR30", register=True)
 chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwithLHS", register=True)
 chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
 chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
@@ -1408,7 +1411,7 @@ chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).with_name("
 chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).with_name("chainBOwithR", register=True)
 chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).with_name("chainBOwithRsqrt", register=True)
 chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).with_name("chainBOwithRdim", register=True)
-chainBOwithR30 = Chaining([RandomSearch, BO], [30]).with_name("chainBOwithR30", register=True) 
+chainBOwithR30 = Chaining([RandomSearch, BO], [30]).with_name("chainBOwithR30", register=True)
 chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
 chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
 chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
@@ -1421,7 +1424,7 @@ chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).wi
 chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).with_name("chainPSOwithR", register=True)
 chainPSOwithRsqrt = Chaining([RandomSearch, PSO], ["sqrt"]).with_name("chainPSOwithRsqrt", register=True)
 chainPSOwithRdim = Chaining([RandomSearch, PSO], ["dimension"]).with_name("chainPSOwithRdim", register=True)
-chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).with_name("chainPSOwithR30", register=True) 
+chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).with_name("chainPSOwithR30", register=True)
 chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS30", register=True)
 chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
 chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
@@ -1434,7 +1437,7 @@ chainPSOwithMetaRecentering = Chaining([MetaRecentering, PSO], ["num_workers"]).
 chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).with_name("chainCMAwithR", register=True)
 chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).with_name("chainCMAwithRsqrt", register=True)
 chainCMAwithRdim = Chaining([RandomSearch, CMA], ["dimension"]).with_name("chainCMAwithRdim", register=True)
-chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).with_name("chainCMAwithR30", register=True) 
+chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).with_name("chainCMAwithR30", register=True)
 chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS30", register=True)
 chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
 chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
@@ -1443,6 +1446,7 @@ chainCMAwithMetaRecentering30 = Chaining([MetaRecentering, CMA], [30]).with_name
 chainCMAwithMetaRecenteringsqrt = Chaining([MetaRecentering, CMA], ["sqrt"]).with_name("chainCMAwithMetaRecenteringsqrt", register=True)
 chainCMAwithMetaRecenteringdim = Chaining([MetaRecentering, CMA], ["dimension"]).with_name("chainCMAwithMetaRecenteringdim", register=True)
 chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).with_name("chainCMAwithMetaRecentering", register=True)
+
 
 @registry.register
 class cGA(base.Optimizer):
@@ -1494,9 +1498,12 @@ class cGA(base.Optimizer):
             self._previous_value_candidate = None
 
 
+# Discussions with Jialin Liu and Fabien Teytaud helped the following development.
+# This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
 @registry.register
 class NGO(base.Optimizer):
     """Nevergrad optimizer by competence map."""
+    one_shot = True
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
@@ -1506,24 +1513,38 @@ class NGO(base.Optimizer):
         if self.instrumentation.probably_noisy:
             self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmax = False
         self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
-            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+            # noise and discrete: let us merge evolution and bandits.
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
         else:
-            if self.has_noise:
+            if self.has_noise and self.fully_continuous:
+                # This is the real of population control. FIXME: should we pair with a bandit ?
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
-                if self.has_discrete_not_softmax:
-                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                if self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable or not self.fully_continuous:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
                 else:
                     if num_workers > budget / 5:
-                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
-                    else:
-                        if num_workers == 1 and budget > 3000:
-                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        if num_workers > budget / 2. or budget < self.dimension:
+                            self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    else:
+                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                        # if num_workers == 1 and budget > 6000:  # Let us go memetic.
+                        #    self.optims = [chainCMASQP(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        # else
+                        if num_workers == 1 and budget < self.dimension * 30:
+                            if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            else:
+                                self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            if self.dimension > 2000:  # DE is great in such a case (?).
+                                self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            else:
+                                self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0
@@ -1543,7 +1564,7 @@ class NGO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
-        
+
 @registry.register
 class JNGO(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
@@ -1552,7 +1573,7 @@ class JNGO(NGO):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
         if self.has_noise and self.has_discrete_not_softmax:
-            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
         else:
             if self.has_noise:
                 self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
