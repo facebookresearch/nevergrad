@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import typing as t
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
@@ -145,6 +146,10 @@ class Instrumentation(Tuple):
         return self._compatibility.value  # type: ignore
 
     def set_cheap_constraint_checker(self, func: t.Callable[..., bool]) -> None:
+        warnings.warn("set_cheap_constraint_checker is deprecated in favor of register_cheap_constraint with "
+                      "slightly different API:\nthe registered function must only take one argument (the value"
+                      " of the parameter, for an Instrumentation, this is a tuple countaining the tuple of args "
+                      "and the dict of kwargs")
         self.register_cheap_constraint(FunctionPack(func))
 
     def get_summary(self, data: ArrayLike) -> str:

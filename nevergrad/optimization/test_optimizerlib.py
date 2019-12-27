@@ -347,6 +347,9 @@ def test_constrained_optimization() -> None:
     instrumentation = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(instrumentation, budget=100)
     optimizer.instrumentation.random_state.seed(12)
-    optimizer.instrumentation.set_cheap_constraint_checker(lambda x, y: x[0] >= 1)  # type:ignore
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=UserWarning)
+        optimizer.instrumentation.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
