@@ -80,9 +80,9 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             raise AssertionError(
                                  "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
                                  ) from e
-        else:
-            assert optimizer.num_tell == budget + 1
-            assert optimizer.num_tell_not_asked == 1
+    else:
+        assert optimizer.num_tell == budget + 1
+        assert optimizer.num_tell_not_asked == 1
 
 
 SLOW = [
