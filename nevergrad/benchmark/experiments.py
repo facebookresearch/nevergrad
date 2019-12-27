@@ -15,7 +15,7 @@ from ..functions.stsp import STSP
 from ..functions import rl
 from ..functions.games import game
 from ..instrumentation import InstrumentedFunction
-from .xpbase import Experiment
+from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 
@@ -205,6 +205,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
+# pylint: disable=redefined-outer-name
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
@@ -313,6 +314,13 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
+def _positive_sum(args_kwargs: Any) -> bool:
+    args, kwargs = args_kwargs
+    if kwargs or len(args) != 1 or not isinstance(args[0], np.ndarray):
+        raise ValueError(f"Unexpected inputs {args} and {kwargs}")
+    return float(np.sum(args[0])) > 0
+
+
 @registry.register
 def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
@@ -328,7 +336,9 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     for optim in optims:
         for function in functions:
             for budget in [400, 4000, 40000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg), cheap_constraint_checker=lambda x: np.sum(x) > 0)
+                func = function.duplicate()
+                func.instrumentation.register_cheap_constraint(_positive_sum)
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register

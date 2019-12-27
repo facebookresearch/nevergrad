@@ -230,7 +230,7 @@ class Landscape(inst.InstrumentedFunction):
         self.instrumentation = self.instrumentation.with_name("standard")  # force descriptor update
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
-            variables = list(inst.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)
+            variables = list(p.TransitionChoice(list(range(x))) for x in self._image.shape)
             self.instrumentation = inst.Instrumentation(*variables).with_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.

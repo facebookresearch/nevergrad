@@ -15,7 +15,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
-from nevergrad.parametrization import parameter as p
+import nevergrad as ng
 from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
@@ -178,7 +178,8 @@ def test_optimizers_recommendation(with_parameter: bool,
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        param: Union[int, p.Instrumentation] = dimension if not with_parameter else p.Instrumentation(p.Array(shape=(dimension,)))
+        param: Union[int, ng.p.Instrumentation] = (dimension if not with_parameter else
+                                                   ng.p.Instrumentation(ng.p.Array(shape=(dimension,))))
         optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
         optim.instrumentation.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)
@@ -310,7 +311,7 @@ def test_population_pickle(name: str) -> None:
 
 def test_bo_instrumentation_and_parameters() -> None:
     # instrumentation
-    instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
+    instrumentation = inst.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
         optlib.QRBO(instrumentation, budget=10)
     with pytest.warns(None) as record:
@@ -335,7 +336,7 @@ def test_chaining() -> None:
 
 
 def test_instrumentation_optimizer_reproducibility() -> None:
-    instrumentation = inst.Instrumentation(inst.var.Array(1), y=inst.var.SoftmaxCategorical(list(range(100))))
+    instrumentation = inst.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
     instrumentation.random_state.seed(12)
     optimizer = optlib.RandomSearch(instrumentation, budget=10)
     recom = optimizer.minimize(_square)
@@ -343,7 +344,7 @@ def test_instrumentation_optimizer_reproducibility() -> None:
 
 
 def test_constrained_optimization() -> None:
-    instrumentation = inst.Instrumentation(x=inst.var.Array(1), y=inst.var.Scalar())
+    instrumentation = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(instrumentation, budget=100)
     optimizer.instrumentation.random_state.seed(12)
     optimizer.instrumentation.set_cheap_constraint_checker(lambda x, y: x[0] >= 1)  # type:ignore

@@ -5,7 +5,7 @@
 
 import uuid
 import copy
-from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
+from typing import Any, Tuple, Optional, Dict, Set, TypeVar
 import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
@@ -50,7 +50,6 @@ class Variable(p.Instrumentation):
     def __init__(self) -> None:
         super().__init__()
         self._specs = VarSpecs()
-        self._constraint_checker = _default_checker
         # compatibility
         self._data: tp.Optional[np.ndarray] = None
         self._value: tp.Optional[ArgsKwargs] = None
@@ -60,12 +59,6 @@ class Variable(p.Instrumentation):
         if self._data is None:
             self._data = np.zeros((self.dimension,))
         return self._data
-
-    def set_cheap_constraint_checker(self, func: Callable[..., bool]) -> None:
-        self._constraint_checker = func
-
-    def cheap_constraint_check(self, *args: Any, **kwargs: Any) -> bool:
-        return self._constraint_checker(*args, **kwargs)
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state

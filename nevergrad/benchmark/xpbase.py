@@ -143,7 +143,6 @@ class Experiment:
     def __init__(self, function: instru.InstrumentedFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
-                 cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
         assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
         assert function.dimension, "Nothing to optimize"
@@ -156,7 +155,6 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[base.Candidate] = None
         self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
-        self._cheap_constraint_checker = cheap_constraint_checker  # TODO: remove, and only use (future) parameter
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
@@ -226,8 +224,6 @@ class Experiment:
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
-        if self._cheap_constraint_checker:
-            self._optimizer.instrumentation.set_cheap_constraint_checker(self._cheap_constraint_checker)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
