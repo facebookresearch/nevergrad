@@ -92,7 +92,7 @@ def check_parameter_features(param: Parameter) -> None:
     param.register_cheap_constraint(_true)
     with pytest.warns(UserWarning):
         param.register_cheap_constraint(lambda *args, **kwargs: False)
-    child2 = param.spawn_child()
+    child2 = param.spawn_child(param.value)  # just checking new_value
     assert child.satisfies_constraint()
     assert not param.satisfies_constraint()
     assert not child2.satisfies_constraint()
