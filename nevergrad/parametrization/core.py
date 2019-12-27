@@ -160,24 +160,6 @@ class Parameter:
     def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
         raise utils.NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
 
-    def from_value(self: P, value: t.Any) -> P:
-        """Creates a new instance with the provided value
-        This is only a shortcut for spawning a child and updated the value
-
-        Parameter
-        ---------
-        value: Any
-            the value of the new instance
-
-        Returns
-        -------
-        Parameter
-            the new instance, with the given value
-        """
-        child = self.spawn_child()
-        child.value = value
-        return child
-
     # PART 2 - Additional features
 
     @property
@@ -302,14 +284,21 @@ class Parameter:
         if self._subparameters is not None:
             self.subparameters._set_random_state(random_state)
 
-    def spawn_child(self: P) -> P:
+    def spawn_child(self: P, new_value: t.Optional[t.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
         is sampled from the same data, and mutates independently from the parent.
+        If a new value is provided, it will be set to the new instance
+
+        Parameter
+        ---------
+        value: anything (optional)
+            if provided, it will be set to the new instance.
 
         Returns
         -------
         Parameter
-            a new instance of the same class, with same value/parameters/subparameters/...
+            a new instance of the same class, with same parameters/subparameters/...
+            Optionally, a new value will be set after creation
         """
         rng = self.random_state  # make sure to create one before spawning
         child = self._internal_spawn_child()
@@ -319,6 +308,8 @@ class Parameter:
         child._descriptors = self._descriptors
         child._name = self._name
         child.parents_uids.append(self.uid)
+        if new_value is not None:
+            child.value = new_value
         return child
 
     def freeze(self) -> None:
@@ -400,7 +391,9 @@ class Constant(Parameter):
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return instance
 
-    def spawn_child(self: P) -> P:
+    def spawn_child(self: P, new_value: t.Optional[t.Any] = None) -> P:
+        if new_value is not None:
+            self.value = new_value  # check that it is equal
         return self  # no need to create another instance for a constant
 
     def recombine(self: P, *others: P) -> None:
