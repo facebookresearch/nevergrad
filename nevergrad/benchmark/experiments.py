@@ -505,6 +505,30 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
+                            
+@registry.register
+def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = []
+
+    # Adding ARCoating.
+    funcs += [STSP(1, 10)]
+    funcs += [STSP(2, 100)]
+    funcs += [STSP(3, 1000)]
+    funcs += [STSP(4, 10000)]
+
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for num_workers in [1]: #, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
 
 @registry.register
 def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
