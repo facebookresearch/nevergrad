@@ -602,7 +602,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
-    for budget in [25600, 51200, 102400]:
+    for budget in [25600, 51200, 102400, 204800, 409600]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in algos:
@@ -739,13 +739,39 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
             mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
                                          ArtificialFunction(name2, block_dimension=7)],
                                         upper_bounds=np.array((50., 50.)))]
-        for name3 in ["sphere", "ellipsoid"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
-                                         ArtificialFunction(name3, block_dimension=6),
-                                         ArtificialFunction(name2, block_dimension=6)],
-                                        upper_bounds=np.array((100, 100, 1000.)))]
+            for name3 in ["sphere", "ellipsoid"]:
+                mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                             ArtificialFunction(name3, block_dimension=6),
+                                             ArtificialFunction(name2, block_dimension=6)],
+                                            upper_bounds=np.array((100, 100, 1000.)))]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
+                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+                
+@registry.register
+def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "SQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    mofuncs: List[PackedFunctions] = []
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "hm"]:
+            for name3 in ["sphere", "ellipsoid"]:
+                for name4 in ["rastrigin", "rosenbrock"]:
+                    for name5 in ["hm", "rosenbrock"]:
+                        for name6 in ["rastrigin", "cigar"]:
+                            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                                         ArtificialFunction(name2, block_dimension=6),
+                                                         ArtificialFunction(name3, block_dimension=6),
+                                                         ArtificialFunction(name4, block_dimension=6),
+                                                         ArtificialFunction(name5, block_dimension=6),
+                                                         ArtificialFunction(name6, block_dimension=6)],
+                                                    upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in list(range(100, 5901, 400)):
                 yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
