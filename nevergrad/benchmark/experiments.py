@@ -670,17 +670,17 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
-    func = ARCoating()
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
              "OnePlusOne", "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
     # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
     for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
-        for num_workers in [1]: #, 10, 100]:
+        for num_workers in [1, 10, 100]:
             for algo in algos:
-                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                if not xp.is_incoherent:
-                    yield xp
+                for func in [ARCoating(10, 400), ARCoating(35,700), ARCoating(70,1000)]:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
