@@ -654,7 +654,7 @@ def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
     for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
         for num_workers in [1, 10, 100]:
             for algo in algos:
-                for func in [ARCoating(10, 400), ARCoating(35,700), ARCoating(70,1000]]:
+                for func in [ARCoating(10, 400), ARCoating(35,700), ARCoating(70,1000)]:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
