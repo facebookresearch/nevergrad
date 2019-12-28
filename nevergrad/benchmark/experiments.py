@@ -746,7 +746,7 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
                                                          ArtificialFunction(name4, block_dimension=6),
                                                          ArtificialFunction(name5, block_dimension=6),
                                                          ArtificialFunction(name6, block_dimension=6)],
-                                                    upper_bounds=np.array((100, 100, 1000.)))]
+                                                    upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
