@@ -41,16 +41,17 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
-        for bd in [30]
+        for bd in [5, 30, 180]
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
-            for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
-                           1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+            for nw in [1, 10]:
+                for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
+                               1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
+                    yield Experiment(func.duplicate(), optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
@@ -67,7 +68,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
-        for bd in [30]
+        for bd in [5, 30, 180]
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
@@ -114,7 +115,7 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
-            for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
+            for budget in [25, 37, 50, 75, 87] + list(range(100, 20001, 500)):
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
