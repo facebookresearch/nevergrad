@@ -157,3 +157,6 @@ class Variable:
     def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
         output = self.data_to_arguments(np.array(data, copy=False), deterministic=True)
         return f"Value {output[0][0]}, from data: {data}"
+
+    def freeze(self) -> None:
+        pass  # forward compatibility

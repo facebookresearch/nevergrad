@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import itertools
+import typing as tp
 from typing import List, Any, Tuple, Dict, Optional, Callable
 import numpy as np
 from ..common.typetools import ArrayLike
@@ -210,7 +211,86 @@ class Instrumentation(NestedVariables):
         return super()._arguments_to_data(*(wrap_arg(x) for x in args), **{k: wrap_arg(x) for k, x in kwargs.items()})
 
 
-class InstrumentedFunction:
+Parameter = Instrumentation  # looking ahead
+PF = tp.TypeVar("PF", bound="ParametrizedFunction")
+
+
+class ParametrizedFunction:
+    """Combines a function and its parametrization
+    Parameters
+    ----------
+    function: callable
+        the callable to convert
+    parameter: Parameter
+        the parametrization of the function
+    Notes
+    -----
+    - This function can then be directly used in benchmarks *if it returns a float*.
+    - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
+    """
+
+    def __init__(self, function: tp.Callable[..., tp.Any], parameter: Parameter) -> None:
+        assert callable(function)
+        self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
+        self._parameter = parameter
+        self.parameter = parameter
+        self._function = function
+        # if this is not a function bound to this very instance, add the function/callable name to the descriptors
+        if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
+            name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
+            self._descriptors.update(name=name)
+
+    @property
+    def parameter(self) -> Parameter:
+        return self._parameter
+
+    @parameter.setter
+    def parameter(self, parameter: Parameter) -> None:
+        self._parameter = parameter
+        self._parameter.freeze()
+        self._descriptors.update(instrumentation=parameter.name, dimension=parameter.dimension)  # TODO change to parameter
+
+    @property
+    def function(self) -> tp.Callable[..., tp.Any]:
+        return self._function
+
+    # to be added later on
+    # def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> X:
+    #     """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
+    #     """
+    #     return self._function(*args, **kwargs)
+
+    @property
+    def descriptors(self) -> tp.Dict[str, tp.Any]:
+        """Description of the function parameterization, as a dict. This base class implementation provides function_class,
+            noise_level, transform and dimension
+        """
+        return dict(self._descriptors)  # Avoid external modification
+
+    def __repr__(self) -> str:
+        """Shows the function name and its summary
+        """
+        params = [f"{x}={repr(y)}" for x, y in sorted(self._descriptors.items())]
+        return "Instance of {}({})".format(self.__class__.__name__, ", ".join(params))
+
+    def is_equivalent(self, other: tp.Any) -> bool:
+        """Check that two instances where initialized with same settings.
+        This is not meant to be used to check if functions are exactly equal
+        (initialization may hold some randomness)
+        This is only useful for unit testing.
+        (may need to be overloaded to make faster if tests are getting slow)
+        """
+        if other.__class__ != self.__class__:
+            return False
+        return bool(self._descriptors == other._descriptors)
+
+    def copy(self: PF) -> PF:
+        pf = ParametrizedFunction(self.function, self.parameter.copy())
+        pf._descriptors = self.descriptors
+        return pf  # type: ignore
+
+
+class InstrumentedFunction(ParametrizedFunction):
     """Converts a multi-argument function into a single-argument multidimensional continuous function
     which can be optimized.
 
@@ -243,24 +323,17 @@ class InstrumentedFunction:
     def __init__(self, function: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         assert callable(function)
         self._descriptors: Dict[str, Any] = {"function_class": self.__class__.__name__}
-        self._instrumentation = Instrumentation()  # dummy
-        self.instrumentation = Instrumentation(*args, **kwargs)  # sets descriptors
-        self.function = function
+        super().__init__(function, Instrumentation(*args, **kwargs))
         self.last_call_args: Optional[Tuple[Any, ...]] = None
         self.last_call_kwargs: Optional[Dict[str, Any]] = None
-        # if this is not a function bound to this very instance, add the function/callable name to the descriptors
-        if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
-            name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
-            self._descriptors.update(name=name)
 
     @property
     def instrumentation(self) -> Instrumentation:
-        return self._instrumentation
+        return self.parameter
 
     @instrumentation.setter
     def instrumentation(self, instrum: Instrumentation) -> None:
-        self._instrumentation = instrum
-        self._descriptors.update(instrumentation=instrum.name, dimension=instrum.dimension)
+        self.parameter = instrum
 
     @property
     def dimension(self) -> int:
@@ -313,3 +386,6 @@ class InstrumentedFunction:
         if other.__class__ != self.__class__:
             return False
         return bool(self._descriptors == other._descriptors)
+
+    def copy(self: PF) -> PF:
+        raise RuntimeError("InstrumentedFunction does not implement copy")
