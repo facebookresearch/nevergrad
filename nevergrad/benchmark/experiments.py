@@ -181,7 +181,8 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+
+#al(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
@@ -190,8 +191,8 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
               "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"] + list(
-        sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+    #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
