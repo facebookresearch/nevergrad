@@ -734,8 +734,7 @@ class PackedFunctions(ExperimentFunction):
         self._functions = functions
         self._upper_bounds = upper_bounds
         self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
-        inst = self._functions[0].instrumentation
-        super().__init__(self.multiobjective, inst)
+        super().__init__(self.multiobjective, self._functions[0].parameter)
         # TODO add descriptors?
 
     def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
@@ -791,4 +790,4 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 5901, 400)):
-                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))

@@ -194,7 +194,7 @@ class Experiment:
             torch.manual_seed(self.seed)  # type: ignore
         try:
             pfunc = self.function.copy()
-            instrumentation = self.function.parameter
+            instrumentation = pfunc.parameter
         except RuntimeError:  # compatibility
             pfunc = self.function
             instrumentation = self.function.parameter.copy()  # make sure it is not shared
