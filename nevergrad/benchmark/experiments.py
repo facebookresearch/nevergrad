@@ -41,16 +41,17 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
-        for bd in [30]
+        for bd in [5, 30, 180]
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
-            for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
-                           1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+            for nw in [1, 10]:
+                for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
+                               1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
+                    yield Experiment(func.duplicate(), optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
@@ -67,7 +68,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
-        for bd in [30]
+        for bd in [5, 30, 180]
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
@@ -114,7 +115,7 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
-            for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
+            for budget in [25, 37, 50, 75, 87] + list(range(100, 20001, 500)):
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -185,7 +186,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
-    optims = ["NaiveTBPSA", "TBPSA",
+    optims = ["NGO", "NaiveTBPSA", "TBPSA",
               "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
@@ -518,6 +519,23 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs = [STSP(1, 10), STSP(2, 100), STSP(3, 1000), STSP(4, 10000)]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE"]
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for num_workers in [1]:  # , 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
 def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[InstrumentedFunction] = []
     funcs += [game.Game("war")]
@@ -530,6 +548,28 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO"]
     for budget in [1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
+    funcs: List[InstrumentedFunction] = []
+    funcs += [game.Game("war")]
+    funcs += [game.Game("batawaf")]
+    funcs += [game.Game("flip")]
+    funcs += [game.Game("guesswho")]
+    funcs += [game.Game("bigguesswho")]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO"]
+    for budget in [25600, 51200, 102400]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:
@@ -590,7 +630,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
-    for budget in [25600, 51200, 102400]:
+    for budget in [25600, 51200, 102400, 204800, 409600]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in algos:
@@ -658,17 +698,17 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
-    func = ARCoating()
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
              "OnePlusOne", "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
     # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
     for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
-        for num_workers in [1]:  # , 10, 100]:
+        for num_workers in [1, 10, 100]:
             for algo in algos:
-                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                if not xp.is_incoherent:
-                    yield xp
+                for func in [ARCoating(10, 400), ARCoating(35, 700), ARCoating(70, 1000)]:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
@@ -727,13 +767,39 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
             mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
                                          ArtificialFunction(name2, block_dimension=7)],
                                         upper_bounds=np.array((50., 50.)))]
-        for name3 in ["sphere", "ellipsoid"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
-                                         ArtificialFunction(name3, block_dimension=6),
-                                         ArtificialFunction(name2, block_dimension=6)],
-                                        upper_bounds=np.array((100, 100, 1000.)))]
+            for name3 in ["sphere", "ellipsoid"]:
+                mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                             ArtificialFunction(name3, block_dimension=6),
+                                             ArtificialFunction(name2, block_dimension=6)],
+                                            upper_bounds=np.array((100, 100, 1000.)))]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
+                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "PSO", "DE", "SQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    mofuncs: List[PackedFunctions] = []
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "hm"]:
+            for name3 in ["sphere", "ellipsoid"]:
+                for name4 in ["rastrigin", "rosenbrock"]:
+                    for name5 in ["hm", "rosenbrock"]:
+                        for name6 in ["rastrigin", "cigar"]:
+                            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
+                                                         ArtificialFunction(name2, block_dimension=6),
+                                                         ArtificialFunction(name3, block_dimension=6),
+                                                         ArtificialFunction(name4, block_dimension=6),
+                                                         ArtificialFunction(name5, block_dimension=6),
+                                                         ArtificialFunction(name6, block_dimension=6)],
+                                                        upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
+    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in list(range(100, 5901, 400)):
                 yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))

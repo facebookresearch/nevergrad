@@ -15,15 +15,15 @@ from nevergrad import instrumentation as inst
 from nevergrad.parametrization import parameter as p
 
 
-# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class STSP(inst.InstrumentedFunction):
+class STSP(inst.InstrumentedFunction):  # TODO avoid seeding functions :s (in future ParametrizedFunction)
 
-    def __init__(self, seed: int = 0, the_dimension: int = 500) -> None:
-        super().__init__(self._simulate_stsp, p.Array(shape=(the_dimension,)))
-        self.x = self.instrumentation.random_state.normal(size=the_dimension)
-        self.y = self.instrumentation.random_state.normal(size=the_dimension)
-        self._descriptors.update(seed=seed)
+    def __init__(self, seed: int = 0, dimension: int = 500) -> None:
+        super().__init__(self._simulate_stsp, p.Array(shape=(dimension,)))
         self.order = np.arange(0, self.instrumentation.dimension)
+        self.instrumentation.random_state.seed(seed)
+        self.x = self.instrumentation.random_state.normal(size=self.dimension)
+        self.y = self.instrumentation.random_state.normal(size=self.dimension)
+        self._descriptors.update(seed=seed)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
         order = np.argsort(x)

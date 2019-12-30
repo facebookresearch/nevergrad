@@ -9,7 +9,7 @@
 
 ### Breaking changes
 
-- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more changes are coming. This should only impact custom variables.
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more (bigger yet) changes are coming. This should only impact custom-made variables.
 - `Candidates` have now a `uid` instead of a `uuid` for compatibility reasons.
 - Update archive `keys/items_as_array` methods to `keys/items_as_arrays` for consistency.
 
@@ -20,8 +20,11 @@
 - Cleaner installation.
 - New simplified `Log` variable for log-distributed scalars.
 - Cheap constraints can now be provided through the `Instrumentation`
-- Added preliminary multiobjective function support (may be buggy for the time being)
+- Added preliminary multiobjective function support (may be buggy for the time being, and API will change)
 - New callback for dumping parameters and loss, and loading them back easily for display (display yet to come).
+- Added a new parametrization module which is expected to soon replace the instrumentation module.
+- Added new test cases: games, power system, etc (experimental)
+- Added new algorithms: quasi-opposite one shot optimizers
 
 ## v0.2.2
 
