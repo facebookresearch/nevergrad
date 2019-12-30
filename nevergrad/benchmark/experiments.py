@@ -511,14 +511,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = []
-
-    # Adding ARCoating.
-    funcs += [STSP(1, 10)]
-    funcs += [STSP(2, 100)]
-    funcs += [STSP(3, 1000)]
-    funcs += [STSP(4, 10000)]
-
+    funcs = [STSP(1, 10), STSP(2, 100), STSP(3, 1000), STSP(4, 10000)]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
