@@ -8,6 +8,7 @@ from . import variables
 from . import variables as var
 from .multivariables import Instrumentation as Instrumentation
 from .multivariables import InstrumentedFunction as InstrumentedFunction
+from .multivariables import ParametrizedFunction as ParametrizedFunction
 from .utils import TemporaryDirectoryCopy, CommandFunction
 
 __all__ = ["Instrumentation", "var", "CommandFunction", "FolderFunction"]
