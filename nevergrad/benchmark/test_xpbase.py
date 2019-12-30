@@ -94,7 +94,7 @@ class Function(inst.ExperimentFunction):
         return 5 - value
 
     def copy(self) -> "Function":
-        return Function(self.parameter.dimension)
+        return Function(self.dimension)
 
 
 @testing.parametrized(

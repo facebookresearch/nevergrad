@@ -222,7 +222,7 @@ class ExperimentFunction:
     ----------
     function: callable
         the callable to convert
-    parameter: Parameter
+    parametrization: Parameter
         the parametrization of the function
     Notes
     -----
@@ -230,11 +230,11 @@ class ExperimentFunction:
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """
 
-    def __init__(self, function: tp.Callable[..., float], parameter: Parameter) -> None:
+    def __init__(self, function: tp.Callable[..., float], parametrization: Parameter) -> None:
         assert callable(function)
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
-        self._parameter = parameter
-        self.parameter = parameter
+        self._parametrization = parametrization
+        self.parametrization = parametrization
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
@@ -243,17 +243,18 @@ class ExperimentFunction:
 
     @property
     def dimension(self) -> int:
-        return self._parameter.dimension
+        return self._parametrization.dimension
 
     @property
-    def parameter(self) -> Parameter:
-        return self._parameter
+    def parametrization(self) -> Parameter:
+        return self._parametrization
 
-    @parameter.setter
-    def parameter(self, parameter: Parameter) -> None:
-        self._parameter = parameter
-        self._parameter.freeze()
-        self._descriptors.update(instrumentation=parameter.name, dimension=parameter.dimension)  # TODO change to parameter
+    @parametrization.setter
+    def parametrization(self, parametrization: Parameter) -> None:
+        self._parametrization = parametrization
+        self._parametrization.freeze()
+        # TODO change to parametrization
+        self._descriptors.update(instrumentation=parametrization.name, dimension=parametrization.dimension)
 
     @property
     def function(self) -> tp.Callable[..., float]:
@@ -289,7 +290,7 @@ class ExperimentFunction:
         return bool(self._descriptors == other._descriptors)
 
     def copy(self: PF) -> PF:
-        pf = self.__class__(self.function, self.parameter.copy())
+        pf = self.__class__(self.function, self.parametrization.copy())
         pf._descriptors = self.descriptors
         return pf
 
@@ -343,11 +344,11 @@ class InstrumentedFunction(ExperimentFunction):
 
     @property
     def instrumentation(self) -> Instrumentation:
-        return self.parameter
+        return self.parametrization
 
     @instrumentation.setter
     def instrumentation(self, instrum: Instrumentation) -> None:
-        self.parameter = instrum
+        self.parametrization = instrum
 
     @property
     def dimension(self) -> int:

@@ -19,8 +19,8 @@ class STSP(inst.ExperimentFunction):
     def __init__(self, dimension: int = 500) -> None:
         super().__init__(self._simulate_stsp, inst.Instrumentation(inst.var.Array(dimension)))
         self.order = np.arange(0, self.dimension)
-        self.x = self.parameter.random_state.normal(size=self.dimension)
-        self.y = self.parameter.random_state.normal(size=self.dimension)
+        self.x = self.parametrization.random_state.normal(size=self.dimension)
+        self.y = self.parametrization.random_state.normal(size=self.dimension)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
         order = np.argsort(x)

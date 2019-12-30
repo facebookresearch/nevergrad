@@ -106,7 +106,7 @@ def test_instrumented_function() -> None:
     )
     np.testing.assert_equal(ifunc.dimension, 8)
     data = [-100.0, 100, 1, 2, 3, 4, 100, -100]
-    args0, kwargs0 = ifunc.parameter.data_to_arguments(np.array(data))
+    args0, kwargs0 = ifunc.parametrization.data_to_arguments(np.array(data))
     output = ifunc(*args0, **kwargs0)  # this is very stupid and should be removed when Parameter is in use
     args: Any = output[0]  # type: ignore
     kwargs: Any = output[1]  # type: ignore
@@ -130,7 +130,7 @@ def test_instrumented_function_kwarg_order() -> None:
     )
     np.testing.assert_equal(ifunc.dimension, 7)
     data = np.array([-1, 1, 2, 3, 4, 100, -100])
-    args0, kwargs0 = ifunc.parameter.data_to_arguments(data)
+    args0, kwargs0 = ifunc.parametrization.data_to_arguments(data)
     # this is very stupid and should be removed when Parameter is in use
     kwargs: Any = ifunc(*args0, **kwargs0)[1]   # type: ignore
     testing.printed_assert_equal(kwargs, {"kw1": 0, "kw2": "constant", "kw3": [[1, 2], [3, 4]], "kw4": 1})

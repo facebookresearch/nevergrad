@@ -734,7 +734,7 @@ class PackedFunctions(ExperimentFunction):
         self._functions = functions
         self._upper_bounds = upper_bounds
         self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
-        super().__init__(self.multiobjective, self._functions[0].parameter)
+        super().__init__(self.multiobjective, self._functions[0].parametrization)
         # TODO add descriptors?
 
     def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:

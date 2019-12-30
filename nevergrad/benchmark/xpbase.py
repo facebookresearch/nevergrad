@@ -132,7 +132,7 @@ class Experiment:
         self._cheap_constraint_checker = cheap_constraint_checker
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim={self.function.parameter.dimension}) on {self.function}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
 
     @property
     def is_incoherent(self) -> bool:
@@ -194,10 +194,10 @@ class Experiment:
             torch.manual_seed(self.seed)  # type: ignore
         try:
             pfunc = self.function.copy()
-            instrumentation = pfunc.parameter
+            instrumentation = pfunc.parametrization
         except RuntimeError:  # compatibility
             pfunc = self.function
-            instrumentation = self.function.parameter.copy()  # make sure it is not shared
+            instrumentation = self.function.parametrization.copy()  # make sure it is not shared
         if isinstance(self.function, ArtificialFunction) and self.function._parameters.get("noise_level", 0) > 0:
             instrumentation.probably_noisy = True
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast

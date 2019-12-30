@@ -14,4 +14,4 @@ def test_games(name: str) -> None:
     assert score >= 0.1
     assert score <= 0.9
     function = game.Game(name)
-    function(function.parameter.random_state.normal(size=function.dimension))
+    function(function.parametrization.random_state.normal(size=function.dimension))
