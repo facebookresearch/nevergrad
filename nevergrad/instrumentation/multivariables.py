@@ -242,6 +242,10 @@ class ExperimentFunction:
             self._descriptors.update(name=name)
 
     @property
+    def dimension(self) -> int:
+        return self._parameter.dimension
+
+    @property
     def parameter(self) -> Parameter:
         return self._parameter
 

@@ -14,14 +14,13 @@ import numpy as np
 from ... import instrumentation as inst
 
 
-class STSP(inst.InstrumentedFunction):  # TODO avoid seeding functions :s (in future ParametrizedFunction)
+class STSP(inst.ExperimentFunction):
 
-    def __init__(self, seed: int = 0, dimension: int = 500) -> None:
-        super().__init__(self._simulate_stsp, inst.var.Array(dimension))
-        self.order = np.arange(0, self.instrumentation.dimension)
-        self.instrumentation.random_state.seed(seed)
-        self.x = self.instrumentation.random_state.normal(size=self.dimension)
-        self.y = self.instrumentation.random_state.normal(size=self.dimension)
+    def __init__(self, dimension: int = 500) -> None:
+        super().__init__(self._simulate_stsp, inst.Instrumentation(inst.var.Array(dimension)))
+        self.order = np.arange(0, self.dimension)
+        self.x = self.parameter.random_state.normal(size=self.dimension)
+        self.y = self.parameter.random_state.normal(size=self.dimension)
 
     def _simulate_stsp(self, x: np.ndarray) -> float:
         order = np.argsort(x)
@@ -31,6 +30,9 @@ class STSP(inst.InstrumentedFunction):  # TODO avoid seeding functions :s (in fu
         output = np.sqrt((x[0] - x[-1])**2 + (y[0] - y[-1])**2) + sum(np.sqrt((x[i] - x[i + 1])**2 + (y[i] - y[i + 1])**2)
                                                                       for i in range(self.dimension - 1))
         return float(output)
+
+    def copy(self) -> "STSP":
+        return STSP(self.dimension)
 
     def make_plots(self, filename: str = "stsp.png") -> None:
         plt.clf()

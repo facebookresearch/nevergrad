@@ -511,7 +511,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs = [STSP(1, 10), STSP(2, 100), STSP(3, 1000), STSP(4, 10000)]
+    funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",

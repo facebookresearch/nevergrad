@@ -380,7 +380,7 @@ class _Game:
 
 
 # Real life is more complicated! This is a very simple model.
-class Game(inst.InstrumentedFunction):  # TODO: Improve seeding support (with ParametrizedFunction)
+class Game(inst.ExperimentFunction):
     """
     Parameters
     ----------
@@ -393,15 +393,14 @@ class Game(inst.InstrumentedFunction):  # TODO: Improve seeding support (with Pa
         self.game = game
         self.game_object = _Game()
         dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
-        super().__init__(self._simulate_game, inst.var.Array(dimension))
-        self.instrumentation.probably_noisy = True
-        self.instrumentation.is_nonmetrizable = game in ["war", "batawaf"]
+        super().__init__(self._simulate_game, inst.Instrumentation(inst.var.Array(dimension)))
+        self.parameter.probably_noisy = True
+        self.parameter.is_nonmetrizable = game in ["war", "batawaf"]
         self._descriptors.update(game=game)
 
     def _simulate_game(self, x: np.ndarray) -> float:
         # FIXME: an adaptive opponent, e.g. bandit, would be better.
         # We play a game as player 1.
-        # np_state = np.random.get_state()  # TODO TOO DANGEREOUS! this can make the game play the same move all over again
         p1 = x[:(self.dimension // 2)]
         p2 = np.random.normal(size=self.dimension // 2)
         r = self.game_object.play_game(self.game, p1, p2)
@@ -410,5 +409,7 @@ class Game(inst.InstrumentedFunction):  # TODO: Improve seeding support (with Pa
         p1 = np.random.normal(size=self.dimension // 2)
         p2 = x[(self.dimension // 2):]
         r = self.game_object.play_game(self.game, p1, p2)
-        # np.random.set_state(np_state)
         return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
+
+    def copy(self) -> "Game":
+        return Game(self.game)
