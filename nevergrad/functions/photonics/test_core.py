@@ -73,4 +73,4 @@ def test_photonics() -> None:
     # check error
     with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n"):
         np.testing.assert_raises(RuntimeError, photo, np.zeros(16).tolist())
-    np.testing.assert_raises(ValueError, photo, np.zeros(12).tolist())
+    np.testing.assert_raises(AssertionError, photo, np.zeros(12).tolist())

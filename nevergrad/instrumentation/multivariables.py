@@ -362,6 +362,10 @@ class InstrumentedFunction(ExperimentFunction):
         """
         return self.instrumentation.data_to_arguments(data, deterministic=deterministic)
 
+    def legacy_call(self, x: ArrayLike) -> Any:
+        self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
+        return self.function(*self.last_call_args, **self.last_call_kwargs)
+
     def arguments_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
         return self.instrumentation.arguments_to_data(*args, **kwargs)
 
