@@ -39,12 +39,14 @@ def threshold_discretization(x: ArrayLike, arity: int = 2) -> List[int]:
     else:
         return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 
+
 # The function below is the opposite of the function above.
 def inverse_threshold_discretization(indexes: List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
     return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+
 
 # The discretization is, by nature, not one to one.
 # In the function below, we randomly draw one of the possible inverse values - this is therefore noisy.
@@ -103,7 +105,7 @@ def softmax_probas(data: np.ndarray) -> np.ndarray:
     return data / np.sum(data)  # type: ignore
 
 
-def inverse_softmax_discretization(index: int, arity: int) -> ArrayLike:
+def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
     # p is an arbitrary probability that the provided arg will be sampled with the returned point
     p = (1 / arity) * 1.5
     x: np.ndarray = np.zeros(arity)
