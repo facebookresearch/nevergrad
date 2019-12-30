@@ -206,6 +206,7 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
+# pylint: disable=redefined-outer-name
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
@@ -224,7 +225,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names 
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
@@ -233,9 +234,10 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
         for function in functions:
             for budget in [50, 200, 800, 3200, 12800] if (not big and not noise) else [40000, 80000]:
                 xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
-                        budget=budget, seed=next(seedg))
+                                budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
 
 @registry.register
 def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
@@ -498,7 +500,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [1]: #, 10, 100]:
+        for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:
@@ -506,7 +508,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
-                            
+
 @registry.register
 def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = []
@@ -522,7 +524,7 @@ def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
-        for num_workers in [1]: #, 10, 100]:
+        for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:
@@ -551,7 +553,6 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
-
 
 
 @registry.register
@@ -702,7 +703,7 @@ def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
     for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
         for num_workers in [1, 10, 100]:
             for algo in algos:
-                for func in [ARCoating(10, 400), ARCoating(35,700), ARCoating(70,1000)]:
+                for func in [ARCoating(10, 400), ARCoating(35, 700), ARCoating(70, 1000)]:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
@@ -775,7 +776,7 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
             for budget in list(range(100, 2901, 400)):
                 yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
 
-                
+
 @registry.register
 def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
@@ -794,7 +795,7 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
                                                          ArtificialFunction(name4, block_dimension=6),
                                                          ArtificialFunction(name5, block_dimension=6),
                                                          ArtificialFunction(name6, block_dimension=6)],
-                                                    upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
+                                                        upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
     # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
