@@ -105,7 +105,6 @@ class PowerSystem(inst.ParametrizedFunction):
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
         self.thermal_power_prices = np.random.rand(num_thermal_plants)
-        print("capa", self.thermal_power_capacity)
         dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
@@ -119,7 +118,6 @@ class PowerSystem(inst.ParametrizedFunction):
 
     def _simulate_power_system(self, x: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
-        print("array", x.size, x[:5])
         dam_agents = self.dam_agents
         for a in dam_agents:
             assert len(x) >= a.dimension

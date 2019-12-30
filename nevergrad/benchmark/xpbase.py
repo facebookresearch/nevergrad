@@ -219,7 +219,6 @@ class Experiment:
             np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
-            print("Seeded", self.seed)
         try:
             pfunc = self.function.copy()
             instrumentation = self.function.parameter
