@@ -173,16 +173,16 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
 
             # Let us rank power plants by production cost.
             order = sorted(range(len(price)), key=lambda x: price[x])  # pylint: disable=cell-var-from-loop
-            price = price[order]
-            capacity = capacity[order]
+            ordered_price = price[order]
+            ordered_capacity = capacity[order]
             dam_index = dam_index[order]
 
             # Using power plants in their cost order, so that we use cheap power plants first.
             marginal_cost = 0.
-            for i, _ in enumerate(price):
+            for i, _ in enumerate(ordered_price):
                 if needed <= 0:
                     break
-                production = min(capacity[i], needed)
+                production = min(ordered_capacity[i], needed)
                 # If this is a dam, producing will reduce the stock.
                 if dam_index[i] >= 0:
                     hydro_prod[dam_index[i]] += production  # Let us log the hydro prod for this dam.
