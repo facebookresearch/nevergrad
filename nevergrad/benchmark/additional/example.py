@@ -15,12 +15,12 @@ from nevergrad.benchmark import Experiment
 # it can be used with the --imports parameters if nevergrad.benchmark commandline function
 
 
-class CustomFunction(inst.InstrumentedFunction):
+class CustomFunction(inst.ExperimentFunction):
     """Example of a new test function
     """
 
     def __init__(self, offset):
-        super().__init__(self.oracle_call, ng.var.Scalar())
+        super().__init__(self.oracle_call, ng.Instrumentation(ng.var.Scalar()))
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks
@@ -31,6 +31,9 @@ class CustomFunction(inst.InstrumentedFunction):
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
         return (x - self.offset)**2
+
+    def copy(self) -> "CustomFunction":
+        return CustomFunction(self.offset)
 
 
 @ng.optimizers.registry.register  # register optimizers in the optimization registry

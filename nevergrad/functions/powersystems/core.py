@@ -290,6 +290,4 @@ class PowerSystem(inst.ExperimentFunction):
         plt.savefig(filename)
 
     def copy(self) -> "PowerSystem":
-        ps = PowerSystem(**self._params)
-        ps._descriptors = self.descriptors
-        return ps
+        return PowerSystem(**self._params)
