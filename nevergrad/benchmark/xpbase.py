@@ -8,41 +8,17 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Any, Optional, Iterator, Type, Callable, Tuple
+from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
 import numpy as np
 from nevergrad.functions import ArtificialFunction
 from ..common import decorators
 from .. import instrumentation as instru
-from ..functions import utils as futils
 from ..functions.rl.agents import torch
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
 
 registry = decorators.Registry[Callable[..., Iterator['Experiment']]]()
-
-
-class IFuncWrapper(execution.PostponedObject):
-    """Simple wrapper to use encapsulate relevant parts of an InstrumentedFunction
-
-    Parameter
-    ---------
-    func: Callable
-        the callable to wrap
-    """
-
-    def __init__(self, func: instru.ParametrizedFunction) -> None:
-        self.func = func
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return self.func.function(*args, **kwargs)  # compute *before* updating num calls
-
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
-        """Propagate subfunction delay
-        """
-        if isinstance(self.func, execution.PostponedObject):
-            return self.func.get_postponing_delay(args, kwargs, value)
-        return 1.
 
 
 class OptimizerSettings:
@@ -140,12 +116,12 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: instru.ParametrizedFunction,
+    def __init__(self, function: instru.ExperimentFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
-        assert isinstance(function, instru.ParametrizedFunction), ("All experiment functions should derive from InstrumentedFunction")
+        assert isinstance(function, instru.ExperimentFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         # Conjecture on the noise level.
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
@@ -189,7 +165,7 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, pfunc: instru.ParametrizedFunction, t0: float, num_calls: int) -> None:
+    def _log_results(self, pfunc: instru.ExperimentFunction, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         self.result["elapsed_time"] = time.time() - t0
@@ -197,10 +173,7 @@ class Experiment:
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         reco = self.recommendation
-        if isinstance(pfunc, futils.NoisyBenchmarkFunction):
-            self.result["loss"] = pfunc.noisefree_function(*reco.args, **reco.kwargs)
-        else:
-            self.result["loss"] = pfunc.function(*reco.args, **reco.kwargs)
+        self.result["loss"] = pfunc.noisefree_function(*reco.args, **reco.kwargs)  # ExperimentFunction directly override this if need be
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
@@ -237,14 +210,18 @@ class Experiment:
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
-        func = IFuncWrapper(pfunc)  # probably useless now (= num_ask) but helps being 100% sure
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                self.recommendation = base.Optimizer.minimize(self._optimizer, func, batch_mode=executor.batch_mode, executor=executor)
+                self.recommendation = base.Optimizer.minimize(
+                    self._optimizer,
+                    pfunc,
+                    batch_mode=executor.batch_mode,
+                    executor=executor
+                )
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
                 self._log_results(pfunc, t0, self._optimizer.num_ask)

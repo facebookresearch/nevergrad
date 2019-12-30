@@ -14,7 +14,7 @@ from ..functions.powersystems import PowerSystem
 from ..functions.stsp import STSP
 from ..functions import rl
 from ..functions.games import game
-from ..instrumentation import InstrumentedFunction
+from ..instrumentation import ExperimentFunction
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -419,7 +419,7 @@ def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - PowerSystem: a power system simulation problem.
     # - STSP: a simple TSP problem.
     # MLDA stuff, except the Perceptron.
-    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+    funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -467,7 +467,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - PowerSystem: a power system simulation problem.
     # - STSP: a simple TSP problem.
     # MLDA stuff, except the Perceptron.
-    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+    funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -528,7 +528,7 @@ def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
     funcs += [game.Game("flip")]
@@ -550,7 +550,7 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
     funcs += [game.Game("flip")]
@@ -572,7 +572,7 @@ def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [PowerSystem(3)]
     funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
     funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
@@ -603,7 +603,7 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [PowerSystem(3)]
     funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
     funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
@@ -633,7 +633,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = [
+    funcs: List[ExperimentFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -659,7 +659,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = [
+    funcs: List[ExperimentFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -738,11 +738,9 @@ class PackedFunctions(MultiobjectiveFunction):
     def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
         return np.array([f(*args, **kwargs) for f in self._functions])
 
-    def to_instrumented(self) -> InstrumentedFunction:  # this is only to insure reproducibility
-        # TODO: hopefully, be able to remove it eventually
+    def to_instrumented(self) -> ExperimentFunction:  # this is only to insure reproducibility
         inst = self._functions[0].instrumentation
-        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds),
-                                     *inst.args, **inst.kwargs)
+        instf = ExperimentFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds), inst)
         # TODO add descriptors?
         return instf
 

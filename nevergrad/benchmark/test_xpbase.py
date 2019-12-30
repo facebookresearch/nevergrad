@@ -6,14 +6,13 @@
 import sys
 import contextlib
 from unittest.mock import patch
-from typing import Optional, List, Tuple, Any, Dict
+from typing import Optional, List, Any
 import numpy as np
 from ..common import testing
 from ..optimization import test_base
 from ..functions import ArtificialFunction
 from ..functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from .. import instrumentation as inst
-from . import execution
 from . import xpbase
 
 
@@ -21,25 +20,12 @@ DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer
                     "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
 
 
-class Function(inst.InstrumentedFunction, execution.PostponedObject):
-
-    def __init__(self, dimension: int):
-        super().__init__(self.oracle_call, inst.var.Gaussian(0, 1, shape=[dimension]))
-
-    def oracle_call(self, x: np.ndarray) -> float:
-        return float(x[0])
-
-    # pylint: disable=unused-argument
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
-        return 5 - value
-
-
 def test_run_artificial_function() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=12)
     summary = xp.run()
     assert summary["elapsed_time"] < .5  # should be much faster
-    np.testing.assert_almost_equal(summary["loss"], 0.00078544)  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], 0.000785448)  # makes sure seeding works!
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
@@ -93,6 +79,22 @@ def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optio
         value = next(generator)
         output.append(value if value is None else value % 1000)
     np.testing.assert_array_equal(output, expected)
+
+
+class Function(inst.ExperimentFunction):
+
+    def __init__(self, dimension: int):
+        super().__init__(self.oracle_call, inst.Instrumentation(inst.var.Gaussian(0, 1, shape=[dimension])))
+
+    def oracle_call(self, x: np.ndarray) -> float:
+        return float(x[0])
+
+    # pylint: disable=unused-argument
+    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:
+        return 5 - value
+
+    def copy(self) -> "Function":
+        return Function(self.parameter.dimension)
 
 
 @testing.parametrized(

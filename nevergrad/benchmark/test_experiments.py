@@ -57,11 +57,9 @@ def check_seedable(maker: Any) -> None:
     # draw twice with same random seed_generator and once with a different one
     results = []
     algo = "OnePlusOne"  # for simplifying the test
+    rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
     for seed in [random_seed, random_seed, random_seed + 1]:
         xps = list(itertools.islice(maker(seed), 0, 3))
-        for xp in xps:
-            if isinstance(xp.function, rl.agents.TorchAgentFunction):
-                xp.function._num_test_evaluations = 1  # patch for faster evaluation
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])

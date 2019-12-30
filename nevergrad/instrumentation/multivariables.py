@@ -212,11 +212,12 @@ class Instrumentation(NestedVariables):
 
 
 Parameter = Instrumentation  # looking ahead
-PF = tp.TypeVar("PF", bound="ParametrizedFunction")
+PF = tp.TypeVar("PF", bound="ExperimentFunction")
 
 
-class ParametrizedFunction:
-    """Combines a function and its parametrization
+class ExperimentFunction:
+    """Combines a function and its parametrization for running experiments
+
     Parameters
     ----------
     function: callable
@@ -229,7 +230,7 @@ class ParametrizedFunction:
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """
 
-    def __init__(self, function: tp.Callable[..., tp.Any], parameter: Parameter) -> None:
+    def __init__(self, function: tp.Callable[..., float], parameter: Parameter) -> None:
         assert callable(function)
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parameter = parameter
@@ -251,14 +252,13 @@ class ParametrizedFunction:
         self._descriptors.update(instrumentation=parameter.name, dimension=parameter.dimension)  # TODO change to parameter
 
     @property
-    def function(self) -> tp.Callable[..., tp.Any]:
+    def function(self) -> tp.Callable[..., float]:
         return self._function
 
-    # to be added later on
-    # def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> X:
-    #     """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
-    #     """
-    #     return self._function(*args, **kwargs)
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+        """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
+        """
+        return self._function(*args, **kwargs)
 
     @property
     def descriptors(self) -> tp.Dict[str, tp.Any]:
@@ -285,12 +285,22 @@ class ParametrizedFunction:
         return bool(self._descriptors == other._descriptors)
 
     def copy(self: PF) -> PF:
-        pf = ParametrizedFunction(self.function, self.parameter.copy())
+        pf = self.__class__(self.function, self.parameter.copy())
         pf._descriptors = self.descriptors
-        return pf  # type: ignore
+        return pf
+
+    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+        """For defining custom computation times during experiments
+        """
+        return 1.
+
+    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+        """For defining custom noisefree test function for experiments
+        """
+        return self.function(*args, **kwargs)
 
 
-class InstrumentedFunction(ParametrizedFunction):
+class InstrumentedFunction(ExperimentFunction):
     """Converts a multi-argument function into a single-argument multidimensional continuous function
     which can be optimized.
 
@@ -354,10 +364,6 @@ class InstrumentedFunction(ParametrizedFunction):
 
     def arguments_to_data(self, *args: Any, **kwargs: Any) -> ArrayLike:
         return self.instrumentation.arguments_to_data(*args, **kwargs)
-
-    def __call__(self, x: ArrayLike) -> Any:
-        self.last_call_args, self.last_call_kwargs = self.data_to_arguments(x, deterministic=False)
-        return self.function(*self.last_call_args, **self.last_call_kwargs)
 
     def get_summary(self, data: ArrayLike) -> Any:  # probably impractical for large arrays
         """Provides the summary corresponding to the provided data

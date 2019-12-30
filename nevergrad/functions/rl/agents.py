@@ -31,7 +31,6 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import WeightedRandomSampler
 from nevergrad import instrumentation as inst
-from nevergrad.functions import utils
 from . import base
 from . import envs
 
@@ -118,7 +117,7 @@ class TorchAgent(base.Agent):
         self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})  # type: ignore
 
 
-class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
+class TorchAgentFunction(inst.InstrumentedFunction):
     """Instrumented function which plays the agent using an environment runner
     """
 

@@ -48,7 +48,7 @@ class Agent():
 
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class PowerSystem(inst.ParametrizedFunction):
+class PowerSystem(inst.ExperimentFunction):
     """Very simple model of a power system.
     Real life is more complicated!
 
@@ -290,4 +290,6 @@ class PowerSystem(inst.ParametrizedFunction):
         plt.savefig(filename)
 
     def copy(self) -> "PowerSystem":
-        return PowerSystem(**self._params)
+        ps = PowerSystem(**self._params)
+        ps._descriptors = self.descriptors
+        return ps

@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
-from typing import List, Tuple, Any, Dict, Callable
+from typing import List, Any, Callable
 import numpy as np
 from . import utils
 from . import corefuncs
@@ -60,7 +60,7 @@ class ArtificialVariable:
         return "Photonics"
 
 
-class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils.NoisyBenchmarkFunction):
+class ArtificialFunction(inst.InstrumentedFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -192,16 +192,17 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         """
         return self.__class__(**self._parameters)
 
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
+    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
+        args, kwargs = input_parameter
         assert not kwargs
         assert len(args) == 1
-        if isinstance(self._func, utils.PostponedObject):
+        if hasattr(self._func, "get_postponing_delay"):
             data = self._transform(args[0])
             total = 0.
             for block in data:
-                total += self._func.get_postponing_delay((block,), {}, value)
+                total += self._func.get_postponing_delay(((block,), {}), value)  # type: ignore
             return total
         return 1.
 

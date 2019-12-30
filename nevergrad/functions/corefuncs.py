@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Dict, Any, Tuple, List, Callable
+from typing import Any, List, Callable
 from math import exp, sqrt, tanh
 import numpy as np
-from .utils import PostponedObject
 from ..instrumentation import discretization
 from ..common.decorators import Registry
 
@@ -61,12 +60,13 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
     return float(39.16599 * len(x) + 0.5 * val + noise * np.random.normal(size=val.shape))
 
 
-class DelayedSphere(PostponedObject):
+class DelayedSphere:
+
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
-        x = args[0]
+    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+        x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
 
