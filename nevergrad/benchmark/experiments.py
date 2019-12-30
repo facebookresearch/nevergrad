@@ -181,8 +181,7 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-
-#al(seed: Optional[int] = None) -> Iterator[Experiment]:
+def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
