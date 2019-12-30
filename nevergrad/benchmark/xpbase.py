@@ -10,6 +10,7 @@ import warnings
 import traceback
 from typing import Dict, Union, Any, Optional, Iterator, Type, Callable, Tuple
 import numpy as np
+from nevergrad.functions import ArtificialFunction
 from ..common import decorators
 from .. import instrumentation as instru
 from ..functions import utils as futils
@@ -30,7 +31,7 @@ class IFuncWrapper(execution.PostponedObject):
         the callable to wrap
     """
 
-    def __init__(self, func: instru.InstrumentedFunction) -> None:
+    def __init__(self, func: instru.ParametrizedFunction) -> None:
         self.func = func
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -139,17 +140,14 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: instru.InstrumentedFunction,
+    def __init__(self, function: instru.ParametrizedFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
-        assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
+        assert isinstance(function, instru.ParametrizedFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         # Conjecture on the noise level.
-        if not self.function.instrumentation.probably_noisy:
-            if hasattr(self.function, "_parameters") and "noise_level" in self.function._parameters and self.function._parameters["noise_level"] > 0:  # type: ignore
-                self.function.instrumentation.probably_noisy = True
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
@@ -158,7 +156,7 @@ class Experiment:
         self._cheap_constraint_checker = cheap_constraint_checker
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.parameter.dimension}) on {self.function}"
 
     @property
     def is_incoherent(self) -> bool:
@@ -191,7 +189,7 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, t0: float, num_calls: int) -> None:
+    def _log_results(self, pfunc: instru.ParametrizedFunction, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         self.result["elapsed_time"] = time.time() - t0
@@ -199,10 +197,10 @@ class Experiment:
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         reco = self.recommendation
-        if isinstance(self.function, futils.NoisyBenchmarkFunction):
-            self.result["loss"] = self.function.noisefree_function(*reco.args, **reco.kwargs)
+        if isinstance(pfunc, futils.NoisyBenchmarkFunction):
+            self.result["loss"] = pfunc.noisefree_function(*reco.args, **reco.kwargs)
         else:
-            self.result["loss"] = self.function.function(*reco.args, **reco.kwargs)
+            self.result["loss"] = pfunc.function(*reco.args, **reco.kwargs)
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
@@ -216,12 +214,20 @@ class Experiment:
             a dictionary of callbacks to register on the optimizer with key "ask" and/or "tell" (see base Optimizer class).
             This is only for easier debugging.
         """
-        instrumentation = self.function.instrumentation.copy()  # make sure it is not shared
         if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
+            print("Seeded", self.seed)
+        try:
+            pfunc = self.function.copy()
+            instrumentation = self.function.parameter
+        except RuntimeError:  # compatibility
+            pfunc = self.function
+            instrumentation = self.function.parameter.copy()  # make sure it is not shared
+        if isinstance(self.function, ArtificialFunction) and self.function._parameters.get("noise_level", 0) > 0:
+            instrumentation.probably_noisy = True
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
@@ -232,7 +238,7 @@ class Experiment:
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
-        func = IFuncWrapper(self.function)  # probably useless now (= num_ask) but helps being 100% sure
+        func = IFuncWrapper(pfunc)  # probably useless now (= num_ask) but helps being 100% sure
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
@@ -242,9 +248,9 @@ class Experiment:
                 self.recommendation = base.Optimizer.minimize(self._optimizer, func, batch_mode=executor.batch_mode, executor=executor)
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
-                self._log_results(t0, self._optimizer.num_ask)
+                self._log_results(pfunc, t0, self._optimizer.num_ask)
                 raise e
-        self._log_results(t0, self._optimizer.num_ask)
+        self._log_results(pfunc, t0, self._optimizer.num_ask)
 
     def get_description(self) -> Dict[str, Union[str, float, bool]]:
         """Return the description of the experiment, as a dict.

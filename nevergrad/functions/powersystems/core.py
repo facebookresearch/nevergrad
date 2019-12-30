@@ -48,7 +48,7 @@ class Agent():
 
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with ParametrizedFunction
+class PowerSystem(inst.ParametrizedFunction):
     """Very simple model of a power system.
     Real life is more complicated!
 
@@ -87,6 +87,7 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
                  num_years: int = 1,
                  failure_cost: float = 500.,
                  ) -> None:
+        self._params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         self.num_dams = num_dams
         self.losses: tp.List[float] = []
         self.marginal_costs: tp.List[float] = []
@@ -104,12 +105,13 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
         self.thermal_power_prices = np.random.rand(num_thermal_plants)
+        print("capa", self.thermal_power_capacity)
         dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        the_dimension = sum([a.dimension for a in dam_agents])
+        dimension = sum([a.dimension for a in dam_agents])
+        super().__init__(self._simulate_power_system, inst.Instrumentation(inst.var.Array(dimension)))
         self.dam_agents = dam_agents
-        super().__init__(self._simulate_power_system, inst.var.Array(the_dimension))
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
     def get_num_vars(self) -> tp.List[tp.Any]:
@@ -117,12 +119,13 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
 
     def _simulate_power_system(self, x: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
+        print("array", x.size, x[:5])
         dam_agents = self.dam_agents
         for a in dam_agents:
             assert len(x) >= a.dimension
             a.set_parameters(np.array(x[:a.dimension]))
             x = x[a.dimension:]
-        assert not x
+        assert not x.size
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
@@ -287,3 +290,6 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
         ax.set_ylabel('production per hour')
         ax.legend(loc='best')
         plt.savefig(filename)
+
+    def copy(self) -> "PowerSystem":
+        return PowerSystem(**self._params)

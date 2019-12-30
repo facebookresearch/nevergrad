@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Iterator, Optional, List, Union, Any
-import nevergrad as ng
 import numpy as np
+import nevergrad as ng
 from ..functions import ArtificialFunction
 from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
@@ -15,7 +15,7 @@ from ..functions.stsp import STSP
 from ..functions import rl
 from ..functions.games import game
 from ..instrumentation import InstrumentedFunction
-from .xpbase import Experiment
+from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 
