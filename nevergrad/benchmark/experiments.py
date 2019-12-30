@@ -728,21 +728,21 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 # Intermediate definition for building a multiobjective problem.
-class PackedFunctions(MultiobjectiveFunction):
+class PackedFunctions(ExperimentFunction):
 
     def __init__(self, functions: List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
         self._functions = functions
         self._upper_bounds = upper_bounds
-        super().__init__(self._mo, upper_bounds)
+        self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
+        inst = self._functions[0].instrumentation
+        super().__init__(self.multiobjective, inst)
+        # TODO add descriptors?
 
     def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
         return np.array([f(*args, **kwargs) for f in self._functions])
 
-    def to_instrumented(self) -> ExperimentFunction:  # this is only to insure reproducibility
-        inst = self._functions[0].instrumentation
-        instf = ExperimentFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds), inst)
-        # TODO add descriptors?
-        return instf
+    def copy(self) -> "PackedFunctions":
+        return PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds)
 
 
 @registry.register
@@ -765,7 +765,7 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
-                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
