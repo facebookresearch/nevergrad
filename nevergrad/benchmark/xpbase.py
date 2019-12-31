@@ -173,7 +173,7 @@ class Experiment:
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         reco = self.recommendation
-        self.result["loss"] = pfunc.noisefree_function(*reco.args, **reco.kwargs)  # ExperimentFunction directly override this if need be
+        self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)  # ExperimentFunction directly override this if need be
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")

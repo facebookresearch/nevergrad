@@ -151,6 +151,8 @@ class ArtificialFunction(inst.InstrumentedFunction):
         self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
                                  discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
         # transforms are initialized at runtime to avoid slow init
+        if hasattr(self._func, "get_postponing_delay"):
+            raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
 
     @property
     def dimension(self) -> int:
@@ -175,7 +177,7 @@ class ArtificialFunction(inst.InstrumentedFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -192,17 +194,17 @@ class ArtificialFunction(inst.InstrumentedFunction):
         """
         return self.__class__(**self._parameters)
 
-    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
         args, kwargs = input_parameter
         assert not kwargs
         assert len(args) == 1
-        if hasattr(self._func, "get_postponing_delay"):
+        if hasattr(self._func, "compute_pseudotime"):
             data = self._transform(args[0])
             total = 0.
             for block in data:
-                total += self._func.get_postponing_delay(((block,), {}), value)  # type: ignore
+                total += self._func.compute_pseudotime(((block,), {}), value)  # type: ignore
             return total
         return 1.
 

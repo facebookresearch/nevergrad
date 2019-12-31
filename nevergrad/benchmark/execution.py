@@ -44,7 +44,7 @@ class MockedTimedJob:
             # compute the delay and add to queue
             self._delay = 1.
             if isinstance(self._func, ExperimentFunction):
-                self._delay = max(0, self._func.get_postponing_delay((self._args, self._kwargs), self._output))
+                self._delay = max(0, self._func.compute_pseudotime((self._args, self._kwargs), self._output))
 
     def result(self) -> Any:
         """Return the result if "done()" is true, and raises

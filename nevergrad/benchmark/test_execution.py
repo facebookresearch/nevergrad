@@ -20,7 +20,7 @@ class Function(inst.ExperimentFunction):
         return x + y
 
     # pylint: disable=unused-argument
-    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
         return 5 - value
 
 

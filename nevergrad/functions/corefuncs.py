@@ -65,7 +65,7 @@ class DelayedSphere:
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
         x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 

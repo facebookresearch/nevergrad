@@ -144,7 +144,7 @@ class TorchAgentFunction(inst.InstrumentedFunction):
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """

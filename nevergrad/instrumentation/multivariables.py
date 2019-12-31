@@ -240,6 +240,10 @@ class ExperimentFunction:
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
             self._descriptors.update(name=name)
+        if hasattr(self, "get_postponing_delay"):
+            raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
+        if hasattr(self, "noisefree_function"):
+            raise RuntimeError('"noisefree_function" has been replaced by "evaluation_function" and has been  aggressively deprecated')
 
     @property
     def dimension(self) -> int:
@@ -294,13 +298,34 @@ class ExperimentFunction:
         pf._descriptors = self.descriptors
         return pf
 
-    def get_postponing_delay(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
-        """For defining custom computation times during experiments
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+        """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
+        By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
+        function and the pseudo time can be a function of the function inputs and output.
+
+        Note: This replaces get_postponing_delay which has been aggressively deprecated
+
+        Parameters
+        ----------
+        input_parameter: Any
+            the input that was provided to the actual function
+        value: float
+            the output of the actual function
+
+        Returns
+        -------
+        float
+            the pseudo computation time of the call to the actual function
         """
         return 1.
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
-        """For defining custom noisefree test function for experiments
+    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
+        """Provides a (usually "noisefree") function used at final test/evaluation time in benchmarks.
+
+        Parameters
+        ----------
+        *args, **kwargs
+            same as the actual function
         """
         return self.function(*args, **kwargs)
 
