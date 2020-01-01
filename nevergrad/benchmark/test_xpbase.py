@@ -11,6 +11,7 @@ import numpy as np
 from ..common import testing
 from ..optimization import test_base
 from ..functions import ArtificialFunction
+from ..functions import ExperimentFunction
 from ..functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from .. import instrumentation as inst
 from . import xpbase
@@ -81,7 +82,7 @@ def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optio
     np.testing.assert_array_equal(output, expected)
 
 
-class Function(inst.ExperimentFunction):
+class Function(ExperimentFunction):
 
     def __init__(self, dimension: int):
         super().__init__(self.oracle_call, inst.Instrumentation(inst.var.Gaussian(0, 1, shape=[dimension])))

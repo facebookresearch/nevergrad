@@ -13,7 +13,8 @@ import numpy as np
 from nevergrad.functions import ArtificialFunction
 from ..common import decorators
 from .. import instrumentation as instru
-from ..functions.rl.agents import torch
+from ..functions.rl.agents import torch  # import includes pytorch fix
+from ..functions import ExperimentFunction
 from ..optimization import base
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
@@ -116,12 +117,12 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: instru.ExperimentFunction,
+    def __init__(self, function: ExperimentFunction,
                  optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
-        assert isinstance(function, instru.ExperimentFunction), ("All experiment functions should derive from InstrumentedFunction")
+        assert isinstance(function, ExperimentFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         # Conjecture on the noise level.
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
@@ -165,7 +166,7 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, pfunc: instru.ExperimentFunction, t0: float, num_calls: int) -> None:
+    def _log_results(self, pfunc: ExperimentFunction, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         self.result["elapsed_time"] = time.time() - t0

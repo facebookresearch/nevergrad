@@ -11,10 +11,11 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from ... import instrumentation as inst
+from nevergrad import instrumentation as inst
+from ..core import ExperimentFunction
 
 
-class STSP(inst.ExperimentFunction):
+class STSP(ExperimentFunction):
 
     def __init__(self, dimension: int = 500) -> None:
         super().__init__(self._simulate_stsp, inst.Instrumentation(inst.var.Array(dimension)))

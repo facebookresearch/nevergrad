@@ -11,6 +11,7 @@ from math import pi, cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 from ... import instrumentation as inst
+from ..core import ExperimentFunction
 
 
 class Agent():
@@ -48,7 +49,7 @@ class Agent():
 
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class PowerSystem(inst.ExperimentFunction):
+class PowerSystem(ExperimentFunction):
     """Very simple model of a power system.
     Real life is more complicated!
 

@@ -8,6 +8,7 @@
 
 import functools
 import numpy as np
+from nevergrad.functions import ExperimentFunction
 from nevergrad import instrumentation as inst
 
 
@@ -380,7 +381,7 @@ class _Game:
 
 
 # Real life is more complicated! This is a very simple model.
-class Game(inst.ExperimentFunction):
+class Game(ExperimentFunction):
     """
     Parameters
     ----------
