@@ -1394,6 +1394,8 @@ class Chaining(base.ParametrizedFamily):
 
 chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
 chainCMASQP.no_parallelization = True
+chainCMAPowell = Chaining([CMA, Powell], ["half"]).with_name("chainCMAPowell", register=True)
+chainCMAPowell.no_parallelization = True
 
 chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
 chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)
@@ -1532,19 +1534,19 @@ class NGO(base.Optimizer):
                             self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
                         # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                        # if num_workers == 1 and budget > 6000:  # Let us go memetic.
-                        #    self.optims = [chainCMASQP(self.instrumentation, budget, num_workers)]  # noqa: F405
-                        # else
-                        if num_workers == 1 and budget < self.dimension * 30:
-                            if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
-                            else:
-                                self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
+                            self.optims = [chainCMAPowell(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            if self.dimension > 2000:  # DE is great in such a case (?).
-                                self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            if num_workers == 1 and budget < self.dimension * 30:
+                                if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                    self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
+                                else:
+                                    self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
                             else:
-                                self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
+                                if self.dimension > 2000:  # DE is great in such a case (?).
+                                    self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                                else:
+                                    self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0
