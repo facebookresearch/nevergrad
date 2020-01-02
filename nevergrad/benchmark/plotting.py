@@ -160,8 +160,15 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.
                 # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                 # (typically when attribute1 and attribute2 are correlated).
-                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
-                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                try:
+                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                except TypeError:
+                    xindices = list(set([c[0] for c in df.unique(fixed)]))
+                try:
+                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                except TypeError:
+                    yindices = list(set([c[1] for c in df.unique(fixed)]))
+                    
                 for _ in range(len(xindices)):
                     best_algo += [[]]
                 for i in range(len(xindices)):
