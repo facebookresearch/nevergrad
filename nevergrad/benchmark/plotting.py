@@ -6,7 +6,6 @@
 import os
 import argparse
 import itertools
-import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
@@ -14,7 +13,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from ..common import tools
 from ..common.typetools import PathLike
 from .exporttable import export_table
@@ -105,7 +104,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget", competencemaps: bool=False) -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget", competencemaps: bool = False) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -156,13 +155,20 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         else:
             order = 0
         best_algo: List[List[str]] = []
-        if competencemaps and order == 2:  # With order 2 we can create a competence map. 
+        if competencemaps and order == 2:  # With order 2 we can create a competence map.
             print("\n#trying to competence-map")
-            if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.             
+            if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.
                 # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                 # (typically when attribute1 and attribute2 are correlated).
-                xindices = sorted(set([c[0] for c in df.unique(fixed)]))
-                yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                try:
+                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                except TypeError:
+                    xindices = list(set([c[0] for c in df.unique(fixed)]))
+                try:
+                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                except TypeError:
+                    yindices = list(set([c[1] for c in df.unique(fixed)]))
+                    
                 for _ in range(len(xindices)):
                     best_algo += [[]]
                 for i in range(len(xindices)):
@@ -183,13 +189,13 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
             fplotter.save(str(output_folder / name), dpi=_DPI)
-    
-        if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.       
+
+        if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
             print("\n# Competence map")
             name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-            export_table(str(output_folder  / name), xindices, yindices, best_algo)
+            export_table(str(output_folder / name), xindices, yindices, best_algo)
             print("Competence map data:", fixed, case, best_algo)
-            
+
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
