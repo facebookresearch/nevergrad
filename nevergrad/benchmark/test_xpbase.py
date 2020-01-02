@@ -26,7 +26,7 @@ def test_run_artificial_function() -> None:
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=12)
     summary = xp.run()
     assert summary["elapsed_time"] < .5  # should be much faster
-    np.testing.assert_almost_equal(summary["loss"], 0.000785448)  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], 0.00078544)  # makes sure seeding works!
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
