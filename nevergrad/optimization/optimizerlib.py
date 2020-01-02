@@ -1518,7 +1518,10 @@ class NGO(base.Optimizer):
         self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
-            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+            if self.dimension < 60:
+                self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+            else:
+                self.optims = [CMA(self.instrumentation, budget, num_workers)]
         else:
             if self.has_noise and self.fully_continuous:
                 # This is the real of population control. FIXME: should we pair with a bandit ?
