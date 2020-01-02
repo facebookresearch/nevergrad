@@ -47,7 +47,7 @@ def test_artitificial_function_repr() -> None:
 def test_testcase_function_value(config: Dict[str, Any], expected: float) -> None:
     # make sure no change is made to the computation
     func = functionlib.ArtificialFunction(**config)
-    np.random.seed(2)
+    np.random.seed(3)
     x = np.random.normal(0, 1, func.dimension)
     x *= -1 if config.get("noise_dissymmetry", False) else 1  # change sign to activate noise dissymetry
     if config.get("hashing", False):
