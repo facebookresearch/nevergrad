@@ -5,6 +5,11 @@
 ### Breaking changes
 
 - `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more (bigger yet) changes are coming. This should only impact custom-made variables.
+- `InstrumentedFunction` has been aggressively deprecated in favor of using the `Instrumentation` directly at the optimizer initialization,
+  and of using `ExperimentFunction` to define functions to be used in benchmarks. Main differences are:
+  * `instrumentation` attribute is renamed to `parametrization` for forward compatibility.
+  *  `__init__` takes exactly two arguments (main function and parametrization/instrumentation) and
+  * calls to `__call__` is directly forwarded to the main function (instead of converting from data space),
 - `Candidates` have now a `uid` instead of a `uuid` for compatibility reasons.
 - Update archive `keys/items_as_array` methods to `keys/items_as_arrays` for consistency.
 

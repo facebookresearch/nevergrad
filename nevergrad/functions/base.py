@@ -18,7 +18,7 @@ class ExperimentFunctionCopyError(NotImplementedError):
 
 
 class ExperimentFunction:
-    """Combines a function and its parametrization for running experiments
+    """Combines a function and its parametrization for running experiments (see benchmark subpackage)
 
     Parameters
     ----------
@@ -28,8 +28,10 @@ class ExperimentFunction:
         the parametrization of the function
     Notes
     -----
-    - This function can then be directly used in benchmarks *if it returns a float*.
+    - you can redefine custom "evaluation_function" and "compute_pseudotime" for custom behaviors in experiments
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
+    - Makes sure you the "copy()" methods works (provides a new copy of the function *and* its parametrization)
+      if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
     def __init__(self, function: tp.Callable[..., float], parametrization: Variable) -> None:
