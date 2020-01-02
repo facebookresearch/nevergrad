@@ -20,6 +20,7 @@ class CustomFunction(ngfuncs.ExperimentFunction):
 
     def __init__(self, offset):
         super().__init__(self.oracle_call, ng.Instrumentation(ng.var.Scalar()))
+        self.register_initialization(offset=offset)  # to create equivalent instances through "copy"
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks
@@ -30,9 +31,6 @@ class CustomFunction(ngfuncs.ExperimentFunction):
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
         return (x - self.offset)**2
-
-    def copy(self) -> "CustomFunction":
-        return CustomFunction(self.offset)
 
 
 @ng.optimizers.registry.register  # register optimizers in the optimization registry

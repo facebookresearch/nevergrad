@@ -91,6 +91,7 @@ class Function(ExperimentFunction):
 
     def __init__(self, dimension: int):
         super().__init__(self.oracle_call, inst.Instrumentation(inst.var.Gaussian(0, 1, shape=[dimension])))
+        self.register_initialization(dimension=dimension)
 
     def oracle_call(self, x: np.ndarray) -> float:
         return float(x[0])
@@ -98,9 +99,6 @@ class Function(ExperimentFunction):
     # pylint: disable=unused-argument
     def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
         return 5 - value
-
-    def copy(self) -> "Function":
-        return Function(self.dimension)
 
 
 @testing.parametrized(
