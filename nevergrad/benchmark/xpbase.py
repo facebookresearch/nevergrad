@@ -10,7 +10,6 @@ import warnings
 import traceback
 from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
 import numpy as np
-from nevergrad.functions import ArtificialFunction
 from ..common import decorators
 from .. import instrumentation as instru
 from ..functions.rl.agents import torch  # import includes pytorch fix
@@ -198,8 +197,6 @@ class Experiment:
             torch.manual_seed(self.seed)  # type: ignore
         pfunc = self.function.copy()
         instrumentation = pfunc.parametrization
-        if isinstance(self.function, ArtificialFunction) and self.function._parameters.get("noise_level", 0) > 0:
-            instrumentation.probably_noisy = True
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
