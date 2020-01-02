@@ -105,9 +105,9 @@ class Experiment:
 
     Parameters
     ----------
-    function: InstrumentedFunction
-        the function to run the experiment on. It must inherit from InstrumentedFunction to implement
-        descriptors for the function.
+    function: ExperimentFunction
+        the function to run the experiment on. It must inherit from ExperimentFunction to implement
+        necessary functionalities (parametrization, descriptors, evaluation_function, pseudotime etc)
 
     Note
     ----
@@ -122,7 +122,8 @@ class Experiment:
                  batch_mode: bool = True, seed: Optional[int] = None,
                  cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
-        assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should derive from InstrumentedFunction")
+        assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
+                                                                "derive from ng.functions.ExperimentFunction")
         self.function = function
         # Conjecture on the noise level.
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
