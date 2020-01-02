@@ -230,11 +230,11 @@ class ExperimentFunction:
     - You can update the "_descriptors" dict attribute so that function parameterization is recorded during benchmark
     """
 
-    def __init__(self, function: tp.Callable[..., float], parametrization: Parameter) -> None:
+    def __init__(self, function: tp.Callable[..., float], parametrization: Variable) -> None:
         assert callable(function)
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
-        self._parametrization = parametrization
-        self.parametrization = parametrization
+        self._parametrization = Instrumentation()
+        self.parametrization = parametrization if isinstance(parametrization, Instrumentation) else Instrumentation(parametrization)
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore

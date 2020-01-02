@@ -11,7 +11,8 @@
 from typing import Optional
 import numpy as np
 import scipy.spatial
-from ...common.typetools import ArrayLike
+from nevergrad.common.typetools import ArrayLike
+from ..core import ExperimentFunction
 from ... import instrumentation as inst
 from . import datasets
 
@@ -26,7 +27,7 @@ def _kmeans_distance(points: np.ndarray, centers: np.ndarray) -> float:
     return float(np.sum(affect))
 
 
-class Clustering(inst.InstrumentedFunction):
+class Clustering(ExperimentFunction):
     """Cost function of a clustering problem.
 
     Parameters
@@ -76,7 +77,7 @@ class Clustering(inst.InstrumentedFunction):
         return _kmeans_distance(self._points, centers)
 
 
-class Perceptron(inst.InstrumentedFunction):
+class Perceptron(ExperimentFunction):
     """Perceptron function
 
     Parameters
@@ -141,7 +142,7 @@ class Perceptron(inst.InstrumentedFunction):
         return float(np.mean((gx - self._y)**2))
 
 
-class SammonMapping(inst.InstrumentedFunction):
+class SammonMapping(ExperimentFunction):
     """Sammon mapping function
     """
 
@@ -204,7 +205,7 @@ class SammonMapping(inst.InstrumentedFunction):
         return float(np.sum(norm_prox.ravel()))
 
 
-class Landscape(inst.InstrumentedFunction):
+class Landscape(ExperimentFunction):
     """Planet Earth Landscape problem defined in
     Machine Learning and Data Analysis (MLDA) Problem Set v1.0, Gallagher et al., 2018, PPSN
     https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view
@@ -225,16 +226,16 @@ class Landscape(inst.InstrumentedFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.var.Array(1).asscalar(), inst.var.Array(1).asscalar())
-        self.instrumentation = self.instrumentation.with_name("standard")  # force descriptor update
+        super().__init__(self._get_pixel_value, inst.Instrumentation(inst.var.Scalar(), inst.var.Scalar()))
+        self.parametrization = self.parametrization.with_name("standard")  # force descriptor update
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
             variables = list(inst.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)
-            self.instrumentation = inst.Instrumentation(*variables).with_name("gaussian")
+            self.parametrization = inst.Instrumentation(*variables).with_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.
             variables2 = list(inst.var.Gaussian(s, s) for s in stds)
-            self.instrumentation = inst.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
+            self.parametrization = inst.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
         elif transform is not None:
             raise ValueError(f"Unknown transform {transform}")
         self._max = float(self._image.max())

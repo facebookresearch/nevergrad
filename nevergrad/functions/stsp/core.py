@@ -18,7 +18,7 @@ from ..core import ExperimentFunction
 class STSP(ExperimentFunction):
 
     def __init__(self, dimension: int = 500) -> None:
-        super().__init__(self._simulate_stsp, inst.Instrumentation(inst.var.Array(dimension)))
+        super().__init__(self._simulate_stsp, inst.var.Array(dimension))
         self.order = np.arange(0, self.dimension)
         self.x = self.parametrization.random_state.normal(size=self.dimension)
         self.y = self.parametrization.random_state.normal(size=self.dimension)

@@ -31,6 +31,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import WeightedRandomSampler
 from nevergrad import instrumentation as inst
+from ..core import ExperimentFunction
 from . import base
 from . import envs
 
@@ -117,7 +118,7 @@ class TorchAgent(base.Agent):
         self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})  # type: ignore
 
 
-class TorchAgentFunction(inst.InstrumentedFunction):
+class TorchAgentFunction(ExperimentFunction):
     """Instrumented function which plays the agent using an environment runner
     """
 
@@ -130,7 +131,7 @@ class TorchAgentFunction(inst.InstrumentedFunction):
         self.agent = agent.copy()
         self.runner = env_runner
         self.reward_postprocessing = reward_postprocessing
-        super().__init__(self.compute, **self.agent.instrumentation.kwargs)
+        super().__init__(self.compute, self.agent.instrumentation)
         self._descriptors.update(num_repetitions=self.runner.num_repetitions, instrumentation="")
 
     def compute(self, **kwargs: np.ndarray) -> float:

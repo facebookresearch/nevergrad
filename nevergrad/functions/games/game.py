@@ -394,7 +394,7 @@ class Game(ExperimentFunction):
         self.game = game
         self.game_object = _Game()
         dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
-        super().__init__(self._simulate_game, inst.Instrumentation(inst.var.Array(dimension)))
+        super().__init__(self._simulate_game, inst.var.Array(dimension))
         self.parametrization.probably_noisy = True
         self.parametrization.is_nonmetrizable = game in ["war", "batawaf"]
         self._descriptors.update(game=game)
