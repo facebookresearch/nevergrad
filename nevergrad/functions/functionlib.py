@@ -193,11 +193,6 @@ class ArtificialFunction(ExperimentFunction):
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def copy(self) -> "ArtificialFunction":
-        """Create an equivalent instance, initialized with the same settings
-        """
-        return self.__class__(**self._parameters)
-
     def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
