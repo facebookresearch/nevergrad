@@ -282,7 +282,7 @@ class ExperimentFunction:
         params = [f"{x}={repr(y)}" for x, y in sorted(self._descriptors.items())]
         return "Instance of {}({})".format(self.__class__.__name__, ", ".join(params))
 
-    def is_equivalent(self, other: tp.Any) -> bool:
+    def equivalent_to(self, other: tp.Any) -> bool:
         """Check that two instances where initialized with same settings.
         This is not meant to be used to check if functions are exactly equal
         (initialization may hold some randomness)
@@ -294,6 +294,10 @@ class ExperimentFunction:
         return bool(self._descriptors == other._descriptors)
 
     def copy(self: PF) -> PF:
+        """Provides a new equivalent instance of the class, possibly with
+        different random initialization, to provide different equivalent test cases
+        when using different seeds.
+        """
         pf = self.__class__(self.function, self.parametrization.copy())
         pf._descriptors = self.descriptors
         return pf

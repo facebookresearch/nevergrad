@@ -6,6 +6,7 @@
 import hashlib
 from typing import List, Any, Callable
 import numpy as np
+from .core import ExperimentFunction
 from . import utils
 from . import corefuncs
 from .. import instrumentation as inst
@@ -60,7 +61,7 @@ class ArtificialVariable:
         return "Photonics"
 
 
-class ArtificialFunction(inst.InstrumentedFunction):
+class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -143,8 +144,8 @@ class ArtificialFunction(inst.InstrumentedFunction):
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        super().__init__(self.noisy_function, inst.var.Array(1 if hashing else self._dimension))
-        self.instrumentation = self.instrumentation.with_name("")
+        parametrization = inst.Instrumentation(inst.var.Array(1 if hashing else self._dimension)).with_name("")
+        super().__init__(self.noisy_function, parametrization)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
@@ -189,7 +190,7 @@ class ArtificialFunction(inst.InstrumentedFunction):
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def duplicate(self) -> "ArtificialFunction":
+    def copy(self) -> "ArtificialFunction":
         """Create an equivalent instance, initialized with the same settings
         """
         return self.__class__(**self._parameters)

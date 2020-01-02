@@ -34,12 +34,17 @@ def test_run_artificial_function() -> None:
 
 def test_noisy_artificial_function_loss() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=.3)
-    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5)
+    seed = np.random.randint(99999)
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5, seed=seed)
     xp.run()
     loss_ref = xp.result["loss"]
-    xp._log_results(xp.function, 0., 0)
-    loss = xp.result["loss"]
-    np.testing.assert_equal(loss, loss_ref)
+    # now with copy
+    reco = xp.recommendation
+    assert reco is not None
+    np.random.seed(seed)
+    pfunc = func.copy()
+    np.testing.assert_equal(pfunc.evaluation_function(*reco.args, **reco.kwargs), loss_ref)
+    np.random.seed(None)
 
 
 def test_run_with_error() -> None:

@@ -98,10 +98,10 @@ def test_artificial_function_summary() -> None:
     np.testing.assert_equal(func.descriptors["function_class"], "ArtificialFunction")
 
 
-def test_duplicate() -> None:
+def test_functionlib_copy() -> None:
     func = functionlib.ArtificialFunction("sphere", 5, noise_level=.2, num_blocks=4)
-    func2 = func.duplicate()
-    assert func == func2
+    func2 = func.copy()
+    assert func.equivalent_to(func2)
     assert func._parameters["noise_level"] == func2._parameters["noise_level"]
     assert func is not func2
 

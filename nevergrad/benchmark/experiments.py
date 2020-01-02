@@ -45,13 +45,12 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for nw in [1, 10]:
                 for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
                                1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                    yield Experiment(func.duplicate(), optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
@@ -72,12 +71,11 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
                            1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -92,11 +90,10 @@ def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
         for n_blocks in [1, 2, 8, 16]
         for aggregator in ["sum", "max"]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
             for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -112,11 +109,10 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
         for n_blocks in [1, 2, 8, 16]
         for aggregator in ["sum", "max"]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [25, 37, 50, 75, 87] + list(range(100, 20001, 500)):
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -132,12 +128,10 @@ def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
         for uv_factor in [0, 10, 100]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -152,12 +146,10 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
         for bd in [25]
         for uv_factor in [0, 5]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=int(budget / 5), seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=int(budget / 5), seed=next(seedg))
 
 
 @registry.register
@@ -172,12 +164,10 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
         for bd in [3, 25]
         for uv_factor in [0, 5]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -198,12 +188,10 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
         for bd in [3, 25]
         for uv_factor in [0, 5]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 # pylint: disable=redefined-outer-name
@@ -233,7 +221,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     for optim in optims:
         for function in functions:
             for budget in [50, 200, 800, 3200, 12800] if (not big and not noise) else [40000, 80000]:
-                xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
+                xp = Experiment(function, optim, num_workers=100 if parallel else 1,
                                 budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
@@ -280,7 +268,7 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in optims:
         for function in functions:
             for budget in [100, 1000, 10000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -294,7 +282,7 @@ def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
         for function in functions:
             for budget in [100, 1000, 10000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -312,7 +300,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in optims:
         for function in functions:
             for budget in [100, 1000, 10000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -330,7 +318,7 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     for optim in optims:
         for function in functions:
             for budget in [400, 4000, 40000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg), cheap_constraint_checker=lambda x: np.sum(x) > 0)
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg), cheap_constraint_checker=lambda x: np.sum(x) > 0)
 
 
 @registry.register
@@ -347,12 +335,10 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
         for uv_factor in [0]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000, 10000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -741,7 +727,7 @@ class PackedFunctions(ExperimentFunction):
         return np.array([f(*args, **kwargs) for f in self._functions])
 
     def copy(self) -> "PackedFunctions":
-        return PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds)
+        return PackedFunctions([f.copy() for f in self._functions], self._upper_bounds)
 
 
 @registry.register
@@ -760,7 +746,6 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
                                              ArtificialFunction(name3, block_dimension=6),
                                              ArtificialFunction(name2, block_dimension=6)],
                                             upper_bounds=np.array((100, 100, 1000.)))]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
@@ -786,7 +771,6 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
                                                          ArtificialFunction(name5, block_dimension=6),
                                                          ArtificialFunction(name6, block_dimension=6)],
                                                         upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 5901, 400)):

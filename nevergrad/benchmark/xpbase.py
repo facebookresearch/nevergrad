@@ -241,4 +241,5 @@ class Experiment:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Experiment):
             return False
-        return self.function == other.function and self.optimsettings == other.optimsettings
+        same_seed = other.seed is None if self.seed is None else other.seed == self.seed
+        return same_seed and self.function.equivalent_to(other.function) and self.optimsettings == other.optimsettings
