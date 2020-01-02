@@ -423,16 +423,13 @@ def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
-    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
-    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
+    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
     for archi in ["mono", "multi"]:
-        agent = agent_mono if archi == "mono" else agent_multi
-        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-        func._descriptors.update(archi=archi)
+        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
-
     seedg = create_seed_generator(seed)
     algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -471,16 +468,13 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
-    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
-    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
+    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
     for archi in ["mono", "multi"]:
-        agent = agent_mono if archi == "mono" else agent_multi
-        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-        func._descriptors.update(archi=archi)
+        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
-
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
@@ -694,12 +688,11 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
-    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
-    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
+    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
-            agent = agent_mono if archi == "mono" else agent_multi
             dde = ng.optimizers.DifferentialEvolution(crossover="dimension").with_name("DiscreteDE")
             for optim in ["PSO", "NGO", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
                           "RandomSearch", "AlmostRotationInvariantDE", dde]:
@@ -707,8 +700,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                     for num_workers in [1, 10, 100]:
                         # careful, not threadsafe
                         runner = rl.EnvironmentRunner(env.copy(), num_repetitions=num_repetitions, max_step=50)
-                        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-                        func._descriptors.update(archi=archi)
+                        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
 

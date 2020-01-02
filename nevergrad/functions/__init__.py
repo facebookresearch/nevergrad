@@ -5,4 +5,4 @@
 
 from .functionlib import ArtificialFunction as ArtificialFunction
 from .multiobjective import MultiobjectiveFunction as MultiobjectiveFunction
-from .core import ExperimentFunction as ExperimentFunction
+from .base import ExperimentFunction as ExperimentFunction

@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.instrumentation.core import Variable
-from ..core import ExperimentFunction
+from ..base import ExperimentFunction
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
@@ -78,6 +78,7 @@ class ARCoating(ExperimentFunction):
         self.epf = 9
         self.epmin = 1
         super().__init__(self._get_minimum_average_reflexion, ARCoatingVariable(nbslab, self.epmin, self.epf))
+        self.register_initialization(nbslab=nbslab, d_ar=d_ar)
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:

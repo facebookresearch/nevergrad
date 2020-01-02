@@ -31,7 +31,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import WeightedRandomSampler
 from nevergrad import instrumentation as inst
-from ..core import ExperimentFunction
+from ..base import ExperimentFunction
 from . import base
 from . import envs
 
@@ -129,10 +129,11 @@ class TorchAgentFunction(ExperimentFunction):
     ) -> None:
         assert isinstance(env_runner.env, gym.Env)
         self.agent = agent.copy()
-        self.runner = env_runner
+        self.runner = env_runner.copy()
         self.reward_postprocessing = reward_postprocessing
-        super().__init__(self.compute, self.agent.instrumentation)
-        self._descriptors.update(num_repetitions=self.runner.num_repetitions, instrumentation="")
+        super().__init__(self.compute, self.agent.instrumentation.copy().with_name(""))
+        self.register_initialization(agent=agent, env_runner=env_runner, reward_postprocessing=reward_postprocessing)
+        self._descriptors.update(num_repetitions=self.runner.num_repetitions, archi=self.agent.module.__class__.__name__)
 
     def compute(self, **kwargs: np.ndarray) -> float:
         self.agent.load_state_dict(kwargs)

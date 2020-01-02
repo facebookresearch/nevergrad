@@ -14,8 +14,8 @@ from nevergrad.functions import ArtificialFunction
 from ..common import decorators
 from .. import instrumentation as instru
 from ..functions.rl.agents import torch  # import includes pytorch fix
-from ..functions import ExperimentFunction
-from ..optimization import base
+from ..functions import base as fbase
+from ..optimization import base as obase
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
 
@@ -31,7 +31,7 @@ class OptimizerSettings:
     Eventually, this class should be moved to be directly used for defining experiments.
     """
 
-    def __init__(self, optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+    def __init__(self, optimizer: Union[str, obase.OptimizerFamily], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
         self._setting_names = [x for x in locals() if x != "self"]
         if isinstance(optimizer, str):
             assert optimizer in optimizer_registry, f"{optimizer} is not registered"
@@ -51,7 +51,7 @@ class OptimizerSettings:
     def __repr__(self) -> str:
         return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
 
-    def _get_factory(self) -> Union[Type[base.Optimizer], base.OptimizerFamily]:
+    def _get_factory(self) -> Union[Type[obase.Optimizer], obase.OptimizerFamily]:
         return optimizer_registry[self.optimizer] if isinstance(self.optimizer, str) else self.optimizer
 
     @property
@@ -63,7 +63,7 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instantiate(self, instrumentation: instru.Instrumentation) -> base.Optimizer:
+    def instantiate(self, instrumentation: instru.Instrumentation) -> obase.Optimizer:
         """Instantiate an optimizer, providing the optimization space dimension
         """
         return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
@@ -117,19 +117,19 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: ExperimentFunction,
-                 optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
+    def __init__(self, function: fbase.ExperimentFunction,
+                 optimizer: Union[str, obase.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
-        assert isinstance(function, ExperimentFunction), ("All experiment functions should derive from InstrumentedFunction")
+        assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should derive from InstrumentedFunction")
         self.function = function
         # Conjecture on the noise level.
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self.recommendation: Optional[base.Candidate] = None
-        self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
+        self.recommendation: Optional[obase.Candidate] = None
+        self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
         self._cheap_constraint_checker = cheap_constraint_checker
 
     def __repr__(self) -> str:
@@ -158,6 +158,8 @@ class Experiment:
         """
         try:
             self._run_with_error()
+        except fbase.ExperimentFunctionCopyError as c_e:
+            raise c_e
         except Exception as e:  # pylint: disable=broad-except
             # print the case and the traceback
             self.result["error"] = e.__class__.__name__
@@ -166,7 +168,7 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, pfunc: ExperimentFunction, t0: float, num_calls: int) -> None:
+    def _log_results(self, pfunc: fbase.ExperimentFunction, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         self.result["elapsed_time"] = time.time() - t0
@@ -179,7 +181,7 @@ class Experiment:
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
 
-    def _run_with_error(self, callbacks: Optional[Dict[str, base._OptimCallBack]] = None) -> None:
+    def _run_with_error(self, callbacks: Optional[Dict[str, obase._OptimCallBack]] = None) -> None:
         """Run an experiment with the provided artificial function and optimizer
 
         Parameter
@@ -193,12 +195,8 @@ class Experiment:
             np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
-        try:
-            pfunc = self.function.copy()
-            instrumentation = pfunc.parametrization
-        except RuntimeError:  # compatibility
-            pfunc = self.function
-            instrumentation = self.function.parametrization.copy()  # make sure it is not shared
+        pfunc = self.function.copy()
+        instrumentation = pfunc.parametrization
         if isinstance(self.function, ArtificialFunction) and self.function._parameters.get("noise_level", 0) > 0:
             instrumentation.probably_noisy = True
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
@@ -213,11 +211,11 @@ class Experiment:
         t0 = time.time()
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
+            warnings.filterwarnings("ignore", category=obase.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                self.recommendation = base.Optimizer.minimize(
+                self.recommendation = obase.Optimizer.minimize(
                     self._optimizer,
                     pfunc,
                     batch_mode=executor.batch_mode,

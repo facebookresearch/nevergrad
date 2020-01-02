@@ -6,7 +6,7 @@
 import hashlib
 from typing import List, Any, Callable
 import numpy as np
-from .core import ExperimentFunction
+from .base import ExperimentFunction
 from . import utils
 from . import corefuncs
 from .. import instrumentation as inst
@@ -146,6 +146,7 @@ class ArtificialFunction(ExperimentFunction):
                                                 only_index_transform=only_index_transform)
         parametrization = inst.Instrumentation(inst.var.Array(1 if hashing else self._dimension)).with_name("")
         super().__init__(self.noisy_function, parametrization)
+        self.register_initialization(**self._parameters)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors

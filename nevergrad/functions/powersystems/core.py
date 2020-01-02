@@ -11,7 +11,7 @@ from math import pi, cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 from ... import instrumentation as inst
-from ..core import ExperimentFunction
+from ..base import ExperimentFunction
 
 
 class Agent():
@@ -88,7 +88,7 @@ class PowerSystem(ExperimentFunction):
                  num_years: int = 1,
                  failure_cost: float = 500.,
                  ) -> None:
-        self._params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
+        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         self.num_dams = num_dams
         self.losses: tp.List[float] = []
         self.marginal_costs: tp.List[float] = []
@@ -111,6 +111,7 @@ class PowerSystem(ExperimentFunction):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
         dimension = sum([a.dimension for a in dam_agents])
         super().__init__(self._simulate_power_system, inst.var.Array(dimension))
+        self.register_initialization(**params)
         self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
@@ -289,6 +290,3 @@ class PowerSystem(ExperimentFunction):
         ax.set_ylabel('production per hour')
         ax.legend(loc='best')
         plt.savefig(filename)
-
-    def copy(self) -> "PowerSystem":
-        return PowerSystem(**self._params)

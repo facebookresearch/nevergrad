@@ -395,6 +395,7 @@ class Game(ExperimentFunction):
         self.game_object = _Game()
         dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
         super().__init__(self._simulate_game, inst.var.Array(dimension))
+        self.register_initialization(game=game)
         self.parametrization.probably_noisy = True
         self.parametrization.is_nonmetrizable = game in ["war", "batawaf"]
         self._descriptors.update(game=game)
@@ -411,6 +412,3 @@ class Game(ExperimentFunction):
         p2 = x[(self.dimension // 2):]
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
-
-    def copy(self) -> "Game":
-        return Game(self.game)
