@@ -479,8 +479,14 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
     # Adding ARCoating.
     funcs += [ARCoating()]
-    funcs += [PowerSystem()]
-    funcs += [STSP()]
+    funcs += [PowerSystem(), PowerSystem(13)]
+    funcs += [STSP(), STSP(2, 500)]
+
+    funcs += [game.Game("war")]
+    funcs += [game.Game("batawaf")]
+    funcs += [game.Game("flip")]
+    funcs += [game.Game("guesswho")]
+    funcs += [game.Game("bigguesswho")]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
@@ -496,11 +502,11 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         funcs += [func]
 
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [1]:  # , 10, 100]:
+        for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:
