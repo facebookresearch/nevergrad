@@ -1571,7 +1571,150 @@ class NGO(base.Optimizer):
 
 
 @registry.register
+class EMNA_TBPSA(TBPSA):
+    """Test-based population-size adaptation with EMNA.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        self.mu = self.dimension
+        self.llambda = 4 * self.dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        self._loss_record: List[float] = []
+        # population
+        self._evaluated_population: List[base.utils.Individual] = []
+        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
+
+    def _internal_provide_recommendation(self) -> ArrayLike: 
+        # return self.current_center
+        return self.current_bests["optimistic"].x # Naive version for now
+
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+        self._loss_record += [value]
+        if len(self._loss_record) >= 5 * self.llambda:
+            first_fifth = self._loss_record[: self.llambda]
+            last_fifth = self._loss_record[-self.llambda:]
+            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
+            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
+            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
+            if z < 2.0:
+                self.mu *= 2
+            else:
+                self.mu = int(self.mu * 0.84)
+                if self.mu < self.dimension:
+                    self.mu = self.dimension
+            self.llambda = 4 * self.mu
+            if self.num_workers > 1:
+                self.llambda = max(self.llambda, self.num_workers)
+                self.mu = self.llambda // 4
+            self._loss_record = []
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        particle = self._unevaluated_population[x_bytes]
+        particle.value = value
+        self._evaluated_population.append(particle)
+        if len(self._evaluated_population) >= self.llambda:
+            # Sorting the population.
+            self._evaluated_population.sort(key=lambda p: p.value)
+            # Computing the new parent.
+            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
+            # EMNA update
+            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
+            if False and self.num_workers/self.dimension > 16:
+                self.sigma /= imp
+            self._evaluated_population = []
+        del self._unevaluated_population[x_bytes]
+
+@registry.register
+class FTNGO(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
+        self.has_noise = self.instrumentation.noisy
+        if self.instrumentation.probably_noisy:
+            self.has_noise = True
+        self.fully_continuous = self.instrumentation.continuous
+        self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
+        if self.has_noise and self.has_discrete_not_softmax:
+            # noise and discrete: let us merge evolution and bandits.
+            if self.dimension < 60:
+                self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+            else:
+                self.optims = [CMA(self.instrumentation, budget, num_workers)]
+        else:
+            if self.has_noise and self.fully_continuous:
+                # This is the real of population control. FIXME: should we pair with a bandit ?
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable or not self.fully_continuous:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+                else:
+                    if num_workers > budget / 5:
+                        if num_workers > budget / 2. or budget < self.dimension:
+                            self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
+                    else:
+                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                        if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
+                            self.optims = [chainCMAPowell(self.instrumentation, budget, num_workers)]  # noqa: F405
+                        else:
+                            if num_workers == 1 and budget < self.dimension * 30:
+                                if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                    self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
+                                else:
+                                    self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            else:
+                                if self.dimension > 2000:  # DE is great in such a case (?).
+                                    self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
+                                else:
+                                    self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+
+
+@registry.register
 class JNGO(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and self.has_discrete_not_softmax:
+            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+        else:
+            if self.has_noise:
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.has_discrete_not_softmax:
+                    if budget < 10 * self.dimension:
+                        self.optims = [PortfolioDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+                    else:
+                        self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)] 
+                else:
+                    if num_workers == 1:
+                        if budget < self.dimension * 300:
+                            self.optims = [MiniDE(self.instrumentation, budget, num_workers)]
+                        else:
+                            self.optims = [PSO(self.instrumentation, budget, num_workers)]
+                    else:
+                        if self.dimension > budget:
+                            self.optims = [CMA(self.instrumentation, budget, num_workers)] 
+                        else:
+                            self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]
+
+
+@registry.register
+class OldJNGO(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
