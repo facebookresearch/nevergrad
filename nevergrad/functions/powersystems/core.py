@@ -6,13 +6,12 @@
 # This code is based on a code and ideas by Emmanuel Centeno and Antoine Moreau,
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
+import typing as tp
 from math import pi, cos, sin
-from typing import Any
-from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
-from nevergrad import instrumentation as inst
 from nevergrad.parametrization import parameter as p
+from ..base import ExperimentFunction
 
 
 class Agent():
@@ -23,55 +22,76 @@ class Agent():
         assert layers >= 2
         self.input_size = input_size
         self.output_size = output_size
-        self.layers: List[Any] = []
+        self.layers: tp.List[tp.Any] = []
         self.layers += [np.zeros((input_size, layer_width))]
         for _ in range(layers - 2):
             self.layers += [np.zeros((layer_width, layer_width))]
         self.layers += [np.zeros((layer_width, output_size))]
         assert len(self.layers) == layers
 
-    def GetParamNumbers(self) -> int:
+    @property
+    def dimension(self) -> int:
         return sum([np.prod(l.shape) for l in self.layers])
 
-    def SetParams(self, ww: Any) -> None:
+    def set_parameters(self, ww: tp.Any) -> None:
         w = [w for w in ww]
-        assert len(w) == self.GetParamNumbers()
+        assert len(w) == self.dimension
         for i in range(len(self.layers)):
             s = np.prod(self.layers[i].shape)
             self.layers[i] = np.reshape(np.array(w[:s]), self.layers[i].shape)  # TODO @oteytaud new name?
             w = w[s:]
 
-    def GetOutput(self, inp: Any) -> np.ndarray:
+    def get_output(self, inp: tp.Any) -> np.ndarray:
         output = np.array(inp).reshape(1, len(inp))
         for l in self.layers[:-1]:
             output = np.tanh(np.matmul(output, l))
         return np.matmul(output, self.layers[-1])  # type: ignore
 
 
-# Real life is more complicated! This is a very simple model.
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class PowerSystem(inst.InstrumentedFunction):
-    """
+class PowerSystem(ExperimentFunction):
+    """Very simple model of a power system.
+    Real life is more complicated!
+
     Parameters
     ----------
-    nint intaum_stocks: number of stocks to be managed
-    depth: number of layers in the neural networks
-    width: number of neurons per hidden layer
+    num_dams: int
+        number of dams to be managed
+    depth: int
+        number of layers in the neural networks
+    width: int
+        number of neurons per hidden layer
+    year_to_day_ratio: float = 2.
+        Ratio between std of consumption in the year and std of consumption in the day.
+    constant_to_year_ratio: float
+        Ratio between constant baseline consumption and std of consumption in the year.
+    back_to_normal: float
+        Part of the variability which is forgotten at each time step.
+    consumption_noise: float
+        Instantaneous variability.
+    num_thermal_plants: int
+        Number of thermal plants.
+    num_years: int
+        Number of years.
+    failure_cost: float
+        Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
     """
 
-    def __init__(self, num_dams: int = 13, depth: int = 3, width: int = 3,
-                 year_to_day_ratio: float = 2.,  # Ratio between std of consumption in the year and std of consumption in the day.
-                 constant_to_year_ratio: float = 1.,  # Ratio between constant baseline consumption and std of consumption in the year.
-                 back_to_normal: float = 0.5,  # Part of the variability which is forgotten at each time step.
-                 consumption_noise: float = 0.1,  # Instantaneous variability.
-                 num_thermal_plants: int = 7,  # Number of thermal plants.
-                 num_years: int = 1,  # Number of years.
-                 # Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
+    def __init__(self, num_dams: int = 13,
+                 depth: int = 3,
+                 width: int = 3,
+                 year_to_day_ratio: float = 2.,
+                 constant_to_year_ratio: float = 1.,
+                 back_to_normal: float = 0.5,
+                 consumption_noise: float = 0.1,
+                 num_thermal_plants: int = 7,
+                 num_years: int = 1,
                  failure_cost: float = 500.,
                  ) -> None:
+        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         self.num_dams = num_dams
-        self.losses: List[float] = []
-        self.marginal_costs: List[float] = []
+        self.losses: tp.List[float] = []
+        self.marginal_costs: tp.List[float] = []
         # Parameters describing the problem.
         self.year_to_day_ratio = year_to_day_ratio
         self.constant_to_year_ratio = constant_to_year_ratio
@@ -80,31 +100,32 @@ class PowerSystem(inst.InstrumentedFunction):
         self.num_thermal_plants = num_thermal_plants
         self.number_of_years = num_years
         self.failure_cost = failure_cost
-        self.hydro_prod_per_time_step: List[Any] = []  # TODO @oteytaud initial values?
-        self.consumption_per_time_step: List[Any] = []
+        self.hydro_prod_per_time_step: tp.List[tp.Any] = []  # TODO @oteytaud initial values?
+        self.consumption_per_time_step: tp.List[tp.Any] = []
 
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
         self.thermal_power_prices = np.random.rand(num_thermal_plants)
-        dam_agents: List[Any] = []
+        dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        dimension = int(sum([a.GetParamNumbers() for a in dam_agents]))
-        self.dam_agents = dam_agents
+        dimension = sum([a.dimension for a in dam_agents])
         super().__init__(self._simulate_power_system, p.Array(shape=(dimension,)))
+        self.register_initialization(**params)
+        self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
-    def get_num_vars(self) -> List[Any]:
-        return [m.GetParamNumbers() for m in self.dam_agents]
+    def get_num_vars(self) -> tp.List[tp.Any]:
+        return [m.dimension for m in self.dam_agents]
 
     def _simulate_power_system(self, x: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
         for a in dam_agents:
-            assert len(x) >= a.GetParamNumbers()
-            a.SetParams(np.array(x[:a.GetParamNumbers()]))
-            x = x[a.GetParamNumbers():]
-        assert not x
+            assert len(x) >= a.dimension
+            a.set_parameters(np.array(x[:a.dimension]))
+            x = x[a.dimension:]
+        assert not x.size
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
@@ -116,8 +137,8 @@ class PowerSystem(inst.InstrumentedFunction):
         # Loop on time steps.
         num_time_steps = int(365 * 24 * self.number_of_years)
         consumption = 0.
-        hydro_prod_per_time_step: List[Any] = []
-        consumption_per_time_step: List[float] = []
+        hydro_prod_per_time_step: tp.List[tp.Any] = []
+        consumption_per_time_step: tp.List[float] = []
         for t in range(num_time_steps):
 
             # Rain
@@ -144,7 +165,7 @@ class PowerSystem(inst.InstrumentedFunction):
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
 
             # Prices as a decomposition tool!
-            price: np.ndarray = np.asarray([a.GetOutput(np.array(x))[0][0] for a in dam_agents])
+            price: np.ndarray = np.asarray([a.get_output(np.array(x))[0][0] for a in dam_agents])
             dam_index: np.ndarray = np.asarray(range(num_dams))
             price = np.concatenate((price, self.thermal_power_prices))
             capacity = np.concatenate((np.asarray(stocks), self.thermal_power_capacity))
@@ -202,22 +223,22 @@ class PowerSystem(inst.InstrumentedFunction):
         # num_time_steps = int(365 * 24 * self.number_of_years)
 
         # Utility function for plotting per year or per day.
-        def block(x: List[float]) -> List[float]:
-            result: List[float] = []
+        def block(x: tp.List[float]) -> tp.List[float]:
+            result: tp.List[float] = []
             step = int(np.sqrt(len(x)))
             for i in range(0, len(x), step):
                 result += [sum(x[i:i + step]) / len(x[i:i + step])]
             return result
 
-        def block24(x: List[float]) -> List[float]:
-            result: List[float] = []
+        def block24(x: tp.List[float]) -> tp.List[float]:
+            result: tp.List[float] = []
             for i in range(0, len(x), 24):
                 result += [sum(x[i:i + 24]) / len(x[i:i + 24])]
             if len(x) != len(result) * 24:
                 print(len(x), len(result) * 24)
             return result
 
-        def deblock24(x: List[float]) -> List[float]:
+        def deblock24(x: tp.List[float]) -> tp.List[float]:
             result = [0.0] * 24
             for i, _ in enumerate(x):
                 result[i % 24] += x[i] / 24.

@@ -28,7 +28,9 @@ def test_arcoating_transform_and_call() -> None:
     nbslab = 8
     func = core.ARCoating(nbslab=nbslab)
     x = 7 * np.random.normal(size=nbslab)  # make sure it touches space boundaries
-    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    data = func.parametrization.data_to_arguments(x)[0][0]
+    value = func(data)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
-    value = func(np.arange(8))  # should not touch boundaries, so value should be < np.inf
+    data = func.parametrization.data_to_arguments(np.arange(8))[0][0]
+    value = func(data)
     np.testing.assert_almost_equal(value, 11.31129)

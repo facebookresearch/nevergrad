@@ -9,8 +9,8 @@
 from math import sqrt, tan, pi
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from nevergrad import instrumentation as inst
 import nevergrad as ng
+from ..base import ExperimentFunction
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
@@ -28,7 +28,7 @@ def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float)
     return R
 
 
-class ARCoating(inst.InstrumentedFunction):
+class ARCoating(ExperimentFunction):
     """
     Parameters
     ----------
@@ -63,6 +63,7 @@ class ARCoating(inst.InstrumentedFunction):
         init = np.zeros((nbslab,)) + (self.epmin + self.epf) / 2.0
         super().__init__(self._get_minimum_average_reflexion,
                          ng.p.Array(init=init).set_bounds(self.epmin, self.epf, method="tanh"))
+        self.register_initialization(nbslab=nbslab, d_ar=d_ar)
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:

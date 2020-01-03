@@ -4,8 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Iterator, Optional, List, Union, Any
-import nevergrad as ng
 import numpy as np
+import nevergrad as ng
+from ..functions import ExperimentFunction
 from ..functions import ArtificialFunction
 from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
@@ -14,7 +15,6 @@ from ..functions.powersystems import PowerSystem
 from ..functions.stsp import STSP
 from ..functions import rl
 from ..functions.games import game
-from ..instrumentation import InstrumentedFunction
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -45,13 +45,12 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for nw in [1, 10]:
                 for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
                                1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                    yield Experiment(func.duplicate(), optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
@@ -72,12 +71,11 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
         for uv_factor in [0, 5, 10]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
                            1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -92,11 +90,10 @@ def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
         for n_blocks in [1, 2, 8, 16]
         for aggregator in ["sum", "max"]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
             for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -112,11 +109,10 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
         for n_blocks in [1, 2, 8, 16]
         for aggregator in ["sum", "max"]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [25, 37, 50, 75, 87] + list(range(100, 20001, 500)):
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -132,12 +128,10 @@ def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
         for uv_factor in [0, 10, 100]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -152,12 +146,10 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
         for bd in [25]
         for uv_factor in [0, 5]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=int(budget / 5), seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=int(budget / 5), seed=next(seedg))
 
 
 @registry.register
@@ -172,12 +164,10 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
         for bd in [3, 25]
         for uv_factor in [0, 5]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=budget, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -198,12 +188,10 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
         for bd in [3, 25]
         for uv_factor in [0, 5]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 # pylint: disable=redefined-outer-name
@@ -233,7 +221,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     for optim in optims:
         for function in functions:
             for budget in [50, 200, 800, 3200, 12800] if (not big and not noise) else [40000, 80000]:
-                xp = Experiment(function.duplicate(), optim, num_workers=100 if parallel else 1,
+                xp = Experiment(function, optim, num_workers=100 if parallel else 1,
                                 budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
@@ -280,7 +268,7 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in optims:
         for function in functions:
             for budget in [100, 1000, 10000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -294,7 +282,7 @@ def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
         for function in functions:
             for budget in [100, 1000, 10000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -312,7 +300,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     for optim in optims:
         for function in functions:
             for budget in [100, 1000, 10000]:
-                yield Experiment(function.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 def _positive_sum(args_kwargs: Any) -> bool:
@@ -334,12 +322,12 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
+    for func in functions:
+        func.parametrization.register_cheap_constraint(_positive_sum)
     for optim in optims:
         for function in functions:
             for budget in [400, 4000, 40000]:
-                func = function.duplicate()
-                func.instrumentation.register_cheap_constraint(_positive_sum)
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -356,12 +344,10 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
         for uv_factor in [0]
         for n_blocks in [1]
     ]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000, 10000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -428,7 +414,7 @@ def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - PowerSystem: a power system simulation problem.
     # - STSP: a simple TSP problem.
     # MLDA stuff, except the Perceptron.
-    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+    funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -446,16 +432,13 @@ def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
-    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
-    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
+    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
     for archi in ["mono", "multi"]:
-        agent = agent_mono if archi == "mono" else agent_multi
-        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-        func._descriptors.update(archi=archi)
+        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
-
     seedg = create_seed_generator(seed)
     algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -476,7 +459,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # - PowerSystem: a power system simulation problem.
     # - STSP: a simple TSP problem.
     # MLDA stuff, except the Perceptron.
-    funcs: List[Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+    funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -494,16 +477,13 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
-    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
-    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
+    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
     for archi in ["mono", "multi"]:
-        agent = agent_mono if archi == "mono" else agent_multi
-        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-        func._descriptors.update(archi=archi)
+        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
-
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
@@ -520,7 +500,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs = [STSP(1, 10), STSP(2, 100), STSP(3, 1000), STSP(4, 10000)]
+    funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
@@ -537,7 +517,7 @@ def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
     funcs += [game.Game("flip")]
@@ -559,7 +539,7 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
     funcs += [game.Game("flip")]
@@ -581,7 +561,7 @@ def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [PowerSystem(3)]
     funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
     funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
@@ -612,7 +592,7 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = []
+    funcs: List[ExperimentFunction] = []
     funcs += [PowerSystem(3)]
     funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
     funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
@@ -642,7 +622,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = [
+    funcs: List[ExperimentFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -668,7 +648,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[InstrumentedFunction] = [
+    funcs: List[ExperimentFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
     funcs += [
@@ -717,12 +697,11 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     base_env = rl.envs.DoubleOSeven(verbose=False)
     random_agent = rl.agents.Agent007(base_env)
-    agent_multi = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.DenseNet, deterministic=False)
-    agent_mono = rl.agents.TorchAgent.from_module_maker(base_env, rl.agents.Perceptron, deterministic=False)
+    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
+    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
-            agent = agent_mono if archi == "mono" else agent_multi
             dde = ng.optimizers.DifferentialEvolution(crossover="dimension").with_name("DiscreteDE")
             for optim in ["PSO", "NGO", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
                           "RandomSearch", "AlmostRotationInvariantDE", dde]:
@@ -730,30 +709,26 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
                     for num_workers in [1, 10, 100]:
                         # careful, not threadsafe
                         runner = rl.EnvironmentRunner(env.copy(), num_repetitions=num_repetitions, max_step=50)
-                        func = rl.agents.TorchAgentFunction(agent.copy(), runner, reward_postprocessing=lambda x: 1 - x)
-                        func._descriptors.update(archi=archi)
+                        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg))  # type: ignore
 
 
 # Intermediate definition for building a multiobjective problem.
-class PackedFunctions(MultiobjectiveFunction):
+class PackedFunctions(ExperimentFunction):
 
     def __init__(self, functions: List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
         self._functions = functions
         self._upper_bounds = upper_bounds
-        super().__init__(self._mo, upper_bounds)
+        self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
+        super().__init__(self.multiobjective, self._functions[0].parametrization)
+        # TODO add descriptors?
 
     def _mo(self, *args: Any, **kwargs: Any) -> np.ndarray:
         return np.array([f(*args, **kwargs) for f in self._functions])
 
-    def to_instrumented(self) -> InstrumentedFunction:  # this is only to insure reproducibility
-        # TODO: hopefully, be able to remove it eventually
-        inst = self._functions[0].instrumentation
-        instf = InstrumentedFunction(PackedFunctions([f.duplicate() for f in self._functions], self._upper_bounds))
-        instf.instrumentation = inst
-        # TODO add descriptors?
-        return instf
+    def copy(self) -> "PackedFunctions":
+        return PackedFunctions([f.copy() for f in self._functions], self._upper_bounds)
 
 
 @registry.register
@@ -772,11 +747,10 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
                                              ArtificialFunction(name3, block_dimension=6),
                                              ArtificialFunction(name2, block_dimension=6)],
                                             upper_bounds=np.array((100, 100, 1000.)))]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
-                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -798,8 +772,7 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
                                                          ArtificialFunction(name5, block_dimension=6),
                                                          ArtificialFunction(name6, block_dimension=6)],
                                                         upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 5901, 400)):
-                yield Experiment(mofunc.to_instrumented(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
