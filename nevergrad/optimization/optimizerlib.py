@@ -1624,7 +1624,7 @@ class EMNA_TBPSA(TBPSA):
             # Computing the new parent.
             self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
             # EMNA update
-            t1 = [(self.evaluated_population[i]-self.current_center)**2 for i in range(self.mu)]
+            t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
             self.sigma = np.sqrt(sum(t1)/(self.mu))
             imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
             if False and self.num_workers/self.dimension > 16:
