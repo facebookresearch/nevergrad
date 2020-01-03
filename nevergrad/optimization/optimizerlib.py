@@ -1687,7 +1687,7 @@ class FTNGO(NGO):
                         if num_workers > budget / 2. or budget < self.dimension:
                             self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
-                            self.optims = [d(self.instrumentation, budget, num_workers)]  # noqa: F405
+                            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
                         # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                         if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
