@@ -21,6 +21,9 @@ you should install with the `[benchmark]` flag (example: `pip install 'nevergrad
 the `[all]` flag (example: `pip install -e '.[all]'`)
 
 
+You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/)
+
+
 ## Goals and structure
 
 The goals of this package are to provide:
