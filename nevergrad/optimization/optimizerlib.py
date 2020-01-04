@@ -246,7 +246,7 @@ class ParametrizedCMA(base.ParametrizedFamily):
     """
 
     _optimizer_class = _CMA
-
+    one_shot = True
     def __init__(self, *, scale: float = 1.0, diagonal: bool = False) -> None:
         self.scale = scale
         self.diagonal = diagonal
