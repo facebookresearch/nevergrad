@@ -396,8 +396,8 @@ class Game(ExperimentFunction):
         dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
         super().__init__(self._simulate_game, p.Array(shape=(dimension,)))
         self.register_initialization(game=game)
-        self.instrumentation.descriptors.deterministic_function = False
-        self.instrumentation.descriptors.metrizable = game not in ["war", "batawaf"]
+        self.parametrization.descriptors.deterministic_function = False
+        self.parametrization.descriptors.metrizable = game not in ["war", "batawaf"]
         self._descriptors.update(game=game)
 
     def _simulate_game(self, x: np.ndarray) -> float:

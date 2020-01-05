@@ -109,7 +109,7 @@ class PowerSystem(ExperimentFunction):
         dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        dimension = sum([a.dimension for a in dam_agents])
+        dimension = int(sum([a.dimension for a in dam_agents]))
         super().__init__(self._simulate_power_system, p.Array(shape=(dimension,)))
         self.register_initialization(**params)
         self.dam_agents = dam_agents

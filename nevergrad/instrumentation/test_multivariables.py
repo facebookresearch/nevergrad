@@ -67,4 +67,4 @@ def test_instrumentation_copy() -> None:
 
 def test_instrumentation_init_error() -> None:
     variable = var.Gaussian(0, 1)
-    np.testing.assert_raises(AssertionError, mvar.Instrumentation, variable, variable)
+    np.testing.assert_raises(ValueError, mvar.Instrumentation, variable, variable)

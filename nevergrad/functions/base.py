@@ -115,11 +115,12 @@ class ExperimentFunction:
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")
-            return output
-        # back to standard ExperimentFunction
-        pf = self.__class__(self.function, self.parametrization.copy())
-        pf._descriptors = self.descriptors
-        return pf
+        else:
+            # back to standard ExperimentFunction
+            ouptut = self.__class__(self.function, self.parametrization.copy())
+            ouptut._descriptors = self.descriptors
+        output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+        return output
 
     def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.

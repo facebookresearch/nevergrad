@@ -125,6 +125,7 @@ class Experiment:
         assert function.dimension, "Nothing to optimize"
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
+        self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.recommendation: Optional[obase.Candidate] = None
         self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
@@ -194,6 +195,7 @@ class Experiment:
             torch.manual_seed(self.seed)  # type: ignore
         pfunc = self.function.copy()
         instrumentation = pfunc.parametrization
+        assert len(pfunc.parametrization) == len(self.function.parametrization), "Some constraints failed to be propagated"
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
