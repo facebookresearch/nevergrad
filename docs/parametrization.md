@@ -5,7 +5,6 @@
 The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
 The parametrization subpackage will help you do thanks to:
 - the `parameter` modules providing classes that should be used to specify each parameter.
-- the `Instrumentation`, and `InstrumentedFunction` classes which provide an interface for converting any arguments into the data space used for optimization, and convert from data space back to the arguments space.
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
 turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed, and define how these parameters can be mutated and combined together.
@@ -21,9 +20,11 @@ turn a piece of code with parameters you want to optimize into a function define
 - `Log(a_min, a_max)`: describes log distributed data between two bounds. Under the hood this uses an `Scalar` with appropriate specifications for bounds and mutations.
 
 
-## Instrumentation
+## Parametrization
 
-Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods. Since `data_to_arguments` can be stochastic, the instrumentation holds a random state (`instrumentation.random_state`) which is also used by optimizers.
+Parametrization helps you define the parameters you want to optimize upon.
+Currently most algorithms make use of it to help convert the parameters into the "standardized data" space (a real vector space),
+where it is easier to define operations.
 
 
 ```python

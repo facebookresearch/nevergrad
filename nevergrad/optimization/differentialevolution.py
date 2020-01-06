@@ -8,7 +8,7 @@ import warnings
 import numpy as np
 from scipy import stats
 from . import base
-from .base import Parameter
+from .base import IntOrParameter
 from . import sequences
 
 
@@ -69,7 +69,7 @@ class _DE(base.Optimizer):
     # pylint: disable=too-many-locals, too-many-nested-blocks
     # pylint: disable=too-many-branches, too-many-statements
 
-    def __init__(self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
@@ -210,7 +210,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.popsize = popsize
         super().__init__()
 
-    def __call__(self, instrumentation: Parameter,
+    def __call__(self, instrumentation: IntOrParameter,
                  budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)

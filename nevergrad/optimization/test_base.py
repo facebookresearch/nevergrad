@@ -12,7 +12,7 @@ from ..common import testing
 from . import optimizerlib
 from . import test_optimizerlib
 from . import base
-from .base import Parameter
+from .base import IntOrParameter
 from . import callbacks
 
 
@@ -132,7 +132,7 @@ def test_compare() -> None:
 
 class StupidFamily(base.OptimizerFamily):
 
-    def __call__(self, instrumentation: Parameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+    def __call__(self, instrumentation: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
         run = class_(instrumentation=instrumentation, budget=budget, num_workers=num_workers)
         run.name = self._repr

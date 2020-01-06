@@ -3,17 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict, Union
+from typing import Optional, Callable, Dict
 import numpy as np
 from scipy import optimize as scipyoptimize
 from . import base
-from .base import Parameter
+from .base import IntOrParameter
 from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
-        self, instrumentation: Parameter, budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ScipyOptimizer()
@@ -24,8 +24,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
-        """
-        pass  # We do not do anything; this just updates the current best.
+        """  # We do not do anything; this just updates the current best.
 
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
