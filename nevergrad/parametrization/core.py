@@ -92,7 +92,7 @@ class Parameter:
 
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
-        This usually means spawning a child and mutating itp.
+        This usually means spawning a child and mutating it.
         This function should be used in optimizers when creating an initial population
         """
         child = self.spawn_child()
@@ -187,7 +187,7 @@ class Parameter:
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def get_data_hash(self) -> tp.Hashable:
-        """Hashable object representing the current standardized data of the objectp.
+        """Hashable object representing the current standardized data of the object.
 
         Note
         ----
