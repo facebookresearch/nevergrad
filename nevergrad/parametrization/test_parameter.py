@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
-import typing as t
+import typing as tp
 import pytest
 import numpy as np
 from .core import Parameter
@@ -42,7 +42,7 @@ def test_empty_parameters(param: par.Dict) -> None:
         assert not param.get_value_hash()
 
 
-def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
+def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
     return True
 
 
