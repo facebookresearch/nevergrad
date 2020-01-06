@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
-import typing as t
+import typing as tp
 import pytest
 import numpy as np
 from .core import Constant
@@ -49,7 +49,7 @@ def test_empty_parameters(param: par.Dict) -> None:
     assert param.descriptors.deterministic
 
 
-def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
+def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
     return True
 
 
@@ -177,7 +177,7 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
      (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
      ]
 )
-def test_list_parameter_instances(param: par.Parameter, classes: t.List[t.Type[par.Parameter]]) -> None:
+def test_list_parameter_instances(param: par.Parameter, classes: tp.List[tp.Type[par.Parameter]]) -> None:
     outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
     assert outputs == classes
 

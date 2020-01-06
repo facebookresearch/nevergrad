@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as t
+import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import discretization
@@ -16,13 +16,13 @@ from .data import Scalar
 # pylint: disable=no-value-for-parameter
 
 
-C = t.TypeVar("C", bound="Choice")
-T = t.TypeVar("T", bound="TransitionChoice")
+C = tp.TypeVar("C", bound="Choice")
+T = tp.TypeVar("T", bound="TransitionChoice")
 
 
 class BaseChoice(core.Dict):
 
-    def __init__(self, *, choices: t.Iterable[t.Any], **kwargs: t.Any) -> None:
+    def __init__(self, *, choices: tp.Iterable[tp.Any], **kwargs: tp.Any) -> None:
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)  # for iterables
         super().__init__(choices=Tuple(*lchoices), **kwargs)
@@ -49,14 +49,14 @@ class BaseChoice(core.Dict):
         return self["choices"]  # type: ignore
 
     @property
-    def value(self) -> t.Any:
+    def value(self) -> tp.Any:
         return core.as_parameter(self.choices[self.index]).value
 
     @value.setter
-    def value(self, value: t.Any) -> None:
+    def value(self, value: tp.Any) -> None:
         self._find_and_set_value(value)
 
-    def _find_and_set_value(self, value: t.Any) -> int:
+    def _find_and_set_value(self, value: tp.Any) -> int:
         self._check_frozen()
         index = -1
         # try to find where to put this
@@ -73,7 +73,7 @@ class BaseChoice(core.Dict):
             raise ValueError(f"Could not figure out where to put value {value}")
         return index
 
-    def get_value_hash(self) -> t.Hashable:
+    def get_value_hash(self) -> tp.Hashable:
         return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
 
 
@@ -102,14 +102,14 @@ class Choice(BaseChoice):
 
     def __init__(
             self,
-            choices: t.Iterable[t.Any],
+            choices: tp.Iterable[tp.Any],
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)
         super().__init__(choices=lchoices, weights=Array(shape=(len(lchoices),), mutable_sigma=False))
         self._deterministic = deterministic
-        self._index: t.Optional[int] = None
+        self._index: tp.Optional[int] = None
 
     def _get_name(self) -> str:
         name = super()._get_name()
@@ -134,7 +134,7 @@ class Choice(BaseChoice):
         """
         return self["weights"]  # type: ignore
 
-    def _find_and_set_value(self, value: t.Any) -> int:
+    def _find_and_set_value(self, value: tp.Any) -> int:
         index = super()._find_and_set_value(value)
         self._index = index
         # force new probabilities
@@ -189,8 +189,8 @@ class TransitionChoice(BaseChoice):
 
     def __init__(
             self,
-            choices: t.Iterable[t.Any],
-            transitions: t.Union[ArrayLike, Array] = (1.0, 1.0),
+            choices: tp.Iterable[tp.Any],
+            transitions: tp.Union[ArrayLike, Array] = (1.0, 1.0),
     ) -> None:
         super().__init__(choices=choices,
                          position=Scalar(),
@@ -201,7 +201,7 @@ class TransitionChoice(BaseChoice):
     def index(self) -> int:
         return discretization.threshold_discretization(np.array([self.position.value]), arity=len(self.choices))[0]
 
-    def _find_and_set_value(self, value: t.Any) -> int:
+    def _find_and_set_value(self, value: tp.Any) -> int:
         index = super()._find_and_set_value(value)
         self._set_index(index)
         return index
