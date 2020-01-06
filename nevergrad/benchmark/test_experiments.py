@@ -21,8 +21,7 @@ def test_experiments_registry(name: str, maker: Callable[[], Iterator[experiment
     with patch("shutil.which", return_value="here"):  # do not check for missing packages
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-        if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "powersystems", "powersystemsbig",
-                        "fastgames", "bigfastgames"}:
+        if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld"}:
             check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -57,11 +56,9 @@ def check_seedable(maker: Any) -> None:
     # draw twice with same random seed_generator and once with a different one
     results = []
     algo = "OnePlusOne"  # for simplifying the test
+    rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
     for seed in [random_seed, random_seed, random_seed + 1]:
-        xps = list(itertools.islice(maker(seed), 0, 8))
-        for xp in xps:
-            if isinstance(xp.function, rl.agents.TorchAgentFunction):
-                xp.function._num_test_evaluations = 1  # patch for faster evaluation
+        xps = list(itertools.islice(maker(seed), 0, 3))
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])

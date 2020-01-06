@@ -226,3 +226,6 @@ class EnvironmentRunner:
         for name, outcome in outcomes.items():
             agents[name].act(*outcome)  # type: ignore
         return reward_sum
+
+    def copy(self) -> "EnvironmentRunner":
+        return EnvironmentRunner(self.env.copy(), num_repetitions=self.num_repetitions, max_step=self.max_step)

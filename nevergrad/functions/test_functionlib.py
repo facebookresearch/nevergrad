@@ -47,7 +47,8 @@ def test_artitificial_function_repr() -> None:
 def test_testcase_function_value(config: Dict[str, Any], expected: float) -> None:
     # make sure no change is made to the computation
     func = functionlib.ArtificialFunction(**config)
-    np.random.seed(2)
+    func = func.copy()
+    np.random.seed(2)  # initialization is delayed
     x = np.random.normal(0, 1, func.dimension)
     x *= -1 if config.get("noise_dissymmetry", False) else 1  # change sign to activate noise dissymetry
     if config.get("hashing", False):
@@ -80,8 +81,8 @@ def test_oracle() -> None:
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns a different float since the function is noisy
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
-    y3 = func.noisefree_function(x)   # returns a float
-    y4 = func.noisefree_function(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
+    y3 = func.evaluation_function(x)   # returns a float
+    y4 = func.evaluation_function(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
     np.testing.assert_array_almost_equal(y3, y4)  # should be different
 
 
@@ -98,10 +99,10 @@ def test_artificial_function_summary() -> None:
     np.testing.assert_equal(func.descriptors["function_class"], "ArtificialFunction")
 
 
-def test_duplicate() -> None:
+def test_functionlib_copy() -> None:
     func = functionlib.ArtificialFunction("sphere", 5, noise_level=.2, num_blocks=4)
-    func2 = func.duplicate()
-    assert func == func2
+    func2 = func.copy()
+    assert func.equivalent_to(func2)
     assert func._parameters["noise_level"] == func2._parameters["noise_level"]
     assert func is not func2
 
@@ -113,20 +114,20 @@ def test_artifificial_function_with_jump() -> None:
     np.testing.assert_equal(func2.transform_var.only_index_transform, True)
 
 
-def test_get_postponing_delay() -> None:
+def test_compute_pseudotime() -> None:
     x = np.array([2., 2])
     func = functionlib.ArtificialFunction("sphere", 2)
-    np.testing.assert_equal(func.get_postponing_delay((x,), {}, 3), 1.)
+    np.testing.assert_equal(func.compute_pseudotime(((x,), {}), 3), 1.)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.get_postponing_delay((x,), {}, 3), 0.0010534)
+    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.0010534)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
     func([0, 0])  # trigger init
     x = func.transform_var._transforms[0].translation
     np.testing.assert_equal(func(x), 0)
-    np.testing.assert_equal(func.get_postponing_delay((x,), {}, 0), 0)
+    np.testing.assert_equal(func.compute_pseudotime(((x,), {}), 0), 0)
 
 
 @testing.parametrized(

@@ -1,6 +1,9 @@
 # Contributing to nevergrad
 We want to make contributing to this project as easy and transparent as possible.
 
+Whether you want to contribute or not, don't hesitate to join [Nevergrad users' Facebook group](https://www.facebook.com/groups/nevergradusers/)
+
+
 ## Our Development Process
 
 To install `nevergrad` in development mode (if you wish to contribute to it), clone the repository and run `pip install -e '.[all]'` from inside the repository folder.
