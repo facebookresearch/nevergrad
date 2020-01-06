@@ -46,6 +46,11 @@ python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmar
 ```
 See the [example file](../nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`. In this case, please refer to these [guidelines](adding_an_algorithm.md).
 
-Functions used for the experiments must derive from `nevergrad.instrumentation.InstrumentedFunction`. This class keeps a dictionary of descriptors of your function settings through the `_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](../nevergrad/functions/arcoating/core.py) and [example.py](../nevergrad/benchmark/additional/example.py) for examples.
+Functions used for the experiments must derive from `nevergrad.functions.ExperimentFunction`. This class implements features necessary for the benchmarks:
+- keeps the parametrization of the function, used for instantiating the optimizers.
+- keeping a dictionary of descriptors of your function settings through the `_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments
+- let's you override methods allowing custom behaviors such as `evaluation_function` called at evaluation time to possibly avoid noise when possible, and `compute_pseudotime` to mock computation time during benchkmarks.
+
+See the docstrings for more information, and [functionlib.py](../nevergrad/functions/arcoating/core.py) and [example.py](../nevergrad/benchmark/additional/example.py) for examples.
 
 If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiments.py](../nevergrad/benchmark/experiments.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).

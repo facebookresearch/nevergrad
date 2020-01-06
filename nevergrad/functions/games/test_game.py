@@ -1,6 +1,6 @@
 import typing as tp
-from nevergrad.common import testing
 import numpy as np
+from nevergrad.common import testing
 from . import game
 
 
@@ -14,4 +14,4 @@ def test_games(name: str) -> None:
     assert score >= 0.1
     assert score <= 0.9
     function = game.Game(name)
-    function(function.instrumentation.random_state.normal(size=function.dimension))
+    function(function.parametrization.random_state.normal(size=function.dimension))

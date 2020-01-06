@@ -11,6 +11,7 @@ from math import pi, cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
 from ... import instrumentation as inst
+from ..base import ExperimentFunction
 
 
 class Agent():
@@ -48,7 +49,7 @@ class Agent():
 
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
-class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with ParametrizedFunction
+class PowerSystem(ExperimentFunction):
     """Very simple model of a power system.
     Real life is more complicated!
 
@@ -87,6 +88,7 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
                  num_years: int = 1,
                  failure_cost: float = 500.,
                  ) -> None:
+        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         self.num_dams = num_dams
         self.losses: tp.List[float] = []
         self.marginal_costs: tp.List[float] = []
@@ -107,9 +109,10 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
         dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        the_dimension = sum([a.dimension for a in dam_agents])
+        dimension = sum([a.dimension for a in dam_agents])
+        super().__init__(self._simulate_power_system, inst.var.Array(dimension))
+        self.register_initialization(**params)
         self.dam_agents = dam_agents
-        super().__init__(self._simulate_power_system, inst.var.Array(the_dimension))
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
     def get_num_vars(self) -> tp.List[tp.Any]:
@@ -122,7 +125,7 @@ class PowerSystem(inst.InstrumentedFunction):  # TODO revise seeding with Parame
             assert len(x) >= a.dimension
             a.set_parameters(np.array(x[:a.dimension]))
             x = x[a.dimension:]
-        assert not x
+        assert not x.size
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
