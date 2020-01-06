@@ -473,7 +473,6 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [ARCoating()]
     funcs += [PowerSystem(), PowerSystem(13)]
     funcs += [STSP(), STSP(500)]
-
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
     funcs += [game.Game("flip")]
