@@ -180,7 +180,7 @@ class Parameter:
             raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def get_data_hash(self) -> tp.Hashable:
-        """Hashable object representing the current standardized data of the objectp.
+        """Hashable object representing the current standardized data of the object.
 
         Note
         ----

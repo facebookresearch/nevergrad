@@ -4,15 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-import typing as t
+import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
 
 
-Ins = t.TypeVar("Ins", bound="Instrumentation")
-ArgsKwargs = t.Tuple[t.Tuple[t.Any, ...], t.Dict[str, t.Any]]
+Ins = tp.TypeVar("Ins", bound="Instrumentation")
+ArgsKwargs = tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]
 
 
 class Tuple(Dict):
@@ -32,7 +32,7 @@ class Tuple(Dict):
     used to hold the subparameters for all Parameter classes.
     """
 
-    def __init__(self, *parameters: t.Any) -> None:
+    def __init__(self, *parameters: tp.Any) -> None:
         super().__init__()
         self._parameters.update({k: core.as_parameter(p) for k, p in enumerate(parameters)})
         self._sanity_check(list(self._parameters.values()))
@@ -42,12 +42,12 @@ class Tuple(Dict):
         return ",".join(f"{n}" for _, n in params)
 
     @property  # type: ignore
-    def value(self) -> t.Tuple[t.Any, ...]:  # type: ignore
+    def value(self) -> tp.Tuple[tp.Any, ...]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
         return tuple(p.value if isinstance(p, core.Parameter) else p for p in param_val)
 
     @value.setter
-    def value(self, value: t.Tuple[t.Any]) -> None:
+    def value(self, value: tp.Tuple[tp.Any]) -> None:
         assert isinstance(value, tuple), "Value must be a tuple"
         for k, val in enumerate(value):
             core.as_parameter(self[k]).value = val
@@ -56,7 +56,7 @@ class Tuple(Dict):
 class Instrumentation(Tuple):
     """Parameter holding args and kwargs:
     The parameter provided as input are used to provide values for
-    an arg tuple and a kwargs dict.
+    an arg tuple and a kwargs dictp.
     "value" attribue returns (args, kwargs), but each can be independantly
     accessed through the "args" and "kwargs" methods
 
@@ -75,17 +75,17 @@ class Instrumentation(Tuple):
     multiparameter functions.
     """
 
-    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(Tuple(*args), Dict(**kwargs))
         self._sanity_check(list(self[0]._parameters.values()) + list(self[1]._parameters.values()))  # type: ignore
-        self._compatibility_: t.Optional["Instrumentation"] = None  # TODO remove when compatibility is over
+        self._compatibility_: tp.Optional["Instrumentation"] = None  # TODO remove when compatibility is over
 
     @property
-    def args(self) -> t.Tuple[t.Any, ...]:
+    def args(self) -> tp.Tuple[tp.Any, ...]:
         return self[0].value  # type: ignore
 
     @property
-    def kwargs(self) -> t.Dict[str, t.Any]:
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
 
     # # # THE FOLLOWING IS ONLY FOR TEMPORARY (PARTIAL) COMPATIBILITY
@@ -93,7 +93,7 @@ class Instrumentation(Tuple):
     def with_name(self: Ins, name: str) -> Ins:
         return self.set_name(name)
 
-    def cheap_constraint_check(self, *args: t.Any, **kwargs: t.Any) -> bool:
+    def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
         child = self.spawn_child()
         child.value = (args, kwargs)
         return child.satisfies_constraint()
@@ -124,7 +124,7 @@ class Instrumentation(Tuple):
             self._compatibility_ = self.spawn_child()
         return self._compatibility_
 
-    def arguments_to_data(self, *args: t.Any, **kwargs: t.Any) -> np.ndarray:
+    def arguments_to_data(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
         """Converts args and kwargs into data in np.ndarray format
         """
         self._compatibility.value = (args, kwargs)
@@ -149,7 +149,7 @@ class Instrumentation(Tuple):
         self._compatibility.set_standardized_data(np.array(data, copy=False), deterministic=deterministic)
         return self._compatibility.value  # type: ignore
 
-    def set_cheap_constraint_checker(self, func: t.Callable[..., bool]) -> None:
+    def set_cheap_constraint_checker(self, func: tp.Callable[..., bool]) -> None:
         warnings.warn("set_cheap_constraint_checker is deprecated in favor of register_cheap_constraint with "
                       "slightly different API:\nthe registered function must only take one argument (the value"
                       " of the parameter, for an Instrumentation, this is a tuple countaining the tuple of args "
@@ -162,7 +162,7 @@ class Instrumentation(Tuple):
 
 class FunctionPack:
 
-    def __init__(self, func: t.Callable[..., bool]) -> None:
+    def __init__(self, func: tp.Callable[..., bool]) -> None:
         self.func = func
 
     def __call__(self, value: ArgsKwargs) -> bool:
