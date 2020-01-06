@@ -180,8 +180,8 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
               "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"] + list(
-        sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+    #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -201,9 +201,9 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     """
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "TBPSA", "NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
-              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
     if not parallel:
-        optims += ["SQP", "Cobyla", "Powell", "chainCMASQP"]
+        optims += ["SQP", "Cobyla", "Powell", "chainCMASQP", "chainCMAPowell"]
     #optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
@@ -471,8 +471,14 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
     # Adding ARCoating.
     funcs += [ARCoating()]
-    funcs += [PowerSystem()]
-    funcs += [STSP()]
+    funcs += [PowerSystem(), PowerSystem(13)]
+    funcs += [STSP(), STSP(500)]
+
+    funcs += [game.Game("war")]
+    funcs += [game.Game("batawaf")]
+    funcs += [game.Game("flip")]
+    funcs += [game.Game("guesswho")]
+    funcs += [game.Game("bigguesswho")]
 
     # 007 with 100 repetitions, both mono and multi architectures.
     base_env = rl.envs.DoubleOSeven(verbose=False)
@@ -485,11 +491,11 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [1]:  # , 10, 100]:
+        for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:

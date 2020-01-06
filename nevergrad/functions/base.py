@@ -5,8 +5,10 @@
 
 import typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.instrumentation import Instrumentation
 
 
+Parameter = Instrumentation  # looking ahead
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
 
@@ -37,8 +39,8 @@ class ExperimentFunction:
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
-        self._parametrization = p.Instrumentation()
-        self.parametrization = parametrization if isinstance(parametrization, p.Instrumentation) else p.Instrumentation(parametrization)
+        self._parametrization = Parameter()
+        self.parametrization = parametrization if isinstance(parametrization, Parameter) else p.Instrumentation(parametrization)
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore

@@ -12,7 +12,7 @@ from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
 import numpy as np
 from ..common import decorators
 from .. import instrumentation as instru
-from ..functions.rl.agents import torch  # force torch trick
+from ..functions.rl.agents import torch  # import includes pytorch fix
 from ..functions import base as fbase
 from ..optimization import base as obase
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it

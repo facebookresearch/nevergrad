@@ -15,7 +15,7 @@ def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> tp.Tuple[tp.Tuple[tp.Any, ..
     return args, kwargs
 
 
-def test_instrumented_function() -> None:
+def test_experimented_function() -> None:
     ifunc = base.ExperimentFunction(_arg_return, Instrumentation(  # type: ignore
         var.SoftmaxCategorical([1, 12]),
         "constant",
