@@ -463,7 +463,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Adding ARCoating.
     funcs += [ARCoating()]
     funcs += [PowerSystem(), PowerSystem(13)]
-    funcs += [STSP(), STSP(2, 500)]
+    funcs += [STSP(), STSP(500)]
 
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]

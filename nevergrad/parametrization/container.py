@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as t
+import typing as tp
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
 
@@ -25,7 +25,7 @@ class Tuple(Dict):
     used to hold the subparameters for all Parameter classes.
     """
 
-    def __init__(self, *parameters: t.Any) -> None:
+    def __init__(self, *parameters: tp.Any) -> None:
         super().__init__()
         self._parameters.update({k: core.as_parameter(p) for k, p in enumerate(parameters)})
         self._sanity_check(list(self._parameters.values()))
@@ -35,12 +35,12 @@ class Tuple(Dict):
         return ",".join(f"{n}" for _, n in params)
 
     @property  # type: ignore
-    def value(self) -> t.Tuple[t.Any, ...]:  # type: ignore
+    def value(self) -> tp.Tuple[tp.Any, ...]:  # type: ignore
         param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
         return tuple(p.value if isinstance(p, core.Parameter) else p for p in param_val)
 
     @value.setter
-    def value(self, value: t.Tuple[t.Any]) -> None:
+    def value(self, value: tp.Tuple[tp.Any]) -> None:
         assert isinstance(value, tuple), "Value must be a tuple"
         for k, val in enumerate(value):
             core.as_parameter(self[k]).value = val
@@ -49,7 +49,7 @@ class Tuple(Dict):
 class Instrumentation(Tuple):
     """Parameter holding args and kwargs:
     The parameter provided as input are used to provide values for
-    an arg tuple and a kwargs dict.
+    an arg tuple and a kwargs dictp.
     "value" attribue returns (args, kwargs), but each can be independantly
     accessed through the "args" and "kwargs" methods
 
@@ -68,14 +68,14 @@ class Instrumentation(Tuple):
     multiparameter functions.
     """
 
-    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(Tuple(*args), Dict(**kwargs))
         self._sanity_check(list(self[0]._parameters.values()) + list(self[1]._parameters.values()))  # type: ignore
 
     @property
-    def args(self) -> t.Tuple[t.Any, ...]:
+    def args(self) -> tp.Tuple[tp.Any, ...]:
         return self[0].value  # type: ignore
 
     @property
-    def kwargs(self) -> t.Dict[str, t.Any]:
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
