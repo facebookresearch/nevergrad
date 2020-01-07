@@ -23,7 +23,7 @@ from . import utils
 
 
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
-_OptimCallBack = Union[Callable[["Optimizer", "Candidate", float], None], Callable[["Optimizer"], None]]
+_OptimCallBack = Union[Callable[["Optimizer", "p.Instrumentation", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
 IntOrParameter = tp.Union[int, p.Instrumentation]
 
@@ -48,46 +48,8 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """
 
 
-class Candidate:
-    """Handle for args and kwargs arguments, keeping
-    the initial data in memory.
-    """
-
-    def __init__(self, parameter: p.Instrumentation):
-        self.parameter = parameter
-        self._meta: Dict[str, Any] = {}
-
-    @property
-    def uid(self) -> str:  # non-writable
-        """Unique identifier of the candidate, used for identification in the algorithms
-        """
-        return self.parameter.uid
-
-    @property
-    def args(self) -> Tuple[Any, ...]:
-        """Positional arguments to be used on a function with `func(*candidate.args, **candidate.kwargs)`
-        """
-        return self.parameter.args
-
-    @property
-    def kwargs(self) -> Dict[str, Any]:
-        """Keyword arguments to be used on a function with `func(*candidate.args, **candidate.kwargs)`
-        """
-        return self.parameter.kwargs
-
-    @property
-    def data(self) -> np.ndarray:
-        return self.parameter.get_standardized_data()
-
-    def __repr__(self) -> str:
-        return f"Candidate(parameter={self.parameter})"
-
-    def __str__(self) -> str:
-        return f"Candidate(args={self.args}, kwargs={self.kwargs})"
-
-
 class CandidateMaker:
-    """Handle for creating Candidate instances easily
+    """Handle for creating p.Instrumentation instances easily
 
     Parameter
     ---------
@@ -97,7 +59,7 @@ class CandidateMaker:
     Note
     ----
     An instance of this class is linked to each optimizer (optimizer.create_candidate).
-    Candidates can then easily be created through: optimizer.create_candidate.from_data(data)
+    p.Instrumentations can then easily be created through: optimizer.create_candidate.from_data(data)
     and/or optimizer.create_candidate.from_call(*args, **kwargs).
     """
 
@@ -105,7 +67,7 @@ class CandidateMaker:
         self._instrumentation = instrumentation
         self._instrumentation.freeze()
 
-    def from_call(self, *args: Any, **kwargs: Any) -> Candidate:
+    def from_call(self, *args: Any, **kwargs: Any) -> p.Instrumentation:
         """
         Parameters
         ----------
@@ -114,15 +76,14 @@ class CandidateMaker:
 
         Returns
         -------
-        Candidate:
-            The corresponding candidate. Candidates have field `args` and `kwargs` which can be directly used
+        p.Instrumentation:
+            The corresponding candidate. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        param = self._instrumentation.spawn_child(new_value=(args, kwargs))
-        return Candidate(param)
+        return self._instrumentation.spawn_child(new_value=(args, kwargs))
 
-    def from_data(self, data: ArrayLike, deterministic: bool = False) -> Candidate:
-        """Creates a Candidate, given a data from the optimization space
+    def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Instrumentation:
+        """Creates a p.Instrumentation, given a data from the optimization space
 
         Parameters
         ----------
@@ -134,13 +95,13 @@ class CandidateMaker:
 
         Returns
         -------
-        Candidate:
-            The corresponding candidate. Candidates have field `args` and `kwargs` which can be directly used
+        p.Instrumentation:
+            The corresponding candidate. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         param = self._instrumentation.spawn_child()
         self._instrumentation.set_standardized_data(np.array(data, copy=True), instance=param, deterministic=deterministic)
-        return Candidate(param)
+        return param
 
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
@@ -211,14 +172,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         )
         # instance state
         self._asked: Set[str] = set()
-        self._suggestions: Deque[Candidate] = deque()
+        self._suggestions: Deque[p.Instrumentation] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[Candidate, JobLike[float]]] = []
-        self._finished_jobs: Deque[Tuple[Candidate, JobLike[float]]] = deque()
+        self._running_jobs: List[Tuple[p.Instrumentation, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[p.Instrumentation, JobLike[float]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -309,7 +270,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         self._suggestions.append(self.create_candidate.from_call(*args, **kwargs))
 
-    def tell(self, candidate: Candidate, value: float) -> None:
+    def tell(self, candidate: p.Instrumentation, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -322,10 +283,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Note
         ----
         The candidate should generally be one provided by `ask()`, but can be also
-        a non-asked candidate. To create a Candidate instance from args and kwargs,
+        a non-asked candidate. To create a p.Instrumentation instance from args and kwargs,
         you can use `optimizer.create_candidate.from_call(*args, **kwargs)`.
         """
-        if not isinstance(candidate, Candidate):
+        if not isinstance(candidate, p.Instrumentation):
             raise TypeError(
                 "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
                 "if you want to inoculate a point that as not been asked for"
@@ -333,7 +294,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        data = self.instrumentation.get_standardized_data(instance=candidate)
         self._update_archive_and_bests(data, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
@@ -367,14 +328,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self) -> Candidate:
+    def ask(self) -> p.Instrumentation:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
 
         Returns
         -------
-        Candidate:
-            The candidate to try on the objective function. Candidates have field `args` and `kwargs` which can be directly used
+        p.Instrumentation:
+            The candidate to try on the objective function. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         # call callbacks for logging etc...
@@ -410,41 +371,41 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         return candidate
 
-    def provide_recommendation(self) -> Candidate:
+    def provide_recommendation(self) -> p.Instrumentation:
         """Provides the best point to use as a minimum, given the budget that was used
 
         Returns
         -------
-        Candidate
-            The candidate with minimal value. Candidates have field `args` and `kwargs` which can be directly used
+        p.Instrumentation
+            The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> Candidate:
+    def recommend(self) -> p.Instrumentation:
         """Provides the best candidate to use as a minimum, given the budget that was used.
 
         Returns
         -------
-        Candidate
-            The candidate with minimal value. Candidates have field `args` and `kwargs` which can be directly used
+        p.Instrumentation
+            The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.create_candidate.from_data(self._internal_provide_recommendation(), deterministic=True)
 
-    def _internal_tell_not_asked(self, candidate: Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
         self._internal_tell_candidate(candidate, value)
 
-    def _internal_tell_candidate(self, candidate: Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was "asked".
         """
-        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        data = self.instrumentation.get_standardized_data(instance=candidate)
         self._internal_tell(data, value)
 
-    def _internal_ask_candidate(self) -> Candidate:
+    def _internal_ask_candidate(self) -> p.Instrumentation:
         return self.create_candidate.from_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
@@ -463,7 +424,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-    ) -> Candidate:
+    ) -> p.Instrumentation:
         """Optimization (minimization) procedure
 
         Parameters
@@ -484,8 +445,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        Candidate
-            The candidate with minimal value. Candidates have field `args` and `kwargs` which can be directly used
+        p.Instrumentation
+            The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
@@ -500,8 +461,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: List[Tuple[Candidate, JobLike[float]]] = []
-        tmp_finished: Deque[Tuple[Candidate, JobLike[float]]] = deque()
+        tmp_runnings: List[Tuple[p.Instrumentation, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[p.Instrumentation, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
@@ -562,7 +523,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-    ) -> Candidate:
+    ) -> p.Instrumentation:
         """This function is deprecated and renamed "minimize".
         """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
@@ -572,21 +533,21 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
 
-    def compare(self: Optimizer, winners: List[Candidate], losers: List[Candidate]) -> None:
+    def compare(self: Optimizer, winners: List[p.Instrumentation], losers: List[p.Instrumentation]) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.
 
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
         for candidate in losers:
-            data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+            data = self.instrumentation.get_standardized_data(instance=candidate)
             if data in self.archive:
                 best_fitness_value = min(best_fitness_value, self.archive[data].get_estimation("average"))
 
         # Now let us decide the fitness value of winners.
         for i, candidate in enumerate(winners):
             self.tell(candidate, best_fitness_value - len(winners) + i)
-            data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+            data = self.instrumentation.get_standardized_data(instance=candidate)
             self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
 
     setattr(optimizer.__class__, 'compare', compare)

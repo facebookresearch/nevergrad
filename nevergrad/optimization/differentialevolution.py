@@ -7,6 +7,7 @@ from typing import Optional, Union, Set
 import warnings
 import numpy as np
 from scipy import stats
+from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 from . import sequences
@@ -102,7 +103,7 @@ class _DE(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return sum([g.x for g in good_guys]) / len(good_guys)  # type: ignore
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Instrumentation:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._parameters.initialization
             if self.sampler is None and init != "gaussian":
@@ -134,23 +135,23 @@ class _DE(base.Optimizer):
         candidate._meta["particle"] = particle
         return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
         if particle.value is None or value <= particle.value:
-            particle.x = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+            particle.x = self.instrumentation.get_standardized_data(instance=candidate)
             particle.value = value
         self.population.set_queued(particle)
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
         worst_part = None
         if not len(self.population) < self.llambda:
             worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
             if worst_part.value is not None and worst_part.value < value:
                 return  # no need to update
-        particle = base.utils.Individual(self.instrumentation.get_standardized_data(instance=candidate.parameter))
+        particle = base.utils.Individual(self.instrumentation.get_standardized_data(instance=candidate))
         particle.value = value
         if worst_part is not None:
             self.population.replace(worst_part, particle)

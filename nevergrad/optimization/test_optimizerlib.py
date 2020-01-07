@@ -56,9 +56,9 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             candidate = optimizer.minimize(fitness)
         if verify_value and "chain" not in str(optimizer_cls):
             try:
-                np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
+                np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
-                print(f"Attemp #{k}: failed with best point {tuple(candidate.data)}")
+                print(f"Attemp #{k}: failed with best point {tuple(candidate.args[0])}")
                 if k == num_attempts:
                     raise e
             else:
@@ -190,12 +190,12 @@ def test_optimizers_recommendation(with_parameter: bool,
         with patch("bayes_opt.bayesian_optimization.acq_max", patched):
             candidate = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.args[0])
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
     decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
     np.testing.assert_array_almost_equal(
-        candidate.data,
+        candidate.args[0],
         recomkeeper.recommendations.loc[name, :][:dimension],
         decimal=decimal,
         err_msg="Something has changed, if this is normal, delete the following "
@@ -261,7 +261,7 @@ def test_tell_not_asked(name: str) -> None:
     opt.tell(asked[1], fitness(*asked[1].args))
     assert opt.num_tell == 4, opt.num_tell
     assert opt.num_ask == 2
-    if (0, 0, 0, 0) not in [tuple(x.data) for x in asked]:
+    if (0, 0, 0, 0) not in [tuple(x.args[0]) for x in asked]:
         for value in opt.archive.values():
             assert value.count == 1
 
@@ -274,7 +274,7 @@ def test_tbpsa_recom_with_update() -> None:
     optim.instrumentation.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.minimize(fitness)
-    np.testing.assert_almost_equal(candidate.data, [0.037964, 0.0433031, -0.4688667, 0.3633273])
+    np.testing.assert_almost_equal(candidate.args[0], [0.037964, 0.0433031, -0.4688667, 0.3633273])
 
 
 def _square(x: np.ndarray, y: float = 12) -> float:
