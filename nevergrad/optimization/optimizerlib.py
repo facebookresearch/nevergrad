@@ -552,7 +552,7 @@ class TBPSA(base.Optimizer):
         del self._unevaluated_population[x_bytes]
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
+        x = self.instrumentation.get_standardized_data(instance=candidate.parameter)
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         part = base.utils.Individual(x)
         part._parameters = np.array([sigma])
@@ -674,7 +674,7 @@ class PSO(base.Optimizer):
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
-        x = candidate.data
+        x = self.instrumentation.get_standardized_data(instance=candidate.parameter)
         point = particle.get_transformed_position()
         assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particle.value = value
@@ -687,7 +687,7 @@ class PSO(base.Optimizer):
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
+        x = self.instrumentation.get_standardized_data(instance=candidate.parameter)
         if len(self.population) < self.llambda:
             particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
             particle.x = self._PARTICULE.transform.backward(x)
@@ -834,7 +834,7 @@ class SplitOptimizer(base.Optimizer):
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        data = candidate.data
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
         n = 0
         for i in range(self.num_optims):
             opt = self.optims[i]
@@ -906,12 +906,13 @@ class Portfolio(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self._num_ask % len(self.optims)
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        self.who_asked[tuple(data)] += [optim_index]
+        return candidate
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        tx = tuple(candidate.data)
+        tx = tuple(self.instrumentation.get_standardized_data(instance=candidate.parameter))
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
         self.optims[optim_index].tell(candidate, value)
@@ -954,9 +955,10 @@ class ParaPortfolio(Portfolio):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        tx = tuple(self.instrumentation.get_standardized_data(instance=candidate.parameter))
+        self.who_asked[tx] += [optim_index]
+        return candidate
 
 
 @registry.register
@@ -1010,9 +1012,10 @@ class ASCMADEthird(Portfolio):
                         best_value = val
                 self.best_optim = optim_index
             optim_index = self.best_optim
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        tx = tuple(self.instrumentation.get_standardized_data(instance=candidate.parameter))
+        self.who_asked[tx] += [optim_index]
+        return candidate
 
 
 @registry.register
@@ -1216,7 +1219,8 @@ class _BO(base.Optimizer):
         if "x_probe" in candidate._meta:
             y = candidate._meta["x_probe"]
         else:
-            y = self._transform.forward(np.array(candidate.data, copy=False))  # tell not asked
+            data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+            y = self._transform.forward(data)  # tell not asked
         self._fake_function.register(y, -value)  # minimizing
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
@@ -1323,7 +1327,8 @@ class PBIL(base.Optimizer):
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        self._population.append((value, candidate.data))
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        self._population.append((value, data))
         if len(self._population) >= self.llambda:
             self._population.sort(key=lambda tup: tup[0])
             mean_pop: np.ndarray = np.mean([x[1] for x in self._population[: self.mu]])
@@ -1487,15 +1492,16 @@ class cGA(base.Optimizer):
         return self.create_candidate.from_data(data)
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
         if self._previous_value_candidate is None:
-            self._previous_value_candidate = (value, candidate.data)
+            self._previous_value_candidate = (value, data)
         else:
-            winner, loser = self._previous_value_candidate[1], candidate.data
+            winner, loser = self._previous_value_candidate[1], data
             if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
             winner_data = discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
             loser_data = discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
-            for i in range(len(winner_data)):
+            for i, _ in enumerate(winner_data):
                 if winner_data[i] != loser_data[i]:
                     self.p[i][winner_data[i]] += 1. / self.llambda
                     self.p[i][loser_data[i]] -= 1. / self.llambda
@@ -1559,18 +1565,21 @@ class NGO(base.Optimizer):
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        self.who_asked[tuple(data)] += [optim_index]
+        return candidate
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        tx = tuple(candidate.data)
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        tx = tuple(data)
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.optims[0].provide_recommendation().data
+        params = self.optims[0].provide_recommendation()
+        return self.instrumentation.get_standardized_data(instance=params.parameter)
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
