@@ -95,10 +95,12 @@ class Parameter:
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
         This usually means spawning a child and mutating it.
-        This function should be used in optimizers when creating an initial population
+        This function should be used in optimizers when creating an initial population,
+        and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
         child = self.spawn_child()
         child.mutate()
+        child.heritage["lineage"] = child.uid
         return child
 
     def recombine(self: P, *others: P) -> None:
@@ -497,7 +499,8 @@ class Dict(Parameter):
     def sample(self: D) -> D:
         child = self.spawn_child()
         child._parameters = {k: p.sample() for k, p in self._parameters.items()}
-        return child  # TODO check
+        child.heritage["lineage"] = child.uid
+        return child
 
     def recombine(self, *others: "Dict") -> None:
         assert all(isinstance(o, self.__class__) for o in others)

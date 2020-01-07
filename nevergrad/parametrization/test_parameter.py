@@ -112,6 +112,10 @@ def check_parameter_features(param: Parameter) -> None:
     if isinstance(param, par.Array):
         for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
+    # sampling
+    samp_param = param.sample()
+    print(samp_param.heritage, param.heritage)
+    assert samp_param.uid == samp_param.heritage["lineage"]
 
 
 def check_parameter_freezable(param: Parameter) -> None:
