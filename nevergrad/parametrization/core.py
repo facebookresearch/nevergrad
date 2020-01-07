@@ -30,6 +30,7 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
+        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
         self._subparameters = None if not subparameters else Dict(**subparameters)
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -39,6 +40,7 @@ class Parameter:
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
+        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
 
     @property
     def value(self) -> tp.Any:
@@ -79,11 +81,13 @@ class Parameter:
 
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
-        This usually means spawning a child and mutating itp.
-        This function should be used in optimizers when creating an initial population
+        This usually means spawning a child and mutating it.
+        This function should be used in optimizers when creating an initial population,
+        and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
         child = self.spawn_child()
         child.mutate()
+        child.heritage["lineage"] = child.uid
         return child
 
     def recombine(self: P, *others: P) -> None:
@@ -239,6 +243,8 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
+        if self._subparameters is not None and not self.subparameters.satisfies_constraint():
+            return False
         if not self._constraint_checkers:
             return True
         val = self.value
@@ -308,6 +314,7 @@ class Parameter:
         child._descriptors = self._descriptors
         child._name = self._name
         child.parents_uids.append(self.uid)
+        child.heritage = dict(self.heritage)
         if new_value is not None:
             child.value = new_value
         return child
@@ -511,7 +518,8 @@ class Dict(Parameter):
     def sample(self: D) -> D:
         child = self.spawn_child()
         child._parameters = {k: p.sample() for k, p in self._parameters.items()}
-        return child  # TODO check
+        child.heritage["lineage"] = child.uid
+        return child
 
     def recombine(self, *others: "Dict") -> None:
         # pylint: disable=pointless-statement
