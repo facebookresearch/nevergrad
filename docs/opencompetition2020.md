@@ -43,9 +43,10 @@ All pull requests not yet merged on December 1 2019 and opened before June 1, 20
 
 ## Dates
 **Submission deadline is June 1, 2020, AoE**
+All pull requests active between December 1st 2019 and June 1st, 2020 are eligible.
 
 ## Awards:
-The type of awards, if any, will be announced later.
+12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
 
 ## About Nevergrad and IOHprofiler
 
