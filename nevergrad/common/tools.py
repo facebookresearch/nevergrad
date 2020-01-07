@@ -192,13 +192,15 @@ class OrderedSet(tp.MutableSet[X]):
     """
 
     def __init__(self, keys: tp.Optional[tp.Iterable[X]] = None) -> None:
-        self._data: 'collections.OrderedDict[X, None]' = collections.OrderedDict()
+        self._data: 'collections.OrderedDict[X, int]' = collections.OrderedDict()
+        self._global_index = 0  # keep track of insertion global index if need be
         if keys is not None:
             for key in keys:
-                self._data[key] = None
+                self.add(key)
 
     def add(self, key: X) -> None:
-        self._data[key] = self._data.pop(key, None)
+        self._data[key] = self._data.pop(key, self._global_index)
+        self._global_index += 1
 
     def popright(self) -> X:
         key = next(reversed(self._data))
