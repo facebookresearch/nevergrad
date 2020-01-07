@@ -149,6 +149,7 @@ class Array(core.Parameter):
         std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
         diff = std_bounds[1] - std_bounds[0]
         child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
+        child.heritage["lineage"] = child.uid
         return child
 
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
