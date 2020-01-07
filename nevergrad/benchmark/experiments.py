@@ -79,24 +79,6 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    functions = [
-        ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
-        for name in names
-        for rotation in [False, True]
-        for n_blocks in [1, 2, 8, 16]
-        for aggregator in ["sum", "max"]
-    ]
-    for func in functions:
-        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
-            for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
 def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
@@ -272,20 +254,6 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
-    """
-    seedg = create_seed_generator(seed)
-    functions = [
-        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
-    ]
-    for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
-        for function in functions:
-            for budget in [100, 1000, 10000]:
-                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
 def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
@@ -394,51 +362,6 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                 for name in ["sphere", "sphere4", "cigar"]:
                     function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
-
-
-@registry.register
-def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # This experiment contains:
-    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
-    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
-    # - The 007 game: 1 function, noisy.
-    # - PowerSystem: a power system simulation problem.
-    # - STSP: a simple TSP problem.
-    # MLDA stuff, except the Perceptron.
-    funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
-        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
-    ]
-    funcs += [
-        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
-        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
-    ]
-    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
-
-    # Adding ARCoating.
-    funcs += [ARCoating()]
-    funcs += [PowerSystem()]
-    funcs += [STSP()]
-
-    # 007 with 100 repetitions, both mono and multi architectures.
-    base_env = rl.envs.DoubleOSeven(verbose=False)
-    random_agent = rl.agents.Agent007(base_env)
-    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
-    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
-    env = base_env.with_agent(player_0=random_agent).as_single_agent()
-    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
-    for archi in ["mono", "multi"]:
-        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
-        funcs += [func]
-    seedg = create_seed_generator(seed)
-    algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
-    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [budget]:
-            for algo in algos:
-                for fu in funcs:
-                    xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
 
 
 @registry.register
@@ -747,7 +670,8 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
-                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
@@ -772,4 +696,5 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 5901, 400)):
-                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
