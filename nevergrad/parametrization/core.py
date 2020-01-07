@@ -40,6 +40,7 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
+        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
         self._subparameters = None if not subparameters else Dict(**subparameters)
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -48,6 +49,7 @@ class Parameter:
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
+        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
 
     @property
     def descriptors(self) -> Descriptors:
@@ -93,10 +95,12 @@ class Parameter:
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
         This usually means spawning a child and mutating it.
-        This function should be used in optimizers when creating an initial population
+        This function should be used in optimizers when creating an initial population,
+        and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
         child = self.spawn_child()
         child.mutate()
+        child.heritage["lineage"] = child.uid
         return child
 
     def recombine(self: P, *others: P) -> None:
@@ -315,6 +319,7 @@ class Parameter:
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
         child.parents_uids.append(self.uid)
+        child.heritage = dict(self.heritage)
         if new_value is not None:
             child.value = new_value
         return child
@@ -496,7 +501,8 @@ class Dict(Parameter):
     def sample(self: D) -> D:
         child = self.spawn_child()
         child._parameters = {k: p.sample() for k, p in self._parameters.items()}
-        return child  # TODO check
+        child.heritage["lineage"] = child.uid
+        return child
 
     def recombine(self, *others: "Dict") -> None:
         assert all(isinstance(o, self.__class__) for o in others)
