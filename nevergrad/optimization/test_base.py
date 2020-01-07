@@ -8,7 +8,8 @@ from pathlib import Path
 import typing as tp
 import pytest
 import numpy as np
-from ..common import testing
+from nevergrad.parametrization import parameter as p
+from nevergrad.common import testing
 from . import optimizerlib
 from . import test_optimizerlib
 from . import base
@@ -86,12 +87,12 @@ def test_base_optimizer() -> None:
     expected = "instrumentation=Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
     assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().data, [0, 0])
-    zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 0)
-    zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
+    zeroptim.tell(base.candidate_from_data(zeroptim, [0., 0]), 0)
+    zeroptim.tell(base.candidate_from_data(zeroptim, [1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 10)
-    zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
+    zeroptim.tell(base.candidate_from_data(zeroptim, [0., 0]), 10)
+    zeroptim.tell(base.candidate_from_data(zeroptim, [1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
     # check suggest

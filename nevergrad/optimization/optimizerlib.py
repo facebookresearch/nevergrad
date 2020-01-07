@@ -661,7 +661,7 @@ class PSO(base.Optimizer):
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
             particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
-        candidate = self.create_candidate.from_data(particle.get_transformed_position())
+        candidate = base.candidate_from_data(self, particle.get_transformed_position(), deterministic=False)
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
@@ -832,7 +832,7 @@ class SplitOptimizer(base.Optimizer):
             opt = self.optims[i]
             data += list(opt.ask().data)
         assert len(data) == self.dimension
-        return self.create_candidate.from_data(data)
+        return base.candidate_from_data(self, data, deterministic=False)
 
     def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         data = self.instrumentation.get_standardized_data(instance=candidate)
@@ -842,7 +842,7 @@ class SplitOptimizer(base.Optimizer):
             local_data = list(data)[n:n + self.num_vars[i]]
             n += self.num_vars[i]
             assert len(local_data) == self.num_vars[i]
-            local_candidate = opt.create_candidate.from_data(local_data)
+            local_candidate = base.candidate_from_data(opt, local_data)
             opt.tell(local_candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -1204,15 +1204,15 @@ class _BO(base.Optimizer):
         return self._bo
 
     def _internal_ask_candidate(self) -> p.Instrumentation:
-        p = self._parameters
-        util = UtilityFunction(kind=p.utility_kind, kappa=p.utility_kappa, xi=p.utility_xi)
+        params = self._parameters
+        util = UtilityFunction(kind=params.utility_kind, kappa=params.utility_kappa, xi=params.utility_xi)
         try:
             x_probe = next(self.bo._queue)
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[f"x{i}"] for i in range(len(x_probe))]
         data = self._transform.backward(np.array(x_probe, copy=False))
-        candidate = self.create_candidate.from_data(data)
+        candidate = base.candidate_from_data(self, data, deterministic=False)
         candidate._meta["x_probe"] = x_probe
         return candidate
 
@@ -1325,7 +1325,8 @@ class PBIL(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Instrumentation:
         unif = self._rng.uniform(size=self.dimension)
         data = (unif > 1 - self.p[0]).astype(float)
-        return self.create_candidate.from_data(data)
+        candidate = base.candidate_from_data(self, data, deterministic=False)
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         data = self.instrumentation.get_standardized_data(instance=candidate)
@@ -1490,7 +1491,8 @@ class cGA(base.Optimizer):
         # Multinomial.
         values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
         data = discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
-        return self.create_candidate.from_data(data)
+        candidate = base.candidate_from_data(self, data, deterministic=False)
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         data = self.instrumentation.get_standardized_data(instance=candidate)

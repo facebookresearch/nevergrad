@@ -281,7 +281,9 @@ class Array(core.Parameter):
         return child
 
     def _internal_get_standardized_data(self: A, instance: A) -> np.ndarray:
-        return self._to_std_space(instance._value)
+        out = self._to_std_space(instance._value)
+        assert np.may_share_memory(out, instance._value)
+        return out
 
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
         """Converts array with appropriate shapes to the standard space of this instance
@@ -290,7 +292,7 @@ class Array(core.Parameter):
         if self.bound_transform is not None:
             data = self.bound_transform.backward(data)
         distribval = data if self.exponent is None else np.log(data) / np.log(self.exponent)
-        reduced = distribval / sigma
+        reduced = (distribval / sigma) if sigma != 1.0 else distribval  # minor optimization
         return reduced.ravel()  # type: ignore
 
     def recombine(self: A, *others: A) -> None:
