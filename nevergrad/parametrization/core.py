@@ -246,6 +246,8 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
+        if self._subparameters is not None and not self.subparameters.satisfies_constraint():
+            return False
         if not self._constraint_checkers:
             return True
         val = self.value

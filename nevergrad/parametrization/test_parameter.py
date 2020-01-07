@@ -197,6 +197,12 @@ def test_array_recombination() -> None:
     assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
 
 
+def test_endogeneous_constraint() -> None:
+    param = par.Scalar(1.0, mutable_sigma=True)
+    param.sigma.register_cheap_constraint(lambda x: False)
+    assert not param.satisfies_constraint()
+
+
 @pytest.mark.parametrize(  # type: ignore
     "name", ["clipping", "arctan", "tanh", "constraint"]
 )
