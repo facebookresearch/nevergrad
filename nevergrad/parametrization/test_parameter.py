@@ -71,6 +71,7 @@ def check_parameter_features(param: Parameter) -> None:
     assert param.generation == 0
     child = param.spawn_child()
     assert isinstance(child, type(param))
+    assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
     assert param._random_state is not None
     child.mutate()

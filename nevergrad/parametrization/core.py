@@ -40,6 +40,7 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
+        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
         self._subparameters = None if not subparameters else Dict(**subparameters)
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -48,6 +49,7 @@ class Parameter:
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
+        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
 
     @property
     def descriptors(self) -> Descriptors:
@@ -313,6 +315,7 @@ class Parameter:
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
         child.parents_uids.append(self.uid)
+        child.heritage = dict(self.heritage)
         if new_value is not None:
             child.value = new_value
         return child
