@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import uuid
 import time
 import pickle
 import inspect
@@ -14,7 +13,7 @@ from collections import deque
 import typing as tp  # favor using tp.Dict instead of Dict etc
 from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
 import numpy as np
-from nevergrad.parametrization import parameter
+from nevergrad.parametrization import parameter as p
 from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
 from ..common.typetools import JobLike, ExecutorLike
 from .. import instrumentation as instru
@@ -26,7 +25,7 @@ from . import utils
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "Candidate", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
-IntOrParameter = tp.Union[int, parameter.Instrumentation]
+IntOrParameter = tp.Union[int, p.Instrumentation]
 
 
 def load(cls: Type[X], filepath: Union[str, Path]) -> X:
@@ -54,52 +53,34 @@ class Candidate:
     the initial data in memory.
     """
 
-    def __init__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike):
-        self._args = args
-        self._kwargs = kwargs
-        self.data = np.array(data, copy=False)
-        self._uid = uuid.uuid4().hex
+    def __init__(self, parameter: p.Instrumentation):
+        self.parameter = parameter
         self._meta: Dict[str, Any] = {}
 
     @property
     def uid(self) -> str:  # non-writable
         """Unique identifier of the candidate, used for identification in the algorithms
         """
-        return self._uid
-
-    @property
-    def uuid(self) -> str:
-        warnings.warn("uuid has been renamed to uid for compatibility reasons", DeprecationWarning)
-        return self._uid
+        return self.parameter.uid
 
     @property
     def args(self) -> Tuple[Any, ...]:
         """Positional arguments to be used on a function with `func(*candidate.args, **candidate.kwargs)`
         """
-        return self._args
+        return self.parameter.args
 
     @property
     def kwargs(self) -> Dict[str, Any]:
         """Keyword arguments to be used on a function with `func(*candidate.args, **candidate.kwargs)`
         """
-        return self._kwargs
+        return self.parameter.kwargs
 
-    def __getitem__(self, ind: int) -> None:
-        raise RuntimeError(
-            'Return type of "ask" is now a Candidate, use candidate.data[ind] '
-            "(rather than candidate[ind]) for the legacy behavior. "
-            "However, please update your code to use candidate.args and kwargs instead (see documentation)."
-        )
-
-    def __array__(self) -> None:
-        raise RuntimeError(
-            'Return type of "ask" is now a Candidate instead of an array. '
-            "You can use candidate.data to recover the data array as in the old versions. "
-            "However, please update your code to use args and kwargs instead (see documentation)."
-        )
+    @property
+    def data(self) -> np.ndarray:
+        return self.parameter.get_standardized_data()
 
     def __repr__(self) -> str:
-        return f"Candidate(args={self.args}, kwargs={self.kwargs}, data={self.data})"
+        return f"Candidate(parameter={self.parameter})"
 
     def __str__(self) -> str:
         return f"Candidate(args={self.args}, kwargs={self.kwargs})"
@@ -120,11 +101,9 @@ class CandidateMaker:
     and/or optimizer.create_candidate.from_call(*args, **kwargs).
     """
 
-    def __init__(self, instrumentation: parameter.Instrumentation) -> None:
+    def __init__(self, instrumentation: p.Instrumentation) -> None:
         self._instrumentation = instrumentation
-
-    def __call__(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], data: ArrayLike) -> Candidate:
-        return Candidate(args, kwargs, data)
+        self._instrumentation.freeze()
 
     def from_call(self, *args: Any, **kwargs: Any) -> Candidate:
         """
@@ -139,8 +118,8 @@ class CandidateMaker:
             The corresponding candidate. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        data = self._instrumentation.arguments_to_data(*args, **kwargs)
-        return Candidate(args, kwargs, data)
+        param = self._instrumentation.spawn_child(new_value=(args, kwargs))
+        return Candidate(param)
 
     def from_data(self, data: ArrayLike, deterministic: bool = False) -> Candidate:
         """Creates a Candidate, given a data from the optimization space
@@ -159,8 +138,9 @@ class CandidateMaker:
             The corresponding candidate. Candidates have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        args, kwargs = self._instrumentation.data_to_arguments(data, deterministic=deterministic)
-        return Candidate(args, kwargs, data)
+        param = self._instrumentation.spawn_child()
+        self._instrumentation.set_standardized_data(np.array(data, copy=True), instance=param, deterministic=deterministic)
+        return Candidate(param)
 
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
@@ -212,7 +192,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.instrumentation = (
             instrumentation
             if not isinstance(instrumentation, (int, np.int))
-            else instru.Instrumentation(parameter.Array(shape=(instrumentation,)))
+            else instru.Instrumentation(p.Array(shape=(instrumentation,)))
         )
         self.instrumentation.freeze()  # avoids issues!
         if not self.dimension:
@@ -353,7 +333,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        self._update_archive_and_bests(candidate.data, value)
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        self._update_archive_and_bests(data, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
             self._asked.remove(candidate.uid)
@@ -460,7 +441,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_tell_candidate(self, candidate: Candidate, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was "asked".
         """
-        self._internal_tell(candidate.data, value)
+        data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+        self._internal_tell(data, value)
 
     def _internal_ask_candidate(self) -> Candidate:
         return self.create_candidate.from_data(self._internal_ask())
@@ -596,14 +578,16 @@ def addCompare(optimizer: Optimizer) -> None:
 
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
-        for l in losers:
-            if l.data in self.archive:
-                best_fitness_value = min(best_fitness_value, self.archive[l.data].get_estimation("average"))
+        for candidate in losers:
+            data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+            if data in self.archive:
+                best_fitness_value = min(best_fitness_value, self.archive[data].get_estimation("average"))
 
         # Now let us decide the fitness value of winners.
-        for i, w in enumerate(winners):
-            self.tell(w, best_fitness_value - len(winners) + i)
-            self.archive[w.data] = utils.Value(best_fitness_value - len(winners) + i)
+        for i, candidate in enumerate(winners):
+            self.tell(candidate, best_fitness_value - len(winners) + i)
+            data = self.instrumentation.get_standardized_data(instance=candidate.parameter)
+            self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
 
     setattr(optimizer.__class__, 'compare', compare)
 

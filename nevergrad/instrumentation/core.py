@@ -170,7 +170,7 @@ class Variable(p.Instrumentation):
 
     def _internal_set_standardized_data(self: T, data: np.ndarray, instance: T, deterministic: bool = False) -> T:
         instance._data = data
-        self._value = instance.data_to_arguments(self.data, deterministic=deterministic)
+        instance._value = instance.data_to_arguments(instance.data, deterministic=deterministic)
         return instance
 
     def _internal_spawn_child(self: T) -> T:

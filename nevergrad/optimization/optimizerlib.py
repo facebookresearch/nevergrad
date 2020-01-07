@@ -74,7 +74,6 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         pessimistic = self.current_bests["pessimistic"].x
-
         if mutation == "gaussian":  # standard case
             return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
