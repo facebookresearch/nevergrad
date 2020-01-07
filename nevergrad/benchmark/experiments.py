@@ -172,8 +172,9 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+            for budget in [3000, 10000, 30000, 100000]:
+                for nw in [1, 1000]:
+                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 # pylint: disable=redefined-outer-name
