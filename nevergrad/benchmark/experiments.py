@@ -153,16 +153,18 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+def multimodal(seed: Optional[int] = None, bool para=False) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["NGO", "NaiveTBPSA", "TBPSA",
-              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+              "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    if not para:
+        optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
     #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
@@ -173,10 +175,16 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     for func in functions:
         for optim in optims:
             for budget in [3000, 10000, 30000, 100000]:
-                for nw in [1, 1000]:
+                for nw in [1000] if para else [1]:
                     yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
+@registry.register
+def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = multimodal(seed, para=True)
+    for xp in internal_generator:
+        yield xp
+                    
 # pylint: disable=redefined-outer-name
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
@@ -656,7 +664,7 @@ class PackedFunctions(ExperimentFunction):
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "SQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
@@ -679,7 +687,7 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
 def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "SQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "hm"]:
