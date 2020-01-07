@@ -566,34 +566,34 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield xp
 
 
-@registry.register
-def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[ExperimentFunction] = [
-        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
-    ]
-    funcs += [
-        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
-        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
-    ]
-    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
-    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
-    seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
-             "Zero", "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint",
-             "HaltonSearchPlusMiddlePoint", "MiniQrDE", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
-             "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
-    # pylint: disable=too-many-nested-blocks
-    algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
-              "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
-    for budget in [9600, 12800, 25600]:  # , 51200]:#, 102400]:
-        for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
-            for algo in algos:
-                for func in funcs:
-                    if num_workers < budget:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+# @registry.register
+# def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
+#     funcs: List[ExperimentFunction] = [
+#         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+#     ]
+#     funcs += [
+#         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+#         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+#         _mlda.SammonMapping.from_mlda("Employees"),
+#     ]
+#     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+#     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+#     seedg = create_seed_generator(seed)
+#     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
+#              "Zero", "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint",
+#              "HaltonSearchPlusMiddlePoint", "MiniQrDE", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
+#              "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
+#     # pylint: disable=too-many-nested-blocks
+#     algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
+#               "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+#     for budget in [9600, 12800, 25600]:  # , 51200]:#, 102400]:
+#         for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
+#             for algo in algos:
+#                 for func in funcs:
+#                     if num_workers < budget:
+#                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+#                         if not xp.is_incoherent:
+#                             yield xp
 
 
 @registry.register
