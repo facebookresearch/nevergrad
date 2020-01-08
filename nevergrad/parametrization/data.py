@@ -266,7 +266,7 @@ class Array(core.Parameter):
     def _internal_set_standardized_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
         assert isinstance(data, np.ndarray)
         sigma = self.sigma.value
-        data_reduc = (sigma * data).reshape(instance._value.shape)
+        data_reduc = (sigma * data if sigma != 1.0 else data).reshape(instance._value.shape)
         instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
         if instance.bound_transform is not None:
             instance._value = instance.bound_transform.forward(instance._value)
@@ -282,7 +282,6 @@ class Array(core.Parameter):
 
     def _internal_get_standardized_data(self: A, instance: A) -> np.ndarray:
         out = self._to_std_space(instance._value)
-        assert np.may_share_memory(out, instance._value)
         return out
 
     def _to_std_space(self, data: np.ndarray) -> np.ndarray:
