@@ -276,8 +276,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
           calling optimizer.create_candidate.from_call.
         """
-        candidate = self.instrumentation.spawn_child(new_value=(args, kwargs))
-        self._suggestions.append(candidate)
+        self._suggestions.append(self.instrumentation.spawn_child(new_value=(args, kwargs)))
 
     def tell(self, candidate: p.Instrumentation, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
@@ -400,8 +399,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        data = np.asarray(self._internal_provide_recommendation())
-        return candidate_from_data(self, data, deterministic=False)
+        return candidate_from_data(self, self._internal_provide_recommendation(), deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -416,8 +414,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._internal_tell(data, value)
 
     def _internal_ask_candidate(self) -> p.Instrumentation:
-        data = np.asarray(self._internal_ask())
-        return candidate_from_data(self, data, deterministic=False)
+        return candidate_from_data(self, self._internal_ask(), deterministic=False)
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:

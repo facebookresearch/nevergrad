@@ -115,8 +115,7 @@ class _DE(base.Optimizer):
             particle = base.utils.Individual(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
-            candidate = self.instrumentation.spawn_child()
-            self.instrumentation.set_standardized_data(np.asarray(new_guy), instance=candidate, deterministic=False)
+            candidate = base.candidate_from_data(self, new_guy, deterministic=False)
             candidate._meta["particle"] = particle
             return candidate
         # init is done
@@ -132,8 +131,7 @@ class _DE(base.Optimizer):
         crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
-        candidate = self.instrumentation.spawn_child()
-        self.instrumentation.set_standardized_data(np.asarray(donor), instance=candidate, deterministic=False)
+        candidate = base.candidate_from_data(self, donor, deterministic=False)
         candidate._meta["particle"] = particle
         return candidate
 

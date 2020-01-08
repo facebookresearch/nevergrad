@@ -1325,8 +1325,7 @@ class PBIL(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Instrumentation:
         unif = self._rng.uniform(size=self.dimension)
         data = (unif > 1 - self.p[0]).astype(float)
-        candidate = base.candidate_from_data(self, data, deterministic=False)
-        return candidate
+        return base.candidate_from_data(self, data, deterministic=False)
 
     def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         data = self.instrumentation.get_standardized_data(instance=candidate)
@@ -1491,8 +1490,7 @@ class cGA(base.Optimizer):
         # Multinomial.
         values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
         data = discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
-        candidate = base.candidate_from_data(self, data, deterministic=False)
-        return candidate
+        return base.candidate_from_data(self, data, deterministic=False)
 
     def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
         data = self.instrumentation.get_standardized_data(instance=candidate)
