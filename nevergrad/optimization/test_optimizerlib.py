@@ -74,7 +74,8 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     # add a random point to test tell_not_asked
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
-        candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+        data = np.random.normal(0, 1, size=optimizer.dimension)
+        candidate = base.candidate_from_data(optimizer, data, deterministic=False)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
@@ -253,10 +254,11 @@ def test_tell_not_asked(name: str) -> None:
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
-    zeros = [0.0] * dim
-    opt.tell(opt.create_candidate.from_data(zeros), fitness(zeros))  # not asked
+    zero_c = base.candidate_from_data(opt, [0.0] * dim)
+    best_c = base.candidate_from_data(opt, best)
+    opt.tell(zero_c, fitness(zero_c.args[0]))  # not asked
     asked = [opt.ask(), opt.ask()]
-    opt.tell(opt.create_candidate.from_data(best), fitness(best))  # not asked
+    opt.tell(best_c, fitness(best))  # not asked
     opt.tell(asked[0], fitness(*asked[0].args))
     opt.tell(asked[1], fitness(*asked[1].args))
     assert opt.num_tell == 4, opt.num_tell
@@ -319,7 +321,8 @@ def test_bo_instrumentation_and_parameters() -> None:
     assert not record, record.list  # no warning
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
-    opt.tell(opt.create_candidate.from_call(True), 0.0)
+    new_candidate = opt.instrumentation.spawn_child(new_value=((True,), {}))
+    opt.tell(new_candidate, 0.0)
 
 
 def test_chaining() -> None:
