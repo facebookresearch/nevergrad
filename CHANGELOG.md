@@ -2,10 +2,13 @@
 
 ## master
 
+## v0.3.0
+
 ### Breaking changes
 
-- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more (bigger yet) changes are coming. This should only impact custom-made variables.
-- `InstrumentedFunction` has been aggressively deprecated in favor of using the `Instrumentation` directly at the optimizer initialization,
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed,
+  and bigger changes are coming (`instrumentation` will become `parametrization` with a different API). This should only impact custom-made variables.
+- `InstrumentedFunction` has been aggressively deprecated to solve bugs and simplify code, in favor of using the `Instrumentation` directly at the optimizer initialization,
   and of using `ExperimentFunction` to define functions to be used in benchmarks. Main differences are:
   * `instrumentation` attribute is renamed to `parametrization` for forward compatibility.
   *  `__init__` takes exactly two arguments (main function and parametrization/instrumentation) and
