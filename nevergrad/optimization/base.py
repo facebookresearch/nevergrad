@@ -49,67 +49,19 @@ class TellNotAskedNotSupportedError(NotImplementedError):
 
 
 class CandidateMaker:
-    """Handle for creating p.Instrumentation instances easily
-
-    Parameter
-    ---------
-    instrumentation: Instrumentation
-        The instrumentation for converting from data space to arguments space.
-
-    Note
-    ----
-    An instance of this class is linked to each optimizer (optimizer.create_candidate).
-    p.Instrumentations can then easily be created through: optimizer.create_candidate.from_data(data)
-    and/or optimizer.create_candidate.from_call(*args, **kwargs).
-    """
 
     def __init__(self, instrumentation: p.Instrumentation) -> None:
         self._instrumentation = instrumentation
         self._instrumentation.freeze()
 
-    def fr2om_call(self, *args: Any, **kwargs: Any) -> p.Instrumentation:
-        """
-        Parameters
-        ----------
-        *args, **kwargs: Any
-            any arguments which match the instrumentation pattern.
-
-        Returns
-        -------
-        p.Instrumentation:
-            The corresponding candidate. p.Instrumentations have field `args` and `kwargs` which can be directly used
-            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
-        """
+    def from_call(self, *args: Any, **kwargs: Any) -> p.Instrumentation:
+        warnings.warn("CandidateMaker is deprecated, use instrumentation.spawn_child(new_value=(args, kwargs)) instead", DeprecationWarning)
         return self._instrumentation.spawn_child(new_value=(args, kwargs))
 
-    def fr2om_data(self, data: ArrayLike, deterministic: bool = False) -> p.Instrumentation:
-        """Creates a p.Instrumentation, given a data from the optimization space
-
-        Parameters
-        ----------
-        data: np.ndarray, List[float]...
-            data from the optimization space
-        deterministic: bool
-            whether to sample arguments and kwargs from the distribution (when applicable) or
-            create the most likely individual.
-
-        Returns
-        -------
-        p.Instrumentation:
-            The corresponding candidate. p.Instrumentations have field `args` and `kwargs` which can be directly used
-            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
-        """
-        param = self._instrumentation.spawn_child()
-        self._instrumentation.set_standardized_data(np.array(data, copy=True), instance=param, deterministic=deterministic)
-        return param
-
-
-def candidate_from_data(opt: "Optimizer", data: ArrayLike, deterministic: bool = False) -> p.Instrumentation:
-    """For convenience
-    """
-    candidate = opt.instrumentation.spawn_child()
-    opt.instrumentation.set_standardized_data(np.asarray(data), instance=candidate, deterministic=deterministic)
-    return candidate
+    def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Instrumentation:
+        warnings.warn("CandidateMaker is deprecated, use instrumentation.spawn_child().set_standardized_data(data, deterministic) instead",
+                      DeprecationWarning)
+        return self._instrumentation.spawn_child().set_standardized_data(data, deterministic=deterministic)
 
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
@@ -399,7 +351,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        return candidate_from_data(self, self._internal_provide_recommendation(), deterministic=True)
+        return self.instrumentation.spawn_child().set_standardized_data(self._internal_provide_recommendation(), deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -414,7 +366,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._internal_tell(data, value)
 
     def _internal_ask_candidate(self) -> p.Instrumentation:
-        return candidate_from_data(self, self._internal_ask(), deterministic=False)
+        return self.instrumentation.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:

@@ -10,6 +10,7 @@ import functools
 from collections import OrderedDict
 import typing as tp
 import numpy as np
+from nevergrad.common.typetools import ArrayLike
 from . import utils
 # pylint: disable=no-value-for-parameter
 
@@ -133,7 +134,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, *, instance: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: ArrayLike, *, instance: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided instance (or self) using the standardized data.
 
         Parameters
@@ -159,7 +160,7 @@ class Parameter:
         sent_instance = self if instance is None else instance
         assert isinstance(sent_instance, self.__class__), f"Expected {type(self)} but got {type(sent_instance)} as instance"
         sent_instance._check_frozen()
-        return self._internal_set_standardized_data(data, sent_instance, deterministic=deterministic)
+        return self._internal_set_standardized_data(np.array(data, copy=False), sent_instance, deterministic=deterministic)
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
         raise utils.NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
@@ -297,8 +298,11 @@ class Parameter:
 
         Parameter
         ---------
-        value: anything (optional)
-            if provided, it will be set to the new instance.
+        new_value: anything (optional)
+            if provided, it will update the new instance value (cannot be used at the same time as new_data).
+        new_data: np.ndarray
+            if provided, it will update the new instance standardized data (cannot be used at the same time as new_value)
+            the new value will be drawn non-deterministically from the data.
 
         Returns
         -------
@@ -499,7 +503,7 @@ class Dict(Parameter):
             self.get_standardized_data()
         assert self._sizes is not None
         if data.size != sum(v for v in self._sizes.values()):
-            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}")
+            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}")
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():

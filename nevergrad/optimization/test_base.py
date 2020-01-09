@@ -87,12 +87,12 @@ def test_base_optimizer() -> None:
     expected = "instrumentation=Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
     assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().data, [0, 0])
-    zeroptim.tell(base.candidate_from_data(zeroptim, [0., 0]), 0)
-    zeroptim.tell(base.candidate_from_data(zeroptim, [1., 1]), 1)
+    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 0)
+    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell(base.candidate_from_data(zeroptim, [0., 0]), 10)
-    zeroptim.tell(base.candidate_from_data(zeroptim, [1., 1]), 1)
+    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 10)
+    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
     # check suggest

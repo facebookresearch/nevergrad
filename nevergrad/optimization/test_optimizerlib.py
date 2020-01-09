@@ -75,7 +75,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         data = np.random.normal(0, 1, size=optimizer.dimension)
-        candidate = base.candidate_from_data(optimizer, data, deterministic=False)
+        candidate = optimizer.instrumentation.spawn_child().set_standardized_data(data, deterministic=False)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
@@ -254,8 +254,8 @@ def test_tell_not_asked(name: str) -> None:
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
-    zero_c = base.candidate_from_data(opt, [0.0] * dim)
-    best_c = base.candidate_from_data(opt, best)
+    zero_c = opt.instrumentation.spawn_child().set_standardized_data([0.0] * dim)
+    best_c = opt.instrumentation.spawn_child().set_standardized_data(best)
     opt.tell(zero_c, fitness(zero_c.args[0]))  # not asked
     asked = [opt.ask(), opt.ask()]
     opt.tell(best_c, fitness(best))  # not asked
