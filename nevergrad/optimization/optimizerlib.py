@@ -1651,10 +1651,11 @@ class EMNA_TBPSA(TBPSA):
             t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
             self.sigma = np.sqrt(sum(t1)/(self.mu))
             imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
-            if False and self.num_workers/self.dimension > 16:
+            if self.num_workers/self.dimension > 16:
                 self.sigma /= imp
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
+
 
 @registry.register
 class FTNGO(NGO):
@@ -1662,46 +1663,26 @@ class FTNGO(NGO):
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
-        self.has_noise = self.instrumentation.noisy
-        if self.instrumentation.probably_noisy:
-            self.has_noise = True
-        self.fully_continuous = self.instrumentation.continuous
-        self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
-        if self.has_noise and self.has_discrete_not_softmax:
-            # noise and discrete: let us merge evolution and bandits.
-            if self.dimension < 60:
-                self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
-            else:
-                self.optims = [CMA(self.instrumentation, budget, num_workers)]
-        else:
-            if self.has_noise and self.fully_continuous:
-                # This is the real of population control. FIXME: should we pair with a bandit ?
-                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
-            else:
-                if self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable or not self.fully_continuous:
-                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
-                else:
-                    if num_workers > budget / 5:
-                        if num_workers > budget / 2. or budget < self.dimension:
-                            self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
-                        else:
-                            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
-                    else:
-                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                        if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                            self.optims = [chainCMAPowell(self.instrumentation, budget, num_workers)]  # noqa: F405
-                        else:
-                            if num_workers == 1 and budget < self.dimension * 30:
-                                if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                    self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
-                                else:
-                                    self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
-                            else:
-                                if self.dimension > 2000:  # DE is great in such a case (?).
-                                    self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
-                                else:
-                                    self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
+        if (not self.has_noise and
+            not self.has_discrete_not_softmax and
+            not self.has_discrete_not_softmax and
+            not self.instrumentation.is_nonmetrizable and
+            # num_workers > budget / 10 and
+            num_workers > self.dimension / 4):
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+@registry.register
+class FTNGO2(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if (not self.has_noise and
+            not self.has_discrete_not_softmax and
+            not self.has_discrete_not_softmax and
+            not self.instrumentation.is_nonmetrizable and
+            # num_workers > budget / 10 and
+            num_workers > self.dimension / 8):
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
 __all__ = list(registry.keys())
