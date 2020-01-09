@@ -1618,5 +1618,166 @@ class JNGO(NGO):
                         else:
                             self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
 
+@registry.register
+class EMNA_TBPSA(TBPSA):
+    """Test-based population-size adaptation with EMNA.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        self.mu = self.dimension
+        self.llambda = 4 * self.dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        self._loss_record: List[float] = []
+        # population
+        self._evaluated_population: List[base.utils.Individual] = []
+        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
+
+    def _internal_provide_recommendation(self) -> ArrayLike: 
+        # return self.current_center
+        return self.current_bests["optimistic"].x # Naive version for now
+
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+        self._loss_record += [value]
+        if len(self._loss_record) >= 5 * self.llambda:
+            first_fifth = self._loss_record[: self.llambda]
+            last_fifth = self._loss_record[-self.llambda:]
+            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
+            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
+            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
+            if z < 2.0:
+                self.mu *= 2
+            else:
+                self.mu = int(self.mu * 0.84)
+                if self.mu < self.dimension:
+                    self.mu = self.dimension
+            self.llambda = 4 * self.mu
+            if self.num_workers > 1:
+                self.llambda = max(self.llambda, self.num_workers)
+                self.mu = self.llambda // 4
+            self._loss_record = []
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        particle = self._unevaluated_population[x_bytes]
+        particle.value = value
+        self._evaluated_population.append(particle)
+        if len(self._evaluated_population) >= self.llambda:
+            # Sorting the population.
+            self._evaluated_population.sort(key=lambda p: p.value)
+            # Computing the new parent.
+            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
+            # EMNA update
+            t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
+            if self.num_workers/self.dimension > 16:
+                self.sigma /= imp
+            self._evaluated_population = []
+        del self._unevaluated_population[x_bytes]
+
+
+@registry.register
+class fabienosaur(TBPSA):
+    """Test-based population-size adaptation with EMNA.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self.sigma = np.ones(self.dimension)
+        self.mu = self.dimension
+        self.llambda = 4 * self.dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        self._loss_record: List[float] = []
+        # population
+        self._evaluated_population: List[base.utils.Individual] = []
+        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
+
+    def _internal_provide_recommendation(self) -> ArrayLike: 
+        # return self.current_center
+        return self.current_bests["optimistic"].x # Naive version for now
+
+    def _internal_ask(self) -> ArrayLike:
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1, self.dimension) / np.sqrt(self.dimension))
+        individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
+        part = base.utils.Individual(individual)
+        part._parameters = np.array([mutated_sigma])
+        self._unevaluated_population[individual.tobytes()] = part
+        return individual  # type: ignore
+
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+        self._loss_record += [value]
+        if len(self._loss_record) >= 5 * self.llambda:
+            first_fifth = self._loss_record[: self.llambda]
+            last_fifth = self._loss_record[-self.llambda:]
+            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
+            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
+            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
+            if z < 2.0:
+                self.mu *= 2
+            else:
+                self.mu = int(self.mu * 0.84)
+                if self.mu < self.dimension:
+                    self.mu = self.dimension
+            self.llambda = 4 * self.mu
+            if self.num_workers > 1:
+                self.llambda = max(self.llambda, self.num_workers)
+                self.mu = self.llambda // 4
+            self._loss_record = []
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        particle = self._unevaluated_population[x_bytes]
+        particle.value = value
+        self._evaluated_population.append(particle)
+        if len(self._evaluated_population) >= self.llambda:
+            # Sorting the population.
+            self._evaluated_population.sort(key=lambda p: p.value)
+            # Computing the new parent.
+            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
+            # EMNA update
+            t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1)/(self.mu*self.dimension))
+            self.sigma = np.sqrt(sum(t1)/(self.mu))
+            imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
+            if self.num_workers/self.dimension > 16:
+                self.sigma /= imp
+            self._evaluated_population = []
+        del self._unevaluated_population[x_bytes]
+
+@registry.register
+class FTNGO(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if (not self.has_noise and
+            not self.has_discrete_not_softmax and
+            not self.has_discrete_not_softmax and
+            not self.instrumentation.is_nonmetrizable and
+            # num_workers > budget / 10 and
+            num_workers > self.dimension / 4):
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+@registry.register
+class FTNGO2(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        if (not self.has_noise and
+            not self.has_discrete_not_softmax and
+            not self.has_discrete_not_softmax and
+            not self.instrumentation.is_nonmetrizable and
+            # num_workers > budget / 10 and
+            num_workers > self.dimension / 8):
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
 __all__ = list(registry.keys())
