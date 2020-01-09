@@ -122,7 +122,6 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = ["ScrHammersleySearch", "NGO", "FTNGO", "FTNGO2", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE"]
-    optims = ["NGO", "NaiveTBPSA", "fabienosaur"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
