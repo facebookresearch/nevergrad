@@ -1571,6 +1571,30 @@ class NGO(base.Optimizer):
 
 
 @registry.register
+class cameleon(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and (self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable):
+            self.optims = [RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+        else:
+            self.optims = [NGO(self.instrumentation, budget, num_workers)]
+        if self.instrumentation.is_nonmetrizable:
+            if self.dimension < 60:
+                self.optims = [NGO(self.instrumentation, budget, num_workers)]
+            else:
+                self.optims = [CMA(self.instrumentation, budget, num_workers)]
+        self.optims = [NGO(self.instrumentation, budget, num_workers)]
+            
+            
+            
+            
+
+
+
+@registry.register
 class JNGO(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
