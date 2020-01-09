@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
-import typing as t
+import typing as tp
 import pytest
 import numpy as np
 from .core import Parameter
@@ -42,7 +42,7 @@ def test_empty_parameters(param: par.Dict) -> None:
         assert not param.get_value_hash()
 
 
-def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
+def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
     return True
 
 
@@ -71,6 +71,7 @@ def check_parameter_features(param: Parameter) -> None:
     assert param.generation == 0
     child = param.spawn_child()
     assert isinstance(child, type(param))
+    assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
     assert param._random_state is not None
     child.mutate()
@@ -111,6 +112,10 @@ def check_parameter_features(param: Parameter) -> None:
     if isinstance(param, par.Array):
         for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
+    # sampling
+    samp_param = param.sample()
+    print(samp_param.heritage, param.heritage)
+    assert samp_param.uid == samp_param.heritage["lineage"]
 
 
 def check_parameter_freezable(param: Parameter) -> None:
@@ -195,6 +200,12 @@ def test_array_recombination() -> None:
     assert param.value[0] == 2.0
     param2.set_standardized_data((param.get_standardized_data() + param2.get_standardized_data()) / 2)
     assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
+
+
+def test_endogeneous_constraint() -> None:
+    param = par.Scalar(1.0, mutable_sigma=True)
+    param.sigma.register_cheap_constraint(lambda x: False)
+    assert not param.satisfies_constraint()
 
 
 @pytest.mark.parametrize(  # type: ignore

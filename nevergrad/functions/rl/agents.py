@@ -31,7 +31,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import WeightedRandomSampler
 from nevergrad import instrumentation as inst
-from nevergrad.functions import utils
+from ..base import ExperimentFunction
 from . import base
 from . import envs
 
@@ -118,7 +118,7 @@ class TorchAgent(base.Agent):
         self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})  # type: ignore
 
 
-class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
+class TorchAgentFunction(ExperimentFunction):
     """Instrumented function which plays the agent using an environment runner
     """
 
@@ -129,10 +129,11 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
     ) -> None:
         assert isinstance(env_runner.env, gym.Env)
         self.agent = agent.copy()
-        self.runner = env_runner
+        self.runner = env_runner.copy()
         self.reward_postprocessing = reward_postprocessing
-        super().__init__(self.compute, **self.agent.instrumentation.kwargs)
-        self._descriptors.update(num_repetitions=self.runner.num_repetitions, instrumentation="")
+        super().__init__(self.compute, self.agent.instrumentation.copy().with_name(""))
+        self.register_initialization(agent=agent, env_runner=env_runner, reward_postprocessing=reward_postprocessing)
+        self._descriptors.update(num_repetitions=self.runner.num_repetitions, archi=self.agent.module.__class__.__name__)
 
     def compute(self, **kwargs: np.ndarray) -> float:
         self.agent.load_state_dict(kwargs)
@@ -145,7 +146,7 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """

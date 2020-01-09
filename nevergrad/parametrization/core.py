@@ -6,16 +6,16 @@
 import uuid
 import warnings
 from collections import OrderedDict
-import typing as t
+import typing as tp
 import numpy as np
 # pylint: disable=no-value-for-parameter
 
 
-P = t.TypeVar("P", bound="Parameter")
-D = t.TypeVar("D", bound="Dict")
+P = tp.TypeVar("P", bound="Parameter")
+D = tp.TypeVar("D", bound="Dict")
 
 
-class Descriptors(t.NamedTuple):
+class Descriptors(tp.NamedTuple):
     """Provides access to a set of descriptors for the parametrization
     This can be used within optimizers.
     """
@@ -36,29 +36,31 @@ class Parameter:
     constraint check, hashes, generation and naming.
     """
 
-    def __init__(self, **subparameters: t.Any) -> None:
+    def __init__(self, **subparameters: tp.Any) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
-        self.parents_uids: t.List[str] = []
+        self.parents_uids: tp.List[str] = []
+        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
         self._subparameters = None if not subparameters else Dict(**subparameters)
-        self._dimension: t.Optional[int] = None
+        self._dimension: tp.Optional[int] = None
         # Additional convenient features
-        self._random_state: t.Optional[np.random.RandomState] = None  # lazy initialization
+        self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        self._constraint_checkers: t.List[t.Callable[[t.Any], bool]] = []
-        self._name: t.Optional[str] = None
+        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
+        self._name: tp.Optional[str] = None
         self._frozen = False
+        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
 
     @property
     def descriptors(self) -> Descriptors:
         return Descriptors(deterministic=True, continuous=True)
 
     @property
-    def value(self) -> t.Any:
+    def value(self) -> tp.Any:
         raise NotImplementedError
 
     @value.setter
-    def value(self, value: t.Any) -> t.Any:
+    def value(self, value: tp.Any) -> tp.Any:
         raise NotImplementedError
 
     @property
@@ -93,10 +95,12 @@ class Parameter:
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
         This usually means spawning a child and mutating it.
-        This function should be used in optimizers when creating an initial population
+        This function should be used in optimizers when creating an initial population,
+        and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
         child = self.spawn_child()
         child.mutate()
+        child.heritage["lineage"] = child.uid
         return child
 
     def recombine(self: P, *others: P) -> None:
@@ -110,7 +114,7 @@ class Parameter:
         """
         raise NotSupportedError(f"Recombination is not implemented for {self.name}")
 
-    def get_standardized_data(self: P, instance: t.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(self: P, instance: tp.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
         The data only represent the value of this instance, not the subparameters (eg.: mutable sigma), hence it does not
@@ -141,7 +145,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
         raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, instance: t.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: np.ndarray, instance: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided instance (or self) using the standardized data.
 
         Parameters
@@ -175,7 +179,7 @@ class Parameter:
         """
         return self._generation
 
-    def get_value_hash(self) -> t.Hashable:
+    def get_value_hash(self) -> tp.Hashable:
         """Hashable object representing the current value of the instance
         """
         val = self.value
@@ -186,7 +190,7 @@ class Parameter:
         else:
             raise NotSupportedError(f"Value hash is not supported for object {self.name}")
 
-    def get_data_hash(self) -> t.Hashable:
+    def get_data_hash(self) -> tp.Hashable:
         """Hashable object representing the current standardized data of the object.
 
         Note
@@ -246,18 +250,20 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
+        if self._subparameters is not None and not self.subparameters.satisfies_constraint():
+            return False
         if not self._constraint_checkers:
             return True
         val = self.value
         return all(func(val) for func in self._constraint_checkers)
 
-    def register_cheap_constraint(self, func: t.Callable[[t.Any], bool]) -> None:
+    def register_cheap_constraint(self, func: tp.Callable[[tp.Any], bool]) -> None:
         """Registers a new constraint on the parameter values.
 
         Parameter
         ---------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraint.
+            function which, given the value of the instance, returns whether it satisfies the constraintp.
 
         Note
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
@@ -291,9 +297,9 @@ class Parameter:
         if self._subparameters is not None:
             self.subparameters._set_random_state(random_state)
 
-    def spawn_child(self: P, new_value: t.Optional[t.Any] = None) -> P:
+    def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
-        is sampled from the same data, and mutates independently from the parent.
+        is sampled from the same data, and mutates independently from the parentp.
         If a new value is provided, it will be set to the new instance
 
         Parameter
@@ -313,6 +319,7 @@ class Parameter:
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
         child.parents_uids.append(self.uid)
+        child.heritage = dict(self.heritage)
         if new_value is not None:
             child.value = new_value
         return child
@@ -346,7 +353,7 @@ class Constant(Parameter):
         the value that this parameter will always provide
     """
 
-    def __init__(self, value: t.Any) -> None:
+    def __init__(self, value: tp.Any) -> None:
         super().__init__()
         if isinstance(value, Parameter):
             raise TypeError("Only non-parameters can be wrapped in a Constant")
@@ -355,18 +362,18 @@ class Constant(Parameter):
     def _get_name(self) -> str:
         return str(self._value)
 
-    def get_value_hash(self) -> t.Hashable:
+    def get_value_hash(self) -> tp.Hashable:
         try:
             return super().get_value_hash()
         except NotSupportedError:
             return "#non-hashable-constant#"
 
     @property
-    def value(self) -> t.Any:
+    def value(self) -> tp.Any:
         return self._value
 
     @value.setter
-    def value(self, value: t.Any) -> None:
+    def value(self, value: tp.Any) -> None:
         if not value == self._value:
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
@@ -378,7 +385,7 @@ class Constant(Parameter):
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return instance
 
-    def spawn_child(self: P, new_value: t.Optional[t.Any] = None) -> P:
+    def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         if new_value is not None:
             self.value = new_value  # check that it is equal
         return self  # no need to create another instance for a constant
@@ -390,7 +397,7 @@ class Constant(Parameter):
         pass
 
 
-def as_parameter(param: t.Any) -> Parameter:
+def as_parameter(param: tp.Any) -> Parameter:
     """Returns a Parameter from anything:
     either the input if it is already a parameter, or a Constant if not
     This is convenient for iterating over Parameter and other objects alike
@@ -418,13 +425,13 @@ class Dict(Parameter):
     used to hold the subparameters for all Parameter classes.
     """
 
-    def __init__(self, **parameters: t.Any) -> None:
+    def __init__(self, **parameters: tp.Any) -> None:
         super().__init__()
-        self._parameters: t.Dict[t.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
-        self._sizes: t.Optional[t.Dict[str, int]] = None
+        self._parameters: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
+        self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(parameters.values()))
 
-    def _sanity_check(self, parameters: t.List[Parameter]) -> None:
+    def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
         """Check that all subparameters are different
         """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
         ids = {id(p) for p in parameters}
@@ -436,7 +443,7 @@ class Dict(Parameter):
         return Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
                               for name in ("deterministic", "continuous")})
 
-    def __getitem__(self, name: t.Any) -> Parameter:
+    def __getitem__(self, name: tp.Any) -> Parameter:
         return self._parameters[name]
 
     def __len__(self) -> int:
@@ -450,17 +457,17 @@ class Dict(Parameter):
         return f"{self.__class__.__name__}({self._get_parameters_str()})"
 
     @property
-    def value(self) -> t.Dict[str, t.Any]:
+    def value(self) -> tp.Dict[str, tp.Any]:
         return {k: as_parameter(p).value for k, p in self._parameters.items()}
 
     @value.setter
-    def value(self, value: t.Dict[str, t.Any]) -> None:
+    def value(self, value: tp.Dict[str, tp.Any]) -> None:
         if set(value) != set(self._parameters):
             raise ValueError(f"Got input keys {set(value)} but expected {set(self._parameters)}")
         for key, val in value.items():
             as_parameter(self._parameters[key]).value = val
 
-    def get_value_hash(self) -> t.Hashable:
+    def get_value_hash(self) -> tp.Hashable:
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items()))
 
     def _internal_get_standardized_data(self: D, instance: D) -> np.ndarray:
@@ -494,7 +501,8 @@ class Dict(Parameter):
     def sample(self: D) -> D:
         child = self.spawn_child()
         child._parameters = {k: p.sample() for k, p in self._parameters.items()}
-        return child  # TODO check
+        child.heritage["lineage"] = child.uid
+        return child
 
     def recombine(self, *others: "Dict") -> None:
         assert all(isinstance(o, self.__class__) for o in others)

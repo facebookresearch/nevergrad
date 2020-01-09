@@ -44,7 +44,7 @@ def test_torch_agent_function() -> None:
     agent = agents.TorchAgent.from_module_maker(game, agents.DenseNet)
     runner = base.EnvironmentRunner(game)
     agentfunction = agents.TorchAgentFunction(agent, runner)
-    instru = agentfunction.instrumentation
+    instru = agentfunction.parametrization
     args, kwargs = instru.data_to_arguments([0] * instru.dimension)
     assert not args
     value = agentfunction.compute(**kwargs)

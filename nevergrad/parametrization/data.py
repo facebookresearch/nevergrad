@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-import typing as t
+import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import core
@@ -12,8 +12,8 @@ from ..instrumentation import transforms as trans  # TODO move along
 # pylint: disable=no-value-for-parameter
 
 
-BoundValue = t.Optional[t.Union[float, int, np.int, np.float, np.ndarray]]
-A = t.TypeVar("A", bound="Array")
+BoundValue = tp.Optional[tp.Union[float, int, np.int, np.float, np.ndarray]]
+A = tp.TypeVar("A", bound="Array")
 
 
 class BoundChecker:
@@ -77,8 +77,8 @@ class Array(core.Parameter):
     def __init__(
             self,
             *,
-            init: t.Optional[ArrayLike] = None,
-            shape: t.Optional[t.Tuple[int, ...]] = None,
+            init: tp.Optional[ArrayLike] = None,
+            shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
@@ -94,9 +94,9 @@ class Array(core.Parameter):
         else:
             raise ValueError(err_msg)
         self.integer = False
-        self.exponent: t.Optional[float] = None
-        self.bounds: t.Tuple[t.Optional[np.ndarray], t.Optional[np.ndarray]] = (None, None)
-        self.bound_transform: t.Optional[trans.BoundTransform] = None
+        self.exponent: tp.Optional[float] = None
+        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
+        self.bound_transform: tp.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
 
     @property
@@ -105,7 +105,8 @@ class Array(core.Parameter):
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
-        descriptors: t.List[str] = ["int"] if self.integer else ([str(self.value.shape).replace(" ", "")] if self.value.shape != () else [])
+        descriptors: tp.List[str] = ["int"] if self.integer else (
+            [str(self.value.shape).replace(" ", "")] if self.value.shape != () else [])
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
         descriptors += [f"{self.bound_transform}"] if self.bound_transform is not None else []
         descriptors += ["constr"] if self._constraint_checkers else []
@@ -115,7 +116,7 @@ class Array(core.Parameter):
         return f"{cls}{description}"
 
     @property
-    def sigma(self) -> t.Union["Array", "Scalar"]:
+    def sigma(self) -> tp.Union["Array", "Scalar"]:
         """Value for the standard deviation used to mutate the parameter
         """
         return self.subparameters["sigma"]  # type: ignore
@@ -146,6 +147,7 @@ class Array(core.Parameter):
         std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
         diff = std_bounds[1] - std_bounds[0]
         child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
+        child.heritage["lineage"] = child.uid
         return child
 
     def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
@@ -214,7 +216,7 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
-    def set_mutation(self: A, sigma: t.Optional[t.Union[float, "Array"]] = None, exponent: t.Optional[float] = None) -> A:
+    def set_mutation(self: A, sigma: tp.Optional[tp.Union[float, "Array"]] = None, exponent: tp.Optional[float] = None) -> A:
         """Output will be cast to integer(s) through deterministic rounding.
 
         Parameters
@@ -240,11 +242,11 @@ class Array(core.Parameter):
         if exponent is not None:
             if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
                 raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
-                                   "only clipping and constraint bounding methods can accept it.")
+                                   "only clipping and constraint bounding methods can accept itp.")
             if exponent <= 1.0:
                 raise ValueError("Only exponents strictly higher than 1.0 are allowed")
             if np.min(self._value.ravel()) <= 0:
-                raise RuntimeError("Cannot convert to logarithmic mode with current non-positive value, please update it first.")
+                raise RuntimeError("Cannot convert to logarithmic mode with current non-positive value, please update it firstp.")
             self.exponent = exponent
         return self
 
@@ -356,8 +358,8 @@ class Log(Scalar):
         *,
         init: float = 1.0,
         exponent: float = 2.0,
-        a_min: t.Optional[float] = None,
-        a_max: t.Optional[float] = None,
+        a_min: tp.Optional[float] = None,
+        a_max: tp.Optional[float] = None,
         mutable_sigma: bool = False,
     ) -> None:
         super().__init__(init=init, mutable_sigma=mutable_sigma)

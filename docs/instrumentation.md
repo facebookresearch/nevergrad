@@ -4,7 +4,7 @@
 
 The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed. For this, discrete/categorical arguments must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do thanks to:
 - the `variables` modules providing priors that can be used to define each argument.
-- the `Instrumentation`, and `InstrumentedFunction` classes which provide an interface for converting any arguments into the data space used for optimization, and convert from data space back to the arguments space.
+- the `Instrumentation` class which provide an interface for converting any arguments into the data space used for optimization, and convert from data space back to the arguments space.
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
 
@@ -54,11 +54,6 @@ print(instrum.data_to_arguments([1, -80, -80, 80, 3]))
 # e is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80))
 # value=7 because 3 * std + mean = 7
 ```
-
-
-For convenience and until a better way is implemented (see future notice), we provide an `InstrumentedFunction` class converting a function of any parameter space into the data space. Here is a basic example of its use:
-
-**Future notice**: `InstrumentedFunction` may come to disappear (or at least we discourage its use) since a new API for instrumenting on the optimizer side has been added in v0.2.0.
 
 You can then directly perform optimization on a function given its instrumentation:
 ```python

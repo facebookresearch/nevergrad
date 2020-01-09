@@ -11,7 +11,7 @@ from . import discretization
 from ..common.typetools import ArrayLike
 from . import transforms
 from .core import ArgsKwargs
-from .core import Variable
+from .core import Variable as Variable
 # pylint: disable=unused-argument
 
 
@@ -116,8 +116,11 @@ class UnorderedDiscrete(Variable):
 # the i^th (i=0,...,i=k-1) possible value of a discrete variable with k values is represented by the quantile
 # (i+.5)/k of the standard normal distribution.
 # The optimization algorithm can check the instrumentation to know which kind of data this is.
+
+
 class OrderedDiscrete(UnorderedDiscrete):
     pass
+
 
 class Gaussian(Variable):
     """Gaussian variable with a mean and a standard deviation, and

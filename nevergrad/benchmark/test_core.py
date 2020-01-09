@@ -133,4 +133,4 @@ def test_benchmark_chunk_resuming() -> None:
     with warnings.catch_warnings(record=True) as w:
         warnings.filterwarnings("ignore", category=optimizerlib.InefficientSettingsWarning)
         chunk.compute()
-        assert not w, "A warning was raised while it should not have (experiment could not be resumed)"
+        assert not w, f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"
