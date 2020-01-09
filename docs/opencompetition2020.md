@@ -48,7 +48,8 @@ Nevergrad requires a CLA for contributors: https://github.com/facebookresearch/n
 All pull requests active between December 1st 2019 and June 1st, 2020 are eligible.
 
 ## Awards:
-12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
+Up to 12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
+In addition, a limited number of registration fee waivers are available for PPSN 2020.
 
 ## About Nevergrad and IOHprofiler
 
