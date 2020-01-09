@@ -59,7 +59,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Discrete test bed, including useless variables, 5 values or 2 values per character.
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
-    optims = ["NGO", "FTNGO", "CMA"] + sorted(
+    optims = ["NGO", "FTNGO", "FTNGO2", "CMA"] + sorted(
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
@@ -646,7 +646,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "NGO", "FTNGO"]
+             "RandomScaleRandomSearch", "MiniDE", "NGO", "FTNGO", "FTNGO2"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -670,7 +670,7 @@ def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "FTNGO", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
+    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "FTNGO", "FTNGO2", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
              "Zero", "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint",
              "HaltonSearchPlusMiddlePoint", "MiniQrDE", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
              "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
@@ -715,7 +715,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
         for archi in ["mono", "multi"]:
             agent = agent_mono if archi == "mono" else agent_multi
             dde = ng.optimizers.DifferentialEvolution(crossover="dimension").with_name("DiscreteDE")
-            for optim in ["PSO", "NGO", "FTNGO", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
+            for optim in ["PSO", "NGO", "FTNGO", "FTNGO2", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
                           "RandomSearch", "AlmostRotationInvariantDE", dde]:
                 for env_budget in [5000, 10000, 20000, 40000]:
                     for num_workers in [1, 10, 100]:
