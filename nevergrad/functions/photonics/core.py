@@ -19,7 +19,6 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
-import shutil
 import typing as tp
 import numpy as np
 from . import muse
@@ -114,8 +113,6 @@ class Photonics(ExperimentFunction):
     """
 
     def __init__(self, name: str, dimension: int, transform: str = "tanh") -> None:
-        if shutil.which("octave") is None:
-            raise RuntimeError("Photonics function requires Octave to be installed in order to run")
         assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
