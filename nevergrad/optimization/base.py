@@ -23,9 +23,9 @@ from . import utils
 
 
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
-_OptimCallBack = Union[Callable[["Optimizer", "p.Instrumentation", float], None], Callable[["Optimizer"], None]]
+_OptimCallBack = Union[Callable[["Optimizer", "p.Parameter", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
-IntOrParameter = tp.Union[int, p.Instrumentation]
+IntOrParameter = tp.Union[int, p.Parameter]
 
 
 def load(cls: Type[X], filepath: Union[str, Path]) -> X:
@@ -50,15 +50,15 @@ class TellNotAskedNotSupportedError(NotImplementedError):
 
 class CandidateMaker:
 
-    def __init__(self, instrumentation: p.Instrumentation) -> None:
+    def __init__(self, instrumentation: p.Parameter) -> None:
         self._instrumentation = instrumentation
         self._instrumentation.freeze()
 
-    def from_call(self, *args: Any, **kwargs: Any) -> p.Instrumentation:
+    def from_call(self, *args: Any, **kwargs: Any) -> p.Parameter:
         warnings.warn("CandidateMaker is deprecated, use instrumentation.spawn_child(new_value=(args, kwargs)) instead", DeprecationWarning)
         return self._instrumentation.spawn_child(new_value=(args, kwargs))
 
-    def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Instrumentation:
+    def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Parameter:
         warnings.warn("CandidateMaker is deprecated, use instrumentation.spawn_child().set_standardized_data(data, deterministic) instead",
                       DeprecationWarning)
         return self._instrumentation.spawn_child().set_standardized_data(data, deterministic=deterministic)
@@ -83,7 +83,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     Parameters
     ----------
-    instrumentation: int or Instrumentation
+    instrumentation: int or Parameter
         either the dimension of the optimization space, or its instrumentation
     budget: int/None
         number of allowed evaluations
@@ -113,7 +113,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.instrumentation = (
             instrumentation
             if not isinstance(instrumentation, (int, np.int))
-            else instru.Instrumentation(p.Array(shape=(instrumentation,)))
+            else p.Array(shape=(instrumentation,))
         )
         self.instrumentation.freeze()  # avoids issues!
         if not self.dimension:
@@ -132,14 +132,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         )
         # instance state
         self._asked: Set[str] = set()
-        self._suggestions: Deque[p.Instrumentation] = deque()
+        self._suggestions: Deque[p.Parameter] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[p.Instrumentation, JobLike[float]]] = []
-        self._finished_jobs: Deque[Tuple[p.Instrumentation, JobLike[float]]] = deque()
+        self._running_jobs: List[Tuple[p.Parameter, JobLike[float]]] = []
+        self._finished_jobs: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -228,9 +228,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
           calling optimizer.create_candidate.from_call.
         """
-        self._suggestions.append(self.instrumentation.spawn_child(new_value=(args, kwargs)))
+        if isinstance(self.instrumentation, p.Instrumentation):
+            new_value: tp.Any = (args, kwargs)
+        else:
+            assert len(args) == 1 and not kwargs
+            new_value = args[0]
+        self._suggestions.append(self.instrumentation.spawn_child(new_value=new_value))
 
-    def tell(self, candidate: p.Instrumentation, value: float) -> None:
+    def tell(self, candidate: p.Parameter, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -243,10 +248,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Note
         ----
         The candidate should generally be one provided by `ask()`, but can be also
-        a non-asked candidate. To create a p.Instrumentation instance from args and kwargs,
+        a non-asked candidate. To create a p.Parameter instance from args and kwargs,
         you can use `optimizer.create_candidate.from_call(*args, **kwargs)`.
         """
-        if not isinstance(candidate, p.Instrumentation):
+        if not isinstance(candidate, p.Parameter):
             raise TypeError(
                 "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
                 "if you want to inoculate a point that as not been asked for"
@@ -288,14 +293,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self) -> p.Instrumentation:
+    def ask(self) -> p.Parameter:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
 
         Returns
         -------
-        p.Instrumentation:
-            The candidate to try on the objective function. p.Instrumentations have field `args` and `kwargs` which can be directly used
+        p.Parameter:
+            The candidate to try on the objective function. p.Parameter have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         # call callbacks for logging etc...
@@ -331,41 +336,41 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
         return candidate
 
-    def provide_recommendation(self) -> p.Instrumentation:
+    def provide_recommendation(self) -> p.Parameter:
         """Provides the best point to use as a minimum, given the budget that was used
 
         Returns
         -------
-        p.Instrumentation
-            The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
+        p.Parameter
+            The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.recommend()  # duplicate method
 
-    def recommend(self) -> p.Instrumentation:
+    def recommend(self) -> p.Parameter:
         """Provides the best candidate to use as a minimum, given the budget that was used.
 
         Returns
         -------
-        p.Instrumentation
-            The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
+        p.Parameter
+            The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.instrumentation.spawn_child().set_standardized_data(self._internal_provide_recommendation(), deterministic=True)
 
-    def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
         self._internal_tell_candidate(candidate, value)
 
-    def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was "asked".
         """
         data = self.instrumentation.get_standardized_data(instance=candidate)
         self._internal_tell(data, value)
 
-    def _internal_ask_candidate(self) -> p.Instrumentation:
+    def _internal_ask_candidate(self) -> p.Parameter:
         return self.instrumentation.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
@@ -384,7 +389,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-    ) -> p.Instrumentation:
+    ) -> p.Parameter:
         """Optimization (minimization) procedure
 
         Parameters
@@ -405,8 +410,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        p.Instrumentation
-            The candidate with minimal value. p.Instrumentations have field `args` and `kwargs` which can be directly used
+        p.Parameter
+            The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
@@ -421,8 +426,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: List[Tuple[p.Instrumentation, JobLike[float]]] = []
-        tmp_finished: Deque[Tuple[p.Instrumentation, JobLike[float]]] = deque()
+        tmp_runnings: List[Tuple[p.Parameter, JobLike[float]]] = []
+        tmp_finished: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
         # go
         sleeper = Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
@@ -483,7 +488,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
-    ) -> p.Instrumentation:
+    ) -> p.Parameter:
         """This function is deprecated and renamed "minimize".
         """
         warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
@@ -493,7 +498,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
 
-    def compare(self: Optimizer, winners: List[p.Instrumentation], losers: List[p.Instrumentation]) -> None:
+    def compare(self: Optimizer, winners: List[p.Parameter], losers: List[p.Parameter]) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.
 
@@ -605,7 +610,7 @@ class ParametrizedFamily(OptimizerFamily):
 
         Parameters
         ----------
-        instrumentation: int or Instrumentation
+        instrumentation: int or Parameter
             either the dimension of the optimization space, or its instrumentation
         budget: int/None
             number of allowed evaluations

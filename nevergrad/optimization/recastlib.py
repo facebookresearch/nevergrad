@@ -22,7 +22,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.initial_guess: Optional[base.ArrayLike] = None
 
 #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-    def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.

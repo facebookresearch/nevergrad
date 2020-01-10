@@ -86,14 +86,14 @@ def test_base_optimizer() -> None:
     representation = repr(zeroptim)
     expected = "instrumentation=Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
     assert expected in representation, f"Unexpected representation: {representation}"
-    np.testing.assert_equal(zeroptim.ask().data, [0, 0])
+    np.testing.assert_equal(zeroptim.ask().value, [0, 0])
     zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 0)
     zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([1., 1]), 1)
-    np.testing.assert_equal(zeroptim.provide_recommendation().data, [0, 0])
+    np.testing.assert_equal(zeroptim.provide_recommendation().value, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
     zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 10)
     zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([1., 1]), 1)
-    np.testing.assert_equal(zeroptim.provide_recommendation().data, [1, 1])
+    np.testing.assert_equal(zeroptim.provide_recommendation().value, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
     # check suggest
     zeroptim.suggest([12, 12])
@@ -108,13 +108,13 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         result = optimizer.minimize(func, verbosity=2)
-    np.testing.assert_almost_equal(result.data[0], 1, decimal=2)
+    np.testing.assert_almost_equal(result.value[0], 1, decimal=2)
     np.testing.assert_equal(func.count, 100)
     # pickling
     filepath = tmp_path / "dump_test.pkl"
     optimizer.dump(filepath)
     optimizer2 = optimizerlib.OnePlusOne.load(filepath)
-    np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
+    np.testing.assert_almost_equal(optimizer2.provide_recommendation().value[0], 1, decimal=2)
 
 
 def test_compare() -> None:
@@ -124,11 +124,11 @@ def test_compare() -> None:
         x: tp.List[tp.Any] = []
         for _ in range(6):
             x += [optimizer.ask()]
-        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data - np.array((1., 1., 1.))))
+        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1., 1., 1.))))
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
     print(result)
-    np.testing.assert_almost_equal(result.data[0], 1., decimal=2)
+    np.testing.assert_almost_equal(result.value[0], 1., decimal=2)
 
 
 class StupidFamily(base.OptimizerFamily):
@@ -145,7 +145,7 @@ def test_optimizer_family() -> None:
         optf = StupidFamily(zero=zero)
         opt = optf(instrumentation=2, budget=4, num_workers=1)
         recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
-        np.testing.assert_equal(recom.data == np.zeros(2), zero)
+        np.testing.assert_equal(recom.value == np.zeros(2), zero)
 
 
 def test_deprecation_warning() -> None:

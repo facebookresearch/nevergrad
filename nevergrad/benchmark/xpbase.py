@@ -63,7 +63,7 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instantiate(self, instrumentation: instru.Instrumentation) -> obase.Optimizer:
+    def instantiate(self, instrumentation: p.Parameter) -> obase.Optimizer:
         """Instantiate an optimizer, providing the optimization space dimension
         """
         return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
@@ -128,7 +128,7 @@ class Experiment:
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self.recommendation: Optional[p.Instrumentation] = None
+        self.recommendation: Optional[p.Parameter] = None
         self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
 
     def __repr__(self) -> str:

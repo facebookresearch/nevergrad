@@ -70,7 +70,7 @@ class ParametersLogger:
         if self._filepath.exists() and delete_existing_file:
             self._filepath.unlink()  # missing_ok argument added in python 3.8
 
-    def __call__(self, optimizer: base.Optimizer, candidate: p.Instrumentation, value: float) -> None:
+    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, value: float) -> None:
         data = {"#instrumentation": optimizer.instrumentation.name,
                 "#name": optimizer.name,
                 "#session": self._session,

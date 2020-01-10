@@ -103,7 +103,7 @@ class _DE(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return sum([g.x for g in good_guys]) / len(good_guys)  # type: ignore
 
-    def _internal_ask_candidate(self) -> p.Instrumentation:
+    def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._parameters.initialization
             if self.sampler is None and init != "gaussian":
@@ -135,7 +135,7 @@ class _DE(base.Optimizer):
         candidate._meta["particle"] = particle
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Instrumentation, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
@@ -145,7 +145,7 @@ class _DE(base.Optimizer):
             particle.value = value
         self.population.set_queued(particle)
 
-    def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         worst_part = None
         if not len(self.population) < self.llambda:
             worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)

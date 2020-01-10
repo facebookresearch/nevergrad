@@ -226,7 +226,7 @@ class RecastOptimizer(base.Optimizer):
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
         messages[0].result = value  # post the value, and the thread will deal with it
 
-    def _internal_tell_not_asked(self, candidate: p.Instrumentation, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:

@@ -52,6 +52,20 @@ class Parameter:
         raise NotImplementedError
 
     @property
+    def args(self) -> tp.Tuple[tp.Any, ...]:
+        """Serves to input value in a funciton as func(*param.args, **param.kwargs)
+        Use parameter.Instrumentation to set args and kwargs with full liberty.
+        """
+        return (self.value,)
+
+    @property
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
+        """Serves to input value in a funciton as func(*param.args, **param.kwargs)
+        Use parameter.Instrumentation to set args and kwargs with full liberty.
+        """
+        return {}
+
+    @property
     def subparameters(self) -> "Dict":
         if self._subparameters is None:  # delayed instantiation to avoid infinte loop
             assert self.__class__ != Dict, "subparameters of Parameters dict should never be called"
