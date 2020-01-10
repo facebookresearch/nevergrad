@@ -78,4 +78,4 @@ def test_photonics_error() -> None:
 )
 def test_photonics_values(name: str, value: float, expected: float) -> None:
     photo = core.Photonics(name, 16)
-    np.testing.assert_almost_equal(photo(value * np.ones(16)), expected)
+    np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
