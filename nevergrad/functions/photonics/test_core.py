@@ -64,13 +64,10 @@ def test_morpho_transform_constraints() -> None:
 
 
 def test_photonics() -> None:
-    with patch("shutil.which", return_value="here"):
-        photo = core.Photonics("bragg", 16)
-    with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n12\n"):
-        with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n12\n"):
-            output = photo(np.zeros(16))
-    np.testing.assert_equal(output, 12)
+    photo = core.Photonics("bragg", 16)
+    output = photo(np.ones(16))
+    np.testing.assert_almost_equal(output, 0.9327846364883402)
     # check error
-    with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n"):
-        np.testing.assert_raises(RuntimeError, photo, np.zeros(16).tolist())
     np.testing.assert_raises(AssertionError, photo, np.zeros(12).tolist())
+    output = photo(np.zeros(16))
+    np.testing.assert_almost_equal(output, float("inf"))

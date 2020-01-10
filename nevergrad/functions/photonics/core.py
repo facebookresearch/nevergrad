@@ -19,11 +19,10 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
-import os
 import shutil
-from typing import List
-from pathlib import Path
+import typing as tp
 import numpy as np
+from . import muse
 from ..base import ExperimentFunction
 from ... import instrumentation as inst
 
@@ -46,7 +45,7 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
     """
     assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
     n = dimension // 4
-    arrays: List[inst.var.Array] = []
+    arrays: tp.List[inst.var.Array] = []
     if name == "bragg":
         # n multiple of 2, from 16 to 80
         # domain (n=60): [2,3]^30 x [0,300]^30
@@ -120,22 +119,16 @@ class Photonics(ExperimentFunction):
         assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
-        path = Path(__file__).absolute().parent / 'src' / (name + '.m')
-        assert path.exists(), f"Path {path} does not exist (anymore?)"
-        self._func = inst.CommandFunction(["octave-cli", "--no-gui", "--no-history", "--norc", "--quiet", "--no-window-system", path.name],
-                                          cwd=path.parent, verbose=False,
-                                          env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"))
+        self._base_func = {"morpho": muse.morpho, "bragg": muse.bragg, "chirped": muse.chirped}[name]
         super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, transform=transform))
         self.register_initialization(name=name, dimension=dimension, transform=transform)
         self._descriptors.update(name=name)
 
     def _compute(self, *x: np.ndarray) -> float:
         x_cat = np.concatenate(x)
-        assert x_cat.shape == (self.dimension,), f"Got length {x_cat.shape} but expected ({self.dimension},)"
-        output = self._func(*x_cat.tolist())
-        output_list = output.strip().splitlines()
+        assert x_cat.size == self.dimension
         try:
-            value = float(output_list[-1])
-        except Exception as e:  # pylint: disable=bare-except
-            raise RuntimeError(f'Could not parse output "{output}"') from e
-        return value
+            output = self._base_func(x_cat)
+        except Exception:  # pylint: disable=broad-except
+            output = float("inf")
+        return output
