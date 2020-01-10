@@ -312,7 +312,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 candidate = self._internal_ask_candidate()
                 # only register actual asked points
-            if self.instrumentation.cheap_constraint_check(*candidate.args, **candidate.kwargs):
+            if candidate.satisfies_constraints():
                 break  # good to go!
             else:
                 if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative

@@ -94,9 +94,11 @@ class Instrumentation(Tuple):
         return self.set_name(name)
 
     def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
+        warnings.warn("cheap_constraint_check(*args, **kwargs) is deprecated, use satisfies_constraints() instead",
+                      DeprecationWarning)
         child = self.spawn_child()
         child.value = (args, kwargs)
-        return child.satisfies_constraint()
+        return child.satisfies_constraints()
 
     @property
     def continuous(self) -> bool:
