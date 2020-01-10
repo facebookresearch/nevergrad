@@ -28,13 +28,13 @@ You can join Nevergrad users Facebook group [here](https://www.facebook.com/grou
 
 The goals of this package are to provide:
 - **gradient/derivative-free optimization algorithms**, including algorithms able to handle noise.
-- **tools to instrument any code**, making it painless to optimize your parameters/hyperparameters, whether they are continuous, discrete or a mixture of continuous and discrete variables.
+- **tools to parametrize any code**, making it painless to optimize your parameters/hyperparameters, whether they are continuous, discrete or a mixture of continuous and discrete parameters.
 - **functions** on which to test the optimization algorithms.
 - **benchmark routines** in order to compare algorithms easily.
 
 The structure of the package follows its goal, you will therefore find subpackages:
 - `optimization`: implementing optimization algorithms
-- `instrumentation`: tooling to convert code into a well-defined function to optimize.
+- `parametrization`: specifying what are the parameters you want to optimize
 - `functions`: implementing both simple and complex benchmark functions
 - `benchmark`: for running experiments comparing the algorithms on benchmark functions
 - `common`: a set of tools used throughout the package
@@ -48,7 +48,7 @@ The structure of the package follows its goal, you will therefore find subpackag
 
 The following README is very general, here are links to find more details on:
 - [how to perform optimization](docs/optimization.md) using `nevergrad`, including using parallelization and a few recommendation on which algorithm should be used depending on the settings
-- [how to instrument](docs/instrumentation.md) functions with any kind of parameters in order to convert them into a function defined on a continuous vectorial space where optimization can be performed. It also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
+- [how to parametrize](docs/parametrization.md) your problem so that the optimizers are informed of the problem to solve. This also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
 - [how to benchmark](docs/benchmarking.md) all optimizers on various test functions.
 - [benchmark results](docs/benchmarks.md) of some standard optimizers an simple test cases.
 - examples of [optimization for machine learning](docs/machinelearning.md).

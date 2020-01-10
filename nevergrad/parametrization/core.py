@@ -5,9 +5,12 @@
 
 import uuid
 import warnings
+import operator
+import functools
 from collections import OrderedDict
 import typing as tp
 import numpy as np
+from . import utils
 # pylint: disable=no-value-for-parameter
 
 
@@ -15,20 +18,7 @@ P = tp.TypeVar("P", bound="Parameter")
 D = tp.TypeVar("D", bound="Dict")
 
 
-class Descriptors(tp.NamedTuple):
-    """Provides access to a set of descriptors for the parametrization
-    This can be used within optimizers.
-    """
-    deterministic: bool = True
-    continuous: bool = True
-
-
-class NotSupportedError(RuntimeError):
-    """This type of operation is not supported by the parameter.
-    """
-
-
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Parameter:
     """This provides the core functionality of a parameter, aka
     value, subparameters, mutation, recombination
@@ -49,11 +39,8 @@ class Parameter:
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
+        self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
-
-    @property
-    def descriptors(self) -> Descriptors:
-        return Descriptors(deterministic=True, continuous=True)
 
     @property
     def value(self) -> tp.Any:
@@ -79,7 +66,7 @@ class Parameter:
         if self._dimension is None:
             try:
                 self._dimension = self.get_standardized_data().size
-            except NotSupportedError:
+            except utils.NotSupportedError:
                 self._dimension = 0
         return self._dimension
 
@@ -112,9 +99,9 @@ class Parameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise NotSupportedError(f"Recombination is not implemented for {self.name}")
+        raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
 
-    def get_standardized_data(self: P, instance: tp.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(self: P, *, instance: tp.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
         The data only represent the value of this instance, not the subparameters (eg.: mutable sigma), hence it does not
@@ -138,14 +125,15 @@ class Parameter:
         Operations between different standardized data should only be performed if at least one of these conditions apply:
         - subparameters do not mutate (eg: sigma is constant)
         - each array was produced by the same instance in the exact same state (no mutation)
+        - to make the code more explicit, the "instance" parameter is enforced as a keyword-only parameter.
         """
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
         return self._internal_get_standardized_data(self if instance is None else instance)
 
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
-        raise NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
+        raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, instance: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: np.ndarray, *, instance: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided instance (or self) using the standardized data.
 
         Parameters
@@ -161,6 +149,11 @@ class Parameter:
         -------
         Parameter
             the updated instance (self, or the provided instance)
+
+        Note
+        ----
+        To make the code more explicit, the "instance" and "deterministic" parameters are enforced
+        as keyword-only parameters.
         """
         assert isinstance(deterministic, bool)
         sent_instance = self if instance is None else instance
@@ -169,7 +162,7 @@ class Parameter:
         return self._internal_set_standardized_data(data, sent_instance, deterministic=deterministic)
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
-        raise NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
+        raise utils.NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
 
     # PART 2 - Additional features
 
@@ -188,7 +181,7 @@ class Parameter:
         elif isinstance(val, np.ndarray):
             return val.tobytes()
         else:
-            raise NotSupportedError(f"Value hash is not supported for object {self.name}")
+            raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
 
     def get_data_hash(self) -> tp.Hashable:
         """Hashable object representing the current standardized data of the object.
@@ -226,7 +219,7 @@ class Parameter:
         self.set_name(name)  # with_name allows chaining
 
     def __repr__(self) -> str:
-        return f"{self.name}:{self.value}".replace(" ", "").replace("\n", "")
+        return f"{self.name}:{self.value}"
 
     def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
@@ -318,6 +311,8 @@ class Parameter:
         child._set_random_state(rng)
         child._constraint_checkers = list(self._constraint_checkers)
         child._generation = self.generation + 1
+        child._descriptors = self._descriptors
+        child._name = self._name
         child.parents_uids.append(self.uid)
         child.heritage = dict(self.heritage)
         if new_value is not None:
@@ -340,6 +335,24 @@ class Parameter:
         inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._parameters.items()}
         child = self.__class__(**inputs)
         return child
+
+    def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
+        """Create a child, but remove the random state
+        This is used to run multiple experiments
+        """
+        child = self.spawn_child()
+        child.random_state = None
+        return child
+
+    def _compute_descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors()
+
+    @property
+    def descriptors(self) -> utils.Descriptors:
+        if self._descriptors is None:
+            self._compute_descriptors()
+            self._descriptors = self._compute_descriptors()
+        return self._descriptors
 
 
 class Constant(Parameter):
@@ -365,7 +378,7 @@ class Constant(Parameter):
     def get_value_hash(self) -> tp.Hashable:
         try:
             return super().get_value_hash()
-        except NotSupportedError:
+        except utils.NotSupportedError:
             return "#non-hashable-constant#"
 
     @property
@@ -374,7 +387,7 @@ class Constant(Parameter):
 
     @value.setter
     def value(self, value: tp.Any) -> None:
-        if not value == self._value:
+        if not (value == self._value or value is self._value):
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
     def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
@@ -429,19 +442,20 @@ class Dict(Parameter):
         super().__init__()
         self._parameters: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
-        self._sanity_check(list(parameters.values()))
+        self._sanity_check(list(self._parameters.values()))
 
     def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
         """Check that all subparameters are different
         """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
-        ids = {id(p) for p in parameters}
-        if len(ids) != len(parameters):
-            raise ValueError("Don't repeat twice the same parameter")
+        if parameters:
+            assert all(isinstance(p, Parameter) for p in parameters)
+            ids = {id(p) for p in parameters}
+            if len(ids) != len(parameters):
+                raise ValueError("Don't repeat twice the same parameter")
 
-    @property
-    def descriptors(self) -> Descriptors:
-        return Descriptors(**{name: all(getattr(as_parameter(p).descriptors, name) for p in self._parameters.values())
-                              for name in ("deterministic", "continuous")})
+    def _compute_descriptors(self) -> utils.Descriptors:
+        init = utils.Descriptors()
+        return functools.reduce(operator.and_, [p.descriptors for p in self._parameters.values()], init)
 
     def __getitem__(self, name: tp.Any) -> Parameter:
         return self._parameters[name]
@@ -471,7 +485,7 @@ class Dict(Parameter):
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items()))
 
     def _internal_get_standardized_data(self: D, instance: D) -> np.ndarray:
-        data = {k: self[k].get_standardized_data(p) for k, p in instance._parameters.items()}
+        data = {k: self[k].get_standardized_data(instance=p) for k, p in instance._parameters.items()}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
@@ -484,7 +498,8 @@ class Dict(Parameter):
         if self._sizes is None:
             self.get_standardized_data()
         assert self._sizes is not None
-        assert data.size == sum(v for v in self._sizes.values())
+        if data.size != sum(v for v in self._sizes.values()):
+            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}")
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():
@@ -495,6 +510,8 @@ class Dict(Parameter):
         return instance
 
     def mutate(self) -> None:
+        # pylint: disable=pointless-statement
+        self.random_state  # make sure to create one before using
         for param in self._parameters.values():
             param.mutate()
 
@@ -505,6 +522,8 @@ class Dict(Parameter):
         return child
 
     def recombine(self, *others: "Dict") -> None:
+        # pylint: disable=pointless-statement
+        self.random_state  # make sure to create one before using
         assert all(isinstance(o, self.__class__) for o in others)
         for k, param in self._parameters.items():
             param.recombine(*[o[k] for o in others])

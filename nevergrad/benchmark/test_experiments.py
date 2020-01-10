@@ -62,7 +62,8 @@ def check_seedable(maker: Any) -> None:
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
-        results.append(Selector(selector.loc[:, ["loss", "seed"]]))  # elapsed_time can vary...
+        results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
+        assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"
     results[0].assert_equivalent(results[1], f"Non identical outputs for seed={random_seed}")
     np.testing.assert_raises(
         AssertionError, results[1].assert_equivalent, results[2], f"Identical output with different seeds (seed={random_seed})"

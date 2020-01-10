@@ -10,7 +10,7 @@ import typing as tp
 from math import pi, cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
-from ... import instrumentation as inst
+from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 
 
@@ -109,8 +109,8 @@ class PowerSystem(ExperimentFunction):
         dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        dimension = sum([a.dimension for a in dam_agents])
-        super().__init__(self._simulate_power_system, inst.var.Array(dimension))
+        dimension = int(sum([a.dimension for a in dam_agents]))
+        super().__init__(self._simulate_power_system, p.Array(shape=(dimension,)))
         self.register_initialization(**params)
         self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)

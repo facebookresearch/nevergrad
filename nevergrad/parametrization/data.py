@@ -8,7 +8,8 @@ import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from . import core
-from ..instrumentation import transforms as trans  # TODO move along
+from . import utils
+from . import transforms as trans
 # pylint: disable=no-value-for-parameter
 
 
@@ -99,14 +100,13 @@ class Array(core.Parameter):
         self.bound_transform: tp.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
 
-    @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=True, continuous=not self.integer)
+    def _compute_descriptors(self) -> utils.Descriptors:
+        return utils.Descriptors(continuous=not self.integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
-        descriptors: tp.List[str] = ["int"] if self.integer else (
-            [str(self.value.shape).replace(" ", "")] if self.value.shape != () else [])
+        descriptors: tp.List[str] = (["int"] if self.integer else
+                                     ([str(self.value.shape).replace(" ", "")] if self.value.shape != () else []))
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
         descriptors += [f"{self.bound_transform}"] if self.bound_transform is not None else []
         descriptors += ["constr"] if self._constraint_checkers else []
@@ -128,10 +128,12 @@ class Array(core.Parameter):
         return self._value
 
     @value.setter
-    def value(self, value: np.ndarray) -> None:
+    def value(self, value: ArrayLike) -> None:
         self._check_frozen()
-        if not isinstance(value, np.ndarray):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray")
+        if not isinstance(value, (np.ndarray, tuple, list)):
+            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
+        value = np.asarray(value)
+        assert isinstance(value, np.ndarray)
         if self._value.shape != value.shape:
             raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
         if not BoundChecker(*self.bounds)(self.value):
@@ -295,7 +297,7 @@ class Array(core.Parameter):
         recomb = self.subparameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
-            self.set_standardized_data(np.mean([self.get_standardized_data(p) for p in all_p], axis=0), deterministic=False)
+            self.set_standardized_data(np.mean([self.get_standardized_data(instance=p) for p in all_p], axis=0), deterministic=False)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

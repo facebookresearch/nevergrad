@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as tp
+from nevergrad.parametrization import parameter as p
 from nevergrad.instrumentation import Instrumentation
-from nevergrad.instrumentation.core import Variable
 
 
 Parameter = Instrumentation  # looking ahead
@@ -34,13 +34,13 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self, function: tp.Callable[..., float], parametrization: Variable) -> None:
+    def __init__(self, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parametrization = Parameter()
-        self.parametrization = parametrization if isinstance(parametrization, Parameter) else Parameter(parametrization)
+        self.parametrization = parametrization if isinstance(parametrization, Parameter) else p.Instrumentation(parametrization)
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
@@ -59,11 +59,11 @@ class ExperimentFunction:
         return self._parametrization.dimension
 
     @property
-    def parametrization(self) -> Parameter:
+    def parametrization(self) -> p.Instrumentation:
         return self._parametrization
 
     @parametrization.setter
-    def parametrization(self, parametrization: Parameter) -> None:
+    def parametrization(self, parametrization: p.Instrumentation) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
         # TODO change to parametrization
@@ -112,16 +112,17 @@ class ExperimentFunction:
                 raise ExperimentFunctionCopyError("Copy must be specifically implemented for each subclass of ExperimentFunction "
                                                   "(and make sure you don't use the same parametrization in the process), or "
                                                   "initialization parameters should be registered through 'register_initialization'")
-            kwargs = {x: y.copy() if isinstance(y, Variable) else y for x, y in self._initialization_kwargs.items()}
+            kwargs = {x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._initialization_kwargs.items()}
             output = self.__class__(**kwargs)
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")
-            return output
-        # back to standard ExperimentFunction
-        pf = self.__class__(self.function, self.parametrization.copy())
-        pf._descriptors = self.descriptors
-        return pf
+        else:
+            # back to standard ExperimentFunction
+            ouptut = self.__class__(self.function, self.parametrization.copy())
+            ouptut._descriptors = self.descriptors
+        output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+        return output
 
     def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.

@@ -2,9 +2,16 @@
 
 ## master
 
+<<<<<<< HEAD
 ## v0.3.0
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
+=======
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+- Instrumented functions may silently failed when initialized as: `InstrumentedFunction(func, *inst.args, **inst.kwargs)`,
+  because `args` and `kwargs` are now actual parameter values (new parametrization)
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+>>>>>>> 955942be134c9107f8a014893fdbfddb2f7d7340
 
 ### Breaking changes
 
