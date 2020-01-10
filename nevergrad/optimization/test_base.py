@@ -8,7 +8,6 @@ from pathlib import Path
 import typing as tp
 import pytest
 import numpy as np
-from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from . import optimizerlib
 from . import test_optimizerlib
@@ -84,7 +83,7 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
 def test_base_optimizer() -> None:
     zeroptim = optimizerlib.Zero(instrumentation=2, budget=4, num_workers=1)
     representation = repr(zeroptim)
-    expected = "instrumentation=Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
+    expected = "instrumentation=Array{(2,)}[recombination=average,sigma=1.0]"
     assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().value, [0, 0])
     zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 0)
@@ -157,7 +156,7 @@ def test_deprecation_warning() -> None:
 def test_naming() -> None:
     optf = StupidFamily(zero=True)
     opt = optf(instrumentation=2, budget=4, num_workers=1)
-    instru_str = "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
+    instru_str = "Array{(2,)}[recombination=average,sigma=1.0]"
     np.testing.assert_equal(repr(opt), f"Instance of StupidFamily(zero=True)(instrumentation={instru_str}, budget=4, num_workers=1)")
     optf.with_name("BlubluOptimizer", register=True)
     opt = base.registry["BlubluOptimizer"](instrumentation=2, budget=4, num_workers=1)
