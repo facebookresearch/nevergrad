@@ -63,11 +63,19 @@ def test_morpho_transform_constraints() -> None:
     assert np.all(output[3 * q:] <= 300)
 
 
-def test_photonics() -> None:
-    photo = core.Photonics("bragg", 16)
-    output = photo(np.ones(16))
-    np.testing.assert_almost_equal(output, 0.9327846364883402)
+def test_photonics_error() -> None:
     # check error
+    photo = core.Photonics("bragg", 16)
     np.testing.assert_raises(AssertionError, photo, np.zeros(12).tolist())
     output = photo(np.zeros(16))
     np.testing.assert_almost_equal(output, float("inf"))
+
+
+@testing.parametrized(
+    morpho=("morpho", 100, 1.1647),
+    chirped=("chirped", 150, 0.94439),
+    bragg=("bragg", 2.5, 0.93216),
+)
+def test_photonics_values(name: str, value: float, expected: float) -> None:
+    photo = core.Photonics(name, 16)
+    np.testing.assert_almost_equal(photo(value * np.ones(16)), expected)
