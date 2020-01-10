@@ -1656,6 +1656,81 @@ class EMNA_TBPSA(TBPSA):
             self._evaluated_population = []
         del self._unevaluated_population[x_bytes]
 
+@registry.register
+class AnisoTBPSA(NaiveTBPSA):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self.sigma = np.ones(self.dimension)
+        self.mu = self.dimension
+        self.llambda = 4 * self.dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        self._loss_record: List[float] = []
+        # population
+        self._evaluated_population: List[base.utils.Individual] = []
+        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
+
+    def _internal_ask(self) -> ArrayLike:
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1, self.dimension) / np.sqrt(self.dimension))
+        individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
+        part = base.utils.Individual(individual)
+        part._parameters = np.array([mutated_sigma])
+        self._unevaluated_population[individual.tobytes()] = part
+        return individual  # type: ignore
+
+    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+        self._loss_record += [value]
+        if len(self._loss_record) >= 5 * self.llambda:
+            first_fifth = self._loss_record[: self.llambda]
+            last_fifth = self._loss_record[-self.llambda:]
+            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
+            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
+            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
+            if z < 2.0:
+                self.mu *= 2
+            else:
+                self.mu = int(self.mu * 0.84)
+                if self.mu < self.dimension:
+                    self.mu = self.dimension
+            self.llambda = 4 * self.mu
+            if self.num_workers > 1:
+                self.llambda = max(self.llambda, self.num_workers)
+                self.mu = self.llambda // 4
+            self._loss_record = []
+        x = np.array(x, copy=False)
+        x_bytes = x.tobytes()
+        particle = self._unevaluated_population[x_bytes]
+        particle.value = value
+        self._evaluated_population.append(particle)
+        if len(self._evaluated_population) >= self.llambda:
+            # Sorting the population.
+            self._evaluated_population.sort(key=lambda p: p.value)
+            # Computing the new parent.
+            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
+            self.sigma = np.exp(np.sum(np.log([p._parameters[0]
+                                               for p in self._evaluated_population[: self.mu]])) / self.mu)
+            self._evaluated_population = []
+        del self._unevaluated_population[x_bytes]
+
+    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+        x = candidate.data
+        sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
+        part = base.utils.Individual(x)
+        part._parameters = np.array([sigma])
+        self._unevaluated_population[x.tobytes()] = part
+        self._internal_tell_candidate(candidate, value)  # go through standard pipeline
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["optimistic"].x
 
 @registry.register
 class fabienosaur(TBPSA):
