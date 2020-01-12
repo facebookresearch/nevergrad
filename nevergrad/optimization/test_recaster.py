@@ -81,3 +81,22 @@ def test_recast_optimizer_and_stop() -> None:
     optimizer = FakeOptimizer(instrumentation=2, budget=100)
     optimizer.ask()
     # thread is not finished... but should not hang!
+
+def test_provide_recommendation() -> None:
+    nevergrad_optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
+    # even if no ask&tell, recommendation should work:
+    assert nevergrad_optimizer.provide_recommendation() is not None
+
+    # the recommended solution should be the better one among
+    # all told solutions for OnePlusOne solver:
+    x1 = nevergrad_optimizer.ask()
+    nevergrad_optimizer.tell(x1, 10)
+    x2 = nevergrad_optimizer.ask()
+    nevergrad_optimizer.tell(x2, 5)
+    recommended_solution = nevergrad_optimizer.provide_recommendation()
+    for i in range(len(recommended_solution.data)):
+        assert recommended_solution.data[i] == x2.data[i]
+
+    scipy_optimizer = optimizerlib.SQP(instrumentation=2, budget=100)
+    # even if no ask&tell, recommendation should work:
+    assert scipy_optimizer.provide_recommendation() is not None
