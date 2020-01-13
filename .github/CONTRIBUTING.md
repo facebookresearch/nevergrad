@@ -19,7 +19,7 @@ mypy --implicit-reexport nevergrad
 ```
 If you are not familiar with type checking, we do not want it to be an annoyance and you can can ignore errors by adding `# type: ignore` at the end of lines flagged as incorrect.
 If we consider it useful to have correct typing, we will update the code after your pull request is merged.
-If you are however familiar with type hints, you can check with the strict mode: `mypy --implicit-reexport --strict nevergrad`, but at any given moment all the code is not guaranteed to pass the test (we try work on it regularly, see #409).
+If you are however familiar with type hints, you can check with the strict mode: `mypy --implicit-reexport --strict nevergrad`, but at any given moment all the code is not guaranteed to pass the test (we try to work on it regularly, see #409).
 
 Unit tests and type checks (in non-strict mode) will be automatically run every time a pull request is submitted/updated.
 
