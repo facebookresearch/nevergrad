@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import tempfile
+import typing as tp
 from pathlib import Path
-from typing import Tuple, List, Optional
 import numpy as np
 from ..common import testing
 from . import instantiate
@@ -17,7 +17,8 @@ def test_symlink_folder_tree() -> None:
     path = Path(__file__).absolute().parents[1]
     assert path.name == "nevergrad"
     with tempfile.TemporaryDirectory() as folder:
-        instantiate.symlink_folder_tree(path, folder)
+        with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+            instantiate.symlink_folder_tree(path, folder)
 
 
 _EXPECTED = [Placeholder(*x) for x in [("value1", "this is a comment"), ("value2", None), ("string", None)]]
@@ -65,9 +66,10 @@ def test_folder_instantiator(clean_copy: bool) -> None:
     ifolder = instantiate.FolderInstantiator(path, clean_copy=clean_copy)
     testing.printed_assert_equal(ifolder.placeholders, _EXPECTED)
     np.testing.assert_equal(len(ifolder.file_functions), 1)
-    with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
-        with (tmp / "script.py").open("r") as f:
-            lines = f.readlines()
+    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+        with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
+            with (tmp / "script.py").open("r") as f:
+                lines = f.readlines()
     np.testing.assert_equal(lines[10], "value2 = 110.0\n")
 
 
@@ -76,7 +78,7 @@ def test_folder_instantiator(clean_copy: bool) -> None:
     unique_no_comment=("bfseibf\nbsfei NG_ARG{machin}", [("machin", None)]),
     several=("bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}", [("truc", "blublu"), ("bidule", None)]),
 )
-def test_placeholder(text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
+def test_placeholder(text: str, name_comments: tp.List[tp.Tuple[str, tp.Optional[str]]]) -> None:
     placeholders = Placeholder.finditer(text)
     testing.printed_assert_equal(placeholders, [Placeholder(*x) for x in name_comments])
 
@@ -111,7 +113,8 @@ def test_file_text_function() -> None:
 def test_folder_function() -> None:
     folder = Path(__file__).parent / "examples"
     func = instantiate.FolderFunction(str(folder), ["python", "examples/script.py"], clean_copy=True)
-    output = func(value1=98, value2=12, string="plop")
+    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+        output = func(value1=98, value2=12, string="plop")
     np.testing.assert_equal(output, 24)
     output = func(value1=98, value2=12, string="blublu")
     np.testing.assert_equal(output, 12)

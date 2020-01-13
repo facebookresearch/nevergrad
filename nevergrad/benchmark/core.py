@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Dict, Optional, Callable, Any, List, Iterator, Tuple, Iterable
 import numpy as np
 import pandas as pd
-from .experiments import registry, Experiment
+from .experiments import registry as registry
+from .experiments import Experiment as Experiment
 from ..common import tools
 from ..common.typetools import ExecutorLike, JobLike, PathLike
 from ..optimization.utils import SequentialExecutor
