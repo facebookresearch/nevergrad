@@ -50,6 +50,7 @@ version = match.group("version")
 
 
 # setup
+print(requirements["dev"])
 
 setup(
     name="nevergrad",

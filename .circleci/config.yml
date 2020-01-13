@@ -62,8 +62,6 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install -e .[all]
-            git clone https://github.com/numpy/numpy-stubs.git || (cd numpy-stubs; git pull)
-            pip install ./numpy-stubs
 
       - save_cache:
           name: "[all] Save cache"
