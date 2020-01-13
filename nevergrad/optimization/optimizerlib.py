@@ -1608,6 +1608,20 @@ class octopus(NGO):
         self.optims = [NGO(self.instrumentation, budget, num_workers)]
             
             
+@registry.register
+class hoopa(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
+        self.optims = [octopus(self.instrumentation, budget, num_workers)]
+            
+            
+            
+            
             
             
 
@@ -1643,7 +1657,7 @@ class JNGO(NGO):
 
 
 
-@registry.register
+# @registry.register  not registered because it does not cov er all cases (e.g. sequential case)
 class EMNA_TBPSA(TBPSA):
     """Test-based population-size adaptation with EMNA.
     """
