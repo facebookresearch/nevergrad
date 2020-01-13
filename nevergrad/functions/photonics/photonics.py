@@ -24,12 +24,12 @@ from scipy.linalg import toeplitz
 def bragg(X: np.ndarray) -> float:
     lam = 600
     bar = int(np.size(X) / 2)
-    n = np.concatenate(([1], X[0:bar], [1.7]))
+    n = np.concatenate(([1], np.sqrt(X[0:bar]), [1.7320508075688772]))
     Type = np.arange(0, bar + 2)
     hauteur = np.concatenate(([0], X[bar : 2 * bar], [0]))
     tmp = np.tan(2 * np.pi * n[Type] * hauteur[Type] / lam)
     # Specific to this substrate.
-    Z = 1.7
+    Z = n[-1]
     for k in range(np.size(Type) - 1, 0, -1):
         Z = (Z - 1j * n[Type[k]] * tmp[k]) / (1 - 1j * tmp[k] * Z / n[Type[k]])
     # Specific to air.
@@ -40,14 +40,14 @@ def bragg(X: np.ndarray) -> float:
 
 def chirped(X: np.ndarray) -> float:
     lam = np.linspace(500, 800, 50)
-    n = np.array([1, 1.4, 1.7])
+    n = np.array([1, 1.4142135623730951, 1.7320508075688772])
     Type = np.concatenate(([0], np.tile([2, 1], int(np.size(X) / 2)), [2]))
     hauteur = np.concatenate(([0], X, [0]))
     r = np.zeros(np.size(lam)) + 0j
     for m in range(0, np.size(lam)):
         # Specific to this substrate.
         tmp = np.tan(2 * np.pi * n[Type] * hauteur[Type] / lam[m])
-        Z = 1.7
+        Z = 1.7320508075688772
         for k in range(np.size(Type) - 1, 0, -1):
             Z = (Z - 1j * n[Type[k]] * tmp[k]) / (1 - 1j * tmp[k] * Z / n[Type[k]])
         # Specific to air.
@@ -61,7 +61,7 @@ def cascade(T: np.ndarray, U: np.ndarray) -> np.ndarray:
     n = int(T.shape[1] / 2)
     J = np.linalg.inv(np.eye(n) - np.matmul(U[0:n, 0:n], T[n : 2 * n, n : 2 * n]))
     K = np.linalg.inv(np.eye(n) - np.matmul(T[n : 2 * n, n : 2 * n], U[0:n, 0:n]))
-    S: np.ndarray = np.block(
+    S = np.block(
         [
             [
                 T[0:n, 0:n]
@@ -75,21 +75,19 @@ def cascade(T: np.ndarray, U: np.ndarray) -> np.ndarray:
                 np.matmul(np.matmul(U[n : 2 * n, 0:n], K), T[n : 2 * n, 0:n]),
                 U[n : 2 * n, n : 2 * n]
                 + np.matmul(
-                    np.matmul(
-                        np.matmul(U[n : 2 * n, 0:n], K), T[n : 2 * n, n : 2 * n]
-                    ),
+                    np.matmul(np.matmul(U[n : 2 * n, 0:n], K), T[n : 2 * n, n : 2 * n]),
                     U[0:n, n : 2 * n],
                 ),
             ],
         ]
     )
-    return S
+    return S  # type: ignore
 
 
 def c_bas(A: np.ndarray, V: np.ndarray, h: float) -> np.ndarray:
     n = int(A.shape[1] / 2)
     D = np.diag(np.exp(1j * V * h))
-    S: np.ndarray = np.block(
+    S = np.block(
         [
             [A[0:n, 0:n], np.matmul(A[0:n, n : 2 * n], D)],
             [
@@ -98,7 +96,7 @@ def c_bas(A: np.ndarray, V: np.ndarray, h: float) -> np.ndarray:
             ],
         ]
     )
-    return S
+    return S  # type: ignore
 
 
 def marche(a: float, b: float, p: float, n: int, x: float) -> np.ndarray:
@@ -132,9 +130,7 @@ def creneau(k0: float, a0: float, pol: float, e1: float, e2: float, a: float, n:
         T = np.linalg.inv(U)
         M = (
             np.matmul(
-                np.matmul(
-                    np.matmul(T, alpha), np.linalg.inv(marche(e1, e2, a, n, x0))
-                ),
+                np.matmul(np.matmul(T, alpha), np.linalg.inv(marche(e1, e2, a, n, x0))),
                 alpha,
             )
             - k0 * k0 * T
@@ -161,15 +157,10 @@ def interface(P: np.ndarray, Q: np.ndarray) -> np.ndarray:
     S = np.matmul(
         np.linalg.inv(
             np.block(
-                [
-                    [P[0:n, 0:n], -Q[0:n, 0:n]],
-                    [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]],
-                ]
+                [[P[0:n, 0:n], -Q[0:n, 0:n]], [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]]]
             )
         ),
-        np.block(
-            [[-P[0:n, 0:n], Q[0:n, 0:n]], [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]]]
-        ),
+        np.block([[-P[0:n, 0:n], Q[0:n, 0:n]], [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]]]),
     )
     return S  # type: ignore
 
@@ -189,13 +180,10 @@ def morpho(X: np.ndarray) -> float:
     a = X[2 * n_motifs : 3 * n_motifs]
     spacers = X[3 * n_motifs : 4 * n_motifs]
     l = lam / d  # noqa
-    k0: float = 2 * np.pi / l
+    k0 = 2 * np.pi / l
     P, V = homogene(k0, 0, pol, 1, n)
     S = np.block(
-        [
-            [np.zeros([n, n]), np.eye(n, dtype=np.complex)],
-            [np.eye(n), np.zeros([n, n])],
-        ]
+        [[np.zeros([n, n]), np.eye(n, dtype=np.complex)], [np.eye(n), np.zeros([n, n])]]
     )
     for j in range(0, n_motifs):
         Pc, Vc = creneau(k0, 0, pol, e2, 1, a[j], n, x0[j])
@@ -208,7 +196,7 @@ def morpho(X: np.ndarray) -> float:
     R = np.zeros(3, dtype=np.float)
     for j in range(-1, 2):
         R[j] = abs(S[j + nmod, nmod]) ** 2 * np.real(V[j + nmod]) / k0
-    cost = 1 - (R[-1] + R[1]) / 2 + R[0] / 2
+    cost: float = 1 - (R[-1] + R[1]) / 2 + R[0] / 2
 
     lams = (np.array([400, 500, 600, 700, 800]) + 0.24587) / d
     bar = 0
@@ -231,4 +219,4 @@ def morpho(X: np.ndarray) -> float:
         S = cascade(S, interface(P, Pc))
         bar += abs(S[nmod, nmod]) ** 2 * np.real(V[nmod]) / k0
     cost += bar / lams.size
-    return float(cost)
+    return cost

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 from typing import List
 from unittest.mock import patch
 import numpy as np
@@ -67,7 +68,9 @@ def test_photonics_error() -> None:
     # check error
     photo = core.Photonics("bragg", 16)
     np.testing.assert_raises(AssertionError, photo, np.zeros(12).tolist())
-    output = photo(np.zeros(16))
+    with warnings.catch_warnings(record=True) as w:
+        output = photo(np.zeros(16))
+        assert len(w) == 1
     np.testing.assert_almost_equal(output, float("inf"))
 
 

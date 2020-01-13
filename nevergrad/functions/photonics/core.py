@@ -21,7 +21,7 @@
 
 import typing as tp
 import numpy as np
-from . import muse
+from . import photonics
 from ..base import ExperimentFunction
 from ... import instrumentation as inst
 
@@ -116,7 +116,7 @@ class Photonics(ExperimentFunction):
         assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
-        self._base_func = {"morpho": muse.morpho, "bragg": muse.bragg, "chirped": muse.chirped}[name]
+        self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
         super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, transform=transform))
         self.register_initialization(name=name, dimension=dimension, transform=transform)
         self._descriptors.update(name=name)
@@ -127,5 +127,7 @@ class Photonics(ExperimentFunction):
         try:
             output = self._base_func(x_cat)
         except Exception:  # pylint: disable=broad-except
+            output = float("inf")
+        if np.isnan(output):
             output = float("inf")
         return output
