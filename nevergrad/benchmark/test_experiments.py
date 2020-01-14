@@ -5,7 +5,6 @@
 
 import inspect
 import itertools
-from unittest.mock import patch
 from typing import Callable, Iterator, Any
 import numpy as np
 from ..functions.mlda import datasets
@@ -18,11 +17,10 @@ from . import experiments
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
-    with patch("shutil.which", return_value="here"):  # do not check for missing packages
-        with datasets.mocked_data():  # mock mlda data that should be downloaded
-            check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-        if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld"}:
-            check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
+    with datasets.mocked_data():  # mock mlda data that should be downloaded
+        check_maker(maker)  # this is to extract the function for reuse if other external packages need it
+    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld"}:
+        check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
 
 def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:

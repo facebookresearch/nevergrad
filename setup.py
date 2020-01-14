@@ -70,5 +70,5 @@ setup(
     extras_require={"all": requirements["dev"] + requirements["bench"],
                     "dev": requirements["dev"],
                     "benchmark": requirements["bench"]},
-    package_data={"nevergrad": ["py.typed", "*.csv", "*.py", "functions/photonics/src/*"]},
+    package_data={"nevergrad": ["py.typed", "*.csv", "*.py"]},
 )
