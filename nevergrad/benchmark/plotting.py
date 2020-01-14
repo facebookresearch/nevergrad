@@ -85,8 +85,8 @@ def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
 
 def remove_errors(df: pd.DataFrame) -> tools.Selector:
     df = tools.Selector(df)
-    if "error" not in df.columns:  # backward compatibility
-        return df  # type: ignore
+    #if "error" not in df.columns:  # backward compatibility
+    #    return df  # type: ignore
     # errors with no recommendation
     errordf = df.select(error=lambda x: isinstance(x, str) and x, loss=np.isnan)
     for row in errordf.itertuples():

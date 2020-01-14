@@ -34,10 +34,11 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names()
              if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
-    optims = ["NGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA"] + sorted(
+    optims = ["NGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
         ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -58,12 +59,13 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     # Discrete test bed, including useless variables, 5 values or 2 values per character.
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
-    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA"] + sorted(
+    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA"] + sorted(
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
     # Block dimension = dimension of a block on which the function "name" is applied. There are several blocks,
     # and possibly useless variables; so the total dimension is num_blocks * block_dimension * (1+ uv_factor).
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -83,7 +85,8 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
+    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
         for name in names
@@ -103,6 +106,7 @@ def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -121,7 +125,8 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["ScrHammersleySearch", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE"]
+    optims = ["ScrHammersleySearch", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE"]
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -140,6 +145,7 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -159,11 +165,12 @@ def multimodal(seed: Optional[int] = None, para: bool = False) -> Iterator[Exper
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     
-    optims = ["NGO","FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "NaiveTBPSA", "TBPSA",
+    optims = ["NGO","FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "NaiveTBPSA", "TBPSA",
               "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    optims = ["tardigrade"]  # REMOVE
     if not para:
         optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
     #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
@@ -192,8 +199,9 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
     """Yet Another Black-Box Optimization Benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "TBPSA", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+    optims = ["NaiveTBPSA", "TBPSA", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
+    optims = ["tardigrade"]  # REMOVE
     if not parallel:
         optims += ["SQP", "Cobyla", "Powell", "chainCMASQP", "chainCMAPowell"]
     #optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
@@ -252,8 +260,9 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
+    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
               "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE"]
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -268,10 +277,11 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -293,10 +303,11 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -315,6 +326,7 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
     names = ["sphere"]
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
+    optims = ["tardigrade"]  # REMOVE
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -333,9 +345,10 @@ def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
     """All noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2"] + sorted(
+    optims = ["NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2"] + sorted(
         x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     )
+    optims = ["tardigrade"]  # REMOVE
     for budget in [50000]:
         for optim in optims:
             for d in [2, 20, 200]:
@@ -375,6 +388,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
+    optims = ["tardigrade"]  # REMOVE
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -424,7 +438,7 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
         funcs += [func]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "NGO","FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus","FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "NGO","FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus","FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
@@ -441,7 +455,7 @@ def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
@@ -464,7 +478,7 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2"]
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -486,7 +500,7 @@ def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2"]
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2"]
     for budget in [25600, 51200, 102400]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -517,7 +531,7 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer",
-             "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "SplitOptimizer3", "SplitOptimizer13"]
+             "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "SplitOptimizer3", "SplitOptimizer13"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -545,7 +559,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
 
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
     for budget in [25600, 51200, 102400, 204800, 409600]:
@@ -573,7 +587,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2"]
+             "RandomScaleRandomSearch", "MiniDE", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -597,7 +611,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
 #     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
 #     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 #     seedg = create_seed_generator(seed)
-#     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
+#     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
 #              "Zero", "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint",
 #              "HaltonSearchPlusMiddlePoint", "MiniQrDE", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
 #              "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
@@ -618,7 +632,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
 def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
-             "OnePlusOne", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
+             "OnePlusOne", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
     # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
     for budget in [100 * 5 ** k for k in range(6)]:  # from 100 to 312500
         for num_workers in [1, 10, 100]:
@@ -641,7 +655,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
             dde = ng.optimizers.DifferentialEvolution(crossover="dimension").with_name("DiscreteDE")
-            for optim in ["PSO", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
+            for optim in ["PSO", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
                           "RandomSearch", "AlmostRotationInvariantDE", dde]:
                 for env_budget in [5000, 10000, 20000, 40000]:
                     for num_workers in [1, 10, 100]:
@@ -673,7 +687,8 @@ class PackedFunctions(ExperimentFunction):
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims = ["tardigrade"]  # REMOVE
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
@@ -696,7 +711,8 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
 def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "FTNGO", "cameleon", "hoopa", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "FTNGO", "cameleon", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims = ["tardigrade"]  # REMOVE
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "hm"]:

@@ -1062,6 +1062,33 @@ class CMandAS2(ASCMADEthird):
 
 
 @registry.register
+class CMandAS3(ASCMADEthird):
+    """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
+
+    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self.optims = [TwoPointsDE(self.instrumentation, budget=None, num_workers=num_workers)]  # noqa: F405
+        assert budget is not None
+        self.budget_before_choosing = 2 * budget
+        if budget < 201:
+            self.optims = [OnePlusOne(self.instrumentation, budget=None, num_workers=num_workers)]
+        if budget > 50 * self.dimension or num_workers < 30:
+            if num_workers == 1:
+                self.optims = [
+                    chainCMAPowell(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                    chainCMAPowell(self.instrumentation, budget=None, num_workers=num_workers),
+                    chainCMAPowell(self.instrumentation, budget=None, num_workers=num_workers),
+                ]
+            else:
+                self.optims = [
+                    CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
+                    CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                    CMA(self.instrumentation, budget=None, num_workers=num_workers),
+                ]
+            self.budget_before_choosing = budget // 10
+
+
+@registry.register
 class CMandAS(CMandAS2):
     """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
 
@@ -1620,10 +1647,43 @@ class hoopa(NGO):
         self.optims = [octopus(self.instrumentation, budget, num_workers)]
             
             
-            
-            
-            
-            
+@registry.register
+class tardigrade(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and (self.instrumentation.is_nonmetrizable or self.dimension < 16):
+            self.optims = [RecombiningOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+        else:
+            if self.has_noise and self.fully_continuous and self.dimension > 15:
+                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+            else:
+                if self.fully_continuous and num_workers == 1 and self.dimension < 30 and budget > 20000:
+                    self.optims = [CMandAS3(self.instrumentation, budget, num_workers)]
+                if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
+                    self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
+                if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+                    self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
+        self.optims = [octopus(self.instrumentation, budget, num_workers)]
+
+
+@registry.register
+class deoxys(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.fully_continuous and num_workers == 1 and self.dimension < 30 and budget > 20000:
+            self.optims = [CMandAS3(self.instrumentation, budget, num_workers)]
+        if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
+            self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
+        if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
+        self.optims = [octopus(self.instrumentation, budget, num_workers)]
+
 
 @registry.register
 class JNGO(NGO):
