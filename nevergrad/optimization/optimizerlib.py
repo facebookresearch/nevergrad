@@ -1630,9 +1630,13 @@ class octopus(NGO):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        if self.fully_continuous and self.budget > self.dimension*500:  # Large budget ==> we can use active portfolios.
-            self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
-        self.optims = [NGO(self.instrumentation, budget, num_workers)]
+        if self.fully_continuous and self.budget < self.dimension * 300 and num_workers == 1:
+            self.optims = [MiniDE(self.instrumentation, budget, num_workers)]
+        else:
+            if self.fully_continuous and self.budget > self.dimension*3000 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+                self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
+            else:
+                self.optims = [NGO(self.instrumentation, budget, num_workers)]
             
             
 @registry.register
@@ -1644,7 +1648,8 @@ class hoopa(NGO):
         assert budget is not None
         if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
             self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
-        self.optims = [octopus(self.instrumentation, budget, num_workers)]
+        else:
+            self.optims = [octopus(self.instrumentation, budget, num_workers)]
             
             
 @registry.register
@@ -1662,11 +1667,14 @@ class tardigrade(NGO):
             else:
                 if self.fully_continuous and num_workers == 1 and self.dimension < 30 and budget > 20000:
                     self.optims = [CMandAS3(self.instrumentation, budget, num_workers)]
-                if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
-                    self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
-                if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
-                    self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
-        self.optims = [octopus(self.instrumentation, budget, num_workers)]
+                else:
+                    if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
+                        self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
+                    else:
+                        if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+                            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
+                        else:
+                            self.optims = [octopus(self.instrumentation, budget, num_workers)]
 
 
 @registry.register
@@ -1678,11 +1686,14 @@ class deoxys(NGO):
         assert budget is not None
         if self.fully_continuous and num_workers == 1 and self.dimension < 30 and budget > 20000:
             self.optims = [CMandAS3(self.instrumentation, budget, num_workers)]
-        if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
-            self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
-        if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
-            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
-        self.optims = [octopus(self.instrumentation, budget, num_workers)]
+        else:
+            if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
+                self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
+            else:
+                if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+                    self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
+                else:
+                    self.optims = [octopus(self.instrumentation, budget, num_workers)]
 
 
 @registry.register
