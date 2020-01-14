@@ -3,14 +3,17 @@
 ## master
 
 - Instrumentation names are changed (possibly breaking for benchmarks records)
-- Instrumented functions may silently failed when initialized as: `InstrumentedFunction(func, *inst.args, **inst.kwargs)`,
-  because `args` and `kwargs` are now actual parameter values (new parametrization)
 - Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+
+## v0.3.0
+
+**Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
 
 ### Breaking changes
 
-- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more (bigger yet) changes are coming. This should only impact custom-made variables.
-- `InstrumentedFunction` has been aggressively deprecated in favor of using the `Instrumentation` directly at the optimizer initialization,
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed,
+  and bigger changes are coming (`instrumentation` will become `parametrization` with a different API). This should only impact custom-made variables.
+- `InstrumentedFunction` has been aggressively deprecated to solve bugs and simplify code, in favor of using the `Instrumentation` directly at the optimizer initialization,
   and of using `ExperimentFunction` to define functions to be used in benchmarks. Main differences are:
   * `instrumentation` attribute is renamed to `parametrization` for forward compatibility.
   *  `__init__` takes exactly two arguments (main function and parametrization/instrumentation) and

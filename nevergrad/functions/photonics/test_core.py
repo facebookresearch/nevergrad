@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 from typing import List
 from unittest.mock import patch
 import numpy as np
@@ -63,14 +64,21 @@ def test_morpho_transform_constraints() -> None:
     assert np.all(output[3 * q:] <= 300)
 
 
-def test_photonics() -> None:
-    with patch("shutil.which", return_value="here"):
-        photo = core.Photonics("bragg", 16)
-    with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n12\n"):
-        with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n12\n"):
-            output = photo(np.zeros(16))
-    np.testing.assert_equal(output, 12)
+def test_photonics_error() -> None:
     # check error
-    with patch("nevergrad.instrumentation.utils.CommandFunction.__call__", return_value="line1\n"):
-        np.testing.assert_raises(RuntimeError, photo, np.zeros(16).tolist())
+    photo = core.Photonics("bragg", 16)
     np.testing.assert_raises(AssertionError, photo, np.zeros(12).tolist())
+    with warnings.catch_warnings(record=True) as w:
+        output = photo(np.zeros(16))
+        assert len(w) == 1
+    np.testing.assert_almost_equal(output, float("inf"))
+
+
+@testing.parametrized(
+    morpho=("morpho", 100, 1.1647),
+    chirped=("chirped", 150, 0.94439),
+    bragg=("bragg", 2.5, 0.93216),
+)
+def test_photonics_values(name: str, value: float, expected: float) -> None:
+    photo = core.Photonics(name, 16)
+    np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)

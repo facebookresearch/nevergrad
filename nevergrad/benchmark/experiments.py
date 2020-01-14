@@ -79,24 +79,6 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def chain_deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    functions = [
-        ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
-        for name in names
-        for rotation in [False, True]
-        for n_blocks in [1, 2, 8, 16]
-        for aggregator in ["sum", "max"]
-    ]
-    for func in functions:
-        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
-            for budget in [25, 37, 50, 75, 87] + list(range(100, 3001, 100)):
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
 def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
@@ -171,16 +153,18 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+def multimodal(seed: Optional[int] = None, para: bool = False) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["NGO", "NaiveTBPSA", "TBPSA",
-              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
+              "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+              "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+    if not para:
+        optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
     #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
@@ -190,10 +174,17 @@ def multimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 300, 1000, 3000, 10000, 30000, 100000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+            for budget in [3000, 10000, 30000, 100000]:
+                for nw in [1000] if para else [1]:
+                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
+@registry.register
+def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    internal_generator = multimodal(seed, para=True)
+    for xp in internal_generator:
+        yield xp
+                    
 # pylint: disable=redefined-outer-name
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
@@ -266,20 +257,6 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
     for optim in optims:
-        for function in functions:
-            for budget in [100, 1000, 10000]:
-                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
-def chain_illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
-    """
-    seedg = create_seed_generator(seed)
-    functions = [
-        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
-    ]
-    for optim in sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x):
         for function in functions:
             for budget in [100, 1000, 10000]:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
@@ -403,51 +380,6 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
                 for name in ["sphere", "sphere4", "cigar"]:
                     function = ArtificialFunction(name=name, rotation=rotation, block_dimension=20, noise_level=10)
                     yield Experiment(function, optim, budget=budget, seed=next(seedg))
-
-
-@registry.register
-def realworld_oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # This experiment contains:
-    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
-    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
-    # - The 007 game: 1 function, noisy.
-    # - PowerSystem: a power system simulation problem.
-    # - STSP: a simple TSP problem.
-    # MLDA stuff, except the Perceptron.
-    funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
-        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
-    ]
-    funcs += [
-        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
-        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
-    ]
-    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
-
-    # Adding ARCoating.
-    funcs += [ARCoating()]
-    funcs += [PowerSystem()]
-    funcs += [STSP()]
-
-    # 007 with 100 repetitions, both mono and multi architectures.
-    base_env = rl.envs.DoubleOSeven(verbose=False)
-    random_agent = rl.agents.Agent007(base_env)
-    modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
-    agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
-    env = base_env.with_agent(player_0=random_agent).as_single_agent()
-    runner = rl.EnvironmentRunner(env.copy(), num_repetitions=100, max_step=50)
-    for archi in ["mono", "multi"]:
-        func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
-        funcs += [func]
-    seedg = create_seed_generator(seed)
-    algos = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
-    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
-        for num_workers in [budget]:
-            for algo in algos:
-                for fu in funcs:
-                    xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
 
 
 @registry.register
@@ -651,34 +583,34 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield xp
 
 
-@registry.register
-def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[ExperimentFunction] = [
-        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
-    ]
-    funcs += [
-        _mlda.SammonMapping.from_mlda("Virus", rescale=False),
-        _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
-    ]
-    funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
-    funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
-    seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
-             "Zero", "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint",
-             "HaltonSearchPlusMiddlePoint", "MiniQrDE", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
-             "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
-    # pylint: disable=too-many-nested-blocks
-    algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
-              "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
-    for budget in [9600, 12800, 25600]:  # , 51200]:#, 102400]:
-        for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
-            for algo in algos:
-                for func in funcs:
-                    if num_workers < budget:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+# @registry.register
+# def mldaas(seed: Optional[int] = None) -> Iterator[Experiment]:
+#     funcs: List[ExperimentFunction] = [
+#         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
+#     ]
+#     funcs += [
+#         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
+#         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
+#         _mlda.SammonMapping.from_mlda("Employees"),
+#     ]
+#     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
+#     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
+#     seedg = create_seed_generator(seed)
+#     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne", "NGO", "CMA", "OnePointDE", "TwoPointsDE", "QrDE", "LhsDE",
+#              "Zero", "PortfolioDiscreteOnePlusOne", "CauchyOnePlusOne", "RandomSearch", "RandomSearchPlusMiddlePoint",
+#              "HaltonSearchPlusMiddlePoint", "MiniQrDE", "HaltonSearch", "RandomScaleRandomSearch", "MiniDE", "DiscreteOnePlusOne",
+#              "ScrHaltonSearch", "ScrHammersleySearchPlusMiddlePoint", "HaltonSearch", "MilliCMA", "MicroCMA"]
+#     # pylint: disable=too-many-nested-blocks
+#     algos += ["Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS",
+#               "CM", "MultiCMA", "TripleCMA", "MultiScaleCMA"]
+#     for budget in [9600, 12800, 25600]:  # , 51200]:#, 102400]:
+#         for num_workers in [10, 100, 1000]:  # [1, 10, 100]:
+#             for algo in algos:
+#                 for func in funcs:
+#                     if num_workers < budget:
+#                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+#                         if not xp.is_incoherent:
+#                             yield xp
 
 
 @registry.register
@@ -740,7 +672,7 @@ class PackedFunctions(ExperimentFunction):
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "SQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
@@ -755,14 +687,15 @@ def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 2901, 400)):
-                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
 def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "SQP", "LhsDE", "RandomSearch", "NGO", "CMA", "BO", "LBO", "SQP", "RSQP"]
+    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: List[PackedFunctions] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "hm"]:
@@ -780,4 +713,5 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(100, 5901, 400)):
-                yield Experiment(mofunc, optim, budget=budget, num_workers=1, seed=next(seedg))
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
