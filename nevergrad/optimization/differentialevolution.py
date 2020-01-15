@@ -110,8 +110,8 @@ class _DE(base.Optimizer):
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng)
-            new_guy = self.scale * (self._rng.normal(0, 1, self.dimension)
-                                    if self.sampler is None else stats.norm.ppf(self.sampler()))
+            new_guy = self._offset + self.scale * (self._rng.normal(0, 1, self.dimension)
+                                                   if self.sampler is None else stats.norm.ppf(self.sampler()))
             particle = base.utils.Individual(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added

@@ -46,7 +46,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
-                best_x if not self._parameters.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                best_x if not self._parameters.random_restart else self._offset + self._rng.normal(0.0, 1.0, self.dimension),
                 method=self._parameters.method,
                 options=options,
                 tol=0,

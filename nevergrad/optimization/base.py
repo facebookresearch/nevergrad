@@ -16,7 +16,6 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
 from ..common.typetools import JobLike, ExecutorLike
-from .. import instrumentation as instru
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
 from . import utils
@@ -123,7 +122,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
-            x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf)) for x in ["optimistic", "pessimistic", "average"]
+            x: utils.Point(self.instrumentation.get_standardized_data(), utils.Value(np.inf))
+            for x in ["optimistic", "pessimistic", "average"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
@@ -140,6 +140,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[p.Parameter, JobLike[float]]] = []
         self._finished_jobs: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
+        # to ease porting old code to new parametrization
+        self._offset_: tp.Optional[np.ndarray] = None
+
+    @property
+    def _offset(self) -> np.ndarray:
+        if self._offset_ is None:
+            self._offset_ = self.instrumentation.get_standardized_data()
+        return self._offset_
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -325,6 +333,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
                 if k == MAX_TENTATIVES - 1:
                     warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+        if candidate.uid == self.instrumentation.uid:
+            warnings.warn("As a safety measure, algorithms should not send their instrumentation as a candidate")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
@@ -334,6 +344,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._asked.add(candidate.uid)
         self._num_ask = current_num_ask + 1
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        candidate.freeze()
         return candidate
 
     def provide_recommendation(self) -> p.Parameter:

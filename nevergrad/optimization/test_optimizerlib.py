@@ -156,11 +156,8 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("with_parameter", [True, False])  # type: ignore
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
-def test_optimizers_recommendation(with_parameter: bool,
-                                   name: str,
-                                   recomkeeper: RecommendationKeeper) -> None:
+def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
@@ -179,9 +176,7 @@ def test_optimizers_recommendation(with_parameter: bool,
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        param: Union[int, ng.p.Instrumentation] = (dimension if not with_parameter else
-                                                   ng.p.Instrumentation(ng.p.Array(shape=(dimension,))))
-        optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
+        optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
         optim.instrumentation.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)
         # the following context manager speeds up BO tests
@@ -356,3 +351,13 @@ def test_constrained_optimization() -> None:
         optimizer.instrumentation.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
+
+
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+def test_parametrization_offset(name: str) -> None:
+    parametrization = ng.p.Array(init=[1e12, 1e12])
+    optimizer = registry[name](parametrization, budget=100, num_workers=1)
+    for k in range(10):
+        candidate = optimizer.ask()
+        assert candidate.value[0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value[0]}"
+        optimizer.tell(candidate, 0)

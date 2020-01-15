@@ -59,10 +59,9 @@ class _RandomSearch(OneShotOptimizer):
             data = self._opposable_data
             data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
             self._opposable_data = None
-            return data
+            return self._offset + data  # type: ignore
         if self._parameters.middle_point and not self._num_ask:
-            self._opposable_data = np.zeros(self.dimension)
-            return self._opposable_data  # type: ignore
+            return self._offset
         scale = self._parameters.scale
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension.
@@ -72,7 +71,7 @@ class _RandomSearch(OneShotOptimizer):
         point = (self._rng.standard_cauchy(self.dimension) if self._parameters.cauchy
                  else self._rng.normal(0, 1, self.dimension))
         self._opposable_data = scale * point
-        return self._opposable_data  # type: ignore
+        return self._offset + self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.stupid:
@@ -171,14 +170,14 @@ class _SamplingSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self._parameters.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+            return self._offset
         mode = self._parameters.opposition_mode
         if self._opposable_data is not None and mode is not None:
             # weird mypy error, revealed as array, but not accepting substraction
             data = self._opposable_data
             data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
             self._opposable_data = None
-            return data
+            return self._offset + data  # type: ignore
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
@@ -187,7 +186,7 @@ class _SamplingSearch(OneShotOptimizer):
         self._opposable_data = self._parameters.scale * (
             stats.cauchy.ppf if self._parameters.cauchy else stats.norm.ppf)(sample)
         assert self._opposable_data is not None
-        return self._opposable_data
+        return self._offset + self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._parameters.recommendation_rule == "average_of_best":

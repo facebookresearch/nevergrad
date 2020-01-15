@@ -17,7 +17,6 @@ from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad import instrumentation as inst
-from nevergrad.instrumentation import Instrumentation
 from . import utils
 from . import base
 from . import mutations
@@ -57,7 +56,7 @@ class _OnePlusOne(base.Optimizer):
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self._parameters.noise_handling
         if not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+            return self.instrumentation.get_standardized_data()
         # for noisy version
         if noise_handling is not None:
             limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
@@ -70,20 +69,21 @@ class _OnePlusOne(base.Optimizer):
                     return self.current_bests["optimistic"].x
         # crossover
         mutator = mutations.Mutator(self._rng)
+        pessimistic = self.current_bests["pessimistic"].x
         if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
-            return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
+            return mutator.crossover(pessimistic - self._offset, mutator.get_roulette(self.archive, num=2)) + self._offset  # type: ignore
         # mutating
         mutation = self._parameters.mutation
-        pessimistic = self.current_bests["pessimistic"].x
         if mutation == "gaussian":  # standard case
             return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
             return pessimistic + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
         elif mutation == "crossover":
             if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutator.portfolio_discrete_mutation(pessimistic)
+                return mutator.portfolio_discrete_mutation(pessimistic - self._offset) + self._offset  # type: ignore
             else:
-                return mutator.crossover(pessimistic, mutator.get_roulette(self.archive, num=2))
+                return mutator.crossover(pessimistic - self._offset,  # type: ignore
+                                         mutator.get_roulette(self.archive, num=2)) + self._offset
         else:
             func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
                 "discrete": mutator.discrete_mutation,
@@ -91,7 +91,7 @@ class _OnePlusOne(base.Optimizer):
                 "doublefastga": mutator.doubledoerr_discrete_mutation,
                 "portfolio": mutator.portfolio_discrete_mutation,
             }[mutation]
-            return func(self.current_bests["pessimistic"].x)
+            return func(self.current_bests["pessimistic"].x - self._offset) + self._offset  # type: ignore
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
@@ -136,7 +136,11 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
     _optimizer_class = _OnePlusOne
 
     def __init__(
-        self, *, noise_handling: Optional[Union[str, Tuple[str, float]]] = None, mutation: str = "gaussian", crossover: bool = False
+        self,
+        *,
+        noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        mutation: str = "gaussian",
+        crossover: bool = False
     ) -> None:
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -202,7 +206,7 @@ class _CMA(base.Optimizer):
         self._parameters = ParametrizedCMA()
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
-        self.listx: List[ArrayLike] = []
+        self.listx: List[np.ndarray] = []
         self.listy: List[float] = []
         self.to_be_asked: Deque[np.ndarray] = deque()
 
@@ -218,10 +222,10 @@ class _CMA(base.Optimizer):
     def _internal_ask(self) -> ArrayLike:
         if not self.to_be_asked:
             self.to_be_asked.extend(self.es.ask())
-        return self.to_be_asked.popleft()
+        return self._offset + self.to_be_asked.popleft()  # type: ignore
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        self.listx += [x]
+        self.listx += [np.array(x, copy=False) - self._offset]
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
             try:
@@ -283,7 +287,7 @@ class EDA(base.Optimizer):
         self.llambda = 4 * self.dimension
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
-        self.current_center: np.ndarray = np.zeros(self.dimension)
+        self.current_center = self._offset
         # Evaluated population
         self.evaluated_population: List[ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
@@ -501,7 +505,7 @@ class TBPSA(base.Optimizer):
         self.llambda = 4 * self.dimension
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
-        self.current_center: np.ndarray = np.zeros(self.dimension)
+        self.current_center = self._offset
         self._loss_record: List[float] = []
         # population
         self._evaluated_population: List[base.utils.Individual] = []
@@ -577,7 +581,7 @@ class NoisyBandit(base.Optimizer):
 
     def _internal_ask(self) -> ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
-            return self._rng.normal(0, 1, self.dimension)  # type: ignore
+            return self._offset + self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
             idx = self._rng.choice(len(self.archive))
@@ -610,9 +614,11 @@ class PSOParticle(utils.Individual):
         self.random_state = random_state
 
     @classmethod
-    def random_initialization(cls, dimension: int, random_state: np.random.RandomState) -> "PSOParticle":
-        position = random_state.uniform(0.0, 1.0, dimension)
-        speed = random_state.uniform(-1.0, 1.0, dimension)
+    def random_initialization(cls, init: np.ndarray, random_state: np.random.RandomState) -> "PSOParticle":
+        position = random_state.uniform(0.0, 1.0, init.size)
+        # TODO simplify, this is only for to avoid breaking tests, but the initialization in PSO is broken anyway
+        position = cls.transform.backward(cls.transform.forward(position) + init)
+        speed = random_state.uniform(-1.0, 1.0, init.size)
         return cls(position, None, speed, position, float("inf"), random_state=random_state)
 
     def __repr__(self) -> str:
@@ -644,7 +650,7 @@ class PSO(base.Optimizer):
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
         self.population: utils.Population[PSOParticle] = utils.Population([])
-        self.best_x = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
+        self.best_x = self._offset  # TODO: use current best instead?
         self.best_value = float("inf")
         self.omega = 0.5 / np.log(2.0)
         self.phip = 0.5 + np.log(2.0)
@@ -654,7 +660,7 @@ class PSO(base.Optimizer):
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
             additional = [
-                self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
+                self._PARTICULE.random_initialization(self._offset, random_state=self._rng)
                 for _ in range(self.llambda - len(self.population))
             ]
             self.population.extend(additional)
@@ -690,7 +696,7 @@ class PSO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         x = self.instrumentation.get_standardized_data(instance=candidate)
         if len(self.population) < self.llambda:
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
+            particle = self._PARTICULE.random_initialization(self._offset, random_state=self._rng)
             particle.x = self._PARTICULE.transform.backward(x)
             self.population.extend([particle])
         else:
@@ -810,18 +816,21 @@ class SplitOptimizer(base.Optimizer):
         self.num_optims = num_optims
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
-        self.instrumentations: List[Any] = []
+        cumul = 0
         for i in range(self.num_optims):
             if not self.num_vars or len(self.num_vars) < i + 1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
 
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
-            self.instrumentations += [p.Array(shape=(self.num_vars[i],))]
+            instrumentation = p.Array(init=self._offset[cumul: cumul + self.num_vars[i]])
+            # TODO uncomment the following, the seedability tests should not have passed without it (this will change the recorded recom)
+            #instrumentation.random_state = self.instrumentation.random_state
+            cumul += self.num_vars[i]
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
-                self.optims += [multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [multivariate_optimizer(instrumentation, budget, num_workers)]  # noqa: F405
             else:
-                self.optims += [monovariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
+                self.optims += [monovariate_optimizer(instrumentation, budget, num_workers)]  # noqa: F405
 
         assert sum(
             self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."

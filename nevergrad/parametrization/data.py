@@ -88,7 +88,7 @@ class Array(core.Parameter):
         if init is not None:
             if shape is not None:
                 raise ValueError(err_msg)
-            self._value = np.array(init, copy=False)
+            self._value = np.array(init, dtype=float, copy=False)
         elif shape is not None:
             assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape)
             self._value = np.zeros(shape)
@@ -320,7 +320,7 @@ class Scalar(Array):
     """
 
     def __init__(self, init: float = 0.0, mutable_sigma: bool = True) -> None:
-        super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
+        super().__init__(init=np.array([init], dtype=float), mutable_sigma=mutable_sigma)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
