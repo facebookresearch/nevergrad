@@ -119,7 +119,7 @@ class Array(core.Parameter):
     def sigma(self) -> tp.Union["Array", "Scalar"]:
         """Value for the standard deviation used to mutate the parameter
         """
-        return self.subparameters["sigma"]  # type: ignore
+        return self.parameters["sigma"]  # type: ignore
 
     @property
     def value(self) -> np.ndarray:
@@ -237,8 +237,8 @@ class Array(core.Parameter):
         """
         if sigma is not None:
             # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
-            if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._content["sigma"], core.Constant):
-                self.subparameters._content["sigma"] = core.as_parameter(sigma)
+            if isinstance(sigma, core.Parameter) or isinstance(self.parameters._content["sigma"], core.Constant):
+                self.parameters._content["sigma"] = core.as_parameter(sigma)
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
@@ -274,8 +274,8 @@ class Array(core.Parameter):
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(init=self.value)
-        child.subparameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                        for k, v in self.subparameters._content.items()}
+        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
+                                     for k, v in self.parameters._content.items()}
         for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
             setattr(child, name, getattr(self, name))
         return child
@@ -294,7 +294,7 @@ class Array(core.Parameter):
         return reduced.ravel()  # type: ignore
 
     def recombine(self: A, *others: A) -> None:
-        recomb = self.subparameters["recombination"].value
+        recomb = self.parameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
             self.set_standardized_data(np.mean([self.get_standardized_data(instance=p) for p in all_p], axis=0), deterministic=False)
