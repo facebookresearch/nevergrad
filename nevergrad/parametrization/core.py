@@ -31,17 +31,17 @@ class NotSupportedError(RuntimeError):
 # pylint: disable=too-many-instance-attributes
 class Parameter:
     """This provides the core functionality of a parameter, aka
-    value, subparameters, mutation, recombination
+    value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
     """
 
-    def __init__(self, **subparameters: tp.Any) -> None:
+    def __init__(self, **parameters: tp.Any) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
-        self._subparameters = None if not subparameters else Dict(**subparameters)
+        self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
@@ -64,12 +64,14 @@ class Parameter:
         raise NotImplementedError
 
     @property
-    def subparameters(self) -> "Dict":
-        if self._subparameters is None:  # delayed instantiation to avoid infinte loop
-            assert self.__class__ != Dict, "subparameters of Parameters dict should never be called"
-            self._subparameters = Dict()
-        assert self._subparameters is not None
-        return self._subparameters
+    def parameters(self) -> "Dict":
+        """Internal/model parameters for this parameter
+        """
+        if self._parameters is None:  # delayed instantiation to avoid infinte loop
+            assert self.__class__ != Dict, "parameters of Parameters dict should never be called"
+            self._parameters = Dict()
+        assert self._parameters is not None
+        return self._parameters
 
     @property
     def dimension(self) -> int:
@@ -84,10 +86,10 @@ class Parameter:
         return self._dimension
 
     def mutate(self) -> None:
-        """Mutate subparameters of the instance, and then its value
+        """Mutate parameters of the instance, and then its value
         """
         self._check_frozen()
-        self.subparameters.mutate()
+        self.parameters.mutate()
         data = self.get_standardized_data()  # pylint: disable=assignment-from-no-return
         # let's assume the random state is already there (next class)
         self.set_standardized_data(data + self.random_state.normal(size=data.shape), deterministic=False)
@@ -104,7 +106,7 @@ class Parameter:
         return child
 
     def recombine(self: P, *others: P) -> None:
-        """Update value and subparameters of this instance by combining it with
+        """Update value and parameters of this instance by combining it with
         other instances.
 
         Parameters
@@ -117,7 +119,7 @@ class Parameter:
     def get_standardized_data(self: P, instance: tp.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
-        The data only represent the value of this instance, not the subparameters (eg.: mutable sigma), hence it does not
+        The data only represent the value of this instance, not the parameters (eg.: mutable sigma), hence it does not
         fully represent the state of the instance. Also, in stochastic cases, the value can be non-deterministically
         deduced from the data (eg.: categorical variable, for which data includes sampling weights for each value)
 
@@ -136,7 +138,7 @@ class Parameter:
         Note
         ----
         Operations between different standardized data should only be performed if at least one of these conditions apply:
-        - subparameters do not mutate (eg: sigma is constant)
+        - internal/model parameters do not mutate (eg: sigma is constant)
         - each array was produced by the same instance in the exact same state (no mutation)
         """
         assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
@@ -197,28 +199,28 @@ class Parameter:
         ----
         - this differs from the value hash, since the value is sometimes randomly sampled from the data
         - standardized data does not account for the full state of the instance (it does not contain
-          data from subparameters)
+          data from internal/model parameters)
         """
         return self.get_standardized_data().tobytes()
 
     def _get_name(self) -> str:
         """Internal implementation of parameter name. This should be value independant, and should not account
-        for subparameters.
+        for internal/model parameters.
         """
         return self.__class__.__name__
 
     @property
     def name(self) -> str:
         """Name of the parameter
-        This is used to keep track of how this Parameter is configured (included through subparameters),
+        This is used to keep track of how this Parameter is configured (included through internal/model parameters),
         mostly for reproducibility A default version is always provided, but can be overriden directly
         through the attribute, or through the set_name method (which allows chaining).
         """
         if self._name is not None:
             return self._name
         substr = ""
-        if self._subparameters is not None and self.subparameters:
-            substr = f"[{self.subparameters._get_parameters_str()}]"
+        if self._parameters is not None and self.parameters:
+            substr = f"[{self.parameters._get_parameters_str()}]"
         return f"{self._get_name()}" + substr
 
     @name.setter
@@ -250,7 +252,7 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        if self._subparameters is not None and not self.subparameters.satisfies_constraint():
+        if self._parameters is not None and not self.parameters.satisfies_constraint():
             return False
         if not self._constraint_checkers:
             return True
@@ -294,8 +296,8 @@ class Parameter:
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
-        if self._subparameters is not None:
-            self.subparameters._set_random_state(random_state)
+        if self._parameters is not None:
+            self.parameters._set_random_state(random_state)
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
@@ -310,7 +312,7 @@ class Parameter:
         Returns
         -------
         Parameter
-            a new instance of the same class, with same parameters/subparameters/...
+            a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
         rng = self.random_state  # make sure to create one before spawning
@@ -328,8 +330,8 @@ class Parameter:
         """Prevents the parameter from changing value again (through value, mutate etc...)
         """
         self._frozen = True
-        if self._subparameters is not None:
-            self._subparameters.freeze()
+        if self._parameters is not None:
+            self._parameters.freeze()
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(self, Constant):  # nevermind constants (since they dont spawn children)
@@ -337,7 +339,7 @@ class Parameter:
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params
-        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._content.items()}
+        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()}
         child = self.__class__(**inputs)
         return child
 
@@ -422,7 +424,7 @@ class Dict(Parameter):
     Note
     ----
     This is the base structure for all container Parameters, and it is
-    used to hold the subparameters for all Parameter classes.
+    used to hold the internal/model parameters for all Parameter classes.
     """
 
     def __init__(self, **parameters: tp.Any) -> None:
@@ -432,7 +434,7 @@ class Dict(Parameter):
         self._sanity_check(list(parameters.values()))
 
     def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
-        """Check that all subparameters are different
+        """Check that all parameters are different
         """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
         ids = {id(p) for p in parameters}
         if len(ids) != len(parameters):
