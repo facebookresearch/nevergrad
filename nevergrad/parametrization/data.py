@@ -235,8 +235,8 @@ class Array(core.Parameter):
         """
         if sigma is not None:
             # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
-            if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._parameters["sigma"], core.Constant):
-                self.subparameters._parameters["sigma"] = core.as_parameter(sigma)
+            if isinstance(sigma, core.Parameter) or isinstance(self.subparameters._content["sigma"], core.Constant):
+                self.subparameters._content["sigma"] = core.as_parameter(sigma)
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
@@ -272,8 +272,8 @@ class Array(core.Parameter):
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(init=self.value)
-        child.subparameters._parameters = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                           for k, v in self.subparameters._parameters.items()}
+        child.subparameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
+                                        for k, v in self.subparameters._content.items()}
         for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
             setattr(child, name, getattr(self, name))
         return child

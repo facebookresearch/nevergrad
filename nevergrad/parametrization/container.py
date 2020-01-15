@@ -27,16 +27,16 @@ class Tuple(Dict):
 
     def __init__(self, *parameters: tp.Any) -> None:
         super().__init__()
-        self._parameters.update({k: core.as_parameter(p) for k, p in enumerate(parameters)})
-        self._sanity_check(list(self._parameters.values()))
+        self._content.update({k: core.as_parameter(p) for k, p in enumerate(parameters)})
+        self._sanity_check(list(self._content.values()))
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, core.as_parameter(p).name) for k, p in self._parameters.items())
+        params = sorted((k, core.as_parameter(p).name) for k, p in self._content.items())
         return ",".join(f"{n}" for _, n in params)
 
     @property  # type: ignore
     def value(self) -> tp.Tuple[tp.Any, ...]:  # type: ignore
-        param_val = [x[1] for x in sorted(self._parameters.items(), key=lambda x: int(x[0]))]
+        param_val = [x[1] for x in sorted(self._content.items(), key=lambda x: int(x[0]))]
         return tuple(p.value if isinstance(p, core.Parameter) else p for p in param_val)
 
     @value.setter
@@ -70,7 +70,7 @@ class Instrumentation(Tuple):
 
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(Tuple(*args), Dict(**kwargs))
-        self._sanity_check(list(self[0]._parameters.values()) + list(self[1]._parameters.values()))  # type: ignore
+        self._sanity_check(list(self[0]._content.values()) + list(self[1]._content.values()))  # type: ignore
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
