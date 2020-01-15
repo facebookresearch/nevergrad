@@ -19,6 +19,6 @@ def list_parameter_instances(parameter: core.Parameter) -> tp.List[core.Paramete
     """
     instances = [parameter]
     if isinstance(parameter, core.Dict):
-        for p in parameter._parameters.values():
+        for p in parameter._content.values():
             instances += list_parameter_instances(p)
     return instances
