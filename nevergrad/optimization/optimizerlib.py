@@ -191,6 +191,7 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 class _CMA(base.Optimizer):
     one_shot = True
+
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedCMA()
@@ -626,6 +627,10 @@ class PSOParticle(utils.Individual):
 @registry.register
 class PSO(base.Optimizer):
     """Partially following SPSO2011. However, no randomization of the population order.
+    See: M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
+         Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
+         2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
+         https://ieeexplore.ieee.org/document/6557848
     """
 
     # pylint: disable=too-many-instance-attributes
