@@ -1,4 +1,4 @@
-
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -350,7 +350,7 @@ class Parameter:
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params
-        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._parameters.items()}
+        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.subparameters._content.items()}
         child = self.__class__(**inputs)
         return child
 
@@ -458,9 +458,9 @@ class Dict(Parameter):
 
     def __init__(self, **parameters: tp.Any) -> None:
         super().__init__()
-        self._parameters: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
+        self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
-        self._sanity_check(list(self._parameters.values()))
+        self._sanity_check(list(self._content.values()))
 
     def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
         """Check that all subparameters are different
@@ -473,16 +473,16 @@ class Dict(Parameter):
 
     def _compute_descriptors(self) -> utils.Descriptors:
         init = utils.Descriptors()
-        return functools.reduce(operator.and_, [p.descriptors for p in self._parameters.values()], init)
+        return functools.reduce(operator.and_, [p.descriptors for p in self._content.values()], init)
 
     def __getitem__(self, name: tp.Any) -> Parameter:
-        return self._parameters[name]
+        return self._content[name]
 
     def __len__(self) -> int:
-        return len(self._parameters)
+        return len(self._content)
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, p.name) for k, p in self._parameters.items())
+        params = sorted((k, p.name) for k, p in self._content.items())
         return ",".join(f"{k}={n}" for k, n in params)
 
     def _get_name(self) -> str:
@@ -490,20 +490,20 @@ class Dict(Parameter):
 
     @property
     def value(self) -> tp.Dict[str, tp.Any]:
-        return {k: as_parameter(p).value for k, p in self._parameters.items()}
+        return {k: as_parameter(p).value for k, p in self._content.items()}
 
     @value.setter
     def value(self, value: tp.Dict[str, tp.Any]) -> None:
-        if set(value) != set(self._parameters):
-            raise ValueError(f"Got input keys {set(value)} but expected {set(self._parameters)}")
+        if set(value) != set(self._content):
+            raise ValueError(f"Got input keys {set(value)} but expected {set(self._content)}")
         for key, val in value.items():
-            as_parameter(self._parameters[key]).value = val
+            as_parameter(self._content[key]).value = val
 
     def get_value_hash(self) -> tp.Hashable:
-        return tuple(sorted((x, y.get_value_hash()) for x, y in self._parameters.items()))
+        return tuple(sorted((x, y.get_value_hash()) for x, y in self._content.items()))
 
     def _internal_get_standardized_data(self: D, instance: D) -> np.ndarray:
-        data = {k: self[k].get_standardized_data(instance=p) for k, p in instance._parameters.items()}
+        data = {k: self[k].get_standardized_data(instance=p) for k, p in instance._content.items()}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
@@ -522,7 +522,7 @@ class Dict(Parameter):
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._parameters[name].set_standardized_data(data[start: end], instance=instance[name], deterministic=deterministic)
+            self._content[name].set_standardized_data(data[start: end], instance=instance[name], deterministic=deterministic)
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
         return instance
@@ -530,12 +530,12 @@ class Dict(Parameter):
     def mutate(self) -> None:
         # pylint: disable=pointless-statement
         self.random_state  # make sure to create one before using
-        for param in self._parameters.values():
+        for param in self._content.values():
             param.mutate()
 
     def sample(self: D) -> D:
         child = self.spawn_child()
-        child._parameters = {k: p.sample() for k, p in self._parameters.items()}
+        child._content = {k: p.sample() for k, p in self._content.items()}
         child.heritage["lineage"] = child.uid
         return child
 
@@ -543,25 +543,25 @@ class Dict(Parameter):
         # pylint: disable=pointless-statement
         self.random_state  # make sure to create one before using
         assert all(isinstance(o, self.__class__) for o in others)
-        for k, param in self._parameters.items():
+        for k, param in self._content.items():
             param.recombine(*[o[k] for o in others])
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()
-        child._parameters = {k: v.spawn_child() for k, v in self._parameters.items()}
+        child._content = {k: v.spawn_child() for k, v in self._content.items()}
         return child
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         super()._set_random_state(random_state)
-        for param in self._parameters.values():
+        for param in self._content.values():
             if isinstance(param, Parameter):
                 param._set_random_state(random_state)
 
     def satisfies_constraints(self) -> bool:
         compliant = super().satisfies_constraints()
-        return compliant and all(param.satisfies_constraints() for param in self._parameters.values() if isinstance(param, Parameter))
+        return compliant and all(param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter))
 
     def freeze(self) -> None:
         super().freeze()
-        for p in self._parameters.values():
+        for p in self._content.values():
             p.freeze()

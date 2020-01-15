@@ -60,7 +60,7 @@ class BaseChoice(core.Dict):
         self._check_frozen()
         index = -1
         # try to find where to put this
-        nums = sorted(int(k) for k in self.choices._parameters)
+        nums = sorted(int(k) for k in self.choices._content)
         for k in nums:
             choice = core.as_parameter(self.choices[k])
             try:
@@ -159,8 +159,8 @@ class Choice(BaseChoice):
 
     def _internal_spawn_child(self: C) -> C:
         child = self.__class__(choices=[], deterministic=self._deterministic)
-        child._parameters["choices"] = self.choices.spawn_child()
-        child._parameters["weights"] = self.weights.spawn_child()
+        child._content["choices"] = self.choices.spawn_child()
+        child._content["weights"] = self.weights.spawn_child()
         return child
 
 
@@ -236,7 +236,7 @@ class TransitionChoice(BaseChoice):
 
     def _internal_spawn_child(self: T) -> T:
         child = self.__class__(choices=[])
-        child._parameters["choices"] = self.choices.spawn_child()
-        child._parameters["position"] = self.position.spawn_child()
-        child._parameters["transitions"] = self.transitions.spawn_child()
+        child._content["choices"] = self.choices.spawn_child()
+        child._content["position"] = self.position.spawn_child()
+        child._content["transitions"] = self.transitions.spawn_child()
         return child
