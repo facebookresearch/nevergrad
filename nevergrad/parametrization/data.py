@@ -99,6 +99,7 @@ class Array(core.Parameter):
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
         self.bound_transform: tp.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
+        self._ref_data: tp.Optional[np.ndarray] = None
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors(continuous=not self.integer)
@@ -130,6 +131,7 @@ class Array(core.Parameter):
     @value.setter
     def value(self, value: ArrayLike) -> None:
         self._check_frozen()
+        self._ref_data = None
         if not isinstance(value, (np.ndarray, tuple, list)):
             raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
         value = np.asarray(value)
@@ -263,14 +265,14 @@ class Array(core.Parameter):
         return self
 
     # pylint: disable=unused-argument
-    def _internal_set_standardized_data(self: A, data: np.ndarray, instance: A, deterministic: bool = False) -> A:
+    def _internal_set_standardized_data(self: A, data: np.ndarray, reference: A, deterministic: bool = False) -> None:
         assert isinstance(data, np.ndarray)
-        sigma = self.sigma.value
-        data_reduc = (sigma * data).reshape(instance._value.shape)
-        instance._value = data_reduc if self.exponent is None else self.exponent**data_reduc
-        if instance.bound_transform is not None:
-            instance._value = instance.bound_transform.forward(instance._value)
-        return instance
+        sigma = reference.sigma.value
+        data_reduc = (sigma * (data + reference._get_ref_data())).reshape(reference._value.shape)
+        self._value = data_reduc if reference.exponent is None else reference.exponent**data_reduc
+        self._ref_data = None
+        if reference.bound_transform is not None:
+            self._value = reference.bound_transform.forward(self._value)
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(init=self.value)
@@ -280,16 +282,21 @@ class Array(core.Parameter):
             setattr(child, name, getattr(self, name))
         return child
 
-    def _internal_get_standardized_data(self: A, instance: A) -> np.ndarray:
-        return self._to_std_space(instance._value)
+    def _internal_get_standardized_data(self: A, reference: A) -> np.ndarray:
+        return reference._to_std_space(self._value) - reference._get_ref_data()  # type: ignore
 
-    def _to_std_space(self, data: np.ndarray) -> np.ndarray:
+    def _get_ref_data(self) -> np.ndarray:
+        if self._ref_data is None:
+            self._ref_data = self._to_std_space(self._value)
+        return self._ref_data
+
+    def _to_std_space(self, value: np.ndarray) -> np.ndarray:
         """Converts array with appropriate shapes to the standard space of this instance
         """
         sigma = self.sigma.value
         if self.bound_transform is not None:
-            data = self.bound_transform.backward(data)
-        distribval = data if self.exponent is None else np.log(data) / np.log(self.exponent)
+            value = self.bound_transform.backward(value)
+        distribval = value if self.exponent is None else np.log(value) / np.log(self.exponent)
         reduced = distribval / sigma
         return reduced.ravel()  # type: ignore
 
@@ -297,7 +304,7 @@ class Array(core.Parameter):
         recomb = self.parameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
-            self.set_standardized_data(np.mean([self.get_standardized_data(instance=p) for p in all_p], axis=0), deterministic=False)
+            self.set_standardized_data(np.mean([p.get_standardized_data(reference=self) for p in all_p], axis=0), deterministic=False)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

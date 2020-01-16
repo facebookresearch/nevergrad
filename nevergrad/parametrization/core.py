@@ -103,7 +103,7 @@ class Parameter:
         """
         raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
 
-    def get_standardized_data(self: P, *, instance: tp.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(self: P, *, reference: tp.Optional[P] = None) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
         The data only represent the value of this instance, not the parameters (eg.: mutable sigma), hence it does not
@@ -112,8 +112,8 @@ class Parameter:
 
         Parameters
         ----------
-        instance: Parameter
-            the instance to represent in the standardized data space. By default this is "self", but other
+        reference: Parameter
+            the reference to represent in the standardized data space. By default this is "self", but other
             instances of the same type can be passed so as to be able to perform operations between them in the
             standardized data space (see note below)
 
@@ -126,44 +126,45 @@ class Parameter:
         ----
         Operations between different standardized data should only be performed if at least one of these conditions apply:
         - internal/model parameters do not mutate (eg: sigma is constant)
-        - each array was produced by the same instance in the exact same state (no mutation)
-        - to make the code more explicit, the "instance" parameter is enforced as a keyword-only parameter.
+        - each array was produced by the same reference in the exact same state (no mutation)
+        - to make the code more explicit, the "reference" parameter is enforced as a keyword-only parameter.
         """
-        assert instance is None or isinstance(instance, self.__class__), f"Expected {type(self)} but got {type(instance)} as instance"
-        return self._internal_get_standardized_data(self if instance is None else instance)
+        assert reference is None or isinstance(reference, self.__class__), f"Expected {type(self)} but got {type(reference)} as reference"
+        return self._internal_get_standardized_data(self if reference is None else reference)
 
-    def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
+    def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, *, instance: tp.Optional[P] = None, deterministic: bool = False) -> P:
-        """Updates the value of the provided instance (or self) using the standardized data.
+    def set_standardized_data(self: P, data: np.ndarray, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+        """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
         ----------
         np.ndarray
             the representation of the value in the optimization space
-        instance: Parameter
-            the instance to update ("self", if not provided)
+        reference: Parameter
+            the reference to update ("self", if not provided)
         deterministic: bool
             whether the value should be deterministically drawn (max probability) in the case of stochastic parameters
 
         Returns
         -------
         Parameter
-            the updated instance (self, or the provided instance)
+            self (modified)
 
         Note
         ----
-        To make the code more explicit, the "instance" and "deterministic" parameters are enforced
+        To make the code more explicit, the "reference" and "deterministic" parameters are enforced
         as keyword-only parameters.
         """
         assert isinstance(deterministic, bool)
-        sent_instance = self if instance is None else instance
-        assert isinstance(sent_instance, self.__class__), f"Expected {type(self)} but got {type(sent_instance)} as instance"
-        sent_instance._check_frozen()
-        return self._internal_set_standardized_data(data, sent_instance, deterministic=deterministic)
+        sent_reference = self if reference is None else reference
+        assert isinstance(sent_reference, self.__class__), f"Expected {type(self)} but got {type(sent_reference)} as reference"
+        self._check_frozen()
+        self._internal_set_standardized_data(data, sent_reference, deterministic=deterministic)
+        return self
 
-    def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
+    def _internal_set_standardized_data(self: P, data: np.ndarray, reference: P, deterministic: bool = False) -> None:
         raise utils.NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
 
     # PART 2 - Additional features
@@ -184,17 +185,6 @@ class Parameter:
             return val.tobytes()
         else:
             raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
-
-    def get_data_hash(self) -> tp.Hashable:
-        """Hashable object representing the current standardized data of the object.
-
-        Note
-        ----
-        - this differs from the value hash, since the value is sometimes randomly sampled from the data
-        - standardized data does not account for the full state of the instance (it does not contain
-          data from internal/model parameters)
-        """
-        return self.get_standardized_data().tobytes()
 
     def _get_name(self) -> str:
         """Internal implementation of parameter name. This should be value independant, and should not account
@@ -392,13 +382,14 @@ class Constant(Parameter):
         if not (value == self._value or value is self._value):
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
-    def _internal_get_standardized_data(self: P, instance: P) -> np.ndarray:
+    def get_standardized_data(self: P, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
         return np.array([])
 
-    def _internal_set_standardized_data(self: P, data: np.ndarray, instance: P, deterministic: bool = False) -> P:
+    # pylint: disable=unused-argument
+    def set_standardized_data(self: P, data: np.ndarray, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         if data.size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return instance
+        return self
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         if new_value is not None:
@@ -486,8 +477,8 @@ class Dict(Parameter):
     def get_value_hash(self) -> tp.Hashable:
         return tuple(sorted((x, y.get_value_hash()) for x, y in self._content.items()))
 
-    def _internal_get_standardized_data(self: D, instance: D) -> np.ndarray:
-        data = {k: self[k].get_standardized_data(instance=p) for k, p in instance._content.items()}
+    def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
+        data = {k: self[k].get_standardized_data(reference=p) for k, p in reference._content.items()}
         if self._sizes is None:
             self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
         assert self._sizes is not None
@@ -496,7 +487,7 @@ class Dict(Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def _internal_set_standardized_data(self: D, data: np.ndarray, instance: D, deterministic: bool = False) -> D:
+    def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D, deterministic: bool = False) -> None:
         if self._sizes is None:
             self.get_standardized_data()
         assert self._sizes is not None
@@ -506,10 +497,9 @@ class Dict(Parameter):
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._content[name].set_standardized_data(data[start: end], instance=instance[name], deterministic=deterministic)
+            self._content[name].set_standardized_data(data[start: end], reference=reference[name], deterministic=deterministic)
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
-        return instance
 
     def mutate(self) -> None:
         # pylint: disable=pointless-statement

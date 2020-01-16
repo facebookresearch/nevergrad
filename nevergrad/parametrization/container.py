@@ -128,7 +128,7 @@ class Instrumentation(Tuple):
         """Converts args and kwargs into data in np.ndarray format
         """
         self._compatibility.value = (args, kwargs)
-        return self._compatibility.get_standardized_data()
+        return self._compatibility.get_standardized_data(reference=self)
 
     def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
         """Converts data to arguments
@@ -146,7 +146,7 @@ class Instrumentation(Tuple):
         kwargs: Dict[str, Any]
             the keyword arguments corresponding to the instance initialization keyword arguments
         """
-        self._compatibility.set_standardized_data(np.array(data, copy=False), deterministic=deterministic)
+        self._compatibility.set_standardized_data(np.array(data, copy=False), reference=self, deterministic=deterministic)
         return self._compatibility.value  # type: ignore
 
     def set_cheap_constraint_checker(self, func: tp.Callable[..., bool]) -> None:

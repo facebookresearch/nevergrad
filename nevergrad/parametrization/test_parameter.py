@@ -42,9 +42,6 @@ def test_array_basics() -> None:
                          )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
-    assert not param.get_data_hash()
-    if not param:  # Dict is not empty even though it is constant
-        assert not param.get_value_hash()
     assert param.descriptors.continuous
     assert param.descriptors.deterministic
 
@@ -81,7 +78,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert isinstance(child, type(param))
     assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert child.get_data_hash() == param.get_data_hash()
+    assert not np.any(param.get_standardized_data())
+    assert not np.any(child.get_standardized_data())
+    assert not np.any(child.get_standardized_data(reference=param))
     assert child.name == param.name
     assert param._random_state is not None
     assert child.random_state is param.random_state
@@ -93,7 +92,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     except par.NotSupportedError:
         mutable = False
     else:
-        assert child.get_data_hash() != param.get_data_hash()  # Could be the same, for TransitionChoice with constants for instance
+        assert np.any(child.get_standardized_data(reference=param))
     param.set_name("blublu")
     child_hash = param.spawn_child()
     assert child_hash.name == "blublu"
@@ -102,7 +101,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     if isinstance(param, par.Array):
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
-        assert param.get_data_hash() == child_hash.get_data_hash()
+        assert not np.any(param.get_standardized_data(reference=child))
     if mutable:
         param.recombine(child, child)
     # constraints
@@ -114,13 +113,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert not param.satisfies_constraint()
     assert not child2.satisfies_constraint()
     # array to and from with hash
-    data_hash = param.get_data_hash()
-    param.set_standardized_data(param.get_standardized_data())
-    try:
-        assert data_hash == param.get_data_hash()
-    except AssertionError:
-        # sometimes there can be some rounding errors...
-        np.testing.assert_almost_equal(np.frombuffer(param.get_data_hash()), np.frombuffer(data_hash))
+    data = param.get_standardized_data(reference=child2)
+    param.set_standardized_data(data, reference=child2)
+    np.testing.assert_array_almost_equal(param.get_standardized_data(reference=child2), data)
     # picklable
     string = pickle.dumps(child)
     pickle.loads(string)
@@ -151,7 +146,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         param.value = value
     with pytest.raises(RuntimeError):
         param.set_standardized_data(data)
-    param.set_standardized_data(data, instance=child)
+    child.set_standardized_data(data, reference=param)
     with pytest.raises(RuntimeError):
         param.recombine(child)
 
@@ -233,8 +228,8 @@ def test_array_recombination() -> None:
     param2.value = (3,)
     param.recombine(param2)
     assert param.value[0] == 2.0
-    param2.set_standardized_data((param.get_standardized_data() + param2.get_standardized_data()) / 2)
-    assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
+    param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data()) / 2)
+    assert param2.value[0] == 2.5
 
 
 def test_endogeneous_constraint() -> None:
