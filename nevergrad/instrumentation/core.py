@@ -165,13 +165,12 @@ class Variable(p.Instrumentation):
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return {}
 
-    def _internal_get_standardized_data(self: T, instance: T) -> np.ndarray:
-        return instance.data
+    def _internal_get_standardized_data(self: T, reference: T) -> np.ndarray:  # pylint: disable=unused-argument
+        return self.data - reference.data  # type: ignore
 
-    def _internal_set_standardized_data(self: T, data: np.ndarray, instance: T, deterministic: bool = False) -> T:
-        instance._data = data
-        instance._value = instance.data_to_arguments(instance.data, deterministic=deterministic)
-        return instance
+    def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T, deterministic: bool = False) -> None:
+        self._data = data + reference.data
+        self._value = self.data_to_arguments(self.data, deterministic=deterministic)
 
     def _internal_spawn_child(self: T) -> T:
         child = copy.deepcopy(self)
