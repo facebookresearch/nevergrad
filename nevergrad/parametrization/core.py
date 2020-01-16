@@ -113,9 +113,9 @@ class Parameter:
         Parameters
         ----------
         reference: Parameter
-            the reference to represent in the standardized data space. By default this is "self", but other
-            instances of the same type can be passed so as to be able to perform operations between them in the
-            standardized data space (see note below)
+            the reference instance for representation in the standardized data space. By default this is "self",
+            hence by default this method returns a zero vector, but you can represent the instance with respect to another
+            reference point, and operation between instances should always be from data relative to a unique reference
 
         Returns
         -------
@@ -124,9 +124,8 @@ class Parameter:
 
         Note
         ----
-        Operations between different standardized data should only be performed if at least one of these conditions apply:
-        - internal/model parameters do not mutate (eg: sigma is constant)
-        - each array was produced by the same reference in the exact same state (no mutation)
+        - Operations between different standardized data should only be performed if each array was produced
+          by the same reference in the exact same state (no mutation)
         - to make the code more explicit, the "reference" parameter is enforced as a keyword-only parameter.
         """
         assert reference is None or isinstance(reference, self.__class__), f"Expected {type(self)} but got {type(reference)} as reference"
@@ -143,7 +142,7 @@ class Parameter:
         np.ndarray
             the representation of the value in the optimization space
         reference: Parameter
-            the reference to update ("self", if not provided)
+            the reference point for representing the data ("self", if not provided)
         deterministic: bool
             whether the value should be deterministically drawn (max probability) in the case of stochastic parameters
 
