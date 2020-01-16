@@ -30,7 +30,8 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # Discrete functions on {0,1}^d.
 @registry.register
 def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # Discrete test bed, including useless variables, binary only.
+    """Discrete test bed, including useless variables, binary only.
+    Poorly designed, should be reimplemented from scratch using a decent instrumentation."""
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names()
              if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
@@ -55,7 +56,8 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # Discrete test bed, including useless variables, 5 values or 2 values per character.
+    """Discrete test bed, including useless variables, 5 values or 2 values per character. 
+    Poorly designed, should be reimplemented from scratch using a decent instrumentation."""
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
     optims = ["NGO", "CMA"] + sorted(
@@ -80,7 +82,9 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
+    one has an infinite condition number, one has an infinitely long path towards the optimum.
+    Looks somehow fractal."""
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
     optims = ["NGO", "PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
@@ -99,7 +103,8 @@ def deceptive(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # Additional large scale experiments for one-shot optimizers.
+    """Large scale experiments for one-shot optimizers.
+    Very simple objective function (the sphere), various dimensions and numbers of useless variables."""
     seedg = create_seed_generator(seed)
     names = ["sphere"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -118,7 +123,7 @@ def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = ["ScrHammersleySearch", "NGO", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE"]
@@ -136,7 +141,7 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
@@ -154,7 +159,8 @@ def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def multimodal(seed: Optional[int] = None, para: bool = False) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
+    """Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
+    deceptivemultimodal."""
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
@@ -181,6 +187,7 @@ def multimodal(seed: Optional[int] = None, para: bool = False) -> Iterator[Exper
 
 @registry.register
 def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Parallel counterpart of the multimodal experiment."""
     internal_generator = multimodal(seed, para=True)
     for xp in internal_generator:
         yield xp
@@ -189,6 +196,7 @@ def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
+    Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     """
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "TBPSA", "NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
@@ -220,6 +228,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
 
 @registry.register
 def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
     internal_generator = yabbob(seed, parallel=False, big=True)
     for xp in internal_generator:
         yield xp
@@ -227,6 +236,7 @@ def yabigbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def yahdbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
     internal_generator = yabbob(seed, hd=True)
     for xp in internal_generator:
         yield xp
@@ -234,6 +244,7 @@ def yahdbbob(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def yaparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Parallel optimization counterpart of yabbob."""
     internal_generator = yabbob(seed, parallel=True, big=False)
     for xp in internal_generator:
         yield xp
@@ -241,6 +252,11 @@ def yaparabbob(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def yanoisybbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Noisy optimization counterpart of yabbob.
+    This is supposed to be consistent with normal practices in noisy
+    optimization: we distinguish recommendations and exploration.
+    This is different from the original BBOB/COCO from that point of view.
+    """
     internal_generator = yabbob(seed, noise=True)
     for xp in internal_generator:
         yield xp
@@ -248,7 +264,7 @@ def yanoisybbob(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """Testing optimizers on ill cond problems.
     """
     seedg = create_seed_generator(seed)
     optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
@@ -264,7 +280,7 @@ def illcondi(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """Testing optimizers on ill-conditionned parallel optimization.
     """
     seedg = create_seed_generator(seed)
     optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
@@ -282,7 +298,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems
+    """Many optimizers on ill cond problems with constraints.
     """
     seedg = create_seed_generator(seed)
     optims = ["NGO", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
@@ -299,9 +315,8 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
 
 
 @registry.register
-def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS performs best, followed by QR and random
-    # nearly equally (Hammersley better than random, Halton not clearly; scrambling improves results).
-    # prepare list of parameters to sweep for independent variables
+def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """One-shot optimization in dimension 10 of the sphere function. No useless variables."""
     names = ["sphere"]
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
@@ -320,7 +335,7 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:  # LHS perfor
 
 @registry.register
 def noisy(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All noisy optimization methods on a few noisy problems.
+    """Noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
     optims = ["NGO"] + sorted(
@@ -361,7 +376,7 @@ def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """All optimizers on ill cond problems. This benchmark is based on the noise benchmark.
+    """Some optimizers on a noisy optimization problem. This benchmark is based on the noise benchmark.
     """
     seedg = create_seed_generator(seed)
     optims = sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
@@ -375,13 +390,14 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # This experiment contains:
-    # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
-    # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
-    # - The 007 game: 1 function, noisy.
-    # - PowerSystem: a power system simulation problem.
-    # - STSP: a simple TSP problem.
-    # MLDA stuff, except the Perceptron.
+    """Realworld optimization. This experiment contains:
+     - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+     - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
+     - The 007 game: 1 function, noisy.
+     - PowerSystem: a power system simulation problem.
+     - STSP: a simple TSP problem.
+     MLDA stuff, except the Perceptron.
+    """
     funcs: List[Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
@@ -429,6 +445,9 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
+    specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
+    even if white-box methods are not included though they could do this more efficiently."""
     funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
@@ -446,6 +465,7 @@ def simpletsp(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Optimization of policies for games, namely direct policy search."""
     funcs: List[ExperimentFunction] = []
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
@@ -468,6 +488,7 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Optimization of policies for games, namely direct policy search. Bigger budget than << fastgames >>."""
     funcs: List[ExperimentFunction] = []
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
@@ -490,6 +511,7 @@ def bigfastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Unit commitment problem, i.e. management of dams for hydroelectric planning."""
     funcs: List[ExperimentFunction] = []
     funcs += [PowerSystem(3)]
     funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
@@ -521,6 +543,8 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Unit commitment problem, i.e. management of dams for hydroelectric planning.
+    Bigger budget than the powersystems problem."""
     funcs: List[ExperimentFunction] = []
     funcs += [PowerSystem(3)]
     funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
@@ -551,6 +575,7 @@ def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """MLDA (machine learning and data analysis) testbed."""
     funcs: List[ExperimentFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for rescale in [True, False]
     ]
@@ -607,6 +632,7 @@ def mlda(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def arcoating(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """AR coating. Problems about optical properties of nanolayers."""
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO",
              "OnePlusOne", "NGO", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
