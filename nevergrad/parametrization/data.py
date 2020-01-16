@@ -148,7 +148,7 @@ class Array(core.Parameter):
         if not self.full_range_sampling:
             return super().sample()
         child = self.spawn_child()
-        std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
+        std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
         diff = std_bounds[1] - std_bounds[0]
         child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
         child.heritage["lineage"] = child.uid
@@ -213,7 +213,7 @@ class Array(core.Parameter):
         self.full_range_sampling = full_range_sampling
         # warn if sigma is too large for range
         if both_bounds and method != "tanh":  # tanh goes to infinity anyway
-            std_bounds = tuple(self._to_std_space(b) for b in self.bounds)  # type: ignore
+            std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
             min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
             if min_dist < 3.0:
                 warnings.warn(f"Bounds are {min_dist} sigma away from each other at the closest, "
@@ -283,15 +283,16 @@ class Array(core.Parameter):
         return child
 
     def _internal_get_standardized_data(self: A, reference: A) -> np.ndarray:
-        return reference._to_std_space(self._value) - reference._get_ref_data()  # type: ignore
+        return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
 
     def _get_ref_data(self) -> np.ndarray:
         if self._ref_data is None:
-            self._ref_data = self._to_std_space(self._value)
+            self._ref_data = self._to_reduced_space(self._value)
         return self._ref_data
 
-    def _to_std_space(self, value: np.ndarray) -> np.ndarray:
-        """Converts array with appropriate shapes to the standard space of this instance
+    def _to_reduced_space(self, value: np.ndarray) -> np.ndarray:
+        """Converts array with appropriate shapes to reduced (uncentered) space
+        by applying log scaling and sigma scaling
         """
         sigma = self.sigma.value
         if self.bound_transform is not None:
