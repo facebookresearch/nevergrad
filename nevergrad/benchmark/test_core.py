@@ -13,9 +13,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib
-from ..optimization import optimizerlib
-from ..instrumentation.utils import CommandFunction
-from ..common import testing
+from nevergrad.optimization import optimizerlib
+from nevergrad.parametrization.utils import CommandFunction
+from nevergrad.common import testing
 from . import core
 from .test_xpbase import DESCRIPTION_KEYS
 matplotlib.use('Agg')
