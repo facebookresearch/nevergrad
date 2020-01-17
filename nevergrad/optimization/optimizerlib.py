@@ -194,9 +194,8 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 class _CMA(base.Optimizer):
 
-    one_shot = True
-
     def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ParametrizedCMA()
         self._es: Optional[cma.CMAEvolutionStrategy] = None
@@ -287,30 +286,25 @@ class EDA(base.Optimizer):
         self.evaluated_population: List[ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
         self.evaluated_population_fitness: List[float] = []
-        # Unevaluated population
-        self.unevaluated_population: List[ArrayLike] = []
-        self.unevaluated_population_sigma: List[float] = []
         # Archive
         self.archive_fitness: List[float] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        individual = tuple(mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance))
-        self.unevaluated_population_sigma += [mutated_sigma]
-        self.unevaluated_population += [tuple(individual)]
-        return individual
+        data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
+        candidate = self.create_candidate.from_data(data)
+        candidate._meta["sigma"] = mutated_sigma
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -343,7 +337,7 @@ class PCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -364,12 +358,10 @@ class PCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -399,7 +391,7 @@ class MPCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -420,12 +412,10 @@ class MPCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -456,13 +446,11 @@ class MEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -504,20 +492,18 @@ class TBPSA(base.Optimizer):
         self._loss_record: List[float] = []
         # population
         self._evaluated_population: List[base.utils.Individual] = []
-        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        part = base.utils.Individual(individual)
-        part._parameters = np.array([mutated_sigma])
-        self._unevaluated_population[individual.tobytes()] = part
-        return individual  # type: ignore
+        candidate = self.create_candidate.from_data(individual)
+        candidate._meta["sigma"] = mutated_sigma
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -536,9 +522,9 @@ class TBPSA(base.Optimizer):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        particle = self._unevaluated_population[x_bytes]
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        particle = base.utils.Individual(data)
+        particle._parameters = np.array([candidate._meta["sigma"]])
         particle.value = value
         self._evaluated_population.append(particle)
         if len(self._evaluated_population) >= self.llambda:
@@ -549,14 +535,11 @@ class TBPSA(base.Optimizer):
             self.sigma = np.exp(np.sum(np.log([p._parameters[0]
                                                for p in self._evaluated_population[: self.mu]])) / self.mu)
             self._evaluated_population = []
-        del self._unevaluated_population[x_bytes]
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        x = candidate.get_standardized_data(reference=self.instrumentation)
-        sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
-        part = base.utils.Individual(x)
-        part._parameters = np.array([sigma])
-        self._unevaluated_population[x.tobytes()] = part
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        sigma = np.linalg.norm(data - self.current_center) / np.sqrt(self.dimension)  # educated guess
+        candidate._meta["sigma"] = sigma
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 

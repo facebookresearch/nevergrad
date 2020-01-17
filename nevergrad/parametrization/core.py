@@ -175,7 +175,7 @@ class Parameter:
         sent_reference = self if reference is None else reference
         assert isinstance(sent_reference, self.__class__), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
-        self._internal_set_standardized_data(np.array(data, copy=False), sent_reference, deterministic=deterministic)
+        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference, deterministic=deterministic)
         return self
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, reference: P, deterministic: bool = False) -> None:

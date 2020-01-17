@@ -161,10 +161,6 @@ class Instrumentation(Tuple):
     def get_summary(self, data: ArrayLike) -> str:
         raise RuntimeError("Summary is now suppressed because new parametrization is easier to analyze")
 
-    @property
-    def data(self) -> np.ndarray:
-        return self.get_standardized_data()
-
 
 class FunctionPack:
 

@@ -16,7 +16,6 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
 from ..common.typetools import JobLike, ExecutorLike
-from .. import instrumentation as instru
 from ..common.tools import Sleeper
 from ..common.decorators import Registry
 from . import utils

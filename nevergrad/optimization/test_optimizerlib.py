@@ -360,8 +360,8 @@ def test_constrained_optimization() -> None:
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_parametrization_offset(name: str) -> None:
-    if "PSO" in name:
-        raise SkipTest("PSO has large initial variance")
+    if "PSO" in name or "BO" in name:
+        raise SkipTest("PSO and BO have large initial variance")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
     optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
