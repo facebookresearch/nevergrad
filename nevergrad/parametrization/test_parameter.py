@@ -109,9 +109,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     with pytest.warns(UserWarning):
         param.register_cheap_constraint(lambda *args, **kwargs: False)
     child2 = param.spawn_child(param.value)  # just checking new_value
-    assert child.satisfies_constraint()
-    assert not param.satisfies_constraint()
-    assert not child2.satisfies_constraint()
+    assert child.satisfies_constraints()
+    assert not param.satisfies_constraints()
+    assert not child2.satisfies_constraints()
     # array to and from with hash
     data = param.get_standardized_data(reference=child2)
     param.set_standardized_data(data, reference=child2)
@@ -235,7 +235,7 @@ def test_array_recombination() -> None:
 def test_endogeneous_constraint() -> None:
     param = par.Scalar(1.0, mutable_sigma=True)
     param.sigma.register_cheap_constraint(lambda x: False)
-    assert not param.satisfies_constraint()
+    assert not param.satisfies_constraints()
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -246,7 +246,7 @@ def test_constraints(name: str) -> None:
     param.set_standardized_data(param.get_standardized_data())
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
-    if param.satisfies_constraint():
+    if param.satisfies_constraints():
         np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
 
 

@@ -225,7 +225,7 @@ class Parameter:
 
     # %% Constraint management
 
-    def satisfies_constraint(self) -> bool:
+    def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
         the "register_cheap_constraint" method
 
@@ -234,7 +234,7 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        if self._parameters is not None and not self.parameters.satisfies_constraint():
+        if self._parameters is not None and not self.parameters.satisfies_constraints():
             return False
         if not self._constraint_checkers:
             return True
@@ -530,9 +530,9 @@ class Dict(Parameter):
             if isinstance(param, Parameter):
                 param._set_random_state(random_state)
 
-    def satisfies_constraint(self) -> bool:
-        compliant = super().satisfies_constraint()
-        return compliant and all(param.satisfies_constraint() for param in self._content.values() if isinstance(param, Parameter))
+    def satisfies_constraints(self) -> bool:
+        compliant = super().satisfies_constraints()
+        return compliant and all(param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter))
 
     def freeze(self) -> None:
         super().freeze()
