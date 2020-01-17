@@ -12,8 +12,9 @@ from typing import Optional
 import numpy as np
 import scipy.spatial
 from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
+from nevergrad import instrumentation as inst
 from ..base import ExperimentFunction
-from ... import instrumentation as inst
 from . import datasets
 
 
@@ -44,7 +45,7 @@ class Clustering(ExperimentFunction):
         if rescale:
             self._points -= np.mean(self._points, axis=0, keepdims=True)
             self._points /= np.std(self._points, axis=0, keepdims=True)
-        super().__init__(self._compute_distance, inst.var.Array(num_clusters, points.shape[1]))
+        super().__init__(self._compute_distance, p.Array(shape=(num_clusters, points.shape[1])))
         self.register_initialization(points=points, num_clusters=num_clusters, rescale=rescale)
         self._descriptors.update(num_clusters=num_clusters, rescale=rescale)
 
@@ -94,7 +95,7 @@ class Perceptron(ExperimentFunction):
         assert y.ndim == 1
         self._x = x
         self._y = y
-        super().__init__(self._compute_loss, inst.var.Array(10))
+        super().__init__(self._compute_loss, p.Array(shape=(10,)))
         self.register_initialization(x=x, y=y)
 
     @classmethod
@@ -152,7 +153,7 @@ class SammonMapping(ExperimentFunction):
         self._proximity = proximity_array
         self._proximity_2 = self._proximity**2
         self._proximity_2[self._proximity_2 == 0] = 1  # avoid ZeroDivision (for diagonal terms, or identical points)
-        super().__init__(self._compute_distance, inst.var.Array(self._proximity.shape[0], 2))
+        super().__init__(self._compute_distance, p.Array(shape=(self._proximity.shape[0], 2)))
         self.register_initialization(proximity_array=proximity_array)
 
     @classmethod
@@ -229,12 +230,11 @@ class Landscape(ExperimentFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.Instrumentation(inst.var.Scalar(), inst.var.Scalar()))
+        super().__init__(self._get_pixel_value, inst.Instrumentation(p.Scalar(), p.Scalar()).set_name("standard"))
         self.register_initialization(transform=transform)
-        self.parametrization = self.parametrization.with_name("standard")  # force descriptor update
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
-            variables = list(inst.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)
+            variables = list(p.TransitionChoice(list(range(x))) for x in self._image.shape)
             self.parametrization = inst.Instrumentation(*variables).with_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.

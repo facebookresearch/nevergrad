@@ -7,8 +7,10 @@ import pickle
 import typing as tp
 import pytest
 import numpy as np
-from .core import Parameter
+from .core import Constant
+from . import utils
 from . import parameter as par
+from . import helpers
 
 
 def test_array_basics() -> None:
@@ -34,12 +36,14 @@ def test_array_basics() -> None:
 
 
 @pytest.mark.parametrize("param", [par.Dict(truc=12),  # type: ignore
-                                   par.Tuple(), ])
+                                   par.Tuple(),
+                                   par.Instrumentation(12),
+                                   ]
+                         )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
-    assert not param.get_data_hash()
-    if not param:  # Dict is not empty even though it is constant
-        assert not param.get_value_hash()
+    assert param.descriptors.continuous
+    assert param.descriptors.deterministic
 
 
 def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
@@ -57,12 +61,13 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
                                    ],
                          )
-def test_parameters_basic_features(param: Parameter) -> None:
+def test_parameters_basic_features(param: par.Parameter) -> None:
     check_parameter_features(param)
     check_parameter_freezable(param)
 
 
-def check_parameter_features(param: Parameter) -> None:
+# pylint: disable=too-many-statements
+def check_parameter_features(param: par.Parameter) -> None:
     seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
@@ -73,22 +78,32 @@ def check_parameter_features(param: Parameter) -> None:
     assert isinstance(child, type(param))
     assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert param._random_state is not None
-    child.mutate()
+    assert not np.any(param.get_standardized_data())
+    assert not np.any(child.get_standardized_data())
+    assert not np.any(child.get_standardized_data(reference=param))
     assert child.name == param.name
+    assert param._random_state is not None
     assert child.random_state is param.random_state
-    assert child.get_data_hash() != param.get_data_hash()
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
-    assert child.get_data_hash() != param.get_data_hash()  # Could be the same, for TransitionChoice with constants for instance
+    mutable = True
+    try:
+        child.mutate()
+    except par.NotSupportedError:
+        mutable = False
+    else:
+        assert np.any(child.get_standardized_data(reference=param))
+    param.set_name("blublu")
     child_hash = param.spawn_child()
+    assert child_hash.name == "blublu"
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
     if isinstance(param, par.Array):
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
-        assert param.get_data_hash() == child_hash.get_data_hash()
-    param.recombine(child, child)
+        assert not np.any(param.get_standardized_data(reference=child))
+    if mutable:
+        param.recombine(child, child)
     # constraints
     param.register_cheap_constraint(_true)
     with pytest.warns(UserWarning):
@@ -98,13 +113,9 @@ def check_parameter_features(param: Parameter) -> None:
     assert not param.satisfies_constraint()
     assert not child2.satisfies_constraint()
     # array to and from with hash
-    data_hash = param.get_data_hash()
-    param.set_standardized_data(param.get_standardized_data())
-    try:
-        assert data_hash == param.get_data_hash()
-    except AssertionError:
-        # sometimes there can be some rounding errors...
-        np.testing.assert_almost_equal(np.frombuffer(param.get_data_hash()), np.frombuffer(data_hash))
+    data = param.get_standardized_data(reference=child2)
+    param.set_standardized_data(data, reference=child2)
+    np.testing.assert_array_almost_equal(param.get_standardized_data(reference=child2), data)
     # picklable
     string = pickle.dumps(child)
     pickle.loads(string)
@@ -116,9 +127,15 @@ def check_parameter_features(param: Parameter) -> None:
     samp_param = param.sample()
     print(samp_param.heritage, param.heritage)
     assert samp_param.uid == samp_param.heritage["lineage"]
+    # set descriptor
+    assert param.descriptors.deterministic_function
+    param.descriptors.deterministic_function = False
+    assert not param.descriptors.deterministic_function
+    descr_child = param.spawn_child()
+    assert not descr_child.descriptors.deterministic_function
 
 
-def check_parameter_freezable(param: Parameter) -> None:
+def check_parameter_freezable(param: par.Parameter) -> None:
     param.freeze()
     value = param.value
     data = param.get_standardized_data()
@@ -129,7 +146,7 @@ def check_parameter_freezable(param: Parameter) -> None:
         param.value = value
     with pytest.raises(RuntimeError):
         param.set_standardized_data(data)
-    param.set_standardized_data(data, child)
+    child.set_standardized_data(data, reference=param)
     with pytest.raises(RuntimeError):
         param.recombine(child)
 
@@ -149,22 +166,35 @@ def check_parameter_freezable(param: Parameter) -> None:
                                      "sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.])")
      ]
 )
-def test_parameter_names(param: Parameter, name: str) -> None:
+def test_parameter_names(param: par.Parameter, name: str) -> None:
     assert param.name == name
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,continuous,deterministic",
-    [(par.Array(shape=(2, 2)), True, True),
-     (par.Choice([True, False]), True, False),
-     (par.Choice([True, False], deterministic=True), False, True),
-     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False),
-     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True),
+    "param,classes",
+    [(par.Array(shape=(2, 2)), [par.Array]),
+     (par.Tuple(12), [par.Tuple, Constant]),
+     (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
      ]
 )
-def test_parameter_descriptors(param: Parameter, continuous: bool, deterministic: bool) -> None:
+def test_list_parameter_instances(param: par.Parameter, classes: tp.List[tp.Type[par.Parameter]]) -> None:
+    outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
+    assert outputs == classes
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "param,continuous,deterministic,ordered",
+    [(par.Array(shape=(2, 2)), True, True, True),
+     (par.Choice([True, False]), True, False, False),
+     (par.Choice([True, False], deterministic=True), False, True, False),
+     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False, False),
+     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True, True),
+     ]
+)
+def test_parameter_descriptors(param: par.Parameter, continuous: bool, deterministic: bool, ordered: bool) -> None:
     assert param.descriptors.continuous == continuous
     assert param.descriptors.deterministic == deterministic
+    assert param.descriptors.ordered == ordered
 
 
 def test_instrumentation() -> None:
@@ -198,8 +228,8 @@ def test_array_recombination() -> None:
     param2.value = (3,)
     param.recombine(param2)
     assert param.value[0] == 2.0
-    param2.set_standardized_data((param.get_standardized_data() + param2.get_standardized_data()) / 2)
-    assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
+    param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data()) / 2)
+    assert param2.value[0] == 2.5
 
 
 def test_endogeneous_constraint() -> None:
@@ -247,3 +277,19 @@ def test_ordered_choice() -> None:
     assert choice.get_standardized_data().size
     choice.set_standardized_data(np.array([12.0]))
     assert choice.value == 3
+
+
+def test_ordered_choice_weird_values() -> None:
+    choice = par.TransitionChoice([0, np.nan, np.inf])
+    choice.value = np.nan
+    assert choice.value is np.nan
+    choice.value = np.inf
+    assert choice.value == np.inf
+
+
+def test_descriptors() -> None:
+    d1 = utils.Descriptors()
+    d2 = utils.Descriptors(continuous=False)
+    d3 = d1 & d2
+    assert d3.continuous is False
+    assert d3.deterministic is True

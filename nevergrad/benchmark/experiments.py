@@ -296,6 +296,13 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
+def _positive_sum(args_kwargs: Any) -> bool:
+    args, kwargs = args_kwargs
+    if kwargs or len(args) != 1 or not isinstance(args[0], np.ndarray):
+        raise ValueError(f"Unexpected inputs {args} and {kwargs}")
+    return float(np.sum(args[0])) > 0
+
+
 @registry.register
 def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Many optimizers on ill cond problems with constraints.
@@ -308,10 +315,12 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
+    for func in functions:
+        func.parametrization.register_cheap_constraint(_positive_sum)
     for optim in optims:
         for function in functions:
             for budget in [400, 4000, 40000]:
-                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg), cheap_constraint_checker=lambda x: np.sum(x) > 0)
+                yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -412,7 +421,6 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     funcs += [ARCoating()]
     funcs += [PowerSystem(), PowerSystem(13)]
     funcs += [STSP(), STSP(500)]
-
     funcs += [game.Game("war")]
     funcs += [game.Game("batawaf")]
     funcs += [game.Game("flip")]

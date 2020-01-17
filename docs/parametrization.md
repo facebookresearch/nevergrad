@@ -1,42 +1,42 @@
-# Instrumentation
+# Parametrization
 
-**Please note that this document is deprecated, you should now refer to [parametrization.md](parametrization.md)**
+**Please note that parametrization is still a work in progress with heavy changes comming soon! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.**
 
-The aim of instrumentation is to turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed. For this, discrete/categorical arguments must be transformed to continuous variables, and all variables concatenated. The instrumentation subpackage will help you do thanks to:
-- the `variables` modules providing priors that can be used to define each argument.
-- the `Instrumentation` class which provide an interface for converting any arguments into the data space used for optimization, and convert from data space back to the arguments space.
+The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
+The parametrization subpackage will help you do thanks to:
+- the `parameter` modules providing classes that should be used to specify each parameter.
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
+turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed, and define how these parameters can be mutated and combined together.
 
 ## Variables
 
 6 types of variables are currently provided:
-- `SoftmaxCategorical(items)`: converts a list of `n` (unordered) categorial items into an `n`-dimensional space. The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
-- `OrderedDiscrete(items)`: converts a list of (ordered) discrete items into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last.
-- `UnorderedDiscrete(items)`: converts a list of (ordered) discrete items into a 1-dimensional variable. The returned value will depend on the value on this dimension: low values corresponding to first elements of the list, and high values to the last. The behavior is exactly the same as OrderedDiscrete variables -- the optimizer is just informed, by the instrumentation, that the order should not be used.
-- `Gaussian(mean, std)`: normalizes a `n`-dimensional variable with independent Gaussian priors (1-dimension per value).
-- `Array(dim1, ...)`: casts the data from the optimization space into a `np.ndarray` of any shape, to which some transforms can be applied
-  (see `asscalar`, `affined`, `exponentiated`, `bounded`). This makes it a very flexible type of variable. Eg. `Array(2, 3).bounded(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
-- `Scalar(dtype)`: casts the data from the optimization space into a float (the default) or an int. It is equivalent to `Array(1).asscalar(dtype)`
+- `Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
+- `TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
+- `Array(shape)`: describes a `np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see `set_bounds`, `set_mutation`). This makes it a very flexible type of variable. Eg. `Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
+- `Scalar(dtype)`: describes a float (the default) or an int.
   and all `Array` methods are therefore available. Note that `Gaussian(a, b)` is equivalent to `Scalar().affined(a, b)`.
-- `Log(a_min, a_max)`: for log distributed data between two bounds. Under the hood this uses an `Scalar` with an appropriate set of transforms (including clipping for the bounds).
+- `Log(a_min, a_max)`: describes log distributed data between two bounds. Under the hood this uses an `Scalar` with appropriate specifications for bounds and mutations.
 
 
-## Instrumentation
+## Parametrization
 
-Instrumentation helps you convert a set of arguments into variables in the data space which can be optimized. The core class performing this conversion is called `Instrumentation`. It provides arguments conversion through the `arguments_to_data` and `data_to_arguments` methods. Since `data_to_arguments` can be stochastic, the instrumentation holds a random state (`instrumentation.random_state`) which is also used by optimizers.
+Parametrization helps you define the parameters you want to optimize upon.
+Currently most algorithms make use of it to help convert the parameters into the "standardized data" space (a real vector space),
+where it is easier to define operations.
 
 
 ```python
 import nevergrad as ng
 
 # argument transformation
-arg1 = ng.var.OrderedDiscrete(["a", "b"])  # 1st arg. = positional discrete argument
-arg2 = ng.var.SoftmaxCategorical(["a", "c", "e"])  # 2nd arg. = positional discrete argument
-value = ng.var.Gaussian(mean=1, std=2)  # the 4th arg. is a keyword argument with Gaussian prior
+arg1 = ng.p.TransitionChoice(["a", "b"])  # 1st arg. = positional discrete argument
+arg2 = ng.var.Choice(["a", "c", "e"])  # 2nd arg. = positional discrete argument
+value = ng.p.Scalar()  # the 4th arg. is a keyword argument with Gaussian prior
 
 # create the instrumented function
-instrum = ng.Instrumentation(arg1, arg2, "blublu", value=value)
+instrum = ng.p.Instrumentation(arg1, arg2, "blublu", value=value)
 # the 3rd arg. is a positional arg. which will be kept constant to "blublu"
 print(instrum.dimension)  # 5 dimensional space
 
@@ -48,12 +48,13 @@ print(instrum.dimension)  # 5 dimensional space
 # - the 4th variable is a real number, represented by single coordinate.
 
 
-print(instrum.data_to_arguments([1, -80, -80, 80, 3]))
-# prints (args, kwargs): (('b', 'e', 'blublu'), {'value': 7})
+instrum.set_standardized_data([1, -80, -80, 80, 3]))
+# prints (instrum.args, instrum.kwargs): (('b', 'e', 'blublu'), {'value': 7})
 # b is selected because 1 > 0 (the threshold is 0 here since there are 2 values.
 # e is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80))
 # value=7 because 3 * std + mean = 7
 ```
+
 
 You can then directly perform optimization on a function given its instrumentation:
 ```python
@@ -64,19 +65,6 @@ def myfunction(arg1, arg2, arg3, value=3):
 optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
 recommendation = optimizer.minimize(ifunc)
 ```
-
-When you have performed optimization on this function and want to trace back to what should your values be, use:
-```python
-# let us instantiate a fake recommendation for the sake of this tutorial
-recommendation = optimizer.create_candidate.from_data([1, -80, -80, 80, -.5], deterministic=True)
-print(recommendation.args)    # should print ["b", "e", "blublu"]
-print(recommendation.kwargs)  # should print {"value": 0} because -.5 * std + mean = 0
-
-# but be careful, since some variables are stochastic (SoftmaxCategorical ones are), setting deterministic=False may yield different results
-# The following will print more information on the conversion to your arguments:
-print(instrum.get_summary(recommendation.data))
-```
-
 
 
 ## External code instantiation

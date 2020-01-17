@@ -2,6 +2,9 @@
 
 ## master
 
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+
 ## v0.3.0
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.

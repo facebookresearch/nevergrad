@@ -146,7 +146,7 @@ class ArtificialFunction(ExperimentFunction):
                                                 only_index_transform=only_index_transform)
         parametrization = inst.Instrumentation(inst.var.Array(1 if hashing else self._dimension)).with_name("")
         if noise_level > 0:
-            parametrization.probably_noisy = True
+            parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
         self.register_initialization(**self._parameters)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
