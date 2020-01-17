@@ -4,6 +4,11 @@
 
 - Instrumentation names are changed (possibly breaking for benchmarks records)
 - Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+- Performance loss has been suppressed.
+- `Candidate` class is removed, and is completely replaced by `Parameter`.
+- `CandidateMaker` (`optimizer.create_candidate`) raises `DeprecationWarning`s since it new candidates/parameters
+  can be straightforwardly created (`parameter.spawn_child(new_value=new_value)`)
+- all `Parameter` classes have `args` and `kwargs` attributes for uniformity and backward compatibility, alongside the simpler `value` attribute.
 
 ## v0.3.0
 
