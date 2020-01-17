@@ -296,7 +296,7 @@ class EDA(base.Optimizer):
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
-        candidate = self.create_candidate.from_data(data)
+        candidate = self.instrumentation.spawn_child().set_standardized_data(data)
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
@@ -499,7 +499,7 @@ class TBPSA(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        candidate = self.create_candidate.from_data(individual)
+        candidate = self.instrumentation.spawn_child().set_standardized_data(individual)
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
