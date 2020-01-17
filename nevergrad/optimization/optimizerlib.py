@@ -41,6 +41,7 @@ class _OnePlusOne(base.Optimizer):
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
+    However, other algorithms are better in the parallel case. See e.g. NGO.
     """
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -235,7 +236,7 @@ class _CMA(base.Optimizer):
 
 
 class ParametrizedCMA(base.ParametrizedFamily):
-    """TODO
+    """Covariance matrix adaptation algorithm.
 
     Parameters
     ----------
@@ -261,7 +262,7 @@ MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
 
 @registry.register
 class EDA(base.Optimizer):
-    """Test-based population-size adaptation.
+    """Evolution of Distribution algorithm.
 
     Population-size equal to lambda = 4 x dimension.
     Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
@@ -330,10 +331,11 @@ class EDA(base.Optimizer):
 
 @registry.register
 class PCEDA(EDA):
-    """Test-based population-size adaptation.
+    """Evolution of Distribution Algorithm with Population Control.
 
     Population-size equal to lambda = 4 x dimension.
     Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    Greater covariance matrix than above.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -386,10 +388,11 @@ class PCEDA(EDA):
 
 @registry.register
 class MPCEDA(EDA):
-    """Test-based population-size adaptation.
+    """Test-based population-size adaptation with Multivariate Gaussian.
 
     Population-size equal to lambda = 4 x dimension.
     Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    The selection ratio is based on F. Teytaud's paper "A new selection ratio".
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -443,10 +446,7 @@ class MPCEDA(EDA):
 
 @registry.register
 class MEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """Similar to EDA but with multivariate Gaussian with memory; the previous covariance is used in the new covariance.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -484,6 +484,8 @@ class TBPSA(base.Optimizer):
 
     Population-size equal to lambda = 4 x dimension.
     Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+
+    No covariance adaptation.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -557,6 +559,9 @@ class TBPSA(base.Optimizer):
 
 @registry.register
 class NaiveTBPSA(TBPSA):
+    """Similar to TBPSA but with recommendation equal to best point so far.
+    Not adapted to noisy optimization, but cool in multimodal noise-free optimization.
+    """
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x
 
@@ -625,7 +630,8 @@ class PSOParticle(utils.Individual):
 
 @registry.register
 class PSO(base.Optimizer):
-    """Partially following SPSO2011. However, no randomization of the population order.
+    """Particle swarm optimization.
+    Partially following SPSO2011. However, no randomization of the population order.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -1224,7 +1230,7 @@ class _BO(base.Optimizer):
 
 
 class ParametrizedBO(base.ParametrizedFamily):
-    """Bayesian optimization
+    """Bayesian optimization.
 
     Parameters
     ----------
@@ -1368,7 +1374,8 @@ class _Chain(base.Optimizer):
 
 
 class Chaining(base.ParametrizedFamily):
-    """
+    """Chaning of optimization algorithms.
+
     A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
     Each algorithm is fed with what happened before it.
 
@@ -1452,8 +1459,7 @@ chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).
 
 @registry.register
 class cGA(base.Optimizer):
-    """
-    Implementation of the discrete cGA algorithm
+    """Implementation of the discrete cGA algorithm
 
     https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf
     """
