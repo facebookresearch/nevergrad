@@ -493,20 +493,18 @@ class TBPSA(base.Optimizer):
         self._loss_record: List[float] = []
         # population
         self._evaluated_population: List[base.utils.Individual] = []
-        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        part = base.utils.Individual(individual)
-        part._parameters = np.array([mutated_sigma])
-        self._unevaluated_population[individual.tobytes()] = part
-        return individual  # type: ignore
+        candidate = self.create_candidate.from_data(individual)
+        candidate._meta["sigma"] = mutated_sigma
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -525,9 +523,8 @@ class TBPSA(base.Optimizer):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        particle = self._unevaluated_population[x_bytes]
+        particle = base.utils.Individual(candidate.data)
+        particle._parameters = np.array([candidate._meta["sigma"]])
         particle.value = value
         self._evaluated_population.append(particle)
         if len(self._evaluated_population) >= self.llambda:
@@ -538,14 +535,10 @@ class TBPSA(base.Optimizer):
             self.sigma = np.exp(np.sum(np.log([p._parameters[0]
                                                for p in self._evaluated_population[: self.mu]])) / self.mu)
             self._evaluated_population = []
-        del self._unevaluated_population[x_bytes]
 
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
-        sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
-        part = base.utils.Individual(x)
-        part._parameters = np.array([sigma])
-        self._unevaluated_population[x.tobytes()] = part
+        sigma = np.linalg.norm(candidate.data - self.current_center) / np.sqrt(self.dimension)  # educated guess
+        candidate._meta["sigma"] = sigma
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
