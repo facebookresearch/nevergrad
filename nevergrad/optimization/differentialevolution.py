@@ -141,7 +141,7 @@ class _DE(base.Optimizer):
             self._internal_tell_not_asked(candidate, value)
             return
         if particle.value is None or value <= particle.value:
-            particle.x = self.instrumentation.get_standardized_data(instance=candidate)
+            particle.x = candidate.get_standardized_data(reference=self.instrumentation)
             particle.value = value
         self.population.set_queued(particle)
 
@@ -151,7 +151,7 @@ class _DE(base.Optimizer):
             worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
             if worst_part.value is not None and worst_part.value < value:
                 return  # no need to update
-        particle = base.utils.Individual(self.instrumentation.get_standardized_data(instance=candidate))
+        particle = base.utils.Individual(candidate.get_standardized_data(reference=self.instrumentation))
         particle.value = value
         if worst_part is not None:
             self.population.replace(worst_part, particle)

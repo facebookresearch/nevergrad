@@ -553,7 +553,7 @@ class TBPSA(base.Optimizer):
         del self._unevaluated_population[x_bytes]
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        x = self.instrumentation.get_standardized_data(instance=candidate)
+        x = candidate.get_standardized_data(reference=self.instrumentation)
         sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
         part = base.utils.Individual(x)
         part._parameters = np.array([sigma])
@@ -675,7 +675,7 @@ class PSO(base.Optimizer):
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
-        x = self.instrumentation.get_standardized_data(instance=candidate)
+        x = candidate.get_standardized_data(reference=self.instrumentation)
         point = particle.get_transformed_position()
         assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particle.value = value
@@ -688,7 +688,7 @@ class PSO(base.Optimizer):
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        x = self.instrumentation.get_standardized_data(instance=candidate)
+        x = candidate.get_standardized_data(reference=self.instrumentation)
         if len(self.population) < self.llambda:
             particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
             particle.x = self._PARTICULE.transform.backward(x)
@@ -835,7 +835,7 @@ class SplitOptimizer(base.Optimizer):
         return self.instrumentation.spawn_child().set_standardized_data(data)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         n = 0
         for i in range(self.num_optims):
             opt = self.optims[i]
@@ -908,12 +908,12 @@ class Portfolio(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self._num_ask % len(self.optims)
         candidate = self.optims[optim_index].ask()
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self.who_asked[tuple(data)] += [optim_index]
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        tx = tuple(self.instrumentation.get_standardized_data(instance=candidate))
+        tx = tuple(candidate.get_standardized_data(reference=self.instrumentation))
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
         self.optims[optim_index].tell(candidate, value)
@@ -957,7 +957,7 @@ class ParaPortfolio(Portfolio):
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
         candidate = self.optims[optim_index].ask()
-        tx = tuple(self.instrumentation.get_standardized_data(instance=candidate))
+        tx = tuple(candidate.get_standardized_data(reference=self.instrumentation))
         self.who_asked[tx] += [optim_index]
         return candidate
 
@@ -1014,7 +1014,7 @@ class ASCMADEthird(Portfolio):
                 self.best_optim = optim_index
             optim_index = self.best_optim
         candidate = self.optims[optim_index].ask()
-        tx = tuple(self.instrumentation.get_standardized_data(instance=candidate))
+        tx = tuple(candidate.get_standardized_data(reference=self.instrumentation))
         self.who_asked[tx] += [optim_index]
         return candidate
 
@@ -1220,7 +1220,7 @@ class _BO(base.Optimizer):
         if "x_probe" in candidate._meta:
             y = candidate._meta["x_probe"]
         else:
-            data = self.instrumentation.get_standardized_data(instance=candidate)
+            data = candidate.get_standardized_data(reference=self.instrumentation)
             y = self._transform.forward(data)  # tell not asked
         self._fake_function.register(y, -value)  # minimizing
         self.bo.probe(y, lazy=False)
@@ -1328,7 +1328,7 @@ class PBIL(base.Optimizer):
         return self.instrumentation.spawn_child().set_standardized_data(data)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self._population.append((value, data))
         if len(self._population) >= self.llambda:
             self._population.sort(key=lambda tup: tup[0])
@@ -1493,7 +1493,7 @@ class cGA(base.Optimizer):
         return self.instrumentation.spawn_child().set_standardized_data(data)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         if self._previous_value_candidate is None:
             self._previous_value_candidate = (value, data)
         else:
@@ -1567,12 +1567,12 @@ class NGO(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = 0
         candidate = self.optims[optim_index].ask()
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self.who_asked[tuple(data)] += [optim_index]
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         tx = tuple(data)
         optim_index = self.who_asked[tx][0]
         del self.who_asked[tx][0]
@@ -1580,7 +1580,7 @@ class NGO(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         params = self.optims[0].provide_recommendation()
-        return self.instrumentation.get_standardized_data(instance=params)
+        return params.get_standardized_data(reference=self.instrumentation)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError

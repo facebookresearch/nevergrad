@@ -259,7 +259,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self._update_archive_and_bests(data, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
@@ -367,7 +367,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was "asked".
         """
-        data = self.instrumentation.get_standardized_data(instance=candidate)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self._internal_tell(data, value)
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -505,14 +505,14 @@ def addCompare(optimizer: Optimizer) -> None:
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
         for candidate in losers:
-            data = self.instrumentation.get_standardized_data(instance=candidate)
+            data = candidate.get_standardized_data(reference=self.instrumentation)
             if data in self.archive:
                 best_fitness_value = min(best_fitness_value, self.archive[data].get_estimation("average"))
 
         # Now let us decide the fitness value of winners.
         for i, candidate in enumerate(winners):
             self.tell(candidate, best_fitness_value - len(winners) + i)
-            data = self.instrumentation.get_standardized_data(instance=candidate)
+            data = candidate.get_standardized_data(reference=self.instrumentation)
             self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
 
     setattr(optimizer.__class__, 'compare', compare)
