@@ -287,30 +287,25 @@ class EDA(base.Optimizer):
         self.evaluated_population: List[ArrayLike] = []
         self.evaluated_population_sigma: List[float] = []
         self.evaluated_population_fitness: List[float] = []
-        # Unevaluated population
-        self.unevaluated_population: List[ArrayLike] = []
-        self.unevaluated_population_sigma: List[float] = []
         # Archive
         self.archive_fitness: List[float] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask_candidate(self) -> base.Candidate:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        individual = tuple(mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance))
-        self.unevaluated_population_sigma += [mutated_sigma]
-        self.unevaluated_population += [tuple(individual)]
-        return individual
+        data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
+        candidate = self.create_candidate.from_data(data)
+        candidate._meta["sigma"] = mutated_sigma
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = candidate.data
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -343,7 +338,7 @@ class PCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -364,12 +359,10 @@ class PCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+        data = candidate.data
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -399,7 +392,7 @@ class MPCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -420,12 +413,10 @@ class MPCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+        data = candidate.data
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
@@ -456,13 +447,11 @@ class MEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        idx = self.unevaluated_population.index(tuple(x))
-        self.evaluated_population += [x]
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+        data = candidate.data
+        self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [self.unevaluated_population_sigma[idx]]
-        del self.unevaluated_population[idx]
-        del self.unevaluated_population_sigma[idx]
+        self.evaluated_population_sigma += [candidate._meta["sigma"]]
         if len(self.evaluated_population) >= self.llambda:
             # Sorting the population.
             sorted_pop_with_sigma_and_fitness = [
