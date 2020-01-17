@@ -56,9 +56,9 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             candidate = optimizer.minimize(fitness)
         if verify_value and "chain" not in str(optimizer_cls):
             try:
-                np.testing.assert_array_almost_equal(candidate.data, optimum, decimal=1)
+                np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
-                print(f"Attemp #{k}: failed with best point {tuple(candidate.data)}")
+                print(f"Attemp #{k}: failed with best point {tuple(candidate.args[0])}")
                 if k == num_attempts:
                     raise e
             else:
@@ -74,7 +74,8 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
     # add a random point to test tell_not_asked
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
-        candidate = optimizer.create_candidate.from_data(np.random.normal(0, 1, size=optimizer.dimension))
+        data = np.random.normal(0, 1, size=optimizer.dimension)
+        candidate = optimizer.instrumentation.spawn_child().set_standardized_data(data, deterministic=False)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
@@ -190,12 +191,12 @@ def test_optimizers_recommendation(with_parameter: bool,
         with patch("bayes_opt.bayesian_optimization.acq_max", patched):
             candidate = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.data)
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.args[0])
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
     decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
     np.testing.assert_array_almost_equal(
-        candidate.data,
+        candidate.args[0],
         recomkeeper.recommendations.loc[name, :][:dimension],
         decimal=decimal,
         err_msg="Something has changed, if this is normal, delete the following "
@@ -253,15 +254,16 @@ def test_tell_not_asked(name: str) -> None:
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
-    zeros = [0.0] * dim
-    opt.tell(opt.create_candidate.from_data(zeros), fitness(zeros))  # not asked
+    zero_c = opt.instrumentation.spawn_child().set_standardized_data([0.0] * dim)
+    best_c = opt.instrumentation.spawn_child().set_standardized_data(best)
+    opt.tell(zero_c, fitness(zero_c.args[0]))  # not asked
     asked = [opt.ask(), opt.ask()]
-    opt.tell(opt.create_candidate.from_data(best), fitness(best))  # not asked
+    opt.tell(best_c, fitness(best))  # not asked
     opt.tell(asked[0], fitness(*asked[0].args))
     opt.tell(asked[1], fitness(*asked[1].args))
     assert opt.num_tell == 4, opt.num_tell
     assert opt.num_ask == 2
-    if (0, 0, 0, 0) not in [tuple(x.data) for x in asked]:
+    if (0, 0, 0, 0) not in [tuple(x.args[0]) for x in asked]:
         for value in opt.archive.values():
             assert value.count == 1
 
@@ -274,7 +276,7 @@ def test_tbpsa_recom_with_update() -> None:
     optim.instrumentation.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.minimize(fitness)
-    np.testing.assert_almost_equal(candidate.data, [0.037964, 0.0433031, -0.4688667, 0.3633273])
+    np.testing.assert_almost_equal(candidate.args[0], [0.037964, 0.0433031, -0.4688667, 0.3633273])
 
 
 def _square(x: np.ndarray, y: float = 12) -> float:
@@ -319,7 +321,8 @@ def test_bo_instrumentation_and_parameters() -> None:
     assert not record, record.list  # no warning
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
-    opt.tell(opt.create_candidate.from_call(True), 0.0)
+    new_candidate = opt.instrumentation.spawn_child(new_value=((True,), {}))
+    opt.tell(new_candidate, 0.0)
 
 
 def test_chaining() -> None:

@@ -6,6 +6,7 @@
 from typing import Optional, Callable, Dict
 import numpy as np
 from scipy import optimize as scipyoptimize
+from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 from . import recaster
@@ -21,7 +22,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.initial_guess: Optional[base.ArrayLike] = None
 
 #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
