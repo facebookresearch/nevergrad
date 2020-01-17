@@ -17,7 +17,6 @@ from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad import instrumentation as inst
-from nevergrad.instrumentation import Instrumentation
 from . import utils
 from . import base
 from . import mutations
@@ -830,7 +829,7 @@ class SplitOptimizer(base.Optimizer):
         data: List[Any] = []
         for i in range(self.num_optims):
             opt = self.optims[i]
-            data += list(opt.ask().get_standardized_data())
+            data += list(opt.ask().get_standardized_data(reference=opt.instrumentation))
         assert len(data) == self.dimension
         return self.instrumentation.spawn_child().set_standardized_data(data)
 
