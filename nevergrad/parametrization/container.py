@@ -96,7 +96,7 @@ class Instrumentation(Tuple):
     def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
         child = self.spawn_child()
         child.value = (args, kwargs)
-        return child.satisfies_constraint()
+        return child.satisfies_constraints()
 
     @property
     def continuous(self) -> bool:
