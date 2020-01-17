@@ -353,3 +353,15 @@ def test_constrained_optimization() -> None:
         optimizer.instrumentation.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
+
+
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+def test_parametrization_offset(name: str) -> None:
+    if "PSO" in name:
+        raise SkipTest("PSO has large initial variance")
+    parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
+    optimizer = registry[name](parametrization, budget=100, num_workers=1)
+    for k in range(10 if "BO" not in name else 2):
+        candidate = optimizer.ask()
+        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.args[0][0]}"
+        optimizer.tell(candidate, 0)
