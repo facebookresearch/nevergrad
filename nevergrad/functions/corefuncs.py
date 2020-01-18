@@ -6,8 +6,8 @@
 from typing import Any, List, Callable
 from math import exp, sqrt, tanh
 import numpy as np
-from ..instrumentation import discretization
-from ..common.decorators import Registry
+from nevergrad.parametrization import discretization
+from nevergrad.common.decorators import Registry
 
 
 registry = Registry[Callable[[np.ndarray], float]]()

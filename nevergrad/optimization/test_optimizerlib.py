@@ -15,6 +15,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
+import nevergrad as ng
 from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
@@ -153,8 +154,12 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
             pass
 
 
+# pylint: disable=redefined-outer-name
+@pytest.mark.parametrize("with_parameter", [True, False])  # type: ignore
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
-def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:  # pylint: disable=redefined-outer-name
+def test_optimizers_recommendation(with_parameter: bool,
+                                   name: str,
+                                   recomkeeper: RecommendationKeeper) -> None:
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
@@ -173,7 +178,9 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
+        param: Union[int, ng.p.Instrumentation] = (dimension if not with_parameter else
+                                                   ng.p.Instrumentation(ng.p.Array(shape=(dimension,))))
+        optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
         optim.instrumentation.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)
         # the following context manager speeds up BO tests
@@ -304,7 +311,7 @@ def test_population_pickle(name: str) -> None:
 
 def test_bo_instrumentation_and_parameters() -> None:
     # instrumentation
-    instrumentation = inst.Instrumentation(inst.var.SoftmaxCategorical([True, False]))
+    instrumentation = inst.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
         optlib.QRBO(instrumentation, budget=10)
     with pytest.warns(None) as record:
@@ -329,7 +336,7 @@ def test_chaining() -> None:
 
 
 def test_instrumentation_optimizer_reproducibility() -> None:
-    instrumentation = inst.Instrumentation(inst.var.Array(1), y=inst.var.SoftmaxCategorical(list(range(100))))
+    instrumentation = inst.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
     instrumentation.random_state.seed(12)
     optimizer = optlib.RandomSearch(instrumentation, budget=10)
     recom = optimizer.minimize(_square)
@@ -337,9 +344,24 @@ def test_instrumentation_optimizer_reproducibility() -> None:
 
 
 def test_constrained_optimization() -> None:
-    instrumentation = inst.Instrumentation(x=inst.var.Array(1), y=inst.var.Scalar())
+    instrumentation = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(instrumentation, budget=100)
     optimizer.instrumentation.random_state.seed(12)
-    optimizer.instrumentation.set_cheap_constraint_checker(lambda x, y: x[0] >= 1)  # type:ignore
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=UserWarning)
+        optimizer.instrumentation.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
+
+
+@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+def test_parametrization_offset(name: str) -> None:
+    if "PSO" in name or "BO" in name:
+        raise SkipTest("PSO and BO have large initial variance")
+    parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
+    optimizer = registry[name](parametrization, budget=100, num_workers=1)
+    for k in range(10 if "BO" not in name else 2):
+        candidate = optimizer.ask()
+        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.args[0][0]}"
+        optimizer.tell(candidate, 0)

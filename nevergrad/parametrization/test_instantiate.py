@@ -7,7 +7,7 @@ import tempfile
 import typing as tp
 from pathlib import Path
 import numpy as np
-from ..common import testing
+from nevergrad.common import testing
 from . import instantiate
 from .instantiate import LINETOKEN
 from .instantiate import Placeholder

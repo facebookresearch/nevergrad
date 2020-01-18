@@ -6,7 +6,6 @@ import heapq
 from collections import deque
 from typing import List, Callable, Any, NamedTuple, Tuple, Dict, Optional, Deque
 from nevergrad.functions import ExperimentFunction
-# this object only serves to provide delays that the executor must use to order jobs
 
 
 class MockedTimedJob:

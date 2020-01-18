@@ -11,14 +11,14 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from nevergrad import instrumentation as inst
+from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 
 
 class STSP(ExperimentFunction):
 
     def __init__(self, dimension: int = 500) -> None:
-        super().__init__(self._simulate_stsp, inst.var.Array(dimension))
+        super().__init__(self._simulate_stsp, p.Array(shape=(dimension,)))
         self.register_initialization(dimension=dimension)
         self.order = np.arange(0, self.dimension)
         self.x = self.parametrization.random_state.normal(size=self.dimension)

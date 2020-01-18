@@ -3,16 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict, Union
+from typing import Optional, Callable, Dict
 import numpy as np
 from scipy import optimize as scipyoptimize
 from . import base
+from .base import IntOrParameter
 from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
-        self, instrumentation: Union[int, base.instru.Instrumentation], budget: Optional[int] = None, num_workers: int = 1
+        self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = ScipyOptimizer()
@@ -23,8 +24,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
-        """
-        pass  # We do not do anything; this just updates the current best.
+        """  # We do not do anything; this just updates the current best.
 
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
@@ -37,7 +37,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x  #np.zeros(self.dimension)
+        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
@@ -80,7 +80,6 @@ class ScipyOptimizer(base.ParametrizedFamily):
         self.random_restart = random_restart
         super().__init__()
 
-        
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").with_name("NelderMead", register=True)
 Powell = ScipyOptimizer(method="Powell").with_name("Powell", register=True)

@@ -5,14 +5,14 @@
 
 import warnings
 from pathlib import Path
-from typing import List, Tuple, Any, Optional, Union
+import typing as tp
 import pytest
 import numpy as np
 from ..common import testing
-from ..instrumentation import Instrumentation
 from . import optimizerlib
 from . import test_optimizerlib
 from . import base
+from .base import IntOrParameter
 from . import callbacks
 
 
@@ -31,7 +31,7 @@ class LoggingOptimizer(base.Optimizer):
 
     def __init__(self, num_workers: int = 1) -> None:
         super().__init__(instrumentation=1, budget=5, num_workers=num_workers)
-        self.logs: List[str] = []
+        self.logs: tp.List[str] = []
 
     def _internal_ask(self) -> base.ArrayLike:
         self.logs.append(f"s{self._num_ask}")  # s for suggest
@@ -48,7 +48,7 @@ class LoggingOptimizer(base.Optimizer):
     w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),  # not really steady TODO change this behavior
     # w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 's3', 'u1', 's4', 'u2', 'u3', 'u4']),  # This is what we would like
 )
-def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expected: List[Tuple[str, float]]) -> None:
+def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expected: tp.List[tp.Tuple[str, float]]) -> None:
     # tests the suggestion (s) and update (u) patterns
     # the w3_steady is unexpected. It is designed to be efficient with a non-sequential executor, but because
     # of it, it is acting like batch mode when sequential...
@@ -71,7 +71,7 @@ def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expec
     complex_val=(1j, True),
     object_val=(object(), True),
 )
-def test_tell_types(value: Any, error: bool) -> None:
+def test_tell_types(value: tp.Any, error: bool) -> None:
     optim = LoggingOptimizer(num_workers=1)
     x = optim.ask()
     if error:
@@ -83,7 +83,8 @@ def test_tell_types(value: Any, error: bool) -> None:
 def test_base_optimizer() -> None:
     zeroptim = optimizerlib.Zero(instrumentation=2, budget=4, num_workers=1)
     representation = repr(zeroptim)
-    assert "instrumentation=A(2)" in representation, f"Unexpected representation: {representation}"
+    expected = "instrumentation=Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
+    assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().data, [0, 0])
     zeroptim.tell(zeroptim.create_candidate.from_data([0., 0]), 0)
     zeroptim.tell(zeroptim.create_candidate.from_data([1., 1]), 1)
@@ -115,14 +116,14 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
     np.testing.assert_almost_equal(optimizer2.provide_recommendation().data[0], 1, decimal=2)
 
 
-def test_compare(tmp_path: Path) -> None:
+def test_compare() -> None:
     optimizer = optimizerlib.CMA(instrumentation=3, budget=1000, num_workers=5)
     optimizerlib.addCompare(optimizer)
-    for i in range(1000):
-        x: List[Any] = []
-        for j in range(6):
+    for _ in range(1000):  # TODO make faster test
+        x: tp.List[tp.Any] = []
+        for _ in range(6):
             x += [optimizer.ask()]
-        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data-np.array((1.,1.,1.))))
+        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.data - np.array((1., 1., 1.))))
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
     print(result)
@@ -131,7 +132,7 @@ def test_compare(tmp_path: Path) -> None:
 
 class StupidFamily(base.OptimizerFamily):
 
-    def __call__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+    def __call__(self, instrumentation: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
         run = class_(instrumentation=instrumentation, budget=budget, num_workers=num_workers)
         run.name = self._repr
@@ -155,7 +156,8 @@ def test_deprecation_warning() -> None:
 def test_naming() -> None:
     optf = StupidFamily(zero=True)
     opt = optf(instrumentation=2, budget=4, num_workers=1)
-    np.testing.assert_equal(repr(opt), "Instance of StupidFamily(zero=True)(instrumentation=A(2), budget=4, num_workers=1)")
+    instru_str = "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict())"
+    np.testing.assert_equal(repr(opt), f"Instance of StupidFamily(zero=True)(instrumentation={instru_str}, budget=4, num_workers=1)")
     optf.with_name("BlubluOptimizer", register=True)
     opt = base.registry["BlubluOptimizer"](instrumentation=2, budget=4, num_workers=1)
-    np.testing.assert_equal(repr(opt), "Instance of BlubluOptimizer(instrumentation=A(2), budget=4, num_workers=1)")
+    np.testing.assert_equal(repr(opt), f"Instance of BlubluOptimizer(instrumentation={instru_str}, budget=4, num_workers=1)")

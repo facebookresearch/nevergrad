@@ -7,10 +7,9 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 from math import sqrt, tan, pi
-from typing import Any
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from nevergrad.instrumentation.core import Variable
+import nevergrad as ng
 from ..base import ExperimentFunction
 
 
@@ -27,22 +26,6 @@ def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float)
         Z = etha * (Z + 1j * etha * tan(k0d * n)) / (etha + 1j * Z * tan(k0d * n))
     R = abs((Z - 1 / sqrt(ep0)) / (Z + 1 / sqrt(ep0)))**2 * 100  # reflection in %
     return R
-
-
-class ARCoatingVariable(Variable):
-
-    def __init__(self, dimension: int, epmin: float, epf: float) -> None:
-        super().__init__()
-        self.epf = epf
-        self.epmin = epmin
-        self._specs.update(dimension=dimension)
-
-    # pylint: disable=unused-argument
-    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
-        return ((self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin,), {}
-
-    def __repr__(self) -> str:
-        return "ARCoating"
 
 
 class ARCoating(ExperimentFunction):
@@ -77,7 +60,9 @@ class ARCoating(ExperimentFunction):
         self.ep0 = 1
         self.epf = 9
         self.epmin = 1
-        super().__init__(self._get_minimum_average_reflexion, ARCoatingVariable(nbslab, self.epmin, self.epf))
+        init = np.zeros((nbslab,)) + (self.epmin + self.epf) / 2.0
+        super().__init__(self._get_minimum_average_reflexion,
+                         ng.p.Array(init=init).set_bounds(self.epmin, self.epf, method="tanh"))
         self.register_initialization(nbslab=nbslab, d_ar=d_ar)
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar)
 
