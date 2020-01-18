@@ -5,9 +5,9 @@
 
 import tempfile
 from pathlib import Path
-from typing import Tuple, List, Optional
+import typing as tp
 import numpy as np
-from ..common import testing
+from nevergrad.common import testing
 from . import instantiate
 from .instantiate import LINETOKEN
 from .instantiate import Placeholder
@@ -76,7 +76,7 @@ def test_folder_instantiator(clean_copy: bool) -> None:
     unique_no_comment=("bfseibf\nbsfei NG_ARG{machin}", [("machin", None)]),
     several=("bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}", [("truc", "blublu"), ("bidule", None)]),
 )
-def test_placeholder(text: str, name_comments: List[Tuple[str, Optional[str]]]) -> None:
+def test_placeholder(text: str, name_comments: tp.List[tp.Tuple[str, tp.Optional[str]]]) -> None:
     placeholders = Placeholder.finditer(text)
     testing.printed_assert_equal(placeholders, [Placeholder(*x) for x in name_comments])
 

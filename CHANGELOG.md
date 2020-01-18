@@ -4,6 +4,7 @@
 
 - Instrumentation names are changed (possibly breaking for benchmarks records)
 - Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+- `FolderFunction` must now be accessed through `nevergrad.parametrization.FolderFunction`
 
 ## v0.3.0
 
