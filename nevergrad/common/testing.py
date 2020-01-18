@@ -4,9 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import platform
+import unittest
 import inspect
+import contextlib
 from pathlib import Path
-from typing import Iterable, Any, Union, List, Tuple, Callable
+import typing as tp
 try:
     import pytest
 except ImportError:
@@ -14,7 +17,7 @@ except ImportError:
 import numpy as np
 
 
-def assert_set_equal(estimate: Iterable[Any], reference: Iterable[Any], err_msg: str = "") -> None:
+def assert_set_equal(estimate: tp.Iterable[tp.Any], reference: tp.Iterable[tp.Any], err_msg: str = "") -> None:
     """Asserts that both sets are equals, with comprehensive error message.
     This function should only be used in tests.
     Parameters
@@ -32,7 +35,7 @@ def assert_set_equal(estimate: Iterable[Any], reference: Iterable[Any], err_msg:
         raise AssertionError("\n".join(messages))
 
 
-def printed_assert_equal(actual: Any, desired: Any, err_msg: str = '') -> None:
+def printed_assert_equal(actual: tp.Any, desired: tp.Any, err_msg: str = '') -> None:
     try:
         np.testing.assert_equal(actual, desired, err_msg=err_msg)
     except AssertionError as e:
@@ -41,7 +44,7 @@ def printed_assert_equal(actual: Any, desired: Any, err_msg: str = '') -> None:
         raise e
 
 
-def assert_markdown_links_not_broken(folder: Union[str, Path]) -> None:
+def assert_markdown_links_not_broken(folder: tp.Union[str, Path]) -> None:
     """Asserts that all relative hyperlinks are valid in markdown files of the folder
     and its subfolders.
 
@@ -77,7 +80,7 @@ class _MarkdownLink:
         return f"{self._link} ({self._string}) from file {self._filepath}"
 
 
-def _get_all_markdown_links(folder: Union[str, Path]) -> List[_MarkdownLink]:
+def _get_all_markdown_links(folder: tp.Union[str, Path]) -> tp.List[_MarkdownLink]:
     """Returns a list of all existing markdown links
     """
     pattern = re.compile(r"\[(?P<string>.+?)\]\((?P<link>\S+?)\)")
@@ -104,7 +107,7 @@ class parametrized:
         contains a value for each of the arguments of the underlying function (in the definition order).
     """
 
-    def __init__(self, **kwargs: Tuple[Any, ...]):
+    def __init__(self, **kwargs: tp.Tuple[tp.Any, ...]):
         self.ids = sorted(kwargs)
         self.params = tuple(kwargs[name] for name in self.ids)
         assert self.params
@@ -112,8 +115,23 @@ class parametrized:
         assert all(isinstance(p, (tuple, list)) for p in self.params)
         assert all(self.num_params == len(p) for p in self.params[1:])
 
-    def __call__(self, func: Callable[..., None]) -> Any:  # type is lost here :(
+    def __call__(self, func: tp.Callable[..., None]) -> tp.Any:  # type is lost here :(
         names = list(inspect.signature(func).parameters.keys())
         assert len(names) == self.num_params, f"Parameter names: {names}"
         return pytest.mark.parametrize(
             ",".join(names), self.params if self.num_params > 1 else [p[0] for p in self.params], ids=self.ids)(func)
+
+
+@contextlib.contextmanager
+def skip_error_on_systems(error_type: tp.Type[Exception], systems: tp.Iterable[str]) -> tp.Iterator[None]:
+    """Context manager for skipping a test upon a specific error on specific systems
+    This is mostly used to skip some tests for features which are incompatible with Windows
+    """
+    try:
+        yield
+    except error_type as e:
+        system = platform.system()
+        if system in systems:
+            raise unittest.SkipTest
+        print(f'This is system "{system}" (should it be skipped for the test?)')
+        raise e

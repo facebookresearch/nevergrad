@@ -22,7 +22,7 @@ from . import base
 from . import mutations
 from .base import registry as registry
 from .base import addCompare
-from .base import InefficientSettingsWarning
+from .base import InefficientSettingsWarning as InefficientSettingsWarning
 from .base import IntOrParameter
 from . import sequences
 

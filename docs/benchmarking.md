@@ -39,12 +39,14 @@ afterwards, it will be used to save all figures, otherwise it will be saved a fo
 
 ## Adding your own experiments and/or optimizers and/or functions
 The `nevergrad.benchmark` command has an "import" system which can import additional modules where you defined your own experiments, possibly with your own functions and/or optimizers.
+This system however does not work on Windows (yet? feel free to help us!)
 
 Example (please note that `nevergrad` needs to be cloned in your working directory for this example to work):
 ```
 python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 ```
-See the [example file](../nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`. In this case, please refer to these [guidelines](adding_an_algorithm.md).
+See the [example file](../nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`.
+In this case, please refer to these [guidelines](adding_an_algorithm.md).
 
 Functions used for the experiments must derive from `nevergrad.functions.ExperimentFunction`. This class implements features necessary for the benchmarks:
 - keeps the parametrization of the function, used for instantiating the optimizers.
