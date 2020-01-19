@@ -26,4 +26,4 @@
 - [ ] I have read the **CONTRIBUTING** document and completed the CLA (see **CONTRIBUTING**).
 - [ ] All tests passed, and additional code has been covered with new tests.
 
-<!--- In any case, don't hesisate to join and ask questions if you need on Nevergrad users Facebook group https://www.facebook.com/groups/nevergradusers/ -->
+<!--- In any case, don't hesitate to join and ask questions if you need on Nevergrad users Facebook group https://www.facebook.com/groups/nevergradusers/ -->

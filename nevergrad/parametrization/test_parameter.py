@@ -17,7 +17,7 @@ def test_array_basics() -> None:
     var1 = par.Array(shape=(1,))
     var2 = par.Array(shape=(2, 2))
     d = par.Dict(var1=var1, var2=var2, var3=12)
-    data = d.get_standardized_data()
+    data = d.get_standardized_data(reference=d)
     assert data.size == 5
     d.set_standardized_data(np.array([1, 2, 3, 4, 5]))
     assert var1.value[0] == 1
@@ -78,8 +78,8 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert isinstance(child, type(param))
     assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert not np.any(param.get_standardized_data())
-    assert not np.any(child.get_standardized_data())
+    assert not np.any(param.get_standardized_data(reference=param))
+    assert not np.any(child.get_standardized_data(reference=child))
     assert not np.any(child.get_standardized_data(reference=param))
     assert child.name == param.name
     assert param._random_state is not None
@@ -138,7 +138,7 @@ def check_parameter_features(param: par.Parameter) -> None:
 def check_parameter_freezable(param: par.Parameter) -> None:
     param.freeze()
     value = param.value
-    data = param.get_standardized_data()
+    data = param.get_standardized_data(reference=param)
     child = param.spawn_child()
     child.mutate()
     child.recombine(param)
@@ -210,7 +210,7 @@ def test_instrumentation() -> None:
 def test_scalar_and_mutable_sigma() -> None:
     param = par.Scalar(init=1.0, mutable_sigma=True).set_mutation(exponent=2.0, sigma=5)
     assert param.value == 1
-    data = param.get_standardized_data()
+    data = param.get_standardized_data(reference=param)
     assert data[0] == 0.0
     param.set_standardized_data(np.array([-0.2]))
     assert param.value == 0.5
@@ -228,7 +228,7 @@ def test_array_recombination() -> None:
     param2.value = (3,)
     param.recombine(param2)
     assert param.value[0] == 2.0
-    param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data()) / 2)
+    param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data(reference=param2)) / 2)
     assert param2.value[0] == 2.5
 
 
@@ -243,7 +243,7 @@ def test_endogeneous_constraint() -> None:
 )
 def test_constraints(name: str) -> None:
     param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, a_min=-100, a_max=100)
-    param.set_standardized_data(param.get_standardized_data())
+    param.set_standardized_data(param.get_standardized_data(reference=param))
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
     if param.satisfies_constraints():
@@ -274,7 +274,7 @@ def test_ordered_choice() -> None:
     assert choice.value == 1
     choice.mutate()
     assert choice.value in [0, 2]
-    assert choice.get_standardized_data().size
+    assert choice.get_standardized_data(reference=choice).size
     choice.set_standardized_data(np.array([12.0]))
     assert choice.value == 3
 

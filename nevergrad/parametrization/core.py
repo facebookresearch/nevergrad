@@ -78,11 +78,11 @@ class Parameter:
     @property
     def dimension(self) -> int:
         """Dimension of the standardized space for this parameter
-        i.e size of the vector returned by get_standardized_data()
+        i.e size of the vector returned by get_standardized_data(reference=...)
         """
         if self._dimension is None:
             try:
-                self._dimension = self.get_standardized_data().size
+                self._dimension = self.get_standardized_data(reference=self).size
             except utils.NotSupportedError:
                 self._dimension = 0
         return self._dimension
@@ -92,9 +92,7 @@ class Parameter:
         """
         self._check_frozen()
         self.parameters.mutate()
-        data = self.get_standardized_data()  # pylint: disable=assignment-from-no-return
-        # let's assume the random state is already there (next class)
-        self.set_standardized_data(data + self.random_state.normal(size=data.shape), deterministic=False)
+        self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
 
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
@@ -118,7 +116,7 @@ class Parameter:
         """
         raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
 
-    def get_standardized_data(self: P, *, reference: tp.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
         In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
         The data only represent the value of this instance, not the parameters (eg.: mutable sigma), hence it does not
@@ -128,9 +126,9 @@ class Parameter:
         Parameters
         ----------
         reference: Parameter
-            the reference instance for representation in the standardized data space. By default this is "self",
-            hence by default this method returns a zero vector, but you can represent the instance with respect to another
-            reference point, and operation between instances should always be from data relative to a unique reference
+            the reference instance for representation in the standardized data space. This keyword parameter is
+            mandatory to make the code clearer.
+            If you use "self", this method will always return a zero vector.
 
         Returns
         -------
@@ -506,7 +504,7 @@ class Dict(Parameter):
 
     def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D, deterministic: bool = False) -> None:
         if self._sizes is None:
-            self.get_standardized_data()
+            self.get_standardized_data(reference=self)
         assert self._sizes is not None
         if data.size != sum(v for v in self._sizes.values()):
             raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}")
