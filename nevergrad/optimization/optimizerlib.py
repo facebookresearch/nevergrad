@@ -567,7 +567,7 @@ class NoisyBandit(base.Optimizer):
 
 
 class PSOParticle(utils.Individual):
-    """Particle for the PSO algorithm, holding relevant information
+    """Particle for the PSO algorithm, holding relevant information (in [0,1] box)
     """
 
     transform = transforms.ArctanBound(0, 1).reverted()
@@ -591,13 +591,14 @@ class PSOParticle(utils.Individual):
         self.random_state = random_state
 
     @classmethod
-    def random_initialization(cls, dimension: int, random_state: np.random.RandomState) -> "PSOParticle":
-        position = random_state.uniform(0.0, 1.0, dimension)
-        speed = random_state.uniform(-1.0, 1.0, dimension)
+    def from_data(cls, data: np.ndarray, random_state: np.random.RandomState) -> "PSOParticle":
+        position = cls.transform.backward(data)
+        speed = random_state.uniform(-1.0, 1.0, data.size)
         return cls(position, None, speed, position, float("inf"), random_state=random_state)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.value}, best: {self.best_value}>"
+        # return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.value}, best: {self.best_value}>"
+        return f"{self.__class__.__name__}<position: {self.x}, {self.get_transformed_position()}>"
 
     def mutate(self, best_x: np.ndarray, omega: float, phip: float, phig: float) -> None:
         dim = len(best_x)
@@ -634,11 +635,12 @@ class PSO(base.Optimizer):
     def _internal_ask_candidate(self) -> base.Candidate:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
-            additional = [
-                self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
-                for _ in range(self.llambda - len(self.population))
-            ]
-            self.population.extend(additional)
+            param = self.instrumentation
+            for _ in range(self.llambda - len(self.population)):
+                # the commented old initialization below seeds in the while R space, while other algorithms use normal distrib
+                # data = self._PARTICULE.transform.forward(self._rng.uniform(0, 1, self.dimension))
+                data = param.sample().get_standardized_data(reference=param)
+                self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
             particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
@@ -671,15 +673,13 @@ class PSO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
         x = candidate.data
         if len(self.population) < self.llambda:
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
-            particle.x = self._PARTICULE.transform.backward(x)
+            particle = self._PARTICULE.from_data(x, random_state=self._rng)
             self.population.extend([particle])
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_value)  # or fitness?
             if worst_part.best_value < value:
                 return  # no need to update
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
-            particle.x = self._PARTICULE.transform.backward(x)
+            particle = self._PARTICULE.from_data(x, random_state=self._rng)
             worst_part._active = False
             self.population.replace(worst_part, particle)
         # go through standard pipeline
