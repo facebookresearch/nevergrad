@@ -62,7 +62,7 @@ class FakeOptimizer(recaster.SequentialRecastOptimizer):
     def _optim_function(self, func: Callable[..., Any]) -> ArrayLike:
         suboptim = optimizerlib.OnePlusOne(instrumentation=2, budget=self.budget)
         recom = suboptim.minimize(func)
-        return recom.get_standardized_data()
+        return recom.get_standardized_data(reference=self.instrumentation)
 
 
 def test_recast_optimizer() -> None:
