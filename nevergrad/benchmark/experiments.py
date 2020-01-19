@@ -440,6 +440,8 @@ def realworld(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "LargeScrHammersleySearch", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO","FTNGO", "cameleon2", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus","FTNGO2", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE"]
+    algos += ["tardigrade", "deoxys", "cameleon2", "FTNGO", "FTNGO2", "CMA", "hoopa", "octopus"]
+    algos = ["tardigrade", "deoxys", "cameleon2", "FTNGO", "FTNGO2", "CMA", "hoopa", "octopus"]  # REMOVE
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -542,34 +544,34 @@ def powersystems(seed: Optional[int] = None) -> Iterator[Experiment]:
                             yield xp
 
 
-@registry.register
-def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
-    funcs: List[ExperimentFunction] = []
-    funcs += [PowerSystem(3)]
-    funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
-    funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
-    funcs += [PowerSystem(5)]
-    funcs += [PowerSystem(num_dams=5, depth=5, width=5)]
-    funcs += [PowerSystem(num_dams=5, depth=9, width=9)]
-    funcs += [PowerSystem(9)]
-    funcs += [PowerSystem(num_dams=9, width=5, depth=5)]
-    funcs += [PowerSystem(num_dams=9, width=9, depth=9)]
-    funcs += [PowerSystem(13)]
-    funcs += [PowerSystem(num_dams=13, width=5, depth=5)]
-    funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
-
-    seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "FTNGO", "cameleon2", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "PSO", "OnePlusOne",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
-    for budget in [25600, 51200, 102400, 204800, 409600]:
-        for num_workers in [1]:
-            if num_workers < budget:
-                for algo in algos:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+#@registry.register
+#def powersystemsbig(seed: Optional[int] = None) -> Iterator[Experiment]:
+#    funcs: List[ExperimentFunction] = []
+#    funcs += [PowerSystem(3)]
+#    funcs += [PowerSystem(num_dams=3, depth=5, width=5)]
+#    funcs += [PowerSystem(num_dams=3, depth=9, width=9)]
+#    funcs += [PowerSystem(5)]
+#    funcs += [PowerSystem(num_dams=5, depth=5, width=5)]
+#    funcs += [PowerSystem(num_dams=5, depth=9, width=9)]
+#    funcs += [PowerSystem(9)]
+#    funcs += [PowerSystem(num_dams=9, width=5, depth=5)]
+#    funcs += [PowerSystem(num_dams=9, width=9, depth=9)]
+#    funcs += [PowerSystem(13)]
+#    funcs += [PowerSystem(num_dams=13, width=5, depth=5)]
+#    funcs += [PowerSystem(num_dams=13, width=9, depth=9)]
+#
+#    seedg = create_seed_generator(seed)
+#    algos = ["NaiveTBPSA", "SQP", "Powell", "LargeScrHammersleySearch", "ScrHammersleySearch", "NGO", "FTNGO", "cameleon2", "hoopa", "deoxys", "JNGO", "CMandAS2", "octopus", "FTNGO2", "PSO", "OnePlusOne",
+#             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+#             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
+#    for budget in [25600, 51200, 102400, 204800, 409600]:
+#        for num_workers in [1]:
+#            if num_workers < budget:
+#                for algo in algos:
+#                    for fu in funcs:
+#                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+#                        if not xp.is_incoherent:
+#                            yield xp
 
 
 @registry.register

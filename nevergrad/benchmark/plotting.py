@@ -120,7 +120,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     """
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
-    df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"], downcast='float')
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
@@ -141,7 +141,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     # choice of the combination variables to fix
     fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
-    num_rows = 6
+    num_rows = 11
 
     # For the competence map case we must consider pairs of attributes, hence maxcomb_size >= 2.
     # A competence map shows for each value of each of two attributes which algorithm was best.
@@ -207,7 +207,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", "")[:40])
         data = XpPlotter.make_data(subdf)
         xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
         xpplotter.save(out_filepath)
