@@ -6,12 +6,13 @@
 import datetime
 import warnings
 import itertools
+import typing as tp
 import importlib.util
 from pathlib import Path
-from typing import Dict, Optional, Callable, Any, List, Iterator, Tuple, Iterable
 import numpy as np
 import pandas as pd
-from .experiments import registry, Experiment
+from .experiments import registry as registry
+from .experiments import Experiment as Experiment
 from ..common import tools
 from ..common.typetools import ExecutorLike, JobLike, PathLike
 from ..optimization.utils import SequentialExecutor
@@ -57,14 +58,14 @@ class Moduler:
         this allows to compute the length of the modulated sequence.
     """
 
-    def __init__(self, modulo: int, index: int, total_length: Optional[int] = None) -> None:
+    def __init__(self, modulo: int, index: int, total_length: tp.Optional[int] = None) -> None:
         assert modulo > 0, "Modulo must be strictly positive"
         assert index < modulo, "Index must be strictly smaller than modulo"
         self.modulo = modulo
         self.index = index
         self.total_length = total_length
 
-    def split(self, number: int) -> List["Moduler"]:
+    def split(self, number: int) -> tp.List["Moduler"]:
         return [Moduler(self.modulo * number, self.index + k * self.modulo, self.total_length) for k in range(number)]
 
     def __len__(self) -> int:
@@ -96,14 +97,14 @@ class BenchmarkChunk:
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, name: str, repetitions: int = 1, seed: Optional[int] = None, cap_index: Optional[int] = None) -> None:
+    def __init__(self, name: str, repetitions: int = 1, seed: tp.Optional[int] = None, cap_index: tp.Optional[int] = None) -> None:
         self.name = name
         self.seed = seed
         self.cap_index = None if cap_index is None else max(1, int(cap_index))
-        self._moduler: Optional[Moduler] = None
+        self._moduler: tp.Optional[Moduler] = None
         self.repetitions = repetitions
-        self.summaries: List[Dict[str, Any]] = []
-        self._current_experiment: Optional[Experiment] = None  # for stopping and resuming
+        self.summaries: tp.List[tp.Dict[str, tp.Any]] = []
+        self._current_experiment: tp.Optional[Experiment] = None  # for stopping and resuming
         self._id = (
             datetime.datetime.now().strftime("%y-%m-%d_%H%M")
             + "_"
@@ -123,9 +124,9 @@ class BenchmarkChunk:
         """
         return f"{self._id}_i{self.moduler.index}m{self.moduler.modulo}"
 
-    def __iter__(self) -> Iterator[Tuple[int, Experiment]]:
+    def __iter__(self) -> tp.Iterator[tp.Tuple[int, Experiment]]:
         maker = registry[self.name]
-        seeds: Iterable[Optional[int]] = (
+        seeds: tp.Iterable[tp.Optional[int]] = (
             (None for _ in range(self.repetitions)) if self.seed is None else range(self.seed, self.seed + self.repetitions)
         )
         # check experiments.py to see seedable xp
@@ -135,7 +136,7 @@ class BenchmarkChunk:
         enumerated_selection = ((k, s) for (k, s) in enumerate(itertools.chain.from_iterable(generators)) if self.moduler(k))
         return enumerated_selection
 
-    def split(self, number: int) -> List["BenchmarkChunk"]:
+    def split(self, number: int) -> tp.List["BenchmarkChunk"]:
         """Create n BenchmarkChunk which split the experiments of the current BenchmarkChunk
 
         Parameters
@@ -162,12 +163,12 @@ class BenchmarkChunk:
     def __len__(self) -> int:
         return len(self.moduler)
 
-    def compute(self, process_function: Optional[Callable[["BenchmarkChunk", Experiment], None]] = None) -> tools.Selector:
+    def compute(self, process_function: tp.Optional[tp.Callable[["BenchmarkChunk", Experiment], None]] = None) -> tools.Selector:
         """Run all the experiments and returns the result dataframe.
 
         Parameters
         ----------
-        print_function: Callable
+        print_function: tp.Callable
             a function to print at the end of each experiment (for custom logging)
         """
         for local_ind, (index, xp) in enumerate(self):
@@ -199,11 +200,11 @@ class BenchmarkChunk:
 def _submit_jobs(
     experiment_name: str,
     num_workers: int = 1,
-    seed: Optional[int] = None,
-    executor: Optional[ExecutorLike] = None,
-    print_function: Optional[Callable[[Experiment], None]] = None,
-    cap_index: Optional[int] = None,
-) -> List[JobLike[tools.Selector]]:
+    seed: tp.Optional[int] = None,
+    executor: tp.Optional[ExecutorLike] = None,
+    print_function: tp.Optional[tp.Callable[[Experiment], None]] = None,
+    cap_index: tp.Optional[int] = None,
+) -> tp.List[JobLike[tools.Selector]]:
     """Submits a job for computation
 
     Parameters
@@ -216,7 +217,7 @@ def _submit_jobs(
         a seed for the experiment plan (if seedable)
     executor: Executor-like object
         an object such as concurrent.futures.ThreadPoolExecutor for running experiments in parallel
-    print_function: Callable
+    print_function: tp.Callable
         a function to print at the end of each experiment (for custom logging)
     cap_index: int
         index at which the experiment plan must be stopped (convenient for testing if the experiment
@@ -231,7 +232,7 @@ def _submit_jobs(
         if num_workers > 1:
             raise ValueError("An executor must be provided to run multiple jobs in parallel")
         executor = SequentialExecutor()
-    jobs: List[JobLike[tools.Selector]] = []
+    jobs: tp.List[JobLike[tools.Selector]] = []
     bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
     # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
     next(registry[experiment_name]())
@@ -246,10 +247,10 @@ def _submit_jobs(
 def compute(
     experiment_name: str,
     num_workers: int = 1,
-    seed: Optional[int] = None,
-    executor: Optional[ExecutorLike] = None,
-    print_function: Optional[Callable[[Dict[str, Any]], None]] = None,
-    cap_index: Optional[int] = None,
+    seed: tp.Optional[int] = None,
+    executor: tp.Optional[ExecutorLike] = None,
+    print_function: tp.Optional[tp.Callable[[tp.Dict[str, tp.Any]], None]] = None,
+    cap_index: tp.Optional[int] = None,
 ) -> tools.Selector:
     """Submits a job for computation
 
@@ -263,7 +264,7 @@ def compute(
         a seed for the experiment plan (if seedable)
     executor: Executor-like object
         an object such as concurrent.futures.ThreadPoolExecutor for running experiments in parallel
-    print_function: Callable
+    print_function: tp.Callable
         a function to print at the end of each experiment (for custom logging)
     cap_index: int
         index at which the experiment plan must be stopped (convenient for testing if the experiment

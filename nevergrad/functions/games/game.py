@@ -9,7 +9,7 @@
 import functools
 import numpy as np
 from nevergrad.functions import ExperimentFunction
-from nevergrad import instrumentation as inst
+from nevergrad.parametrization import parameter as p
 
 
 class _Game:
@@ -394,10 +394,10 @@ class Game(ExperimentFunction):
         self.game = game
         self.game_object = _Game()
         dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
-        super().__init__(self._simulate_game, inst.var.Array(dimension))
+        super().__init__(self._simulate_game, p.Array(shape=(dimension,)))
         self.register_initialization(game=game)
-        self.parametrization.probably_noisy = True
-        self.parametrization.is_nonmetrizable = game in ["war", "batawaf"]
+        self.parametrization.descriptors.deterministic_function = False
+        self.parametrization.descriptors.metrizable = game not in ["war", "batawaf"]
         self._descriptors.update(game=game)
 
     def _simulate_game(self, x: np.ndarray) -> float:

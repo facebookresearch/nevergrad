@@ -6,7 +6,8 @@
 import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from ..instrumentation import discretization  # TODO move along
+from . import discretization
+from . import utils
 from . import core
 from .container import Tuple
 from .data import Array
@@ -26,15 +27,16 @@ class BaseChoice(core.Dict):
         lchoices = list(choices)  # for iterables
         super().__init__(choices=Tuple(*lchoices), **kwargs)
 
+    def _compute_descriptors(self) -> utils.Descriptors:
+        deterministic = getattr(self, "_deterministic", True)
+        ordered = not hasattr(self, "_deterministic")
+        internal = utils.Descriptors(deterministic=deterministic, continuous=not deterministic, ordered=ordered)
+        return self.choices.descriptors & internal
+
     def __len__(self) -> int:
         """Number of choices
         """
         return len(self.choices)
-
-    @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous)
 
     @property
     def index(self) -> int:
@@ -58,9 +60,9 @@ class BaseChoice(core.Dict):
         self._check_frozen()
         index = -1
         # try to find where to put this
-        nums = sorted(int(k) for k in self.choices._parameters)
+        nums = sorted(int(k) for k in self.choices._content)
         for k in nums:
-            choice = core.as_parameter(self.choices[k])
+            choice = self.choices[k]
             try:
                 choice.value = value
                 index = k
@@ -118,11 +120,6 @@ class Choice(BaseChoice):
         return name
 
     @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous & (not self._deterministic))
-
-    @property
     def index(self) -> int:  # delayed choice
         """Index of the chosen option
         """
@@ -142,6 +139,7 @@ class Choice(BaseChoice):
         self._index = index
         # force new probabilities
         out = discretization.inverse_softmax_discretization(self.index, len(self))
+        self.weights._value *= 0.  # reset since there is no reference
         self.weights.set_standardized_data(out, deterministic=True)
         return index
 
@@ -150,10 +148,9 @@ class Choice(BaseChoice):
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(weights, weights.size, random=random)[0])
 
-    def _internal_set_standardized_data(self: C, data: np.ndarray, instance: C, deterministic: bool = False) -> C:
-        super()._internal_set_standardized_data(data, instance=instance, deterministic=deterministic)
-        instance._draw(deterministic=deterministic)
-        return instance
+    def _internal_set_standardized_data(self: C, data: np.ndarray, reference: C, deterministic: bool = False) -> None:
+        super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
+        self._draw(deterministic=deterministic)
 
     def mutate(self) -> None:
         self.weights.mutate()
@@ -162,8 +159,8 @@ class Choice(BaseChoice):
 
     def _internal_spawn_child(self: C) -> C:
         child = self.__class__(choices=[], deterministic=self._deterministic)
-        child._parameters["choices"] = self.choices.spawn_child()
-        child._parameters["weights"] = self.weights.spawn_child()
+        child._content["choices"] = self.choices.spawn_child()
+        child._content["weights"] = self.weights.spawn_child()
         return child
 
 
@@ -239,7 +236,7 @@ class TransitionChoice(BaseChoice):
 
     def _internal_spawn_child(self: T) -> T:
         child = self.__class__(choices=[])
-        child._parameters["choices"] = self.choices.spawn_child()
-        child._parameters["position"] = self.position.spawn_child()
-        child._parameters["transitions"] = self.transitions.spawn_child()
+        child._content["choices"] = self.choices.spawn_child()
+        child._content["position"] = self.position.spawn_child()
+        child._content["transitions"] = self.transitions.spawn_child()
         return child

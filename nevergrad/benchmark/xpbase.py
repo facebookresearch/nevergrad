@@ -119,18 +119,16 @@ class Experiment:
     def __init__(self, function: fbase.ExperimentFunction,
                  optimizer: Union[str, obase.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
-                 cheap_constraint_checker: Optional[Callable[[Any], Any]] = None,
                  ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
                                                                 "derive from ng.functions.ExperimentFunction")
+        assert function.dimension, "Nothing to optimize"
         self.function = function
-        # Conjecture on the noise level.
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[obase.Candidate] = None
         self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
-        self._cheap_constraint_checker = cheap_constraint_checker
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
@@ -197,11 +195,10 @@ class Experiment:
             torch.manual_seed(self.seed)  # type: ignore
         pfunc = self.function.copy()
         instrumentation = pfunc.parametrization
+        assert len(pfunc.parametrization) == len(self.function.parametrization), "Some constraints failed to be propagated"
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
-        if self._cheap_constraint_checker:
-            self._optimizer.instrumentation.set_cheap_constraint_checker(self._cheap_constraint_checker)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

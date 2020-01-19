@@ -89,6 +89,7 @@ All submissions are based on pull request, which are directly made to either one
 
 ## Recommended topics (non-exhaustive list)
 We identify the following list of topics for which we feel that great contributions are possible.
+This does not exclude other forms of contributions; all pull requests are eligible; please just do a pull request, follow the discussion there, you might specify a track in the conversation but this is not mandatory.
 
 ### Improvements in any of the following optimization categories:
 - One-shot optimization
@@ -115,6 +116,7 @@ We identify the following list of topics for which we feel that great contributi
 The awards will be separated in two tracks:
 - Performance: making algorithms better or designing better algorithms;
 - Contributions: everything people can think of, which makes the platform better for users and for science.
+Please note that tracks are indicative; you do not have to specify a track.
 
 ## Organizers
 In case of questions, please do not hesitate to contact the organizers of the competition. Please send all inquiries to Carola (Carola.Doerr@lip6.fr) and Olivier (oteytaud@fb.com), who will coordinate your request. 

@@ -5,11 +5,11 @@
 
 from pathlib import Path
 import nevergrad as ng
-from nevergrad.instrumentation import FolderFunction
+from nevergrad.parametrization import FolderFunction
 
 
 if __name__ == "__main__":
-    folder = Path(__file__).parents[1] / "instrumentation" / "examples"
+    folder = Path(__file__).parents[1] / "parametrization" / "examples"
     func = FolderFunction(folder, ["python", "examples/script.py"], clean_copy=True)
     instrumentation = ng.Instrumentation(value1=ng.var.Array(1).asscalar(),
                                          value2=12,

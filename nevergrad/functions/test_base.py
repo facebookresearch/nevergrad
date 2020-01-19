@@ -31,13 +31,17 @@ def test_experimented_function() -> None:
     kwargs: tp.Any = output[1]  # type: ignore
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
+    instru_str = ("Instrumentation(Tuple(SoftmaxCategorical(choices=Tuple(1,12),"
+                  "weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,G(0,1)),"
+                  "Dict(constkwarg=blublu,plop=SoftmaxCategorical(choices=Tuple(3,4),"
+                  "weights=Array{(2,)}[recombination=average,sigma=1.0])))")
     testing.printed_assert_equal(
         ifunc.descriptors,
         {
             "dimension": 8,
             "name": "_arg_return",
             "function_class": "ExperimentFunction",
-            "instrumentation": "SC(1,12|0),constant,G(0,1),constkwarg=blublu,plop=SC(3,4|0)",
+            "instrumentation": instru_str,
         },
     )
 

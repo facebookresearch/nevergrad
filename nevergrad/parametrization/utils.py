@@ -8,8 +8,38 @@ import sys
 import shutil
 import tempfile
 import subprocess
-from typing import List, Any, Union, Optional, Dict
+import typing as tp
 from pathlib import Path
+
+
+class Descriptors:
+    """Provides access to a set of descriptors for the parametrization
+    This can be used within optimizers.
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        deterministic: bool = True,
+        deterministic_function: bool = True,
+        continuous: bool = True,
+        metrizable: bool = True,
+        ordered: bool = True,
+    ) -> None:
+        self.deterministic = deterministic
+        self.deterministic_function = deterministic_function
+        self.continuous = continuous
+        self.metrizable = metrizable
+        self.ordered = ordered
+
+    def __and__(self, other: "Descriptors") -> "Descriptors":
+        values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
+        return Descriptors(**values)
+
+
+class NotSupportedError(RuntimeError):
+    """This type of operation is not supported by the parameter.
+    """
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
@@ -25,7 +55,7 @@ class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
     key = "CLEAN_COPY_DIRECTORY"
 
     @classmethod
-    def set_clean_copy_environment_variable(cls, directory: Union[Path, str]) -> None:
+    def set_clean_copy_environment_variable(cls, directory: tp.Union[Path, str]) -> None:
         """Sets the CLEAN_COPY_DIRECTORY environment variable in
         order for subsequent calls to use this directory as base for the
         copies.
@@ -34,7 +64,7 @@ class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
         os.environ[cls.key] = str(directory)
 
     # pylint: disable=redefined-builtin
-    def __init__(self, source: Union[Path, str], dir: Optional[Union[Path, str]] = None) -> None:
+    def __init__(self, source: tp.Union[Path, str], dir: tp.Optional[tp.Union[Path, str]] = None) -> None:
         if dir is None:
             dir = os.environ.get(self.key, None)
         super().__init__(prefix="tmp_clean_copy_", dir=dir)
@@ -71,8 +101,8 @@ class CommandFunction:
        Everything that has been sent to stdout
     """
 
-    def __init__(self, command: List[str], verbose: bool = False, cwd: Optional[Union[str, Path]] = None,
-                 env: Optional[Dict[str, str]] = None) -> None:
+    def __init__(self, command: tp.List[str], verbose: bool = False, cwd: tp.Optional[tp.Union[str, Path]] = None,
+                 env: tp.Optional[tp.Dict[str, str]] = None) -> None:
         if not isinstance(command, list):
             raise TypeError("The command must be provided as a list")
         self.command = command
@@ -80,7 +110,7 @@ class CommandFunction:
         self.cwd = None if cwd is None else str(cwd)
         self.env = env
 
-    def __call__(self, *args: Any, **kwargs: Any) -> str:
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> str:
         """Call the cammand line with addidional arguments
         The keyword arguments will be sent as --{key}={val}
         The logs are bufferized. They will be printed if the job fails, or sent as output of the function
@@ -90,7 +120,7 @@ class CommandFunction:
         full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
         if self.verbose:
             print(f"The following command is sent: {full_command}")
-        outlines: List[str] = []
+        outlines: tp.List[str] = []
         with subprocess.Popen(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               shell=False, cwd=self.cwd, env=self.env) as process:
             try:

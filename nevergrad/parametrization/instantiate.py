@@ -5,7 +5,6 @@
 
 import os
 import re
-import warnings
 import tempfile
 import operator
 import contextlib
@@ -76,11 +75,6 @@ class Placeholder:
         return text
 
 
-def register_file_type(suffix: str, comment_chars: str) -> None:
-    warnings.warn("Please use FolderFunction.register_file_type static method instead")
-    FolderFunction.register_file_type(suffix=suffix, comment_chars=comment_chars)
-
-
 def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
     """Utility for copying the tree structure of a folder and symlinking all files
     This can help creating lightweight copies of a project, for instantiating several
@@ -98,7 +92,7 @@ def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str
 
 def uncomment_line(line: str, extension: str) -> str:
     if extension not in COMMENT_CHARS:
-        raise RuntimeError(f'Unknown file type: {extension}\nDid you register it using {register_file_type.__name__}?')
+        raise RuntimeError(f'Unknown file type: {extension}\nDid you register it using {FolderFunction.register_file_type.__name__}?')
     pattern = r'^(?P<indent> *)'
     pattern += r'(?P<linetoken>' + COMMENT_CHARS[extension] + r" *" + LINETOKEN + r" *)"
     pattern += r'(?P<command>.*)'
