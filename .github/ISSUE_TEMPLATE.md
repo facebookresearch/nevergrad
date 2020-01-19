@@ -19,4 +19,4 @@
   ```
 
 
-<!--- In any case, don't hesisate to join and ask questions if you need on Nevergrad users Facebook group https://www.facebook.com/groups/nevergradusers/ -->
+<!--- In any case, don't hesitate to join and ask questions if you need on Nevergrad users Facebook group https://www.facebook.com/groups/nevergradusers/ -->
