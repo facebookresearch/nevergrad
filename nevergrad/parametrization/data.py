@@ -348,7 +348,7 @@ class Log(Scalar):
     ----------
     init: float or None
         initial value of the variable. If not provided, it is set to the middle of a_min and a_max in log space
-    exponent: float
+    exponent: float or None
         exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
         By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
         at 5 sigma in the transformed space.
