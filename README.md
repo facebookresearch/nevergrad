@@ -72,15 +72,14 @@ def square(x):
 optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
 recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
+>>> Array{(2,)}[recombination=average,sigma=1.0]:[0.49971112 0.5002944 ]
 ```
-
-`recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
-In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
 
 `instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
 See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
 
+`recommendation` holds the optimal value(s) found by the for the provided function. It can be
+directly accessed through `recommendation.value` which is here a `np.ndarray` of size 2.
 
 You can print the full list of optimizers with:
 ```python

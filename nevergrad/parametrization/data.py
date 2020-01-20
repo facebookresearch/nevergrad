@@ -346,10 +346,12 @@ class Log(Scalar):
 
     Parameters
     ----------
-    init: float
-        initial value of the variable
+    init: float or None
+        initial value of the variable. If not provided, it is set to the middle of a_min and a_max in log space
     exponent: float
         exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
+        By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
+        at 5 sigma in the transformed space.
     a_min: float or None
         minimum value if any (> 0)
     a_max: float or None
@@ -366,12 +368,21 @@ class Log(Scalar):
     def __init__(
         self,
         *,
-        init: float = 1.0,
-        exponent: float = 2.0,
+        init: tp.Optional[float] = None,
+        exponent: tp.Optional[float] = None,
         a_min: tp.Optional[float] = None,
         a_max: tp.Optional[float] = None,
         mutable_sigma: bool = False,
     ) -> None:
+        if all(a is not None for a in (a_min, a_max)):
+            if init is None:
+                init = float(np.sqrt(a_min * a_max))  # type: ignore
+            if exponent is None:
+                exponent = float(np.exp((np.log(a_max) - np.log(a_min)) / 10.0))
+        if init is None:
+            raise ValueError("You must define either a init value or both a_min and a_max bounds")
+        if exponent is None:
+            exponent = 2.0
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (a_min, a_max)):

@@ -260,10 +260,16 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 def test_log() -> None:
     with pytest.warns(UserWarning) as record:
-        par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=2.0)
+        log = par.Log(a_min=0.001, a_max=0.1, init=0.02, exponent=2.0)
+        assert log.value == 0.02
         assert not record
         par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=10.0)
         assert len(record) == 1
+    # automatic
+    log = par.Log(a_min=0.001, a_max=0.1)
+    assert log.value == 0.01
+    log.set_standardized_data([4.999])
+    np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
 
 
 def test_ordered_choice() -> None:

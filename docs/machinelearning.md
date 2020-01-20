@@ -7,29 +7,24 @@ def myfunction(lr, num_layers, arg3, arg4, other_anything):
     return -accuracy  # something to minimize
 ```
 
-You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `OrderedDiscrete`, `UnorderedDiscrete` for all discrete variables, `Array` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne` as optimizer.
+You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use `TransitionChoice` for all discrete variables, `Array` for all your continuous variables, and use `PortfolioDiscreteOnePlusOne` as optimizer.
 
 ```python
 import nevergrad as ng
 # instrument learning rate and number of layers, keep arg3 to 3 and arg4 to 4
-lr = ng.var.Log(0.0001, 1)  # log distributed between 0.001 and 1
-num_layers = ng.var.OrderedDiscrete([4, 5, 6])
-instrumentation = ng.Instrumentation(lr, num_layers, 3., arg4=4)
+lr = ng.p.Log(a_min=0.0001, a_max=1)  # log distributed between 0.001 and 1
+num_layers = ng.p.TransitionChoice([4, 5, 6])
+instrumentation = ng.p.Instrumentation(lr, num_layers, 3., arg4=4)
 ```
+Make sure `instrumentation.value` holds your initial guess. It is automatically populated, but can be updated manually (just set `value` to what you want.
 
-Just take care that the default value (your initial guess) is at the middle in the list of possible values for `OrderedDiscrete`, and 0 for `Array` (you can modify this with `Array` methods). You can check that things are correct by checking that for zero you get the default:
-```python
-args, kwargs = instrumentation.data_to_arguments([0] * instrumentation.dimension)
-print(args, kwargs)
-```
+The fact that you use (ordered) discrete variables through `TransitionChoice` is not a big deal because by nature `PortfolioDiscreteOnePlusOne` will ignore the order. This algorithm is quite stable.
 
-The fact that you use ordered discrete variables is not a big deal because by nature `PortfolioDiscreteOnePlusOne` will ignore the order. This algorithm is quite stable.
-
-If you have more budget, a cool possibility is to use `CategoricalSoftmax` for all discrete variables and then apply `TwoPointsDE`. You might also compare this to `DE` (classical differential evolution). This might need a budget in the hundreds.
+If you have more budget, a cool possibility is to use `Choice` for all discrete variables and then apply `TwoPointsDE`. You might also compare this to `DE` (classical differential evolution). This might need a budget in the hundreds.
 
 If you want to double-check that you are not worse than random search, you might use `RandomSearch`.
 
-If you want something fully parallel (the number of workers can be equal to the budget), then you might use `ScrHammersleySearch`, which includes the discrete case. Then, you should use `OrderedDiscrete` rather than `CategoricalSoftmax`. This does not have the traditional drawback of grid search and should still be more uniform than random. By nature `ScrHammersleySearch` will deal correctly with `OrderedDiscrete` type for discrete variables.
+If you want something fully parallel (the number of workers can be equal to the budget), then you might use `ScrHammersleySearch`, which includes the discrete case. Then, you should use `TransitionChoice` rather than `CategoricalSoftmax`. This does not have the traditional drawback of grid search and should still be more uniform than random. By nature `ScrHammersleySearch` will deal correctly with `TransitionChoice` type for discrete variables.
 
 If you are optimizing weights in reinforcement learning, you might use `TBPSA` (high noise) or `CMA` (low noise).
 
@@ -130,16 +125,16 @@ This function must then be instrumented in order to let the optimizer now what a
 import nevergrad as ng
 # argument transformation
 # Optimization of mixed (continuous and discrete) hyperparameters.
-arg1 = ng.var.OrderedDiscrete(["a", "b"])  # 1st arg. = positional discrete argument
+arg1 = ng.p.TransitionChoice(["a", "b"])  # 1st arg. = positional discrete argument
 # We apply a softmax for converting real numbers to discrete values.
-arg2 = ng.var.SoftmaxCategorical(["a", "c", "e"])  # 2nd arg. = positional discrete argument
-value = ng.var.Gaussian(mean=1, std=2)  # the 4th arg. is a keyword argument with Gaussian prior
+arg2 = ng.p.Choice(["a", "c", "e"])  # 2nd arg. = positional discrete argument
+value = ng.p.Scalar(init=1.0).set_mutation(sigma=2)  # the 4th arg. is a keyword argument with Gaussian prior
 
 # create the instrumentation
 # the 3rd arg. is a positional arg. which will be kept constant to "blublu"
-instrumentation = ng.Instrumentation(arg1, arg2, "blublu", value=value)
+instru = ng.Instrumentation(arg1, arg2, "blublu", value=value)
 
-print(instrumentation.dimension)  # 5 dimensional space
+print(instru.dimension)  # 5 dimensional space
 ```
 
 The dimension is 5 because:
@@ -149,22 +144,22 @@ The dimension is 5 because:
 - the 4th var. is a real number, represented by single coordinate.
 
 ```python
-args, kwargs = instrumentation.data_to_arguments([1, -80, -80, 80, 3])
-print(args, kwargs)
->>> ('b', 'e', 'blublu') {'value': 7}
-myfunction(*args, **kwargs)
->>> 8
+instru.set_standardized_data([1, -80, -80, 80, 3])
+print(instru.args, instru.kwargs)
+>>> (('b', 'e', 'blublu'), {'value': 7.0})
+myfunction(*instru.args, **instru.kwargs)
+>>> 8.0
 ```
 
 In this case:
 - `args[0] == "b"` because 1 > 0 (the threshold is 0 here since there are 2 values.
 - `args[1] == "e"` is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80)) = 1
 - `args[2] == "blublu"` because it is kept constant
-- `value == 7` because std * 3 + mean = 2 * 3 + 1 = 7
+- `value == 7` because std * 3 + current_value = 2 * 3 + 1 = 7
 The function therefore returns 7 + 1 = 8.
 
 
-Then you can run the optimization as usual. PortfolioDiscreteOnePlusOne is quite a natural choice when you have a good initial guess and a mix of discrete and continuous variables; in this case, it might be better to use `OrderedDiscrete` rather than `SoftmaxCategorical`.  
+Then you can run the optimization as usual. `PortfolioDiscreteOnePlusOne` is quite a natural choice when you have a good initial guess and a mix of discrete and continuous variables; in this case, it might be better to use `TransitionChoice` rather than `Choice`.  
 `TwoPointsDE` is often excellent in the large scale case (budget in the hundreds).
 
 ```python

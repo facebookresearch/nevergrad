@@ -1594,6 +1594,3 @@ class JNGO(NGO):
                             self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
                             self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
-
-
-__all__ = list(registry.keys())

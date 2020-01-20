@@ -1,58 +1,42 @@
 # Parametrization
 
-**Please note that parametrization is still a work in progress with heavy changes comming soon! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.**
+**Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.**
 
 The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
 The parametrization subpackage will help you do thanks to:
-- the `parameter` modules providing classes that should be used to specify each parameter.
+- the `parameter` modules (accessed by the shortcut `nevergrad.p`) providing classes that should be used to specify each parameter.
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
-
-turn a piece of code with parameters you want to optimize into a function defined on an n-dimensional continuous data space in which the optimization can easily be performed, and define how these parameters can be mutated and combined together.
 
 ## Variables
 
-6 types of variables are currently provided:
+7 types of variables are currently provided:
 - `Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
 - `Array(shape)`: describes a `np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see `set_bounds`, `set_mutation`). This makes it a very flexible type of variable. Eg. `Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
 - `Scalar(dtype)`: describes a float (the default) or an int.
   and all `Array` methods are therefore available. Note that `Gaussian(a, b)` is equivalent to `Scalar().affined(a, b)`.
 - `Log(a_min, a_max)`: describes log distributed data between two bounds. Under the hood this uses an `Scalar` with appropriate specifications for bounds and mutations.
-
+- `Instrumentation(*args, **kwargs)`: a container for other parameters. Values of parameters in the `args` will be returned as a `tuple` by `param.args`, and
+  values of parameters in the `kwargs` will be returned as a `dict` by `param.kwargs` (in practice, `param.value == (param.args, param.kwargs)`).
+  This serves to parametrize functions taking multiple arguments, since you can then call the function with `func(*param.args, **param.kwargs)`.
 
 ## Parametrization
 
 Parametrization helps you define the parameters you want to optimize upon.
-Currently most algorithms make use of it to help convert the parameters into the "standardized data" space (a real vector space),
+Currently most algorithms make use of it to help convert the parameters into the "standardized data" space (a vector space spanning all the real values),
 where it is easier to define operations.
 
+Let's define the parametrization for a function taking 3 positional arguments and one keyword argument `value`.
+- `arg1 = ng.p.TransitionChoice(["a", "b"])` is the first positional argument, it encodes the choice through a single index which can mutate in a continuous way.
+- `arg2 = ng.p.Choice(["a", "c", "e"])` is the second one, which can take 3 possible values, without any order, the selection is made stochasticly through the sampling of a softmax. It is encoded by 3 values (the softmax weights) in the "standardized space"
+- third argument will be kept constant to ` blublu`
+- `value = ng.p.Scalar()` which represents a scalar both in the parameter space, and in the "standardized space"
 
+We then define a parameter holding all these parameters, with a standardized space of dimension 5 (as the sum of the dimensions above):
 ```python
-import nevergrad as ng
-
-# argument transformation
-arg1 = ng.p.TransitionChoice(["a", "b"])  # 1st arg. = positional discrete argument
-arg2 = ng.var.Choice(["a", "c", "e"])  # 2nd arg. = positional discrete argument
-value = ng.p.Scalar()  # the 4th arg. is a keyword argument with Gaussian prior
-
-# create the instrumented function
-instrum = ng.p.Instrumentation(arg1, arg2, "blublu", value=value)
-# the 3rd arg. is a positional arg. which will be kept constant to "blublu"
-print(instrum.dimension)  # 5 dimensional space
-
-# The dimension is 5 because:
-# - the 1st discrete variable has 1 possible values, represented by a hard thresholding in
-#   a 1-dimensional space, i.e. we add 1 coordinate to the continuous problem
-# - the 2nd discrete variable has 3 possible values, represented by softmax, i.e. we add 3 coordinates to the continuous problem
-# - the 3rd variable has no uncertainty, so it does not introduce any coordinate in the continuous problem
-# - the 4th variable is a real number, represented by single coordinate.
-
-
-instrum.set_standardized_data([1, -80, -80, 80, 3]))
-# prints (instrum.args, instrum.kwargs): (('b', 'e', 'blublu'), {'value': 7})
-# b is selected because 1 > 0 (the threshold is 0 here since there are 2 values.
-# e is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80))
-# value=7 because 3 * std + mean = 7
+instru = ng.p.Instrumentation(arg1, arg2, "blublu", value=value)
+print(instru.dimension)
+>>> 5
 ```
 
 
@@ -62,8 +46,24 @@ def myfunction(arg1, arg2, arg3, value=3):
     print(arg1, arg2, arg3)
     return value**2
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
-recommendation = optimizer.minimize(ifunc)
+optimizer = ng.optimizers.OnePlusOne(instrumentation=instru, budget=100)
+recommendation = optimizer.minimize(myfunction)
+print(recommendation.value)
+>>> (('b', 'e', 'blublu'), {'value': -0.00014738768964717153})
+```
+
+
+
+Here is a glipse of what happens on the optimization space:
+```python
+instru.set_standardized_data([1, -80, -80, 80, 3])
+print(instru.args, instru.kwargs)
+>>> (('b', 'e', 'blublu'), {'value': 3.0})
+```
+With this code:
+- b is selected because 1 > 0 (the index is 1 for values above 0, and 0 for values under 0 since there are 2 values).
+- e is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80)) = 1
+- `value=3` because the last value of the standardized space (i.e. 3) corresponds to the value of the last kwargs.
 ```
 
 
