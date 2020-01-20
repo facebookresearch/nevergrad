@@ -104,6 +104,7 @@ def check_parameter_features(param: par.Parameter) -> None:
         assert not np.any(param.get_standardized_data(reference=child))
     if mutable:
         param.recombine(child, child)
+        param.recombine()  # empty should work, for simplicity's sake
     # constraints
     param.register_cheap_constraint(_true)
     with pytest.warns(UserWarning):

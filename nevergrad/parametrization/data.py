@@ -302,6 +302,8 @@ class Array(core.Parameter):
         return reduced.ravel()  # type: ignore
 
     def recombine(self: A, *others: A) -> None:
+        if not others:
+            return
         recomb = self.parameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
