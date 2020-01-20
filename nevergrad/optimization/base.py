@@ -49,18 +49,12 @@ class TellNotAskedNotSupportedError(NotImplementedError):
 
 class CandidateMaker:
 
-    def __init__(self, instrumentation: p.Parameter) -> None:
-        self._instrumentation = instrumentation
-        self._instrumentation.freeze()
-
     def from_call(self, *args: Any, **kwargs: Any) -> p.Parameter:
-        warnings.warn("CandidateMaker is deprecated, use instrumentation.spawn_child(new_value=(args, kwargs)) instead", DeprecationWarning)
-        return self._instrumentation.spawn_child(new_value=(args, kwargs))
+        raise RuntimeError("CandidateMaker is deprecated, use instrumentation.spawn_child(new_value=(args, kwargs)) instead")
 
     def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Parameter:
-        warnings.warn("CandidateMaker is deprecated, use instrumentation.spawn_child().set_standardized_data(data, deterministic) instead",
-                      DeprecationWarning)
-        return self._instrumentation.spawn_child().set_standardized_data(data, deterministic=deterministic)
+        raise RuntimeError("CandidateMaker is deprecated, "
+                           "use instrumentation.spawn_child().set_standardized_data(data, deterministic) instead")
 
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
@@ -117,7 +111,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.instrumentation.freeze()  # avoids issues!
         if not self.dimension:
             raise ValueError("No variable to optimize in this instrumentation.")
-        self.create_candidate = CandidateMaker(self.instrumentation)
+        self.create_candidate = CandidateMaker()
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
