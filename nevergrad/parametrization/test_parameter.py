@@ -268,7 +268,7 @@ def test_log() -> None:
     # automatic
     log = par.Log(a_min=0.001, a_max=0.1)
     assert log.value == 0.01
-    log.set_standardized_data([4.999])
+    log.set_standardized_data(np.array([4.999]))
     np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
 
 
