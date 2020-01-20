@@ -356,9 +356,11 @@ class Parameter:
 
     @property
     def descriptors(self) -> utils.Descriptors:
+        print("Computing descriptors for", self.__class__)
         if self._descriptors is None:
             self._compute_descriptors()
             self._descriptors = self._compute_descriptors()
+        print("Got", self._descriptors)
         return self._descriptors
 
 

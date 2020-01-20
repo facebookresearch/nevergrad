@@ -25,7 +25,7 @@ def test_clustering() -> None:
         func = problems.Clustering.from_mlda(name="Ruspini", num_clusters=num_clusters, rescale=True)
         np.testing.assert_equal(func.dimension, 10)
     func(np.arange(10).reshape((num_clusters, -1)))
-    instru_str = "Instrumentation(Tuple(Array{(5,2)}[recombination=average,sigma=1.0]),Dict())"
+    instru_str = "Array{(5,2)}[recombination=average,sigma=1.0]"
     testing.printed_assert_equal(func.descriptors,
                                  {"instrumentation": instru_str, "function_class": "Clustering", "dimension": 10,
                                   "name": "Ruspini", "num_clusters": 5, "rescale": True})

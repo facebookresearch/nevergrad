@@ -6,12 +6,12 @@
 import hashlib
 from typing import List, Any, Callable
 import numpy as np
+from nevergrad.parametrization import parameter as p
+from nevergrad.common import tools
+from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
 from . import utils
 from . import corefuncs
-from .. import instrumentation as inst
-from ..common import tools
-from ..common.typetools import ArrayLike
 
 
 class ArtificialVariable:
@@ -144,7 +144,7 @@ class ArtificialFunction(ExperimentFunction):
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        parametrization = inst.Instrumentation(inst.var.Array(1 if hashing else self._dimension)).with_name("")
+        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)

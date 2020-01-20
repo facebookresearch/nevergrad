@@ -53,6 +53,8 @@ class Gaussian(Variable):
     """
 
     def __init__(self, mean: float, std: float, shape: Optional[Sequence[int]] = None) -> None:
+        warnings.warn("Gaussian variable will disappear in the next version, "
+                      "please update your code to use ng.p.Array instead (different API).", DeprecationWarning)
         super().__init__()
         self.mean = mean
         self.std = std
@@ -127,6 +129,8 @@ class Array(Variable):
 
     def __init__(self, *dims: int) -> None:
         super().__init__()
+        warnings.warn("ng.var.Array variable will disappear in the next version, "
+                      "please update your code to use ng.p.Array instead (slightly different API).", DeprecationWarning)
         self.transforms: List[Any] = []
         self.shape = tuple(dims)
         self._dtype: Optional[Type[Union[float, int]]] = None
@@ -265,6 +269,8 @@ class Scalar(Array):
     """
 
     def __init__(self, dtype: Type[Union[float, int]] = float):
+        warnings.warn("ng.var.Scalar variable will disappear in the next version, "
+                      "please update your code to use ng.p.Scalar instead (slightly different API).", DeprecationWarning)
         super().__init__(1)
         self.asscalar(dtype=dtype)
 
@@ -291,6 +297,8 @@ class Log(Variable):
     """
 
     def __init__(self, a_min: float, a_max: float, width: float = 20.0, dtype: Type[Union[float, int]] = float) -> None:
+        warnings.warn("ng.var.Log variable will disappear in the next version, "
+                      "please update your code to use ng.p.Log instead (slightly different API).", DeprecationWarning)
         super().__init__()
         assert a_min < a_max
         self._specs.update(dimension=1, name="Log({a_min},{a_max},{width})")

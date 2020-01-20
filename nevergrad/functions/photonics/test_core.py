@@ -24,7 +24,7 @@ def test_photonics_transforms(pb: str, expected: List[float]) -> None:
     assert func.dimension == 8
     np.random.seed(24)
     x = np.random.normal(0, 1, size=8)
-    all_x, _ = func.parametrization.data_to_arguments(x)
+    all_x = func.parametrization.spawn_child().set_standardized_data(x).args
     output = np.concatenate(all_x)
     np.testing.assert_almost_equal(output, expected, decimal=2)
 
@@ -45,7 +45,7 @@ def test_photonics_transforms_mean(pb: str, transform: str, expected: List[float
         # dim 8 is easier to test... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
         with patch("nevergrad.functions.photonics.core._make_instrumentation", return_value=core._make_instrumentation(pb, 8, transform)):
             func = core.Photonics(pb, 16, transform=transform)
-    all_x, _ = func.parametrization.data_to_arguments([0] * 8)
+    all_x = func.parametrization.args
     output = np.concatenate(all_x)
     np.testing.assert_almost_equal(output, expected, decimal=2)
 
@@ -54,7 +54,7 @@ def test_morpho_transform_constraints() -> None:
     with patch("shutil.which", return_value="here"):
         func = core.Photonics("morpho", 60)
     x = np.random.normal(0, 5, size=60)  # std 5 to play with boundaries
-    all_x, _ = func.parametrization.data_to_arguments(x)
+    all_x = func.parametrization.spawn_child().set_standardized_data(x).args
     output = np.concatenate(all_x)
     assert np.all(output >= 0)
     q = len(x) // 4

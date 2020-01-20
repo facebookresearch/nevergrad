@@ -9,6 +9,13 @@
 - `Candidate` class is removed, and is completely replaced by `Parameter`.
 - `CandidateMaker` (`optimizer.create_candidate`) raises `DeprecationWarning`s since it new candidates/parameters
   can be straightforwardly created (`parameter.spawn_child(new_value=new_value)`)
+- Optimizers can now hold any parametrization, not just `Instrumentation`. This for instance mean that when you
+  do `OptimizerClass(instrumentation=12, budget=100)`, the instrumentation (and therefore the candidates) will be of class
+  `ng.p.Array` (and not `ng.p.Instrumentation`), and their attribute `value` will be the corresponding `np.ndarray` value.
+  You can still use `args` and `kwargs` if you want, but it's no more needed!
+- Old `instrumentation` classes now raise deprecation warnings, and will disappear in versions >0.3.2.
+  Hence, prefere using parameters from `ng.p` than `ng.var`, and avoid using `ng.Instrumentation` altogether if
+  you don't need it anymore (or import it through `ng.p.Instrumentation`)
 
 ## v0.3.0
 
