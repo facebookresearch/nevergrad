@@ -12,7 +12,6 @@ from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from ..common import decorators
-from .. import instrumentation as instru
 from ..functions.rl.agents import torch  # import includes pytorch fix
 from ..functions import base as fbase
 from ..optimization import base as obase
@@ -195,11 +194,11 @@ class Experiment:
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
         pfunc = self.function.copy()
-        instrumentation = pfunc.parametrization
-        assert len(pfunc.parametrization) == len(self.function.parametrization), "Some constraints failed to be propagated"
+        # check constraints are propagated
+        assert len(pfunc.parametrization._constraint_checkers) == len(self.function.parametrization._constraint_checkers)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
+            self._optimizer = self.optimsettings.instantiate(instrumentation=pfunc.parametrization)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

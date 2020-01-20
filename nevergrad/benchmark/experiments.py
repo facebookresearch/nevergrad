@@ -56,7 +56,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """Discrete test bed, including useless variables, 5 values or 2 values per character. 
+    """Discrete test bed, including useless variables, 5 values or 2 values per character.
     Poorly designed, should be reimplemented from scratch using a decent instrumentation."""
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
@@ -191,7 +191,7 @@ def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     internal_generator = multimodal(seed, para=True)
     for xp in internal_generator:
         yield xp
-                    
+
 # pylint: disable=redefined-outer-name
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
@@ -296,11 +296,10 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
-def _positive_sum(args_kwargs: Any) -> bool:
-    args, kwargs = args_kwargs
-    if kwargs or len(args) != 1 or not isinstance(args[0], np.ndarray):
-        raise ValueError(f"Unexpected inputs {args} and {kwargs}")
-    return float(np.sum(args[0])) > 0
+def _positive_sum(data: np.ndarray) -> bool:
+    if not isinstance(data, np.ndarray):
+        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+    return float(np.sum(data)) > 0
 
 
 @registry.register

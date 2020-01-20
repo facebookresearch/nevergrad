@@ -83,9 +83,9 @@ def test_landscape() -> None:
     np.testing.assert_equal(func(2, 1), 0)
     np.testing.assert_equal(func(2.6, 1), float("inf"))
     # with square
-    args, _ = sfunc.parametrization.data_to_arguments([-1, -1])  # bottom left
+    args = sfunc.parametrization.spawn_child().set_standardized_data([-1, -1]).args  # bottom left
     np.testing.assert_equal(args, [0, 0])
-    args, _ = sfunc.parametrization.data_to_arguments([1, 1])  # upper right
+    args = sfunc.parametrization.spawn_child().set_standardized_data([1, 1]).args  # upper right
     np.testing.assert_equal(args, [2, 1])
 
 
@@ -94,8 +94,8 @@ def test_landscape_gaussian() -> None:
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
         func = problems.Landscape(transform="gaussian")
-    output, _ = func.parametrization.data_to_arguments([-144, -144])
+    output = func.parametrization.spawn_child().set_standardized_data([-144, -144]).args
     np.testing.assert_equal(output, [0, 0])  # should be mapped to 0, 0
-    output, _ = func.parametrization.data_to_arguments([144, 144])
+    output = func.parametrization.spawn_child().set_standardized_data([144, 144]).args
     np.testing.assert_array_equal(output, [2, 1])  # last element
     testing.printed_assert_equal(func.descriptors, {"instrumentation": "gaussian", "function_class": "Landscape", "dimension": 2})

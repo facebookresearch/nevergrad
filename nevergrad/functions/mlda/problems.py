@@ -13,7 +13,6 @@ import numpy as np
 import scipy.spatial
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.parametrization import parameter as p
-from nevergrad import instrumentation as inst
 from ..base import ExperimentFunction
 from . import datasets
 
@@ -230,16 +229,16 @@ class Landscape(ExperimentFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.Instrumentation(p.Scalar(), p.Scalar()).set_name("standard"))
+        super().__init__(self._get_pixel_value, p.Instrumentation(p.Scalar(), p.Scalar()).set_name("standard"))
         self.register_initialization(transform=transform)
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
             variables = list(p.TransitionChoice(list(range(x))) for x in self._image.shape)
-            self.parametrization = inst.Instrumentation(*variables).with_name("gaussian")
+            self.parametrization = p.Instrumentation(*variables).with_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.
-            variables2 = list(inst.var.Gaussian(s, s) for s in stds)
-            self.parametrization = inst.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
+            variables2 = list(p.Scalar(init=s).set_mutation(sigma=s) for s in stds)
+            self.parametrization = p.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
         elif transform is not None:
             raise ValueError(f"Unknown transform {transform}")
         self._max = float(self._image.max())

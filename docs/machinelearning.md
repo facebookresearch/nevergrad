@@ -53,7 +53,7 @@ print("Optimization of continuous hyperparameters =========")
 def train_and_return_test_error(x):
     return np.linalg.norm([int(50. * abs(x_ - 0.2)) for x_ in x])
 
-instrumentation = ng.Instrumentation(ng.var.Array(300))  # optimize on R^300
+instrumentation = ng.p.Array(300)  # optimize on R^300
 
 budget = 1200  # How many trainings we will do before concluding.
 

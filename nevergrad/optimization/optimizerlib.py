@@ -1504,6 +1504,7 @@ class NGO(base.Optimizer):
     """Nevergrad optimizer by competence map."""
     one_shot = True
 
+    # pylint: disable=too-many-branches
     def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1512,7 +1513,7 @@ class NGO(base.Optimizer):
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.list_parameter_instances(self.instrumentation)
-        self.has_discrete_not_softmax = any(isinstance(x, inst.var.OrderedDiscrete) for x in all_params)
+        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params)
         # pylint: disable=too-many-nested-blocks
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.

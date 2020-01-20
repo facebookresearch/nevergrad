@@ -110,12 +110,12 @@ All algorithms have strengths and weaknesses. Questionable rules of thumb could 
 ## Optimizing machine learning hyperparameters
 
 When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see [instrumentation](instrumentation.md)) to use:
-- use `SoftmaxCategorical` for discrete variables
+- use `Choice` for discrete variables
 - use `TwoPointsDE` with `num_workers` equal to the number of workers available to you.
 See the [machine learning example](machinelearning.md) for more.
 
 Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):
-- use `OrderedDiscrete` for discrete variables, taking care that the default value is in the middle.
+- use `TransitionChoice` for discrete variables, taking care that the default value is in the middle.
 - Use `ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
 
