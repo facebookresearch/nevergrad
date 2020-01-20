@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import sys
 import argparse
 import itertools
 from pathlib import Path
@@ -84,6 +85,7 @@ def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
 
 
 def remove_errors(df: pd.DataFrame) -> tools.Selector:
+    df = df.replace([np.inf, -np.inf], np.nan).fillna(sys.float_info.max)
     df = tools.Selector(df)
     #if "error" not in df.columns:  # backward compatibility
     #    return df  # type: ignore
@@ -120,7 +122,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     """
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
-    df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"], downcast='float')
+    df.loc[:, "loss"] = df.to_numeric(df.loc[:, "loss"], downcast='float')
     df = tools.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"

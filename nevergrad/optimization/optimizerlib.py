@@ -1623,7 +1623,7 @@ class cameleon(NGO):
                 self.optims = [NGO(self.instrumentation, budget, num_workers)]
             
 @registry.register
-class cameleon2(cameleon):
+class shiva(cameleon):
     pass
             
 @registry.register
