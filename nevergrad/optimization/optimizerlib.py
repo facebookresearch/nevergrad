@@ -1676,7 +1676,7 @@ class octopus(NGO):
         if self.fully_continuous and self.budget < self.dimension * 300 and num_workers == 1:
             self.optims = [MiniDE(self.instrumentation, budget, num_workers)]
         else:
-            if self.fully_continuous and self.budget > self.dimension * 3000 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
+            if self.fully_continuous and self.budget > self.dimension * 3000 and num_workers < self.budget / 2.:  # Large budget ==> we can use active portfolios.
                 self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
             else:
                 self.optims = [NGO(self.instrumentation, budget, num_workers)]
