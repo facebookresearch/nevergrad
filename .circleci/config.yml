@@ -62,8 +62,6 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install -e .[all]
-            git clone https://github.com/numpy/numpy-stubs.git || (cd numpy-stubs; git pull)
-            pip install ./numpy-stubs
 
       - save_cache:
           name: "[all] Save cache"
@@ -93,4 +91,4 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py sdist bdist_wheel
-            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text(); assert 'photonics/src/CREDIT' in files"
+            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"

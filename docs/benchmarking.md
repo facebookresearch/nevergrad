@@ -39,13 +39,20 @@ afterwards, it will be used to save all figures, otherwise it will be saved a fo
 
 ## Adding your own experiments and/or optimizers and/or functions
 The `nevergrad.benchmark` command has an "import" system which can import additional modules where you defined your own experiments, possibly with your own functions and/or optimizers.
+This system however does not work on Windows (yet? feel free to help us!)
 
 Example (please note that `nevergrad` needs to be cloned in your working directory for this example to work):
 ```
 python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 ```
-See the [example file](../nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`. In this case, please refer to these [guidelines](adding_an_algorithm.md).
+See the [example file](../nevergrad/benchmark/additional/example.py) to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in `nevergrad`.
+In this case, please refer to these [guidelines](adding_an_algorithm.md).
 
-Functions used for the experiments must derive from `nevergrad.instrumentation.InstrumentedFunction`. This class keeps a dictionary of descriptors of your function settings through the `_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments. See the docstrings for more information, and [functionlib.py](../nevergrad/functions/arcoating/core.py) and [example.py](../nevergrad/benchmark/additional/example.py) for examples.
+Functions used for the experiments must derive from `nevergrad.functions.ExperimentFunction`. This class implements features necessary for the benchmarks:
+- keeps the parametrization of the function, used for instantiating the optimizers.
+- keeping a dictionary of descriptors of your function settings through the `_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments
+- let's you override methods allowing custom behaviors such as `evaluation_function` called at evaluation time to possibly avoid noise when possible, and `compute_pseudotime` to mock computation time during benchkmarks.
+
+See the docstrings for more information, and [functionlib.py](../nevergrad/functions/arcoating/core.py) and [example.py](../nevergrad/benchmark/additional/example.py) for examples.
 
 If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See [experiments.py](../nevergrad/benchmark/experiments.py) for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).

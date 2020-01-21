@@ -35,7 +35,7 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims: List[Union[str, OptimizerFamily]] = ["OnePlusOne", optimizers.DifferentialEvolution()]
     for _ in range(5):
         for optim in optims:
-            yield Experiment(function.duplicate(), optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
+            yield Experiment(function, optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
 
 
 @registry.register
@@ -47,11 +47,10 @@ def small_discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
                     and "SSNEA" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [30] for uv_factor in [5, 10] for n_blocks in [1]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [100, 400, 700, 1000, 1300, 1600, 1900, 2200, 2500, 2800, 3000]:  # , 10000]:
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -104,12 +103,10 @@ def dim10_smallbudget(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [10] for uv_factor in [0] for n_blocks in [1]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [4, 8, 16, 32]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -120,12 +117,10 @@ def dim10_select_two_features(seed: Optional[int] = None) -> Iterator[Experiment
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [2] for uv_factor in [5] for n_blocks in [1]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [4, 8, 16, 32]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -136,12 +131,10 @@ def dim10_select_one_feature(seed: Optional[int] = None) -> Iterator[Experiment]
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [1] for uv_factor in [10] for n_blocks in [1]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [8, 10, 12, 14, 16, 18, 20]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -152,12 +145,10 @@ def doe_dim4(seed: Optional[int] = None) -> Iterator[Experiment]:  # Here, QR pe
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [4] for uv_factor in [0] for n_blocks in [1]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment (no need to seed here)
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000, 10000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -169,12 +160,10 @@ def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
                  for name in names for bd in [1, 4, 20] for uv_factor in [0, 10] for n_blocks in [1]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -185,12 +174,10 @@ def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=bd) for name in names for bd in [4, 20]]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 60, 100]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -200,12 +187,10 @@ def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
     optims = sorted(x for x, y in optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
     functions = [ArtificialFunction(name, block_dimension=2, num_blocks=1, useless_variables=20) for name in names]
-    # functions are not initialized and duplicated at yield time, they will be initialized in the experiment
     for func in functions:
         for optim in optims:
             for budget in [30, 60, 100]:
-                # duplicate -> each Experiment has different randomness
-                yield Experiment(func.duplicate(), optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register

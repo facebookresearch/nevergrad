@@ -37,15 +37,19 @@ All contributions are directly made to either one of the tools, Nevergrad or IOH
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.  
 All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
 
+Nevergrad requires a CLA for contributors: https://github.com/facebookresearch/nevergrad/blob/master/.github/CONTRIBUTING.md#contributor-license-agreement-cla
+
 ## Key principles
 - Open source: no matter how good the results are, if they can not be reproduced or the code can not be checked, this is not in the scope.
 - Reproducibility: if the code can not be run easily, it is also not in the scope.
 
 ## Dates
 **Submission deadline is June 1, 2020, AoE**
+All pull requests active between December 1st 2019 and June 1st, 2020 are eligible.
 
 ## Awards:
-The type of awards, if any, will be announced later.
+Up to 12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
+In addition, a limited number of registration fee waivers are available for PPSN 2020.
 
 ## About Nevergrad and IOHprofiler
 
@@ -85,6 +89,7 @@ All submissions are based on pull request, which are directly made to either one
 
 ## Recommended topics (non-exhaustive list)
 We identify the following list of topics for which we feel that great contributions are possible.
+This does not exclude other forms of contributions; all pull requests are eligible; please just do a pull request, follow the discussion there, you might specify a track in the conversation but this is not mandatory.
 
 ### Improvements in any of the following optimization categories:
 - One-shot optimization
@@ -111,6 +116,7 @@ We identify the following list of topics for which we feel that great contributi
 The awards will be separated in two tracks:
 - Performance: making algorithms better or designing better algorithms;
 - Contributions: everything people can think of, which makes the platform better for users and for science.
+Please note that tracks are indicative; you do not have to specify a track.
 
 ## Organizers
 In case of questions, please do not hesitate to contact the organizers of the competition. Please send all inquiries to Carola (Carola.Doerr@lip6.fr) and Olivier (oteytaud@fb.com), who will coordinate your request. 

@@ -3,10 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import uuid
 import copy
-from typing import Any, Tuple, Optional, Dict, Set, TypeVar, Callable
+from typing import Any, Tuple, Optional, Dict, Set, TypeVar
+import typing as tp
 import numpy as np
-from ..common.typetools import ArrayLike
+from nevergrad.common.typetools import ArrayLike
+from ..parametrization.utils import Descriptors
+from ..parametrization import parameter as p
+# pylint: disable=no-value-for-parameter,too-many-ancestors, too-many-instance-attributes
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 T = TypeVar('T', bound="Variable")
@@ -40,51 +45,33 @@ def _default_checker(*args: Any, **kwargs: Any) -> bool:  # pylint: disable=unus
     return True
 
 
-class Variable:
+class Variable(p.Instrumentation):
 
     def __init__(self) -> None:
-        self._random_state: Optional[np.random.RandomState] = None  # lazy initialization
+        super().__init__()
         self._specs = VarSpecs()
-        self._constraint_checker = _default_checker
-
-    def set_cheap_constraint_checker(self, func: Callable[..., bool]) -> None:
-        self._constraint_checker = func
-
-    def cheap_constraint_check(self, *args: Any, **kwargs: Any) -> bool:
-        return self._constraint_checker(*args, **kwargs)
+        # compatibility
+        self._data: tp.Optional[np.ndarray] = None
+        self._value: tp.Optional[ArgsKwargs] = None
 
     @property
-    def random_state(self) -> np.random.RandomState:
-        """Random state the instrumentation and the optimizers pull from.
-        It can be seeded/replaced.
-        """
-        if self._random_state is None:
-            # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)
-            self._set_random_state(np.random.RandomState(seed))
-        assert self._random_state is not None
-        return self._random_state
-
-    @random_state.setter
-    def random_state(self, random_state: np.random.RandomState) -> None:
-        self._set_random_state(random_state)
+    def data(self) -> np.ndarray:
+        if self._data is None:
+            self._data = np.zeros((self.dimension,))
+        return self._data
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
 
-    def with_name(self: T, name: str) -> T:
-        """Sets a name and return the current instrumentation (for chaining)
-        """
-        self._specs.update(name=name)
-        return self
-
-    @property
-    def name(self) -> str:
-        """Short identifier for the variables
-        """
+    def _get_name(self) -> str:
         if self._specs.name is not None:
             return self._specs.name
         return repr(self)
+
+    def with_name(self: T, name: str) -> T:
+        """Sets a name and return the current instrumentation (for chaining)
+        """
+        return self.set_name(name)
 
     def copy(self: T) -> T:  # TODO, use deepcopy directly in the code if it works?
         """Return a new instrumentation with the same variable and same name
@@ -157,3 +144,46 @@ class Variable:
     def get_summary(self, data: ArrayLike) -> str:  # pylint: disable=unused-argument
         output = self.data_to_arguments(np.array(data, copy=False), deterministic=True)
         return f"Value {output[0][0]}, from data: {data}"
+
+    # compatibility
+    @property
+    def value(self) -> tp.Any:
+        if self._value is None:
+            self._value = self.data_to_arguments(self.data)
+        return self._value[0][0]
+
+    @value.setter
+    def value(self, value: tp.Any) -> None:
+        self._value = (value,), {}
+        self._data = self.arguments_to_data(value)
+
+    @property
+    def args(self) -> tp.Tuple[tp.Any, ...]:
+        return (self.value,)
+
+    @property
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
+        return {}
+
+    def _internal_get_standardized_data(self: T, reference: T) -> np.ndarray:  # pylint: disable=unused-argument
+        return self.data - reference.data  # type: ignore
+
+    def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T, deterministic: bool = False) -> None:
+        self._data = data + reference.data
+        self._value = self.data_to_arguments(self.data, deterministic=deterministic)
+
+    def _internal_spawn_child(self: T) -> T:
+        child = copy.deepcopy(self)
+        child._frozen = False
+        child.uid = uuid.uuid4().hex
+        child.parents_uids = []
+        return child
+
+    def _compute_descriptors(self) -> Descriptors:
+        return Descriptors(continuous=self.continuous, deterministic=not self.noisy)
+
+    def mutate(self) -> None:
+        raise p.NotSupportedError("Please port your code to new parametrization")
+
+    def recombine(self: T, *others: T) -> None:  # type: ignore
+        raise p.NotSupportedError("Please port your code to new parametrization")

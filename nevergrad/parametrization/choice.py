@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as t
+import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from ..instrumentation import discretization  # TODO move along
+from . import discretization
+from . import utils
 from . import core
 from .container import Tuple
 from .data import Array
@@ -15,26 +16,27 @@ from .data import Scalar
 # pylint: disable=no-value-for-parameter
 
 
-C = t.TypeVar("C", bound="Choice")
-T = t.TypeVar("T", bound="TransitionChoice")
+C = tp.TypeVar("C", bound="Choice")
+T = tp.TypeVar("T", bound="TransitionChoice")
 
 
 class BaseChoice(core.Dict):
 
-    def __init__(self, *, choices: t.Iterable[t.Any], **kwargs: t.Any) -> None:
+    def __init__(self, *, choices: tp.Iterable[tp.Any], **kwargs: tp.Any) -> None:
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)  # for iterables
         super().__init__(choices=Tuple(*lchoices), **kwargs)
+
+    def _compute_descriptors(self) -> utils.Descriptors:
+        deterministic = getattr(self, "_deterministic", True)
+        ordered = not hasattr(self, "_deterministic")
+        internal = utils.Descriptors(deterministic=deterministic, continuous=not deterministic, ordered=ordered)
+        return self.choices.descriptors & internal
 
     def __len__(self) -> int:
         """Number of choices
         """
         return len(self.choices)
-
-    @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous)
 
     @property
     def index(self) -> int:
@@ -47,20 +49,20 @@ class BaseChoice(core.Dict):
         return self["choices"]  # type: ignore
 
     @property
-    def value(self) -> t.Any:
+    def value(self) -> tp.Any:
         return core.as_parameter(self.choices[self.index]).value
 
     @value.setter
-    def value(self, value: t.Any) -> None:
+    def value(self, value: tp.Any) -> None:
         self._find_and_set_value(value)
 
-    def _find_and_set_value(self, value: t.Any) -> int:
+    def _find_and_set_value(self, value: tp.Any) -> int:
         self._check_frozen()
         index = -1
         # try to find where to put this
-        nums = sorted(int(k) for k in self.choices._parameters)
+        nums = sorted(int(k) for k in self.choices._content)
         for k in nums:
-            choice = core.as_parameter(self.choices[k])
+            choice = self.choices[k]
             try:
                 choice.value = value
                 index = k
@@ -71,7 +73,7 @@ class BaseChoice(core.Dict):
             raise ValueError(f"Could not figure out where to put value {value}")
         return index
 
-    def get_value_hash(self) -> t.Hashable:
+    def get_value_hash(self) -> tp.Hashable:
         return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
 
 
@@ -100,14 +102,14 @@ class Choice(BaseChoice):
 
     def __init__(
             self,
-            choices: t.Iterable[t.Any],
+            choices: tp.Iterable[tp.Any],
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)
         super().__init__(choices=lchoices, weights=Array(shape=(len(lchoices),), mutable_sigma=False))
         self._deterministic = deterministic
-        self._index: t.Optional[int] = None
+        self._index: tp.Optional[int] = None
 
     def _get_name(self) -> str:
         name = super()._get_name()
@@ -116,11 +118,6 @@ class Choice(BaseChoice):
         if self._deterministic:
             name = cls + "{det}" + name[len(cls):]
         return name
-
-    @property
-    def descriptors(self) -> core.Descriptors:
-        return core.Descriptors(deterministic=self._deterministic & self.choices.descriptors.deterministic,
-                                continuous=self.choices.descriptors.continuous & (not self._deterministic))
 
     @property
     def index(self) -> int:  # delayed choice
@@ -137,11 +134,12 @@ class Choice(BaseChoice):
         """
         return self["weights"]  # type: ignore
 
-    def _find_and_set_value(self, value: t.Any) -> int:
+    def _find_and_set_value(self, value: tp.Any) -> int:
         index = super()._find_and_set_value(value)
         self._index = index
         # force new probabilities
         out = discretization.inverse_softmax_discretization(self.index, len(self))
+        self.weights._value *= 0.  # reset since there is no reference
         self.weights.set_standardized_data(out, deterministic=True)
         return index
 
@@ -150,10 +148,9 @@ class Choice(BaseChoice):
         random = False if deterministic or self._deterministic else self.random_state
         self._index = int(discretization.softmax_discretization(weights, weights.size, random=random)[0])
 
-    def _internal_set_standardized_data(self: C, data: np.ndarray, instance: C, deterministic: bool = False) -> C:
-        super()._internal_set_standardized_data(data, instance=instance, deterministic=deterministic)
-        instance._draw(deterministic=deterministic)
-        return instance
+    def _internal_set_standardized_data(self: C, data: np.ndarray, reference: C, deterministic: bool = False) -> None:
+        super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
+        self._draw(deterministic=deterministic)
 
     def mutate(self) -> None:
         self.weights.mutate()
@@ -162,8 +159,8 @@ class Choice(BaseChoice):
 
     def _internal_spawn_child(self: C) -> C:
         child = self.__class__(choices=[], deterministic=self._deterministic)
-        child._parameters["choices"] = self.choices.spawn_child()
-        child._parameters["weights"] = self.weights.spawn_child()
+        child._content["choices"] = self.choices.spawn_child()
+        child._content["weights"] = self.weights.spawn_child()
         return child
 
 
@@ -192,8 +189,8 @@ class TransitionChoice(BaseChoice):
 
     def __init__(
             self,
-            choices: t.Iterable[t.Any],
-            transitions: t.Union[ArrayLike, Array] = (1.0, 1.0),
+            choices: tp.Iterable[tp.Any],
+            transitions: tp.Union[ArrayLike, Array] = (1.0, 1.0),
     ) -> None:
         super().__init__(choices=choices,
                          position=Scalar(),
@@ -204,7 +201,7 @@ class TransitionChoice(BaseChoice):
     def index(self) -> int:
         return discretization.threshold_discretization(np.array([self.position.value]), arity=len(self.choices))[0]
 
-    def _find_and_set_value(self, value: t.Any) -> int:
+    def _find_and_set_value(self, value: tp.Any) -> int:
         index = super()._find_and_set_value(value)
         self._set_index(index)
         return index
@@ -239,7 +236,7 @@ class TransitionChoice(BaseChoice):
 
     def _internal_spawn_child(self: T) -> T:
         child = self.__class__(choices=[])
-        child._parameters["choices"] = self.choices.spawn_child()
-        child._parameters["position"] = self.position.spawn_child()
-        child._parameters["transitions"] = self.transitions.spawn_child()
+        child._content["choices"] = self.choices.spawn_child()
+        child._content["position"] = self.position.spawn_child()
+        child._content["transitions"] = self.transitions.spawn_child()
         return child

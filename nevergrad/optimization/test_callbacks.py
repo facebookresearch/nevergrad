@@ -19,10 +19,10 @@ def _func(x: Any, y: Any, blublu: str, array: Any) -> float:
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
     cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
-    instrum = ng.Instrumentation(ng.var.Array(1),
-                                 ng.var.Scalar(),
-                                 blublu=ng.var.SoftmaxCategorical(cases),
-                                 array=ng.var.Array(3, 2))
+    instrum = ng.Instrumentation(ng.p.Array(shape=(1,)),
+                                 ng.p.Scalar(),
+                                 blublu=ng.p.Choice(cases),
+                                 array=ng.p.Array(shape=(3, 2)))
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=32)
     optimizer.register_callback("tell", callbacks.ParametersLogger(filepath, delete_existing_file=True))
     optimizer.minimize(_func, verbosity=2)

@@ -4,18 +4,20 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
-import typing as t
+import typing as tp
 import pytest
 import numpy as np
-from .core import Parameter
+from .core import Constant
+from . import utils
 from . import parameter as par
+from . import helpers
 
 
 def test_array_basics() -> None:
     var1 = par.Array(shape=(1,))
     var2 = par.Array(shape=(2, 2))
     d = par.Dict(var1=var1, var2=var2, var3=12)
-    data = d.get_standardized_data()
+    data = d.get_standardized_data(reference=d)
     assert data.size == 5
     d.set_standardized_data(np.array([1, 2, 3, 4, 5]))
     assert var1.value[0] == 1
@@ -34,15 +36,17 @@ def test_array_basics() -> None:
 
 
 @pytest.mark.parametrize("param", [par.Dict(truc=12),  # type: ignore
-                                   par.Tuple(), ])
+                                   par.Tuple(),
+                                   par.Instrumentation(12),
+                                   ]
+                         )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
-    assert not param.get_data_hash()
-    if not param:  # Dict is not empty even though it is constant
-        assert not param.get_value_hash()
+    assert param.descriptors.continuous
+    assert param.descriptors.deterministic
 
 
-def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argument
+def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
     return True
 
 
@@ -57,12 +61,13 @@ def _true(*args: t.Any, **kwargs: t.Any) -> bool:  # pylint: disable=unused-argu
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
                                    ],
                          )
-def test_parameters_basic_features(param: Parameter) -> None:
+def test_parameters_basic_features(param: par.Parameter) -> None:
     check_parameter_features(param)
     check_parameter_freezable(param)
 
 
-def check_parameter_features(param: Parameter) -> None:
+# pylint: disable=too-many-statements
+def check_parameter_features(param: par.Parameter) -> None:
     seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
@@ -71,39 +76,47 @@ def check_parameter_features(param: Parameter) -> None:
     assert param.generation == 0
     child = param.spawn_child()
     assert isinstance(child, type(param))
+    assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert param._random_state is not None
-    child.mutate()
+    assert not np.any(param.get_standardized_data(reference=param))
+    assert not np.any(child.get_standardized_data(reference=child))
+    assert not np.any(child.get_standardized_data(reference=param))
     assert child.name == param.name
+    assert param._random_state is not None
     assert child.random_state is param.random_state
-    assert child.get_data_hash() != param.get_data_hash()
     assert child.uid != param.uid
     assert child.parents_uids == [param.uid]
-    assert child.get_data_hash() != param.get_data_hash()  # Could be the same, for TransitionChoice with constants for instance
+    mutable = True
+    try:
+        child.mutate()
+    except par.NotSupportedError:
+        mutable = False
+    else:
+        assert np.any(child.get_standardized_data(reference=param))
+    param.set_name("blublu")
     child_hash = param.spawn_child()
+    assert child_hash.name == "blublu"
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
     if isinstance(param, par.Array):
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
-        assert param.get_data_hash() == child_hash.get_data_hash()
-    param.recombine(child, child)
+        assert not np.any(param.get_standardized_data(reference=child))
+    if mutable:
+        param.recombine(child, child)
+        param.recombine()  # empty should work, for simplicity's sake
     # constraints
     param.register_cheap_constraint(_true)
     with pytest.warns(UserWarning):
         param.register_cheap_constraint(lambda *args, **kwargs: False)
     child2 = param.spawn_child(param.value)  # just checking new_value
-    assert child.satisfies_constraint()
-    assert not param.satisfies_constraint()
-    assert not child2.satisfies_constraint()
+    assert child.satisfies_constraints()
+    assert not param.satisfies_constraints()
+    assert not child2.satisfies_constraints()
     # array to and from with hash
-    data_hash = param.get_data_hash()
-    param.set_standardized_data(param.get_standardized_data())
-    try:
-        assert data_hash == param.get_data_hash()
-    except AssertionError:
-        # sometimes there can be some rounding errors...
-        np.testing.assert_almost_equal(np.frombuffer(param.get_data_hash()), np.frombuffer(data_hash))
+    data = param.get_standardized_data(reference=child2)
+    param.set_standardized_data(data, reference=child2)
+    np.testing.assert_array_almost_equal(param.get_standardized_data(reference=child2), data)
     # picklable
     string = pickle.dumps(child)
     pickle.loads(string)
@@ -111,12 +124,22 @@ def check_parameter_features(param: Parameter) -> None:
     if isinstance(param, par.Array):
         for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
             assert getattr(param, name) == getattr(child, name)
+    # sampling
+    samp_param = param.sample()
+    print(samp_param.heritage, param.heritage)
+    assert samp_param.uid == samp_param.heritage["lineage"]
+    # set descriptor
+    assert param.descriptors.deterministic_function
+    param.descriptors.deterministic_function = False
+    assert not param.descriptors.deterministic_function
+    descr_child = param.spawn_child()
+    assert not descr_child.descriptors.deterministic_function
 
 
-def check_parameter_freezable(param: Parameter) -> None:
+def check_parameter_freezable(param: par.Parameter) -> None:
     param.freeze()
     value = param.value
-    data = param.get_standardized_data()
+    data = param.get_standardized_data(reference=param)
     child = param.spawn_child()
     child.mutate()
     child.recombine(param)
@@ -124,7 +147,7 @@ def check_parameter_freezable(param: Parameter) -> None:
         param.value = value
     with pytest.raises(RuntimeError):
         param.set_standardized_data(data)
-    param.set_standardized_data(data, child)
+    child.set_standardized_data(data, reference=param)
     with pytest.raises(RuntimeError):
         param.recombine(child)
 
@@ -144,22 +167,35 @@ def check_parameter_freezable(param: Parameter) -> None:
                                      "sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.])")
      ]
 )
-def test_parameter_names(param: Parameter, name: str) -> None:
+def test_parameter_names(param: par.Parameter, name: str) -> None:
     assert param.name == name
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,continuous,deterministic",
-    [(par.Array(shape=(2, 2)), True, True),
-     (par.Choice([True, False]), True, False),
-     (par.Choice([True, False], deterministic=True), False, True),
-     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False),
-     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True),
+    "param,classes",
+    [(par.Array(shape=(2, 2)), [par.Array]),
+     (par.Tuple(12), [par.Tuple, Constant]),
+     (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
      ]
 )
-def test_parameter_descriptors(param: Parameter, continuous: bool, deterministic: bool) -> None:
+def test_list_parameter_instances(param: par.Parameter, classes: tp.List[tp.Type[par.Parameter]]) -> None:
+    outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
+    assert outputs == classes
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "param,continuous,deterministic,ordered",
+    [(par.Array(shape=(2, 2)), True, True, True),
+     (par.Choice([True, False]), True, False, False),
+     (par.Choice([True, False], deterministic=True), False, True, False),
+     (par.Choice([True, par.Scalar().set_integer_casting()]), False, False, False),
+     (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True, True),
+     ]
+)
+def test_parameter_descriptors(param: par.Parameter, continuous: bool, deterministic: bool, ordered: bool) -> None:
     assert param.descriptors.continuous == continuous
     assert param.descriptors.deterministic == deterministic
+    assert param.descriptors.ordered == ordered
 
 
 def test_instrumentation() -> None:
@@ -175,7 +211,7 @@ def test_instrumentation() -> None:
 def test_scalar_and_mutable_sigma() -> None:
     param = par.Scalar(init=1.0, mutable_sigma=True).set_mutation(exponent=2.0, sigma=5)
     assert param.value == 1
-    data = param.get_standardized_data()
+    data = param.get_standardized_data(reference=param)
     assert data[0] == 0.0
     param.set_standardized_data(np.array([-0.2]))
     assert param.value == 0.5
@@ -193,8 +229,14 @@ def test_array_recombination() -> None:
     param2.value = (3,)
     param.recombine(param2)
     assert param.value[0] == 2.0
-    param2.set_standardized_data((param.get_standardized_data() + param2.get_standardized_data()) / 2)
-    assert param2.value[0] == 1.7  # because of different sigma, this is not the "expected" value
+    param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data(reference=param2)) / 2)
+    assert param2.value[0] == 2.5
+
+
+def test_endogeneous_constraint() -> None:
+    param = par.Scalar(1.0, mutable_sigma=True)
+    param.sigma.register_cheap_constraint(lambda x: False)
+    assert not param.satisfies_constraints()
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -202,10 +244,10 @@ def test_array_recombination() -> None:
 )
 def test_constraints(name: str) -> None:
     param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, a_min=-100, a_max=100)
-    param.set_standardized_data(param.get_standardized_data())
+    param.set_standardized_data(param.get_standardized_data(reference=param))
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
-    if param.satisfies_constraint():
+    if param.satisfies_constraints():
         np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
 
 
@@ -219,10 +261,16 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 def test_log() -> None:
     with pytest.warns(UserWarning) as record:
-        par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=2.0)
+        log = par.Log(a_min=0.001, a_max=0.1, init=0.02, exponent=2.0)
+        assert log.value == 0.02
         assert not record
         par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=10.0)
         assert len(record) == 1
+    # automatic
+    log = par.Log(a_min=0.001, a_max=0.1)
+    assert log.value == 0.01
+    log.set_standardized_data(np.array([4.999]))
+    np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
 
 
 def test_ordered_choice() -> None:
@@ -233,6 +281,22 @@ def test_ordered_choice() -> None:
     assert choice.value == 1
     choice.mutate()
     assert choice.value in [0, 2]
-    assert choice.get_standardized_data().size
+    assert choice.get_standardized_data(reference=choice).size
     choice.set_standardized_data(np.array([12.0]))
     assert choice.value == 3
+
+
+def test_ordered_choice_weird_values() -> None:
+    choice = par.TransitionChoice([0, np.nan, np.inf])
+    choice.value = np.nan
+    assert choice.value is np.nan
+    choice.value = np.inf
+    assert choice.value == np.inf
+
+
+def test_descriptors() -> None:
+    d1 = utils.Descriptors()
+    d2 = utils.Descriptors(continuous=False)
+    d3 = d1 & d2
+    assert d3.continuous is False
+    assert d3.deterministic is True

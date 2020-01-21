@@ -2,9 +2,23 @@
 
 ## master
 
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+- `FolderFunction` must now be accessed through `nevergrad.parametrization.FolderFunction`
+
+## v0.3.0
+
+**Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
+
 ### Breaking changes
 
-- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed, and more (bigger yet) changes are coming. This should only impact custom-made variables.
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed,
+  and bigger changes are coming (`instrumentation` will become `parametrization` with a different API). This should only impact custom-made variables.
+- `InstrumentedFunction` has been aggressively deprecated to solve bugs and simplify code, in favor of using the `Instrumentation` directly at the optimizer initialization,
+  and of using `ExperimentFunction` to define functions to be used in benchmarks. Main differences are:
+  * `instrumentation` attribute is renamed to `parametrization` for forward compatibility.
+  *  `__init__` takes exactly two arguments (main function and parametrization/instrumentation) and
+  * calls to `__call__` is directly forwarded to the main function (instead of converting from data space),
 - `Candidates` have now a `uid` instead of a `uuid` for compatibility reasons.
 - Update archive `keys/items_as_array` methods to `keys/items_as_arrays` for consistency.
 

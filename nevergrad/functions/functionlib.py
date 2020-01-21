@@ -4,8 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
-from typing import List, Tuple, Any, Dict, Callable
+from typing import List, Any, Callable
 import numpy as np
+from .base import ExperimentFunction
 from . import utils
 from . import corefuncs
 from .. import instrumentation as inst
@@ -60,7 +61,7 @@ class ArtificialVariable:
         return "Photonics"
 
 
-class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils.NoisyBenchmarkFunction):
+class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -143,14 +144,19 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        super().__init__(self.noisy_function, inst.var.Array(1 if hashing else self._dimension))
-        self.instrumentation = self.instrumentation.with_name("")
+        parametrization = inst.Instrumentation(inst.var.Array(1 if hashing else self._dimension)).with_name("")
+        if noise_level > 0:
+            parametrization.descriptors.deterministic_function = False
+        super().__init__(self.noisy_function, parametrization)
+        self.register_initialization(**self._parameters)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
         self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
                                  discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
         # transforms are initialized at runtime to avoid slow init
+        if hasattr(self._func, "get_postponing_delay"):
+            raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
 
     @property
     def dimension(self) -> int:
@@ -175,7 +181,7 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -187,21 +193,17 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def duplicate(self) -> "ArtificialFunction":
-        """Create an equivalent instance, initialized with the same settings
-        """
-        return self.__class__(**self._parameters)
-
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
+        args, kwargs = input_parameter
         assert not kwargs
         assert len(args) == 1
-        if isinstance(self._func, utils.PostponedObject):
+        if hasattr(self._func, "compute_pseudotime"):
             data = self._transform(args[0])
             total = 0.
             for block in data:
-                total += self._func.get_postponing_delay((block,), {}, value)
+                total += self._func.compute_pseudotime(((block,), {}), value)  # type: ignore
             return total
         return 1.
 
