@@ -1645,7 +1645,6 @@ class EMNA_TBPSA(TBPSA):
             if self.num_workers/self.dimension > 16:
                 self.sigma /= imp
             self._evaluated_population = []
-        del self._unevaluated_population[x_bytes]
 
 
 @registry.register
