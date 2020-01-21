@@ -1796,7 +1796,7 @@ class JNGO(NGO):
                         else:
                             self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
 
-
+@registry.register
 class vashi(shiva):
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
