@@ -77,7 +77,12 @@ class ParametersLogger:
                 "#num-ask": optimizer.num_ask,
                 "#num-tell": optimizer.num_tell,
                 "#num-tell-not-asked": optimizer.num_tell_not_asked,
+                "#uid": candidate.uid,
+                "#generation": candidate.generation,
+                "#parents_uids": [],
                 "#loss": value}
+        if candidate.generation > 1:
+            data["#parents_uids"] = candidate.parents_uids
         params = dict(candidate.kwargs)
         params.update({f"#arg{k}": arg for k, arg in enumerate(candidate.args)})
         data.update({k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in params.items()})
