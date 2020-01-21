@@ -1594,7 +1594,7 @@ class EMNA_TBPSA(TBPSA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self.sigma = 1
         self.mu = self.dimension
@@ -1608,10 +1608,9 @@ class EMNA_TBPSA(TBPSA):
         self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        # return self.current_center
         return self.current_bests["optimistic"].x # Naive version for now
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -1630,9 +1629,8 @@ class EMNA_TBPSA(TBPSA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        x = np.array(x, copy=False)
-        x_bytes = x.tobytes()
-        particle = self._unevaluated_population[x_bytes]
+        particle = base.utils.Individual(candidate.data)
+        particle._parameters = np.array([candidate._meta["sigma"]])
         particle.value = value
         self._evaluated_population.append(particle)
         if len(self._evaluated_population) >= self.llambda:
