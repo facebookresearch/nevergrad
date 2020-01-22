@@ -1627,6 +1627,22 @@ class shiva(cameleon):
     pass
             
 @registry.register
+class vashi(shiva):
+    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if (not self.has_noise and
+            not self.has_discrete_not_softmax and
+            not self.instrumentation.is_nonmetrizable and
+            num_workers > self.dimension / 4):
+            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
+        if (not self.has_noise and
+            not self.has_discrete_not_softmax and
+            not self.instrumentation.is_nonmetrizable and
+            self.budget > 3000):
+            self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]  # noqa: F405
+
+@registry.register
 class octopus(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
