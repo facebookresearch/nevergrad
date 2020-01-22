@@ -169,7 +169,7 @@ def test_optimizers_recommendation(with_parameter: bool,
         np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
-    budget = {"PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
+    budget = {"WidePSO": 100, "PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
     if isinstance(optimizer_cls, optlib.DifferentialEvolution):
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
