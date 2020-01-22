@@ -234,11 +234,11 @@ class Landscape(ExperimentFunction):
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
             variables = list(p.TransitionChoice(list(range(x))) for x in self._image.shape)
-            self.parametrization = p.Instrumentation(*variables).with_name("gaussian")
+            self.parametrization = p.Instrumentation(*variables).set_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.
             variables2 = list(p.Scalar(init=s).set_mutation(sigma=s) for s in stds)
-            self.parametrization = p.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
+            self.parametrization = p.Instrumentation(*variables2).set_name("square")  # maybe buggy, try again?
         elif transform is not None:
             raise ValueError(f"Unknown transform {transform}")
         self._max = float(self._image.max())

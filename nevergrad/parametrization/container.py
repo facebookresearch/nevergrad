@@ -91,6 +91,7 @@ class Instrumentation(Tuple):
     # # # THE FOLLOWING IS ONLY FOR TEMPORARY (PARTIAL) COMPATIBILITY
 
     def with_name(self: Ins, name: str) -> Ins:
+        warnings.warn('"with_name" is deprecated, please use "set_name" instead', DeprecationWarning)
         return self.set_name(name)
 
     def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
@@ -129,6 +130,7 @@ class Instrumentation(Tuple):
     def arguments_to_data(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
         """Converts args and kwargs into data in np.ndarray format
         """
+        warnings.warn('"arguments_to_data" is deprecated, please use "get_standardized_data" instead', DeprecationWarning)
         self._compatibility.value = (args, kwargs)
         return self._compatibility.get_standardized_data(reference=self)
 
@@ -148,6 +150,7 @@ class Instrumentation(Tuple):
         kwargs: Dict[str, Any]
             the keyword arguments corresponding to the instance initialization keyword arguments
         """
+        warnings.warn('"data_to_arguments" is deprecated, please use "set_standardized_data" instead', DeprecationWarning)
         self._compatibility.set_standardized_data(np.array(data, copy=False), reference=self, deterministic=deterministic)
         return self._compatibility.value  # type: ignore
 
