@@ -2,10 +2,25 @@
 
 ## master
 
-- Instrumentation names are changed (possibly breaking for benchmarks records)
-- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
+## v0.3.1
+
+**Note**: this is the first step to propagate the instrumentation/parametrization framework.
+ Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/)
+ If you are looking for stability, await for version 0.4.0, but the intermediary releases will help by providing
+ deprecation warnings.
+
+### Breaking changes
+
 - `FolderFunction` must now be accessed through `nevergrad.parametrization.FolderFunction`
-- `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space.
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+
+### Other changes
+
+- Old instrumentation classes now all inherits from the new parametrization classes #391. Both systems coexists, but optimizers
+  use the old API at this point (it will use the new one in version 0.3.2).
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` frameworks.
+- `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
+ optimizer was created, using the previous initial sampling method #467.
 
 ## v0.3.0
 
