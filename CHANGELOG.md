@@ -2,10 +2,10 @@
 
 ## master
 
-## v0.3.1
+## v0.3.1 (2019-01-23)
 
 **Note**: this is the first step to propagate the instrumentation/parametrization framework.
- Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/)
+ Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/).
  If you are looking for stability, await for version 0.4.0, but the intermediary releases will help by providing
  deprecation warnings.
 
@@ -16,13 +16,13 @@
 
 ### Other changes
 
-- Old instrumentation classes now all inherits from the new parametrization classes #391. Both systems coexists, but optimizers
+- Old instrumentation classes now all inherits from the new parametrization classes [#391](https://github.com/facebookresearch/nevergrad/pull/391). Both systems coexists, but optimizers
   use the old API at this point (it will use the new one in version 0.3.2).
 - Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` frameworks.
 - `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
- optimizer was created, using the previous initial sampling method #467.
+ optimizer was created, using the previous initial sampling method [#467](https://github.com/facebookresearch/nevergrad/pull/467).
 
-## v0.3.0
+## v0.3.0 (2019-01-08)
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
 
