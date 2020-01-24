@@ -531,6 +531,8 @@ class Dict(Parameter):
         return child
 
     def recombine(self, *others: "Dict") -> None:
+        if not others:
+            return
         # pylint: disable=pointless-statement
         self.random_state  # make sure to create one before using
         assert all(isinstance(o, self.__class__) for o in others)

@@ -13,4 +13,4 @@ from .parametrization import parameter as p
 
 __all__ = ["Instrumentation", "var", "optimizers", "families", "callbacks", "p"]
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"

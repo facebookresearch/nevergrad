@@ -2,11 +2,8 @@
 
 ## master
 
-- Instrumentation names are changed (possibly breaking for benchmarks records)
-- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` paradigms.
-- `FolderFunction` must now be accessed through `nevergrad.parametrization.FolderFunction`
+- `Candidate` class is removed, and is completely replaced by `Parameter` [#459](https://github.com/facebookresearch/nevergrad/pull/459)
 - New parametrization is now as efficient as in v0.3.0 (see CHANGELOG for v0.3.1 for contect)
-- `Candidate` class is removed, and is completely replaced by `Parameter`.
 - `CandidateMaker` (`optimizer.create_candidate`) raises `DeprecationWarning`s since it new candidates/parameters
   can be straightforwardly created (`parameter.spawn_child(new_value=new_value)`)
 - Optimizers can now hold any parametrization, not just `Instrumentation`. This for instance mean that when you
@@ -17,7 +14,27 @@
   Hence, prefere using parameters from `ng.p` than `ng.var`, and avoid using `ng.Instrumentation` altogether if
   you don't need it anymore (or import it through `ng.p.Instrumentation`)
 
-## v0.3.0
+## v0.3.1 (2019-01-23)
+
+**Note**: this is the first step to propagate the instrumentation/parametrization framework.
+ Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/).
+ If you are looking for stability, await for version 0.4.0, but the intermediary releases will help by providing
+ deprecation warnings.
+
+### Breaking changes
+
+- `FolderFunction` must now be accessed through `nevergrad.parametrization.FolderFunction`
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+
+### Other changes
+
+- Old instrumentation classes now all inherits from the new parametrization classes [#391](https://github.com/facebookresearch/nevergrad/pull/391). Both systems coexists, but optimizers
+  use the old API at this point (it will use the new one in version 0.3.2).
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` frameworks.
+- `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
+ optimizer was created, using the previous initial sampling method [#467](https://github.com/facebookresearch/nevergrad/pull/467).
+
+## v0.3.0 (2019-01-08)
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
 

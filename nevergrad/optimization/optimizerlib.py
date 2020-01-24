@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import typing as tp  # from now on, favor using tp.Dict etc instead of Dict
-from typing import Optional, List, Dict, Tuple, Deque, Union, Callable, Any, Sequence, Type
+from typing import Optional, List, Dict, Tuple, Callable, Any
 from collections import defaultdict, deque
 import warnings
 import cma
@@ -135,7 +135,7 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
     _optimizer_class = _OnePlusOne
 
     def __init__(
-        self, *, noise_handling: Optional[Union[str, Tuple[str, float]]] = None, mutation: str = "gaussian", crossover: bool = False
+        self, *, noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None, mutation: str = "gaussian", crossover: bool = False
     ) -> None:
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -199,9 +199,9 @@ class _CMA(base.Optimizer):
         self._parameters = ParametrizedCMA()
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
-        self.listx: List[ArrayLike] = []
-        self.listy: List[float] = []
-        self.to_be_asked: Deque[np.ndarray] = deque()
+        self.listx: tp.List[ArrayLike] = []
+        self.listy: tp.List[float] = []
+        self.to_be_asked: tp.Deque[np.ndarray] = deque()
 
     @property
     def es(self) -> cma.CMAEvolutionStrategy:
@@ -567,7 +567,7 @@ class NoisyBandit(base.Optimizer):
 
 
 class PSOParticle(utils.Individual):
-    """Particle for the PSO algorithm, holding relevant information
+    """Particle for the PSO algorithm, holding relevant information (in [0,1] box)
     """
 
     transform = transforms.ArctanBound(0, 1).reverted()
@@ -591,13 +591,14 @@ class PSOParticle(utils.Individual):
         self.random_state = random_state
 
     @classmethod
-    def random_initialization(cls, dimension: int, random_state: np.random.RandomState) -> "PSOParticle":
-        position = random_state.uniform(0.0, 1.0, dimension)
-        speed = random_state.uniform(-1.0, 1.0, dimension)
+    def from_data(cls, data: np.ndarray, random_state: np.random.RandomState) -> "PSOParticle":
+        position = cls.transform.backward(data)
+        speed = random_state.uniform(-1.0, 1.0, data.size)
         return cls(position, None, speed, position, float("inf"), random_state=random_state)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.value}, best: {self.best_value}>"
+        # return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.value}, best: {self.best_value}>"
+        return f"{self.__class__.__name__}<position: {self.x}, {self.get_transformed_position()}>"
 
     def mutate(self, best_x: np.ndarray, omega: float, phip: float, phig: float) -> None:
         dim = len(best_x)
@@ -625,6 +626,7 @@ class PSO(base.Optimizer):
 
     def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._wide = False
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
@@ -638,11 +640,14 @@ class PSO(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
-            additional = [
-                self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
-                for _ in range(self.llambda - len(self.population))
-            ]
-            self.population.extend(additional)
+            param = self.instrumentation
+            for _ in range(self.llambda - len(self.population)):
+                if self._wide:
+                    # old initialization below seeds in the while R space, while other algorithms use normal distrib
+                    data = self._PARTICULE.transform.forward(self._rng.uniform(0, 1, self.dimension))
+                else:
+                    data = param.sample().get_standardized_data(reference=param)
+                self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
             particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
@@ -675,20 +680,29 @@ class PSO(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         x = candidate.get_standardized_data(reference=self.instrumentation)
         if len(self.population) < self.llambda:
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
-            particle.x = self._PARTICULE.transform.backward(x)
+            particle = self._PARTICULE.from_data(x, random_state=self._rng)
             self.population.extend([particle])
         else:
             worst_part = max(iter(self.population), key=lambda p: p.best_value)  # or fitness?
             if worst_part.best_value < value:
                 return  # no need to update
-            particle = self._PARTICULE.random_initialization(self.dimension, random_state=self._rng)
-            particle.x = self._PARTICULE.transform.backward(x)
+            particle = self._PARTICULE.from_data(x, random_state=self._rng)
             worst_part._active = False
             self.population.replace(worst_part, particle)
         # go through standard pipeline
         c2 = self._internal_ask_candidate()
         self._internal_tell_candidate(c2, value)
+
+
+@registry.register
+class WidePSO(PSO):
+    """Partially following SPSO2011. However, no randomization of the population order.
+    This version uses a non-standard initialization with high standard deviation.
+    """
+
+    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        self._wide = True
 
 
 @registry.register
@@ -1378,8 +1392,8 @@ class Chaining(base.ParametrizedFamily):
     """
     _optimizer_class = _Chain
 
-    def __init__(self, optimizers: Sequence[Union[base.OptimizerFamily, Type[base.Optimizer]]],
-                 budgets: Sequence[Union[str, int]]) -> None:
+    def __init__(self, optimizers: tp.Sequence[tp.Union[base.OptimizerFamily, tp.Type[base.Optimizer]]],
+                 budgets: tp.Sequence[tp.Union[str, int]]) -> None:
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
         self.budgets = tuple(budgets)
         self.optimizers = tuple(optimizers)
