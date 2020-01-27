@@ -712,3 +712,33 @@ class ParametrizedFamily(OptimizerFamily):
         """
         assert self._optimizer_class is not None
         return load(self._optimizer_class, filepath)
+
+
+class ConfiguredOptimizer(ParametrizedFamily):
+    """This is a special case of an optimizer family for optimizers taking more than
+    3 init arguments
+    """
+
+    _optimizer_class: Optional[Type[Optimizer]] = None
+
+    def __call__(
+        self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+    ) -> Optimizer:
+        """Creates an optimizer from the parametrization
+
+        Parameters
+        ----------
+        instrumentation: int or Instrumentation
+            either the dimension of the optimization space, or its instrumentation
+        budget: int/None
+            number of allowed evaluations
+        num_workers: int
+            number of evaluations which will be run in parallel at once
+        """
+        assert self._optimizer_class is not None
+        # pylint: disable=not-callable
+        run = self._optimizer_class(   # type: ignore
+            instrumentation=instrumentation, budget=budget, num_workers=num_workers, **self._kwargs
+        )
+        run.name = repr(self)
+        return run

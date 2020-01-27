@@ -195,9 +195,18 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 class _CMA(base.Optimizer):
 
-    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    # pylint: too-many-arguments
+    def __init__(
+            self,
+            instrumentation: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            scale: float = 1.0,
+            diagonal: bool = False
+    ) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedCMA()
+        self._scale = scale
+        self._diagonal = diagonal
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
         self.listx: tp.List[ArrayLike] = []
@@ -208,9 +217,8 @@ class _CMA(base.Optimizer):
     def es(self) -> cma.CMAEvolutionStrategy:
         if self._es is None:
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
-            diag = self._parameters.diagonal
-            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": diag, "verbose": 0}
-            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._parameters.scale, inopts=inopts)
+            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> ArrayLike:
@@ -252,8 +260,6 @@ class ParametrizedCMA(base.ParametrizedFamily):
     _optimizer_class = _CMA
 
     def __init__(self, *, scale: float = 1.0, diagonal: bool = False) -> None:
-        self.scale = scale
-        self.diagonal = diagonal
         super().__init__()
 
 
@@ -1621,7 +1627,7 @@ class EMNA_TBPSA(TBPSA):
         self._evaluated_population: List[base.utils.Individual] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x # Naive version for now
+        return self.current_bests["optimistic"].x  # Naive version for now
 
     def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
         self._loss_record += [value]
@@ -1652,10 +1658,10 @@ class EMNA_TBPSA(TBPSA):
             # Computing the new parent.
             self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
             # EMNA update
-            t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
-            self.sigma = np.sqrt(sum(t1)/(self.mu))
-            imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
-            if self.num_workers/self.dimension > 16:
+            t1 = [(self._evaluated_population[i].x - self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1) / (self.mu))
+            imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+            if self.num_workers / self.dimension > 16:
                 self.sigma /= imp
             self._evaluated_population = []
 
