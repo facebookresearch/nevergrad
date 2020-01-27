@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
 import nevergrad as ng
-from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
@@ -313,7 +312,7 @@ def test_population_pickle(name: str) -> None:
 
 def test_bo_instrumentation_and_parameters() -> None:
     # instrumentation
-    instrumentation = inst.Instrumentation(ng.p.Choice([True, False]))
+    instrumentation = ng.p.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
         optlib.QRBO(instrumentation, budget=10)
     with pytest.warns(None) as record:
@@ -339,7 +338,7 @@ def test_chaining() -> None:
 
 
 def test_instrumentation_optimizer_reproducibility() -> None:
-    instrumentation = inst.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
+    instrumentation = ng.p.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
     instrumentation.random_state.seed(12)
     optimizer = optlib.RandomSearch(instrumentation, budget=10)
     recom = optimizer.minimize(_square)
