@@ -1632,9 +1632,9 @@ class EMNA_TBPSA(TBPSA):
         self._evaluated_population: List[base.utils.Individual] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x # Naive version for now
+        return self.current_bests["optimistic"].x  # Naive version for now
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -1653,7 +1653,8 @@ class EMNA_TBPSA(TBPSA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        particle = base.utils.Individual(candidate.data)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        particle = base.utils.Individual(data)
         particle._parameters = np.array([candidate._meta["sigma"]])
         particle.value = value
         self._evaluated_population.append(particle)
@@ -1663,10 +1664,10 @@ class EMNA_TBPSA(TBPSA):
             # Computing the new parent.
             self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
             # EMNA update
-            t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
-            self.sigma = np.sqrt(sum(t1)/(self.mu))
-            imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
-            if self.num_workers/self.dimension > 16:
+            t1 = [(self._evaluated_population[i].x - self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1) / (self.mu))
+            imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+            if self.num_workers / self.dimension > 16:
                 self.sigma /= imp
             self._evaluated_population = []
 
@@ -1678,10 +1679,10 @@ class Shiva(NGO):
     def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        if self.has_noise and (self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable):
+        if self.has_noise and (self.has_discrete_not_softmax or not self.instrumentation.descriptors.metrizable):
             self.optims = [RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
         else:
-            if self.instrumentation.is_nonmetrizable:
+            if not self.instrumentation.descriptors.metrizable:
                 if self.dimension < 60:
                     self.optims = [NGO(self.instrumentation, budget, num_workers)]
                 else:
