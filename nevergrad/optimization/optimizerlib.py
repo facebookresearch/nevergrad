@@ -1605,7 +1605,6 @@ class EMNA_TBPSA(TBPSA):
         self._loss_record: List[float] = []
         # population
         self._evaluated_population: List[base.utils.Individual] = []
-        self._unevaluated_population: Dict[bytes, base.utils.Individual] = {}
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x # Naive version for now
@@ -1648,7 +1647,7 @@ class EMNA_TBPSA(TBPSA):
 
 
 @registry.register
-class shiva(NGO):
+class Shiva(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -1664,146 +1663,6 @@ class shiva(NGO):
                     self.optims = [CMA(self.instrumentation, budget, num_workers)]
             else:
                 self.optims = [NGO(self.instrumentation, budget, num_workers)]
-
-
-@registry.register
-class octopus(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert self.budget is not None
-        if self.fully_continuous and self.budget < self.dimension * 300 and num_workers == 1:
-            self.optims = [MiniDE(self.instrumentation, budget, num_workers)]
-        else:
-            if self.fully_continuous and self.budget > self.dimension * 3000 and num_workers < self.budget / 2.:  # Large budget ==> we can use active portfolios.
-                self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
-            else:
-                self.optims = [NGO(self.instrumentation, budget, num_workers)]
-
-
-@registry.register
-class hoopa(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
-            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
-        else:
-            self.optims = [octopus(self.instrumentation, budget, num_workers)]
-
-
-@registry.register
-class tardigrade(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if self.has_noise and (self.instrumentation.is_nonmetrizable or self.dimension < 16):
-            self.optims = [RecombiningOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
-        else:
-            if self.has_noise and self.fully_continuous and self.dimension > 15:
-                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
-            else:
-                if self.fully_continuous and num_workers == 1 and self.dimension < 30 and budget > 20000:
-                    self.optims = [CMandAS3(self.instrumentation, budget, num_workers)]
-                else:
-                    if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
-                        self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
-                    else:
-                        if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
-                            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
-                        else:
-                            self.optims = [octopus(self.instrumentation, budget, num_workers)]
-
-
-@registry.register
-class deoxys(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if self.fully_continuous and num_workers == 1 and self.dimension < 30 and budget > 20000:
-            self.optims = [CMandAS3(self.instrumentation, budget, num_workers)]
-        else:
-            if self.fully_continuous and self.dimension < 30 and budget > 20000 and num_workers < budget / 2.:
-                self.optims = [CMandAS2(self.instrumentation, budget, num_workers)]
-            else:
-                if self.fully_continuous and num_workers > 99 and num_workers < budget / 2.:  # Large budget ==> we can use active portfolios.
-                    self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]
-                else:
-                    self.optims = [octopus(self.instrumentation, budget, num_workers)]
-
-
-@registry.register
-class FTNGO(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        if (not self.has_noise and
-            not self.has_discrete_not_softmax and
-            not self.has_discrete_not_softmax and
-            not self.instrumentation.is_nonmetrizable and
-            # num_workers > budget / 10 and
-            num_workers > self.dimension / 4):
-            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
-
-
-@registry.register
-class FTNGO2(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        if (not self.has_noise and
-            not self.has_discrete_not_softmax and
-            not self.has_discrete_not_softmax and
-            not self.instrumentation.is_nonmetrizable and
-            # num_workers > budget / 10 and
-            num_workers > self.dimension / 8):
-            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
-
-
-@registry.register
-class JNGO(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if self.has_noise and self.has_discrete_not_softmax:
-            self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
-        else:
-            if self.has_noise:
-                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
-            else:
-                if self.has_discrete_not_softmax:
-                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
-                else:
-                    if num_workers > budget / 5:
-                        self.optims = [TwoPointsDE(self.instrumentation, budget, num_workers)]  # noqa: F405
-                    else:
-                        if num_workers == 1 and budget > 3000:
-                            self.optims = [Powell(self.instrumentation, budget, num_workers)]  # noqa: F405
-                        else:
-                            self.optims = [chainCMAwithLHSsqrt(self.instrumentation, budget, num_workers)]  # noqa: F405
-
-@registry.register
-class vashi(shiva):
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if (not self.has_noise and
-            not self.has_discrete_not_softmax and
-            not self.has_discrete_not_softmax and
-            not self.instrumentation.is_nonmetrizable and
-            num_workers > self.dimension / 4):
-            self.optims = [EMNA_TBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
 
 __all__ = list(registry.keys())
