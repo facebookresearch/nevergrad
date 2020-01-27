@@ -902,19 +902,15 @@ class Portfolio(base.Optimizer):
         ]  # noqa: F405
         if budget < 12 * num_workers:
             self.optims = [ScrHammersleySearch(self.instrumentation, budget, num_workers)]  # noqa: F405
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self._num_ask % len(self.optims)
         candidate = self.optims[optim_index].ask()
-        data = candidate.get_standardized_data(reference=self.instrumentation)
-        self.who_asked[tuple(data)] += [optim_index]
+        candidate._meta["optim_index"] = optim_index
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        tx = tuple(candidate.get_standardized_data(reference=self.instrumentation))
-        optim_index = self.who_asked[tx][0]
-        del self.who_asked[tx][0]
+        optim_index: int = candidate._meta["optim_index"]
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -951,13 +947,11 @@ class ParaPortfolio(Portfolio):
             SQP(self.instrumentation, 1),  # noqa: F405
             ScrHammersleySearch(self.instrumentation, budget=(budget // len(self.which_optim)) * nw4),  # noqa: F405
         ]
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
         candidate = self.optims[optim_index].ask()
-        tx = tuple(candidate.get_standardized_data(reference=self.instrumentation))
-        self.who_asked[tx] += [optim_index]
+        candidate._meta["optim_index"] = optim_index
         return candidate
 
 
@@ -979,7 +973,6 @@ class SQPCMA(ParaPortfolio):
             self.optims += [SQP(self.instrumentation, 1)]  # noqa: F405
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
 
 @registry.register
@@ -993,7 +986,6 @@ class ASCMADEthird(Portfolio):
             CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
             LhsDE(self.instrumentation, budget=None, num_workers=num_workers),
         ]  # noqa: F405
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
 
@@ -1013,8 +1005,7 @@ class ASCMADEthird(Portfolio):
                 self.best_optim = optim_index
             optim_index = self.best_optim
         candidate = self.optims[optim_index].ask()
-        tx = tuple(candidate.get_standardized_data(reference=self.instrumentation))
-        self.who_asked[tx] += [optim_index]
+        candidate._meta["optim_index"] = optim_index
         return candidate
 
 
@@ -1549,7 +1540,6 @@ class NGO(base.Optimizer):
     def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         descr = self.instrumentation.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
@@ -1594,15 +1584,11 @@ class NGO(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = 0
         candidate = self.optims[optim_index].ask()
-        data = candidate.get_standardized_data(reference=self.instrumentation)
-        self.who_asked[tuple(data)] += [optim_index]
+        candidate._meta["optim_index"] = optim_index
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = candidate.get_standardized_data(reference=self.instrumentation)
-        tx = tuple(data)
-        optim_index = self.who_asked[tx][0]
-        del self.who_asked[tx][0]
+        optim_index = candidate._meta["optim_index"]
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
