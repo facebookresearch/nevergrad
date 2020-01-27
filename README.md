@@ -18,10 +18,10 @@ Alternatively, you can clone the repository and run `pip install -e .` from insi
 
 By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interested in the benchmarking part,
 you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
-the `[all]` flag (example: `pip install -e '.[all]'`)
+the `[all]` flag (example: `pip install -e '.[all]'`).
 
 
-You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/)
+You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/).
 
 
 ## Goals and structure
@@ -48,7 +48,7 @@ The structure of the package follows its goal, you will therefore find subpackag
 
 The following README is very general, here are links to find more details on:
 - [how to perform optimization](docs/optimization.md) using `nevergrad`, including using parallelization and a few recommendation on which algorithm should be used depending on the settings
-- [how to parametrize](docs/parametrization.md) your problem so that the optimizers are informed of the problem to solve. This also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
+- [how to parametrize](docs/parametrization.md) your problem so that the optimizers are informed of the problem to solve. This also provides a tool to instantiate a script or non-python code into a Python function and be able to tune some of its parameters.
 - [how to benchmark](docs/benchmarking.md) all optimizers on various test functions.
 - [benchmark results](docs/benchmarks.md) of some standard optimizers an simple test cases.
 - examples of [optimization for machine learning](docs/machinelearning.md).

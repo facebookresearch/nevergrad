@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
+import inspect
 import warnings
 import itertools
 import collections
@@ -218,3 +219,30 @@ class OrderedSet(tp.MutableSet[X]):
 
     def __len__(self) -> int:
         return len(self._data)
+
+
+def different_from_defaults(instance: tp.Any, check_mismatches: bool = False) -> tp.Dict[str, tp.Any]:
+    """Checks which attributes are different from defaults arguments
+
+    Parameters
+    ----------
+    instance: object
+        the object to change
+    check_mismatches: bool
+        checks that the attributes match the parameters
+
+    Note
+    ----
+    This is convenient for short repr of data structures
+    """
+    defaults = {
+        x: y.default for x, y in inspect.signature(instance.__class__.__init__).parameters.items() if x not in ["self", "__class__"]
+    }
+    if check_mismatches:
+        diff = set(defaults.keys()).symmetric_difference(instance.__dict__.keys())
+        if diff:  # this is to help during development
+            raise RuntimeError(f"Mismatch between attributes and arguments of {instance}: {diff}")
+    else:
+        defaults = {x: y for x, y in defaults.items() if x in instance.__dict__}
+    # only print non defaults
+    return {x: instance.__dict__[x] for x, y in defaults.items() if y != instance.__dict__[x] and not x.startswith("_")}

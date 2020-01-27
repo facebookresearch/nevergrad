@@ -35,6 +35,11 @@ def test_command_function() -> None:
         raise AssertionError("An error should have been raised")
 
 
+def test_descriptors() -> None:
+    desc = utils.Descriptors(ordered=False)
+    assert repr(desc) == "Descriptors(ordered=False)"
+
+
 def do_nothing(*args: Any, **kwargs: Any) -> int:
     print("my args", args, flush=True)
     print("my kwargs", kwargs, flush=True)
