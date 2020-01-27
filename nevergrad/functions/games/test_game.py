@@ -16,6 +16,8 @@ def test_games(name: str) -> None:
     for _ in range(200):
         res += [game._Game().play_game(name, np.random.uniform(0, 1, dimension), None)]
         score = (float(sum(1 if r == 2 else 0 if r == 1 else 0.5 for r in res)) / len(res))
+        if score >= 0.2 and score <= 0.8 and len(res) >= 20:
+            break
     assert score >= 0.1
     assert score <= 0.9
     function = game.Game(name)
