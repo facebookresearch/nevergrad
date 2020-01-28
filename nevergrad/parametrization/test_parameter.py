@@ -286,3 +286,22 @@ def test_descriptors() -> None:
     d3 = d1 & d2
     assert d3.continuous is False
     assert d3.deterministic is True
+
+
+@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint"])  # type: ignore
+@pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
+@pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
+def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float) -> None:
+    mbound = 10000
+    param = par.Array(init=2 * np.ones((2, 3))).set_bounds([1, 1, 1], [mbound] * 3, method=method, full_range_sampling=True)
+    if method in ("arctan", "tanh") and exponent is not None:
+        with pytest.raises(RuntimeError):
+            param.set_mutation(exponent=exponent)
+        return
+    else:
+        param.set_mutation(exponent=exponent, sigma=sigma)
+        new_param = param.sample()
+        val = new_param.value
+        assert np.any(np.abs(val) > 10)
+        assert np.all(val <= mbound)
+        assert np.all(val >= 1)
