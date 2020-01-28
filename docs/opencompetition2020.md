@@ -99,7 +99,7 @@ This does not exclude other forms of contributions; all pull requests are eligib
 - Structured optimization (e.g. almost periodic problems with several groups of variables) 
 - Constraint handling
 - Algorithm selection and combination
-- As a beta version, we have an automatic recomputing of various benchmark results, at https://dl.fbaipublicfiles.com/nevergrad/allxps/list.html, including realworld benchmarks, Yet another black-box optimization benchmark (YABBOB), and many others.
+- As a beta version, we have an automatic recomputing of various benchmark results, at https://dl.fbaipublicfiles.com/nevergrad/allxpsnew/list.html, including realworld benchmarks, Yet another black-box optimization benchmark (YABBOB), and many others.
 
 ### Improvements in terms of benchmarking:
 - Criteria in benchmarking, e.g. robustness criteria over large families of problems
