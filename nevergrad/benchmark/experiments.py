@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 from typing import Iterator, Optional, List, Union, Any
 import numpy as np
 import nevergrad as ng
@@ -195,6 +196,8 @@ def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
         yield xp
 
 # pylint: disable=redefined-outer-name
+
+
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
@@ -739,7 +742,8 @@ def far_optimum_es(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def photonics() -> Iterator[Experiment]:
+def photonics(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
     popsizes = [5, 40]
     es = [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=False, popsize=pop)
           for recomb in [0, 1] for pop in popsizes]
@@ -751,6 +755,6 @@ def photonics() -> Iterator[Experiment]:
         for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg", "chirped", "morpho"]]:
             for budget in [100, 1000, 10000]:
                 for algo in algos:
-                    xp = Experiment(func, algo, budget, num_workers=1)
+                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
