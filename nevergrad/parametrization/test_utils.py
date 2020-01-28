@@ -92,6 +92,7 @@ def test_random_crossover() -> None:
     p5i6=(42, 5, 6, [3, 0, 1, 2, 5, 4]),
     p1i2=(42, 1, 2, [0, 0, 1, 1, 1, 1]),
     p2i3=(42, 2, 3, [1, 1, 2, 2, 2, 0]),
+    p3i2=(42, 2, 2, [0, 0, 1, 1, 1, 0]),
 )
 def test_kpoint_crossover(seed: int, points: int, indiv: int, expected: tp.List[int]) -> None:
     rng = np.random.RandomState(seed)
