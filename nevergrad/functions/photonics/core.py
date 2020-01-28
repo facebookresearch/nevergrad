@@ -26,7 +26,7 @@ from . import photonics
 from ..base import ExperimentFunction
 
 
-def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> p.Array:
+def _make_instrumentation(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
     """Creates appropriate instrumentation for a Photonics problem
 
     Parameters
@@ -34,7 +34,7 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
         problem name, among bragg, chirped and morpho
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
-    transform: str
+    bounding_method: str
         transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
 
     Returns
@@ -58,8 +58,8 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
-    array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=transform, full_range_sampling=True)
-    array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))
+    array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
+    array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))  # type: ignore
     array.set_recombination(Crossover(2, structured_dimensions=(0,)))
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
@@ -109,13 +109,13 @@ class Photonics(ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, transform: str = "tanh") -> None:
+    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping") -> None:
         assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, transform=transform))
-        self.register_initialization(name=name, dimension=dimension, transform=transform)
+        super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, bounding_method=bounding_method))
+        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method)
         self._descriptors.update(name=name)
 
     def _compute(self, x: np.ndarray) -> float:
