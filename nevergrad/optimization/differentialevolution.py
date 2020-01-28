@@ -75,7 +75,7 @@ class _DE(base.Optimizer):
         self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: Optional[int] = None
-        self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])
+        self.population: base.utils.Population[p.Parameter] = base.utils.Population([])
         self.sampler: Optional[sequences.Sampler] = None
         self._replaced: Set[bytes] = set()
 
@@ -97,11 +97,11 @@ class _DE(base.Optimizer):
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
-        med_fitness = np.median([p.value for p in self.population if p.value is not None])
-        good_guys = [p for p in self.population if p.value is not None and p.x is not None and p.value < med_fitness]
+        med_fitness = np.median([p._meta["value"] for p in self.population if "value" in p._meta])
+        good_guys = [p for p in self.population if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([g.x for g in good_guys]) / len(good_guys)  # type: ignore
+        return sum([g.get_standardized_data(reference=self.instrumentation) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
@@ -112,17 +112,18 @@ class _DE(base.Optimizer):
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng)
             new_guy = self.scale * (self._rng.normal(0, 1, self.dimension)
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
-            particle = base.utils.Individual(new_guy)
-            self.population.extend([particle])
-            self.population.get_queued(remove=True)  # since it was just added
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
-            candidate._meta["particle"] = particle
+            self.population.extend([candidate])
+            self.population.get_queued(remove=True)  # since it was just added
             return candidate
         # init is done
-        particle = self.population.get_queued(remove=True)
-        individual = particle.x
+        candidate = self.population.get_queued(remove=True).spawn_child()
+        individual = candidate.get_standardized_data(reference=self.instrumentation)
         # define donor
-        indiv_a, indiv_b = (self.population[self.population.uids[self._rng.randint(self.llambda)]].x for _ in range(2))
+        indiv_a, indiv_b = (
+            self.population[self.population.uids[self._rng.randint(self.llambda)]].get_standardized_data(reference=self.instrumentation)
+            for _ in range(2)
+        )
         assert indiv_a is not None and indiv_b is not None
         donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
@@ -131,9 +132,7 @@ class _DE(base.Optimizer):
         crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
-        candidate = self.instrumentation.spawn_child().set_standardized_data(donor, deterministic=False)
-        candidate._meta["particle"] = particle
-        return candidate
+        return candidate.set_standardized_data(donor, deterministic=False)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
