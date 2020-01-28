@@ -5,7 +5,6 @@
 
 import warnings
 from typing import List
-from unittest.mock import patch
 import numpy as np
 from ...common import testing
 from . import core
@@ -17,11 +16,7 @@ from . import core
     chirped=("chirped", [280.36, 52.96, 104.08, 36.34, 31.53, 15.98, 226.69, 193.11]),
 )
 def test_photonics_transforms(pb: str, expected: List[float]) -> None:
-    with patch("shutil.which", return_value="here"):
-        # dim 8 is easier to test... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
-        with patch("nevergrad.functions.photonics.core._make_instrumentation", return_value=core._make_instrumentation(pb, 8)):
-            func = core.Photonics(pb, 16)
-    assert func.dimension == 8
+    func = core.Photonics(pb, 8)
     np.random.seed(24)
     x = np.random.normal(0, 1, size=8)
     output = func.parametrization.spawn_child().set_standardized_data(x).value.ravel()
@@ -40,18 +35,14 @@ def test_photonics_transforms(pb: str, expected: List[float]) -> None:
     morpho_arctan=("morpho", "arctan", [150., 150., 300., 300., 315., 315., 150., 150.]),
 )
 def test_photonics_transforms_mean(pb: str, transform: str, expected: List[float]) -> None:
-    with patch("shutil.which", return_value="here"):
-        # dim 8 is easier to test... but it is actually not allowed. Nevermind here, HACK IT NEXT LINE
-        with patch("nevergrad.functions.photonics.core._make_instrumentation", return_value=core._make_instrumentation(pb, 8, transform)):
-            func = core.Photonics(pb, 16, transform=transform)
+    func = core.Photonics(pb, 8, transform=transform)
     all_x = func.parametrization.value
     output = all_x.ravel()
     np.testing.assert_almost_equal(output, expected, decimal=2)
 
 
 def test_morpho_transform_constraints() -> None:
-    with patch("shutil.which", return_value="here"):
-        func = core.Photonics("morpho", 60)
+    func = core.Photonics("morpho", 60)
     x = np.random.normal(0, 5, size=60)  # std 5 to play with boundaries
     output1 = func.parametrization.spawn_child().set_standardized_data(x)
     output2 = output1.sample()
@@ -60,6 +51,16 @@ def test_morpho_transform_constraints() -> None:
         assert np.all(output.value[[0, 3], :] <= 300)
         assert np.all(output.value[[1, 2], :] <= 600)
         assert np.all(output.value[2, :] >= 30)
+
+
+def test_photonics_recombination() -> None:
+    func = core.Photonics("chirped", 16)
+    func.parametrization.random_state.seed(24)
+    array = func.parametrization.spawn_child()
+    array.value = 12 * np.ones(array.value.shape)
+    array.recombine(func.parametrization)
+    expected = [12] * 5 + [150, 150, 12]
+    np.testing.assert_array_equal(array.value, np.ones((2, 1)).dot(np.array(expected)[None, :]))
 
 
 def test_photonics_error() -> None:

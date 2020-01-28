@@ -56,7 +56,7 @@ class BoundChecker:
         return True
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class Array(core.Parameter):
     """Array variable of a given shape.
 
@@ -315,12 +315,13 @@ class Array(core.Parameter):
         if not others:
             return
         recomb = self.parameters["recombination"].value
-        all_arrays = [p.get_standardized_data(reference=self) for p in [self] + list(others)]
+        all_params = [self] + list(others)
         if isinstance(recomb, str) and recomb == "average":
+            all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
         elif isinstance(recomb, utils.Crossover):
-            crossover = recomb.apply(all_arrays, self.random_state)
-            self.set_standardized_data(crossover, reference=self, deterministic=False)
+            crossover = recomb.apply([p.value for p in all_params], self.random_state)
+            self.value = crossover
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

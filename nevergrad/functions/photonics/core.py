@@ -21,6 +21,7 @@
 
 import numpy as np
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.utils import Crossover
 from . import photonics
 from ..base import ExperimentFunction
 
@@ -58,6 +59,7 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
     array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=transform, full_range_sampling=True)
+    array.set_recombination(Crossover(2, structured_dimensions=(0,)))
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 
