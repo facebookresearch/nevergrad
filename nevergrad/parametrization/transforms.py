@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
+import itertools
 from typing import Optional, Union, Tuple
 import numpy as np
 from scipy import stats
@@ -123,8 +124,9 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
         self.shape: Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
 
     def _check_shape(self, x: np.ndarray) -> None:
-        if self.shape != (1,) and x.shape != self.shape:
-            raise ValueError(f"Shapes do not match: {self.shape} and {x.shape}")
+        for dims in itertools.zip_longest(x.shape, self.shape, fillvalue=1):
+            if dims[0] != dims[1] and not any(x == 1 for x in dims):  # same or broadcastable
+                raise ValueError(f"Shapes do not match: {self.shape} and {x.shape}")
 
 
 class TanhBound(BoundTransform):
@@ -184,7 +186,7 @@ class Clipping(BoundTransform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
-        if (self.a_max is not None and np.max(y) > self.a_max) or (self.a_min is not None and np.min(y) < self.a_min):
+        if (self.a_max is not None and (y > self.a_max).any()) or (self.a_min is not None and (y < self.a_min).any()):
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} "
                              "can be transformed back.")
         return y
@@ -218,7 +220,7 @@ class ArctanBound(BoundTransform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
-        if np.max(y) > self.a_max or np.min(y) < self.a_min:
+        if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
         return np.tan((y - self._b) / self._a)  # type: ignore
 

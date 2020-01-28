@@ -19,14 +19,13 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
-import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from . import photonics
 from ..base import ExperimentFunction
 
 
-def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> p.Instrumentation:
+def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> p.Array:
     """Creates appropriate instrumentation for a Photonics problem
 
     Parameters
@@ -43,30 +42,24 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
         the instrumentation for the problem
     """
     assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
-    n = dimension // 4
-    arrays: tp.List[p.Array] = []
-    ones = np.ones((n,), dtype=float)
     if name == "bragg":
-        # n multiple of 2, from 16 to 80
-        # main (n=60): [2,3]^30 x [0,300]^30
-        arrays.extend([p.Array(init=2.5 * ones).set_bounds(2, 3, method=transform) for _ in range(2)])
-        arrays.extend([p.Array(init=150 * ones).set_bounds(0, 300, method=transform) for _ in range(2)])
+        shape = (2, dimension // 2)
+        bounds = [(2, 3), (0, 300)]
     elif name == "chirped":
-        # n multiple of 2, from 10 to 80
-        # domain (n=60): [0,300]^60
-        arrays = [p.Array(init=150 * ones).set_bounds(0, 300, method=transform) for _ in range(4)]
+        shape = (2, dimension // 2)
+        bounds = [(0, 300), (0, 300)]
     elif name == "morpho":
-        # n multiple of 4, from 16 to 60
-        # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-        arrays.extend([p.Array(init=150 * ones).set_bounds(0, 300, method=transform),
-                       p.Array(init=300 * ones).set_bounds(0, 600, method=transform),
-                       p.Array(init=315 * ones).set_bounds(30, 600, method=transform),
-                       p.Array(init=150 * ones).set_bounds(0, 300, method=transform)])
+        shape = (4, dimension // 4)
+        bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]
     else:
         raise NotImplementedError(f"Transform for {name} is not implemented")
-    instrumentation = p.Instrumentation(*arrays)
-    assert instrumentation.dimension == dimension
-    return instrumentation
+    assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
+    b_array = np.array(bounds)
+    assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
+    init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
+    array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=transform)
+    assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
+    return array
 
 
 class Photonics(ExperimentFunction):
@@ -122,8 +115,8 @@ class Photonics(ExperimentFunction):
         self.register_initialization(name=name, dimension=dimension, transform=transform)
         self._descriptors.update(name=name)
 
-    def _compute(self, *x: np.ndarray) -> float:
-        x_cat = np.concatenate(x)
+    def _compute(self, x: np.ndarray) -> float:
+        x_cat = x.ravel()
         assert x_cat.size == self.dimension
         try:
             output = self._base_func(x_cat)
