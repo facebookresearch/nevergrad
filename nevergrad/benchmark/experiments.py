@@ -8,6 +8,7 @@ import numpy as np
 import nevergrad as ng
 from ..functions import ExperimentFunction
 from ..functions import ArtificialFunction
+from ..functions import FarOptimumFunction
 from ..functions import MultiobjectiveFunction
 from ..functions import mlda as _mlda
 from ..functions.arcoating import ARCoating
@@ -717,3 +718,21 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
             for budget in list(range(100, 5901, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def far_optimum_es(seed: Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    popsizes = [5, 40]
+    es = [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=False, popsize=pop)
+          for recomb in [0, 1] for pop in popsizes]
+    es += [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=only, popsize=pop,
+                                         offsprings=10 if pop == 5 else 60)
+           for only in [True, False] for recomb in [0, 1] for pop in popsizes]
+    optimizers = ["CMA", "TwoPointsDE"] + es  # type: ignore
+    for func in FarOptimumFunction.itercases():
+        for optim in optimizers:
+            for budget in [100, 400, 1000, 4000, 10000]:
+                for _ in range(2):
+                    yield Experiment(func, optim, budget=budget, seed=next(seedg))

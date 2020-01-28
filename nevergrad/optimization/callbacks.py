@@ -11,6 +11,7 @@ from typing import Any, Union, List, Dict
 from pathlib import Path
 import numpy as np
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization import helpers
 from . import base
 
 
@@ -50,6 +51,10 @@ class ParametersLogger:
     ----------
     filepath: str or pathlib.Path
         the path to dump data to
+    append: bool
+        whether to append the file (otherwise it replaces it)
+    order: int
+        order of the internal/model parameters to extract
 
     Usage
     -----
@@ -64,15 +69,16 @@ class ParametersLogger:
     - this class will eventually contain display methods
     """
 
-    def __init__(self, filepath: Union[str, Path], delete_existing_file: bool = False) -> None:
-        self._session = datetime.datetime.now().strftime("%y-%m-%d %H:%M")
+    def __init__(self, filepath: Union[str, Path], append: bool = True, order: int = 1) -> None:
+        self._session = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
         self._filepath = Path(filepath)
-        if self._filepath.exists() and delete_existing_file:
+        self._order = order
+        if self._filepath.exists() and not append:
             self._filepath.unlink()  # missing_ok argument added in python 3.8
 
     def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, value: float) -> None:
         data = {"#instrumentation": optimizer.instrumentation.name,
-                "#name": optimizer.name,
+                "#optimizer": optimizer.name,
                 "#session": self._session,
                 "#num-ask": optimizer.num_ask,
                 "#num-tell": optimizer.num_tell,
@@ -81,11 +87,18 @@ class ParametersLogger:
                 "#generation": candidate.generation,
                 "#parents_uids": [],
                 "#loss": value}
+        if hasattr(optimizer, "_parameters"):
+            configopt = optimizer._parameters  # type: ignore
+            if isinstance(configopt, base.ParametrizedFamily):
+                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
-        params = dict(candidate.kwargs)
-        params.update({f"#arg{k}": arg for k, arg in enumerate(candidate.args)})
-        data.update({k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in params.items()})
+        for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
+            val = param.value
+            data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
+            if isinstance(param, p.Array):
+                val = param.sigma.value
+                data[(name if name else "0") + "#sigma"] = val.tolist() if isinstance(val, np.ndarray) else val
         try:  # avoid bugging as much as possible
             with self._filepath.open("a") as f:
                 f.write(json.dumps(data) + "\n")
@@ -109,7 +122,7 @@ class ParametersLogger:
         ----------
         max_list_elements: int
             Maximum number of elements displayed from the array, each element is given a
-            unique id of type list_name#i1_i2_...
+            unique id of type list_name#i0_i1_...
         """
         data = self.load()
         flat_data: List[Dict[str, Any]] = []

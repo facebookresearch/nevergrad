@@ -16,7 +16,6 @@ from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.functions import MultiobjectiveFunction
-from nevergrad import instrumentation as inst
 from . import utils
 from . import base
 from . import mutations
@@ -30,6 +29,7 @@ from . import sequences
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import, too-many-lines
 from .differentialevolution import *  # noqa: F403
+from .es import *  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .rescaledoneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
@@ -1543,8 +1543,8 @@ class NGO(base.Optimizer):
         descr = self.instrumentation.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
-        all_params = paramhelpers.list_parameter_instances(self.instrumentation)
-        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params)
+        all_params = paramhelpers.flatten_parameter(self.instrumentation)
+        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
         # pylint: disable=too-many-nested-blocks
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.

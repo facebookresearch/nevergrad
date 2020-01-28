@@ -588,6 +588,9 @@ class ParametrizedFamily(OptimizerFamily):
         different = ngtools.different_from_defaults(self, check_mismatches=True)
         super().__init__(**different)
 
+    def config(self) -> tp.Dict[str, tp.Any]:
+        return {x: y for x, y in self.__dict__.items() if not x.startswith("_")}
+
     def __call__(
         self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:

@@ -7,10 +7,8 @@ import pickle
 import typing as tp
 import pytest
 import numpy as np
-from .core import Constant
 from . import utils
 from . import parameter as par
-from . import helpers
 
 
 def test_array_basics() -> None:
@@ -169,18 +167,6 @@ def check_parameter_freezable(param: par.Parameter) -> None:
 )
 def test_parameter_names(param: par.Parameter, name: str) -> None:
     assert param.name == name
-
-
-@pytest.mark.parametrize(  # type: ignore
-    "param,classes",
-    [(par.Array(shape=(2, 2)), [par.Array]),
-     (par.Tuple(12), [par.Tuple, Constant]),
-     (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
-     ]
-)
-def test_list_parameter_instances(param: par.Parameter, classes: tp.List[tp.Type[par.Parameter]]) -> None:
-    outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
-    assert outputs == classes
 
 
 @pytest.mark.parametrize(  # type: ignore

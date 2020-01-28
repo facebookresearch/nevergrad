@@ -155,11 +155,8 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("with_parameter", [True, False])  # type: ignore
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
-def test_optimizers_recommendation(with_parameter: bool,
-                                   name: str,
-                                   recomkeeper: RecommendationKeeper) -> None:
+def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
@@ -170,7 +167,7 @@ def test_optimizers_recommendation(with_parameter: bool,
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
     budget = {"WidePSO": 100, "PSO": 100, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
-    if isinstance(optimizer_cls, optlib.DifferentialEvolution):
+    if isinstance(optimizer_cls, (optlib.DifferentialEvolution, optlib.EvolutionStrategy)):
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
@@ -178,9 +175,7 @@ def test_optimizers_recommendation(with_parameter: bool,
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        param: Union[int, ng.p.Instrumentation] = (dimension if not with_parameter else
-                                                   ng.p.Instrumentation(ng.p.Array(shape=(dimension,))))
-        optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
+        optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
         optim.instrumentation.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)
         # the following context manager speeds up BO tests
