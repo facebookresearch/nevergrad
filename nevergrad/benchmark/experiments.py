@@ -3,19 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 from typing import Iterator, Optional, List, Union, Any
 import numpy as np
 import nevergrad as ng
-from ..functions import ExperimentFunction
-from ..functions import ArtificialFunction
-from ..functions import FarOptimumFunction
-from ..functions import MultiobjectiveFunction
-from ..functions import mlda as _mlda
-from ..functions.arcoating import ARCoating
-from ..functions.powersystems import PowerSystem
-from ..functions.stsp import STSP
-from ..functions import rl
-from ..functions.games import game
+from nevergrad.functions import ExperimentFunction
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions import MultiobjectiveFunction
+from nevergrad.functions import mlda as _mlda
+from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.powersystems import PowerSystem
+from nevergrad.functions.stsp import STSP
+from nevergrad.functions import rl
+from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -192,6 +193,7 @@ def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     internal_generator = multimodal(seed, para=True)
     for xp in internal_generator:
         yield xp
+
 
 # pylint: disable=redefined-outer-name
 @registry.register
@@ -721,7 +723,7 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def far_optimum_es(seed: Optional[int] = None) -> Iterator[Experiment]:
+def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     popsizes = [5, 40]
@@ -734,5 +736,4 @@ def far_optimum_es(seed: Optional[int] = None) -> Iterator[Experiment]:
     for func in FarOptimumFunction.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
-                for _ in range(2):
-                    yield Experiment(func, optim, budget=budget, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, seed=next(seedg))
