@@ -76,7 +76,6 @@ class _DE(base.Optimizer):
         self._parameters = DifferentialEvolution()
         self._llambda: tp.Optional[int] = None
         self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])
-        self._uid_queue = base.utils.UidQueue()
         self.sampler: tp.Optional[sequences.Sampler] = None
         self._replaced: tp.Set[bytes] = set()
 
@@ -115,15 +114,12 @@ class _DE(base.Optimizer):
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
             particle = base.utils.Individual(new_guy)
             self.population.extend([particle])
-            self._uid_queue.asked.add(particle.uid)
             self.population.get_queued(remove=True)  # since it was just added
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
         # init is done
         particle = self.population.get_queued(remove=True)
-        uid = self._uid_queue.ask()
-        assert particle.uid == uid
         individual = particle.x
         # define donor
         indiv_a, indiv_b = (self.population[self.population.uids[self._rng.randint(self.llambda)]].x for _ in range(2))
@@ -148,7 +144,6 @@ class _DE(base.Optimizer):
             particle.x = candidate.get_standardized_data(reference=self.instrumentation)
             particle.value = value
         self.population.set_queued(particle)
-        self._uid_queue.tell(particle.uid)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         worst_part = None
