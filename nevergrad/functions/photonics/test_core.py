@@ -53,13 +53,13 @@ def test_morpho_transform_constraints() -> None:
     with patch("shutil.which", return_value="here"):
         func = core.Photonics("morpho", 60)
     x = np.random.normal(0, 5, size=60)  # std 5 to play with boundaries
-    output = func.parametrization.spawn_child().set_standardized_data(x).value.ravel()
-    assert np.all(output >= 0)
-    q = len(x) // 4
-    assert np.all(output[:q] <= 300)
-    assert np.all(output[q: 3 * q] <= 600)
-    assert np.all(output[2 * q: 3 * q] >= 30)
-    assert np.all(output[3 * q:] <= 300)
+    output1 = func.parametrization.spawn_child().set_standardized_data(x)
+    output2 = output1.sample()
+    for output in (output1, output2):
+        assert np.all(output.value >= 0)
+        assert np.all(output.value[[0, 3], :] <= 300)
+        assert np.all(output.value[[1, 2], :] <= 600)
+        assert np.all(output.value[2, :] >= 30)
 
 
 def test_photonics_error() -> None:

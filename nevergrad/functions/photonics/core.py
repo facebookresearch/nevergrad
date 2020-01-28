@@ -57,7 +57,7 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
-    array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=transform)
+    array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=transform, full_range_sampling=True)
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 

@@ -148,9 +148,13 @@ class Array(core.Parameter):
         if not self.full_range_sampling:
             return super().sample()
         child = self.spawn_child()
-        std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
+        func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
+        std_bounds = tuple(func(b * np.ones(self.value.shape)) for b in self.bounds)
         diff = std_bounds[1] - std_bounds[0]
-        child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
+        new_data = std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff
+        if self.exponent is None:
+            new_data = self._to_reduced_space(new_data)
+        child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)
         child.heritage["lineage"] = child.uid
         return child
 
