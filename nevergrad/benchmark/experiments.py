@@ -195,9 +195,8 @@ def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
+
 # pylint: disable=redefined-outer-name
-
-
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
