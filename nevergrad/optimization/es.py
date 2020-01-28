@@ -2,7 +2,7 @@ import warnings
 import typing as tp
 # import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.common.tools import OrderedSet
+from nevergrad.optimization.utils import UidQueue
 from . import base
 
 
@@ -14,18 +14,16 @@ class _EvolutionStrategy(base.Optimizer):
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = EvolutionStrategy()
         self._population: tp.Dict[str, p.Parameter] = {}
-        self._told_queue = tp.Deque[str]()
-        self._asked_queue = OrderedSet[str]()
+        self._uid_queue = UidQueue()
         self._waiting: tp.List[p.Parameter] = []
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if self.num_ask < self._parameters.popsize or not self._population:
             param = self.instrumentation.sample()
+            assert param.uid == param.heritage["lineage"]  # this is an assumption used below
+            self._uid_queue.asked.add(param.uid)
             return param
-        if self._told_queue:
-            uid = self._told_queue.popleft()
-        else:
-            uid = next(iter(self._asked_queue))
+        uid = self._uid_queue.ask()
         param = self._population[uid].spawn_child()
         param.mutate()
         # if self._parameters.de_step and len(self._population) > 1:
@@ -39,32 +37,30 @@ class _EvolutionStrategy(base.Optimizer):
         if self._parameters.recombinations:
             selected = self._rng.choice(list(self._population), self._parameters.recombinations, replace=False)
             param.recombine(*(self._population[s] for s in selected))
-        self._asked_queue.add(uid)
         return param
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["value"] = value
         if self._parameters.offsprings is None:
             uid = candidate.heritage["lineage"]
+            self._uid_queue.tell(uid)
             parent_value = float('inf') if uid not in self._population else self._population[uid]._meta["value"]
             if value < parent_value:
                 self._population[uid] = candidate
-            self._told_queue.append(uid)
         else:
-            uid = candidate.uid
             if candidate.parents_uids[0] not in self._population and len(self._population) < self._parameters.popsize:
-                self._population[uid] = candidate
-                self._told_queue.append(uid)
+                self._population[candidate.uid] = candidate
+                self._uid_queue.tell(candidate.uid)
             else:
                 self._waiting.append(candidate)
             if len(self._waiting) >= self._parameters.offsprings:
                 choices = self._waiting + ([] if self._parameters.only_offsprings else list(self._population.values()))
                 choices.sort(key=lambda x: x._meta["value"])
                 self._population = {x.uid: x for x in choices[:self._parameters.popsize]}
-                self._told_queue.clear()
-                self._asked_queue.clear()
+                self._uid_queue.clear()
                 self._waiting.clear()
-                self._told_queue.extend(list(self._population))
+                for uid in self._population:
+                    self._uid_queue.tell(uid)
 
 
 class EvolutionStrategy(base.ParametrizedFamily):
