@@ -6,16 +6,17 @@
 from typing import Iterator, Optional, List, Union, Any
 import numpy as np
 import nevergrad as ng
-from ..functions import ExperimentFunction
-from ..functions import ArtificialFunction
-from ..functions import FarOptimumFunction
-from ..functions import MultiobjectiveFunction
-from ..functions import mlda as _mlda
-from ..functions.arcoating import ARCoating
-from ..functions.powersystems import PowerSystem
-from ..functions.stsp import STSP
-from ..functions import rl
-from ..functions.games import game
+from nevergrad.functions import ExperimentFunction
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions import MultiobjectiveFunction
+from nevergrad.functions import mlda as _mlda
+from nevergrad.functions.photonics import Photonics
+from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.powersystems import PowerSystem
+from nevergrad.functions.stsp import STSP
+from nevergrad.functions import rl
+from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -734,5 +735,22 @@ def far_optimum_es(seed: Optional[int] = None) -> Iterator[Experiment]:
     for func in FarOptimumFunction.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
-                for _ in range(2):
-                    yield Experiment(func, optim, budget=budget, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def photonics() -> Iterator[Experiment]:
+    popsizes = [5, 40]
+    es = [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=False, popsize=pop)
+          for recomb in [0, 1] for pop in popsizes]
+    es += [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=only, popsize=pop,
+                                         offsprings=10 if pop == 5 else 60)
+           for only in [True, False] for recomb in [0, 1] for pop in popsizes]
+    algos = ["TwoPointsDE", "DE", "PSO"] + es  # type: ignore
+    for method in ["clipping", "tanh"]:
+        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg", "chirped", "morpho"]]:
+            for budget in [100, 1000, 10000]:
+                for algo in algos:
+                    xp = Experiment(func, algo, budget, num_workers=1)
+                    if not xp.is_incoherent:
+                        yield xp

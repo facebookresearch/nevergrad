@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-from typing import List
+import typing as tp
+import pytest
 import numpy as np
 from ...common import testing
 from . import core
@@ -15,13 +16,13 @@ from . import core
     morpho=("morpho", [280.36, 52.96, 208.16, 72.69, 89.92, 60.37, 226.69, 193.11]),
     chirped=("chirped", [280.36, 52.96, 104.08, 36.34, 31.53, 15.98, 226.69, 193.11]),
 )
-def test_photonics_bounding_methods(pb: str, expected: List[float]) -> None:
+def test_photonics_bounding_methods(pb: str, expected: tp.List[float]) -> None:
     func = core.Photonics(pb, 8, bounding_method="tanh")
     np.random.seed(24)
     x = np.random.normal(0, 1, size=8)
-    param = func.parametrization.spawn_child()
-    # legacy test, now sigma has been modified, we revert this in the following line
-    func.parametrization = param.set_mutation(sigma=np.ones(param.sigma.value.shape))  # type: ignore
+    # param = func.parametrization.spawn_child()
+    # # legacy test, now sigma has been modified, we revert this in the following line
+    # func.parametrization = param.set_mutation(sigma=np.ones(param.sigma.value.shape))  # type: ignore
     output = func.parametrization.spawn_child().set_standardized_data(x).value.ravel()
     np.testing.assert_almost_equal(output, expected, decimal=2)
 
@@ -37,7 +38,7 @@ def test_photonics_bounding_methods(pb: str, expected: List[float]) -> None:
     morpho_tanh=("morpho", "tanh", [150., 150., 300., 300., 315., 315., 150., 150.]),
     morpho_arctan=("morpho", "arctan", [150., 150., 300., 300., 315., 315., 150., 150.]),
 )
-def test_photonics_bounding_methods_mean(pb: str, bounding_method: str, expected: List[float]) -> None:
+def test_photonics_bounding_methods_mean(pb: str, bounding_method: str, expected: tp.List[float]) -> None:
     func = core.Photonics(pb, 8, bounding_method=bounding_method)
     all_x = func.parametrization.value
     output = all_x.ravel()
@@ -74,6 +75,14 @@ def test_photonics_error() -> None:
         output = photo(np.zeros(16))
         assert len(w) == 1
     np.testing.assert_almost_equal(output, float("inf"))
+
+
+@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint"])  # type: ignore
+@pytest.mark.parametrize("name", ["bragg", "morpho", "chirped"])
+def test_no_warning(name: str, method: str):
+    with warnings.catch_warnings(record=True) as w:
+        core.Photonics(name, 24, bounding_method=method)
+        assert not w, f"Got a warning at initialization: {w[0]}"
 
 
 @testing.parametrized(

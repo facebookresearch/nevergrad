@@ -58,9 +58,12 @@ def _make_instrumentation(name: str, dimension: int, bounding_method: str = "cli
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
-    array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
-    array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))  # type: ignore
-    array.set_recombination(Crossover(2, structured_dimensions=(0,)))
+    array = p.Array(init=init)
+    if bounding_method not in ("arctan", "tanh"):
+        # sigma must be adapted for clipping and constraint methods
+        array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))  # type: ignore
+    array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
+    array.set_recombination(Crossover(2, structured_dimensions=(0,))).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 
@@ -110,7 +113,6 @@ class Photonics(ExperimentFunction):
     """
 
     def __init__(self, name: str, dimension: int, bounding_method: str = "clipping") -> None:
-        assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
