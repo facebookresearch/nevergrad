@@ -3,18 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import time
 import random
 import tempfile
 import warnings
+import typing as tp
 from pathlib import Path
 from functools import partial
 from unittest import SkipTest
 from unittest.mock import patch
-from typing import Type, Union, Generator, List
 import pytest
 import numpy as np
 import pandas as pd
 from bayes_opt.util import acq_max
+from scipy import stats
 import nevergrad as ng
 from .. import instrumentation as inst
 from ..common.typetools import ArrayLike
@@ -31,13 +33,25 @@ class Fitness:
 
     def __init__(self, x0: ArrayLike) -> None:
         self.x0 = np.array(x0, copy=True)
+        self.call_times: tp.List[float] = []
 
     def __call__(self, x: ArrayLike) -> float:
         assert len(self.x0) == len(x)
+        self.call_times.append(time.time())
         return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))
 
+    def get_factors(self) -> tp.Tuple[float, float]:
+        logdiffs = np.log(np.maximum(1e-15, np.cumsum(np.diff(self.call_times))))
+        nums = np.arange(len(logdiffs))
+        slope, intercept = (float(np.exp(x)) for x in stats.linregress(nums, logdiffs)[:2])
+        return slope, intercept
 
-def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimizer]], budget: int = 300, verify_value: bool = True) -> None:
+
+def check_optimizer(
+        optimizer_cls: tp.Union[base.OptimizerFamily, tp.Type[base.Optimizer]],
+        budget: int = 300,
+        verify_value: bool = True
+) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
@@ -46,6 +60,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
         optimum = [0, 1, 0, 1, 0, 1]
     fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
+        fitness = Fitness(optimum)
         optimizer = optimizer_cls(instrumentation=len(optimum), budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
             # tests do not need to be efficient
@@ -63,6 +78,9 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
                     raise e
             else:
                 break
+    if budget > 100:
+        slope, intercept = fitness.get_factors()
+        print(f"For your information: slope={slope} and intercept={intercept}")
     # check population queue
     if hasattr(optimizer, "population"):  # TODO add a PopBasedOptimizer
         assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
@@ -102,7 +120,7 @@ SLOW = [
     "MicroCMA",
 ]
 DISCRETE = ["PBIL", "cGA"]
-UNSEEDABLE: List[str] = []
+UNSEEDABLE: tp.List[str] = []
 
 
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
@@ -134,7 +152,7 @@ class RecommendationKeeper:
 
 
 @pytest.fixture(scope="module")  # type: ignore
-def recomkeeper() -> Generator[RecommendationKeeper, None, None]:
+def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
     keeper = RecommendationKeeper(filepath=Path(__file__).parent / "recorded_recommendations.csv")
     yield keeper
     keeper.save()
@@ -178,8 +196,8 @@ def test_optimizers_recommendation(with_parameter: bool,
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        param: Union[int, ng.p.Instrumentation] = (dimension if not with_parameter else
-                                                   ng.p.Instrumentation(ng.p.Array(shape=(dimension,))))
+        param: tp.Union[int, ng.p.Instrumentation] = (dimension if not with_parameter else
+                                                      ng.p.Instrumentation(ng.p.Array(shape=(dimension,))))
         optim = optimizer_cls(instrumentation=param, budget=budget, num_workers=1)
         optim.instrumentation.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)

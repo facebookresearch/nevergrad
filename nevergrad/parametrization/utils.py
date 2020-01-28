@@ -10,6 +10,7 @@ import tempfile
 import subprocess
 import typing as tp
 from pathlib import Path
+from ..common.tools import different_from_defaults
 
 
 class Descriptors:
@@ -35,6 +36,10 @@ class Descriptors:
     def __and__(self, other: "Descriptors") -> "Descriptors":
         values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
         return Descriptors(**values)
+
+    def __repr__(self) -> str:
+        diff = ",".join(f"{x}={y}" for x, y in sorted(different_from_defaults(self, check_mismatches=True).items()))
+        return f"{self.__class__.__name__}({diff})"
 
 
 class NotSupportedError(RuntimeError):
