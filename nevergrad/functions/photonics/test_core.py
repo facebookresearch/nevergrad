@@ -20,9 +20,6 @@ def test_photonics_bounding_methods(pb: str, expected: tp.List[float]) -> None:
     func = core.Photonics(pb, 8, bounding_method="tanh")
     np.random.seed(24)
     x = np.random.normal(0, 1, size=8)
-    # param = func.parametrization.spawn_child()
-    # # legacy test, now sigma has been modified, we revert this in the following line
-    # func.parametrization = param.set_mutation(sigma=np.ones(param.sigma.value.shape))  # type: ignore
     output = func.parametrization.spawn_child().set_standardized_data(x).value.ravel()
     np.testing.assert_almost_equal(output, expected, decimal=2)
 
