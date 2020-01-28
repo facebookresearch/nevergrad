@@ -724,7 +724,7 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def far_optimum_es(seed: Optional[int] = None) -> Iterator[Experiment]:
+def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     popsizes = [5, 40]
