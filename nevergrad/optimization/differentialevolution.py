@@ -76,6 +76,7 @@ class _DE(base.Optimizer):
         self._parameters = DifferentialEvolution()
         self._llambda: tp.Optional[int] = None
         self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])
+        self._population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = base.utils.UidQueue()
         self.sampler: tp.Optional[sequences.Sampler] = None
         self._replaced: tp.Set[bytes] = set()
@@ -119,6 +120,7 @@ class _DE(base.Optimizer):
             self.population.get_queued(remove=True)  # since it was just added
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
             candidate._meta["particle"] = particle
+            self._population[particle.uid] = candidate
             return candidate
         # init is done
         particle = self.population.get_queued(remove=True)
@@ -135,22 +137,25 @@ class _DE(base.Optimizer):
         crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
-        candidate = self.instrumentation.spawn_child().set_standardized_data(donor, deterministic=False)
+        candidate = self._population[uid].spawn_child().set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
         candidate._meta["particle"] = particle
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
+        candidate._meta["value"] = value
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
         if particle.value is None or value <= particle.value:
+            self._population[particle.uid] = candidate
             particle.x = candidate.get_standardized_data(reference=self.instrumentation)
             particle.value = value
         self.population.set_queued(particle)
         self._uid_queue.tell(particle.uid)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        candidate._meta["value"] = value
         worst_part = None
         if not len(self.population) < self.llambda:
             worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
