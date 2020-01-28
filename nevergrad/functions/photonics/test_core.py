@@ -19,6 +19,9 @@ def test_photonics_transforms(pb: str, expected: List[float]) -> None:
     func = core.Photonics(pb, 8)
     np.random.seed(24)
     x = np.random.normal(0, 1, size=8)
+    param = func.parametrization.spawn_child()
+    # legacy test, now sigma has been modified, we revert this in the following line
+    func.parametrization = param.set_mutation(sigma=np.ones(param.sigma.value.shape))  # type: ignore
     output = func.parametrization.spawn_child().set_standardized_data(x).value.ravel()
     np.testing.assert_almost_equal(output, expected, decimal=2)
 
@@ -42,7 +45,7 @@ def test_photonics_transforms_mean(pb: str, transform: str, expected: List[float
 
 
 def test_morpho_transform_constraints() -> None:
-    func = core.Photonics("morpho", 60)
+    func = core.Photonics("morpho", 60, transform="arctan")
     x = np.random.normal(0, 5, size=60)  # std 5 to play with boundaries
     output1 = func.parametrization.spawn_child().set_standardized_data(x)
     output2 = output1.sample()

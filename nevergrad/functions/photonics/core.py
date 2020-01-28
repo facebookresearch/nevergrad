@@ -59,6 +59,7 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
     array = p.Array(init=init).set_bounds(b_array[:, [0]], b_array[:, [1]], method=transform, full_range_sampling=True)
+    array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))
     array.set_recombination(Crossover(2, structured_dimensions=(0,)))
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array

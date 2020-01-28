@@ -278,7 +278,7 @@ class Array(core.Parameter):
     def _internal_set_standardized_data(self: A, data: np.ndarray, reference: A, deterministic: bool = False) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
-        data_reduc = (sigma * (data + reference._get_ref_data())).reshape(reference._value.shape)
+        data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
         self._value = data_reduc if reference.exponent is None else reference.exponent**data_reduc
         self._ref_data = None
         if reference.bound_transform is not None:
