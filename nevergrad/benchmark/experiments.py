@@ -749,11 +749,11 @@ def photonics(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
     es += [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=only, popsize=pop,
                                          offsprings=10 if pop == 5 else 60)
            for only in [True, False] for recomb in [0, 1] for pop in popsizes]
-    algos = ["TwoPointsDE", "DE", "PSO"] + es  # type: ignore
+    algos = ["TwoPointsDE", "DE", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
     for method in ["clipping", "tanh"]:
-        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg", "chirped", "morpho"]]:
-            for budget in [100, 1000, 10000]:
+        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg", "chirped"]]:  # , "morpho"]]:
+            for budget in [1e2, 1e3, 1e4, 1e5]:
                 for algo in algos:
-                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp

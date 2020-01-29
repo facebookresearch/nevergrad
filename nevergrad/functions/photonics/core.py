@@ -118,7 +118,7 @@ class Photonics(ExperimentFunction):
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
         super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, bounding_method=bounding_method))
         self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method)
-        self._descriptors.update(name=name)
+        self._descriptors.update(name=name, bounding_method=bounding_method)
 
     def _compute(self, x: np.ndarray) -> float:
         x_cat = x.ravel()
