@@ -14,6 +14,7 @@
   Hence, prefere using parameters from `ng.p` than `ng.var`, and avoid using `ng.Instrumentation` altogether if
   you don't need it anymore (or import it through `ng.p.Instrumentation`).
 - Added experimental evolution-strategy-like algorithms using new parametrization [#471](https://github.com/facebookresearch/nevergrad/pull/471)
+- `DE` algorithms comply with the new parametrization system and can be set to use parameter's recombination.
 - Fixed array as bounds in `Array` parameters
 
 ## v0.3.1 (2019-01-23)
