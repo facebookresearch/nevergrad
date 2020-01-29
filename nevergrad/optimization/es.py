@@ -7,6 +7,9 @@ from . import base
 
 
 class _EvolutionStrategy(base.Optimizer):
+    """Experimental evolution-strategy-like algorithm
+    The behavior is going to evolve
+    """
 
     def __init__(self, instrumentation: base.IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         if budget is not None and budget < 60:
@@ -26,14 +29,6 @@ class _EvolutionStrategy(base.Optimizer):
         uid = self._uid_queue.ask()
         param = self._population[uid].spawn_child()
         param.mutate()
-        # if self._parameters.de_step and len(self._population) > 1:
-        #     sdata = [self._population[s].get_standardized_data(reference=self.instrumentation)
-        #              for s in self._rng.choice(list(self._population), 2, replace=False)]
-        #     F1, F2 = 0.8, 0.8
-        #     data = param.get_standardized_data(reference=self.instrumentation)
-        #     data += F2 * (self.current_bests["pessimistic"].x - data)
-        #     #data += F1 * (sdata[1] - sdata[0])
-        #     param.set_standardized_data(data, reference=self.instrumentation)
         if self._parameters.recombinations:
             selected = self._rng.choice(list(self._population), self._parameters.recombinations, replace=False)
             param.recombine(*(self._population[s] for s in selected))
@@ -64,6 +59,9 @@ class _EvolutionStrategy(base.Optimizer):
 
 
 class EvolutionStrategy(base.ParametrizedFamily):
+    """Experimental evolution-strategy-like algorithm
+    The API is going to evolve
+    """
 
     _optimizer_class = _EvolutionStrategy
 
