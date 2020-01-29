@@ -19,6 +19,7 @@ import nevergrad as ng
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
+from . import utils
 from . import optimizerlib as optlib
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
@@ -63,7 +64,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             else:
                 break
     # check population queue
-    if hasattr(optimizer, "population"):  # TODO add a PopBasedOptimizer
+    if hasattr(optimizer, "population") and isinstance(optimizer.population, utils.Population):  # type: ignore
         assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
     # make sure we are correctly tracking the best values
     archive = optimizer.archive
@@ -357,7 +358,10 @@ def test_parametrization_offset(name: str) -> None:
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
-    optimizer = registry[name](parametrization, budget=100, num_workers=1)
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
         assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.args[0][0]}"
