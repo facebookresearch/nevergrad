@@ -326,6 +326,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._asked.add(candidate.uid)
         self._num_ask = current_num_ask + 1
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        candidate.freeze()
         return candidate
 
     def provide_recommendation(self) -> p.Parameter:

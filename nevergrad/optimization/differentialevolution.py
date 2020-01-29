@@ -75,7 +75,6 @@ class _DE(base.Optimizer):
         self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: tp.Optional[int] = None
-        self.population: base.utils.Population[base.utils.Individual] = base.utils.Population([])
         self._population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = base.utils.UidQueue()
         self.sampler: tp.Optional[sequences.Sampler] = None
@@ -116,20 +115,12 @@ class _DE(base.Optimizer):
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
-            particle = base.utils.Individual(new_guy)
-            candidate._meta["particle"] = particle
-            particle.uid = candidate.uid
-            self.population.extend([particle])
-            self.population.get_queued(remove=True)  # since it was just added
-            self._uid_queue.asked.add(particle.uid)
-            self._population[particle.uid] = candidate
+            self._population[candidate.uid] = candidate
+            self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        particle1 = self.population.get_queued(remove=True)
-        uid = self._uid_queue.ask()
-        assert particle1.uid == uid
-        # individual = particle.x
-        individual = self._population[uid].get_standardized_data(reference=self.instrumentation)
+        candidate = self._population[self._uid_queue.ask()].spawn_child()
+        individual = candidate.get_standardized_data(reference=self.instrumentation)
         # define donor
         uids = list(self._population)
         indivs = (self._population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
@@ -141,12 +132,11 @@ class _DE(base.Optimizer):
         crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
-        candidate = self._population[uid].spawn_child().set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
-        candidate._meta["particle"] = particle1
+        candidate.parents_uids.extend([i.uid for i in indivs])
+        candidate.set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
         candidate._meta["value"] = value
         uid = candidate.heritage["lineage"]
         if uid not in self._population:
@@ -155,15 +145,11 @@ class _DE(base.Optimizer):
         parent_value = self._population[uid]._meta.get("value", float("inf"))
         if value <= parent_value:
             self._population[uid] = candidate
-            particle.x = candidate.get_standardized_data(reference=self.instrumentation)
-            particle.value = value
-        self.population.set_queued(particle)
-        self._uid_queue.tell(particle.uid)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["value"] = value
         worst_part = None
-        if not len(self.population) < self.llambda:
+        if not len(self._population) < self.llambda:
             worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
             if worst_part.value is not None and worst_part.value < value:
                 return  # no need to update
