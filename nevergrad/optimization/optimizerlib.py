@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 import typing as tp  # from now on, favor using tp.Dict etc instead of Dict
 from typing import Optional, List, Dict, Tuple, Callable, Any
-from collections import defaultdict, deque
+from collections import deque
 import warnings
 import cma
 import numpy as np
@@ -667,7 +667,6 @@ class PSO(base.Optimizer):
             return
         x = candidate.get_standardized_data(reference=self.instrumentation)
         point = particle.get_transformed_position()
-        assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particle.value = value
         if value < self.best_value:
             self.best_x = np.array(particle.x, copy=True)
