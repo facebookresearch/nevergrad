@@ -404,7 +404,7 @@ class UidQueue:
 
     def __init__(self) -> None:
         self.told = tp.Deque[str]()
-        self.asked = OrderedSet[str]()
+        self.asked: OrderedSet[str] = OrderedSet()
 
     def clear(self) -> None:
         """Removes all uids from the queues
