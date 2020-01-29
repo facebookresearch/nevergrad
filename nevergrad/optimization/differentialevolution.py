@@ -114,13 +114,14 @@ class _DE(base.Optimizer):
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng)
             new_guy = self.scale * (self._rng.normal(0, 1, self.dimension)
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
-            particle = base.utils.Individual(new_guy)
-            self.population.extend([particle])
-            self._uid_queue.asked.add(particle.uid)
-            self.population.get_queued(remove=True)  # since it was just added
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
+            particle = base.utils.Individual(new_guy)
             candidate._meta["particle"] = particle
+            particle.uid = candidate.uid
+            self.population.extend([particle])
+            self.population.get_queued(remove=True)  # since it was just added
+            self._uid_queue.asked.add(particle.uid)
             self._population[particle.uid] = candidate
             return candidate
         # init is done
@@ -146,7 +147,7 @@ class _DE(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
         candidate._meta["value"] = value
-        uid = particle.uid
+        uid = candidate.heritage["lineage"]
         if uid not in self._population:
             self._internal_tell_not_asked(candidate, value)
             return
