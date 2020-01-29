@@ -67,7 +67,7 @@ class _DE(base.Optimizer):
     CR =.5, F1=.8, F2=.8, curr-to-best.
     Initial population: pure random.
     """
-    # pylint: disable=too-many-locals, too-many-nested-blocks
+    # pylint: disable=too-many-locals, too-many-nested-blocks,too-many-instance-attributes
     # pylint: disable=too-many-branches, too-many-statements
 
     def __init__(self, instrumentation: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
@@ -99,11 +99,11 @@ class _DE(base.Optimizer):
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
-        med_fitness = np.median([p.value for p in self.population if p.value is not None])
-        good_guys = [p for p in self.population if p.value is not None and p.x is not None and p.value < med_fitness]
+        med_fitness = np.median([p._meta["value"] for p in self._population.values() if "value" in p._meta])
+        good_guys = [p for p in self._population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([g.x for g in good_guys]) / len(good_guys)  # type: ignore
+        return sum([g.get_standardized_data(reference=self.instrumentation) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
