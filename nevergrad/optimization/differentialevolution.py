@@ -75,10 +75,9 @@ class _DE(base.Optimizer):
         self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: tp.Optional[int] = None
-        self.population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = base.utils.UidQueue()
+        self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[sequences.Sampler] = None
-        self._replaced: tp.Set[bytes] = set()
 
     @property
     def scale(self) -> float:
