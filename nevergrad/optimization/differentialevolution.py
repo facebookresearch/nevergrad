@@ -106,7 +106,7 @@ class _DE(base.Optimizer):
         return sum([g.get_standardized_data(reference=self.instrumentation) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        if len(self.population) < self.llambda:  # initialization phase
+        if len(self._population) < self.llambda:  # initialization phase
             init = self._parameters.initialization
             if self.sampler is None and init != "gaussian":
                 assert init in ["LHS", "QR"]
@@ -119,6 +119,7 @@ class _DE(base.Optimizer):
             self._uid_queue.asked.add(particle.uid)
             self.population.get_queued(remove=True)  # since it was just added
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
+            candidate.heritage["lineage"] = candidate.uid  # new lineage
             candidate._meta["particle"] = particle
             self._population[particle.uid] = candidate
             return candidate
@@ -128,9 +129,10 @@ class _DE(base.Optimizer):
         assert particle.uid == uid
         individual = particle.x
         # define donor
-        indiv_a, indiv_b = (self.population[self.population.uids[self._rng.randint(self.llambda)]].x for _ in range(2))
-        assert indiv_a is not None and indiv_b is not None
-        donor = (individual + self._parameters.F1 * (indiv_a - indiv_b) +
+        uids = list(self._population)
+        indivs = (self._population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
+        data_a, data_b = (indiv.get_standardized_data(reference=self.instrumentation) for indiv in indivs)
+        donor = (individual + self._parameters.F1 * (data_a - data_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
         # apply crossover
         co = self._parameters.crossover
