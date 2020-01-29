@@ -119,20 +119,23 @@ class _DE(base.Optimizer):
             return candidate
         # init is done
         candidate = self.population[self._uid_queue.ask()].spawn_child()
-        individual = candidate.get_standardized_data(reference=self.instrumentation)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         # define donor
         uids = list(self.population)
         indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
         data_a, data_b = (indiv.get_standardized_data(reference=self.instrumentation) for indiv in indivs)
-        donor = (individual + self._parameters.F1 * (data_a - data_b) +
-                 self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
+        donor = (data + self._parameters.F1 * (data_a - data_b) +
+                 self._parameters.F2 * (self.current_bests["pessimistic"].x - data))
+        candidate.parents_uids.extend([i.uid for i in indivs])
         # apply crossover
         co = self._parameters.crossover
-        crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
-        crossovers.apply(donor, individual)
-        # create candidate
-        candidate.parents_uids.extend([i.uid for i in indivs])
-        return candidate.set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
+        if co == "parametrization":
+            candidate.recombine(self.instrumentation.spawn_child().set_standardized_data(donor))
+        else:
+            crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
+            crossovers.apply(donor, data)
+            candidate.set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         uid = candidate.heritage["lineage"]
@@ -182,6 +185,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
         - "random": different random (uniform) crossover rate at each iteration
         - "onepoint": one point crossover
         - "twopoints": two points crossover
+        - "parametrization": use the parametrization recombine method
     F1: float
         differential weight #1
     F2: float
@@ -201,7 +205,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
         assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
         assert popsize in ["large", "dimension", "standard"]
-        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random"]
+        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
         self.initialization = initialization
         self.scale = scale
         self.recommendation = recommendation
@@ -222,6 +226,7 @@ class DifferentialEvolution(base.ParametrizedFamily):
 DE = DifferentialEvolution().with_name("DE", register=True)
 OnePointDE = DifferentialEvolution(crossover="onepoint").with_name("OnePointDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").with_name("TwoPointsDE", register=True)
+ParametrizationDE = DifferentialEvolution(crossover="parametrization").with_name("ParametrizationDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=True)
 MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
