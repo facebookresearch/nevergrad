@@ -1,7 +1,5 @@
 import numpy as np
-from typing import List, AnyStr
-
-from nevergrad.functions.multiobjective.pyhv import _HyperVolume
+from typing import List, AnyStr, Iterator
 
 
 class VectorNode:
@@ -36,18 +34,11 @@ class VectorLinkedList:
         self.sentinel.next = [self.sentinel for _ in range(dimension)]
 
     def __str__(self):
-        strings = []
-        for i in range(self.dimension):
-            currentList = []
-            node = self.sentinel.next[i]
-            while node != self.sentinel:
-                currentList.append(str(node))
-                node = node.next[i]
-            strings.append(str(currentList))
-        stringRepr = ""
-        for string in strings:
-            stringRepr += string + "\n"
-        return stringRepr
+        string = [
+            str([str(node) for node in self.iterate(dimension)])
+            for dimension in range(self.dimension)
+        ]
+        return "\n".join(string)
 
     def __len__(self) -> int:
         return self.dimension
@@ -97,7 +88,7 @@ class VectorLinkedList:
             node.prev[i].next[i] = node
             node.next[i].prev[i] = node
 
-    def iterate(self, index: int, start: VectorNode = None) -> VectorNode:
+    def iterate(self, index: int, start: VectorNode = None) -> Iterator[VectorNode]:
         if start is None:
             node = self.sentinel.next[index]
         else:
@@ -106,7 +97,7 @@ class VectorLinkedList:
             yield node
             node = node.next[index]
 
-    def reverse_iterate(self, index: int, start: VectorNode = None) -> VectorNode:
+    def reverse_iterate(self, index: int, start: VectorNode = None) -> Iterator[VectorNode]:
         if start is None:
             node = self.sentinel.prev[index]
         else:
@@ -255,5 +246,7 @@ if __name__ == "__main__":
         (105, 30),
     ]
     volume = hv.compute(front)
+
+    from nevergrad.functions.multiobjective.pyhv import _HyperVolume
     reference_volume = _HyperVolume(reference).compute(front)
     assert volume == reference_volume
