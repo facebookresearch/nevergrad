@@ -146,11 +146,13 @@ class _DE(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
         candidate._meta["value"] = value
-        if not particle._active:
+        uid = particle.uid
+        if uid not in self._population:
             self._internal_tell_not_asked(candidate, value)
             return
-        if particle.value is None or value <= particle.value:
-            self._population[particle.uid] = candidate
+        parent_value = self._population[uid]._meta.get("value", float("inf"))
+        if value <= parent_value:
+            self._population[uid] = candidate
             particle.x = candidate.get_standardized_data(reference=self.instrumentation)
             particle.value = value
         self.population.set_queued(particle)
