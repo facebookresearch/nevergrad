@@ -125,10 +125,11 @@ class _DE(base.Optimizer):
             self._population[particle.uid] = candidate
             return candidate
         # init is done
-        particle = self.population.get_queued(remove=True)
+        particle1 = self.population.get_queued(remove=True)
         uid = self._uid_queue.ask()
-        assert particle.uid == uid
-        individual = particle.x
+        assert particle1.uid == uid
+        # individual = particle.x
+        individual = self._population[uid].get_standardized_data(reference=self.instrumentation)
         # define donor
         uids = list(self._population)
         indivs = (self._population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
@@ -141,7 +142,7 @@ class _DE(base.Optimizer):
         crossovers.apply(donor, individual)
         # create candidate
         candidate = self._population[uid].spawn_child().set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
-        candidate._meta["particle"] = particle
+        candidate._meta["particle"] = particle1
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
