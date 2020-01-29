@@ -19,6 +19,7 @@ import nevergrad as ng
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
+from . import utils
 from . import optimizerlib as optlib
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
@@ -63,7 +64,7 @@ def check_optimizer(optimizer_cls: Union[base.OptimizerFamily, Type[base.Optimiz
             else:
                 break
     # check population queue
-    if hasattr(optimizer, "population"):  # TODO add a PopBasedOptimizer
+    if hasattr(optimizer, "population") and isinstance(optimizer.population, utils.Population):  # type: ignore
         assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
     # make sure we are correctly tracking the best values
     archive = optimizer.archive

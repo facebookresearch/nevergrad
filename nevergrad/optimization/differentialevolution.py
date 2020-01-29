@@ -75,7 +75,7 @@ class _DE(base.Optimizer):
         self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: tp.Optional[int] = None
-        self._population: tp.Dict[str, p.Parameter] = {}
+        self.population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = base.utils.UidQueue()
         self.sampler: tp.Optional[sequences.Sampler] = None
         self._replaced: tp.Set[bytes] = set()
@@ -98,14 +98,14 @@ class _DE(base.Optimizer):
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
         if self._parameters.recommendation != "noisy":
             return self.current_bests[self._parameters.recommendation].x
-        med_fitness = np.median([p._meta["value"] for p in self._population.values() if "value" in p._meta])
-        good_guys = [p for p in self._population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
+        med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
+        good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
         return sum([g.get_standardized_data(reference=self.instrumentation) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        if len(self._population) < self.llambda:  # initialization phase
+        if len(self.population) < self.llambda:  # initialization phase
             init = self._parameters.initialization
             if self.sampler is None and init != "gaussian":
                 assert init in ["LHS", "QR"]
@@ -115,15 +115,15 @@ class _DE(base.Optimizer):
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
             candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
-            self._population[candidate.uid] = candidate
+            self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        candidate = self._population[self._uid_queue.ask()].spawn_child()
+        candidate = self.population[self._uid_queue.ask()].spawn_child()
         individual = candidate.get_standardized_data(reference=self.instrumentation)
         # define donor
-        uids = list(self._population)
-        indivs = (self._population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
+        uids = list(self.population)
+        indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
         data_a, data_b = (indiv.get_standardized_data(reference=self.instrumentation) for indiv in indivs)
         donor = (individual + self._parameters.F1 * (data_a - data_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - individual))
@@ -133,31 +133,31 @@ class _DE(base.Optimizer):
         crossovers.apply(donor, individual)
         # create candidate
         candidate.parents_uids.extend([i.uid for i in indivs])
-        candidate.set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
-        return candidate
+        return candidate.set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["value"] = value
         uid = candidate.heritage["lineage"]
-        if uid not in self._population:
+        self._uid_queue.tell(uid)
+        candidate._meta["value"] = value
+        if uid not in self.population:
             self._internal_tell_not_asked(candidate, value)
             return
-        parent_value = self._population[uid]._meta.get("value", float("inf"))
+        parent_value = self.population[uid]._meta.get("value", float("inf"))
         if value <= parent_value:
-            self._population[uid] = candidate
+            self.population[uid] = candidate
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["value"] = value
-        worst_part = None
-        if not len(self._population) < self.llambda:
-            worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
-            if worst_part.value is not None and worst_part.value < value:
+        worst: tp.Optional[p.Parameter] = None
+        if not len(self.population) < self.llambda:
+            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
+            if worst._meta.get("value", float("inf")) < value:
                 return  # no need to update
-        particle = base.utils.Individual(candidate.get_standardized_data(reference=self.instrumentation))
-        particle.value = value
-        if worst_part is not None:
-            self.population.replace(worst_part, particle)
-            worst_part._active = False
+            else:
+                del self.population[worst.heritage["lineage"]]
+        candidate.heritage["lineage"] = candidate.uid  # new lineage
+        self.population[candidate.uid] = candidate
+        self._uid_queue.tell(candidate.uid)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes

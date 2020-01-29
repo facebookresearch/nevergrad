@@ -248,6 +248,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
                 "if you want to inoculate a point that as not been asked for"
             )
+        candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
@@ -326,7 +327,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._asked.add(candidate.uid)
         self._num_ask = current_num_ask + 1
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
-        candidate.freeze()
+        candidate.freeze()  # make sure it is not modified somewhere
         return candidate
 
     def provide_recommendation(self) -> p.Parameter:
