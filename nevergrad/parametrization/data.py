@@ -56,7 +56,7 @@ class BoundChecker:
         return True
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class Array(core.Parameter):
     """Array variable of a given shape.
 
@@ -148,9 +148,13 @@ class Array(core.Parameter):
         if not self.full_range_sampling:
             return super().sample()
         child = self.spawn_child()
-        std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
+        func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
+        std_bounds = tuple(func(b * np.ones(self.value.shape)) for b in self.bounds)
         diff = std_bounds[1] - std_bounds[0]
-        child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
+        new_data = std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff
+        if self.exponent is None:
+            new_data = self._to_reduced_space(new_data)
+        child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)
         child.heritage["lineage"] = child.uid
         return child
 
@@ -220,6 +224,12 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
+    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter, utils.Crossover]) -> A:
+        assert self._parameters is not None
+        self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
+                                                      else core.Constant(recombination))
+        return self
+
     def set_mutation(self: A, sigma: tp.Optional[tp.Union[float, "Array"]] = None, exponent: tp.Optional[float] = None) -> A:
         """Output will be cast to integer(s) through deterministic rounding.
 
@@ -268,7 +278,7 @@ class Array(core.Parameter):
     def _internal_set_standardized_data(self: A, data: np.ndarray, reference: A, deterministic: bool = False) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
-        data_reduc = (sigma * (data + reference._get_ref_data())).reshape(reference._value.shape)
+        data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
         self._value = data_reduc if reference.exponent is None else reference.exponent**data_reduc
         self._ref_data = None
         if reference.bound_transform is not None:
@@ -305,9 +315,13 @@ class Array(core.Parameter):
         if not others:
             return
         recomb = self.parameters["recombination"].value
-        all_p = [self] + list(others)
-        if recomb == "average":
-            self.set_standardized_data(np.mean([p.get_standardized_data(reference=self) for p in all_p], axis=0), deterministic=False)
+        all_params = [self] + list(others)
+        if isinstance(recomb, str) and recomb == "average":
+            all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
+            self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
+        elif isinstance(recomb, utils.Crossover):
+            crossover = recomb.apply([p.value for p in all_params], self.random_state)
+            self.value = crossover
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

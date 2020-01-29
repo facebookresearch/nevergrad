@@ -5,7 +5,9 @@
 
 from typing import Any, Dict
 import numpy as np
-from ..common import testing
+import pytest
+from nevergrad.common import testing
+from nevergrad.parametrization import parameter as p
 from . import functionlib
 
 
@@ -148,3 +150,23 @@ def test_noisy_call(x: int, noise: bool, noise_dissymmetry: bool, expect_noisy: 
         np.testing.assert_raises(AssertionError, np.testing.assert_almost_equal, fx, x, decimal=8)
     else:
         np.testing.assert_almost_equal(fx, x, decimal=8)
+
+
+@pytest.mark.parametrize("independent_sigma", [True, False])  # type: ignore
+@pytest.mark.parametrize("mutable_sigma", [True, False])  # type: ignore
+def test_far_optimum_function(independent_sigma: bool, mutable_sigma: bool) -> None:
+    func = functionlib.FarOptimumFunction(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma).copy()
+    param = func.parametrization.spawn_child()
+    assert isinstance(param, p.Array)
+    assert isinstance(param.sigma, p.Array) == mutable_sigma
+    assert param.sigma.value.size == (1 + independent_sigma)
+    param.mutate()
+    new_val = param.sigma.value
+    assert bool(np.sum(np.abs(new_val - func.parametrization.sigma.value))) == mutable_sigma  # type: ignore
+    if independent_sigma and mutable_sigma:
+        assert new_val[0] != new_val[1]
+
+
+def test_far_optimum_function_cases() -> None:
+    cases = list(functionlib.FarOptimumFunction.itercases())
+    assert len(cases) == 48

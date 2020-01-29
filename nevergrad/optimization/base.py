@@ -248,6 +248,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
                 "if you want to inoculate a point that as not been asked for"
             )
+        candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
@@ -326,6 +327,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._asked.add(candidate.uid)
         self._num_ask = current_num_ask + 1
         assert candidate is not None, f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        candidate.freeze()  # make sure it is not modified somewhere
         return candidate
 
     def provide_recommendation(self) -> p.Parameter:
@@ -587,6 +589,9 @@ class ParametrizedFamily(OptimizerFamily):
     def __init__(self) -> None:
         different = ngtools.different_from_defaults(self, check_mismatches=True)
         super().__init__(**different)
+
+    def config(self) -> tp.Dict[str, tp.Any]:
+        return {x: y for x, y in self.__dict__.items() if not x.startswith("_")}
 
     def __call__(
         self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
