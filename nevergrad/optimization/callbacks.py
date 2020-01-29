@@ -10,6 +10,7 @@ import datetime
 from typing import Any, Union, List, Dict
 from pathlib import Path
 import numpy as np
+from nevergrad.parametrization import parameter as p
 from . import base
 
 
@@ -69,14 +70,19 @@ class ParametersLogger:
         if self._filepath.exists() and delete_existing_file:
             self._filepath.unlink()  # missing_ok argument added in python 3.8
 
-    def __call__(self, optimizer: base.Optimizer, candidate: base.Candidate, value: float) -> None:
+    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, value: float) -> None:
         data = {"#instrumentation": optimizer.instrumentation.name,
                 "#name": optimizer.name,
                 "#session": self._session,
                 "#num-ask": optimizer.num_ask,
                 "#num-tell": optimizer.num_tell,
                 "#num-tell-not-asked": optimizer.num_tell_not_asked,
+                "#uid": candidate.uid,
+                "#generation": candidate.generation,
+                "#parents_uids": [],
                 "#loss": value}
+        if candidate.generation > 1:
+            data["#parents_uids"] = candidate.parents_uids
         params = dict(candidate.kwargs)
         params.update({f"#arg{k}": arg for k, arg in enumerate(candidate.args)})
         data.update({k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in params.items()})

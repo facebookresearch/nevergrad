@@ -7,6 +7,7 @@ from typing import Optional, Union, Set
 import warnings
 import numpy as np
 from scipy import stats
+from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 from . import sequences
@@ -102,7 +103,7 @@ class _DE(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return sum([g.x for g in good_guys]) / len(good_guys)  # type: ignore
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._parameters.initialization
             if self.sampler is None and init != "gaussian":
@@ -114,7 +115,7 @@ class _DE(base.Optimizer):
             particle = base.utils.Individual(new_guy)
             self.population.extend([particle])
             self.population.get_queued(remove=True)  # since it was just added
-            candidate = self.create_candidate.from_data(new_guy)
+            candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
             candidate._meta["particle"] = particle
             return candidate
         # init is done
@@ -130,27 +131,27 @@ class _DE(base.Optimizer):
         crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
         crossovers.apply(donor, individual)
         # create candidate
-        candidate = self.create_candidate.from_data(donor)
+        candidate = self.instrumentation.spawn_child().set_standardized_data(donor, deterministic=False)
         candidate._meta["particle"] = particle
         return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: base.utils.Individual = candidate._meta["particle"]  # all asked candidate should have this field
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
         if particle.value is None or value <= particle.value:
-            particle.x = candidate.data
+            particle.x = candidate.get_standardized_data(reference=self.instrumentation)
             particle.value = value
         self.population.set_queued(particle)
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         worst_part = None
         if not len(self.population) < self.llambda:
             worst_part = max(iter(self.population), key=lambda p: p.value if p.value is not None else np.inf)
             if worst_part.value is not None and worst_part.value < value:
                 return  # no need to update
-        particle = base.utils.Individual(candidate.data)
+        particle = base.utils.Individual(candidate.get_standardized_data(reference=self.instrumentation))
         particle.value = value
         if worst_part is not None:
             self.population.replace(worst_part, particle)

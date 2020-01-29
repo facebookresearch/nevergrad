@@ -4,8 +4,18 @@
 # LICENSE file in the root directory of this source tree.
 
 # pylint: disable=unused-import
+import warnings
 import typing as tp
-from ..parametrization.parameter import Instrumentation as Instrumentation
+from ..parametrization.parameter import Instrumentation as _Instrumentation
+
+
+class Instrumentation(_Instrumentation):
+
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
+        warnings.warn("Instrumentation has been moved and is no more necessary to parametrize an optimizer, "
+                      "if you still need it anyway, you should import it like other parameters as "
+                      "nevergrad.p.Instrumentation.", DeprecationWarning)
+        super().__init__(*args, **kwargs)
 
 
 class InstrumentedFunction:

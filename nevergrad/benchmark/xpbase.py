@@ -10,8 +10,8 @@ import warnings
 import traceback
 from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
 import numpy as np
+from nevergrad.parametrization import parameter as p
 from ..common import decorators
-from .. import instrumentation as instru
 from ..functions.rl.agents import torch  # import includes pytorch fix
 from ..functions import base as fbase
 from ..optimization import base as obase
@@ -62,7 +62,7 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instantiate(self, instrumentation: instru.Instrumentation) -> obase.Optimizer:
+    def instantiate(self, instrumentation: p.Parameter) -> obase.Optimizer:
         """Instantiate an optimizer, providing the optimization space dimension
         """
         return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
@@ -127,7 +127,7 @@ class Experiment:
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self.recommendation: Optional[obase.Candidate] = None
+        self.recommendation: Optional[p.Parameter] = None
         self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
 
     def __repr__(self) -> str:
@@ -194,11 +194,11 @@ class Experiment:
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
         pfunc = self.function.copy()
-        instrumentation = pfunc.parametrization
-        assert len(pfunc.parametrization) == len(self.function.parametrization), "Some constraints failed to be propagated"
+        # check constraints are propagated
+        assert len(pfunc.parametrization._constraint_checkers) == len(self.function.parametrization._constraint_checkers)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
+            self._optimizer = self.optimsettings.instantiate(instrumentation=pfunc.parametrization)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

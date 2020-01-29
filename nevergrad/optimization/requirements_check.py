@@ -11,9 +11,9 @@ from nevergrad.parametrization import FolderFunction
 if __name__ == "__main__":
     folder = Path(__file__).parents[1] / "parametrization" / "examples"
     func = FolderFunction(folder, ["python", "examples/script.py"], clean_copy=True)
-    instrumentation = ng.Instrumentation(value1=ng.var.Array(1).asscalar(),
-                                         value2=12,
-                                         string=ng.var.SoftmaxCategorical(["plop", "blublu", "plouf"]))
+    instrumentation = ng.p.Instrumentation(value1=ng.p.Scalar(),
+                                           value2=12,
+                                           string=ng.p.Choice(["plop", "blublu", "plouf"]))
     opt = ng.optimizers.registry["OnePlusOne"](instrumentation, budget=4)
     opt.minimize(func)
     ng.families.ParametrizedOnePlusOne()

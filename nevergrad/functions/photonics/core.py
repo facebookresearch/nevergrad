@@ -21,12 +21,12 @@
 
 import typing as tp
 import numpy as np
+from nevergrad.parametrization import parameter as p
 from . import photonics
 from ..base import ExperimentFunction
-from ... import instrumentation as inst
 
 
-def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> inst.Instrumentation:
+def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> p.Instrumentation:
     """Creates appropriate instrumentation for a Photonics problem
 
     Parameters
@@ -44,26 +44,27 @@ def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") ->
     """
     assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
     n = dimension // 4
-    arrays: tp.List[inst.var.Array] = []
+    arrays: tp.List[p.Array] = []
+    ones = np.ones((n,), dtype=float)
     if name == "bragg":
         # n multiple of 2, from 16 to 80
-        # domain (n=60): [2,3]^30 x [0,300]^30
-        arrays.extend([inst.var.Array(n).bounded(2, 3, transform=transform) for _ in range(2)])
-        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(2)])
+        # main (n=60): [2,3]^30 x [0,300]^30
+        arrays.extend([p.Array(init=2.5 * ones).set_bounds(2, 3, method=transform) for _ in range(2)])
+        arrays.extend([p.Array(init=150 * ones).set_bounds(0, 300, method=transform) for _ in range(2)])
     elif name == "chirped":
         # n multiple of 2, from 10 to 80
         # domain (n=60): [0,300]^60
-        arrays = [inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(4)]
+        arrays = [p.Array(init=150 * ones).set_bounds(0, 300, method=transform) for _ in range(4)]
     elif name == "morpho":
         # n multiple of 4, from 16 to 60
         # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform),
-                       inst.var.Array(n).bounded(0, 600, transform=transform),
-                       inst.var.Array(n).bounded(30, 600, transform=transform),
-                       inst.var.Array(n).bounded(0, 300, transform=transform)])
+        arrays.extend([p.Array(init=150 * ones).set_bounds(0, 300, method=transform),
+                       p.Array(init=300 * ones).set_bounds(0, 600, method=transform),
+                       p.Array(init=315 * ones).set_bounds(30, 600, method=transform),
+                       p.Array(init=150 * ones).set_bounds(0, 300, method=transform)])
     else:
         raise NotImplementedError(f"Transform for {name} is not implemented")
-    instrumentation = inst.Instrumentation(*arrays)
+    instrumentation = p.Instrumentation(*arrays)
     assert instrumentation.dimension == dimension
     return instrumentation
 

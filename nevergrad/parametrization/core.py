@@ -10,6 +10,7 @@ import functools
 from collections import OrderedDict
 import typing as tp
 import numpy as np
+from nevergrad.common.typetools import ArrayLike
 from . import utils
 # pylint: disable=no-value-for-parameter
 
@@ -49,6 +50,20 @@ class Parameter:
     @value.setter
     def value(self, value: tp.Any) -> tp.Any:
         raise NotImplementedError
+
+    @property
+    def args(self) -> tp.Tuple[tp.Any, ...]:
+        """Serves to input value in a funciton as func(*param.args, **param.kwargs)
+        Use parameter.Instrumentation to set args and kwargs with full liberty.
+        """
+        return (self.value,)
+
+    @property
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
+        """Serves to input value in a funciton as func(*param.args, **param.kwargs)
+        Use parameter.Instrumentation to set args and kwargs with full liberty.
+        """
+        return {}
 
     @property
     def parameters(self) -> "Dict":
@@ -132,7 +147,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -158,7 +173,7 @@ class Parameter:
         sent_reference = self if reference is None else reference
         assert isinstance(sent_reference, self.__class__), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
-        self._internal_set_standardized_data(data, sent_reference, deterministic=deterministic)
+        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference, deterministic=deterministic)
         return self
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, reference: P, deterministic: bool = False) -> None:
@@ -245,7 +260,7 @@ class Parameter:
         Parameter
         ---------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraintp.
+            function which, given the value of the instance, returns whether it satisfies the constraints.
 
         Note
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
@@ -286,8 +301,11 @@ class Parameter:
 
         Parameter
         ---------
-        value: anything (optional)
-            if provided, it will be set to the new instance.
+        new_value: anything (optional)
+            if provided, it will update the new instance value (cannot be used at the same time as new_data).
+        new_data: np.ndarray
+            if provided, it will update the new instance standardized data (cannot be used at the same time as new_value)
+            the new value will be drawn non-deterministically from the data.
 
         Returns
         -------
@@ -383,8 +401,8 @@ class Constant(Parameter):
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: np.ndarray, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
-        if data.size:
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+        if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
 
@@ -489,7 +507,7 @@ class Dict(Parameter):
             self.get_standardized_data(reference=self)
         assert self._sizes is not None
         if data.size != sum(v for v in self._sizes.values()):
-            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}")
+            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}")
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():

@@ -30,7 +30,7 @@ import torch as torch
 import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import WeightedRandomSampler
-from nevergrad import instrumentation as inst
+from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 from . import base
 from . import envs
@@ -85,10 +85,10 @@ class TorchAgent(base.Agent):
         self.deterministic = deterministic
         self.module = module
         kwargs = {
-            name: inst.var.Array(*value.shape).affined(a=instrumentation_std).bounded(-10, 10, transform="arctan")
+            name: p.Array(shape=value.shape).set_mutation(sigma=instrumentation_std).set_bounds(-10, 10, method="arctan")
             for name, value in module.state_dict().items()  # type: ignore
         }  # bounded to avoid overflows
-        self.instrumentation = inst.Instrumentation(**kwargs)
+        self.instrumentation = p.Instrumentation(**kwargs)
 
     @classmethod
     def from_module_maker(

@@ -4,19 +4,19 @@
 # LICENSE file in the root directory of this source tree.
 import typing as tp  # from now on, favor using tp.Dict etc instead of Dict
 from typing import Optional, List, Dict, Tuple, Callable, Any
-from collections import defaultdict, deque
+from collections import deque
 import warnings
 import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
+from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad import instrumentation as inst
-from nevergrad.instrumentation import Instrumentation
 from . import utils
 from . import base
 from . import mutations
@@ -74,7 +74,6 @@ class _OnePlusOne(base.Optimizer):
         # mutating
         mutation = self._parameters.mutation
         pessimistic = self.current_bests["pessimistic"].x
-
         if mutation == "gaussian":  # standard case
             return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
         elif mutation == "cauchy":
@@ -292,16 +291,16 @@ class EDA(base.Optimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
-        candidate = self.create_candidate.from_data(data)
+        candidate = self.instrumentation.spawn_child().set_standardized_data(data)
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        data = candidate.data
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
         self.evaluated_population_sigma += [candidate._meta["sigma"]]
@@ -323,7 +322,7 @@ class EDA(base.Optimizer):
             self.evaluated_population_sigma = []
             self.evaluated_population_fitness = []
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -337,7 +336,7 @@ class PCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -358,7 +357,7 @@ class PCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        data = candidate.data
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
         self.evaluated_population_sigma += [candidate._meta["sigma"]]
@@ -391,7 +390,7 @@ class MPCEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self.archive_fitness += [value]
         if len(self.archive_fitness) >= 5 * self.llambda:
             first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
@@ -412,7 +411,7 @@ class MPCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        data = candidate.data
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
         self.evaluated_population_sigma += [candidate._meta["sigma"]]
@@ -446,8 +445,8 @@ class MEDA(EDA):
 
     # pylint: disable=too-many-instance-attributes
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        data = candidate.data
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         self.evaluated_population += [data]
         self.evaluated_population_fitness += [value]
         self.evaluated_population_sigma += [candidate._meta["sigma"]]
@@ -496,14 +495,14 @@ class TBPSA(base.Optimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        candidate = self.create_candidate.from_data(individual)
+        candidate = self.instrumentation.spawn_child().set_standardized_data(individual)
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -522,7 +521,8 @@ class TBPSA(base.Optimizer):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        particle = base.utils.Individual(candidate.data)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        particle = base.utils.Individual(data)
         particle._parameters = np.array([candidate._meta["sigma"]])
         particle.value = value
         self._evaluated_population.append(particle)
@@ -535,8 +535,9 @@ class TBPSA(base.Optimizer):
                                                for p in self._evaluated_population[: self.mu]])) / self.mu)
             self._evaluated_population = []
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        sigma = np.linalg.norm(candidate.data - self.current_center) / np.sqrt(self.dimension)  # educated guess
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        sigma = np.linalg.norm(data - self.current_center) / np.sqrt(self.dimension)  # educated guess
         candidate._meta["sigma"] = sigma
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
@@ -636,7 +637,7 @@ class PSO(base.Optimizer):
         self.phip = 0.5 + np.log(2.0)
         self.phig = 0.5 + np.log(2.0)
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if self.population.is_queue_empty() and len(self.population) < self.llambda:
             param = self.instrumentation
@@ -650,7 +651,7 @@ class PSO(base.Optimizer):
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
             particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
-        candidate = self.create_candidate.from_data(particle.get_transformed_position())
+        candidate = self.instrumentation.spawn_child().set_standardized_data(particle.get_transformed_position())
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
@@ -659,14 +660,13 @@ class PSO(base.Optimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self._PARTICULE.transform.forward(self.best_x)
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
-        x = candidate.data
+        x = candidate.get_standardized_data(reference=self.instrumentation)
         point = particle.get_transformed_position()
-        assert np.array_equal(x, point), f"{x} vs {point} - from population: {self.population}"
         particle.value = value
         if value < self.best_value:
             self.best_x = np.array(particle.x, copy=True)
@@ -676,8 +676,8 @@ class PSO(base.Optimizer):
             particle.best_value = value
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        x = candidate.get_standardized_data(reference=self.instrumentation)
         if len(self.population) < self.llambda:
             particle = self._PARTICULE.from_data(x, random_state=self._rng)
             self.population.extend([particle])
@@ -814,7 +814,7 @@ class SplitOptimizer(base.Optimizer):
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
 
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
-            self.instrumentations += [Instrumentation(inst.variables.Array(self.num_vars[i]).affined(1, 0))]
+            self.instrumentations += [p.Array(shape=(self.num_vars[i],))]
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
                 self.optims += [multivariate_optimizer(self.instrumentations[i], budget, num_workers)]  # noqa: F405
@@ -824,29 +824,29 @@ class SplitOptimizer(base.Optimizer):
         assert sum(
             self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         data: List[Any] = []
         for i in range(self.num_optims):
             opt = self.optims[i]
-            data += list(opt.ask().data)
+            data += list(opt.ask().get_standardized_data(reference=opt.instrumentation))
         assert len(data) == self.dimension
-        return self.create_candidate.from_data(data)
+        return self.instrumentation.spawn_child().set_standardized_data(data)
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        data = candidate.data
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         n = 0
         for i in range(self.num_optims):
             opt = self.optims[i]
             local_data = list(data)[n:n + self.num_vars[i]]
             n += self.num_vars[i]
             assert len(local_data) == self.num_vars[i]
-            local_candidate = opt.create_candidate.from_data(local_data)
+            local_candidate = opt.instrumentation.spawn_child().set_standardized_data(local_data)
             opt.tell(local_candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -901,24 +901,21 @@ class Portfolio(base.Optimizer):
         ]  # noqa: F405
         if budget < 12 * num_workers:
             self.optims = [ScrHammersleySearch(self.instrumentation, budget, num_workers)]  # noqa: F405
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self._num_ask % len(self.optims)
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        candidate._meta["optim_index"] = optim_index
+        return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        tx = tuple(candidate.data)
-        optim_index = self.who_asked[tx][0]
-        del self.who_asked[tx][0]
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        optim_index: int = candidate._meta["optim_index"]
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["pessimistic"].x
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -949,13 +946,12 @@ class ParaPortfolio(Portfolio):
             SQP(self.instrumentation, 1),  # noqa: F405
             ScrHammersleySearch(self.instrumentation, budget=(budget // len(self.which_optim)) * nw4),  # noqa: F405
         ]
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self.which_optim[self._num_ask % len(self.which_optim)]
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        candidate._meta["optim_index"] = optim_index
+        return candidate
 
 
 @registry.register
@@ -976,7 +972,6 @@ class SQPCMA(ParaPortfolio):
             self.optims += [SQP(self.instrumentation, 1)]  # noqa: F405
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
 
 
 @registry.register
@@ -990,11 +985,10 @@ class ASCMADEthird(Portfolio):
             CMA(self.instrumentation, budget=None, num_workers=num_workers),  # share instrumentation and its rng
             LhsDE(self.instrumentation, budget=None, num_workers=num_workers),
         ]  # noqa: F405
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         self.budget_before_choosing = budget // 3
         self.best_optim = -1
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         if self.budget_before_choosing > 0:
             self.budget_before_choosing -= 1
             optim_index = self._num_ask % len(self.optims)
@@ -1009,9 +1003,9 @@ class ASCMADEthird(Portfolio):
                         best_value = val
                 self.best_optim = optim_index
             optim_index = self.best_optim
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        candidate._meta["optim_index"] = optim_index
+        return candidate
 
 
 @registry.register
@@ -1225,24 +1219,25 @@ class _BO(base.Optimizer):
                         self._bo.probe(point, lazy=True)
         return self._bo
 
-    def _internal_ask_candidate(self) -> base.Candidate:
-        p = self._parameters
-        util = UtilityFunction(kind=p.utility_kind, kappa=p.utility_kappa, xi=p.utility_xi)
+    def _internal_ask_candidate(self) -> p.Parameter:
+        params = self._parameters
+        util = UtilityFunction(kind=params.utility_kind, kappa=params.utility_kappa, xi=params.utility_xi)
         try:
             x_probe = next(self.bo._queue)
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[f"x{i}"] for i in range(len(x_probe))]
         data = self._transform.backward(np.array(x_probe, copy=False))
-        candidate = self.create_candidate.from_data(data)
+        candidate = self.instrumentation.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         if "x_probe" in candidate._meta:
             y = candidate._meta["x_probe"]
         else:
-            y = self._transform.forward(np.array(candidate.data, copy=False))  # tell not asked
+            data = candidate.get_standardized_data(reference=self.instrumentation)
+            y = self._transform.forward(data)  # tell not asked
         self._fake_function.register(y, -value)  # minimizing
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
@@ -1301,7 +1296,7 @@ class ParametrizedBO(base.ParametrizedFamily):
 
     def __call__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         gp_params = {} if self.gp_parameters is None else self.gp_parameters
-        if isinstance(instrumentation, Instrumentation) and gp_params.get("alpha", 0) == 0:
+        if isinstance(instrumentation, p.Parameter) and gp_params.get("alpha", 0) == 0:
             noisy = not instrumentation.descriptors.deterministic
             cont = instrumentation.descriptors.continuous
             if noisy or not cont:
@@ -1343,13 +1338,14 @@ class PBIL(base.Optimizer):
         self.mu = self.llambda // 2  # number of selected candidates
         self._population: List[Tuple[float, np.ndarray]] = []
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         unif = self._rng.uniform(size=self.dimension)
         data = (unif > 1 - self.p[0]).astype(float)
-        return self.create_candidate.from_data(data)
+        return self.instrumentation.spawn_child().set_standardized_data(data)
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        self._population.append((value, candidate.data))
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        self._population.append((value, data))
         if len(self._population) >= self.llambda:
             self._population.sort(key=lambda tup: tup[0])
             mean_pop: np.ndarray = np.mean([x[1] for x in self._population[: self.mu]])
@@ -1378,7 +1374,7 @@ class _Chain(base.Optimizer):
                 self._optimizers_.append(opt(self.instrumentation, budget=budget, num_workers=self.num_workers))
         return self._optimizers_
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         # Which algorithm are we playing with ?
         sum_budget = 0.0
         opt = self._optimizers[0]
@@ -1389,7 +1385,7 @@ class _Chain(base.Optimizer):
         # if we are over budget, then use the last one...
         return opt.ask()
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         # Let us inform all concerned algorithms
         sum_budget = 0.0
         for opt in self._optimizers:
@@ -1506,22 +1502,23 @@ class cGA(base.Optimizer):
         # then updates depending on the comparison with the first one. We therefore have to store the previous candidate.
         self._previous_value_candidate: Optional[Tuple[float, np.ndarray]] = None
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         # Multinomial.
         values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
         data = discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
-        return self.create_candidate.from_data(data)
+        return self.instrumentation.spawn_child().set_standardized_data(data)
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        data = candidate.get_standardized_data(reference=self.instrumentation)
         if self._previous_value_candidate is None:
-            self._previous_value_candidate = (value, candidate.data)
+            self._previous_value_candidate = (value, data)
         else:
-            winner, loser = self._previous_value_candidate[1], candidate.data
+            winner, loser = self._previous_value_candidate[1], data
             if self._previous_value_candidate[0] > value:
                 winner, loser = loser, winner
             winner_data = discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
             loser_data = discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
-            for i in range(len(winner_data)):
+            for i, _ in enumerate(winner_data):
                 if winner_data[i] != loser_data[i]:
                     self.p[i][winner_data[i]] += 1. / self.llambda
                     self.p[i][loser_data[i]] -= 1. / self.llambda
@@ -1538,15 +1535,15 @@ class NGO(base.Optimizer):
     """Nevergrad optimizer by competence map."""
     one_shot = True
 
+    # pylint: disable=too-many-branches
     def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.who_asked: Dict[Tuple[float, ...], List[int]] = defaultdict(list)
         descr = self.instrumentation.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.list_parameter_instances(self.instrumentation)
-        self.has_discrete_not_softmax = any(isinstance(x, inst.var.OrderedDiscrete) for x in all_params)
+        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params)
         # pylint: disable=too-many-nested-blocks
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
@@ -1583,22 +1580,21 @@ class NGO(base.Optimizer):
                                 else:
                                     self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = 0
-        individual = self.optims[optim_index].ask()
-        self.who_asked[tuple(individual.data)] += [optim_index]
-        return individual
+        candidate = self.optims[optim_index].ask()
+        candidate._meta["optim_index"] = optim_index
+        return candidate
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        tx = tuple(candidate.data)
-        optim_index = self.who_asked[tx][0]
-        del self.who_asked[tx][0]
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        optim_index = candidate._meta["optim_index"]
         self.optims[optim_index].tell(candidate, value)
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.optims[0].provide_recommendation().data
+        params = self.optims[0].provide_recommendation()
+        return params.get_standardized_data(reference=self.instrumentation)
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -1621,9 +1617,9 @@ class EMNA_TBPSA(TBPSA):
         self._evaluated_population: List[base.utils.Individual] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x # Naive version for now
+        return self.current_bests["optimistic"].x  # Naive version for now
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -1642,7 +1638,8 @@ class EMNA_TBPSA(TBPSA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        particle = base.utils.Individual(candidate.data)
+        data = candidate.get_standardized_data(reference=self.instrumentation)
+        particle = base.utils.Individual(data)
         particle._parameters = np.array([candidate._meta["sigma"]])
         particle.value = value
         self._evaluated_population.append(particle)
@@ -1652,10 +1649,10 @@ class EMNA_TBPSA(TBPSA):
             # Computing the new parent.
             self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
             # EMNA update
-            t1 = [(self._evaluated_population[i].x-self.current_center)**2 for i in range(self.mu)]
-            self.sigma = np.sqrt(sum(t1)/(self.mu))
-            imp = max(1, (np.log(self.llambda)/2)**(1/self.dimension))
-            if self.num_workers/self.dimension > 16:
+            t1 = [(self._evaluated_population[i].x - self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(t1) / (self.mu))
+            imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+            if self.num_workers / self.dimension > 16:
                 self.sigma /= imp
             self._evaluated_population = []
 
@@ -1664,19 +1661,16 @@ class EMNA_TBPSA(TBPSA):
 class Shiva(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         assert budget is not None
-        if self.has_noise and (self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable):
+        if self.has_noise and (self.has_discrete_not_softmax or not self.instrumentation.descriptors.metrizable):
             self.optims = [RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
         else:
-            if self.instrumentation.is_nonmetrizable:
+            if not self.instrumentation.descriptors.metrizable:
                 if self.dimension < 60:
                     self.optims = [NGO(self.instrumentation, budget, num_workers)]
                 else:
                     self.optims = [CMA(self.instrumentation, budget, num_workers)]
             else:
                 self.optims = [NGO(self.instrumentation, budget, num_workers)]
-
-
-__all__ = list(registry.keys())
