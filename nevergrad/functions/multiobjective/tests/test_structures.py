@@ -1,98 +1,81 @@
-from unittest import TestCase
-
 from nevergrad.functions.multiobjective.hypervolume import VectorNode, VectorLinkedList
 
 
-class TestNode(TestCase):
-    def test_initialize(self):
-        dim = 4
-        node = VectorNode(dim)
+def test_initialize():
+    dim = 4
+    node = VectorNode(dim)
 
-        self.assertIsNone(node.coordinate)
-        for entry in node.next:
-            self.assertTrue(entry is None)
-        for entry in node.prev:
-            self.assertTrue(entry is None)
+    assert node.coordinate is None
+    for entry in node.next:
+        assert entry is None
+    for entry in node.prev:
+        assert  entry is None
 
-        self.assertListEqual(list(node.area), [0.0] * dim)
-        self.assertListEqual(list(node.volume), [0.0] * dim)
+    assert list(node.area) == [0.0] * dim
+    assert list(node.volume) == [0.0] * dim
 
 
-class TestMultiList(TestCase):
-    def setUp(self) -> None:
-        self.dim = 4
-        self.multilist = VectorLinkedList(dimension=self.dim)
+def test_initialize():
+    dim = 4
+    multilist = VectorLinkedList(dimension=dim)
 
-    def test_initialize(self):
-        self.assertEqual(self.dim, self.multilist.dimension)
-        self.assertIsInstance(self.multilist.sentinel, VectorNode)
-        self.assertEqual(4, len(self.multilist.sentinel.prev))
-        self.assertEqual(4, len(self.multilist.sentinel.next))
-        self.assertEqual(4, len(self.multilist))
+    assert dim == multilist.dimension
+    assert isinstance(multilist.sentinel, VectorNode)
+    assert len(multilist.sentinel.prev) == 4
+    assert len(multilist.sentinel.next) == 4
+    assert len(multilist) == 4
 
-        for d in range(self.dim):
-            self.assertIs(
-                self.multilist.sentinel, self.multilist.sentinel.next[d]
-            )
-            self.assertIs(
-                self.multilist.sentinel, self.multilist.sentinel.prev[d]
-            )
+    for d in range(dim):
+        assert multilist.sentinel is multilist.sentinel.next[d]
+        assert multilist.sentinel is multilist.sentinel.prev[d]
 
-        self.assertEqual(
-            len(self.multilist.sentinel.next),
-            len(self.multilist.sentinel.prev),
-        )
-        self.assertEqual(
-            len(self.multilist.sentinel.next),
-            len(self.multilist.sentinel.next[0].next),
-        )
+    assert len(multilist.sentinel.next) == len(multilist.sentinel.prev)
+    assert len(multilist.sentinel.next) == len(multilist.sentinel.next[0].next)
 
-    def test_append(self):
-        new_node = VectorNode(self.dim)
-        self.multilist.append(new_node, 0)
 
-        for i in range(1, self.dim):
-            self.assertIsNone(new_node.next[i])
-            self.assertIsNone(new_node.prev[i])
-            self.assertIs(
-                self.multilist.sentinel.next[i], self.multilist.sentinel
-            )
-            self.assertIs(
-                self.multilist.sentinel.prev[i], self.multilist.sentinel
-            )
-        self.assertIs(new_node.next[0], self.multilist.sentinel)
-        self.assertIs(new_node.prev[0], self.multilist.sentinel)
-        self.assertIs(self.multilist.sentinel.next[0], new_node)
-        self.assertIs(self.multilist.sentinel.prev[0], new_node)
+def test_append():
+    dim = 4
+    multilist = VectorLinkedList(dimension=dim)
 
-        another_node = VectorNode(self.dim)
-        self.multilist.append(another_node, 0)
-        for i in range(1, self.dim):
-            self.assertIsNone(new_node.next[i])
-            self.assertIsNone(new_node.prev[i])
-            self.assertIs(
-                self.multilist.sentinel.next[i], self.multilist.sentinel
-            )
-            self.assertIs(
-                self.multilist.sentinel.prev[i], self.multilist.sentinel
-            )
-        self.assertIs(new_node.next[0], another_node)
-        self.assertIs(new_node.prev[0], self.multilist.sentinel)
-        self.assertIs(self.multilist.sentinel.next[0], new_node)
-        self.assertIs(self.multilist.sentinel.prev[0], another_node)
+    new_node = VectorNode(dim)
+    multilist.append(new_node, 0)
 
-    def test_pop(self):
-        new_node = VectorNode(self.dim)
-        self.multilist.append(new_node, 0)
+    for i in range(1, dim):
+        assert new_node.next[i] is None
+        assert new_node.prev[i] is None
+        assert multilist.sentinel.next[i] is multilist.sentinel
+        assert multilist.sentinel.prev[i] is multilist.sentinel
 
-        popped_node = self.multilist.pop(new_node, 0+1)
-        self.assertIs(popped_node, new_node)
-        self.assertIs(new_node.next[0], self.multilist.sentinel)
-        self.assertIs(new_node.prev[0], self.multilist.sentinel)
-        for i in range(self.dim):
-            self.assertIs(
-                self.multilist.sentinel.next[i], self.multilist.sentinel
-            )
-            self.assertIs(
-                self.multilist.sentinel.prev[i], self.multilist.sentinel
-            )
+    assert new_node.next[0] is multilist.sentinel
+    assert new_node.prev[0] is multilist.sentinel
+    assert multilist.sentinel.next[0] is new_node
+    assert multilist.sentinel.prev[0] is new_node
+
+    another_node = VectorNode(dim)
+    multilist.append(another_node, 0)
+    for i in range(1, dim):
+        assert new_node.next[i] is None
+        assert new_node.prev[i] is None
+        assert multilist.sentinel.next[i] is multilist.sentinel
+        assert multilist.sentinel.prev[i] is multilist.sentinel
+
+    assert new_node.next[0] is another_node
+    assert new_node.prev[0] is multilist.sentinel
+    assert multilist.sentinel.next[0] is new_node
+    assert multilist.sentinel.prev[0] is another_node
+
+
+def test_pop():
+    dim = 4
+    multilist = VectorLinkedList(dimension=dim)
+
+    new_node = VectorNode(dim)
+    multilist.append(new_node, 0)
+
+    popped_node = multilist.pop(new_node, 0+1)
+    assert popped_node is new_node
+    assert new_node.next[0] is multilist.sentinel
+    assert new_node.prev[0] is multilist.sentinel
+    for i in range(dim):
+        assert multilist.sentinel.next[i] is multilist.sentinel
+        assert multilist.sentinel.prev[i] is multilist.sentinel
