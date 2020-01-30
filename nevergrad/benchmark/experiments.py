@@ -12,6 +12,7 @@ from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions import mlda as _mlda
+from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
@@ -737,3 +738,22 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def photonics(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    popsizes = [5, 40]
+    es = [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=False, popsize=pop)
+          for recomb in [0, 1] for pop in popsizes]
+    es += [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=only, popsize=pop,
+                                         offsprings=10 if pop == 5 else 60)
+           for only in [True, False] for recomb in [0, 1] for pop in popsizes]
+    algos = ["TwoPointsDE", "DE", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
+    for method in ["clipping", "tanh"]:
+        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg", "chirped"]]:  # , "morpho"]]:
+            for budget in [1e2, 1e3, 1e4, 1e5]:
+                for algo in algos:
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
