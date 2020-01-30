@@ -639,15 +639,14 @@ class PSO(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
-        if self.population.is_queue_empty() and len(self.population) < self.llambda:
+        if len(self.population) < self.llambda:
             param = self.instrumentation
-            for _ in range(self.llambda - len(self.population)):
-                if self._wide:
-                    # old initialization below seeds in the while R space, while other algorithms use normal distrib
-                    data = self._PARTICULE.transform.forward(self._rng.uniform(0, 1, self.dimension))
-                else:
-                    data = param.sample().get_standardized_data(reference=param)
-                self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
+            if self._wide:
+                # old initialization below seeds in the while R space, while other algorithms use normal distrib
+                data = self._PARTICULE.transform.forward(self._rng.uniform(0, 1, self.dimension))
+            else:
+                data = param.sample().get_standardized_data(reference=param)
+            self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
             particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
@@ -665,8 +664,6 @@ class PSO(base.Optimizer):
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
-        x = candidate.get_standardized_data(reference=self.instrumentation)
-        point = particle.get_transformed_position()
         particle.value = value
         if value < self.best_value:
             self.best_x = np.array(particle.x, copy=True)
@@ -688,9 +685,9 @@ class PSO(base.Optimizer):
             particle = self._PARTICULE.from_data(x, random_state=self._rng)
             worst_part._active = False
             self.population.replace(worst_part, particle)
-        # go through standard pipeline
-        c2 = self._internal_ask_candidate()
-        self._internal_tell_candidate(c2, value)
+        # go through standard tell
+        candidate._meta["particle"] = particle
+        self._internal_tell_candidate(candidate, value)
 
 
 @registry.register

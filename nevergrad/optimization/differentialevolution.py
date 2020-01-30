@@ -156,7 +156,9 @@ class _DE(base.Optimizer):
             if worst._meta.get("value", float("inf")) < value:
                 return  # no need to update
             else:
-                del self.population[worst.heritage["lineage"]]
+                uid = worst.heritage["lineage"]
+                del self.population[uid]
+                self._uid_queue.discard(uid)
         candidate.heritage["lineage"] = candidate.uid  # new lineage
         self.population[candidate.uid] = candidate
         self._uid_queue.tell(candidate.uid)
