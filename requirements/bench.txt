@@ -4,3 +4,4 @@ xlrd>=1.2.0
 matplotlib>=2.2.3
 gym>=0.12.1
 torch>=1.2.0
+hiplot
