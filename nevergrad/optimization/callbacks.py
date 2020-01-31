@@ -158,7 +158,7 @@ class ParametersLogger:
         exp = hip.Experiment()
         for xp in self.load_flattened(max_list_elements=max_list_elements):
             dp = hip.Datapoint(
-                from_uid=xp["#parents_uids#0"] if "#parents_uids#0" in xp else None,
+                from_uid=xp.get("#parents_uids#0"),
                 uid=xp["#uid"],
                 values={x: y for x, y in xp.items() if not (x.startswith("#") and ("uid" in x or "ask" in x))}
             )
