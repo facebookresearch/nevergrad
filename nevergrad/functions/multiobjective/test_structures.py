@@ -1,7 +1,7 @@
 from nevergrad.functions.multiobjective.hypervolume import VectorNode, VectorLinkedList
 
 
-def test_initialize():
+def test_initialize() -> None:
     dim = 4
     node = VectorNode(dim)
 
@@ -9,13 +9,13 @@ def test_initialize():
     for entry in node.next:
         assert entry is None
     for entry in node.prev:
-        assert  entry is None
+        assert entry is None
 
     assert list(node.area) == [0.0] * dim
     assert list(node.volume) == [0.0] * dim
 
 
-def test_initialize():
+def test_initialize_2() -> None:
     dim = 4
     multilist = VectorLinkedList(dimension=dim)
 
@@ -33,7 +33,7 @@ def test_initialize():
     assert len(multilist.sentinel.next) == len(multilist.sentinel.next[0].next)
 
 
-def test_append():
+def test_append() -> None:
     dim = 4
     multilist = VectorLinkedList(dimension=dim)
 
@@ -65,14 +65,14 @@ def test_append():
     assert multilist.sentinel.prev[0] is another_node
 
 
-def test_pop():
+def test_pop() -> None:
     dim = 4
     multilist = VectorLinkedList(dimension=dim)
 
     new_node = VectorNode(dim)
     multilist.append(new_node, 0)
 
-    popped_node = multilist.pop(new_node, 0+1)
+    popped_node = multilist.pop(new_node, 0 + 1)
     assert popped_node is new_node
     assert new_node.next[0] is multilist.sentinel
     assert new_node.prev[0] is multilist.sentinel
