@@ -136,7 +136,7 @@ class ParametersLogger:
                     flat_data[-1][key + "#" + "_".join(str(i) for i in indices)] = value
         return flat_data
 
-    def to_hiplot_experiment(self, max_list_elements: int = 24) -> tp.Any:  # no typing here seems Hiplot is not a hard requirement
+    def to_hiplot_experiment(self, max_list_elements: int = 24) -> tp.Any:  # no typing here since Hiplot is not a hard requirement
         """Converts the logs into an hiplot experiment for display.
 
 
