@@ -6,8 +6,8 @@ class VectorNode:
     def __init__(self, dimension: int, coordinate: tp.Optional[tp.Union[np.ndarray, tp.List[float]]] = None) -> None:
         self.dimension = dimension
         self.coordinate = np.array(coordinate, copy=False)
-        self._next: tp.List[tp.Optional[tp.List["VectorNode"]]] = [None for _ in range(self.dimension)]
-        self._prev: tp.List[tp.Optional[tp.List["VectorNode"]]] = [None for _ in range(self.dimension)]
+        self._next: tp.List[tp.Optional["VectorNode"]] = [None for _ in range(self.dimension)]
+        self._prev: tp.List[tp.Optional["VectorNode"]] = [None for _ in range(self.dimension)]
         self.dominated_flag = 0
         self.area = np.zeros(self.dimension)
         self.volume = np.zeros(self.dimension)
@@ -26,13 +26,13 @@ class VectorNode:
         ]
 
     @property
-    def next(self) -> tp.List["VectorNode"]:
+    def next(self) -> tp.List[tp.Optional["VectorNode"]]:
         # assert self._next is not None
         return self._next
 
     @property
-    def prev(self) -> tp.List["VectorNode"]:
-        assert self._prev is not None
+    def prev(self) -> tp.List[tp.Optional["VectorNode"]]:
+        # assert self._prev is not None
         return self._prev
 
     def pop(self, index: int) -> None:
