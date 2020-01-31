@@ -150,7 +150,7 @@ class ParametersLogger:
         - You can easily change the axes of the XY plot:
           exp.display_data(hip.Displays.XY).update({'axis_x': '0#0', 'axis_y': '0#1'})
         - For more context about hiplot, check:
-          - blogpost: XXX
+          - blogpost: https://ai.facebook.com/blog/hiplot-high-dimensional-interactive-plots-made-easy/
           - github repo: https://github.com/facebookresearch/hiplot
           - documentation: https://facebookresearch.github.io/hiplot/
         """
