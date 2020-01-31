@@ -7,7 +7,7 @@ import json
 import time
 import warnings
 import datetime
-from typing import Any, Union, List, Dict
+import typing as tp
 from pathlib import Path
 import numpy as np
 from nevergrad.parametrization import parameter as p
@@ -35,7 +35,7 @@ class OptimizationPrinter:
         self._next_tell = self._print_interval_tells
         self._next_time = time.time() + print_interval_seconds
 
-    def __call__(self, optimizer: base.Optimizer, *args: Any, **kwargs: Any) -> None:
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
         if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
             self._next_time = time.time() + self._print_interval_seconds
             self._next_tell = optimizer.num_tell + self._print_interval_tells
@@ -69,7 +69,7 @@ class ParametersLogger:
     - this class will eventually contain display methods
     """
 
-    def __init__(self, filepath: Union[str, Path], append: bool = True, order: int = 1) -> None:
+    def __init__(self, filepath: tp.Union[str, Path], append: bool = True, order: int = 1) -> None:
         self._session = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
         self._filepath = Path(filepath)
         self._order = order
@@ -105,17 +105,17 @@ class ParametersLogger:
         except Exception:  # pylint: disable=broad-except
             warnings.warn("Failing to json data")
 
-    def load(self) -> List[Dict[str, Any]]:
+    def load(self) -> tp.List[tp.Dict[str, tp.Any]]:
         """Loads data from the log file
         """
-        data: List[Dict[str, Any]] = []
+        data: tp.List[tp.Dict[str, tp.Any]] = []
         if self._filepath.exists():
             with self._filepath.open("r") as f:
                 for line in f.readlines():
                     data.append(json.loads(line))
         return data
 
-    def load_flattened(self, max_list_elements: int = 24) -> List[Dict[str, Any]]:
+    def load_flattened(self, max_list_elements: int = 24) -> tp.List[tp.Dict[str, tp.Any]]:
         """Loads data from the log file, and splits lists (arrays) into multiple arguments
 
         Parameters
@@ -125,7 +125,7 @@ class ParametersLogger:
             unique id of type list_name#i0_i1_...
         """
         data = self.load()
-        flat_data: List[Dict[str, Any]] = []
+        flat_data: tp.List[tp.Dict[str, tp.Any]] = []
         for element in data:
             list_keys = {key for key, val in element.items() if isinstance(val, list)}
             flat_data.append({key: val for key, val in element.items() if key not in list_keys})
@@ -135,3 +135,35 @@ class ParametersLogger:
                         break
                     flat_data[-1][key + "#" + "_".join(str(i) for i in indices)] = value
         return flat_data
+
+    def to_hiplot_experiment(self, max_list_elements: int = 24) -> tp.Any:  # no typing here seems Hiplot is not a hard requirement
+        """Converts the logs into an hiplot experiment for display.
+
+
+        Example
+        -------
+        exp = logs.to_hiplot_experiment()
+        exp.display(force_full_width=True)
+
+        Note
+        ----
+        - You can easily change the axes of the XY plot:
+          exp.display_data(hip.Displays.XY).update({'axis_x': '0#0', 'axis_y': '0#1'})
+        - For more context about hiplot, check:
+          - blogpost: XXX
+          - github repo: https://github.com/facebookresearch/hiplot
+          - documentation: https://facebookresearch.github.io/hiplot/
+        """
+        import hiplot as hip
+        exp = hip.Experiment()
+        for xp in self.load_flattened(max_list_elements=max_list_elements):
+            dp = hip.Datapoint(
+                from_uid=xp["#parents_uids#0"] if "#parents_uids#0" in xp else None,
+                uid=xp["#uid"],
+                values={x: y for x, y in xp.items() if not (x.startswith("#") and ("uid" in x or "ask" in x))}
+            )
+            exp.datapoints.append(dp)
+        exp.display_data(hip.Displays.XY).update({'axis_x': '#num-tell', 'axis_y': '#loss'})
+        # for the record, some more options:
+        exp.display_data(hip.Displays.XY).update({'lines_thickness': 1.0, 'lines_opacity': 1.0})
+        return exp
