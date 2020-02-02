@@ -6,7 +6,10 @@ Whether you want to contribute or not, don't hesitate to join [Nevergrad users' 
 
 ## Our Development Process
 
-To install `nevergrad` in development mode (if you wish to contribute to it), clone the repository and run `pip install -e '.[all]'` from inside the repository folder.
+To install `nevergrad` in development mode (if you wish to contribute to it), clone the repository and run `pip install -e .[all]` from inside the repository folder,
+or `pip install -e '.[all]'` if you use `zsh`. If the install fails because of `torch`, you can preinstall it with the instructions [here](https://pytorch.org/get-started/locally/)
+and rerun `nevergrad`'s installation.
+
 
 Most of the code is covered by unit tests. You can run them with:
 ```

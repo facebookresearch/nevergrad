@@ -25,7 +25,7 @@ def test_temporary_directory_copy() -> None:
 
 
 def test_command_function() -> None:
-    command = "python -m nevergrad.parametrization.test_utils".split()
+    command = f"{sys.executable} -m nevergrad.parametrization.test_utils".split()
     word = "testblublu12"
     output = utils.CommandFunction(command)(word)
     assert output is not None
