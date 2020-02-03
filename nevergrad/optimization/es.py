@@ -13,7 +13,7 @@ class _EvolutionStrategy(base.Optimizer):
 
     def __init__(self, instrumentation: base.IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         if budget is not None and budget < 60:
-            warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn("ES algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
         super().__init__(instrumentation, budget=budget, num_workers=num_workers)
         self._parameters = EvolutionStrategy()
         self._population: tp.Dict[str, p.Parameter] = {}
@@ -29,9 +29,10 @@ class _EvolutionStrategy(base.Optimizer):
         uid = self._uid_queue.ask()
         param = self._population[uid].spawn_child()
         param.mutate()
-        if self._parameters.recombinations:
-            selected = self._rng.choice(list(self._population), self._parameters.recombinations, replace=False)
-            param.recombine(*(self._population[s] for s in selected))
+        ratio = self._parameters.recombination_ratio
+        if ratio and self._rng.rand() < ratio:
+            selected = self._rng.choice(list(self._population))
+            param.recombine(self._population[selected])
         return param
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
@@ -68,7 +69,7 @@ class EvolutionStrategy(base.ParametrizedFamily):
     def __init__(
             self,
             *,
-            recombinations: int = 0,
+            recombination_ratio: float = 0,
             popsize: int = 40,
             offsprings: tp.Optional[int] = None,
             only_offsprings: bool = False,
@@ -77,7 +78,8 @@ class EvolutionStrategy(base.ParametrizedFamily):
         assert offsprings is None or not only_offsprings or offsprings > popsize
         if only_offsprings:
             assert offsprings is not None, "only_offsprings only work if offsprings is not None (non-DE mode)"
-        self.recombinations = recombinations
+        assert 0 <= recombination_ratio <= 1
+        self.recombination_ratio = recombination_ratio
         self.popsize = popsize
         self.offsprings = offsprings
         self.only_offsprings = only_offsprings
@@ -85,9 +87,9 @@ class EvolutionStrategy(base.ParametrizedFamily):
         super().__init__()
 
 
-RecES = EvolutionStrategy(recombinations=1, only_offsprings=True, offsprings=60).with_name("RecES", register=True)
-RecMixES = EvolutionStrategy(recombinations=1, only_offsprings=False, offsprings=20).with_name("RecMixES", register=True)
-RecMutDE = EvolutionStrategy(recombinations=1, only_offsprings=False, offsprings=None).with_name("RecMutDE", register=True)
-ES = EvolutionStrategy(recombinations=0, only_offsprings=True, offsprings=60).with_name("ES", register=True)
-MixES = EvolutionStrategy(recombinations=0, only_offsprings=False, offsprings=20).with_name("MixES", register=True)
-MutDE = EvolutionStrategy(recombinations=0, only_offsprings=False, offsprings=None).with_name("MutDE", register=True)
+RecES = EvolutionStrategy(recombination_ratio=1, only_offsprings=True, offsprings=60).with_name("RecES", register=True)
+RecMixES = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsprings=20).with_name("RecMixES", register=True)
+RecMutDE = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsprings=None).with_name("RecMutDE", register=True)
+ES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60).with_name("ES", register=True)
+MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=20).with_name("MixES", register=True)
+MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).with_name("MutDE", register=True)
