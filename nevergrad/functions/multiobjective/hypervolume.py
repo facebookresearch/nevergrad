@@ -27,12 +27,10 @@ class VectorNode:
 
     @property
     def next(self) -> tp.List["VectorNode"]:
-        # assert self._next is not None
         return self._next
 
     @property
     def prev(self) -> tp.List["VectorNode"]:
-        # assert self._prev is not None
         return self._prev
 
     def pop(self, index: int) -> None:
@@ -56,12 +54,12 @@ class VectorLinkedList:
         """ Instantiate a VectorLinkedList of dimension `dimension`. The list is
         populated by nodes::VectorNode created from `points`. The nodes are sorted
         by i-th coordinate attribute in i-th row."""
-        linkedlist = cls(dimension)
+        linked_list = cls(dimension)
         nodes = [VectorNode(dimension, coordinate=point) for point in points]
         for i in range(dimension):
             sorted_node = cls.sort_by_index(nodes, i)
-            linkedlist.extend(sorted_node, i)
-        return linkedlist
+            linked_list.extend(sorted_node, i)
+        return linked_list
 
     @staticmethod
     def sort_by_index(node_list: tp.List[VectorNode], dimension_index: int) -> tp.List[VectorNode]:
