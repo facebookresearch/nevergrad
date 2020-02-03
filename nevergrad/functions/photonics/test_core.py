@@ -76,8 +76,8 @@ def test_photonics_error() -> None:
 
 
 @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint"])  # type: ignore
-@pytest.mark.parametrize("name", ["bragg", "morpho", "chirped"])
-def test_no_warning(name: str, method: str):
+@pytest.mark.parametrize("name", ["bragg", "morpho", "chirped"])  # type: ignore
+def test_no_warning(name: str, method: str) -> None:
     with warnings.catch_warnings(record=True) as w:
         core.Photonics(name, 24, bounding_method=method)
         assert not w, f"Got a warning at initialization: {w[0]}"
