@@ -228,6 +228,10 @@ class DifferentialEvolution(base.ParametrizedFamily):
 DE = DifferentialEvolution().with_name("DE", register=True)
 OnePointDE = DifferentialEvolution(crossover="onepoint").with_name("OnePointDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").with_name("TwoPointsDE", register=True)
+DimParametrizationDE = DifferentialEvolution(crossover="parametrization", popsize="dimension").with_name(
+    "DimParametrizationDE", register=True
+)
+DimTwoPointsDE = DifferentialEvolution(crossover="twopoints", popsize="dimension").with_name("DimTwoPointsDE", register=True)
 ParametrizationDE = DifferentialEvolution(crossover="parametrization").with_name("ParametrizationDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=True)
