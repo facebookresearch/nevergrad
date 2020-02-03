@@ -34,6 +34,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
             pip install -e .
 
       - save_cache:
@@ -58,12 +59,11 @@ jobs:
       - run:
           name: "[all] Install dependencies"
           command: |
-            python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip
             pip install -e .[all]
 
       - save_cache:
+          # only this one saves cache to avoid race conditions
           name: "[all] Save cache"
           paths:
             - ./venv
@@ -91,6 +91,13 @@ jobs:
           name: "[all] Restore cache"
           keys:
           - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+
+      - run:
+          name: "[all] Install dependencies"
+          command: |
+            . venv/bin/activate
+            pip install -e .[all]
 
       - run:
           name: Print installation
@@ -122,6 +129,13 @@ jobs:
           name: "[all] Restore cache"
           keys:
           - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+
+      - run:
+          name: "[all] Install dependencies"
+          command: |
+            . venv/bin/activate
+            pip install -e .[all]
 
       - run:
           name: "[all] Run pytest"
@@ -137,8 +151,4 @@ workflows:
     jobs:
       - install
       - mypy:
-          requires:
-            - install
       - pytests:
-          requires:
-            - install
