@@ -205,9 +205,12 @@ class HypervolumeIndicator:
                 node.dominated_flag = 0
         # Line 5
         hypervolume = 0.0
-        # Lines 6 to 12
-        for node in self.multilist.reverse_iterate(dimension):
+        # Line 6
+        current_node = self.multilist.sentinel.prev[dimension]
+        # Lines 7 to 12
+        for node in self.multilist.reverse_iterate(dimension, start=current_node):
             assert node is not None
+            current_node = node
             if self.multilist.chain_length(dimension-1) > 1 and (
                 node.coordinate[dimension] > bounds[dimension]
                 or node.prev[dimension].coordinate[dimension] >= bounds[dimension]
@@ -222,24 +225,22 @@ class HypervolumeIndicator:
                 break
 
         # Line 13
-        assert node is not None
         if self.multilist.chain_length(dimension-1) > 1:
             # Line 14
-            # TODO which node is that??
-            hypervolume = node.prev[dimension].volume[dimension]
-            hypervolume += node.prev[dimension].area[dimension] * (
-                node.coordinate[dimension] - node.prev[dimension].coordinate[dimension]
+            hypervolume = current_node.prev[dimension].volume[dimension]
+            hypervolume += current_node.prev[dimension].area[dimension] * (
+                current_node.coordinate[dimension] - current_node.prev[dimension].coordinate[dimension]
             )
         else:
-            node.configure_area(dimension)
+            current_node.configure_area(dimension)
 
         # Line 15
-        node.volume[dimension] = hypervolume
+        current_node.volume[dimension] = hypervolume
         # Line 16
-        self.skip_dominated_points(node, dimension, bounds)
+        self.skip_dominated_points(current_node, dimension, bounds)
 
         # Line 17
-        for node in self.multilist.iterate(dimension, start=node.next[dimension]):
+        for node in self.multilist.iterate(dimension, start=current_node.next[dimension]):
             assert node is not None
             # Line 18
             hypervolume += node.prev[dimension].area[dimension] * (
@@ -259,7 +260,8 @@ class HypervolumeIndicator:
             self.skip_dominated_points(node, dimension, bounds)
 
         # Line 27
-        hypervolume -= node.area[dimension] * node.coordinate[dimension]
+        last_node = self.multilist.sentinel.prev[dimension]
+        hypervolume -= last_node.area[dimension] * last_node.coordinate[dimension]
         return hypervolume
 
     def skip_dominated_points(
