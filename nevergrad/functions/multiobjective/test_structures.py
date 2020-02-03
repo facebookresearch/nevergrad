@@ -1,3 +1,5 @@
+import numpy as np
+
 from nevergrad.functions.multiobjective.hypervolume import VectorNode, VectorLinkedList
 
 
@@ -5,11 +7,11 @@ def test_initialize() -> None:
     dim = 4
     node = VectorNode(dim)
 
-    assert node.coordinate is None
+    assert isinstance(node.coordinate, np.ndarray)
     for entry in node.next:
-        assert entry is None
+        assert entry is node
     for entry in node.prev:
-        assert entry is None
+        assert entry is node
 
     assert list(node.area) == [0.0] * dim
     assert list(node.volume) == [0.0] * dim
@@ -41,8 +43,8 @@ def test_append() -> None:
     multilist.append(new_node, 0)
 
     for i in range(1, dim):
-        assert new_node.next[i] is None
-        assert new_node.prev[i] is None
+        assert new_node.next[i] is new_node
+        assert new_node.prev[i] is new_node
         assert multilist.sentinel.next[i] is multilist.sentinel
         assert multilist.sentinel.prev[i] is multilist.sentinel
 
@@ -54,8 +56,8 @@ def test_append() -> None:
     another_node = VectorNode(dim)
     multilist.append(another_node, 0)
     for i in range(1, dim):
-        assert new_node.next[i] is None
-        assert new_node.prev[i] is None
+        assert new_node.next[i] is new_node
+        assert new_node.prev[i] is new_node
         assert multilist.sentinel.next[i] is multilist.sentinel
         assert multilist.sentinel.prev[i] is multilist.sentinel
 
