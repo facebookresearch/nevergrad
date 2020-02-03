@@ -175,9 +175,9 @@ workflows:
     jobs:
       - install
       - mypy:
-        requires:
-          - install
+          requires:
+            - install
       - pytests:
-        requires:
-          - install
+          requires:
+            - install
       - windows-pytests
