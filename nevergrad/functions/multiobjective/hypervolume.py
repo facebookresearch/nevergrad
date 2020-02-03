@@ -51,9 +51,6 @@ class VectorLinkedList:
         self.dimension = dimension
         self.sentinel = VectorNode(dimension)
 
-        # self.sentinel._prev = [self.sentinel for _ in range(dimension)]
-        # self.sentinel._next = [self.sentinel for _ in range(dimension)]
-
     def __str__(self) -> str:
         string = [
             str([str(node) for node in self.iterate(dimension)])

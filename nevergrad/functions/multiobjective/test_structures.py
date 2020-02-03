@@ -8,7 +8,7 @@ from nevergrad.functions.multiobjective.hypervolume import (
 from nevergrad.functions.multiobjective.pyhv import _HyperVolume
 
 
-def test_initialize_node() -> None:
+def test_initialize_empty_node() -> None:
     dim = 4
     node = VectorNode(dim)
 
@@ -20,6 +20,39 @@ def test_initialize_node() -> None:
 
     assert list(node.area) == [0.0] * dim
     assert list(node.volume) == [0.0] * dim
+    assert str(node) == "None"
+
+
+def test_initialize_node() -> None:
+    dim = 4
+    coordinate = [1.0, 2.0, 3.0]
+    node = VectorNode(dim, coordinate=coordinate)
+
+    assert isinstance(node.coordinate, np.ndarray)
+    assert list(node.coordinate) == coordinate
+    for entry in node.next:
+        assert entry is node
+    for entry in node.prev:
+        assert entry is node
+
+    assert list(node.area) == [0.0] * dim
+    assert list(node.volume) == [0.0] * dim
+    assert str(node) == "[1. 2. 3.]"
+
+    node.configure_area(0)
+    assert node.area[0] == 1.0
+    assert node.area[1] == 0.0
+    assert node.area[2] == 0.0
+
+    node.configure_area(1)
+    assert node.area[0] == 1.0
+    assert node.area[1] == -1.0
+    assert node.area[2] == 0.0
+
+    node.configure_area(2)
+    assert node.area[0] == 1.0
+    assert node.area[1] == -1.0
+    assert node.area[2] == 2.0
 
 
 def test_initialize_linked_list() -> None:
@@ -38,6 +71,8 @@ def test_initialize_linked_list() -> None:
 
     assert len(multilist.sentinel.next) == len(multilist.sentinel.prev)
     assert len(multilist.sentinel.next) == len(multilist.sentinel.next[0].next)
+
+    assert str(multilist) == "\n".join([str([])] * dim)
 
 
 def test_append() -> None:
@@ -72,6 +107,50 @@ def test_append() -> None:
     assert multilist.sentinel.prev[0] is another_node
 
 
+def test_extend() -> None:
+    dim = 1
+    multilist = VectorLinkedList(dimension=dim)
+    another_multilist = VectorLinkedList(dimension=dim)
+
+    new_node = VectorNode(dim)
+    another_node = VectorNode(dim)
+
+    multilist.append(new_node, 0)
+    multilist.append(another_node, 0)
+
+    another_multilist.extend([new_node, another_node], 0)
+    assert another_multilist.chain_length(0) == 2
+    assert another_multilist.sentinel.next[0] is multilist.sentinel.next[0]
+    assert another_multilist.sentinel.next[0].next[0] is multilist.sentinel.next[0].next[0]
+
+
+def test_chain_length() -> None:
+    dim = 3
+    multilist = VectorLinkedList(dimension=dim)
+
+    new_node = VectorNode(dim)
+    multilist.append(new_node, 0)
+    assert multilist.chain_length(0) == 1
+    assert multilist.chain_length(1) == 0
+    assert multilist.chain_length(2) == 0
+
+    another_node = VectorNode(dim)
+    multilist.append(another_node, 0)
+    assert multilist.chain_length(0) == 2
+    assert multilist.chain_length(1) == 0
+    assert multilist.chain_length(2) == 0
+
+    multilist.append(another_node, 1)
+    assert multilist.chain_length(0) == 2
+    assert multilist.chain_length(1) == 1
+    assert multilist.chain_length(2) == 0
+
+    multilist.append(new_node, 2)
+    assert multilist.chain_length(0) == 2
+    assert multilist.chain_length(1) == 1
+    assert multilist.chain_length(2) == 1
+
+
 def test_pop() -> None:
     dim = 4
     multilist = VectorLinkedList(dimension=dim)
@@ -88,18 +167,94 @@ def test_pop() -> None:
         assert multilist.sentinel.prev[i] is multilist.sentinel
 
 
+def test_reinsert() -> None:
+    dim = 2
+    multilist = VectorLinkedList(dimension=dim)
+
+    new_node = VectorNode(dim)
+    another_node = VectorNode(dim)
+
+    multilist.append(new_node, 0)
+    multilist.append(another_node, 0)
+
+    multilist.append(another_node, 1)
+    multilist.append(new_node, 1)
+
+    popped_node = multilist.pop(new_node, 1 + 1)
+
+    multilist.reinsert(new_node, 0 + 1)
+    assert multilist.chain_length(0) == 2
+    assert multilist.chain_length(1) == 1
+    assert new_node.next[0] is another_node
+    assert new_node.prev[0] is multilist.sentinel
+    assert another_node.prev[0] is new_node
+    assert another_node.next[0] is multilist.sentinel
+    assert another_node.prev[1] is multilist.sentinel
+    assert another_node.next[1] is multilist.sentinel
+
+    multilist.reinsert(popped_node, 1 + 1)
+    assert multilist.chain_length(0) == 2
+    assert multilist.chain_length(1) == 2
+    assert another_node.prev[1] is multilist.sentinel
+    assert another_node.next[1] is new_node
+    assert new_node.prev[1] is another_node
+    assert new_node.next[1] is multilist.sentinel
+
+
+def test_iterate() -> None:
+    dim = 1
+    multilist = VectorLinkedList(dimension=dim)
+
+    new_node = VectorNode(dim)
+    another_node = VectorNode(dim)
+
+    multilist.append(new_node, 0)
+    multilist.append(another_node, 0)
+    gen = multilist.iterate(0)
+    assert next(gen) is new_node
+    assert next(gen) is another_node
+
+    yet_another_node = VectorNode(dim)
+    multilist.append(yet_another_node, 0)
+    gen = multilist.iterate(0, start=another_node)
+    assert next(gen) is another_node
+    assert next(gen) is yet_another_node
+
+
+def test_reverse_iterate() -> None:
+    dim = 1
+    multilist = VectorLinkedList(dimension=dim)
+
+    new_node = VectorNode(dim)
+    another_node = VectorNode(dim)
+    yet_another_node = VectorNode(dim)
+
+    multilist.append(new_node, 0)
+    multilist.append(another_node, 0)
+    multilist.append(yet_another_node, 0)
+
+    gen = multilist.reverse_iterate(0)
+    assert next(gen) is yet_another_node
+    assert next(gen) is another_node
+    assert next(gen) is new_node
+
+    gen = multilist.reverse_iterate(0, start=another_node)
+    assert next(gen) is another_node
+    assert next(gen) is new_node
+
+
 def test_version_consistency() -> None:
     reference = np.array([79, 89, 99])
     hv = HypervolumeIndicator(reference)
     front = [
-        (110, 110, 100),  # -0 + distance
-        (110, 90, 87),  # -0 + distance
-        (80, 80, 36),  # -400 + distance
+        (110, 110, 100),
+        (110, 90, 87),
+        (80, 80, 36),
         (50, 50, 55),
         (105, 30, 43),
         (110, 110, 100)
     ]
     volume = hv.compute(front)
 
-    reference_volume = _HyperVolume(reference).compute(front)  # type: ignore
+    reference_volume = _HyperVolume(reference).compute(front)
     assert volume == reference_volume
