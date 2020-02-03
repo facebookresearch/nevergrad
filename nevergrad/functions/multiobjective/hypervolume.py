@@ -274,21 +274,3 @@ class HypervolumeIndicator:
             node.area[dimension] = self.recursive_hypervolume(dimension - 1, bounds)
             if node.area[dimension] <= node.prev[dimension].area[dimension]:
                 node.dominated_flag = dimension
-
-
-if __name__ == "__main__":  # TODO move as a test
-    reference = np.array([79, 89, 99])
-    hv = HypervolumeIndicator(reference)
-    front = [
-        (110, 110, 100),  # -0 + distance
-        (110, 90, 87),  # -0 + distance
-        (80, 80, 36),  # -400 + distance
-        (50, 50, 55),
-        (105, 30, 43),
-        (110, 110, 100)
-    ]
-    volume = hv.compute(front)
-
-    from nevergrad.functions.multiobjective.pyhv import _HyperVolume
-    reference_volume = _HyperVolume(reference).compute(front)  # type: ignore
-    assert volume == reference_volume

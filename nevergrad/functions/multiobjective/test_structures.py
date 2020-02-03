@@ -1,9 +1,14 @@
 import numpy as np
 
-from nevergrad.functions.multiobjective.hypervolume import VectorNode, VectorLinkedList
+from nevergrad.functions.multiobjective.hypervolume import (
+    VectorNode,
+    VectorLinkedList,
+    HypervolumeIndicator,
+)
+from nevergrad.functions.multiobjective.pyhv import _HyperVolume
 
 
-def test_initialize() -> None:
+def test_initialize_node() -> None:
     dim = 4
     node = VectorNode(dim)
 
@@ -17,7 +22,7 @@ def test_initialize() -> None:
     assert list(node.volume) == [0.0] * dim
 
 
-def test_initialize_2() -> None:
+def test_initialize_linked_list() -> None:
     dim = 4
     multilist = VectorLinkedList(dimension=dim)
 
@@ -81,3 +86,20 @@ def test_pop() -> None:
     for i in range(dim):
         assert multilist.sentinel.next[i] is multilist.sentinel
         assert multilist.sentinel.prev[i] is multilist.sentinel
+
+
+def test_version_consistency() -> None:
+    reference = np.array([79, 89, 99])
+    hv = HypervolumeIndicator(reference)
+    front = [
+        (110, 110, 100),  # -0 + distance
+        (110, 90, 87),  # -0 + distance
+        (80, 80, 36),  # -400 + distance
+        (50, 50, 55),
+        (105, 30, 43),
+        (110, 110, 100)
+    ]
+    volume = hv.compute(front)
+
+    reference_volume = _HyperVolume(reference).compute(front)  # type: ignore
+    assert volume == reference_volume
