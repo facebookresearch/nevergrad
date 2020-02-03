@@ -21,7 +21,7 @@ class VectorNode:
 
     def configure_area(self, dimension: int) -> None:
         self.area[0] = 1.0
-        self.area[1 : dimension + 1] = [
+        self.area[1: dimension + 1] = [
             -self.area[i] * self.coordinate[i] for i in range(dimension)
         ]
 
@@ -184,7 +184,8 @@ class HypervolumeIndicator:
                 break
             hypervolume += h * (node.coordinate[dimension] - next_node.coordinate[dimension])
             h = min(h, next_node.coordinate[dimension - 1])
-        hypervolume += h * node.coordinate[dimension]  # TODO undefined node
+        last_node = self.multilist.sentinel.prev[dimension]
+        hypervolume += h * last_node.coordinate[dimension]
         return hypervolume
 
     def recursive_hypervolume(self, dimension: int, front_size: int, bounds: tp.List[float]) -> float:
