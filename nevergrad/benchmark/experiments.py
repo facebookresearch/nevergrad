@@ -728,9 +728,9 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     popsizes = [5, 40]
-    es = [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=False, popsize=pop)
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
           for recomb in [0, 1] for pop in popsizes]
-    es += [ng.families.EvolutionStrategy(recombinations=recomb, only_offsprings=only, popsize=pop,
+    es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
                                          offsprings=10 if pop == 5 else 60)
            for only in [True, False] for recomb in [0, 1] for pop in popsizes]
     optimizers = ["CMA", "TwoPointsDE"] + es  # type: ignore

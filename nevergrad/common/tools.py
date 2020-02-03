@@ -58,6 +58,14 @@ class Selector(pd.DataFrame):  # type: ignore
     """Pandas dataframe class with a simplified selection function
     """
 
+    @property
+    def _constructor_expanddim(self) -> tp.Type["Selector"]:
+        return Selector
+
+    @property
+    def _constructor(self) -> tp.Type["Selector"]:
+        return Selector
+
     # pylint: disable=arguments-differ
     def select(self, **kwargs: tp.Union[str, tp.Sequence[str], tp.Callable[[tp.Any], bool]]) -> "Selector":
         """Select rows based on a value, a sequence of values or a discriminating function

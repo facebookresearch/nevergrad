@@ -17,8 +17,12 @@ pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergr
 Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
 
 By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interested in the benchmarking part,
-you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
-the `[all]` flag (example: `pip install -e '.[all]'`).
+you should install with the `[benchmark]` flag (example: `pip install nevergrad[benchmark]`), and if you also want the test tools, use
+the `[all]` flag (example: `pip install -e .[all]`).
+
+**Notes**:
+- with `zhs` you will need to run `pip install 'nevergrad[all]'` instead of `pip install nevergrad[all]`
+- under Windows, you may need to preinstall torch (for `benchmark` or `all` installations) using instructions [here](https://pytorch.org/get-started/locally/).
 
 
 You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/).

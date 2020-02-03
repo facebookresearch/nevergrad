@@ -153,6 +153,15 @@ def test_uid_queue() -> None:
     uidq.tell("b")
     for uid in ["c", "b", "a", "c", "b", "a"]:
         assert uidq.ask() == uid
+    # discarding (in asked, and in told)
+    uidq.discard("b")
+    for uid in ["c", "a", "c", "a"]:
+        assert uidq.ask() == uid
+    uidq.tell("a")
+    uidq.discard("a")
+    for uid in ["c", "c"]:
+        assert uidq.ask() == uid
+    # clearing
     uidq.clear()
     with pytest.raises(RuntimeError):
         uidq.ask()

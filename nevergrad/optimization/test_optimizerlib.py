@@ -256,29 +256,35 @@ def test_optimizer_families_repr() -> None:
 
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
 def test_tell_not_asked(name: str) -> None:
-    best = [0.5, -0.8, 0, 4]
-    dim = len(best)
-    fitness = Fitness(best)
+    param = ng.p.Scalar()
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        opt = optlib.registry[name](instrumentation=dim, budget=2, num_workers=2)
+        opt = optlib.registry[name](instrumentation=param, budget=2, num_workers=2)
     if name == "PSO":
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
-    zero_c = opt.instrumentation.spawn_child().set_standardized_data([0.0] * dim)
-    best_c = opt.instrumentation.spawn_child().set_standardized_data(best)
-    opt.tell(zero_c, fitness(zero_c.args[0]))  # not asked
-    asked = [opt.ask(), opt.ask()]
-    opt.tell(best_c, fitness(best))  # not asked
-    opt.tell(asked[0], fitness(*asked[0].args))
-    opt.tell(asked[1], fitness(*asked[1].args))
+    t_10 = opt.instrumentation.spawn_child(new_value=10)
+    t_100 = opt.instrumentation.spawn_child(new_value=100)
+    assert not opt.population  # type: ignore
+    opt.tell(t_10, 90)  # not asked
+    assert len(opt.population) == 1  # type: ignore
+    asked = opt.ask()
+    opt.tell(asked, 88)
+    assert len(opt.population) == 2  # type: ignore
+    opt.tell(t_100, 0)  # not asked
+    asked = opt.ask()
+    opt.tell(asked, 89)
+    assert len(opt.population) == 2  # type: ignore
     assert opt.num_tell == 4, opt.num_tell
     assert opt.num_ask == 2
-    if (0, 0, 0, 0) not in [tuple(x.args[0]) for x in asked]:
-        for value in opt.archive.values():
-            assert value.count == 1
+    assert len(opt.population) == 2  # type: ignore
+    assert int(opt.recommend().value) == 100
+    if isinstance(opt.population, dict):  # type: ignore
+        assert t_100.uid in opt.population  # type: ignore
+    for point, value in opt.archive.items_as_arrays():
+        assert value.count == 1, f"Error for point {point}"
 
 
 def test_tbpsa_recom_with_update() -> None:

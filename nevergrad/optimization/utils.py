@@ -431,3 +431,9 @@ class UidQueue:
         self.told.append(uid)
         if uid in self.asked:
             self.asked.discard(uid)
+
+    def discard(self, uid: str) -> None:
+        if uid in self.asked:
+            self.asked.discard(uid)
+        else:
+            self.told.remove(uid)
