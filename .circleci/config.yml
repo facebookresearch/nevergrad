@@ -150,5 +150,5 @@ workflows:
   all_ci:
     jobs:
       - install
-      - mypy:
-      - pytests:
+      - mypy
+      - pytests
