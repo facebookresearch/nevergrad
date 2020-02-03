@@ -174,10 +174,10 @@ workflows:
   all_ci:
     jobs:
       - install
-      - mypy
+      - mypy:
         requires:
           - install
-      - pytests
+      - pytests:
         requires:
           - install
       - windows-pytests
