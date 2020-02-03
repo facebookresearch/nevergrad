@@ -68,9 +68,10 @@ def test_photonics_error() -> None:
     # check error
     photo = core.Photonics("bragg", 16)
     np.testing.assert_raises(AssertionError, photo, np.zeros(12).tolist())
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as ws:
         output = photo(np.zeros(16))
-        assert len(w) == 1
+        # one warning on Ubuntu, two warnings with Windows
+        assert any(isinstance(w.message, RuntimeWarning) for w in ws)
     np.testing.assert_almost_equal(output, float("inf"))
 
 

@@ -69,6 +69,13 @@ jobs:
             - ./venv
           key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
+      - run:
+          name: Print installation
+          when: always
+          command: |
+            . venv/bin/activate
+            pip freeze
+
       # Run all tests
 
       - run:

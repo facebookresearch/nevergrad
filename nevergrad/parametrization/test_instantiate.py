@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import sys
 import tempfile
 import typing as tp
 from pathlib import Path
@@ -112,7 +113,7 @@ def test_file_text_function() -> None:
 
 def test_folder_function() -> None:
     folder = Path(__file__).parent / "examples"
-    func = instantiate.FolderFunction(str(folder), ["python", "examples/script.py"], clean_copy=True)
+    func = instantiate.FolderFunction(str(folder), [sys.executable, "examples/script.py"], clean_copy=True)
     with testing.skip_error_on_systems(OSError, systems=("Windows",)):
         output = func(value1=98, value2=12, string="plop")
     np.testing.assert_equal(output, 24)
