@@ -57,6 +57,8 @@ jobs:
       - image: circleci/python:3.6.1
 
     working_directory: ~/repo
+
+    steps:
       - checkout
 
       - restore_cache:
@@ -111,6 +113,7 @@ jobs:
 
     working_directory: ~/repo
 
+    steps:
       - checkout
 
       - restore_cache:
@@ -146,7 +149,6 @@ jobs:
     executor:
       name: win/default
       shell: bash.exe
-
 
     steps:
 
