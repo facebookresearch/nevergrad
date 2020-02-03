@@ -107,7 +107,7 @@ jobs:
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
 
 
-  full-install-pytest:
+  full-install-pytests:
     docker:
       - image: circleci/python:3.6.1
 
@@ -177,3 +177,12 @@ jobs:
           command: |
             . ./venv/Scripts/activate
             pytest nevergrad
+
+workflows:
+  version: 2
+  all_ci:
+    jobs:
+      - partial-install
+      - full-install-mypy
+      - full-install-pytests
+      - windows-pytests
