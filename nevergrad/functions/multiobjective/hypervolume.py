@@ -51,6 +51,24 @@ class VectorLinkedList:
         self.dimension = dimension
         self.sentinel = VectorNode(dimension)
 
+    @classmethod
+    def create_sorted(cls, dimension: int, points: tp.Any) -> "VectorLinkedList":
+        """ Instantiate a VectorLinkedList of dimension `dimension`. The list is
+        populated by nodes::VectorNode created from `points`. The nodes are sorted
+        by i-th coordinate attribute in i-th row."""
+        linkedlist = cls(dimension)
+        nodes = [VectorNode(dimension, coordinate=point) for point in points]
+        for i in range(dimension):
+            sorted_node = cls.sort_by_index(nodes, i)
+            linkedlist.extend(sorted_node, i)
+        return linkedlist
+
+    @staticmethod
+    def sort_by_index(node_list: tp.List[VectorNode], dimension_index: int) -> tp.List[VectorNode]:
+        """ Returns a sorted list of `VectorNode`, with the sorting key defined by the
+        `dimension_index`-th coordinates of the nodes in the `node_list`."""
+        return sorted(node_list, key=lambda node: node.coordinate[dimension_index])
+
     def __str__(self) -> str:
         string = [
             str([str(node) for node in self.iterate(dimension)])
@@ -149,23 +167,9 @@ class HypervolumeIndicator:
 
     def compute(self, points: tp.Any) -> float:  # TODO not too sure what that is (replace Any)
         points = points - self.reference_point
-
-        self._multilist = self.construct_linkedlist(points)
+        self._multilist = VectorLinkedList.create_sorted(self.dimension, points)
         hypervolume = self.recursive_hypervolume(self.dimension - 1, self.reference_bounds)
         return hypervolume
-
-    def construct_linkedlist(self, points: tp.List[np.ndarray]) -> VectorLinkedList:
-        linkedlist = VectorLinkedList(self.dimension)
-        nodes = [VectorNode(self.dimension, coordinate=point) for point in points]
-        for i in range(self.dimension):
-            sorted_node = self.sort_by_index(nodes, i)
-            linkedlist.extend(sorted_node, i)
-        return linkedlist
-
-    def sort_by_index(self, node_list: tp.List[VectorNode], dimension_index: int) -> tp.List[VectorNode]:
-        """ Returns a sorted list of `VectorNode`, with the sorting key defined by the
-        `dimension_index`-th coordinates of the nodes in the `node_list`."""
-        return sorted(node_list, key=lambda node: node.coordinate[dimension_index])
 
     def plane_hypervolume(self, dimension: int) -> float:
         """ Calculates the hypervolume on a two dimensional plane. The algorithm
