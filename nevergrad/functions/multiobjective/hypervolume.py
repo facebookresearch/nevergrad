@@ -154,9 +154,7 @@ class HypervolumeIndicator:
         points = points - self.reference_point
 
         self._multilist = self.construct_linkedlist(points)
-        hypervolume = self.recursive_hypervolume(
-            self.dimension - 1, len(points), self.reference_bounds
-        )
+        hypervolume = self.recursive_hypervolume(self.dimension - 1, self.reference_bounds)
         return hypervolume
 
     def construct_linkedlist(self, points: tp.List[np.ndarray]) -> VectorLinkedList:
@@ -188,10 +186,10 @@ class HypervolumeIndicator:
         hypervolume += h * last_node.coordinate[dimension]
         return hypervolume
 
-    def recursive_hypervolume(self, dimension: int, front_size: int, bounds: tp.List[float]) -> float:
+    def recursive_hypervolume(self, dimension: int, bounds: tp.List[float]) -> float:
         """ Recursive hypervolume computation. The algorithm is provided by Algorithm 3.
         of the original paper."""
-        if front_size == 0:
+        if self.multilist.chain_length(dimension-1) == 0:
             return 0
         assert self.multilist is not None
         if dimension == 0:
@@ -210,7 +208,7 @@ class HypervolumeIndicator:
         # Lines 6 to 12
         for node in self.multilist.reverse_iterate(dimension):
             assert node is not None
-            if front_size > 1 and (
+            if self.multilist.chain_length(dimension-1) > 1 and (
                 node.coordinate[dimension] > bounds[dimension]
                 or node.prev[dimension].coordinate[dimension] >= bounds[dimension]
             ):
@@ -219,13 +217,13 @@ class HypervolumeIndicator:
                 # Line 10
                 self.multilist.pop(node, dimension)
                 # Line 11
-                front_size -= 1
+                # front_size -= 1
             else:
                 break
 
         # Line 13
         assert node is not None
-        if front_size > 1:
+        if self.multilist.chain_length(dimension-1) > 1:
             # Line 14
             # TODO which node is that??
             hypervolume = node.prev[dimension].volume[dimension]
@@ -238,7 +236,7 @@ class HypervolumeIndicator:
         # Line 15
         node.volume[dimension] = hypervolume
         # Line 16
-        self.skip_dominated_points(node, dimension, front_size, bounds)
+        self.skip_dominated_points(node, dimension, bounds)
 
         # Line 17
         for node in self.multilist.iterate(dimension, start=node.next[dimension]):
@@ -254,24 +252,24 @@ class HypervolumeIndicator:
             # Line 21
             self.multilist.reinsert(node, dimension)
             # Line 22
-            front_size += 1
+            # front_size += 1
             # Line 25
             node.volume[dimension] = hypervolume
             # Line 26
-            self.skip_dominated_points(node, dimension, front_size, bounds)
+            self.skip_dominated_points(node, dimension, bounds)
 
         # Line 27
         hypervolume -= node.area[dimension] * node.coordinate[dimension]
         return hypervolume
 
     def skip_dominated_points(
-        self, node: VectorNode, dimension: int, front_size: int, bounds: tp.List[float]
+        self, node: VectorNode, dimension: int, bounds: tp.List[float]
     ) -> None:
         """ Implements Algorithm 2, _skipdom_, for skipping dominated points."""
         if node.dominated_flag >= dimension:
             node.area[dimension] = node.prev[dimension].area[dimension]
         else:
-            node.area[dimension] = self.recursive_hypervolume(dimension - 1, front_size, bounds)
+            node.area[dimension] = self.recursive_hypervolume(dimension - 1, bounds)
             if node.area[dimension] <= node.prev[dimension].area[dimension]:
                 node.dominated_flag = dimension
 
@@ -285,6 +283,7 @@ if __name__ == "__main__":  # TODO move as a test
         (80, 80, 36),  # -400 + distance
         (50, 50, 55),
         (105, 30, 43),
+        (110, 110, 100)
     ]
     volume = hv.compute(front)
 
