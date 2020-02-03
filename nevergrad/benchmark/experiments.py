@@ -120,7 +120,7 @@ def largedoe(seed: Optional[int] = None) -> Iterator[Experiment]:
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -341,7 +341,7 @@ def doe_dim10(seed: Optional[int] = None) -> Iterator[Experiment]:
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000, 10000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
