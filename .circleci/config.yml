@@ -192,4 +192,4 @@ workflows:
       - install
       - mypy
       - pytests
-      - windows-pytest
+      - windows-pytests
