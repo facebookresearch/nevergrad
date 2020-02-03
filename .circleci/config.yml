@@ -167,7 +167,7 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad - v
+            pytest nevergrad -v
 
 workflows:
   version: 2
