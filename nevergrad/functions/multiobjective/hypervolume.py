@@ -64,6 +64,12 @@ class VectorLinkedList:
     def __len__(self) -> int:
         return self.dimension
 
+    def chain_length(self, index: int) -> int:
+        length = 0
+        for _ in self.iterate(index):
+            length += 1
+        return length
+
     def append(self, node: VectorNode, index: int) -> None:
         """ Append a node to the `index`-th position."""
         current_last = self.sentinel.prev[index]
@@ -107,7 +113,6 @@ class VectorLinkedList:
         node that is reinserted are in the list.
         """
         for i in range(index):
-            # they should not be None...
             node.prev[i].next[i] = node
             node.next[i].prev[i] = node
 
