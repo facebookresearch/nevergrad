@@ -32,7 +32,7 @@ def test_get_winners_df() -> None:
     # alg1 and alg2 are a tie (mean loss .3)
     data[tuple(zip(*[(1, 2), (2, 1)]))] = .5  # type: ignore
     expected = pd.DataFrame(index=all_optimizers, columns=all_optimizers, data=data)
-    assert winners.equals(expected), f"Expected:\n{expected}\nbut got:\n{winners}"
+    winners.assert_equivalent(expected)
 
 
 def test_make_sorted_winrates() -> None:
