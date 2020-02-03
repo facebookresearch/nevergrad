@@ -10,7 +10,7 @@ orbs:
 
 
 jobs:
-  partial-install:
+  install:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
@@ -52,15 +52,6 @@ jobs:
             . venv/bin/activate
             python -m nevergrad.optimization.requirements_check  # calls a bit of everything
 
-  full-install-mypy:
-    docker:
-      - image: circleci/python:3.6.1
-
-    working_directory: ~/repo
-
-    steps:
-      - checkout
-
       - restore_cache:
           name: "[all] Restore cache"
           keys:
@@ -81,6 +72,29 @@ jobs:
           paths:
             - ./venv
           key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: "Run wheel and check files presence"
+          when: always
+          command: |
+            . venv/bin/activate
+            python setup.py sdist bdist_wheel
+            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+
+
+  mypy:
+    docker:
+      - image: circleci/python:3.6.1
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Print installation
@@ -98,16 +112,8 @@ jobs:
             mypy --version
             mypy nevergrad
 
-      - run:
-          name: "Run wheel and check files presence"
-          when: always
-          command: |
-            . venv/bin/activate
-            python setup.py sdist bdist_wheel
-            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
 
-
-  full-install-pytests:
+  pytests:
     docker:
       - image: circleci/python:3.6.1
 
@@ -120,22 +126,6 @@ jobs:
           name: "[all] Restore cache"
           keys:
           - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
-          # fallback to installing main requirements
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
-
-      - run:
-          name: "[all] Install dependencies"
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install --upgrade pip
-            pip install -e .[all]
-
-      - save_cache:
-          name: "[all] Save cache"
-          paths:
-            - ./venv
-          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Run pytest"
@@ -177,13 +167,17 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad
+            pytest nevergrad - v
 
 workflows:
   version: 2
   all_ci:
     jobs:
-      - partial-install
-      - full-install-mypy
-      - full-install-pytests
+      - install
+      - mypy
+        requires:
+          - install
+      - pytests
+        requires:
+          - install
       - windows-pytests
