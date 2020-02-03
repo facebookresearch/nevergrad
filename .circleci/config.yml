@@ -2,9 +2,15 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-version: 2
+version: 2.1
+
+
+orbs:
+  win: circleci/windows@2.2.0
+
+
 jobs:
-  build:
+  partial-install:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
@@ -46,7 +52,12 @@ jobs:
             . venv/bin/activate
             python -m nevergrad.optimization.requirements_check  # calls a bit of everything
 
-      # Download and cache dependencies for "main"
+  full-install-mypy:
+    docker:
+      - image: circleci/python:3.6.1
+
+    working_directory: ~/repo
+      - checkout
 
       - restore_cache:
           name: "[all] Restore cache"
@@ -86,16 +97,81 @@ jobs:
             mypy nevergrad
 
       - run:
-          name: "[all] Run pytest"
-          when: always
-          command: |
-            . venv/bin/activate
-            pytest nevergrad --durations=20 --cov=nevergrad
-
-      - run:
           name: "Run wheel and check files presence"
           when: always
           command: |
             . venv/bin/activate
             python setup.py sdist bdist_wheel
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+
+
+  full-install-pytest:
+    docker:
+      - image: circleci/python:3.6.1
+
+    working_directory: ~/repo
+
+      - checkout
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          # fallback to installing main requirements
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+
+      - run:
+          name: "[all] Install dependencies"
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install -e .[all]
+
+      - save_cache:
+          name: "[all] Save cache"
+          paths:
+            - ./venv
+          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: "[all] Run pytest"
+          when: always
+          command: |
+            . venv/bin/activate
+            pytest nevergrad --durations=20 --cov=nevergrad
+
+
+  windows-pytests:
+    executor:
+      name: win/default
+      shell: bash.exe
+
+
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: Setup nevergrad in virtualenv
+          command: |
+            py -3 -m venv venv
+            . ./venv/Scripts/activate
+            pip install .[all]
+
+      - save_cache:
+          name: "[all] Save cache"
+          paths:
+            - ./venv
+          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: pytest
+          command: |
+            . ./venv/Scripts/activate
+            pytest nevergrad
