@@ -12,6 +12,7 @@ from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions import mlda as _mlda
+from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
@@ -173,7 +174,7 @@ def multimodal(seed: Optional[int] = None, para: bool = False) -> Iterator[Exper
               "MultiCMA", "TripleCMA", "MultiScaleCMA"]
     if not para:
         optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
-    #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -206,7 +207,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
     if not parallel:
         optims += ["SQP", "Cobyla", "Powell", "chainCMASQP", "chainCMAPowell"]
-    #optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
+    # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
@@ -737,3 +738,23 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def photonics(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    popsizes = [10, 40, 100]
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
+          for recomb in [0.1, 1] for pop in popsizes]
+    es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
+                                         offsprings={10: 20, 40: 60, 100: 150}[pop])
+           for only in [True, False] for recomb in [0.1, 1] for pop in popsizes]
+    algos = ["TwoPointsDE", "DE", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
+    for method in ["clipping", "tanh", "arctan"]:
+        # , "chirped"]]:  # , "morpho"]]:
+        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg"]]:
+            for budget in [1e2, 1e3, 1e4, 1e5, 1e6]:
+                for algo in algos:
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
