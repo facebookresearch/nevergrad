@@ -100,12 +100,10 @@ class VectorLinkedList:
 
     @staticmethod
     def update_coordinate_bounds(
-            bounds: tp.Optional[tp.List[float]],
+            bounds: tp.List[float],
             node: VectorNode,
             index: int
-    ) -> tp.Optional[tp.List[float]]:
-        if bounds is None:
-            return None
+    ) -> tp.List[float]:
         for i in range(index):
             if bounds[i] > node.coordinate[i]:
                 bounds[i] = node.coordinate[i]
@@ -164,7 +162,7 @@ class HypervolumeIndicator:
         assert self._multilist is not None
         return self._multilist
 
-    def compute(self, points: tp.Any) -> float:  # TODO not too sure what that is (replace Any)
+    def compute(self, points: tp.List[np.ndarray]) -> float:
         points = points - self.reference_point
         self._multilist = VectorLinkedList.create_sorted(self.dimension, points)
         hypervolume = self.recursive_hypervolume(self.dimension - 1, self.reference_bounds)

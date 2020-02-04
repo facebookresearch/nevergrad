@@ -244,8 +244,8 @@ def test_reverse_iterate() -> None:
 
 
 def test_update_coordinate_bounds() -> None:
-    bounds = [-1, -1, -1]
-    node = VectorNode(3, coordinate=[1, -2, -1])
+    bounds = [-1.0, -1.0, -1.0]
+    node = VectorNode(3, coordinate=[1.0, -2.0, -1.0])
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 0 + 1)
     assert bounds == [-1, -1, -1]
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 1 + 1)
