@@ -47,8 +47,8 @@ def _make_instrumentation(name: str, dimension: int, bounding_method: str = "cli
         shape = (2, dimension // 2)
         bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
-        shape = (2, dimension // 2)
-        bounds = [(0, 300), (0, 300)]
+        shape = (1, dimension)
+        bounds = [(0, 300)]
     elif name == "morpho":
         shape = (4, dimension // 4)
         bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]

@@ -9,7 +9,8 @@ import warnings
 import typing as tp
 import pytest
 import numpy as np
-from ...common import testing
+import nevergrad as ng
+from nevergrad.common import testing
 from . import core
 
 
@@ -57,13 +58,15 @@ def test_morpho_bounding_method_constraints() -> None:
 
 
 def test_photonics_recombination() -> None:
-    func = core.Photonics("chirped", 16)
+    func = core.Photonics("morpho", 16)
     func.parametrization.random_state.seed(24)
-    array = func.parametrization.spawn_child()
-    array.value = 12 * np.ones(array.value.shape)
-    array.recombine(func.parametrization)
-    expected = [12] * 5 + [150, 150, 12]
-    np.testing.assert_array_equal(array.value, np.ones((2, 1)).dot(np.array(expected)[None, :]))
+    arrays: tp.List[ng.p.Array] = []
+    for num in [50, 71]:
+        arrays.append(func.parametrization.spawn_child())  # type: ignore
+        arrays[-1].value = num * np.ones(arrays[0].value.shape)
+    arrays[0].recombine(arrays[1])
+    expected = [71, 50, 71, 71]
+    np.testing.assert_array_equal(arrays[0].value, np.ones((4, 1)).dot(np.array(expected)[None, :]))
 
 
 def test_photonics_error() -> None:
