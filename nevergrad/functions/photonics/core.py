@@ -45,7 +45,7 @@ def _make_instrumentation(name: str, dimension: int, bounding_method: str = "cli
     assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
     if name == "bragg":
         shape = (2, dimension // 2)
-        bounds = [(2, 3), (0, 300)]
+        bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
         shape = (2, dimension // 2)
         bounds = [(0, 300), (0, 300)]

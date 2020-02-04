@@ -14,7 +14,7 @@ from . import core
 
 
 @testing.parametrized(
-    bragg=("bragg", [2.93, 2.18, 2.35, 2.12, 31.53, 15.98, 226.69, 193.11]),
+    bragg=("bragg", [2.93, 2.18, 2.35, 2.12, 45.77, 37.99, 143.34, 126.55]),
     morpho=("morpho", [280.36, 52.96, 208.16, 72.69, 89.92, 60.37, 226.69, 193.11]),
     chirped=("chirped", [280.36, 52.96, 104.08, 36.34, 31.53, 15.98, 226.69, 193.11]),
 )
@@ -28,8 +28,8 @@ def test_photonics_bounding_methods(pb: str, expected: tp.List[float]) -> None:
 
 @testing.parametrized(
     # bragg domain (n=60): [2,3]^30 x [0,300]^30
-    bragg_tanh=("bragg", "tanh", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),
-    bragg_arctan=("bragg", "arctan", [2.5, 2.5, 2.5, 2.5, 150., 150., 150., 150.]),
+    bragg_tanh=("bragg", "tanh", [2.5, 2.5, 2.5, 2.5, 105., 105., 105., 105.]),
+    bragg_arctan=("bragg", "arctan", [2.5, 2.5, 2.5, 2.5, 105., 105., 105., 105.]),
     # chirped domain (n=60): [0,300]^60
     chirped_tanh=("chirped", "tanh", [150., 150., 150., 150., 150., 150., 150., 150.]),
     chirped_arctan=("chirped", "arctan", [150., 150., 150., 150., 150., 150., 150., 150.]),
@@ -91,7 +91,7 @@ def test_no_warning(name: str, method: str) -> None:
     bragg=("bragg", 2.5, 0.93216),
 )
 def test_photonics_values(name: str, value: float, expected: float) -> None:
-    if os.environ.get("CIRCLECI", False):
+    if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
@@ -100,10 +100,10 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
 @testing.parametrized(
     morpho=("morpho", 1.127904),
     chirped=("chirped", 0.937039),
-    bragg=("bragg", 0.965988)
+    bragg=("bragg", 0.96776)
 )
 def test_photonics_values_random(name: str, expected: float) -> None:
-    if os.environ.get("CIRCLECI", False):
+    if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
     size = 16 if name != "morpho" else 4
     photo = core.Photonics(name, size)
