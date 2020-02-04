@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
+from unittest import SkipTest
 import warnings
 import typing as tp
 import pytest
@@ -84,11 +86,13 @@ def test_no_warning(name: str, method: str) -> None:
 
 
 @testing.parametrized(
-    # morpho=("morpho", 100, 1.1647), too slow in the CI
+    # morpho=("morpho", 100, 1.1647),  # too slow
     chirped=("chirped", 150, 0.94439),
     bragg=("bragg", 2.5, 0.93216),
 )
 def test_photonics_values(name: str, value: float, expected: float) -> None:
+    if os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
 
@@ -99,6 +103,8 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
     bragg=("bragg", 0.965988)
 )
 def test_photonics_values_random(name: str, expected: float) -> None:
+    if os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
     size = 16 if name != "morpho" else 4
     photo = core.Photonics(name, size)
     np.random.seed(12)
