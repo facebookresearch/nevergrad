@@ -100,10 +100,10 @@ class VectorLinkedList:
 
     @staticmethod
     def update_coordinate_bounds(
-            bounds: tp.List[float],
+            bounds: np.ndarray,
             node: VectorNode,
             index: int
-    ) -> tp.List[float]:
+    ) -> np.ndarray:
         for i in range(index):
             if bounds[i] > node.coordinate[i]:
                 bounds[i] = node.coordinate[i]
@@ -184,7 +184,7 @@ class HypervolumeIndicator:
         hypervolume += h * last_node.coordinate[dimension]
         return hypervolume
 
-    def recursive_hypervolume(self, dimension: int, bounds: tp.List[float]) -> float:
+    def recursive_hypervolume(self, dimension: int, bounds: np.ndarray) -> float:
         """ Recursive hypervolume computation. The algorithm is provided by Algorithm 3.
         of the original paper."""
         if self.multilist.chain_length(dimension-1) == 0:
@@ -263,7 +263,7 @@ class HypervolumeIndicator:
         return hypervolume
 
     def skip_dominated_points(
-        self, node: VectorNode, dimension: int, bounds: tp.List[float]
+        self, node: VectorNode, dimension: int, bounds: np.ndarray
     ) -> None:
         """ Implements Algorithm 2, _skipdom_, for skipping dominated points."""
         if node.dominated_flag >= dimension:

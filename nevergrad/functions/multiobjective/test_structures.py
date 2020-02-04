@@ -244,14 +244,14 @@ def test_reverse_iterate() -> None:
 
 
 def test_update_coordinate_bounds() -> None:
-    bounds = [-1.0, -1.0, -1.0]
+    bounds = np.array([-1.0, -1.0, -1.0])
     node = VectorNode(3, coordinate=[1.0, -2.0, -1.0])
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 0 + 1)
-    assert bounds == [-1, -1, -1]
+    assert list(bounds) == [-1, -1, -1]
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 1 + 1)
-    assert bounds == [-1, -2, -1]
+    assert list(bounds) == [-1, -2, -1]
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 2 + 1)
-    assert bounds == [-1, -2, -1]
+    assert list(bounds) == [-1, -2, -1]
 
 
 def test_sort_by_index() -> None:
