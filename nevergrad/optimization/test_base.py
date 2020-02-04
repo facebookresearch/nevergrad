@@ -117,6 +117,7 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
 
 
 def test_dump_deprecated_init_optimizer(tmp_path: Path) -> None:
+    # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
     optimizer = optimizerlib.TBPSA(instrumentation=1, budget=100, num_workers=5)
     # pickling
     filepath = tmp_path / "dump_test.pkl"
