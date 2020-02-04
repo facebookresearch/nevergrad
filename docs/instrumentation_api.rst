@@ -4,11 +4,11 @@ Instrumentation
 Instrumentation class
 ---------------------
 
-.. autoclass:: nevergrad.Instrumentation
+.. autoclass:: nevergrad.p.Parameter
     :members:
 
 Variables
 ---------
 
-.. automodule:: nevergrad.var
+.. automodule:: nevergrad.p
     :members:

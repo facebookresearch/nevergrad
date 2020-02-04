@@ -12,7 +12,7 @@ import nevergrad as ng
 def square(x, y=12):
     return sum((x - .5)**2) + abs(y)
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 # alternatively, you could use ng.optimizers.registry["OnePlusOne"]
 # (registry is a dict containing all optimizer classes)
 recommendation = optimizer.minimize(square)
@@ -22,16 +22,16 @@ print(recommendation)
 `recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
 In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
 
-`instrumentation=n` is a shortcut to state that the function has only one variable, continuous, of dimension `n`,
-Defining the following instrumentation instead will optimize on both `x` (continuous, dimension 2) and `y` (continuous, dimension 1).
+`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension `n`,
+Defining the following parametrization instead will optimize on both `x` (continuous, dimension 2) and `y` (continuous, dimension 1).
 ```python
 instrum = ng.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
-optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100)
+optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
 recommendation = optimizer.minimize(square)
 print(recommendation)
 >>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
 ```
-See the [instrumentation tutorial](instrumentation.md) for more complex instrumentations.
+See the [parametrization tutorial](parametrization.md) for more complex parametrizations.
 
 
 ## Using several workers
@@ -39,7 +39,7 @@ See the [instrumentation tutorial](instrumentation.md) for more complex instrume
 Running the function evaluation in parallel with several workers is as easy as providing an executor:
 ```python
 from concurrent import futures
-optimizer = ng.optimizers.OnePlusOne(instrumentation=instrum, budget=100, num_workers=5)
+optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100, num_workers=5)
 with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
     recommendation = optimizer.minimize(square, executor=executor, batch_mode=False)
 ```
@@ -54,7 +54,7 @@ An *ask and tell* interface is also available. The 3 key methods for this interf
 For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute `no_parallelization=True` however do not support this.
 
 The `Candidate` class holds attributes `args` and `kwargs` corresponding to the `args` and `kwargs` of the function you optimize,
-given its [instrumentation](instrumentation.md). It also holds a `data` attribute corresponding to the data point in the optimization space.
+given its [parametrization](parametrization.md). It also holds a `data` attribute corresponding to the data point in the optimization space.
 
 Here is a simpler example in the sequential case (this is what happens in the `optimize` method for `num_workers=1`):
 ```python
@@ -80,9 +80,9 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 # define a constraint on first variable of x:
-optimizer.instrumentation.register_cheap_constraint(lambda x: x[0] >= 1)
+optimizer.parametrization.register_cheap_constraint(lambda x: x[0] >= 1)
 
 recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs
@@ -109,7 +109,7 @@ All algorithms have strengths and weaknesses. Questionable rules of thumb could 
 
 ## Optimizing machine learning hyperparameters
 
-When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see [instrumentation](instrumentation.md)) to use:
+When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see [parametrization](parametrization.md)) to use:
 - use `Choice` for discrete variables
 - use `TwoPointsDE` with `num_workers` equal to the number of workers available to you.
 See the [machine learning example](machinelearning.md) for more.
@@ -146,7 +146,7 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = DEwithLHS30(instrumentation=2, budget=300)
+optimizer = DEwithLHS30(parametrization=2, budget=300)
 recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs
 >>> Candidate(args=(array([0.50843113, 0.5104554 ]),), kwargs={})
@@ -164,7 +164,7 @@ import numpy as np
 f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x-1)**2)], upper_bounds=[2.5, 2.5])
 print(f(np.array([1.,2.])))
 
-optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.
+optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
 recommendation = optimizer.optimize(f)
 
 # The function embeds its Pareto-front:
@@ -174,8 +174,8 @@ print("My Pareto front:", [x[0][0] for x in f.pareto_front])
 
 ## Reproducibility
 
-Each instrumentation has its own `random_state` for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
+Each parametrization has its own `random_state` for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
 For reproducibility, this random state can be seeded in two ways:
-- by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the instrumentation's first use. Indeed, when first used,
-  the instrumentation's random state is seeded with a seed drawn from the global random state.
-- by manually seeding the instrumentation random state (E.g.: `instrumentation.random_state.seed(12)` or `optimizer.instrumentation.random_state = np.random.RandomState(12)`)
+- by setting `numpy`'s global random state seed (`np.random.seed(32)`) before the parametrization's first use. Indeed, when first used,
+  the parametrization's random state is seeded with a seed drawn from the global random state.
+- by manually seeding the parametrization random state (E.g.: `parametrization.random_state.seed(12)` or `optimizer.parametrization.random_state = np.random.RandomState(12)`)

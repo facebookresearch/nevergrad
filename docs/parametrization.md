@@ -40,13 +40,13 @@ print(instru.dimension)
 ```
 
 
-You can then directly perform optimization on a function given its instrumentation:
+You can then directly perform optimization on a function given its parametrization:
 ```python
 def myfunction(arg1, arg2, arg3, value=3):
     print(arg1, arg2, arg3)
     return value**2
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=instru, budget=100)
+optimizer = ng.optimizers.OnePlusOne(parametrization=instru, budget=100)
 recommendation = optimizer.minimize(myfunction)
 print(recommendation.value)
 >>> (('b', 'e', 'blublu'), {'value': -0.00014738768964717153})
@@ -73,7 +73,7 @@ Sometimes it is completely impractical or impossible to have a simple Python3.6+
 
 We provide tooling for this situation. Go through these steps to instrument your code:
  - **identify the variables** (parameters, constants...) you want to optimize.
- - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for instrumentation, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the code:
+ - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for parametrization, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the code:
 ```c
 int step_size = 0.1
 // @nevergrad@ step_size = NG_ARG{step|any comment}
@@ -81,8 +81,8 @@ int step_size = 0.1
 - **prepare the command to execute** that will run your code. Make sure that the last printed line is just a float, which is the value to base the optimization upon. We will be doing minimization here, so this value must decrease for better results.
 - **instantiate** your code into a function using the `FolderFunction` class:
 ```python
-from nevergrad.instrumentation import FolderFunction
-folder = "nevergrad/instrumentation/examples" # folder containing the code
+from nevergrad.parametrization import FolderFunction
+folder = "nevergrad/parametrization/examples" # folder containing the code
 command = ["python", "examples/script.py"]  # command to run from right outside the provided folder
 func = FolderFunction(folder, command, clean_copy=True)
 print(func.placeholders)  # will print the number of variables of the function
@@ -98,4 +98,4 @@ print(func(value1=2, value2=3, string="blublu"))
  - using `FolderFunction` argument `clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
  - under the hood, with or without `clean_copy=True`, when calling the function, `FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid duplicating large projects, but they have some drawbacks, see next point ;)
  - one can add a compilation step to `FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
- - the following external file types are registered by default: `[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using `instrumentation.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, variables which can provide a vector or values (`Gaussian` when providing a `shape`) will inject code with a Python format (list) by default, which may not be suitable.
+ - the following external file types are registered by default: `[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using `FolderFunction.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, variables which can provide a vector or values (`Gaussian` when providing a `shape`) will inject code with a Python format (list) by default, which may not be suitable.
