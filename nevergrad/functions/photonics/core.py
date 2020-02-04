@@ -26,8 +26,8 @@ from . import photonics
 from ..base import ExperimentFunction
 
 
-def _make_instrumentation(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
-    """Creates appropriate instrumentation for a Photonics problem
+def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
+    """Creates appropriate parametrization for a Photonics problem
 
     Parameters
     name: str
@@ -40,7 +40,7 @@ def _make_instrumentation(name: str, dimension: int, bounding_method: str = "cli
     Returns
     -------
     Instrumentation
-        the instrumentation for the problem
+        the parametrization for the problem
     """
     assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
     if name == "bragg":
@@ -116,7 +116,7 @@ class Photonics(ExperimentFunction):
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, bounding_method=bounding_method))
+        super().__init__(self._compute, _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method))
         self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method)
         self._descriptors.update(name=name, bounding_method=bounding_method)
 

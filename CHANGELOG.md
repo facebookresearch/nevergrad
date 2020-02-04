@@ -2,6 +2,8 @@
 
 ## master
 
+- Fist argument of optimizers is renamed to `parametrization` instead of `instrumentation` for consistency. There is currently
+  a deprecation warning, but this will be breaking in v0.4.0
 - `Candidate` class is removed, and is completely replaced by `Parameter` [#459](https://github.com/facebookresearch/nevergrad/pull/459)
 - New parametrization is now as efficient as in v0.3.0 (see CHANGELOG for v0.3.1 for contect)
 - `CandidateMaker` (`optimizer.create_candidate`) raises `DeprecationWarning`s since it new candidates/parameters

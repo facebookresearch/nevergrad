@@ -70,8 +70,8 @@ class _DE(base.Optimizer):
     # pylint: disable=too-many-locals, too-many-nested-blocks,too-many-instance-attributes
     # pylint: disable=too-many-branches, too-many-statements
 
-    def __init__(self, instrumentation: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._penalize_cheap_violations = True
         self._parameters = DifferentialEvolution()
         self._llambda: tp.Optional[int] = None
@@ -101,7 +101,7 @@ class _DE(base.Optimizer):
         good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].x
-        return sum([g.get_standardized_data(reference=self.instrumentation) for g in good_guys]) / len(good_guys)  # type: ignore
+        return sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
@@ -112,29 +112,29 @@ class _DE(base.Optimizer):
                 self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng)
             new_guy = self.scale * (self._rng.normal(0, 1, self.dimension)
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
-            candidate = self.instrumentation.spawn_child().set_standardized_data(new_guy)
+            candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
         candidate = self.population[self._uid_queue.ask()].spawn_child()
-        data = candidate.get_standardized_data(reference=self.instrumentation)
+        data = candidate.get_standardized_data(reference=self.parametrization)
         # define donor
         uids = list(self.population)
         indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
-        data_a, data_b = (indiv.get_standardized_data(reference=self.instrumentation) for indiv in indivs)
+        data_a, data_b = (indiv.get_standardized_data(reference=self.parametrization) for indiv in indivs)
         donor = (data + self._parameters.F1 * (data_a - data_b) +
                  self._parameters.F2 * (self.current_bests["pessimistic"].x - data))
         candidate.parents_uids.extend([i.uid for i in indivs])
         # apply crossover
         co = self._parameters.crossover
         if co == "parametrization":
-            candidate.recombine(self.instrumentation.spawn_child().set_standardized_data(donor))
+            candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
             crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
             crossovers.apply(donor, data)
-            candidate.set_standardized_data(donor, deterministic=False, reference=self.instrumentation)
+            candidate.set_standardized_data(donor, deterministic=False, reference=self.parametrization)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
@@ -218,11 +218,12 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.popsize = popsize
         super().__init__()
 
-    def __call__(self, instrumentation: IntOrParameter,
+    @base.deprecated_init
+    def __call__(self, parametrization: IntOrParameter,
                  budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
-        return super().__call__(instrumentation, budget, num_workers)
+        return super().__call__(parametrization, budget, num_workers)
 
 
 DE = DifferentialEvolution().with_name("DE", register=True)

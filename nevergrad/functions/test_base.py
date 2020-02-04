@@ -41,7 +41,7 @@ def test_experimented_function() -> None:
             "dimension": 8,
             "name": "_arg_return",
             "function_class": "ExperimentFunction",
-            "instrumentation": instru_str,
+            "parametrization": instru_str,
         },
     )
 
@@ -63,7 +63,7 @@ class _Callable:
         return abs(x + y)
 
 
-def test_callable_instrumentation() -> None:
+def test_callable_parametrization() -> None:
     ifunc = base.ExperimentFunction(lambda x: x ** 2, p.Scalar(2).set_mutation(2))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), p.Scalar(2).set_mutation(sigma=2))
@@ -94,7 +94,7 @@ def test_deterministic_data_setter() -> None:
     softmax_deterministic=((p.Choice(["blue", "red"], deterministic=True), p.Array(shape=(1,))), False, False),
     ordered_discrete=((p.TransitionChoice([True, False]), p.Array(shape=(1,))), False, False),
 )
-def test_instrumentation_continuous_noisy(variables: tp.Tuple[p.Parameter, ...], continuous: bool, noisy: bool) -> None:
+def test_parametrization_continuous_noisy(variables: tp.Tuple[p.Parameter, ...], continuous: bool, noisy: bool) -> None:
     instru = p.Instrumentation(*variables)
     assert instru.descriptors.continuous == continuous
     assert instru.descriptors.deterministic != noisy
