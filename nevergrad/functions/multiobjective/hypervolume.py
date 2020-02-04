@@ -101,7 +101,8 @@ class VectorLinkedList:
     @staticmethod
     def update_coordinate_bounds(
             bounds: tp.Optional[tp.List[float]],
-            node: VectorNode, index: int
+            node: VectorNode,
+            index: int
     ) -> tp.Optional[tp.List[float]]:
         if bounds is None:
             return None

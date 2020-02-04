@@ -243,6 +243,51 @@ def test_reverse_iterate() -> None:
     assert next(gen) is new_node
 
 
+def test_update_coordinate_bounds() -> None:
+    bounds = [-1, -1, -1]
+    node = VectorNode(3, coordinate=[1, -2, -1])
+    bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 0 + 1)
+    assert bounds == [-1, -1, -1]
+    bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 1 + 1)
+    assert bounds == [-1, -2, -1]
+    bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 2 + 1)
+    assert bounds == [-1, -2, -1]
+
+
+def test_sort_by_index() -> None:
+    nodes = [
+        VectorNode(3, [1, 2, 3]),
+        VectorNode(3, [2, 3, 1]),
+        VectorNode(3, [3, 1, 2])
+    ]
+    new_nodes = VectorLinkedList.sort_by_index(nodes, 0)
+    assert new_nodes == nodes
+
+    new_nodes = VectorLinkedList.sort_by_index(nodes, 1)
+    assert new_nodes == [nodes[2], nodes[0], nodes[1]]
+
+    new_nodes = VectorLinkedList.sort_by_index(nodes, 2)
+    assert new_nodes == [nodes[1], nodes[2], nodes[0]]
+
+
+def test_create_sorted() -> None:
+    dimension = 3
+    coordinates = [
+        [1, 2, 3],
+        [2, 3, 1],
+        [3, 1, 2]
+    ]
+    linked_list = VectorLinkedList.create_sorted(dimension, coordinates)
+    assert isinstance(linked_list, VectorLinkedList)
+    assert list(linked_list.sentinel.next[0].coordinate) == [1, 2, 3]
+    assert list(linked_list.sentinel.next[1].coordinate) == [3, 1, 2]
+    assert list(linked_list.sentinel.next[2].coordinate) == [2, 3, 1]
+
+    assert list(linked_list.sentinel.next[0].next[0].coordinate) == [2, 3, 1]
+    assert list(linked_list.sentinel.next[1].next[1].coordinate) == [1, 2, 3]
+    assert list(linked_list.sentinel.next[2].next[2].coordinate) == [3, 1, 2]
+
+
 def test_version_consistency() -> None:
     reference = np.array([79, 89, 99])
     hv = HypervolumeIndicator(reference)
