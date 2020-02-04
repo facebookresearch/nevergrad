@@ -291,14 +291,16 @@ def test_create_sorted() -> None:
 def test_version_consistency() -> None:
     reference = np.array([79, 89, 99])
     hv = HypervolumeIndicator(reference)
-    front = [
-        (110, 110, 100),
-        (110, 90, 87),
-        (80, 80, 36),
-        (50, 50, 55),
-        (105, 30, 43),
-        (110, 110, 100)
-    ]
+    front = np.array(
+        [
+            (110, 110, 100),
+            (110, 90, 87),
+            (80, 80, 36),
+            (50, 50, 55),
+            (105, 30, 43),
+            (110, 110, 100)
+        ]
+    )
     volume = hv.compute(front)
 
     reference_volume = _HyperVolume(reference).compute(front)

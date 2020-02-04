@@ -162,7 +162,7 @@ class HypervolumeIndicator:
         assert self._multilist is not None
         return self._multilist
 
-    def compute(self, points: tp.List[np.ndarray]) -> float:
+    def compute(self, points: tp.Union[tp.List[np.ndarray], np.array]) -> float:
         points = points - self.reference_point
         self._multilist = VectorLinkedList.create_sorted(self.dimension, points)
         hypervolume = self.recursive_hypervolume(self.dimension - 1, self.reference_bounds)
