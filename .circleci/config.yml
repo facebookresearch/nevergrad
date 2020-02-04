@@ -4,16 +4,36 @@
 #
 version: 2.1
 
+
+# the set up in which the ubuntu jobs will run:
 executors:
-  ubuntu-3.6:
+  ubuntu-python36:
     docker:
       - image: circleci/python:3.6.1
     working_directory: ~/repo
 
 
+commands:
+  ubuntu-restore-all:
+    description: "Restores virtual env from cache, and update dependencies if need be."
+    steps:
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          # fallback to installing main requirements
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+
+      - run:
+          name: "[all] Install dependencies"
+          command: |
+            . venv/bin/activate
+            pip install -e .[all]
+
+
 jobs:
   install:
-    executor: ubuntu-3.6
+    executor: ubuntu-python36
 
     steps:
       - checkout
@@ -75,7 +95,7 @@ jobs:
 
 
   mypy:
-    executor: ubuntu-3.6
+    executor: ubuntu-python36
 
     steps:
       - checkout
@@ -110,7 +130,7 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-3.6
+    executor: ubuntu-python36
 
     steps:
       - checkout
