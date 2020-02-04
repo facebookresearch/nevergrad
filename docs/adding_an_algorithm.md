@@ -51,14 +51,10 @@ The key string is either `optimistic` or `pessimistic`, and the `Point` value is
 - `_internal_provide_recommendation`: to provide the final recommendation. By default, the recommendation is the pessimistic best point.
 - `_internal_tell_not_asked` (optional): if the optimizer must handle points differently if they were not asked for, this method must be implemented. If you do not want to support this, you can raise `base.TellNotAskedNotSupportedError`. A unit test will make sure that the optimizer either accepts the point or raises this error.
 
-These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the parametrization provided at the initialization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
-
-
-These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the parametrization provided at the initialization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
-
-
-
-These functions work with `Candidate` instances, which hold the data point, and `args` and `kwargs` depending on the parametrization provided at the initialization of the optimizer. Such instances can be conveniently created through the `create_candidate` instance of each optimizer. This object creates `Candidate` object in 3 ways: `opt.create_candidate(args, kwargs, data)`, `opt.create_candidate.from_arguments(*args, **kwargs)` and `opt.create_candidate.from_data(data)`. The last one is probably the one you will need to use inside the `_internal_ask_candidate` method.
+These functions work with `Parameter` instances, which hold the parameter(s) `value` (which can also be accessed through `args` and `kwargs`) depending on the parametrization provided at the initialization of the optimizer.
+New instances of `Parameter` can be easily created through the `optimizer.parametrization.spawn_child()`. This way it keeps track of the
+filiation between parameters. The value can then be updated either directly through the `parameter.value` attribute, or by setting
+the value in the "standardized space" (`parameter.set_standardized_data`).
 
 
 
