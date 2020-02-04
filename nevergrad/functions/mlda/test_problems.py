@@ -27,7 +27,7 @@ def test_clustering() -> None:
     func(np.arange(10).reshape((num_clusters, -1)))
     instru_str = "Array{(5,2)}[recombination=average,sigma=1.0]"
     testing.printed_assert_equal(func.descriptors,
-                                 {"instrumentation": instru_str, "function_class": "Clustering", "dimension": 10,
+                                 {"parametrization": instru_str, "function_class": "Clustering", "dimension": 10,
                                   "name": "Ruspini", "num_clusters": 5, "rescale": True})
 
 
@@ -98,4 +98,4 @@ def test_landscape_gaussian() -> None:
     np.testing.assert_equal(output, [0, 0])  # should be mapped to 0, 0
     output = func.parametrization.spawn_child().set_standardized_data([144, 144]).args
     np.testing.assert_array_equal(output, [2, 1])  # last element
-    testing.printed_assert_equal(func.descriptors, {"instrumentation": "gaussian", "function_class": "Landscape", "dimension": 2})
+    testing.printed_assert_equal(func.descriptors, {"parametrization": "gaussian", "function_class": "Landscape", "dimension": 2})
