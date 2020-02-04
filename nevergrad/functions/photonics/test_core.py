@@ -91,3 +91,16 @@ def test_no_warning(name: str, method: str) -> None:
 def test_photonics_values(name: str, value: float, expected: float) -> None:
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
+
+
+@testing.parametrized(
+    morpho=("morpho", 1.246085),
+    chirped=("chirped", 0.937039),
+    bragg=("bragg", 0.965988),
+)
+def test_photonics_values_random(name: str, expected: float) -> None:
+    photo = core.Photonics(name, 16)
+    np.random.seed(12)
+    x = np.random.normal(0, 1, size=16)
+    candidate = photo.parametrization.spawn_child().set_standardized_data(x)
+    np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
