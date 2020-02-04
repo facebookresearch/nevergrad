@@ -68,7 +68,6 @@ def deprecated_init(func: tp.Callable[..., Y]) -> tp.Callable[..., Y]:
         **kwargs: tp.Any,
     ) -> Y:
         assert func.__name__ in ["__call__", "__init__"]
-        print("deprecation", func, parametrization, budget, num_workers, instrumentation)
         assert func is not None
         if instrumentation is not None:
             warnings.warn('"instrumentation" __init__ parameter has been renamed to "parametrization" for consistency. '
@@ -642,6 +641,7 @@ class ParametrizedFamily(OptimizerFamily):
             number of evaluations which will be run in parallel at once
         """
         assert self._optimizer_class is not None
+        # pylint: disable=not-callable
         run = self._optimizer_class(parametrization, budget, num_workers)
         assert hasattr(run, "_parameters")
         assert isinstance(run._parameters, self.__class__)  # type: ignore
