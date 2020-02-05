@@ -167,7 +167,6 @@ class RecastOptimizer(base.Optimizer):
 
     recast = True
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime

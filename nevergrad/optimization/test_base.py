@@ -100,7 +100,7 @@ def test_base_optimizer() -> None:
 
 
 def test_optimize_and_dump(tmp_path: Path) -> None:
-    optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
+    optimizer = optimizerlib.OnePlusOne(parametrization=1, budget=100, num_workers=5)
     optimizer.register_callback("tell", callbacks.OptimizationPrinter(print_interval_tells=10, print_interval_seconds=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
@@ -113,16 +113,6 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer.dump(filepath)
     optimizer2 = optimizerlib.OnePlusOne.load(filepath)
     np.testing.assert_almost_equal(optimizer2.provide_recommendation().value[0], 1, decimal=2)
-
-
-def test_dump_deprecated_init_optimizer(tmp_path: Path) -> None:
-    # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
-    optimizer = optimizerlib.TBPSA(instrumentation=1, budget=100, num_workers=5)
-    # pickling
-    filepath = tmp_path / "dump_test.pkl"
-    optimizer.dump(filepath)
-    optimizer2 = optimizerlib.TBPSA.load(filepath)
-    assert isinstance(optimizer2, optimizerlib.TBPSA)
 
 
 def test_compare() -> None:
@@ -141,7 +131,6 @@ def test_compare() -> None:
 
 class StupidFamily(base.OptimizerFamily):
 
-    @base.deprecated_init
     def __call__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         assert isinstance(self, StupidFamily), f"This is self: {self}"
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]

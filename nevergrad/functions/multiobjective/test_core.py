@@ -16,8 +16,8 @@ def test_multiobjective_function() -> None:
               (50, 50),       # -2500 + distance
               (50, 50),       # -2500 + distance
               (80, 80),       # -2500 + distance --> -2470
-              (30, 60),       # [30,50]x[60,100] + [50,100]x[50,100] --> -2500 -800 = -3300 
-              (60, 30)]       # [30,50]x[60,100] + [50,100]x[50,100] + [60,100]x[30,50] --> -2500 -800 -800= -4100 
+              (30, 60),       # [30,50]x[60,100] + [50,100]x[50,100] --> -2500 -800 = -3300
+              (60, 30)]       # [30,50]x[60,100] + [50,100]x[50,100] + [60,100]x[30,50] --> -2500 -800 -800= -4100
     values = []
     for tup in tuples:
         values.append(mfunc(tup))
@@ -30,7 +30,7 @@ def test_multiobjective_function() -> None:
 
 def test_readme_example() -> None:
     f = MultiobjectiveFunction(multiobjective_function=lambda x: (x[0]**2, x[1]**2), upper_bounds=[2.5, 2.5])
-    optimizer = ng.optimizers.CMA(instrumentation=3, budget=100)  # 3 is the dimension, 100 is the budget.
+    optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
     optimizer.minimize(f)
     # The function embeds its Pareto-front:
     assert len(f.pareto_front) > 1
