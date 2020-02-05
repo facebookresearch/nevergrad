@@ -164,8 +164,9 @@ class HypervolumeIndicator:
 
     def compute(self, points: tp.Union[tp.List[np.ndarray], np.ndarray]) -> float:
         points = points - self.reference_point
+        self.reference_bounds = np.full(self.dimension, -np.inf)
         self._multilist = VectorLinkedList.create_sorted(self.dimension, points)
-        hypervolume = self.recursive_hypervolume(self.dimension - 1, self.reference_bounds)
+        hypervolume = self.recursive_hypervolume(self.dimension - 1)
         return hypervolume
 
     def plane_hypervolume(self, dimension: int) -> float:
@@ -184,7 +185,7 @@ class HypervolumeIndicator:
         hypervolume += h * last_node.coordinate[dimension]
         return hypervolume
 
-    def recursive_hypervolume(self, dimension: int, bounds: np.ndarray) -> float:
+    def recursive_hypervolume(self, dimension: int) -> float:
         """ Recursive hypervolume computation. The algorithm is provided by Algorithm 3.
         of the original paper."""
         if self.multilist.chain_length(dimension-1) == 0:
@@ -210,11 +211,13 @@ class HypervolumeIndicator:
             assert node is not None
             current_node = node
             if self.multilist.chain_length(dimension-1) > 1 and (
-                node.coordinate[dimension] > bounds[dimension]
-                or node.prev[dimension].coordinate[dimension] >= bounds[dimension]
+                node.coordinate[dimension] > self.reference_bounds[dimension]
+                or node.prev[dimension].coordinate[dimension] >= self.reference_bounds[dimension]
             ):
                 # Line 9
-                bounds = self.multilist.update_coordinate_bounds(bounds, node, dimension)  # type: ignore
+                self.reference_bounds = self.multilist.update_coordinate_bounds(
+                    self.reference_bounds, node, dimension
+                )  # type: ignore
                 # Line 10
                 self.multilist.pop(node, dimension)
                 # Line 11
@@ -235,7 +238,7 @@ class HypervolumeIndicator:
         # Line 15
         current_node.volume[dimension] = hypervolume
         # Line 16
-        self.skip_dominated_points(current_node, dimension, bounds)
+        self.skip_dominated_points(current_node, dimension)
 
         # Line 17
         for node in self.multilist.iterate(dimension, start=current_node.next[dimension]):
@@ -245,9 +248,11 @@ class HypervolumeIndicator:
                 node.coordinate[dimension] - node.prev[dimension].coordinate[dimension]
             )
             # Line 19
-            bounds[dimension] = node.coordinate[dimension]
+            self.reference_bounds[dimension] = node.coordinate[dimension]
             # Line 20
-            bounds = self.multilist.update_coordinate_bounds(bounds, node, dimension)  # type: ignore
+            self.reference_bounds = self.multilist.update_coordinate_bounds(
+                self.reference_bounds, node, dimension
+            )  # type: ignore
             # Line 21
             self.multilist.reinsert(node, dimension)
             # Line 22
@@ -255,7 +260,7 @@ class HypervolumeIndicator:
             # Line 25
             node.volume[dimension] = hypervolume
             # Line 26
-            self.skip_dominated_points(node, dimension, bounds)
+            self.skip_dominated_points(node, dimension)
 
         # Line 27
         last_node = self.multilist.sentinel.prev[dimension]
@@ -263,12 +268,11 @@ class HypervolumeIndicator:
         return hypervolume
 
     def skip_dominated_points(
-        self, node: VectorNode, dimension: int, bounds: np.ndarray
-    ) -> None:
+        self, node: VectorNode, dimension: int) -> None:
         """ Implements Algorithm 2, _skipdom_, for skipping dominated points."""
         if node.dominated_flag >= dimension:
             node.area[dimension] = node.prev[dimension].area[dimension]
         else:
-            node.area[dimension] = self.recursive_hypervolume(dimension - 1, bounds)
+            node.area[dimension] = self.recursive_hypervolume(dimension - 1)
             if node.area[dimension] <= node.prev[dimension].area[dimension]:
                 node.dominated_flag = dimension
