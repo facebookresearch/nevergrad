@@ -19,7 +19,7 @@ from . import corefuncs
 
 class ArtificialVariable:
     # pylint: disable=too-many-instance-attributes,too-many-arguments
-    # TODO: refactor, this is not more used for instrumentation, so using the
+    # TODO: refactor, this is not more used for parametrization, so using the
     # Variable framework is not necessary
 
     def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
@@ -163,7 +163,7 @@ class ArtificialFunction(ExperimentFunction):
 
     @property
     def dimension(self) -> int:
-        return self._dimension  # bypass the instrumentation one (because of the "hashing" case)  # TODO: remove
+        return self._dimension  # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
 
     @staticmethod
     def list_sorted_function_names() -> tp.List[str]:

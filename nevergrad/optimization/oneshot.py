@@ -47,8 +47,8 @@ class OneShotOptimizer(base.Optimizer):
 
 class _RandomSearch(OneShotOptimizer):
 
-    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._parameters = RandomSearchMaker()  # updated by the parametrized family
         self._opposable_data: Optional[np.ndarray] = None
 
@@ -144,8 +144,8 @@ RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
 
 class _SamplingSearch(OneShotOptimizer):
 
-    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._parameters = SamplingSearch()  # updated by the parametrized family
         self._sampler_instance: Optional[sequences.Sampler] = None
         self._rescaler: Optional[sequences.Rescaler] = None

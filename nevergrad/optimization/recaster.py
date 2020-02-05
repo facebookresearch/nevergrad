@@ -167,8 +167,9 @@ class RecastOptimizer(base.Optimizer):
 
     recast = True
 
-    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget, num_workers=num_workers)
+    @base.deprecated_init
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
@@ -205,7 +206,7 @@ class RecastOptimizer(base.Optimizer):
             return np.random.normal(0, 1, self.dimension)  # type: ignore
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
-        candidate = self.instrumentation.spawn_child().set_standardized_data(message.args[0])
+        candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
         message.meta["uid"] = candidate.uid
         return candidate
 
@@ -218,7 +219,7 @@ class RecastOptimizer(base.Optimizer):
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
-        x = candidate.get_standardized_data(reference=self.instrumentation)
+        x = candidate.get_standardized_data(reference=self.parametrization)
         assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()

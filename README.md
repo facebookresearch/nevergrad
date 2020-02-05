@@ -16,7 +16,7 @@ pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergr
 
 Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
 
-By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interested in the benchmarking part,
+By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
 you should install with the `[benchmark]` flag (example: `pip install nevergrad[benchmark]`), and if you also want the test tools, use
 the `[all]` flag (example: `pip install -e .[all]`).
 
@@ -73,14 +73,14 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
+optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 recommendation = optimizer.minimize(square)
 print(recommendation)  # optimal args and kwargs
 >>> Array{(2,)}[recombination=average,sigma=1.0]:[0.49971112 0.5002944 ]
 ```
 
-`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
-See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
+`parametrization=n` is a shortcut to state that the function has only one variable, of dimension `n`,
+See the [parametrization tutorial](docs/parametrization.md) for more complex parametrizations.
 
 `recommendation` holds the optimal value(s) found by the for the provided function. It can be
 directly accessed through `recommendation.value` which is here a `np.ndarray` of size 2.

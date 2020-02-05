@@ -62,10 +62,10 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instantiate(self, instrumentation: p.Parameter) -> obase.Optimizer:
+    def instantiate(self, parametrization: p.Parameter) -> obase.Optimizer:
         """Instantiate an optimizer, providing the optimization space dimension
         """
-        return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
+        return self._get_factory()(parametrization=parametrization, budget=self.budget, num_workers=self.num_workers)
 
     def get_description(self) -> Dict[str, Any]:
         """Returns a dictionary describing the optimizer settings
@@ -190,7 +190,7 @@ class Experiment:
         """
         if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
-            np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
+            np.random.seed(self.seed)  # seeds both functions and parametrization (for which random state init is lazy)
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
         pfunc = self.function.copy()
@@ -198,7 +198,7 @@ class Experiment:
         assert len(pfunc.parametrization._constraint_checkers) == len(self.function.parametrization._constraint_checkers)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instantiate(instrumentation=pfunc.parametrization)
+            self._optimizer = self.optimsettings.instantiate(parametrization=pfunc.parametrization)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

@@ -61,7 +61,7 @@ def check_optimizer(
     fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
         fitness = Fitness(optimum)
-        optimizer = optimizer_cls(instrumentation=len(optimum), budget=budget, num_workers=num_workers)
+        optimizer = optimizer_cls(parametrization=len(optimum), budget=budget, num_workers=num_workers)
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -93,7 +93,7 @@ def check_optimizer(
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         data = np.random.normal(0, 1, size=optimizer.dimension)
-        candidate = optimizer.instrumentation.spawn_child().set_standardized_data(data, deterministic=False)
+        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=False)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
@@ -164,7 +164,7 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
-        optimizer = registry[name](instrumentation=4, budget=2)
+        optimizer = registry[name](parametrization=4, budget=2)
         optimizer.suggest(np.array([12.0] * 4))
         candidate = optimizer.ask()
         try:
@@ -194,8 +194,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        optim = optimizer_cls(instrumentation=dimension, budget=budget, num_workers=1)
-        optim.instrumentation.random_state.seed(12)
+        optim = optimizer_cls(parametrization=dimension, budget=budget, num_workers=1)
+        optim.parametrization.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)
         # the following context manager speeds up BO tests
         # BEWARE: BO tests are deterministic but can get different results from a computer to another.
@@ -228,7 +228,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     large=("BPRotationInvariantDE", 10, 40, 70),
 )
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
-    optim = registry[name](instrumentation=dimension, budget=100, num_workers=num_workers)
+    optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
 
@@ -237,7 +237,7 @@ def test_portfolio_budget() -> None:
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         for k in range(3, 13):
-            optimizer = optlib.Portfolio(instrumentation=2, budget=k)
+            optimizer = optlib.Portfolio(parametrization=2, budget=k)
             np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
@@ -260,13 +260,13 @@ def test_tell_not_asked(name: str) -> None:
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        opt = optlib.registry[name](instrumentation=param, budget=2, num_workers=2)
+        opt = optlib.registry[name](parametrization=param, budget=2, num_workers=2)
     if name == "PSO":
         opt.llambda = 2  # type: ignore
     else:
         opt._llambda = 2  # type: ignore
-    t_10 = opt.instrumentation.spawn_child(new_value=10)
-    t_100 = opt.instrumentation.spawn_child(new_value=100)
+    t_10 = opt.parametrization.spawn_child(new_value=10)
+    t_100 = opt.parametrization.spawn_child(new_value=100)
     assert not opt.population  # type: ignore
     opt.tell(t_10, 90)  # not asked
     assert len(opt.population) == 1  # type: ignore
@@ -291,8 +291,8 @@ def test_tbpsa_recom_with_update() -> None:
     budget = 20
     # set up problem
     fitness = Fitness([0.5, -0.8, 0, 4])
-    optim = optlib.TBPSA(instrumentation=4, budget=budget, num_workers=1)
-    optim.instrumentation.random_state.seed(12)
+    optim = optlib.TBPSA(parametrization=4, budget=budget, num_workers=1)
+    optim.parametrization.random_state.seed(12)
     optim.llambda = 3
     candidate = optim.minimize(fitness)
     np.testing.assert_almost_equal(candidate.args[0], [0.037964, 0.0433031, -0.4688667, 0.3633273])
@@ -302,9 +302,9 @@ def _square(x: np.ndarray, y: float = 12) -> float:
     return sum((x - 0.5) ** 2) + abs(y)
 
 
-def test_optimization_doc_instrumentation_example() -> None:
+def test_optimization_doc_parametrization_example() -> None:
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
-    optimizer = optlib.OnePlusOne(instrumentation=instrum, budget=100)
+    optimizer = optlib.OnePlusOne(parametrization=instrum, budget=100)
     recom = optimizer.minimize(_square)
     assert len(recom.args) == 1
     testing.assert_set_equal(recom.kwargs, ["y"])
@@ -313,7 +313,7 @@ def test_optimization_doc_instrumentation_example() -> None:
 
 
 def test_optimization_discrete_with_one_sample() -> None:
-    optimizer = optlib.PortfolioDiscreteOnePlusOne(instrumentation=1, budget=10)
+    optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
 
 
@@ -324,23 +324,23 @@ def test_population_pickle(name: str) -> None:
     # "self.population = base.utils.Population[DEParticle]([])"
     # becomes:
     # "self.population: base.utils.Population[DEParticle] = base.utils.Population([])""
-    optim = registry[name](instrumentation=12, budget=100, num_workers=2)
+    optim = registry[name](parametrization=12, budget=100, num_workers=2)
     with tempfile.TemporaryDirectory() as folder:
         filepath = Path(folder) / "dump_test.pkl"
         optim.dump(filepath)
 
 
-def test_bo_instrumentation_and_parameters() -> None:
-    # instrumentation
-    instrumentation = ng.p.Instrumentation(ng.p.Choice([True, False]))
+def test_bo_parametrization_and_parameters() -> None:
+    # parametrization
+    parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
-        optlib.QRBO(instrumentation, budget=10)
+        optlib.QRBO(parametrization, budget=10)
     with pytest.warns(None) as record:
-        opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(instrumentation, budget=10)
+        opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
     assert not record, record.list  # no warning
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
-    new_candidate = opt.instrumentation.spawn_child(new_value=((True,), {}))
+    new_candidate = opt.parametrization.spawn_child(new_value=((True,), {}))
     opt.tell(new_candidate, 0.0)
 
 
@@ -357,22 +357,22 @@ def test_chaining() -> None:
     assert optimizer._optimizers[-1].num_ask == 15  # type: ignore
 
 
-def test_instrumentation_optimizer_reproducibility() -> None:
-    instrumentation = ng.p.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
-    instrumentation.random_state.seed(12)
-    optimizer = optlib.RandomSearch(instrumentation, budget=10)
+def test_parametrization_optimizer_reproducibility() -> None:
+    parametrization = ng.p.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
+    parametrization.random_state.seed(12)
+    optimizer = optlib.RandomSearch(parametrization, budget=10)
     recom = optimizer.minimize(_square)
     np.testing.assert_equal(recom.kwargs["y"], 67)
 
 
 def test_constrained_optimization() -> None:
-    instrumentation = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
-    optimizer = optlib.OnePlusOne(instrumentation, budget=100)
-    optimizer.instrumentation.random_state.seed(12)
+    parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
+    optimizer = optlib.OnePlusOne(parametrization, budget=100)
+    optimizer.parametrization.random_state.seed(12)
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.instrumentation.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
+        optimizer.parametrization.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
 

@@ -2,18 +2,29 @@
 
 ## master
 
-- `Candidate` class is removed, and is completely replaced by `Parameter` [#459](https://github.com/facebookresearch/nevergrad/pull/459)
-- New parametrization is now as efficient as in v0.3.0 (see CHANGELOG for v0.3.1 for contect)
+## v0.3.2 (2019-02-05)
+
+
+### Breaking changes (possibly for next version)
+
+- Fist argument of optimizers is renamed to `parametrization` instead of `instrumentation` for consistency [#497](https://github.com/facebookresearch/nevergrad/pull/497). There is currently a deprecation warning, but this will be breaking in v0.4.0.
+- Old `instrumentation` classes now raise deprecation warnings, and will disappear in versions >0.3.2.
+  Hence, prefere using parameters from `ng.p` than `ng.var`, and avoid using `ng.Instrumentation` altogether if
+  you don't need it anymore (or import it through `ng.p.Instrumentation`).
 - `CandidateMaker` (`optimizer.create_candidate`) raises `DeprecationWarning`s since it new candidates/parameters
   can be straightforwardly created (`parameter.spawn_child(new_value=new_value)`)
+- `Candidate` class is completely removed, and is completely replaced by `Parameter` [#459](https://github.com/facebookresearch/nevergrad/pull/459).
+  This should not break existing code since `Parameter` can be straightforwardly used as a `Candidate`.
+
+### Other changes
+
+- New parametrization is now as efficient as in v0.3.0 (see CHANGELOG for v0.3.1 for contect)
 - Optimizers can now hold any parametrization, not just `Instrumentation`. This for instance mean that when you
   do `OptimizerClass(instrumentation=12, budget=100)`, the instrumentation (and therefore the candidates) will be of class
   `ng.p.Array` (and not `ng.p.Instrumentation`), and their attribute `value` will be the corresponding `np.ndarray` value.
   You can still use `args` and `kwargs` if you want, but it's no more needed!
-- Old `instrumentation` classes now raise deprecation warnings, and will disappear in versions >0.3.2.
-  Hence, prefere using parameters from `ng.p` than `ng.var`, and avoid using `ng.Instrumentation` altogether if
-  you don't need it anymore (or import it through `ng.p.Instrumentation`).
-- Added experimental evolution-strategy-like algorithms using new parametrization [#471](https://github.com/facebookresearch/nevergrad/pull/471)
+- Added *experimental* evolution-strategy-like algorithms using new parametrization [#471](https://github.com/facebookresearch/nevergrad/pull/471)
+  (the behavior and API of these optimizers will probably evolve in the near future).
 - `DE` algorithms comply with the new parametrization system and can be set to use parameter's recombination.
 - Fixed array as bounds in `Array` parameters
 
