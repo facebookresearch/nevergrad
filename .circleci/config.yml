@@ -100,7 +100,7 @@ jobs:
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             cd ..  # don't use nevergrad locally
-            # pip install repo/dist/nevergrad-*any.whl
+            pip install repo/dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
 
