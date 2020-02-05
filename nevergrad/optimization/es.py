@@ -11,10 +11,10 @@ class _EvolutionStrategy(base.Optimizer):
     The behavior is going to evolve
     """
 
-    def __init__(self, instrumentation: base.IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: base.IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         if budget is not None and budget < 60:
             warnings.warn("ES algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._parameters = EvolutionStrategy()
         self._population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = UidQueue()
@@ -22,7 +22,7 @@ class _EvolutionStrategy(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if self.num_ask < self._parameters.popsize or not self._population:
-            param = self.instrumentation.sample()
+            param = self.parametrization.sample()
             assert param.uid == param.heritage["lineage"]  # this is an assumption used below
             self._uid_queue.asked.add(param.uid)
             return param

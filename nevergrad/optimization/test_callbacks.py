@@ -23,7 +23,7 @@ def test_log_parameters(tmp_path: Path) -> None:
                                    ng.p.Scalar(),
                                    blublu=ng.p.Choice(cases),
                                    array=ng.p.Array(shape=(3, 2)))
-    optimizer = optimizerlib.NoisyOnePlusOne(instrumentation=instrum, budget=32)
+    optimizer = optimizerlib.NoisyOnePlusOne(parametrization=instrum, budget=32)
     optimizer.register_callback("tell", callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)
     # pickling
