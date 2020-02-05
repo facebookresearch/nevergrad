@@ -72,6 +72,8 @@ def deprecated_init(func: tp.Callable[..., Y]) -> tp.Callable[..., Y]:
         if instrumentation is not None:
             warnings.warn('"instrumentation" __init__ parameter has been renamed to "parametrization" for consistency. '
                           "using it will not be supported starting at v0.4.0 (coming soon!)", DeprecationWarning)
+            if parametrization is not None:
+                raise ValueError('Only parametrization arguement should be specified, not "instrumentation" which is deprecated')
             parametrization = instrumentation
         assert parametrization is not None, '"parametrization" must be provided to the optimizer'
         assert isinstance(parametrization, (int, p.Parameter)), f"Weird input {parametrization}"
