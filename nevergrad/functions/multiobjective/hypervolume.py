@@ -78,9 +78,7 @@ class VectorLinkedList:
         return self.dimension
 
     def chain_length(self, index: int) -> int:
-        length = 0
-        for _ in self.iterate(index):
-            length += 1
+        length = sum(1 for _ in self.iterate(index))
         return length
 
     def append(self, node: VectorNode, index: int) -> None:
@@ -267,8 +265,7 @@ class HypervolumeIndicator:
         hypervolume -= last_node.area[dimension] * last_node.coordinate[dimension]
         return hypervolume
 
-    def skip_dominated_points(
-        self, node: VectorNode, dimension: int) -> None:
+    def skip_dominated_points(self, node: VectorNode, dimension: int) -> None:
         """ Implements Algorithm 2, _skipdom_, for skipping dominated points."""
         if node.dominated_flag >= dimension:
             node.area[dimension] = node.prev[dimension].area[dimension]
