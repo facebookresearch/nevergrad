@@ -81,7 +81,7 @@ def test_crossover() -> None:
 
 
 def test_random_crossover() -> None:
-    arrays = [k * np.ones((2, 2)) for k in range(31)]
+    arrays = [k * np.ones((2, 2)) for k in range(30)]
     co = utils.Crossover(0)
     out = co.apply(arrays)
     assert 0 in out
