@@ -6,7 +6,6 @@
 import warnings
 from pathlib import Path
 import typing as tp
-import pytest
 import numpy as np
 from nevergrad.common import testing
 from . import optimizerlib
@@ -157,12 +156,6 @@ def test_optimizer_family() -> None:
         opt = optf(parametrization=2, budget=4, num_workers=1)
         recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom.value == np.zeros(2), zero)
-
-
-def test_deprecation_warning() -> None:
-    opt = StupidFamily()(parametrization=2, budget=4, num_workers=1)
-    with pytest.warns(DeprecationWarning):
-        opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
 
 
 def test_naming() -> None:

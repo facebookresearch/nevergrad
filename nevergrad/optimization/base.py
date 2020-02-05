@@ -509,18 +509,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             first_iteration = False
         return self.provide_recommendation()
 
-    def optimize(
-        self,
-        objective_function: Callable[..., float],
-        executor: Optional[ExecutorLike] = None,
-        batch_mode: bool = False,
-        verbosity: int = 0,
-    ) -> p.Parameter:
-        """This function is deprecated and renamed "minimize".
-        """
-        warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
-        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
-
 
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
