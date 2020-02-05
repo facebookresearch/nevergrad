@@ -98,7 +98,7 @@ jobs:
             python setup.py sdist bdist_wheel
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_install
-            mkdir ..
+            cd ..  # don't use nevergrad locally
             . test_install/bin/activate
             # pip install dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
