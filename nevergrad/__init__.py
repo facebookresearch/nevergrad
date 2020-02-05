@@ -6,8 +6,6 @@
 from .optimization import optimizerlib as optimizers  # busy namespace, likely to be simplified
 from .optimization import families
 from .optimization import callbacks
-from .instrumentation.multivariables import Instrumentation
-from .instrumentation import variables as var
 from .parametrization import parameter as p
 
 
