@@ -132,7 +132,7 @@ value = ng.p.Scalar(init=1.0).set_mutation(sigma=2)  # the 4th arg. is a keyword
 
 # create the parametrization
 # the 3rd arg. is a positional arg. which will be kept constant to "blublu"
-instru = ng.Instrumentation(arg1, arg2, "blublu", value=value)
+instru = ng.p.Instrumentation(arg1, arg2, "blublu", value=value)
 
 print(instru.dimension)  # 5 dimensional space
 ```

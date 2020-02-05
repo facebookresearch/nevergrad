@@ -1,14 +1,14 @@
 Instrumentation
 ===============
 
-Instrumentation class
----------------------
+Base Parameter class
+---------------
 
 .. autoclass:: nevergrad.p.Parameter
     :members:
 
-Variables
----------
+Parameters
+----------
 
 .. automodule:: nevergrad.p
     :members:

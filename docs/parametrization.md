@@ -90,7 +90,7 @@ print(func.placeholders)  # will print the number of variables of the function
 print(func(value1=2, value2=3, string="blublu"))
 # prints: 12.0
 ```
-- **instrument** the function, (see Instrumentation section just above).
+- **parametrize** the function, (see Parametrization section just above).
 
 
 ## Tips and caveats

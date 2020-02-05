@@ -25,7 +25,7 @@ In this example, the optimal value will be found in `recommendation.args[0]` and
 `parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension `n`,
 Defining the following parametrization instead will optimize on both `x` (continuous, dimension 2) and `y` (continuous, dimension 1).
 ```python
-instrum = ng.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
+instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
 optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
 recommendation = optimizer.minimize(square)
 print(recommendation)

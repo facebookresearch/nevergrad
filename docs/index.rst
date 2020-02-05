@@ -12,8 +12,8 @@ Welcome to nevergrad's documentation!
 
    optimization.md
    optimizers.rst
-   instrumentation.md
-   instrumentation_api.rst
+   parametrization.md
+   parametrization_api.rst
    machinelearning.md
    benchmarking.md
    benchmarks.md
