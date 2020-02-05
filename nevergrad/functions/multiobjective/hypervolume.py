@@ -169,10 +169,10 @@ class HypervolumeIndicator:
         hypervolume = self.recursive_hypervolume(self.dimension - 1)
         return hypervolume
 
-    def plane_hypervolume(self, dimension: int) -> float:
+    def plane_hypervolume(self) -> float:
         """ Calculates the hypervolume on a two dimensional plane. The algorithm
         is described in Section III-A of the original paper. """
-        assert dimension == 1
+        dimension = 1
         hypervolume = 0.0
         h = self.multilist.sentinel.next[dimension].coordinate[dimension - 1]
         for node in self.multilist.iterate(dimension):
@@ -195,7 +195,7 @@ class HypervolumeIndicator:
             return -float(self.multilist.sentinel.next[0].coordinate[0])
 
         if dimension == 1:
-            return self.plane_hypervolume(dimension)
+            return self.plane_hypervolume()
 
         # Line 4
         for node in self.multilist.reverse_iterate(dimension):
