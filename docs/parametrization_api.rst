@@ -1,5 +1,11 @@
-Instrumentation
-===============
+Main API
+========
+
+Base Optimizer class
+---------------
+
+.. autoclass:: nevergrad.optimization.base.Optimizer
+    :members:
 
 Base Parameter class
 ---------------
@@ -11,4 +17,4 @@ Parameters
 ----------
 
 .. automodule:: nevergrad.p
-    :members:
+    :members: Array, Scalar, Log, Dict, Tuple, Instrumentation, Choice, TransitionChoice

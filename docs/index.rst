@@ -10,13 +10,14 @@ Welcome to nevergrad's documentation!
    :maxdepth: 3
    :caption: Contents:
 
+
    optimization.md
    optimizers.rst
    parametrization.md
    parametrization_api.rst
    machinelearning.md
-   benchmarking.md
    benchmarks.md
+   benchmarking.md
    adding_an_algorithm.md
 
 
