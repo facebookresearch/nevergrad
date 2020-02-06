@@ -54,8 +54,8 @@ class Instrumentation(Tuple):
     """Parameter holding args and kwargs:
     The parameter provided as input are used to provide values for
     an arg tuple and a kwargs dictp.
-    "value" attribue returns (args, kwargs), but each can be independantly
-    accessed through the "args" and "kwargs" methods
+    `value` attribue returns `(args, kwargs)`, but each can be independantly
+    accessed through the `args` and `kwargs` methods
 
     Parameters
     ----------
@@ -67,8 +67,8 @@ class Instrumentation(Tuple):
     Note
     ----
     When used in conjonction with the "minimize" method of an optimizer,
-    functions call use func(*param.args, **param.kwargs) instead of
-    func(param.value). This is for simplifying the parametrization of
+    functions call use `func(*param.args, **param.kwargs)` instead of
+    `func(param.value)`. This is for simplifying the parametrization of
     multiparameter functions.
     """
 

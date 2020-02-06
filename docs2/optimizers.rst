@@ -18,18 +18,15 @@ Current implementations
     :members:
     :undoc-members:
 
-Families of optimizers
-----------------------
+Configurable optimizers
+-----------------------
 
-Configurable optimizers API
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Configurable optimizers share the following API to create optimizers instances:
 
 .. autoclass:: nevergrad.optimizers.base.ParametrizedFamily
     :members:
     :special-members: __call__
 
-Current configurable optimizers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: nevergrad.families
     :members:
