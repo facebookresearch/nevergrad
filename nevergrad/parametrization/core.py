@@ -306,9 +306,6 @@ class Parameter:
         ----------
         new_value: anything (optional)
             if provided, it will update the new instance value (cannot be used at the same time as new_data).
-        new_data: np.ndarray
-            if provided, it will update the new instance standardized data (cannot be used at the same time as new_value)
-            the new value will be drawn non-deterministically from the data.
 
         Returns
         -------
