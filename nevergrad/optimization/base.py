@@ -124,12 +124,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._finished_jobs: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
 
     @property
-    def instrumentation(self) -> p.Parameter:
-        warnings.warn('"instrumentation" attribute has been renamed to "parametrization" for consistency. '
-                      "using it will not be supported starting at v0.4.0 (coming soon!)", DeprecationWarning)
-        return self.parametrization
-
-    @property
     def _rng(self) -> np.random.RandomState:
         """np.random.RandomState: parametrization random state the optimizer must pull from.
         It can be seeded or updated directly on the parametrization instance (`optimizer.parametrization.random_state`)
