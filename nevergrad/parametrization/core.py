@@ -21,7 +21,7 @@ D = tp.TypeVar("D", bound="Dict")
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Parameter:
-    """This provides the core functionality of a parameter, aka
+    """Abstract class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
