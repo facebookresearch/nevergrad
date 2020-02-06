@@ -2,8 +2,6 @@
 Welcome to nevergrad's documentation!
 =====================================
 
-.. mdinclude:: ../README.md
-
 .. toctree::
    :maxdepth: 3
    :caption: Contents:

@@ -53,9 +53,9 @@ class Tuple(Dict):
 class Instrumentation(Tuple):
     """Parameter holding args and kwargs:
     The parameter provided as input are used to provide values for
-    an arg tuple and a kwargs dictp.
+    an `arg` tuple and a `kwargs` dict.
     `value` attribue returns `(args, kwargs)`, but each can be independantly
-    accessed through the `args` and `kwargs` methods
+    accessed through the `args` and `kwargs` properties.
 
     Parameters
     ----------
