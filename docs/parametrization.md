@@ -12,9 +12,9 @@ The parametrization subpackage will help you do thanks to:
 7 types of parameters are currently provided:
 - `Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
-- `Array(shape)`: describes a `np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see `set_bounds`, `set_mutation`). This makes it a very flexible type of parameter. Eg. `Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
+- `Array(shape=shape)`: describes a `np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see `set_bounds`, `set_mutation`). This makes it a very flexible type of parameter. Eg. `Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
 - `Scalar(dtype)`: describes a float (the default) or an int.
-  and all `Array` methods are therefore available. Note that `Gaussian(a, b)` is equivalent to `Scalar().affined(a, b)`.
+  and all `Array` methods are therefore available.
 - `Log(a_min, a_max)`: describes log distributed data between two bounds. Under the hood this uses an `Scalar` with appropriate specifications for bounds and mutations.
 - `Instrumentation(*args, **kwargs)`: a container for other parameters. Values of parameters in the `args` will be returned as a `tuple` by `param.args`, and
   values of parameters in the `kwargs` will be returned as a `dict` by `param.kwargs` (in practice, `param.value == (param.args, param.kwargs)`).

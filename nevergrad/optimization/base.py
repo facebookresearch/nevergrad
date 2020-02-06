@@ -47,41 +47,6 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """
 
 
-class CandidateMaker:
-
-    def from_call(self, *args: Any, **kwargs: Any) -> p.Parameter:
-        raise RuntimeError("CandidateMaker is deprecated, use parametrization.spawn_child(new_value=(args, kwargs)) instead")
-
-    def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Parameter:
-        raise RuntimeError("CandidateMaker is deprecated, "
-                           "use parametrization.spawn_child().set_standardized_data(data, deterministic) instead")
-
-
-def deprecated_init(func: tp.Callable[..., Y]) -> tp.Callable[..., Y]:
-
-    def _deprecated_init_wrapper(
-        self: "Optimizer",
-        parametrization: tp.Optional[IntOrParameter] = None,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        instrumentation: tp.Optional[IntOrParameter] = None,
-        **kwargs: tp.Any,
-    ) -> Y:
-        assert func.__name__ in ["__call__", "__init__"]
-        assert func is not None
-        if instrumentation is not None:
-            warnings.warn('"instrumentation" __init__ parameter has been renamed to "parametrization" for consistency. '
-                          "using it will not be supported starting at v0.4.0 (coming soon!)", DeprecationWarning)
-            if parametrization is not None:
-                raise ValueError('Only parametrization arguement should be specified, not "instrumentation" which is deprecated')
-            parametrization = instrumentation
-        assert parametrization is not None, '"parametrization" must be provided to the optimizer'
-        assert isinstance(parametrization, (int, p.Parameter)), f"Weird input {parametrization}"
-        return func(self, parametrization, budget, num_workers, **kwargs)
-
-    return _deprecated_init_wrapper
-
-
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
@@ -117,7 +82,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    @deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
@@ -137,7 +101,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.parametrization.freeze()  # avoids issues!
         if not self.dimension:
             raise ValueError("No variable to optimize in this parametrization.")
-        self.create_candidate = CandidateMaker()
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
@@ -159,12 +122,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[p.Parameter, JobLike[float]]] = []
         self._finished_jobs: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
-
-    @property
-    def instrumentation(self) -> p.Parameter:
-        warnings.warn('"instrumentation" attribute has been renamed to "parametrization" for consistency. '
-                      "using it will not be supported starting at v0.4.0 (coming soon!)", DeprecationWarning)
-        return self.parametrization
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -509,18 +466,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             first_iteration = False
         return self.provide_recommendation()
 
-    def optimize(
-        self,
-        objective_function: Callable[..., float],
-        executor: Optional[ExecutorLike] = None,
-        batch_mode: bool = False,
-        verbosity: int = 0,
-    ) -> p.Parameter:
-        """This function is deprecated and renamed "minimize".
-        """
-        warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
-        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
-
 
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
@@ -599,7 +544,6 @@ class OptimizerFamily:
             registry.register_name(name, self)
         return self
 
-    @deprecated_init
     def __call__(
         self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
@@ -627,9 +571,8 @@ class ParametrizedFamily(OptimizerFamily):
     def config(self) -> tp.Dict[str, tp.Any]:
         return {x: y for x, y in self.__dict__.items() if not x.startswith("_")}
 
-    @deprecated_init
     def __call__(
-        self, parametrization: tp.Optional[IntOrParameter] = None, budget: Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         """Creates an optimizer from the parametrization
 

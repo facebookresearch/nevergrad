@@ -218,7 +218,6 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.popsize = popsize
         super().__init__()
 
-    @base.deprecated_init
     def __call__(self, parametrization: IntOrParameter,
                  budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         if budget is not None and budget < 60:

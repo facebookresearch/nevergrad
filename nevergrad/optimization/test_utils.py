@@ -46,7 +46,7 @@ def test_sequential_executor() -> None:
 
 
 def test_get_nash() -> None:
-    zeroptim = Zero(instrumentation=1, budget=4, num_workers=1)
+    zeroptim = Zero(parametrization=1, budget=4, num_workers=1)
     for k in range(4):
         array = (float(k),)
         zeroptim.archive[array] = utils.Value(k)

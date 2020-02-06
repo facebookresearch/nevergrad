@@ -165,7 +165,7 @@ f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.s
 print(f(np.array([1.,2.])))
 
 optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
-recommendation = optimizer.optimize(f)
+recommendation = optimizer.minimize(f)
 
 # The function embeds its Pareto-front:
 print("My Pareto front:", [x[0][0] for x in f.pareto_front])
