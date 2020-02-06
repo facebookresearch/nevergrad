@@ -5,7 +5,6 @@ from nevergrad.functions.multiobjective.hypervolume import (
     VectorLinkedList,
     HypervolumeIndicator,
 )
-from nevergrad.functions.multiobjective.pyhv import _HyperVolume
 
 
 def test_initialize_empty_node() -> None:
@@ -302,6 +301,4 @@ def test_version_consistency() -> None:
         ]
     )
     volume = hv.compute(front)
-
-    reference_volume = _HyperVolume(reference).compute(front)
-    assert volume == reference_volume
+    assert volume == 11113.0
