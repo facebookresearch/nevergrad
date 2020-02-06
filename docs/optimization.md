@@ -16,8 +16,8 @@ optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 # alternatively, you could use ng.optimizers.registry["OnePlusOne"]
 # (registry is a dict containing all optimizer classes)
 recommendation = optimizer.minimize(square)
-print(recommendation)
->>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
+print(recommendation.value)
+>>> [0.500, 0.499]
 ```
 `recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
 In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
@@ -28,8 +28,8 @@ Defining the following parametrization instead will optimize on both `x` (contin
 instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
 optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
 recommendation = optimizer.minimize(square)
-print(recommendation)
->>> Candidate(args=(array([0.490, 0.546]),), kwargs={'y': 0.0})
+print(recommendation.value)
+>>> [0.490, 0.546]
 ```
 See the [parametrization tutorial](parametrization.md) for more complex parametrizations.
 
@@ -53,15 +53,14 @@ An *ask and tell* interface is also available. The 3 key methods for this interf
 - `provide_recommendation`: returns the candidate the algorithms considers the best.
 For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute `no_parallelization=True` however do not support this.
 
-The `Candidate` class holds attributes `args` and `kwargs` corresponding to the `args` and `kwargs` of the function you optimize,
-given its [parametrization](parametrization.md). It also holds a `data` attribute corresponding to the data point in the optimization space.
+The `Parameter` class holds attribute `value` which contain the actual value to evaluate through the function.
 
 Here is a simpler example in the sequential case (this is what happens in the `optimize` method for `num_workers=1`):
 ```python
 for _ in range(optimizer.budget):
     x = optimizer.ask()
-    value = square(*x.args, **x.kwargs)
-    optimizer.tell(x, value)
+    loss = square(*x.args, **x.kwargs)
+    optimizer.tell(x, loss)
 recommendation = optimizer.provide_recommendation()
 ```
 
@@ -85,8 +84,8 @@ optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 optimizer.parametrization.register_cheap_constraint(lambda x: x[0] >= 1)
 
 recommendation = optimizer.minimize(square)
-print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([1.00037625, 0.50683314]),), kwargs={})
+print(recommendation.value)
+>>> [1.00037625, 0.50683314]
 ```
 
 ## Choosing an optimizer
@@ -148,8 +147,8 @@ def square(x):
 
 optimizer = DEwithLHS30(parametrization=2, budget=300)
 recommendation = optimizer.minimize(square)
-print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([0.50843113, 0.5104554 ]),), kwargs={})
+print(recommendation.value)
+>>> [0.50843113, 0.5104554]
 ```
 
 

@@ -388,5 +388,5 @@ def test_parametrization_offset(name: str) -> None:
         optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
-        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.args[0][0]}"
+        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
         optimizer.tell(candidate, 0)

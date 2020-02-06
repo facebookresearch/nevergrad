@@ -7,9 +7,6 @@ Optimizer API
 .. autoclass:: nevergrad.optimizers.base.Optimizer
     :members:
 
-.. autoclass:: nevergrad.optimizers.base.Candidate
-    :members:
-
 Current implementations
 -----------------------
 
