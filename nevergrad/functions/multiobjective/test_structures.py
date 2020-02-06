@@ -12,7 +12,7 @@ def test_initialize_empty_node() -> None:
     dim = 4
     node = VectorNode(dim)
 
-    assert isinstance(node.coordinate, np.ndarray)
+    assert isinstance(node.coordinates, np.ndarray)
     for entry in node.next:
         assert entry is node
     for entry in node.prev:
@@ -25,11 +25,11 @@ def test_initialize_empty_node() -> None:
 
 def test_initialize_node() -> None:
     dim = 4
-    coordinate = [1.0, 2.0, 3.0]
-    node = VectorNode(dim, coordinate=coordinate)
+    coordinates = [1.0, 2.0, 3.0]
+    node = VectorNode(dim, coordinates=coordinates)
 
-    assert isinstance(node.coordinate, np.ndarray)
-    assert list(node.coordinate) == coordinate
+    assert isinstance(node.coordinates, np.ndarray)
+    assert list(node.coordinates) == coordinates
     for entry in node.next:
         assert entry is node
     for entry in node.prev:
@@ -245,7 +245,7 @@ def test_reverse_iterate() -> None:
 
 def test_update_coordinate_bounds() -> None:
     bounds = np.array([-1.0, -1.0, -1.0])
-    node = VectorNode(3, coordinate=[1.0, -2.0, -1.0])
+    node = VectorNode(3, coordinates=[1.0, -2.0, -1.0])
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 0 + 1)
     assert list(bounds) == [-1, -1, -1]
     bounds = VectorLinkedList.update_coordinate_bounds(bounds, node, 1 + 1)
@@ -279,13 +279,13 @@ def test_create_sorted() -> None:
     ]
     linked_list = VectorLinkedList.create_sorted(dimension, coordinates)
     assert isinstance(linked_list, VectorLinkedList)
-    assert list(linked_list.sentinel.next[0].coordinate) == [1, 2, 3]
-    assert list(linked_list.sentinel.next[1].coordinate) == [3, 1, 2]
-    assert list(linked_list.sentinel.next[2].coordinate) == [2, 3, 1]
+    assert list(linked_list.sentinel.next[0].coordinates) == [1, 2, 3]
+    assert list(linked_list.sentinel.next[1].coordinates) == [3, 1, 2]
+    assert list(linked_list.sentinel.next[2].coordinates) == [2, 3, 1]
 
-    assert list(linked_list.sentinel.next[0].next[0].coordinate) == [2, 3, 1]
-    assert list(linked_list.sentinel.next[1].next[1].coordinate) == [1, 2, 3]
-    assert list(linked_list.sentinel.next[2].next[2].coordinate) == [3, 1, 2]
+    assert list(linked_list.sentinel.next[0].next[0].coordinates) == [2, 3, 1]
+    assert list(linked_list.sentinel.next[1].next[1].coordinates) == [1, 2, 3]
+    assert list(linked_list.sentinel.next[2].next[2].coordinates) == [3, 1, 2]
 
 
 def test_version_consistency() -> None:
