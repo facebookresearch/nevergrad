@@ -1,0 +1,870 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Parametrization &mdash; nevergrad  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Optimizers" href="optimizers.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> nevergrad
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parametrization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#api">API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-nevergrad.p">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#summary">Summary</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nevergrad</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Parametrization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/parametrization.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="parametrization">
+<h1>Parametrization<a class="headerlink" href="#parametrization" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="nevergrad.p.Parameter">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Parameter</code><span class="sig-paren">(</span><em class="sig-param">**parameters: Any</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract class providing the core functionality of a parameter, aka
+value, internal/model parameters, mutation, recombination
+and additional features such as shared random state,
+constraint check, hashes, generation and naming.</p>
+<dl class="method">
+<dt id="nevergrad.p.Parameter.args">
+<em class="property">property </em><code class="sig-name descname">args</code><a class="headerlink" href="#nevergrad.p.Parameter.args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the positional arguments.
+Used to input value in a function as <cite>func(*param.args, **param.kwargs)</cite>
+Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kwargs</cite> with full freedom.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a child, but remove the random state
+This is used to run multiple experiments</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.dimension">
+<em class="property">property </em><code class="sig-name descname">dimension</code><a class="headerlink" href="#nevergrad.p.Parameter.dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of the standardized space for this parameter
+i.e size of the vector returned by get_standardized_data(reference=…)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.freeze">
+<code class="sig-name descname">freeze</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.freeze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prevents the parameter from changing value again (through value, mutate etc…)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.generation">
+<em class="property">property </em><code class="sig-name descname">generation</code><a class="headerlink" href="#nevergrad.p.Parameter.generation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generation of the parameter (children are current generation + 1)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.get_standardized_data">
+<code class="sig-name descname">get_standardized_data</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">reference: P</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="headerlink" href="#nevergrad.p.Parameter.get_standardized_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the standardized data representing the value of the instance as an array in the optimization space.
+In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
+The data only represent the value of this instance, not the parameters (eg.: mutable sigma), hence it does not
+fully represent the state of the instance. Also, in stochastic cases, the value can be non-deterministically
+deduced from the data (eg.: categorical variable, for which data includes sampling weights for each value)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>reference</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – the reference instance for representation in the standardized data space. This keyword parameter is
+mandatory to make the code clearer.
+If you use “self”, this method will always return a zero vector.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the representation of the value in the optimization space</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Operations between different standardized data should only be performed if each array was produced
+by the same reference in the exact same state (no mutation)</p></li>
+<li><p>to make the code more explicit, the “reference” parameter is enforced as a keyword-only parameter.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.get_value_hash">
+<code class="sig-name descname">get_value_hash</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Hashable<a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hashable object representing the current value of the instance</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.kwargs">
+<em class="property">property </em><code class="sig-name descname">kwargs</code><a class="headerlink" href="#nevergrad.p.Parameter.kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the keyword arguments.
+Used to input value in a function as <cite>func(*param.args, **param.kwargs)</cite>
+Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kwargs</cite> with full freedom.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.mutate">
+<code class="sig-name descname">mutate</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate parameters of the instance, and then its value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.name">
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#nevergrad.p.Parameter.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the parameter
+This is used to keep track of how this Parameter is configured (included through internal/model parameters),
+mostly for reproducibility A default version is always provided, but can be overriden directly
+through the attribute, or through the set_name method (which allows chaining).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.parameters">
+<em class="property">property </em><code class="sig-name descname">parameters</code><a class="headerlink" href="#nevergrad.p.Parameter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Internal/model parameters for this parameter</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.random_state">
+<em class="property">property </em><code class="sig-name descname">random_state</code><a class="headerlink" href="#nevergrad.p.Parameter.random_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Random state the instrumentation and the optimizers pull from.
+It can be seeded/replaced.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.recombine">
+<code class="sig-name descname">recombine</code><span class="sig-paren">(</span><em class="sig-param">*others: P</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.recombine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update value and parameters of this instance by combining it with
+other instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*others</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – other instances of the same type than this instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.register_cheap_constraint">
+<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param">func: Callable[[Any], bool]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a new constraint on the parameter values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – function which, given the value of the instance, returns whether it satisfies the constraints.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
+The constraint is not used in those processes.</p></li>
+<li><p>constraints should be fast to compute.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.sample">
+<code class="sig-name descname">sample</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample a new instance of the parameter.
+This usually means spawning a child and mutating it.
+This function should be used in optimizers when creating an initial population,
+and parameter.heritage[“lineage”] is reset to parameter.uid instead of its parent’s</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.satisfies_constraints">
+<code class="sig-name descname">satisfies_constraints</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#nevergrad.p.Parameter.satisfies_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the instance satisfies the constraints added through
+the <cite>register_cheap_constraint</cite> method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True iff the constraint is satisfied</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.set_name">
+<code class="sig-name descname">set_name</code><span class="sig-paren">(</span><em class="sig-param">name: str</em><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.set_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a name and return the current instrumentation (for chaining)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – new name to use to represent the Parameter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.set_standardized_data">
+<code class="sig-name descname">set_standardized_data</code><span class="sig-paren">(</span><em class="sig-param">data: Union[Tuple[float, ...], List[float], numpy.ndarray], *, reference: Optional[P] = None, deterministic: bool = False</em><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.set_standardized_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the value of the provided reference (or self) using the standardized data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>np.ndarray</strong> – the representation of the value in the optimization space</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – the reference point for representing the data (“self”, if not provided)</p></li>
+<li><p><strong>deterministic</strong> (<em>bool</em>) – whether the value should be deterministically drawn (max probability) in the case of stochastic parameters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>self (modified)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter">Parameter</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To make the code more explicit, the “reference” and “deterministic” parameters are enforced
+as keyword-only parameters.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Parameter.spawn_child">
+<code class="sig-name descname">spawn_child</code><span class="sig-paren">(</span><em class="sig-param">new_value: Optional[Any] = None</em><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.spawn_child" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new instance which shares the same random generator than its parent,
+is sampled from the same data, and mutates independently from the parentp.
+If a new value is provided, it will be set to the new instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>new_value</strong> (<em>anything</em><em> (</em><em>optional</em><em>)</em>) – if provided, it will update the new instance value (cannot be used at the same time as new_data).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a new instance of the same class, with same content/internal-model parameters/…
+Optionally, a new value will be set after creation</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter">Parameter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-nevergrad.p">
+<span id="parameters"></span><h2>Parameters<a class="headerlink" href="#module-nevergrad.p" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="nevergrad.p.Array">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param">*, init: Union[Tuple[float, ...], List[float], numpy.ndarray, None] = None, shape: Optional[Tuple[int, ...]] = None, mutable_sigma: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
+<p>Array variable of a given shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init</strong> (<em>np.ndarray</em><em>, or </em><em>None</em>) – initial value of the array (defaults to 0, with a provided shape)</p></li>
+<li><p><strong>shape</strong> (<em>tuple of ints</em><em>, or </em><em>None</em>) – shape of the array, to be provided iff init is not provided</p></li>
+<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>More specific behaviors can be obtained throught the following methods:
+set_bounds, set_mutation, set_integer_casting</p>
+</div>
+<dl class="method">
+<dt id="nevergrad.p.Array.recombine">
+<code class="sig-name descname">recombine</code><span class="sig-paren">(</span><em class="sig-param">*others: A</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Array.recombine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update value and parameters of this instance by combining it with
+other instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*others</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – other instances of the same type than this instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Array.sample">
+<code class="sig-name descname">sample</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample a new instance of the parameter.
+This usually means spawning a child and mutating it.
+This function should be used in optimizers when creating an initial population,
+and parameter.heritage[“lineage”] is reset to parameter.uid instead of its parent’s</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Array.set_bounds">
+<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param">a_min: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">a_max: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">method: str = 'clipping'</em>, <em class="sig-param">full_range_sampling: bool = False</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bounds all real values into [a_min, a_max] using a provided method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a_min</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value</p></li>
+<li><p><strong>a_max</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – <p>One of the following choices:</p>
+<ul>
+<li><p>”clipping”: clips the values inside the bounds. This is efficient but leads
+to over-sampling on the bounds.</p></li>
+<li><p>”constraint”: adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
+reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
+dimension.</p></li>
+<li><p>”arctan”: maps the space [a_min, a_max] to to all [-inf, inf] using arctan transform. This is efficient
+but it completely reshapes the space (a mutation in the center of the space will be larger than a mutation
+close to the bounds), and reaching the bounds is equivalent to reaching the infinity.</p></li>
+<li><p>”tanh”: same as “arctan”, but with a “tanh” transform. “tanh” saturating much faster than “arctan”, it can lead
+to unexpected behaviors.</p></li>
+</ul>
+</p></li>
+<li><p><strong>full_range_sampling</strong> (<em>bool</em>) – Changes the default behavior of the “sample” method (aka creating a child and mutating it from the current instance)
+to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
+“sample” method is used by some algorithms to create an initial population.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>“tanh” reaches the boundaries really quickly, while “arctan” is much softer</p></li>
+<li><p>only “clipping” accepts partial bounds (None values)</p></li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Array.set_integer_casting">
+<code class="sig-name descname">set_integer_casting</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_integer_casting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output will be cast to integer(s) through deterministic rounding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Array.set_mutation">
+<code class="sig-name descname">set_mutation</code><span class="sig-paren">(</span><em class="sig-param">sigma: Union[float</em>, <em class="sig-param">Array</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_mutation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output will be cast to integer(s) through deterministic rounding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<em>Array/Log</em><em> or </em><em>float</em>) – The standard deviation of the mutation. If a Parameter is provided, it will replace the current
+value. If a float is provided, it will either replace a previous float value, or update the value
+of the Parameter.</p></li>
+<li><p><strong>exponent</strong> (<em>float</em>) – exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
+x2 or /2 “on average” on the value at each mutation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Array.sigma">
+<em class="property">property </em><code class="sig-name descname">sigma</code><a class="headerlink" href="#nevergrad.p.Array.sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value for the standard deviation used to mutate the parameter</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.Scalar">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Scalar</code><span class="sig-paren">(</span><em class="sig-param">init: float = 0.0</em>, <em class="sig-param">mutable_sigma: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Scalar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Array</span></code></p>
+<p>Parameter representing a scalar</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init</strong> (<em>float</em>) – initial value of the scalar</p></li>
+<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>More specific behaviors can be obtained throught the following methods:
+set_bounds, set_mutation</p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.Log">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Log</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">init: Optional[float] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em>, <em class="sig-param">a_min: Optional[float] = None</em>, <em class="sig-param">a_max: Optional[float] = None</em>, <em class="sig-param">mutable_sigma: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Scalar</span></code></p>
+<p>Parameter representing a log distributed value between 0 and infinity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init</strong> (<em>float</em><em> or </em><em>None</em>) – initial value of the variable. If not provided, it is set to the middle of a_min and a_max in log space</p></li>
+<li><p><strong>exponent</strong> (<em>float</em><em> or </em><em>None</em>) – exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
+By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
+at 5 sigma in the transformed space.</p></li>
+<li><p><strong>a_min</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value if any (&gt; 0)</p></li>
+<li><p><strong>a_max</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value if any</p></li>
+<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>More specific behaviors can be obtained throught the following methods:
+set_bounds, set_mutation</p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.Dict">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Dict</code><span class="sig-paren">(</span><em class="sig-param">**parameters: Any</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
+<p>Dictionary-valued parameter. This Parameter can contain other Parameters,
+its value is a dict, with keys the ones provided as input, and corresponding values are
+either directly the provided values if they are not Parameter instances, or the value of those
+Parameters. It also implements a getter to access the Parameters directly if need be.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the dict</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the base structure for all container Parameters, and it is
+used to hold the internal/model parameters for all Parameter classes.</p>
+</div>
+<dl class="method">
+<dt id="nevergrad.p.Dict.freeze">
+<code class="sig-name descname">freeze</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Dict.freeze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prevents the parameter from changing value again (through value, mutate etc…)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Dict.get_value_hash">
+<code class="sig-name descname">get_value_hash</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Hashable<a class="headerlink" href="#nevergrad.p.Dict.get_value_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hashable object representing the current value of the instance</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Dict.mutate">
+<code class="sig-name descname">mutate</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Dict.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate parameters of the instance, and then its value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Dict.recombine">
+<code class="sig-name descname">recombine</code><span class="sig-paren">(</span><em class="sig-param">*others: nevergrad.parametrization.core.Dict</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Dict.recombine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update value and parameters of this instance by combining it with
+other instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*others</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – other instances of the same type than this instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Dict.sample">
+<code class="sig-name descname">sample</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; D<a class="headerlink" href="#nevergrad.p.Dict.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample a new instance of the parameter.
+This usually means spawning a child and mutating it.
+This function should be used in optimizers when creating an initial population,
+and parameter.heritage[“lineage”] is reset to parameter.uid instead of its parent’s</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Dict.satisfies_constraints">
+<code class="sig-name descname">satisfies_constraints</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#nevergrad.p.Dict.satisfies_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the instance satisfies the constraints added through
+the <cite>register_cheap_constraint</cite> method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True iff the constraint is satisfied</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.Tuple">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Tuple</code><span class="sig-paren">(</span><em class="sig-param">*parameters: Any</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Dict</span></code></p>
+<p>Tuple-valued parameter. This Parameter can contain other Parameters,
+its value is tuple which values are either directly the provided values
+if they are not Parameter instances, or the value of those Parameters.
+It also implements a getter to access the Parameters directly if need be.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the tuple</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the base structure for all container Parameters, and it is
+used to hold the subparameters for all Parameter classes.</p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.Instrumentation">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Instrumentation</code><span class="sig-paren">(</span><em class="sig-param">*args: Any</em>, <em class="sig-param">**kwargs: Any</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Instrumentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.container.Tuple</span></code></p>
+<p>Parameter holding args and kwargs:
+The parameter provided as input are used to provide values for
+an arg tuple and a kwargs dictp.
+<cite>value</cite> attribue returns <cite>(args, kwargs)</cite>, but each can be independantly
+accessed through the <cite>args</cite> and <cite>kwargs</cite> methods</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – values or Parameters to be used to fill the tuple of args</p></li>
+<li><p><strong>*kwargs</strong> – values or Parameters to be used to fill the dict of kwargs</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When used in conjonction with the “minimize” method of an optimizer,
+functions call use <cite>func(*param.args, **param.kwargs)</cite> instead of
+<cite>func(param.value)</cite>. This is for simplifying the parametrization of
+multiparameter functions.</p>
+</div>
+<dl class="method">
+<dt id="nevergrad.p.Instrumentation.args">
+<em class="property">property </em><code class="sig-name descname">args</code><a class="headerlink" href="#nevergrad.p.Instrumentation.args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the positional arguments.
+Used to input value in a function as <cite>func(*param.args, **param.kwargs)</cite>
+Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kwargs</cite> with full freedom.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Instrumentation.kwargs">
+<em class="property">property </em><code class="sig-name descname">kwargs</code><a class="headerlink" href="#nevergrad.p.Instrumentation.kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the keyword arguments.
+Used to input value in a function as <cite>func(*param.args, **param.kwargs)</cite>
+Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kwargs</cite> with full freedom.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.Choice">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Choice</code><span class="sig-paren">(</span><em class="sig-param">choices: Iterable[Any], deterministic: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Choice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.choice.BaseChoice</span></code></p>
+<p>Parameter which choses one of the provided choice options as a value.
+The choices can be Parameters, in which case there value will be returned instead.
+The chosen parameter is drawn randomly from the softmax of weights which are
+updated during the optimization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>choices</strong> (<em>list</em>) – a list of possible values or Parameters for the variable.</p></li>
+<li><p><strong>deterministic</strong> (<em>bool</em>) – whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
+continuity)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Since the chosen value is drawn randomly, the use of this variable makes deterministic
+functions become stochastic, hence “adding noise”</p></li>
+<li><p>the “mutate” method only mutates the weights and the chosen Parameter (if it is not constant),
+leaving others untouched</p></li>
+</ul>
+</div>
+<dl class="method">
+<dt id="nevergrad.p.Choice.index">
+<em class="property">property </em><code class="sig-name descname">index</code><a class="headerlink" href="#nevergrad.p.Choice.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Index of the chosen option</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Choice.mutate">
+<code class="sig-name descname">mutate</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Choice.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate parameters of the instance, and then its value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.Choice.weights">
+<em class="property">property </em><code class="sig-name descname">weights</code><a class="headerlink" href="#nevergrad.p.Choice.weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>The weights used to draw the value</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.p.TransitionChoice">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">TransitionChoice</code><span class="sig-paren">(</span><em class="sig-param">choices: Iterable[Any], transitions: Union[Tuple[float, ...], List[float], numpy.ndarray, nevergrad.parametrization.data.Array] = (1.0, 1.0)</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.TransitionChoice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.choice.BaseChoice</span></code></p>
+<p>Parameter which choses one of the provided choice options as a value.
+The choices can be Parameters, in which case there value will be returned instead.
+The chosen parameter is drawn using transitions between current choice and the next/previous ones.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>choices</strong> (<em>list</em>) – a list of possible values or Parameters for the variable.</p></li>
+<li><p><strong>transitions</strong> (<em>np.ndarray</em><em> or </em><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><em>Array</em></a>) – the transition weights. During transition, the direction (forward or backward will be drawn with
+equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
+the probability to remain in the same state, the second to move one step (backward or forward) and so on.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>the “mutate” method only mutates the weights and the chosen Parameter (if it is not constant),
+leaving others untouched</p></li>
+<li><p>in order to support export to standardized space, the index is encoded as a scalar. A normal distribution N(O,1)
+on this scalar yields a uniform choice of index. This may come to evolve for simplicity’s sake.</p></li>
+<li><p>currently, transitions are computed through softmax, this may evolve since this is somehow impractical</p></li>
+</ul>
+</div>
+<dl class="method">
+<dt id="nevergrad.p.TransitionChoice.mutate">
+<code class="sig-name descname">mutate</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.TransitionChoice.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate parameters of the instance, and then its value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.TransitionChoice.position">
+<em class="property">property </em><code class="sig-name descname">position</code><a class="headerlink" href="#nevergrad.p.TransitionChoice.position" title="Permalink to this definition">¶</a></dt>
+<dd><p>The continuous version of the index (used when working with standardized space)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.p.TransitionChoice.transitions">
+<em class="property">property </em><code class="sig-name descname">transitions</code><a class="headerlink" href="#nevergrad.p.TransitionChoice.transitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>The weights used to draw the step to the next value</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Array</span></code></a></p></td>
+<td><p>Array variable of a given shape.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>Parameter representing a scalar</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Log</span></code></a></p></td>
+<td><p>Parameter representing a log distributed value between 0 and infinity</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code></a></p></td>
+<td><p>Dictionary-valued parameter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tuple</span></code></a></p></td>
+<td><p>Tuple-valued parameter.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Instrumentation</span></code></a></p></td>
+<td><p>Parameter holding args and kwargs: The parameter provided as input are used to provide values for an arg tuple and a kwargs dictp.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Choice</span></code></a></p></td>
+<td><p>Parameter which choses one of the provided choice options as a value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransitionChoice</span></code></a></p></td>
+<td><p>Parameter which choses one of the provided choice options as a value.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="optimizers.html" class="btn btn-neutral float-left" title="Optimizers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Facebook AI Research
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
