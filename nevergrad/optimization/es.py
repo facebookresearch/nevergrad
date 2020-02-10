@@ -26,10 +26,11 @@ class _EvolutionStrategy(base.Optimizer):
         self._waiting: tp.List[p.Parameter] = []
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        if self.num_ask < self._parameters.popsize or not self._population:
+        if self.num_ask < self._parameters.popsize:
             param = self.parametrization.sample()
             assert param.uid == param.heritage["lineage"]  # this is an assumption used below
             self._uid_queue.asked.add(param.uid)
+            self._population[param.uid] = param
             return param
         uid = self._uid_queue.ask()
         param = self._population[uid].spawn_child()

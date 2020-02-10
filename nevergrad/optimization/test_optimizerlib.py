@@ -365,6 +365,14 @@ def test_parametrization_optimizer_reproducibility() -> None:
     np.testing.assert_equal(recom.kwargs["y"], 67)
 
 
+def test_parallel_es() -> None:
+    opt = optlib.EvolutionStrategy(popsize=3, offsprings=None)(4, budget=20, num_workers=5)
+    for k in range(35):
+        cand = opt.ask()  # asking should adapt to the parallelization
+        if not k:
+            opt.tell(cand, 1)
+
+
 def test_constrained_optimization() -> None:
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
