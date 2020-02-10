@@ -13,7 +13,7 @@ from . import functionlib
 
 DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
                     "num_blocks", "rotation", "noise_level", "dimension", "discrete", "aggregator", "hashing",
-                    "instrumentation", "noise_dissymmetry"}
+                    "parametrization", "noise_dissymmetry"}
 
 
 def test_testcase_function_errors() -> None:

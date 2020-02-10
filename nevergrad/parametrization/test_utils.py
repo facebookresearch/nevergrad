@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -81,7 +80,7 @@ def test_crossover() -> None:
 
 
 def test_random_crossover() -> None:
-    arrays = [k * np.ones((2, 2)) for k in range(31)]
+    arrays = [k * np.ones((2, 2)) for k in range(30)]
     co = utils.Crossover(0)
     out = co.apply(arrays)
     assert 0 in out

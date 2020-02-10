@@ -7,14 +7,14 @@ The parametrization subpackage will help you do thanks to:
 - the `parameter` modules (accessed by the shortcut `nevergrad.p`) providing classes that should be used to specify each parameter.
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
-## Variables
+## Parameters
 
-7 types of variables are currently provided:
+7 types of parameters are currently provided:
 - `Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - `TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
-- `Array(shape)`: describes a `np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see `set_bounds`, `set_mutation`). This makes it a very flexible type of variable. Eg. `Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
+- `Array(shape=shape)`: describes a `np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see `set_bounds`, `set_mutation`). This makes it a very flexible type of parameter. Eg. `Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape `(2, 3)`, with values bounded between 0 and 2.
 - `Scalar(dtype)`: describes a float (the default) or an int.
-  and all `Array` methods are therefore available. Note that `Gaussian(a, b)` is equivalent to `Scalar().affined(a, b)`.
+  and all `Array` methods are therefore available.
 - `Log(a_min, a_max)`: describes log distributed data between two bounds. Under the hood this uses an `Scalar` with appropriate specifications for bounds and mutations.
 - `Instrumentation(*args, **kwargs)`: a container for other parameters. Values of parameters in the `args` will be returned as a `tuple` by `param.args`, and
   values of parameters in the `kwargs` will be returned as a `dict` by `param.kwargs` (in practice, `param.value == (param.args, param.kwargs)`).
@@ -40,13 +40,13 @@ print(instru.dimension)
 ```
 
 
-You can then directly perform optimization on a function given its instrumentation:
+You can then directly perform optimization on a function given its parametrization:
 ```python
 def myfunction(arg1, arg2, arg3, value=3):
     print(arg1, arg2, arg3)
     return value**2
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=instru, budget=100)
+optimizer = ng.optimizers.OnePlusOne(parametrization=instru, budget=100)
 recommendation = optimizer.minimize(myfunction)
 print(recommendation.value)
 >>> (('b', 'e', 'blublu'), {'value': -0.00014738768964717153})
@@ -73,7 +73,7 @@ Sometimes it is completely impractical or impossible to have a simple Python3.6+
 
 We provide tooling for this situation. Go through these steps to instrument your code:
  - **identify the variables** (parameters, constants...) you want to optimize.
- - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for instrumentation, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the code:
+ - **add placeholders** to your code. Placeholders are just tokens of the form `NG_ARG{name|comment}` where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for parametrization, you'll need to add "@nevergrad@" at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a `step` argument which will inject values into the `step_size` variable of the code:
 ```c
 int step_size = 0.1
 // @nevergrad@ step_size = NG_ARG{step|any comment}
@@ -81,8 +81,8 @@ int step_size = 0.1
 - **prepare the command to execute** that will run your code. Make sure that the last printed line is just a float, which is the value to base the optimization upon. We will be doing minimization here, so this value must decrease for better results.
 - **instantiate** your code into a function using the `FolderFunction` class:
 ```python
-from nevergrad.instrumentation import FolderFunction
-folder = "nevergrad/instrumentation/examples" # folder containing the code
+from nevergrad.parametrization import FolderFunction
+folder = "nevergrad/parametrization/examples" # folder containing the code
 command = ["python", "examples/script.py"]  # command to run from right outside the provided folder
 func = FolderFunction(folder, command, clean_copy=True)
 print(func.placeholders)  # will print the number of variables of the function
@@ -90,7 +90,7 @@ print(func.placeholders)  # will print the number of variables of the function
 print(func(value1=2, value2=3, string="blublu"))
 # prints: 12.0
 ```
-- **instrument** the function, (see Instrumentation section just above).
+- **parametrize** the function, (see Parametrization section just above).
 
 
 ## Tips and caveats
@@ -98,4 +98,4 @@ print(func(value1=2, value2=3, string="blublu"))
  - using `FolderFunction` argument `clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
  - under the hood, with or without `clean_copy=True`, when calling the function, `FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid duplicating large projects, but they have some drawbacks, see next point ;)
  - one can add a compilation step to `FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
- - the following external file types are registered by default: `[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using `instrumentation.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, variables which can provide a vector or values (`Gaussian` when providing a `shape`) will inject code with a Python format (list) by default, which may not be suitable.
+ - the following external file types are registered by default: `[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using `FolderFunction.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, parameters which provide a vector or values (`Array`) will inject code with a Python format (list) by default, which may not be suitable.

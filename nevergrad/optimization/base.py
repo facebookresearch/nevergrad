@@ -23,6 +23,7 @@ from . import utils
 registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "p.Parameter", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
+Y = TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
 
 
@@ -46,16 +47,6 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """
 
 
-class CandidateMaker:
-
-    def from_call(self, *args: Any, **kwargs: Any) -> p.Parameter:
-        raise RuntimeError("CandidateMaker is deprecated, use instrumentation.spawn_child(new_value=(args, kwargs)) instead")
-
-    def from_data(self, data: ArrayLike, deterministic: bool = False) -> p.Parameter:
-        raise RuntimeError("CandidateMaker is deprecated, "
-                           "use instrumentation.spawn_child().set_standardized_data(data, deterministic) instead")
-
-
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
@@ -75,8 +66,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     Parameters
     ----------
-    instrumentation: int or Parameter
-        either the dimension of the optimization space, or its instrumentation
+    parametrization: int or Parameter
+        either the dimension of the optimization space, or its parametrization
     budget: int/None
         number of allowed evaluations
     num_workers: int
@@ -91,7 +82,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
@@ -102,15 +93,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
         self._penalize_cheap_violations = False
-        self.instrumentation = (
-            instrumentation
-            if not isinstance(instrumentation, (int, np.int))
-            else p.Array(shape=(instrumentation,))
+        self.parametrization = (
+            parametrization
+            if not isinstance(parametrization, (int, np.int))
+            else p.Array(shape=(parametrization,))
         )
-        self.instrumentation.freeze()  # avoids issues!
+        self.parametrization.freeze()  # avoids issues!
         if not self.dimension:
-            raise ValueError("No variable to optimize in this instrumentation.")
-        self.create_candidate = CandidateMaker()
+            raise ValueError("No variable to optimize in this parametrization.")
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
@@ -120,7 +110,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
         self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = utils.Pruning.sensible_default(
-            num_workers=num_workers, dimension=self.instrumentation.dimension
+            num_workers=num_workers, dimension=self.parametrization.dimension
         )
         # instance state
         self._asked: Set[str] = set()
@@ -135,16 +125,16 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def _rng(self) -> np.random.RandomState:
-        """np.random.RandomState: instrumentation random state the optimizer must pull from.
-        It can be seeded or updated directly on the instrumentation instance (`optimizer.instrumentation.random_state`)
+        """np.random.RandomState: parametrization random state the optimizer must pull from.
+        It can be seeded or updated directly on the parametrization instance (`optimizer.parametrization.random_state`)
         """
-        return self.instrumentation.random_state
+        return self.parametrization.random_state
 
     @property
     def dimension(self) -> int:
         """int: Dimension of the optimization space.
         """
-        return self.instrumentation.dimension
+        return self.parametrization.dimension
 
     @property
     def num_ask(self) -> int:
@@ -179,8 +169,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return load(cls, filepath)
 
     def __repr__(self) -> str:
-        inststr = self.instrumentation.name
-        return f"Instance of {self.name}(instrumentation={inststr}, budget={self.budget}, num_workers={self.num_workers})"
+        inststr = self.parametrization.name
+        return f"Instance of {self.name}(parametrization={inststr}, budget={self.budget}, num_workers={self.num_workers})"
 
     def register_callback(self, name: str, callback: _OptimCallBack) -> None:
         """Add a callback method called either when `tell` or `ask` are called, with the same
@@ -208,9 +198,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Parameters
         ----------
         *args: Any
-            positional arguments matching the instrumentation pattern.
+            positional arguments matching the parametrization pattern.
         *kwargs: Any
-            keyword arguments matching the instrumentation pattern.
+            keyword arguments matching the parametrization pattern.
 
         Note
         ----
@@ -220,12 +210,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
           calling optimizer.create_candidate.from_call.
         """
-        if isinstance(self.instrumentation, p.Instrumentation):
+        if isinstance(self.parametrization, p.Instrumentation):
             new_value: tp.Any = (args, kwargs)
         else:
             assert len(args) == 1 and not kwargs
             new_value = args[0]
-        self._suggestions.append(self.instrumentation.spawn_child(new_value=new_value))
+        self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
     def tell(self, candidate: p.Parameter, value: float) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
@@ -252,7 +242,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        data = candidate.get_standardized_data(reference=self.instrumentation)
+        data = candidate.get_standardized_data(reference=self.parametrization)
         self._update_archive_and_bests(data, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
@@ -322,7 +312,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if candidate.uid in self._asked:
                 raise RuntimeError(
                     "Cannot submit the same candidate twice: please recreate a new candidate from data.\n"
-                    "This is to make sure that stochastic instrumentations are resampled."
+                    "This is to make sure that stochastic parametrizations are resampled."
                 )
             self._asked.add(candidate.uid)
         self._num_ask = current_num_ask + 1
@@ -350,7 +340,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
             on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        return self.instrumentation.spawn_child().set_standardized_data(self._internal_provide_recommendation(), deterministic=True)
+        return self.parametrization.spawn_child().set_standardized_data(self._internal_provide_recommendation(), deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -361,11 +351,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was "asked".
         """
-        data = candidate.get_standardized_data(reference=self.instrumentation)
+        data = candidate.get_standardized_data(reference=self.parametrization)
         self._internal_tell(data, value)
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        return self.instrumentation.spawn_child().set_standardized_data(self._internal_ask())
+        return self.parametrization.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
@@ -476,18 +466,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             first_iteration = False
         return self.provide_recommendation()
 
-    def optimize(
-        self,
-        objective_function: Callable[..., float],
-        executor: Optional[ExecutorLike] = None,
-        batch_mode: bool = False,
-        verbosity: int = 0,
-    ) -> p.Parameter:
-        """This function is deprecated and renamed "minimize".
-        """
-        warnings.warn("'optimize' method is deprecated, please use 'minimize' for clarity", DeprecationWarning)
-        return self.minimize(objective_function, executor=executor, batch_mode=batch_mode, verbosity=verbosity)
-
 
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
@@ -499,14 +477,14 @@ def addCompare(optimizer: Optimizer) -> None:
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
         for candidate in losers:
-            data = candidate.get_standardized_data(reference=self.instrumentation)
+            data = candidate.get_standardized_data(reference=self.parametrization)
             if data in self.archive:
                 best_fitness_value = min(best_fitness_value, self.archive[data].get_estimation("average"))
 
         # Now let us decide the fitness value of winners.
         for i, candidate in enumerate(winners):
             self.tell(candidate, best_fitness_value - len(winners) + i)
-            data = candidate.get_standardized_data(reference=self.instrumentation)
+            data = candidate.get_standardized_data(reference=self.parametrization)
             self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
 
     setattr(optimizer.__class__, 'compare', compare)
@@ -567,7 +545,7 @@ class OptimizerFamily:
         return self
 
     def __call__(
-        self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         raise NotImplementedError
 
@@ -594,21 +572,22 @@ class ParametrizedFamily(OptimizerFamily):
         return {x: y for x, y in self.__dict__.items() if not x.startswith("_")}
 
     def __call__(
-        self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         """Creates an optimizer from the parametrization
 
         Parameters
         ----------
-        instrumentation: int or Parameter
-            either the dimension of the optimization space, or its instrumentation
+        parametrization: int or Parameter
+            either the dimension of the optimization space, or its parametrization
         budget: int/None
             number of allowed evaluations
         num_workers: int
             number of evaluations which will be run in parallel at once
         """
         assert self._optimizer_class is not None
-        run = self._optimizer_class(instrumentation=instrumentation, budget=budget, num_workers=num_workers)  # pylint: disable=not-callable
+        # pylint: disable=not-callable
+        run = self._optimizer_class(parametrization, budget, num_workers)
         assert hasattr(run, "_parameters")
         assert isinstance(run._parameters, self.__class__)  # type: ignore
         run._parameters = self  # type: ignore

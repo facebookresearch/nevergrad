@@ -6,7 +6,6 @@
 import warnings
 from pathlib import Path
 import typing as tp
-import pytest
 import numpy as np
 from nevergrad.common import testing
 from . import optimizerlib
@@ -30,7 +29,7 @@ class CounterFunction:
 class LoggingOptimizer(base.Optimizer):
 
     def __init__(self, num_workers: int = 1) -> None:
-        super().__init__(instrumentation=1, budget=5, num_workers=num_workers)
+        super().__init__(parametrization=1, budget=5, num_workers=num_workers)
         self.logs: tp.List[str] = []
 
     def _internal_ask(self) -> base.ArrayLike:
@@ -81,17 +80,17 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
 
 
 def test_base_optimizer() -> None:
-    zeroptim = optimizerlib.Zero(instrumentation=2, budget=4, num_workers=1)
+    zeroptim = optimizerlib.Zero(parametrization=2, budget=4, num_workers=1)
     representation = repr(zeroptim)
-    expected = "instrumentation=Array{(2,)}[recombination=average,sigma=1.0]"
+    expected = "parametrization=Array{(2,)}[recombination=average,sigma=1.0]"
     assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().value, [0, 0])
-    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 0)
-    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([1., 1]), 1)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0., 0]), 0)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().value, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([0., 0]), 10)
-    zeroptim.tell(zeroptim.instrumentation.spawn_child().set_standardized_data([1., 1]), 1)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0., 0]), 10)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([1., 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().value, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
     # check suggest
@@ -101,7 +100,7 @@ def test_base_optimizer() -> None:
 
 
 def test_optimize_and_dump(tmp_path: Path) -> None:
-    optimizer = optimizerlib.OnePlusOne(instrumentation=1, budget=100, num_workers=5)
+    optimizer = optimizerlib.OnePlusOne(parametrization=1, budget=100, num_workers=5)
     optimizer.register_callback("tell", callbacks.OptimizationPrinter(print_interval_tells=10, print_interval_seconds=.1))
     func = CounterFunction()
     with warnings.catch_warnings():
@@ -117,7 +116,7 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
 
 
 def test_compare() -> None:
-    optimizer = optimizerlib.CMA(instrumentation=3, budget=1000, num_workers=5)
+    optimizer = optimizerlib.CMA(parametrization=3, budget=1000, num_workers=5)
     optimizerlib.addCompare(optimizer)
     for _ in range(1000):  # TODO make faster test
         x: tp.List[tp.Any] = []
@@ -132,9 +131,10 @@ def test_compare() -> None:
 
 class StupidFamily(base.OptimizerFamily):
 
-    def __call__(self, instrumentation: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+    def __call__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
+        assert isinstance(self, StupidFamily), f"This is self: {self}"
         class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
-        run = class_(instrumentation=instrumentation, budget=budget, num_workers=num_workers)
+        run = class_(parametrization=parametrization, budget=budget, num_workers=num_workers)
         run.name = self._repr
         return run
 
@@ -142,22 +142,16 @@ class StupidFamily(base.OptimizerFamily):
 def test_optimizer_family() -> None:
     for zero in [True, False]:
         optf = StupidFamily(zero=zero)
-        opt = optf(instrumentation=2, budget=4, num_workers=1)
+        opt = optf(parametrization=2, budget=4, num_workers=1)
         recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
         np.testing.assert_equal(recom.value == np.zeros(2), zero)
 
 
-def test_deprecation_warning() -> None:
-    opt = StupidFamily()(instrumentation=2, budget=4, num_workers=1)
-    with pytest.warns(DeprecationWarning):
-        opt.optimize(test_optimizerlib.Fitness([.5, -.8]))
-
-
 def test_naming() -> None:
     optf = StupidFamily(zero=True)
-    opt = optf(instrumentation=2, budget=4, num_workers=1)
+    opt = optf(parametrization=2, budget=4, num_workers=1)
     instru_str = "Array{(2,)}[recombination=average,sigma=1.0]"
-    np.testing.assert_equal(repr(opt), f"Instance of StupidFamily(zero=True)(instrumentation={instru_str}, budget=4, num_workers=1)")
+    np.testing.assert_equal(repr(opt), f"Instance of StupidFamily(zero=True)(parametrization={instru_str}, budget=4, num_workers=1)")
     optf.with_name("BlubluOptimizer", register=True)
-    opt = base.registry["BlubluOptimizer"](instrumentation=2, budget=4, num_workers=1)
-    np.testing.assert_equal(repr(opt), f"Instance of BlubluOptimizer(instrumentation={instru_str}, budget=4, num_workers=1)")
+    opt = base.registry["BlubluOptimizer"](parametrization=2, budget=4, num_workers=1)
+    np.testing.assert_equal(repr(opt), f"Instance of BlubluOptimizer(parametrization={instru_str}, budget=4, num_workers=1)")

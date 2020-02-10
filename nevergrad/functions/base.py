@@ -65,7 +65,7 @@ class ExperimentFunction:
         self._parametrization = parametrization
         self._parametrization.freeze()
         # TODO change to parametrization
-        self._descriptors.update(instrumentation=parametrization.name, dimension=parametrization.dimension)
+        self._descriptors.update(parametrization=parametrization.name, dimension=parametrization.dimension)
 
     @property
     def function(self) -> tp.Callable[..., float]:

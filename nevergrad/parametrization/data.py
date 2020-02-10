@@ -347,7 +347,7 @@ class Scalar(Array):
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
-        return self._value[0] if not self.integer else int(self._value[0])  # type: ignore
+        return self._value[0] if not self.integer else int(np.round(self._value[0]))  # type: ignore
 
     @value.setter
     def value(self, value: float) -> None:
