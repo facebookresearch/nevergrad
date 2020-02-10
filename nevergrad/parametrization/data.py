@@ -58,7 +58,7 @@ class BoundChecker:
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class Array(core.Parameter):
-    """Array variable of a given shape.
+    """Array parameter with customizable mutation and recombination.
 
     Parameters
     ----------
@@ -328,7 +328,7 @@ class Array(core.Parameter):
 
 
 class Scalar(Array):
-    """Parameter representing a scalar
+    """Parameter representing a scalar.
 
     Parameters
     ----------
@@ -359,7 +359,7 @@ class Scalar(Array):
 
 
 class Log(Scalar):
-    """Parameter representing a log distributed value between 0 and infinity
+    """Parameter representing a log distributed scalar between 0 and infinity.
 
     Parameters
     ----------
