@@ -112,4 +112,3 @@ as well as pieces of advice on how to choose the proper optimizer for your probl
 ## License
 
 `nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details about it.
-LGPL code is however also included in the multiobjective subpackage.
