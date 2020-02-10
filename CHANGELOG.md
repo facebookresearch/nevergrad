@@ -2,6 +2,13 @@
 
 ## master
 
+- Removed all deprecated code [#499](https://github.com/facebookresearch/nevergrad/pull/499). That includes:
+  - `instrumentation` as init parameter of an `Optimizer` (replaced by `parametrization`)
+  - `instrumentation` as attribute of an `Optimizer` (replaced by `parametrization`)
+  - `candidate_maker` (not needed anymore)
+  - `optimize` methods of `Optimizer` (renamed to `minimize`)
+  - all the `instrumentation` subpackage (replaced by `parametrization`) and its legacy methods (`set_cheap_constraint_checker` etc)
+
 ## v0.3.2 (2019-02-05)
 
 

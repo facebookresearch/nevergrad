@@ -272,7 +272,6 @@ class EDA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
@@ -481,7 +480,6 @@ class TBPSA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
@@ -626,7 +624,6 @@ class PSO(base.Optimizer):
 
     _PARTICULE = PSOParticle
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._wide = False
@@ -699,7 +696,6 @@ class WidePSO(PSO):
     This version uses a non-standard initialization with high standard deviation.
     """
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._wide = True
@@ -721,7 +717,6 @@ class SPSA(base.Optimizer):
     """
     no_parallelization = True
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.init = True
@@ -793,7 +788,6 @@ class SplitOptimizer(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, multivariate_optimizer: base.OptimizerFamily = CMA, monovariate_optimizer: base.OptimizerFamily = RandomSearch) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars:
@@ -859,7 +853,6 @@ class SplitOptimizer3(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 3 optimizers.
     """
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -869,7 +862,6 @@ class SplitOptimizer5(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 5 optimizers.
     """
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -879,7 +871,6 @@ class SplitOptimizer9(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 9 optimizers.
     """
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -889,7 +880,6 @@ class SplitOptimizer13(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 13 optimizers.
     """
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
@@ -898,7 +888,6 @@ class SplitOptimizer13(SplitOptimizer):
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -931,7 +920,6 @@ class Portfolio(base.Optimizer):
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -967,7 +955,6 @@ class ParaPortfolio(Portfolio):
 class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -988,7 +975,6 @@ class SQPCMA(ParaPortfolio):
 class ASCMADEthird(Portfolio):
     """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1023,7 +1009,6 @@ class ASCMADEthird(Portfolio):
 class ASCMADEQRthird(ASCMADEthird):
     """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
@@ -1037,7 +1022,6 @@ class ASCMADEQRthird(ASCMADEthird):
 class ASCMA2PDEthird(ASCMADEQRthird):
     """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
@@ -1050,7 +1034,6 @@ class ASCMA2PDEthird(ASCMADEQRthird):
 class CMandAS2(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
@@ -1071,7 +1054,6 @@ class CMandAS2(ASCMADEthird):
 class CMandAS3(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
@@ -1099,7 +1081,6 @@ class CMandAS3(ASCMADEthird):
 class CMandAS(CMandAS2):
     """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
@@ -1121,7 +1102,6 @@ class CMandAS(CMandAS2):
 class CM(CMandAS2):
     """Competence map, simplest."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1138,7 +1118,6 @@ class CM(CMandAS2):
 class MultiCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/10 of the budget."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1154,7 +1133,6 @@ class MultiCMA(CM):
 class TripleCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1170,7 +1148,6 @@ class TripleCMA(CM):
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
@@ -1315,7 +1292,6 @@ class ParametrizedBO(base.ParametrizedFamily):
         self.gp_parameters = gp_parameters
         super().__init__()
 
-    @base.deprecated_init
     def __call__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
         gp_params = {} if self.gp_parameters is None else self.gp_parameters
         if isinstance(parametrization, p.Parameter) and gp_params.get("alpha", 0) == 0:
@@ -1349,7 +1325,6 @@ class PBIL(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
@@ -1510,7 +1485,6 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
@@ -1560,7 +1534,6 @@ class NGO(base.Optimizer):
     one_shot = True
 
     # pylint: disable=too-many-branches
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1629,7 +1602,6 @@ class EMNA_TBPSA(TBPSA):
 
     # pylint: disable=too-many-instance-attributes
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
@@ -1687,7 +1659,6 @@ class EMNA_TBPSA(TBPSA):
 class Shiva(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    @base.deprecated_init
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None

@@ -219,9 +219,13 @@ def test_array_recombination() -> None:
     assert param2.value[0] == 2.5
 
 
+def _false(value: tp.Any) -> bool:  # pylint: disable=unused-argument
+    return False
+
+
 def test_endogeneous_constraint() -> None:
     param = par.Scalar(1.0, mutable_sigma=True)
-    param.sigma.register_cheap_constraint(lambda x: False)
+    param.sigma.register_cheap_constraint(_false)
     assert not param.satisfies_constraints()
 
 
