@@ -129,3 +129,16 @@ We note that `FastGA <https://arxiv.org/abs/1703.03334>`_ performs best. DoubleF
 
 .. image:: ../docs/resources/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png
 
+
+List of benchmarks
+------------------
+
+You can find a list of currently available benchmarks below. Most are not well-documented, please open an issue when you need more information and we'll update the documentation on demand ;)
+
+.. automodule:: nevergrad.benchmark.frozenexperiments
+    :members:
+    :undoc-members:
+
+.. automodule:: nevergrad.benchmark.experiments
+    :members:
+    :undoc-members:
