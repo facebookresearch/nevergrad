@@ -44,7 +44,11 @@ We reproduce this experiment but with 2 useful variables:
 
 LHS still performs very well, as well as scrambled methods; Cauchy is not that useful anymore.
 
-![select2](resources/dim10_select_two_features_r400s12_xpresults.png)
+.. image:: ../TwoPointsDE.gif
+  :width: 400
+
+.. image:: ../docs/resources/dim10_select_two_features_r400s12_xpresults.png
+  :width: 400
 
 
 ### dim 10 & small budget

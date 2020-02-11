@@ -62,7 +62,7 @@ The following README is very general, here are links to find more details on:
 
 ## Basic optimization example
 
-**All optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.**
+**By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).**
 
 
 Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can be easily run with:

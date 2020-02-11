@@ -1,5 +1,5 @@
-Parametrization
-===============
+Parametrization API reference
+=============================
 
 **Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.**
 
@@ -23,8 +23,8 @@ Here are the current types of parameters currently provided:
     :autosummary:
 
 
-API
----
+Parameter API
+-------------
 
 .. autoclass:: nevergrad.p.Parameter
     :members:
