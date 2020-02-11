@@ -92,7 +92,7 @@ class MultiobjectiveFunction:
         self._points = new_points
         return [p[0] for p in self._points]
 
-    def subset_pareto_front(self, size: Optional[int] = None, method: str = "loss-covering") -> List[ArgsKwargs]:
+    def subset_pareto_front(self, size: int = 8, method: str = "loss-covering") -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
         for the function - restricted to number elements covering as well as possible the domain 
         (domain-covering) or the losses (loss-covering) or just randomly (random)..
