@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Tuple, Any, Callable, List, Dict
+from typing import Tuple, Any, Callable, List, Dict, Optional
 import numpy as np
 import random
 from nevergrad.common.typetools import ArrayLike
@@ -92,45 +92,28 @@ class MultiobjectiveFunction:
         self._points = new_points
         return [p[0] for p in self._points]
 
-    def random_pareto_front(self, number: int = 8) -> List[ArgsKwargs]:
+    def subset_pareto_front(self, size: Optional[int] = None, method: str = "loss-covering") -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
-        for the function - random subset of size number.
+        for the function - restricted to number elements covering as well as possible the domain 
+        (domain-covering) or the losses (loss-covering) or just randomly (random)..
         """
         self.pareto_front
-        return random.sample([p[0] for p in self._points], number)
-
-    def losscovering_pareto_front(self, number: int = 8) -> List[ArgsKwargs]:
-        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
-        for the function - restricted to number elements covering as well as possible the fitness space.
-        """
-        self.pareto_front
+        if method == "random":
+            return random.sample([p[0] for p in self._points], size)
         possibilities: List[Any] = []
         scores : List[float] = []
         for u in range(30):
-            possibilities += [random.sample(self._points, number)]
+            possibilities += [random.sample(self._points, size)]
             score: float = 0.
             for v, vloss in self._points:
                 best_score = float("inf")
                 for p, ploss in possibilities[-1]:
-                    best_score = min(best_score, np.linalg.norm(ploss - vloss))
-                score += best_score ** 2
-            scores += [score]
-        return [p[0] for p in possibilities[scores.index(min(scores))]]
-
-    def domaincovering_pareto_front(self, number: int = 8) -> List[ArgsKwargs]:
-        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
-        for the function - restricted to number elements covering as well as possible the domain.
-        """
-        self.pareto_front
-        possibilities: List[Any] = []
-        scores : List[float] = []
-        for u in range(30):
-            possibilities += [random.sample(self._points, number)]
-            score: float = 0.
-            for v, vloss in self._points:
-                best_score = float("inf")
-                for p, ploss in possibilities[-1]:
-                    best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
+                    if method == "loss-covering":
+                        best_score = min(best_score, np.linalg.norm(ploss - vloss))
+                    elif method == "domain-covering":
+                        best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
+                    else:
+                        raise ValueError(f'Unknown method for Pareto-Set subsampling: "{method}"')
                 score += best_score ** 2
             scores += [score]
         return [p[0] for p in possibilities[scores.index(min(scores))]]
