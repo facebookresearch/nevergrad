@@ -7,4 +7,4 @@ recommonmark>=0.5.0
 wheel>=0.33.6
 setuptools>=28.8.0
 autodocsumm>=0.1.11
-numpy-stubs @ git+https://github.com/numpy/numpy-stubs@master
+numpy-stubs@git+https://github.com/numpy/numpy-stubs@master
