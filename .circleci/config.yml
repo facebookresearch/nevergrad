@@ -31,6 +31,7 @@ commands:
           command: |
             . venv/bin/activate
             pip install -e .[all]
+            pip install git+https://github.com/numpy/numpy-stubs@master
 
 
 jobs:
