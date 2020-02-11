@@ -171,9 +171,9 @@ recommendation = optimizer.minimize(f)
 print("My Pareto front:", [x[0][0] for x in f.pareto_front])
 
 # It can also provides a subset:
-print("My Pareto front:", [x[0][0] for x in f.random_pareto_front(3)])
-print("My Pareto front:", [x[0][0] for x in f.domaincovering_pareto_front(3)])
-print("My Pareto front:", [x[0][0] for x in f.losscovering_pareto_front(3)])
+print("My Pareto front:", [x[0][0] for x in f.random_pareto_front(9)])
+print("My Pareto front:", [x[0][0] for x in f.domaincovering_pareto_front(9)])
+print("My Pareto front:", [x[0][0] for x in f.losscovering_pareto_front(9)])
 ```
 
 
