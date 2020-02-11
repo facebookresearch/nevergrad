@@ -79,10 +79,18 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption"><span class="caption-text">Contents</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
             
@@ -151,11 +159,13 @@
 <div class="genindex-jumpbox">
  <a href="#_"><strong>_</strong></a>
  | <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#L"><strong>L</strong></a>
@@ -167,12 +177,13 @@
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#W"><strong>W</strong></a>
+ | <a href="#Y"><strong>Y</strong></a>
  
 </div>
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.ParametrizedFamily.__call__">__call__() (nevergrad.optimizers.base.ParametrizedFamily method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.ParametrizedFamily.__call__">__call__() (nevergrad.optimizers.base.ParametrizedFamily method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -180,23 +191,29 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Instrumentation.args">args() (nevergrad.p.Instrumentation property)</a>
-
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.args">(nevergrad.p.Parameter property)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.arcoating">arcoating() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      </ul></li>
-      <li><a href="parametrization.html#nevergrad.p.Array">Array (class in nevergrad.p)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.args">args() (nevergrad.p.Parameter property)</a>
+</li>
+      <li><a href="parametrization_ref.html#nevergrad.p.Array">Array (class in nevergrad.p)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ASCMA2PDEthird">ASCMA2PDEthird (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ASCMA2PDEthird">ASCMA2PDEthird (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ASCMADEQRthird">ASCMADEQRthird (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ASCMADEQRthird">ASCMADEQRthird (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ASCMADEthird">ASCMADEthird (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ASCMADEthird">ASCMADEthird (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.ask">ask() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.ask">ask() (nevergrad.optimizers.base.Optimizer method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.basic">basic() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -204,47 +221,73 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.cGA">cGA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.cGA">cGA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.Chaining">Chaining (class in nevergrad.families)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.Chaining">Chaining (class in nevergrad.families)</a>
 
       <ul>
-        <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.Chaining">(class in nevergrad.optimization.optimizerlib)</a>
+        <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.Chaining">(class in nevergrad.optimization.optimizerlib)</a>
 </li>
       </ul></li>
-      <li><a href="parametrization.html#nevergrad.p.Choice">Choice (class in nevergrad.p)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Choice">Choice (class in nevergrad.p)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.CM">CM (class in nevergrad.optimization.optimizerlib)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.CMandAS">CMandAS (class in nevergrad.optimization.optimizerlib)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.CM">CM (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.CMandAS2">CMandAS2 (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.CMandAS">CMandAS (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.CMandAS3">CMandAS3 (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.CMandAS2">CMandAS2 (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.compabasedillcond">compabasedillcond() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.CMandAS3">CMandAS3 (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.constrained_illconditioned_parallel">constrained_illconditioned_parallel() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.copy">copy() (nevergrad.p.Parameter method)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.PackedFunctions.copy">copy() (nevergrad.benchmark.experiments.PackedFunctions method)</a>
+
+      <ul>
+        <li><a href="parametrization_ref.html#nevergrad.p.Parameter.copy">(nevergrad.p.Parameter method)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Dict">Dict (class in nevergrad.p)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.deceptive">deceptive() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.DifferentialEvolution">DifferentialEvolution (class in nevergrad.families)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Dict">Dict (class in nevergrad.p)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.dimension">dimension() (nevergrad.optimizers.base.Optimizer property)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.DifferentialEvolution">DifferentialEvolution (class in nevergrad.families)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.dim10_select_one_feature">dim10_select_one_feature() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.dim10_select_two_features">dim10_select_two_features() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.dim10_smallbudget">dim10_smallbudget() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.dimension">dimension() (nevergrad.optimizers.base.Optimizer property)</a>
 
       <ul>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.dimension">(nevergrad.p.Parameter property)</a>
+        <li><a href="parametrization_ref.html#nevergrad.p.Parameter.dimension">(nevergrad.p.Parameter property)</a>
 </li>
       </ul></li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.dump">dump() (nevergrad.optimizers.base.Optimizer method)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.discrete">discrete() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.discrete2">discrete2() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.doe_dim10">doe_dim10() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.doe_dim4">doe_dim4() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.double_o_seven">double_o_seven() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.dump">dump() (nevergrad.optimizers.base.Optimizer method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -252,13 +295,13 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.EDA">EDA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.EDA">EDA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.EMNA_TBPSA">EMNA_TBPSA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.EMNA_TBPSA">EMNA_TBPSA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.EvolutionStrategy">EvolutionStrategy (class in nevergrad.families)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.EvolutionStrategy">EvolutionStrategy (class in nevergrad.families)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -266,15 +309,15 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Dict.freeze">freeze() (nevergrad.p.Dict method)</a>
-
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.freeze">(nevergrad.p.Parameter method)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.far_optimum_es">far_optimum_es() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      </ul></li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.fastgames">fastgames() (in module nevergrad.benchmark.experiments)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PSOParticle.from_data">from_data() (nevergrad.optimization.optimizerlib.PSOParticle class method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.freeze">freeze() (nevergrad.p.Parameter method)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PSOParticle.from_data">from_data() (nevergrad.optimization.optimizerlib.PSOParticle class method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -282,31 +325,41 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.generation">generation() (nevergrad.p.Parameter property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.generation">generation() (nevergrad.p.Parameter property)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.get_standardized_data">get_standardized_data() (nevergrad.p.Parameter method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.get_standardized_data">get_standardized_data() (nevergrad.p.Parameter method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PSOParticle.get_transformed_position">get_transformed_position() (nevergrad.optimization.optimizerlib.PSOParticle method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PSOParticle.get_transformed_position">get_transformed_position() (nevergrad.optimization.optimizerlib.PSOParticle method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Dict.get_value_hash">get_value_hash() (nevergrad.p.Dict method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.get_value_hash">get_value_hash() (nevergrad.p.Parameter method)</a>
+</li>
+  </ul></td>
+</tr></table>
 
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.get_value_hash">(nevergrad.p.Parameter method)</a>
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.hdbo4d">hdbo4d() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Choice.index">index() (nevergrad.p.Choice property)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.illcond">illcond() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.illcondi">illcondi() (in module nevergrad.benchmark.experiments)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Instrumentation">Instrumentation (class in nevergrad.p)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.illcondipara">illcondipara() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="parametrization_ref.html#nevergrad.p.Choice.index">index() (nevergrad.p.Choice property)</a>
+</li>
+      <li><a href="parametrization_ref.html#nevergrad.p.Instrumentation">Instrumentation (class in nevergrad.p)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -314,27 +367,25 @@
 <h2 id="K">K</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Instrumentation.kwargs">kwargs() (nevergrad.p.Instrumentation property)</a>
-
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.kwargs">(nevergrad.p.Parameter property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.kwargs">kwargs() (nevergrad.p.Parameter property)</a>
 </li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.load">load() (nevergrad.optimizers.base.Optimizer class method)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.largedoe">largedoe() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.load">load() (nevergrad.optimizers.base.Optimizer class method)</a>
 
       <ul>
-        <li><a href="optimizers.html#nevergrad.optimizers.base.ParametrizedFamily.load">(nevergrad.optimizers.base.ParametrizedFamily method)</a>
+        <li><a href="optimizers_ref.html#nevergrad.optimizers.base.ParametrizedFamily.load">(nevergrad.optimizers.base.ParametrizedFamily method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Log">Log (class in nevergrad.p)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Log">Log (class in nevergrad.p)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -342,28 +393,32 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.MEDA">MEDA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.manyobjective_example">manyobjective_example() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.minimize">minimize() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MEDA">MEDA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.MPCEDA">MPCEDA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.metanoise">metanoise() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.MultiCMA">MultiCMA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.minimize">minimize() (nevergrad.optimizers.base.Optimizer method)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.MultiScaleCMA">MultiScaleCMA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.mlda">mlda() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MPCEDA">MPCEDA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PSOParticle.mutate">mutate() (nevergrad.optimization.optimizerlib.PSOParticle method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultiCMA">MultiCMA (class in nevergrad.optimization.optimizerlib)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.multimodal">multimodal() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.multiobjective_example">multiobjective_example() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultiScaleCMA">MultiScaleCMA (class in nevergrad.optimization.optimizerlib)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PSOParticle.mutate">mutate() (nevergrad.optimization.optimizerlib.PSOParticle method)</a>
 
       <ul>
-        <li><a href="parametrization.html#nevergrad.p.Choice.mutate">(nevergrad.p.Choice method)</a>
-</li>
-        <li><a href="parametrization.html#nevergrad.p.Dict.mutate">(nevergrad.p.Dict method)</a>
-</li>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.mutate">(nevergrad.p.Parameter method)</a>
-</li>
-        <li><a href="parametrization.html#nevergrad.p.TransitionChoice.mutate">(nevergrad.p.TransitionChoice method)</a>
+        <li><a href="parametrization_ref.html#nevergrad.p.Parameter.mutate">(nevergrad.p.Parameter method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -372,33 +427,41 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.NaiveTBPSA">NaiveTBPSA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.NaiveTBPSA">NaiveTBPSA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.name">name() (nevergrad.p.Parameter property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.name">name() (nevergrad.p.Parameter property)</a>
 </li>
-      <li><a href="optimizers.html#module-nevergrad.families">nevergrad.families (module)</a>
+      <li><a href="benchmarks.html#module-nevergrad.benchmark.experiments">nevergrad.benchmark.experiments (module)</a>
 </li>
-      <li><a href="optimizers.html#module-nevergrad.optimization.optimizerlib">nevergrad.optimization.optimizerlib (module)</a>
+      <li><a href="benchmarks.html#module-nevergrad.benchmark.frozenexperiments">nevergrad.benchmark.frozenexperiments (module)</a>
 </li>
-      <li><a href="parametrization.html#module-nevergrad.p">nevergrad.p (module)</a>
+      <li><a href="optimizers_ref.html#module-nevergrad.families">nevergrad.families (module)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.NGO">NGO (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#module-nevergrad.optimization.optimizerlib">nevergrad.optimization.optimizerlib (module)</a>
+</li>
+      <li><a href="parametrization_ref.html#module-nevergrad.p">nevergrad.p (module)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.NGO">NGO (class in nevergrad.optimization.optimizerlib)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ParametrizedBO.no_parallelization">no_parallelization (nevergrad.optimization.optimizerlib.ParametrizedBO attribute)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ParametrizedBO.no_parallelization">no_parallelization (nevergrad.optimization.optimizerlib.ParametrizedBO attribute)</a>
 
       <ul>
-        <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SPSA.no_parallelization">(nevergrad.optimization.optimizerlib.SPSA attribute)</a>
+        <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SPSA.no_parallelization">(nevergrad.optimization.optimizerlib.SPSA attribute)</a>
 </li>
       </ul></li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.NoisyBandit">NoisyBandit (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.noise">noise() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.num_ask">num_ask() (nevergrad.optimizers.base.Optimizer property)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.noisy">noisy() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.num_tell">num_tell() (nevergrad.optimizers.base.Optimizer property)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.NoisyBandit">NoisyBandit (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.num_tell_not_asked">num_tell_not_asked() (nevergrad.optimizers.base.Optimizer property)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.num_ask">num_ask() (nevergrad.optimizers.base.Optimizer property)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.num_tell">num_tell() (nevergrad.optimizers.base.Optimizer property)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.num_tell_not_asked">num_tell_not_asked() (nevergrad.optimizers.base.Optimizer property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -406,11 +469,21 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.NGO.one_shot">one_shot (nevergrad.optimization.optimizerlib.NGO attribute)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.NGO.one_shot">one_shot (nevergrad.optimization.optimizerlib.NGO attribute)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.oneshot">oneshot() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.oneshot1">oneshot1() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer">Optimizer (class in nevergrad.optimizers.base)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.oneshot2">oneshot2() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.oneshot3">oneshot3() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.oneshot4">oneshot4() (in module nevergrad.benchmark.frozenexperiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer">Optimizer (class in nevergrad.optimizers.base)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -418,43 +491,55 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Parameter">Parameter (class in nevergrad.p)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.PackedFunctions">PackedFunctions (class in nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.parameters">parameters() (nevergrad.p.Parameter property)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.parallel">parallel() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.ParametrizedBO">ParametrizedBO (class in nevergrad.families)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter">Parameter (class in nevergrad.p)</a>
+</li>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.parameters">parameters() (nevergrad.p.Parameter property)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.families.ParametrizedBO">ParametrizedBO (class in nevergrad.families)</a>
 
       <ul>
-        <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ParametrizedBO">(class in nevergrad.optimization.optimizerlib)</a>
+        <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ParametrizedBO">(class in nevergrad.optimization.optimizerlib)</a>
 </li>
       </ul></li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ParametrizedCMA">ParametrizedCMA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ParametrizedCMA">ParametrizedCMA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.ParametrizedFamily">ParametrizedFamily (class in nevergrad.optimizers.base)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.ParametrizedFamily">ParametrizedFamily (class in nevergrad.optimizers.base)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.ParametrizedOnePlusOne">ParametrizedOnePlusOne (class in nevergrad.families)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.ParametrizedOnePlusOne">ParametrizedOnePlusOne (class in nevergrad.families)</a>
 
       <ul>
-        <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne">(class in nevergrad.optimization.optimizerlib)</a>
+        <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne">(class in nevergrad.optimization.optimizerlib)</a>
 </li>
       </ul></li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.paramultimodal">paramultimodal() (in module nevergrad.benchmark.experiments)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.ParaPortfolio">ParaPortfolio (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.ParaPortfolio">ParaPortfolio (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PBIL">PBIL (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PBIL">PBIL (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PCEDA">PCEDA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PCEDA">PCEDA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.Portfolio">Portfolio (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.photonics">photonics() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.TransitionChoice.position">position() (nevergrad.p.TransitionChoice property)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.Portfolio">Portfolio (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.provide_recommendation">provide_recommendation() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.TransitionChoice.position">position() (nevergrad.p.TransitionChoice property)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PSO">PSO (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.powersystems">powersystems() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PSOParticle">PSOParticle (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.powersystemssplit">powersystemssplit() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.provide_recommendation">provide_recommendation() (nevergrad.optimizers.base.Optimizer method)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PSO">PSO (class in nevergrad.optimization.optimizerlib)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PSOParticle">PSOParticle (class in nevergrad.optimization.optimizerlib)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -462,27 +547,25 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.random_state">random_state() (nevergrad.p.Parameter property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.random_state">random_state() (nevergrad.p.Parameter property)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.RandomSearchMaker">RandomSearchMaker (class in nevergrad.families)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.RandomSearchMaker">RandomSearchMaker (class in nevergrad.families)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Array.recombine">recombine() (nevergrad.p.Array method)</a>
-
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Dict.recombine">(nevergrad.p.Dict method)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.realworld">realworld() (in module nevergrad.benchmark.experiments)</a>
 </li>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.recombine">(nevergrad.p.Parameter method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.recombine">recombine() (nevergrad.p.Parameter method)</a>
 </li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.recommend">recommend() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.recommend">recommend() (nevergrad.optimizers.base.Optimizer method)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.register_callback">register_callback() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.register_callback">register_callback() (nevergrad.optimizers.base.Optimizer method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.register_cheap_constraint">register_cheap_constraint() (nevergrad.p.Parameter method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.register_cheap_constraint">register_cheap_constraint() (nevergrad.p.Parameter method)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.remove_all_callbacks">remove_all_callbacks() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.remove_all_callbacks">remove_all_callbacks() (nevergrad.optimizers.base.Optimizer method)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.repeated_basic">repeated_basic() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -490,59 +573,55 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Array.sample">sample() (nevergrad.p.Array method)</a>
-
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Dict.sample">(nevergrad.p.Dict method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.sample">sample() (nevergrad.p.Parameter method)</a>
 </li>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.sample">(nevergrad.p.Parameter method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.SamplingSearch">SamplingSearch (class in nevergrad.families)</a>
 </li>
-      </ul></li>
-      <li><a href="optimizers.html#nevergrad.families.SamplingSearch">SamplingSearch (class in nevergrad.families)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.satisfies_constraints">satisfies_constraints() (nevergrad.p.Parameter method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Dict.satisfies_constraints">satisfies_constraints() (nevergrad.p.Dict method)</a>
-
-      <ul>
-        <li><a href="parametrization.html#nevergrad.p.Parameter.satisfies_constraints">(nevergrad.p.Parameter method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Scalar">Scalar (class in nevergrad.p)</a>
 </li>
-      </ul></li>
-      <li><a href="parametrization.html#nevergrad.p.Scalar">Scalar (class in nevergrad.p)</a>
+      <li><a href="optimizers_ref.html#nevergrad.families.ScipyOptimizer">ScipyOptimizer (class in nevergrad.families)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.families.ScipyOptimizer">ScipyOptimizer (class in nevergrad.families)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Array.set_bounds">set_bounds() (nevergrad.p.Array method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Array.set_bounds">set_bounds() (nevergrad.p.Array method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Array.set_integer_casting">set_integer_casting() (nevergrad.p.Array method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Array.set_integer_casting">set_integer_casting() (nevergrad.p.Array method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Array.set_mutation">set_mutation() (nevergrad.p.Array method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Array.set_mutation">set_mutation() (nevergrad.p.Array method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.set_name">set_name() (nevergrad.p.Parameter method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.set_name">set_name() (nevergrad.p.Parameter method)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.set_standardized_data">set_standardized_data() (nevergrad.p.Parameter method)</a>
+</li>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.Shiva">Shiva (class in nevergrad.optimization.optimizerlib)</a>
+</li>
+      <li><a href="parametrization_ref.html#nevergrad.p.Array.sigma">sigma() (nevergrad.p.Array property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.set_standardized_data">set_standardized_data() (nevergrad.p.Parameter method)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.simpletsp">simpletsp() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.Shiva">Shiva (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.frozenexperiments.small_discrete">small_discrete() (in module nevergrad.benchmark.frozenexperiments)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Array.sigma">sigma() (nevergrad.p.Array property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Parameter.spawn_child">spawn_child() (nevergrad.p.Parameter method)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Parameter.spawn_child">spawn_child() (nevergrad.p.Parameter method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SplitOptimizer">SplitOptimizer (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SplitOptimizer">SplitOptimizer (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SplitOptimizer13">SplitOptimizer13 (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SplitOptimizer13">SplitOptimizer13 (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SplitOptimizer3">SplitOptimizer3 (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SplitOptimizer3">SplitOptimizer3 (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SplitOptimizer5">SplitOptimizer5 (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SplitOptimizer5">SplitOptimizer5 (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SplitOptimizer9">SplitOptimizer9 (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SplitOptimizer9">SplitOptimizer9 (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SPSA">SPSA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SPSA">SPSA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.spsa_benchmark">spsa_benchmark() (in module nevergrad.benchmark.experiments)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.SQPCMA">SQPCMA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.SQPCMA">SQPCMA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.suggest">suggest() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.suggest">suggest() (nevergrad.optimizers.base.Optimizer method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -550,21 +629,21 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.TBPSA">TBPSA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.TBPSA">TBPSA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimizers.base.Optimizer.tell">tell() (nevergrad.optimizers.base.Optimizer method)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimizers.base.Optimizer.tell">tell() (nevergrad.optimizers.base.Optimizer method)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.PSOParticle.transform">transform (nevergrad.optimization.optimizerlib.PSOParticle attribute)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.PSOParticle.transform">transform (nevergrad.optimization.optimizerlib.PSOParticle attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.TransitionChoice">TransitionChoice (class in nevergrad.p)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.TransitionChoice">TransitionChoice (class in nevergrad.p)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.TransitionChoice.transitions">transitions() (nevergrad.p.TransitionChoice property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.TransitionChoice.transitions">transitions() (nevergrad.p.TransitionChoice property)</a>
 </li>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.TripleCMA">TripleCMA (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.TripleCMA">TripleCMA (class in nevergrad.optimization.optimizerlib)</a>
 </li>
-      <li><a href="parametrization.html#nevergrad.p.Tuple">Tuple (class in nevergrad.p)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Tuple">Tuple (class in nevergrad.p)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -572,11 +651,29 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="parametrization.html#nevergrad.p.Choice.weights">weights() (nevergrad.p.Choice property)</a>
+      <li><a href="parametrization_ref.html#nevergrad.p.Choice.weights">weights() (nevergrad.p.Choice property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimizers.html#nevergrad.optimization.optimizerlib.WidePSO">WidePSO (class in nevergrad.optimization.optimizerlib)</a>
+      <li><a href="optimizers_ref.html#nevergrad.optimization.optimizerlib.WidePSO">WidePSO (class in nevergrad.optimization.optimizerlib)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Y">Y</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.yabbob">yabbob() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.yabigbbob">yabigbbob() (in module nevergrad.benchmark.experiments)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.yahdbbob">yahdbbob() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.yanoisybbob">yanoisybbob() (in module nevergrad.benchmark.experiments)</a>
+</li>
+      <li><a href="benchmarks.html#nevergrad.benchmark.experiments.yaparabbob">yaparabbob() (in module nevergrad.benchmark.experiments)</a>
 </li>
   </ul></td>
 </tr></table>

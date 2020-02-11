@@ -1,0 +1,625 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Examples of benchmarks &mdash; nevergrad  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Adding an algorithm" href="adding_an_algorithm.html" />
+    <link rel="prev" title="Running algorithm benchmarks" href="benchmarking.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> nevergrad
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples of benchmarks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#noisy-optimization">Noisy optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#one-shot-optimization">One-shot optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#in-dimension-11-with-one-feature">In dimension-11 with one feature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#in-dimension-12-with-two-features">In dimension-12 with two features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#in-dimension-10-with-small-budget">In dimension-10 with small budget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#in-dimension-4">In dimension-4</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#comparison-based-methods-for-ill-conditioned-problems">Comparison-based methods for ill-conditioned problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ill-conditioned-function">Ill-conditioned function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#discrete">Discrete</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#list-of-benchmarks">List of benchmarks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nevergrad</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Examples of benchmarks</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/benchmarks.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="examples-of-benchmarks">
+<h1>Examples of benchmarks<a class="headerlink" href="#examples-of-benchmarks" title="Permalink to this headline">¶</a></h1>
+<p>The following figures are examples of algorithm benchmarks which can be generated very easily from the platform
+In all examples, we use independent experiments for the different x-values; so that consistent rankings between methods, over several x-values, have a statistical meaning.</p>
+<p>If you want to run the examples yourself, please make sure you have installed <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> with the <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> flag (see <a class="reference external" href="benchmarking">here</a>).</p>
+<div class="section" id="noisy-optimization">
+<h2>Noisy optimization<a class="headerlink" href="#noisy-optimization" title="Permalink to this headline">¶</a></h2>
+<p>Created with command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">nevergrad</span><span class="o">.</span><span class="n">benchmark</span> <span class="n">noise</span> <span class="o">--</span><span class="n">seed</span><span class="o">=</span><span class="mi">12</span> <span class="o">--</span><span class="n">repetitions</span><span class="o">=</span><span class="mi">10</span> <span class="o">--</span><span class="n">plot</span>
+</pre></div>
+</div>
+<p>Here the variance of the noise does not vanish near the optimum.
+TBPSA uses the noise management principles of <a class="reference external" href="https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf">pcCMSA-ES</a> reaching fast convergence rates. We here compare it to a sample of our algorithms; but it performed very well also compared to many other methods.</p>
+<a class="reference internal image-reference" href="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png"><img alt="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png" src="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png" style="width: 800px;" /></a>
+</div>
+<div class="section" id="one-shot-optimization">
+<h2>One-shot optimization<a class="headerlink" href="#one-shot-optimization" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="in-dimension-11-with-one-feature">
+<h3>In dimension-11 with one feature<a class="headerlink" href="#in-dimension-11-with-one-feature" title="Permalink to this headline">¶</a></h3>
+<p>Created with command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark dim10_select_one_feature --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
+</pre></div>
+</div>
+<p>One-shot optimization is the case in which all evaluations should be done in parallel; the optimization algorithm can only decide, once and for all, which points are going to be evaluated. We consider here:</p>
+<ul class="simple">
+<li><p>an optimum which is translated by a standard centered Gaussian;</p></li>
+<li><p>1 useful variable and 10 useless variables (this is a feature selection context as in <a class="reference external" href="https://arxiv.org/abs/1706.03200">https://arxiv.org/abs/1706.03200</a>);</p></li>
+<li><p>the sphere function (restricted to the useful variable);</p></li>
+</ul>
+<p>We see that:</p>
+<ul class="simple">
+<li><p>Quasirandom without scrambling is suboptimal;</p></li>
+<li><p>Cauchy sampling helps a lot (though the optimum is normally drawn!), in this feature selection context;</p></li>
+<li><p>LHS performs equivalently to low discrepancy (which can be related to the fact that only one feature matters).</p></li>
+</ul>
+<img alt="_images/dim10_select_one_feature_r400s12_xpresults.png" src="_images/dim10_select_one_feature_r400s12_xpresults.png" />
+</div>
+<div class="section" id="in-dimension-12-with-two-features">
+<h3>In dimension-12 with two features<a class="headerlink" href="#in-dimension-12-with-two-features" title="Permalink to this headline">¶</a></h3>
+<p>We reproduce this experiment but with 2 useful variables:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark dim10_select_two_features --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
+</pre></div>
+</div>
+<p>LHS still performs very well, as well as scrambled methods; Cauchy is not that useful anymore.</p>
+<img alt="_images/dim10_select_two_features_r400s12_xpresults.png" src="_images/dim10_select_two_features_r400s12_xpresults.png" />
+</div>
+<div class="section" id="in-dimension-10-with-small-budget">
+<h3>In dimension-10 with small budget<a class="headerlink" href="#in-dimension-10-with-small-budget" title="Permalink to this headline">¶</a></h3>
+<p>With all variables useful, the situation becomes different; Cauchy is harmful. Scrambling is still very necessary. LHS (vanilla), which does not couple variables, is weak.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark dim10_smallbudget --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
+</pre></div>
+</div>
+<img alt="_images/dim10_smallbudget_r400s12_xpresults.png" src="_images/dim10_smallbudget_r400s12_xpresults.png" />
+</div>
+<div class="section" id="in-dimension-4">
+<h3>In dimension-4<a class="headerlink" href="#in-dimension-4" title="Permalink to this headline">¶</a></h3>
+<p>In moderate dimension, scrambling is less necessary (consistently with theory) and LHS becomes weaker as budget increases (consistently with discrepancy results in <a class="reference external" href="https://arxiv.org/abs/1707.08481">https://arxiv.org/abs/1707.08481</a>).
+The following plot was created with command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark doe_dim4 --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
+</pre></div>
+</div>
+<img alt="_images/doe_dim4_r400s12_xpresults.png" src="_images/doe_dim4_r400s12_xpresults.png" />
+</div>
+</div>
+<div class="section" id="comparison-based-methods-for-ill-conditioned-problems">
+<h2>Comparison-based methods for ill-conditioned problems<a class="headerlink" href="#comparison-based-methods-for-ill-conditioned-problems" title="Permalink to this headline">¶</a></h2>
+<p>In this setting (rotated or not, ill-conditioned) we get excellent results with:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://hal.inria.fr/inria-00583669/en/">CMA</a>, best on the Cigar and rotated ellipsoid;</p></li>
+<li><p>DE and PSO when there is no rotation;</p></li>
+<li><p>Almost rotationally invariant variants of DE in the rotated case (CR should not be exactly equal to 1, otherwise we stay in the vector space generated by the initial population; this confirms results and explanation in <a class="reference external" href="http://users.cecs.anu.edu.au/~ejmontgomery/publications/2010-07_de_cr_moves.pdf">http://users.cecs.anu.edu.au/~ejmontgomery/publications/2010-07_de_cr_moves.pdf</a>);</p></li>
+</ul>
+</div></blockquote>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark compabasedillcond --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
+</pre></div>
+</div>
+<img alt="_images/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png" src="_images/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png" />
+</div>
+<div class="section" id="ill-conditioned-function">
+<h2>Ill-conditioned function<a class="headerlink" href="#ill-conditioned-function" title="Permalink to this headline">¶</a></h2>
+<p>SQP (which won <a class="reference external" href="https://www.artelys.com/news/159/16/KNITRO-wins-the-GECCO-2015-Black-Box-Optimization-Competitionperformed">GECCO 2015 contest</a> performs great in the quadratic case, consistently with theory and intuition:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark illcond --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">50</span> --plot
+</pre></div>
+</div>
+<img alt="_images/illcond_r50s12_xpresults_namecigar,rotationTrue.png" src="_images/illcond_r50s12_xpresults_namecigar,rotationTrue.png" />
+</div>
+<div class="section" id="discrete">
+<h2>Discrete<a class="headerlink" href="#discrete" title="Permalink to this headline">¶</a></h2>
+<p>The platform can also deal with discrete objective functions! We can both consider discrete domains handled through softmax or through discretization of continuous variables.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark discrete --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">10</span> --plot
+</pre></div>
+</div>
+<p>We note that <a class="reference external" href="https://arxiv.org/abs/1703.03334">FastGA</a> performs best. DoubleFastGA corresponds to a mutation rate ranging between 1/dim and (dim-1)/dim instead of 1/dim and 1/2; this is because the original range corresponds to a binary domain whereas we consider arbitrary domains. The simple uniform mixing of mutation rates (<a class="reference external" href="https://arxiv.org/abs/1606.05551">https://arxiv.org/abs/1606.05551</a>) performs well in several cases.</p>
+<img alt="_images/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png" />
+<img alt="_images/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png" />
+</div>
+<div class="section" id="list-of-benchmarks">
+<h2>List of benchmarks<a class="headerlink" href="#list-of-benchmarks" title="Permalink to this headline">¶</a></h2>
+<p>You can find a list of currently available benchmarks below. Most are not well-documented, please open an issue when you need more information and we’ll update the documentation on demand ;)</p>
+<span class="target" id="module-nevergrad.benchmark.frozenexperiments"></span><dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.basic">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">basic</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.basic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test settings</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.compabasedillcond">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">compabasedillcond</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.compabasedillcond" title="Permalink to this definition">¶</a></dt>
+<dd><p>All optimizers on ill cond problems</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.dim10_select_one_feature">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">dim10_select_one_feature</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.dim10_select_one_feature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.dim10_select_two_features">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">dim10_select_two_features</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.dim10_select_two_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.dim10_smallbudget">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">dim10_smallbudget</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.dim10_smallbudget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.doe_dim4">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">doe_dim4</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.doe_dim4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.illcond">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">illcond</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.illcond" title="Permalink to this definition">¶</a></dt>
+<dd><p>All optimizers on ill cond problems</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.metanoise">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">metanoise</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.metanoise" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.noise">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">noise</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>All optimizers on ill cond problems</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.oneshot1">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">oneshot1</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.oneshot1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comparing one-shot optimizers as initializers for Bayesian Optimization.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.oneshot2">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">oneshot2</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.oneshot2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.oneshot3">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">oneshot3</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.oneshot3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.oneshot4">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">oneshot4</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.oneshot4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.repeated_basic">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">repeated_basic</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.repeated_basic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test settings</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.frozenexperiments.small_discrete">
+<code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">small_discrete</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.small_discrete" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-nevergrad.benchmark.experiments"></span><dl class="class">
+<dt id="nevergrad.benchmark.experiments.PackedFunctions">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">PackedFunctions</code><span class="sig-paren">(</span><em class="sig-param">functions: List[nevergrad.functions.functionlib.ArtificialFunction], upper_bounds: numpy.ndarray</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.benchmark.experiments.PackedFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="nevergrad.benchmark.experiments.PackedFunctions.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.benchmark.experiments.PackedFunctions<a class="headerlink" href="#nevergrad.benchmark.experiments.PackedFunctions.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides a new equivalent instance of the class, possibly with
+different random initialization, to provide different equivalent test cases
+when using different seeds.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.arcoating">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">arcoating</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.arcoating" title="Permalink to this definition">¶</a></dt>
+<dd><p>AR coating. Problems about optical properties of nanolayers.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.constrained_illconditioned_parallel">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">constrained_illconditioned_parallel</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.constrained_illconditioned_parallel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Many optimizers on ill cond problems with constraints.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.deceptive">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">deceptive</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.deceptive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Very difficult objective functions: one is highly multimodal (infinitely many local optima),
+one has an infinite condition number, one has an infinitely long path towards the optimum.
+Looks somehow fractal.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.discrete">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">discrete</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.discrete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discrete test bed, including useless variables, 5 values or 2 values per character.
+Poorly designed, should be reimplemented from scratch using a decent instrumentation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.discrete2">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">discrete2</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.discrete2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discrete test bed, including useless variables, binary only.
+Poorly designed, should be reimplemented from scratch using a decent instrumentation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.doe_dim10">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">doe_dim10</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.doe_dim10" title="Permalink to this definition">¶</a></dt>
+<dd><p>One-shot optimization in dimension 10 of the sphere function. No useless variables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.double_o_seven">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">double_o_seven</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.double_o_seven" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.far_optimum_es">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">far_optimum_es</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.far_optimum_es" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.fastgames">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">fastgames</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.fastgames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimization of policies for games, namely direct policy search.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.hdbo4d">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">hdbo4d</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.hdbo4d" title="Permalink to this definition">¶</a></dt>
+<dd><p>All Bayesian optimization methods on various functions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.illcondi">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">illcondi</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.illcondi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Testing optimizers on ill cond problems.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.illcondipara">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">illcondipara</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.illcondipara" title="Permalink to this definition">¶</a></dt>
+<dd><p>Testing optimizers on ill-conditionned parallel optimization.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.largedoe">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">largedoe</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.largedoe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Large scale experiments for one-shot optimizers.
+Very simple objective function (the sphere), various dimensions and numbers of useless variables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.manyobjective_example">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">manyobjective_example</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.manyobjective_example" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.mlda">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">mlda</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.mlda" title="Permalink to this definition">¶</a></dt>
+<dd><p>MLDA (machine learning and data analysis) testbed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.multimodal">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">multimodal</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em>, <em class="sig-param">para: bool = False</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.multimodal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
+deceptivemultimodal.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.multiobjective_example">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">multiobjective_example</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.multiobjective_example" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.noisy">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">noisy</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.noisy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Noisy optimization methods on a few noisy problems.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.oneshot">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">oneshot</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.oneshot" title="Permalink to this definition">¶</a></dt>
+<dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.parallel">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">parallel</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.parallel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parallel optimization on 3 classical objective functions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.paramultimodal">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">paramultimodal</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.paramultimodal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parallel counterpart of the multimodal experiment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.photonics">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">photonics</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.photonics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.powersystems">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">powersystems</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.powersystems" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unit commitment problem, i.e. management of dams for hydroelectric planning.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.powersystemssplit">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">powersystemssplit</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.powersystemssplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unit commitment problem, i.e. management of dams for hydroelectric planning.
+Bigger budget than the powersystems problem.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.realworld">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">realworld</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.realworld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Realworld optimization. This experiment contains:
+- a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
+- ARCoating <a class="reference external" href="https://arxiv.org/abs/1904.02907">https://arxiv.org/abs/1904.02907</a>: 1 function.
+- The 007 game: 1 function, noisy.
+- PowerSystem: a power system simulation problem.
+- STSP: a simple TSP problem.
+MLDA stuff, except the Perceptron.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.simpletsp">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">simpletsp</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.simpletsp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
+specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
+even if white-box methods are not included though they could do this more efficiently.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.spsa_benchmark">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">spsa_benchmark</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.spsa_benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Some optimizers on a noisy optimization problem. This benchmark is based on the noise benchmark.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.yabbob">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yabbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em>, <em class="sig-param">parallel: bool = False</em>, <em class="sig-param">big: bool = False</em>, <em class="sig-param">noise: bool = False</em>, <em class="sig-param">hd: bool = False</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yabbob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yet Another Black-Box Optimization Benchmark.
+Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.yabigbbob">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yabigbbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yabigbbob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of yabbob with more budget.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.yahdbbob">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yahdbbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yahdbbob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of yabbob with higher dimensions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.yanoisybbob">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yanoisybbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yanoisybbob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Noisy optimization counterpart of yabbob.
+This is supposed to be consistent with normal practices in noisy
+optimization: we distinguish recommendations and exploration.
+This is different from the original BBOB/COCO from that point of view.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.yaparabbob">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yaparabbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yaparabbob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parallel optimization counterpart of yabbob.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="adding_an_algorithm.html" class="btn btn-neutral float-right" title="Adding an algorithm" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="benchmarking.html" class="btn btn-neutral float-left" title="Running algorithm benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Facebook AI Research
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

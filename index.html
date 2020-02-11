@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to nevergrad’s documentation! &mdash; nevergrad  documentation</title>
+  <title>Nevergrad - A gradient-free optimization platform &mdash; nevergrad  documentation</title>
   
 
   
@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Optimizers" href="optimizers.html" /> 
+    <link rel="next" title="Getting started" href="getting_started.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -79,10 +79,18 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption"><span class="caption-text">Contents</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
             
@@ -128,7 +136,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Welcome to nevergrad’s documentation!</li>
+      <li>Nevergrad - A gradient-free optimization platform</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -147,33 +155,179 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="welcome-to-nevergrad-s-documentation">
-<h1>Welcome to nevergrad’s documentation!<a class="headerlink" href="#welcome-to-nevergrad-s-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="nevergrad-a-gradient-free-optimization-platform">
+<h1>Nevergrad - A gradient-free optimization platform<a class="headerlink" href="#nevergrad-a-gradient-free-optimization-platform" title="Permalink to this headline">¶</a></h1>
+<img alt="_images/Nevergrad-LogoMark.png" src="_images/Nevergrad-LogoMark.png" />
+<p>This documentation is a work in progress, feel free to help us update/improve/restucture it!</p>
+<div class="section" id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> is a Python 3.6+ library. It can be installed with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install nevergrad
+</pre></div>
+</div>
+<p>Feel free to join <a class="reference external" href="https://www.facebook.com/groups/nevergradusers/">Nevergrad users Facebook group</a>.</p>
+<p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code>) can be easily run with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
+
+<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># best value</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="p">[</span><span class="mf">0.49971112</span> <span class="mf">0.5002944</span> <span class="p">]</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/TwoPointsDE.gif"><img alt="_images/TwoPointsDE.gif" src="_images/TwoPointsDE.gif" style="width: 400px;" /></a>
+<p><em>Convergence of a population of points to the minima with two-points DE.</em></p>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption"><span class="caption-text">Contents</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="optimizers.html#optimizer-api">Optimizer API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimizers.html#current-implementations">Current implementations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimizers.html#configurable-optimizers">Configurable optimizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installing">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#basic-optimization-example">Basic optimization example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#structure-of-the-package">Structure of the package</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrization</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="parametrization.html#api">API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parametrization.html#module-nevergrad.p">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parametrization.html#summary">Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#basic-example">Basic example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#using-several-workers">Using several workers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#ask-and-tell-interface">Ask and tell interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#optimization-with-constraints">Optimization with constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#choosing-an-optimizer">Choosing an optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#optimizing-machine-learning-hyperparameters">Optimizing machine learning hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">Example of chaining, or inoculation, or initialization of an evolutionary algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#multiobjective-minimization-with-nevergrad">Multiobjective minimization with Nevergrad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parametrization.html#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parametrization.html#parametrization">Parametrization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parametrization.html#parametrizing-external-code">Parametrizing external code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parametrization.html#tips-and-caveats">Tips and caveats</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="machinelearning.html#optimization-of-continuous-hyperparameters-with-cma-pso-de-random-and-quasirandom">Optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="machinelearning.html#ask-and-tell-version">Ask and tell version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="machinelearning.html#asynchronous-version-with-concurrent-futures">Asynchronous version with concurrent.futures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="machinelearning.html#optimization-of-mixed-continuous-and-discrete-hyperparameters">Optimization of mixed (continuous and discrete) hyperparameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="machinelearning.html#manual-parametrization">Manual parametrization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="machinelearning.html#optimization-of-parameters-for-reinforcement-learning">Optimization of parameters for reinforcement learning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimizers_ref.html#configurable-optimizers">Configurable optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers_ref.html#optimizers">Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers_ref.html#optimizer-api">Optimizer API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parametrization_ref.html#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parametrization_ref.html#parameter-api">Parameter API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="benchmarking.html#creating-data-from-experiments">Creating data from experiments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarking.html#plotting-results">Plotting results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarking.html#full-pipeline">Full pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarking.html#adding-your-own-experiments-and-or-optimizers-and-or-test-functions">Adding your own experiments and/or optimizers and/or test functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="benchmarks.html#noisy-optimization">Noisy optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarks.html#one-shot-optimization">One-shot optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#in-dimension-11-with-one-feature">In dimension-11 with one feature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#in-dimension-12-with-two-features">In dimension-12 with two features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#in-dimension-10-with-small-budget">In dimension-10 with small budget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#in-dimension-4">In dimension-4</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarks.html#comparison-based-methods-for-ill-conditioned-problems">Comparison-based methods for ill-conditioned problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarks.html#ill-conditioned-function">Ill-conditioned function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarks.html#discrete">Discrete</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmarks.html#list-of-benchmarks">List of benchmarks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="adding_an_algorithm.html#where-to-add-the-algorithm">Where to add the algorithm?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_an_algorithm.html#how-to-implement-it">How to implement it?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="adding_an_algorithm.html#base-class-features">Base class features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="adding_an_algorithm.html#methods-and-attributes">Methods and attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="adding_an_algorithm.html#seeding">Seeding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="adding_an_algorithm.html#about-type-hints">About type hints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="adding_an_algorithm.html#optimizer-families">Optimizer families</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="adding_an_algorithm.html#how-to-test-it">How to test it</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_an_algorithm.html#how-to-benchmark-it">How to benchmark it</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="adding_an_algorithm.html#how-benchmarks-are-implemented">How benchmarks are implemented</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#overview">Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#performance-improvements-for-any-of-the-following-performance-tracks">Performance: Improvements for any of the following performance tracks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#new-ideas-others-contributions-to-the-experimental-routines-including">New ideas &amp; others: contributions to the experimental routines, including</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#submission">Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#key-principles">Key principles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#dates">Dates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#awards">Awards:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#about-nevergrad-and-iohprofiler">About Nevergrad and IOHprofiler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#nevergrad">Nevergrad</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#iohprofiler">IOHProfiler</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#motivation">Motivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#award-committee-members">Award Committee Members</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#details-about-the-submissions">Details about the Submissions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#recommended-topics-non-exhaustive-list">Recommended topics (non-exhaustive list)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#improvements-in-any-of-the-following-optimization-categories">Improvements in any of the following optimization categories:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#improvements-in-terms-of-benchmarking">Improvements in terms of benchmarking:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opencompetition2020.html#software-contributions">Software contributions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opencompetition2020.html#organizers">Organizers</a></li>
 </ul>
 </li>
 </ul>
 </div>
+</div>
+<div class="section" id="citing">
+<h2>Citing<a class="headerlink" href="#citing" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@misc</span><span class="p">{</span><span class="nl">nevergrad</span><span class="p">,</span>
+    <span class="na">author</span> <span class="p">=</span> <span class="s">{J. Rapin and O. Teytaud}</span><span class="p">,</span>
+    <span class="na">title</span> <span class="p">=</span> <span class="s">{{Nevergrad - A gradient-free optimization platform}}</span><span class="p">,</span>
+    <span class="na">year</span> <span class="p">=</span> <span class="s">{2018}</span><span class="p">,</span>
+    <span class="na">publisher</span> <span class="p">=</span> <span class="s">{GitHub}</span><span class="p">,</span>
+    <span class="na">journal</span> <span class="p">=</span> <span class="s">{GitHub repository}</span><span class="p">,</span>
+    <span class="na">howpublished</span> <span class="p">=</span> <span class="s">{\url{https://GitHub.com/FacebookResearch/Nevergrad}}</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> is released under the MIT license. See <a class="reference external" href="https://github.com/facebookresearch/nevergrad/LICENSE">LICENSE</a> for additional details about it.</p>
 </div>
 <div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
+</div>
 </div>
 
 
@@ -184,7 +338,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="optimizers.html" class="btn btn-neutral float-right" title="Optimizers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="getting_started.html" class="btn btn-neutral float-right" title="Getting started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>

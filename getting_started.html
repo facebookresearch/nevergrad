@@ -1,0 +1,283 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting started &mdash; nevergrad  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to perform optimization" href="optimization.html" />
+    <link rel="prev" title="Nevergrad - A gradient-free optimization platform" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> nevergrad
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installing">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-optimization-example">Basic optimization example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#structure-of-the-package">Structure of the package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nevergrad</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Getting started</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/getting_started.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installing">
+<h2>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h2>
+<p>Nevergrad is a Python 3.6+ library. It can be installed with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install nevergrad
+</pre></div>
+</div>
+<p>You can also install the master branch instead of the latest release with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install git+https://github.com/facebookresearch/nevergrad@master#egg<span class="o">=</span>nevergrad
+</pre></div>
+</div>
+<p>Alternatively, you can clone the repository and run <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> from inside the repository folder.</p>
+<p>By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
+you should install with the <code class="code docutils literal notranslate"><span class="pre">[benchmark]</span></code> flag (example: <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nevergrad[benchmark]</span></code>), and if you also want the test tools, use
+the <code class="code docutils literal notranslate"><span class="pre">[all]</span></code> flag (example: <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.[all]</span></code>).</p>
+<p><strong>Notes</strong>:</p>
+<ul class="simple">
+<li><p>with <code class="code docutils literal notranslate"><span class="pre">zhs</span></code> you will need to run <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'nevergrad[all]'</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nevergrad[all]</span></code></p></li>
+<li><p>under Windows, you may need to preinstall torch (for <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> or <code class="code docutils literal notranslate"><span class="pre">all</span></code> installations) using instructions [here](<a class="reference external" href="https://pytorch.org/get-started/locally/">https://pytorch.org/get-started/locally/</a>).</p></li>
+</ul>
+</div>
+<div class="section" id="basic-optimization-example">
+<h2>Basic optimization example<a class="headerlink" href="#basic-optimization-example" title="Permalink to this headline">¶</a></h2>
+<p><strong>By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).</strong></p>
+<p>Optimizing (minimizing!) a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code>) can be easily run with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
+
+<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="p">)</span>  <span class="c1"># optimal args and kwargs</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Array</span><span class="p">{(</span><span class="mi">2</span><span class="p">,)}[</span><span class="n">recombination</span><span class="o">=</span><span class="n">average</span><span class="p">,</span><span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">]:[</span><span class="mf">0.49971112</span> <span class="mf">0.5002944</span> <span class="p">]</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal notranslate"><span class="pre">parametrization=n</span></code> is a shortcut to state that the function has only one variable, of dimension <code class="code docutils literal notranslate"><span class="pre">n</span></code>,
+See the [parametrization tutorial](docs/parametrization.md) for more complex parametrizations.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">recommendation</span></code> holds the optimal value(s) found by the for the provided function. It can be
+directly accessed through <code class="code docutils literal notranslate"><span class="pre">recommendation.value</span></code> which is here a <code class="code docutils literal notranslate"><span class="pre">np.ndarray</span></code> of size 2.</p>
+<p>You can print the full list of optimizers with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+</pre></div>
+</div>
+<p>The [optimization documentation](docs/optimization.md) contains more information on how to use several workers,
+take full control of the optimization through the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> interface, perform multiobjective optimization,
+as well as pieces of advice on how to choose the proper optimizer for your problem.</p>
+</div>
+<div class="section" id="structure-of-the-package">
+<h2>Structure of the package<a class="headerlink" href="#structure-of-the-package" title="Permalink to this headline">¶</a></h2>
+<p>The goals of this package are to provide:</p>
+<ul class="simple">
+<li><p><strong>gradient/derivative-free optimization algorithms</strong>, including algorithms able to handle noise.</p></li>
+<li><p><strong>tools to parametrize any code</strong>, making it painless to optimize your parameters/hyperparameters, whether they are continuous, discrete or a mixture of continuous and discrete parameters.</p></li>
+<li><p><strong>functions</strong> on which to test the optimization algorithms.</p></li>
+<li><p><strong>benchmark routines</strong> in order to compare algorithms easily.</p></li>
+</ul>
+<p>The structure of the package follows its goal, you will therefore find subpackages:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">optimization</span></code>: implementing optimization algorithms</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">parametrization</span></code>: specifying what are the parameters you want to optimize</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">functions</span></code>: implementing both simple and complex benchmark functions</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">benchmark</span></code>: for running experiments comparing the algorithms on benchmark functions</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">common</span></code>: a set of tools used throughout the package</p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="optimization.html" class="btn btn-neutral float-right" title="How to perform optimization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Nevergrad - A gradient-free optimization platform" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Facebook AI Research
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

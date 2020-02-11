@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Running algorithm benchmarks &mdash; nevergrad  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples of benchmarks" href="benchmarks.html" />
+    <link rel="prev" title="Parametrization API reference" href="parametrization_ref.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> nevergrad
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Running algorithm benchmarks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#creating-data-from-experiments">Creating data from experiments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#plotting-results">Plotting results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#full-pipeline">Full pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-your-own-experiments-and-or-optimizers-and-or-test-functions">Adding your own experiments and/or optimizers and/or test functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nevergrad</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Running algorithm benchmarks</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/benchmarking.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="running-algorithm-benchmarks">
+<span id="benchmarking"></span><h1>Running algorithm benchmarks<a class="headerlink" href="#running-algorithm-benchmarks" title="Permalink to this headline">¶</a></h1>
+<p>The benchmark tools aim at providing derivative-free optimization esearchers with a way to evaluate optimizers on a large range of settings. They provide ways to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.</p>
+<p>By default, <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> does not come with all the requirements for the benchmarks to run. Make sure you have installed/updated it with either the <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> or the <code class="code docutils literal notranslate"><span class="pre">all</span></code> flag (example: <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'nevergrad[benchmark]'</span></code>) or you will miss some packages.</p>
+<div class="section" id="creating-data-from-experiments">
+<h2>Creating data from experiments<a class="headerlink" href="#creating-data-from-experiments" title="Permalink to this headline">¶</a></h2>
+<p>Experiment plans are described in <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark.experiments</span></code>. Each experiment plan is a generator yielding different <code class="code docutils literal notranslate"><span class="pre">Experiment</span></code> instances (defining function and optimizer settings).
+To run an experiment plan, use:</p>
+<p>You may try with the experiment name <code class="code docutils literal notranslate"><span class="pre">repeated_basic</span></code> for instance.
+Check out <code class="code docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">nevergrad.benchmark</span> <span class="pre">-h</span></code> for all options. In particular, using <code class="code docutils literal notranslate"><span class="pre">--num_workers=4</span></code> can speed up the computation by using 4 processes, and
+for some experiments, you may provide a seed for reproducibility.</p>
+<p>This benchmark command creates a file <code class="code docutils literal notranslate"><span class="pre">&lt;experiment_name&gt;.csv</span></code> holding all information. The output file can be changed with the <code class="code docutils literal notranslate"><span class="pre">--output</span></code> parameter. Each line of the csv file corresponds to one experiment from the experiment plan. The columns correspond to the function and optimizer settings for this experiment as well as its result (loss/regret value, elapsed time…).</p>
+</div>
+<div class="section" id="plotting-results">
+<h2>Plotting results<a class="headerlink" href="#plotting-results" title="Permalink to this headline">¶</a></h2>
+<p>In order to plot the data in the csv file, just run:</p>
+<p>Check out <code class="code docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">nevergrad.benchmark.plotting</span> <span class="pre">-h</span></code> for more options.</p>
+<p>The plotting tool will create 2 types of plot:</p>
+<ul class="simple">
+<li><p><em>experiment plots</em>: regret with respect to budget for each optimizer after averaging on all experiments with identical settings.</p></li>
+<li><p><em>fight plots</em>: creates a matrix of size <code class="code docutils literal notranslate"><span class="pre">num_algo</span> <span class="pre">x</span> <span class="pre">num_algo</span></code> where element at position <code class="code docutils literal notranslate"><span class="pre">ij</span></code> is the mean winning rate of <code class="code docutils literal notranslate"><span class="pre">algo_i</span></code> over <code class="code docutils literal notranslate"><span class="pre">algo_j</span></code> in similar settings. The matrix is ordered to show best algorithms first, and only the first 5 rows (first 5 best algorithms) are displayed.</p></li>
+</ul>
+</div>
+<div class="section" id="full-pipeline">
+<h2>Full pipeline<a class="headerlink" href="#full-pipeline" title="Permalink to this headline">¶</a></h2>
+<p>For simplicity’s sake, you can directly plot from the <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark</span></code> command by adding a <code class="code docutils literal notranslate"><span class="pre">--plot</span></code> argument. If a path is specified
+afterwards, it will be used to save all figures, otherwise it will be saved a folder <code class="code docutils literal notranslate"><span class="pre">&lt;csvfilename&gt;_plots</span></code> alongside the experiment csv file.</p>
+</div>
+<div class="section" id="adding-your-own-experiments-and-or-optimizers-and-or-test-functions">
+<h2>Adding your own experiments and/or optimizers and/or test functions<a class="headerlink" href="#adding-your-own-experiments-and-or-optimizers-and-or-test-functions" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark</span></code> command has an “import” system which can import additional modules where you defined your own experiments, possibly with your own functions and/or optimizers.
+This system however does not work on Windows (yet? feel free to help us!)</p>
+<p>Example (please note that <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> needs to be cloned in your working directory for this example to work):</p>
+<p>See the <a class="reference external" href="https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/additional/example.py">example file</a> to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>.
+In this case, please refer to these [guidelines](adding_an_algorithm.md).</p>
+<p>Functions used for the experiments must derive from <code class="code docutils literal notranslate"><span class="pre">nevergrad.functions.ExperimentFunction</span></code>. This class implements features necessary for the benchmarks:</p>
+<ul class="simple">
+<li><p>keeps the parametrization of the function, used for instantiating the optimizers.</p></li>
+<li><p>keeping a dictionary of descriptors of your function settings through the <code class="code docutils literal notranslate"><span class="pre">_descriptors</span></code> attribute,  which is used to create the columns of the data file produced by the experiments</p></li>
+<li><p>let’s you override methods allowing custom behaviors such as <code class="code docutils literal notranslate"><span class="pre">evaluation_function</span></code> called at evaluation time to possibly avoid noise when possible, and <code class="code docutils literal notranslate"><span class="pre">compute_pseudotime</span></code> to mock computation time during benchkmarks.</p></li>
+</ul>
+<p>See the docstrings for more information, and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/functions/arcoating/core.py">arcoating/core.py</a> and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/additional/example.py">example.py</a> for examples.</p>
+<p>If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See <a class="reference external" href="https://https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/experiments.py">experiments.py</a> for examples of seedable experiment plans. If you do not care for it. For simplicity’s sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="benchmarks.html" class="btn btn-neutral float-right" title="Examples of benchmarks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="parametrization_ref.html" class="btn btn-neutral float-left" title="Parametrization API reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Facebook AI Research
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
