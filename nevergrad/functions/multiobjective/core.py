@@ -92,7 +92,6 @@ class MultiobjectiveFunction:
         self._points = new_points
         return [p[0] for p in self._points]
 
-    @property
     def random_pareto_front(self, number: int = 8) -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
         for the function - random subset of size number.
@@ -100,7 +99,6 @@ class MultiobjectiveFunction:
         self.pareto_front
         return random.sample([p[0] for p in self._points], number)
 
-    @property
     def losscovering_pareto_front(self, number: int = 8) -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
         for the function - restricted to number elements covering as well as possible the fitness space.
@@ -119,7 +117,6 @@ class MultiobjectiveFunction:
             scores += [score]
         return [p[0] for p in possibilities[scores.index(min(scores))]]
 
-    @property
     def domaincovering_pareto_front(self, number: int = 8) -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
         for the function - restricted to number elements covering as well as possible the domain.
