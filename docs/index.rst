@@ -1,7 +1,7 @@
 Nevergrad - A gradient-free optimization platform
 =================================================
 
-.. image:: resources/Nevergrad-LogoMark.png
+.. image:: ./resources/Nevergrad-LogoMark.png
 
 This documentation is a work in progress, feel free to help us update/improve/restucture it!
 
