@@ -6,4 +6,4 @@ sphinx_rtd_theme>=0.4.3
 recommonmark>=0.5.0
 setuptools>=28.8.0
 wheel>=0.33.6
-numpy-stubs@git+https://github.com/numpy/numpy-stubs@master
+# need to install manually numpy-stubs@git+https://github.com/numpy/numpy-stubs@master

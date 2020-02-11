@@ -10,6 +10,9 @@ To install `nevergrad` in development mode (if you wish to contribute to it), cl
 or `pip install -e '.[all]'` if you use `zsh`. If the install fails because of `torch`, you can preinstall it with the instructions [here](https://pytorch.org/get-started/locally/)
 and rerun `nevergrad`'s installation.
 
+You will also need to install `numpy-stubs` with `pip install git+https://github.com/numpy/numpy-stubs@master`
+
+
 
 Most of the code is covered by unit tests. You can run them with:
 ```
