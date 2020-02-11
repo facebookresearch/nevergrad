@@ -18,7 +18,7 @@ Created with command:
 Here the variance of the noise does not vanish near the optimum.
 TBPSA uses the noise management principles of `pcCMSA-ES <https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf>`_ reaching fast convergence rates. We here compare it to a sample of our algorithms; but it performed very well also compared to many other methods.
 
-.. image:: ../docs/resources/noise_r400s12_xpresults_namecigar,rotationTrue.png
+.. image:: resources/noise_r400s12_xpresults_namecigar,rotationTrue.png
   :width: 800
 
 One-shot optimization
@@ -45,7 +45,7 @@ We see that:
 - Cauchy sampling helps a lot (though the optimum is normally drawn!), in this feature selection context;
 - LHS performs equivalently to low discrepancy (which can be related to the fact that only one feature matters).
 
-.. image:: ../docs/resources/dim10_select_one_feature_r400s12_xpresults.png
+.. image:: resources/dim10_select_one_feature_r400s12_xpresults.png
 
 
 In dimension-12 with two features
@@ -59,7 +59,7 @@ We reproduce this experiment but with 2 useful variables:
 
 LHS still performs very well, as well as scrambled methods; Cauchy is not that useful anymore.
 
-.. image:: ../docs/resources/dim10_select_two_features_r400s12_xpresults.png
+.. image:: resources/dim10_select_two_features_r400s12_xpresults.png
 
 
 In dimension-10 with small budget
@@ -71,7 +71,7 @@ With all variables useful, the situation becomes different; Cauchy is harmful. S
 
     python -m nevergrad.benchmark dim10_smallbudget --seed=12 --repetitions=400 --plot
 
-.. image:: ../docs/resources/dim10_smallbudget_r400s12_xpresults.png
+.. image:: resources/dim10_smallbudget_r400s12_xpresults.png
 
 
 In dimension-4
@@ -84,7 +84,7 @@ The following plot was created with command:
 
     python -m nevergrad.benchmark doe_dim4 --seed=12 --repetitions=400 --plot
 
-.. image:: ../docs/resources/doe_dim4_r400s12_xpresults.png
+.. image:: resources/doe_dim4_r400s12_xpresults.png
 
 
 Comparison-based methods for ill-conditioned problems
@@ -100,7 +100,7 @@ In this setting (rotated or not, ill-conditioned) we get excellent results with:
 
     python -m nevergrad.benchmark compabasedillcond --seed=12 --repetitions=400 --plot
 
-.. image:: ../docs/resources/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png
+.. image:: resources/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png
 
 
 Ill-conditioned function
@@ -111,7 +111,7 @@ SQP (which won `GECCO 2015 contest <https://www.artelys.com/news/159/16/KNITRO-w
 
     python -m nevergrad.benchmark illcond --seed=12 --repetitions=50 --plot
 
-.. image:: ../docs/resources/illcond_r50s12_xpresults_namecigar,rotationTrue.png
+.. image:: resources/illcond_r50s12_xpresults_namecigar,rotationTrue.png
 
 
 Discrete
@@ -125,9 +125,9 @@ The platform can also deal with discrete objective functions! We can both consid
 
 We note that `FastGA <https://arxiv.org/abs/1703.03334>`_ performs best. DoubleFastGA corresponds to a mutation rate ranging between 1/dim and (dim-1)/dim instead of 1/dim and 1/2; this is because the original range corresponds to a binary domain whereas we consider arbitrary domains. The simple uniform mixing of mutation rates (`<https://arxiv.org/abs/1606.05551>`_) performs well in several cases.
 
-.. image:: ../docs/resources/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png
+.. image:: resources/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png
 
-.. image:: ../docs/resources/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png
+.. image:: resources/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png
 
 
 List of benchmarks
