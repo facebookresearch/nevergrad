@@ -2,7 +2,7 @@
 
 # Nevergrad - A gradient-free optimization platform
 
-![Nevergrad](resources/Nevergrad-LogoMark.png)
+![Nevergrad](docs/resources/Nevergrad-LogoMark.png)
 
 
 `nevergrad` is a Python 3.6+ library. It can be installed with:
