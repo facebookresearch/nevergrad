@@ -56,7 +56,6 @@ setup(
     name="nevergrad",
     version=version,
     license="MIT",
-    setup_requires=['wheel'],
     description="A Python toolbox for performing gradient-free optimization",
     long_description=long_description,
     long_description_content_type="text/markdown",
