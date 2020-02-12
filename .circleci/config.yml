@@ -5,6 +5,11 @@
 version: 2.1
 
 
+orbs:
+  win: circleci/windows@2.2.0
+
+
+
 # the set up in which the ubuntu jobs will run:
 executors:
   ubuntu-python36:
@@ -175,17 +180,53 @@ jobs:
        #     command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
 
 
+  windows-pytests:
+    executor:
+      name: win/default
+      shell: bash.exe
+
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: Setup nevergrad in virtualenv
+          command: |
+            py -3 -m venv venv
+            . ./venv/Scripts/activate
+            pip install -U pip
+            pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install .[all]
+
+      - save_cache:
+          name: "[all] Save cache"
+          paths:
+            - ./venv
+          key: v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: pytest
+          command: |
+            . ./venv/Scripts/activate
+            pytest nevergrad
+
+
 workflows:
   version: 2
   all_ci:
     jobs:
       - install
       - mypy
-      - pytests 
+      - pytests
+      - windows-pytests
       - docs-deploy:
           requires:
             - install
           filters:
             branches:
               only: master
-
