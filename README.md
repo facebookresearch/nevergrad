@@ -2,7 +2,7 @@
 
 # Nevergrad - A gradient-free optimization platform
 
-![Nevergrad](./docs/resources/Nevergrad-LogoMark.png)
+![Nevergrad](docs/resources/Nevergrad-LogoMark.png)
 
 
 `nevergrad` is a Python 3.6+ library. It can be installed with:
@@ -11,7 +11,7 @@
 pip install nevergrad
 ```
 
-More installation options and complete instructions are available in the "Getting started" section of the [documentation](https://facebookresearch.github.io/nevergrad/)
+More installation options and complete instructions are available in the "Getting started" section of the [**documentation**](https://facebookresearch.github.io/nevergrad/).
 
 You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/).
 
@@ -29,14 +29,14 @@ print(recommendation)  # optimal args and kwargs
 >>> Array{(2,)}[recombination=average,sigma=1.0]:[0.49971112 0.5002944 ]
 ```
 
-![Example of optimization](TwoPointsDE.gif)
+![Example of optimization](docs/resources/TwoPointsDE.gif)
 
 *Convergence of a population of points to the minima with two-points DE.*
 
 
 ## Documentation
 
-Check out our [documentation](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
+Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
 
 
 ## Citing
