@@ -38,7 +38,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.autosummary',
               'recommonmark',
-              'autodocsumm']
+             ]
 
 source_suffix = {
     '.rst': 'restructuredtext',

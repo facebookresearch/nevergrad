@@ -20,7 +20,6 @@ Here are the current types of parameters currently provided:
     :members: Array, Scalar, Log, Dict, Tuple, Instrumentation, Choice, TransitionChoice
     :show-inheritance:
     :exclude-members: freeze, recombine, get_value_hash, mutate, satisfies_constraints, args, kwargs, sample
-    :autosummary:
 
 
 Parameter API

@@ -27,6 +27,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 def _replace_relative_links(regex: Match[str]) -> str:
     """Converts relative links into links to master
     """
+    # only the gif is left now so this could probably be removed soon
     string = regex.group()
     link = regex.group("link")
     name = regex.group("name")
