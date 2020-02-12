@@ -49,7 +49,7 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
    parametrization_ref.rst
    benchmarking.rst
    benchmarks.rst
-   adding_an_algorithm.rst
+   contributing.rst
    opencompetition2020.md
 
 
@@ -71,7 +71,7 @@ Citing
 License
 -------
 
-:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/LICENSE>`_ for additional details about it.
+:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/blob/master/LICENSE>`_ for additional details about it.
 
 
 Indices and tables
