@@ -21,10 +21,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Adding an algorithm" href="adding_an_algorithm.html" />
+    <link rel="next" title="Contributing to nevergrad" href="contributing.html" />
     <link rel="prev" title="Running algorithm benchmarks" href="benchmarking.html" /> 
 </head>
 
@@ -104,7 +104,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#list-of-benchmarks">List of benchmarks</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to nevergrad</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
@@ -251,7 +251,7 @@ The following plot was created with command:</p>
 </div>
 <div class="section" id="ill-conditioned-function">
 <h2>Ill-conditioned function<a class="headerlink" href="#ill-conditioned-function" title="Permalink to this headline">¶</a></h2>
-<p>SQP (which won <a class="reference external" href="https://www.artelys.com/news/159/16/KNITRO-wins-the-GECCO-2015-Black-Box-Optimization-Competitionperformed">GECCO 2015 contest</a> performs great in the quadratic case, consistently with theory and intuition:</p>
+<p>SQP (which won <a class="reference external" href="https://www.artelys.com/news/solvers-news/knitro-bbcomp-winner/">GECCO 2015 contest</a> performs great in the quadratic case, consistently with theory and intuition:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark illcond --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">50</span> --plot
 </pre></div>
 </div>
@@ -581,7 +581,7 @@ This is different from the original BBOB/COCO from that point of view.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="adding_an_algorithm.html" class="btn btn-neutral float-right" title="Adding an algorithm" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="contributing.html" class="btn btn-neutral float-right" title="Contributing to nevergrad" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="benchmarking.html" class="btn btn-neutral float-left" title="Running algorithm benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

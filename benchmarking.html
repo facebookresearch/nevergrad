@@ -21,10 +21,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -96,7 +96,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to nevergrad</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
@@ -195,7 +195,7 @@ afterwards, it will be used to save all figures, otherwise it will be saved a fo
 <p>The <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark</span></code> command has an “import” system which can import additional modules where you defined your own experiments, possibly with your own functions and/or optimizers.
 This system however does not work on Windows (yet? feel free to help us!)</p>
 <p>Example (please note that <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> needs to be cloned in your working directory for this example to work):</p>
-<p>See the <a class="reference external" href="https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/additional/example.py">example file</a> to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>.
+<p>See the <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py">example file</a> to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>.
 In this case, please refer to these [guidelines](adding_an_algorithm.md).</p>
 <p>Functions used for the experiments must derive from <code class="code docutils literal notranslate"><span class="pre">nevergrad.functions.ExperimentFunction</span></code>. This class implements features necessary for the benchmarks:</p>
 <ul class="simple">
@@ -203,8 +203,8 @@ In this case, please refer to these [guidelines](adding_an_algorithm.md).</p>
 <li><p>keeping a dictionary of descriptors of your function settings through the <code class="code docutils literal notranslate"><span class="pre">_descriptors</span></code> attribute,  which is used to create the columns of the data file produced by the experiments</p></li>
 <li><p>let’s you override methods allowing custom behaviors such as <code class="code docutils literal notranslate"><span class="pre">evaluation_function</span></code> called at evaluation time to possibly avoid noise when possible, and <code class="code docutils literal notranslate"><span class="pre">compute_pseudotime</span></code> to mock computation time during benchkmarks.</p></li>
 </ul>
-<p>See the docstrings for more information, and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/functions/arcoating/core.py">arcoating/core.py</a> and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/additional/example.py">example.py</a> for examples.</p>
-<p>If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See <a class="reference external" href="https://https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/experiments.py">experiments.py</a> for examples of seedable experiment plans. If you do not care for it. For simplicity’s sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).</p>
+<p>See the docstrings for more information, and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/functions/arcoating/core.py">arcoating/core.py</a> and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py">example.py</a> for examples.</p>
+<p>If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py">experiments.py</a> for examples of seedable experiment plans. If you do not care for it. For simplicity’s sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).</p>
 </div>
 </div>
 

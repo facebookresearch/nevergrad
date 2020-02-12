@@ -37,7 +37,7 @@ All contributions are directly made to either one of the tools, Nevergrad or IOH
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.  
 All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
 
-Nevergrad requires a [CLA for contributors](https://github.com/facebookresearch/nevergrad/blob/master/.github/CONTRIBUTING.md#contributor-license-agreement-cla).
+Nevergrad requires a CLA for contributors (see in the "Contributing to Nevergad" section of the [documentation](https://facebookresearch.github.io/nevergrad/)).
 
 ## Key principles
 - Open source: no matter how good the results are, if they can not be reproduced or the code can not be checked, this is not in the scope.

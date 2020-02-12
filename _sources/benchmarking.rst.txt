@@ -60,7 +60,7 @@ Example (please note that :code:`nevergrad` needs to be cloned in your working d
 
     python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 
-See the `example file <https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/additional/example.py>`_ to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in :code:`nevergrad`.
+See the `example file <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py>`_ to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in :code:`nevergrad`.
 In this case, please refer to these [guidelines](adding_an_algorithm.md).
 
 Functions used for the experiments must derive from :code:`nevergrad.functions.ExperimentFunction`. This class implements features necessary for the benchmarks:
@@ -69,6 +69,6 @@ Functions used for the experiments must derive from :code:`nevergrad.functions.E
 - keeping a dictionary of descriptors of your function settings through the :code:`_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments
 - let's you override methods allowing custom behaviors such as :code:`evaluation_function` called at evaluation time to possibly avoid noise when possible, and :code:`compute_pseudotime` to mock computation time during benchkmarks.
 
-See the docstrings for more information, and `arcoating/core.py <https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/functions/arcoating/core.py>`_ and `example.py <https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/additional/example.py>`_ for examples.
+See the docstrings for more information, and `arcoating/core.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/functions/arcoating/core.py>`_ and `example.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py>`_ for examples.
 
-If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See `experiments.py <https://https://github.com/facebookresearch/nevergrad/tree/master/nevergrad/benchmark/experiments.py>`_ for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).
+If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See `experiments.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_ for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).

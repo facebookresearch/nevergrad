@@ -21,10 +21,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -94,7 +94,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="adding_an_algorithm.html">Adding an algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to nevergrad</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
@@ -172,40 +172,39 @@ The parametrization subpackage will help you do thanks to:</p>
 <div class="section" id="parameters">
 <h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p>Here are the current types of parameters currently provided:</p>
-<span class="target" id="module-nevergrad.p"></span><p><strong>Classes</strong></p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Array</span></code></a>(*, init, …], List[float], …)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*[, init, shape, …])</p></td>
 <td><p>Array parameter with customizable mutation and recombination.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Scalar</span></code></a>(init, mutable_sigma)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>([init, mutable_sigma])</p></td>
 <td><p>Parameter representing a scalar.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Log</span></code></a>(*, init, exponent, a_min, a_max, …)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, a_min, …])</p></td>
 <td><p>Parameter representing a log distributed scalar between 0 and infinity.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code></a>(**parameters)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Dict</span></code></a>(**parameters)</p></td>
 <td><p>Dictionary-valued parameter.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tuple</span></code></a>(*parameters)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Tuple</span></code></a>(*parameters)</p></td>
 <td><p>Tuple-valued parameter.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Instrumentation</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Instrumentation</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Choice</span></code></a>(choices, deterministic)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices[, deterministic])</p></td>
 <td><p>Unordered categorical parameter, randomly choosing one of the provided choice options as a value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransitionChoice</span></code></a>(choices, transitions, …], …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices[, …])</p></td>
 <td><p>Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.</p></td>
 </tr>
 </tbody>
 </table>
-<dl class="class">
+<span class="target" id="module-nevergrad.p"></span><dl class="class">
 <dt id="nevergrad.p.Array">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param">*, init: Union[Tuple[float, ...], List[float], numpy.ndarray, None] = None, shape: Optional[Tuple[int, ...]] = None, mutable_sigma: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
