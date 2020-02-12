@@ -21,8 +21,8 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
     :dedent: 4
-    :start-after: DOC_BASE_0
-    :end-before: DOC_BASE_1
+    :start-after: DOC_SIMPLEST_0
+    :end-before: DOC_SIMPLEST_1
 
 
 .. image:: ../TwoPointsDE.gif
@@ -74,5 +74,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-

@@ -25,7 +25,7 @@ the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
 **Notes**:
 
 - with :code:`zhs` you will need to run :code:`pip install 'nevergrad[all]'` instead of :code:`pip install nevergrad[all]`
-- under Windows, you may need to preinstall torch (for :code:`benchmark` or :code:`all` installations) using instructions [here](https://pytorch.org/get-started/locally/).
+- under Windows, you may need to preinstall torch (for :code:`benchmark` or :code:`all` installations) using Pytorch `installation instructions <https://pytorch.org/get-started/locally/>`_.
 
 
 Basic optimization example
@@ -35,30 +35,26 @@ Basic optimization example
 
 Optimizing (minimizing!) a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
 
-.. code-block:: python
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_SIMPLEST_0
+    :end-before: DOC_SIMPLEST_1
 
-    import nevergrad as ng
-
-    def square(x):
-        return sum((x - .5)**2)
-
-    optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
-    recommendation = optimizer.minimize(square)
-    print(recommendation)  # optimal args and kwargs
-    >>> Array{(2,)}[recombination=average,sigma=1.0]:[0.49971112 0.5002944 ]
 
 :code:`parametrization=n` is a shortcut to state that the function has only one variable, of dimension :code:`n`,
-See the [parametrization tutorial](docs/parametrization.md) for more complex parametrizations.
+See the :ref:`parametrization tutorial <parametrizing>` for more complex parametrizations.
 
 :code:`recommendation` holds the optimal value(s) found by the for the provided function. It can be
 directly accessed through :code:`recommendation.value` which is here a :code:`np.ndarray` of size 2.
 
 You can print the full list of optimizers with:
 
-.. code-block:: python
-
-    import nevergrad as ng
-    print(list(sorted(ng.optimizers.registry.keys())))
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_OPT_REGISTRY_0
+    :end-before: DOC_OPT_REGISTRY_1
 
 The [optimization documentation](docs/optimization.md) contains more information on how to use several workers,
 take full control of the optimization through the :code:`ask` and :code:`tell` interface, perform multiobjective optimization,

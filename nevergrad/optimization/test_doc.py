@@ -1,7 +1,23 @@
 import warnings
 import numpy as np
 import nevergrad as ng
-# pylint: disable=reimported,redefined-outer-name
+# pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object
+
+
+def test_simplest_example() -> None:
+    # DOC_SIMPLEST_0
+    import nevergrad as ng
+
+    def square(x):
+        return sum((x - .5)**2)
+
+    # optimization on x as an array of shape (2,)
+    optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
+    recommendation = optimizer.minimize(square)  # best value
+    print(recommendation.value)
+    # >>> [0.49971112 0.5002944 ]
+    # DOC_SIMPLEST_1
+    np.testing.assert_array_almost_equal(recommendation.value, [0.5, 0.5], decimal=1)
 
 
 def test_base_example() -> None:
@@ -57,6 +73,7 @@ def test_parametrization() -> None:
     print(instru.dimension)
     # >>> 5
     # DOC_PARAM_1
+
     def myfunction(arg1, arg2, arg3, value=3):
         print(arg1, arg2, arg3)
         return value**2
