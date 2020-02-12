@@ -32,7 +32,13 @@ author = 'Facebook AI Research'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon', 'recommonmark']
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.githubpages',
+              'sphinx.ext.coverage',
+              'sphinx.ext.napoleon',
+              'sphinx.ext.autosummary',
+              'recommonmark',
+             ]
 
 source_suffix = {
     '.rst': 'restructuredtext',

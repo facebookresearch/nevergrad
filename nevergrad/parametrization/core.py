@@ -21,7 +21,7 @@ D = tp.TypeVar("D", bound="Dict")
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Parameter:
-    """This provides the core functionality of a parameter, aka
+    """Abstract class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
@@ -53,15 +53,17 @@ class Parameter:
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
-        """Serves to input value in a funciton as func(*param.args, **param.kwargs)
-        Use parameter.Instrumentation to set args and kwargs with full liberty.
+        """Value of the positional arguments.
+        Used to input value in a function as `func(*param.args, **param.kwargs)`
+        Use `parameter.Instrumentation` to set `args` and `kwargs` with full freedom.
         """
         return (self.value,)
 
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
-        """Serves to input value in a funciton as func(*param.args, **param.kwargs)
-        Use parameter.Instrumentation to set args and kwargs with full liberty.
+        """Value of the keyword arguments.
+        Used to input value in a function as `func(*param.args, **param.kwargs)`
+        Use `parameter.Instrumentation` to set `args` and `kwargs` with full freedom.
         """
         return {}
 
@@ -228,8 +230,8 @@ class Parameter:
     def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         name: str
             new name to use to represent the Parameter
         """
@@ -240,7 +242,7 @@ class Parameter:
 
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
-        the "register_cheap_constraint" method
+        the `register_cheap_constraint` method
 
         Returns
         -------
@@ -257,12 +259,13 @@ class Parameter:
     def register_cheap_constraint(self, func: tp.Callable[[tp.Any], bool]) -> None:
         """Registers a new constraint on the parameter values.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         func: Callable
             function which, given the value of the instance, returns whether it satisfies the constraints.
 
         Note
+        ----
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
           The constraint is not used in those processes.
         - constraints should be fast to compute.
@@ -299,13 +302,10 @@ class Parameter:
         is sampled from the same data, and mutates independently from the parentp.
         If a new value is provided, it will be set to the new instance
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         new_value: anything (optional)
             if provided, it will update the new instance value (cannot be used at the same time as new_data).
-        new_data: np.ndarray
-            if provided, it will update the new instance standardized data (cannot be used at the same time as new_value)
-            the new value will be drawn non-deterministically from the data.
 
         Returns
         -------

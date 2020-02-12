@@ -34,6 +34,6 @@ def test_readme_example() -> None:
     optimizer.minimize(f)
     # The function embeds its Pareto-front:
     assert len(f.pareto_front()) > 1
-    assert len(f.pareto_front(4, "loss-covering")) == 4
-    assert len(f.pareto_front(4, "domain-covering")) == 4
-    assert len(f.pareto_front(4, "random")) == 4
+    assert len(f.pareto_front(2, "loss-covering")) == 2
+    assert len(f.pareto_front(2, "domain-covering")) == 2
+    assert len(f.pareto_front(2, "random")) == 2

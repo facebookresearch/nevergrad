@@ -119,6 +119,7 @@ SLOW = [
     "EDA",
     "MEDA",
     "MicroCMA",
+    "ES",
 ]
 DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: tp.List[str] = []
@@ -378,7 +379,6 @@ def test_constrained_optimization() -> None:
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     with warnings.catch_warnings():
-        # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=UserWarning)
         optimizer.parametrization.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
@@ -396,5 +396,5 @@ def test_parametrization_offset(name: str) -> None:
         optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
-        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.args[0][0]}"
+        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
         optimizer.tell(candidate, 0)

@@ -58,7 +58,7 @@ class BoundChecker:
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class Array(core.Parameter):
-    """Array variable of a given shape.
+    """Array parameter with customizable mutation and recombination.
 
     Parameters
     ----------
@@ -170,6 +170,7 @@ class Array(core.Parameter):
             maximum value
         method: str
             One of the following choices:
+
             - "clipping": clips the values inside the bounds. This is efficient but leads
               to over-sampling on the bounds.
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
@@ -181,7 +182,7 @@ class Array(core.Parameter):
             - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
               to unexpected behaviors.
         full_range_sampling: bool
-            this changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
+            Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
             to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
             "sample" method is used by some algorithms to create an initial population.
 
@@ -327,7 +328,7 @@ class Array(core.Parameter):
 
 
 class Scalar(Array):
-    """Parameter representing a scalar
+    """Parameter representing a scalar.
 
     Parameters
     ----------
@@ -358,7 +359,7 @@ class Scalar(Array):
 
 
 class Log(Scalar):
-    """Parameter representing a log distributed value between 0 and infinity
+    """Parameter representing a log distributed scalar between 0 and infinity.
 
     Parameters
     ----------
