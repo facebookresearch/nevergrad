@@ -119,6 +119,7 @@ SLOW = [
     "EDA",
     "MEDA",
     "MicroCMA",
+    "ES",
 ]
 DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: tp.List[str] = []
