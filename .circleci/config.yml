@@ -108,8 +108,9 @@ jobs:
           name: Build docs
           command: |
             . venv/bin/activate
-            cd docs/ && make html
-            cd docs/ && make linkcheck
+            cd docs/
+            make html
+            make linkcheck
 
       - persist_to_workspace:
           root: docs/_build
