@@ -15,6 +15,15 @@ Parameters
 
 Here are the current types of parameters currently provided:
 
+.. autosummary::
+    nevergrad.p.Array
+    nevergrad.p.Scalar
+    nevergrad.p.Log
+    nevergrad.p.Dict
+    nevergrad.p.Tuple
+    nevergrad.p.Instrumentation
+    nevergrad.p.Choice
+    nevergrad.p.TransitionChoice
 
 .. automodule:: nevergrad.p
     :members: Array, Scalar, Log, Dict, Tuple, Instrumentation, Choice, TransitionChoice

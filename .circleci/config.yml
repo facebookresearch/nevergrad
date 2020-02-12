@@ -116,9 +116,8 @@ jobs:
           root: docs/_build
           paths: html
 
-      - store_artifacts:
-          when: always
-          path: docs/_build/html
+      # - store_artifacts:
+      #     path: docs/_build/html
 
   mypy:
     executor: ubuntu-python36
