@@ -107,25 +107,3 @@ def test_doc_constrained_optimization() -> None:
         # >>> [1.00037625, 0.50683314]
         # DOC_CONSTRAINED_1
     np.testing.assert_array_almost_equal(recommendation.value, [1, 0.5], decimal=1)
-
-
-def test_doc_multiobjective() -> None:
-    # DOC_MULTIOBJ_0
-    import nevergrad as ng
-    from nevergrad.functions import MultiobjectiveFunction
-    import numpy as np
-
-    f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x - 1)**2)], upper_bounds=[2.5, 2.5])
-    print(f(np.array([1.0, 2.0])))
-
-    optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
-    recommendation = optimizer.minimize(f)
-
-    # The function embeds its Pareto-front:
-    print("My Pareto front:", [x[0][0] for x in f.pareto_front()])
-
-    # It can also provide a subset:
-    print("My Pareto front:", [x[0][0] for x in f.pareto_front(2, "random")])
-    print("My Pareto front:", [x[0][0] for x in f.pareto_front(2, "loss-covering")])
-    print("My Pareto front:", [x[0][0] for x in f.pareto_front(2, "domain-covering")])
-    # DOC_MULTIOBJ_1

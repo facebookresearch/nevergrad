@@ -161,7 +161,7 @@ Multiobjective minimization is a work in progress in `nevergrad`, you should exp
 Let us minimize `f1` and `f2` (two objective functions) assuming that values above 2.5 are of no interest.
 
 
-.. literalinclude:: ../nevergrad/optimization/test_doc.py
+.. literalinclude:: ../nevergrad/functions/multiobjective/test_core.py
     :language: python
     :dedent: 4
     :start-after: DOC_MULTIOBJ_0
