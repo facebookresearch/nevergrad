@@ -23,7 +23,7 @@ def test_multiobjective_function() -> None:
         values.append(mfunc(tup))
     expected = [10, 10, -400, -2500.0, -2500.0, -2470.0, -3300.0, -4100.0]
     assert values == expected, f"Expected {expected} but got {values}"
-    front = [p[0][0] for p in mfunc.pareto_front]
+    front = [p[0][0] for p in mfunc.pareto_front()]
     expected_front = [(50, 50), (30, 60), (60, 30)]
     assert front == expected_front, f"Expected {expected_front} but got {front}"
 
