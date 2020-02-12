@@ -224,9 +224,9 @@ workflows:
       - mypy
       - pytests
       - windows-pytests
-      - docs-deploy:
-          requires:
-            - install
-          filters:
-            branches:
-              only: master
+      # - docs-deploy:
+      #     requires:
+      #       - install
+      #     filters:
+      #       branches:
+      #         only: master
