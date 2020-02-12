@@ -61,7 +61,7 @@ class MultiobjectiveFunction:
         else:
             # Now we compute for each axis
             # First we prune.
-            self.filter_pareto_front  # pylint: disable=pointless-statement
+            self.filter_pareto_front()
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
