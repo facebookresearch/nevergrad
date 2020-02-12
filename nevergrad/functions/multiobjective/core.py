@@ -6,8 +6,7 @@
 from typing import Tuple, Any, Callable, List, Dict
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
-from .pyhv import _HyperVolume
-
+from .hypervolume import HypervolumeIndicator
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 
@@ -37,7 +36,7 @@ class MultiobjectiveFunction:
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: ArrayLike) -> None:
         self.multiobjective_function = multiobjective_function
         self._upper_bounds = np.array(upper_bounds, copy=False)
-        self._hypervolume: Any = _HyperVolume(self._upper_bounds)  # type: ignore
+        self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
