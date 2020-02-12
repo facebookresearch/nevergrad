@@ -1,4 +1,4 @@
-Contributing to nevergrad
+Contributing to Nevergrad
 #########################
 
 General considerations
