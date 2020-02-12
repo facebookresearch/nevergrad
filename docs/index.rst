@@ -18,17 +18,11 @@ Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/grou
 
 Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
 
-.. code-block:: python
-
-    import nevergrad as ng
-
-    def square(x):
-        return sum((x - .5)**2)
-
-    optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
-    recommendation = optimizer.minimize(square)
-    print(recommendation.value)  # best value
-    >>> [0.49971112 0.5002944 ]
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_BASE_0
+    :end-before: DOC_BASE_1
 
 
 .. image:: ../TwoPointsDE.gif

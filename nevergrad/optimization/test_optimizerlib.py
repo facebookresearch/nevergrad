@@ -378,7 +378,6 @@ def test_constrained_optimization() -> None:
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     with warnings.catch_warnings():
-        # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=UserWarning)
         optimizer.parametrization.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
