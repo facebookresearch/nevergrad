@@ -104,7 +104,7 @@ class MultiobjectiveFunction:
             the list of elements of the pareto front
         """
         self._filter_pareto_front()
-        if size is None:  # No limit: we return the full set.
+        if size is None or size >= len(self._points):  # No limit: we return the full set.
             return [p[0] for p in self._points]
         if subset == "random":
             return random.sample([p[0] for p in self._points], size)
