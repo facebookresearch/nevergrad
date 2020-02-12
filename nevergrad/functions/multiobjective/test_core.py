@@ -33,4 +33,7 @@ def test_readme_example() -> None:
     optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
     optimizer.minimize(f)
     # The function embeds its Pareto-front:
-    assert len(f.pareto_front) > 1
+    assert len(f.pareto_front()) > 1
+    assert len(f.pareto_front(4, "loss-covering")) == 4
+    assert len(f.pareto_front(4, "domain-covering")) == 4
+    assert len(f.pareto_front(4, "random")) == 4

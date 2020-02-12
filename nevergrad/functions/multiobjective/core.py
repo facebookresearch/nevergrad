@@ -61,7 +61,7 @@ class MultiobjectiveFunction:
         else:
             # Now we compute for each axis
             # First we prune.
-            self.filter_pareto_front()
+            self._filter_pareto_front()
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
@@ -75,9 +75,8 @@ class MultiobjectiveFunction:
         # The following is not. It should be called locally.
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
-    def filter_pareto_front(self):
-        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
-        for the function
+    def _filter_pareto_front(self):
+        """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict).
         """
         new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
@@ -90,17 +89,25 @@ class MultiobjectiveFunction:
                 new_points.append((argskwargs, losses))
         self._points = new_points
 
-    def pareto_front(self, size: Optional[int] = None, method: Optional[str] = None) -> List[ArgsKwargs]:
+    def pareto_front(self, size: Optional[int] = None, subset: Optional[str] = "random") -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
-        for the function - restricted to number elements covering as well as possible the domain 
-        (domain-covering) or the losses (loss-covering) or just randomly (random)..
+
+        Parameters
+        ------------
+        size:  int (optional)
+            if provided, selects a subset of the full pareto front with the given maximum size
+        subset: str
+            method for selecting the subset ("random, "loss-covering", "domain-covering")
+
+        Returns
+        --------
+        list
+            the list of elements of the pareto front
         """
-        self.filter_pareto_front()
-        if method is None:
-            method = "random"
+        self._filter_pareto_front()
         if size is None:  # No limit: we return the full set.
             return [p[0] for p in self._points]
-        if method == "random":
+        if subset == "random":
             return random.sample([p[0] for p in self._points], size)
         possibilities: List[Any] = []
         scores : List[float] = []
@@ -110,13 +117,12 @@ class MultiobjectiveFunction:
             for v, vloss in self._points:
                 best_score = float("inf")
                 for p, ploss in possibilities[-1]:
-                    if method == "loss-covering":
+                    if subset == "loss-covering":
                         best_score = min(best_score, np.linalg.norm(ploss - vloss))
-                    elif method == "domain-covering":
+                    elif subset == "domain-covering":
                         best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
                     else:
-                        raise ValueError(f'Unknown method for Pareto-Set subsampling: "{method}"')
+                        raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                 score += best_score ** 2
             scores += [score]
         return [p[0] for p in possibilities[scores.index(min(scores))]]
-        #return [p[0] for p in possibilities[scores.index(min(scores))]]
