@@ -12,10 +12,11 @@ from .optimizerlib import ParametrizedOnePlusOne
 from .optimizerlib import ParametrizedBO
 from .optimizerlib import Chaining
 from .differentialevolution import DifferentialEvolution
+from .es import EvolutionStrategy
 from .recastlib import ScipyOptimizer
 from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
 
 
-__all__ = ["ParametrizedOnePlusOne", "ParametrizedBO", "DifferentialEvolution",
+__all__ = ["ParametrizedOnePlusOne", "ParametrizedBO", "DifferentialEvolution", "EvolutionStrategy",
            "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining"]

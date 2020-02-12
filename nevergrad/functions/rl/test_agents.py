@@ -45,7 +45,7 @@ def test_torch_agent_function() -> None:
     runner = base.EnvironmentRunner(game)
     agentfunction = agents.TorchAgentFunction(agent, runner)
     instru = agentfunction.parametrization
-    args, kwargs = instru.data_to_arguments([0] * instru.dimension)
+    args, kwargs = instru.spawn_child().set_standardized_data([0] * instru.dimension).value
     assert not args
     value = agentfunction.compute(**kwargs)
     assert value in [0, 1]

@@ -8,6 +8,7 @@
 from .utils import NotSupportedError as NotSupportedError
 from .core import Parameter as Parameter
 from .core import Dict as Dict
+from .core import Constant as Constant  # avoid using except for checks
 from .container import Tuple as Tuple
 from .container import Instrumentation as Instrumentation
 from .data import Array as Array

@@ -5,12 +5,13 @@
 
 import warnings
 import operator
+import typing as tp
 from uuid import uuid4
 from collections import OrderedDict
-from typing import (Tuple, Any, Callable, List, Optional, Dict, ValuesView, Iterator,
-                    TypeVar, Generic, Deque, Iterable)
 import numpy as np
-from ..common.typetools import ArrayLike
+from nevergrad.common.tools import OrderedSet
+from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
 
 
 class Value:
@@ -105,7 +106,7 @@ class Point(Value):
         return "Point<x: {}, mean: {}, count: {}>".format(self.x, self.mean, self.count)
 
 
-def _get_nash(optimizer: Any) -> List[Tuple[Tuple[float, ...], int]]:
+def _get_nash(optimizer: tp.Any) -> tp.List[tp.Tuple[tp.Tuple[float, ...], int]]:
     """Returns an empirical distribution. limited using a threshold
     equal to max_num_trials^(1/4).
     """
@@ -121,13 +122,13 @@ def _get_nash(optimizer: Any) -> List[Tuple[Tuple[float, ...], int]]:
                   key=operator.itemgetter(1))
 
 
-def sample_nash(optimizer: Any) -> Tuple[float, ...]:   # Somehow like fictitious play.
+def sample_nash(optimizer: tp.Any) -> tp.Tuple[float, ...]:   # Somehow like fictitious play.
     nash = _get_nash(optimizer)
     if len(nash) == 1:
         return nash[0][0]
-    p = [float(n[1]) for n in nash]
-    p = [p_ / sum(p) for p_ in p]
-    index: int = np.random.choice(np.arange(len(p)), p=p)
+    prob = [float(n[1]) for n in nash]
+    prob = [p_ / sum(prob) for p_ in prob]
+    index: int = np.random.choice(np.arange(len(prob)), p=prob)
     return nash[index][0]
 
 
@@ -135,17 +136,17 @@ class DelayedJob:
     """Future-like object which delays computation
     """
 
-    def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+    def __init__(self, func: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         self.func = func
         self.args = args
         self.kwargs = kwargs
-        self._result: Optional[Any] = None
+        self._result: tp.Optional[tp.Any] = None
         self._computed = False
 
     def done(self) -> bool:
         return True
 
-    def result(self) -> Any:
+    def result(self) -> tp.Any:
         if not self._computed:
             self._result = self.func(*self.args, **self.kwargs)
             self._computed = True
@@ -157,7 +158,7 @@ class SequentialExecutor:
     (just calls the function and returns a FinishedJob)
     """
 
-    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> DelayedJob:
+    def submit(self, fn: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> DelayedJob:
         return DelayedJob(fn, *args, **kwargs)
 
 
@@ -174,17 +175,17 @@ _ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
               "but it is less efficient.")
 
 
-Y = TypeVar("Y")
+Y = tp.TypeVar("Y")
 
 
-class Archive(Generic[Y]):
+class Archive(tp.Generic[Y]):
     """A dict-like object with numpy arrays as keys.
     The underlying `bytesdict` dict stores the arrays as bytes since arrays are not hashable.
     Keys can be converted back with np.frombuffer(key)
     """
 
     def __init__(self) -> None:
-        self.bytesdict: Dict[bytes, Y] = {}
+        self.bytesdict: tp.Dict[bytes, Y] = {}
 
     def __setitem__(self, x: ArrayLike, value: Y) -> None:
         self.bytesdict[_tobytes(x)] = value
@@ -195,13 +196,13 @@ class Archive(Generic[Y]):
     def __contains__(self, x: ArrayLike) -> bool:
         return _tobytes(x) in self.bytesdict
 
-    def get(self, x: ArrayLike, default: Optional[Y] = None) -> Optional[Y]:
+    def get(self, x: ArrayLike, default: tp.Optional[Y] = None) -> tp.Optional[Y]:
         return self.bytesdict.get(_tobytes(x), default)
 
     def __len__(self) -> int:
         return len(self.bytesdict)
 
-    def values(self) -> ValuesView[Y]:
+    def values(self) -> tp.ValuesView[Y]:
         return self.bytesdict.values()
 
     def keys(self) -> None:
@@ -210,10 +211,10 @@ class Archive(Generic[Y]):
     def items(self) -> None:
         raise RuntimeError(_ERROR_STR)
 
-    def items_as_array(self) -> Iterator[Tuple[np.ndarray, Y]]:
+    def items_as_array(self) -> tp.Iterator[tp.Tuple[np.ndarray, Y]]:
         raise RuntimeError("For consistency, items_as_array is renamed to items_as_arrays")
 
-    def items_as_arrays(self) -> Iterator[Tuple[np.ndarray, Y]]:
+    def items_as_arrays(self) -> tp.Iterator[tp.Tuple[np.ndarray, Y]]:
         """Functions that iterates on key-values but transforms keys
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
@@ -222,10 +223,10 @@ class Archive(Generic[Y]):
         """
         return ((np.frombuffer(b), v) for b, v in self.bytesdict.items())
 
-    def keys_as_array(self) -> Iterator[np.ndarray]:
+    def keys_as_array(self) -> tp.Iterator[np.ndarray]:
         raise RuntimeError("For consistency, keys_as_array is renamed to keys_as_arrays")
 
-    def keys_as_arrays(self) -> Iterator[np.ndarray]:
+    def keys_as_arrays(self) -> tp.Iterator[np.ndarray]:
         """Functions that iterates on keys but transforms them
         to np.ndarray. This is to simplify interactions, but should not
         be used in an algorithm since the conversion can be inefficient.
@@ -269,7 +270,7 @@ class Pruning:
         if len(archive) < self.max_len:
             return archive
         warnings.warn("Pruning archive to save memory")
-        quantiles: Dict[str, float] = {}
+        quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
@@ -303,7 +304,7 @@ class Individual:
     def __init__(self, x: ArrayLike) -> None:
         self.x = np.array(x, copy=False)
         self.uid = uuid4().hex
-        self.value: Optional[float] = None
+        self.value: tp.Optional[float] = None
         self._parameters = np.array([])
         self._active = True
 
@@ -311,22 +312,23 @@ class Individual:
         return f"Indiv<{self.x}, {self.value}>"
 
 
-X = TypeVar('X', bound=Individual)
+X = tp.TypeVar('X', bound=tp.Union[Individual, p.Parameter])
 
 
-class Population(Generic[X]):
+class Population(tp.Generic[X]):
     """Handle a population
     This could have a nicer interface... but it is already good enough
+    Note: favor the use of UidQueue instead
     """
 
-    def __init__(self, particles: Iterable[X]) -> None:
+    def __init__(self, particles: tp.Iterable[X]) -> None:
         self._particles = OrderedDict({p.uid: p for p in particles})  # dont modify manually (needs updated uid to index)
-        self._queue = Deque[str]()
-        self._uids: List[str] = []
+        self._queue = tp.Deque[str]()
+        self._uids: tp.List[str] = []
         self.extend(self._particles.values())
 
     @property
-    def uids(self) -> List[str]:
+    def uids(self) -> tp.List[str]:
         """Don't modify manually
         """
         return self._uids
@@ -341,10 +343,10 @@ class Population(Generic[X]):
             raise RuntimeError("Something went horribly wrong in the Population structure")
         return parti
 
-    def __iter__(self) -> Iterator[X]:
+    def __iter__(self) -> tp.Iterator[X]:
         return iter(self._particles.values())
 
-    def extend(self, particles: Iterable[X]) -> None:
+    def extend(self, particles: tp.Iterable[X]) -> None:
         """Adds new particles
         The new particles are queued left (first out of queue)
         """
@@ -389,3 +391,49 @@ class Population(Generic[X]):
         except ValueError:
             pass
         self._queue.appendleft(newbie.uid)
+
+
+class UidQueue:
+    """Queue of uids to handle a population. This keeps track of:
+    - told uids
+    - asked uids
+    When telling, it removes from the asked queue and adds to the told queue
+    When asking, it takes from the told queue if not empty, else from the older
+    asked, and then adds to the asked queue.
+    """
+
+    def __init__(self) -> None:
+        self.told = tp.Deque[str]()
+        self.asked: OrderedSet[str] = OrderedSet()
+
+    def clear(self) -> None:
+        """Removes all uids from the queues
+        """
+        self.told.clear()
+        self.asked.clear()
+
+    def ask(self) -> str:
+        """Takes a uid from the told queue if not empty, else from the older asked,
+        then adds it to the asked queue.
+        """
+        if self.told:
+            uid = self.told.popleft()
+        elif self.asked:
+            uid = next(iter(self.asked))
+        else:
+            raise RuntimeError("Both asked and told queues are empty.")
+        self.asked.add(uid)
+        return uid
+
+    def tell(self, uid: str) -> None:
+        """Removes the uid from the asked queue and adds to the told queue
+        """
+        self.told.append(uid)
+        if uid in self.asked:
+            self.asked.discard(uid)
+
+    def discard(self, uid: str) -> None:
+        if uid in self.asked:
+            self.asked.discard(uid)
+        else:
+            self.told.remove(uid)

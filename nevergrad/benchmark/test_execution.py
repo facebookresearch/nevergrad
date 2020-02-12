@@ -5,17 +5,17 @@
 from operator import add
 from typing import List, Any, Optional, Callable
 import numpy as np
-from nevergrad import instrumentation as inst
-from ..common import testing
-from ..functions import ArtificialFunction
-from ..functions import ExperimentFunction
+import nevergrad as ng
+from nevergrad.common import testing
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import ExperimentFunction
 from . import execution
 
 
 class Function(ExperimentFunction):
 
     def __init__(self) -> None:
-        super().__init__(self._func, inst.Instrumentation())
+        super().__init__(self._func, ng.p.Instrumentation())
 
     def _func(self, x: int, y: int) -> float:
         return x + y

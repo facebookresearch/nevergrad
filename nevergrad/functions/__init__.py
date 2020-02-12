@@ -4,5 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 from .functionlib import ArtificialFunction as ArtificialFunction
+from .functionlib import FarOptimumFunction as FarOptimumFunction
 from .multiobjective import MultiobjectiveFunction as MultiobjectiveFunction
 from .base import ExperimentFunction as ExperimentFunction

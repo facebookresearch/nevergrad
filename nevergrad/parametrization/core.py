@@ -10,6 +10,7 @@ import functools
 from collections import OrderedDict
 import typing as tp
 import numpy as np
+from nevergrad.common.typetools import ArrayLike
 from . import utils
 # pylint: disable=no-value-for-parameter
 
@@ -20,7 +21,7 @@ D = tp.TypeVar("D", bound="Dict")
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Parameter:
-    """This provides the core functionality of a parameter, aka
+    """Abstract class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
@@ -49,6 +50,22 @@ class Parameter:
     @value.setter
     def value(self, value: tp.Any) -> tp.Any:
         raise NotImplementedError
+
+    @property
+    def args(self) -> tp.Tuple[tp.Any, ...]:
+        """Value of the positional arguments.
+        Used to input value in a function as `func(*param.args, **param.kwargs)`
+        Use `parameter.Instrumentation` to set `args` and `kwargs` with full freedom.
+        """
+        return (self.value,)
+
+    @property
+    def kwargs(self) -> tp.Dict[str, tp.Any]:
+        """Value of the keyword arguments.
+        Used to input value in a function as `func(*param.args, **param.kwargs)`
+        Use `parameter.Instrumentation` to set `args` and `kwargs` with full freedom.
+        """
+        return {}
 
     @property
     def parameters(self) -> "Dict":
@@ -132,7 +149,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: np.ndarray, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -158,7 +175,7 @@ class Parameter:
         sent_reference = self if reference is None else reference
         assert isinstance(sent_reference, self.__class__), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
-        self._internal_set_standardized_data(data, sent_reference, deterministic=deterministic)
+        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference, deterministic=deterministic)
         return self
 
     def _internal_set_standardized_data(self: P, data: np.ndarray, reference: P, deterministic: bool = False) -> None:
@@ -213,8 +230,8 @@ class Parameter:
     def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         name: str
             new name to use to represent the Parameter
         """
@@ -225,7 +242,7 @@ class Parameter:
 
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
-        the "register_cheap_constraint" method
+        the `register_cheap_constraint` method
 
         Returns
         -------
@@ -242,18 +259,19 @@ class Parameter:
     def register_cheap_constraint(self, func: tp.Callable[[tp.Any], bool]) -> None:
         """Registers a new constraint on the parameter values.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraintp.
+            function which, given the value of the instance, returns whether it satisfies the constraints.
 
         Note
+        ----
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
           The constraint is not used in those processes.
         - constraints should be fast to compute.
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
-            warnings.warn("Lambda as constraint is not advice because it may not be picklable")
+            warnings.warn("Lambda as constraint is not adviced because it may not be picklable.")
         self._constraint_checkers.append(func)
 
     # %% random state
@@ -284,10 +302,10 @@ class Parameter:
         is sampled from the same data, and mutates independently from the parentp.
         If a new value is provided, it will be set to the new instance
 
-        Parameter
-        ---------
-        value: anything (optional)
-            if provided, it will be set to the new instance.
+        Parameters
+        ----------
+        new_value: anything (optional)
+            if provided, it will update the new instance value (cannot be used at the same time as new_data).
 
         Returns
         -------
@@ -383,8 +401,8 @@ class Constant(Parameter):
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: np.ndarray, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
-        if data.size:
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+        if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
 
@@ -489,7 +507,7 @@ class Dict(Parameter):
             self.get_standardized_data(reference=self)
         assert self._sizes is not None
         if data.size != sum(v for v in self._sizes.values()):
-            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}")
+            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}")
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():

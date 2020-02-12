@@ -8,7 +8,8 @@ import warnings
 import threading
 from typing import Any, Callable, Dict, Optional, List
 import numpy as np
-from ..common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
+from nevergrad.common.typetools import ArrayLike
 from . import base
 from .base import IntOrParameter
 
@@ -166,8 +167,8 @@ class RecastOptimizer(base.Optimizer):
 
     recast = True
 
-    def __init__(self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget, num_workers=num_workers)
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
@@ -182,7 +183,7 @@ class RecastOptimizer(base.Optimizer):
         raise NotImplementedError("You should define your optimizer! Also, be very careful to avoid "
                                   " reference to this instance in the returned object")
 
-    def _internal_ask_candidate(self) -> base.Candidate:
+    def _internal_ask_candidate(self) -> p.Parameter:
         """Reads messages from the thread in which the underlying optimization function is running
         New messages are sent as "ask".
         """
@@ -204,7 +205,7 @@ class RecastOptimizer(base.Optimizer):
             return np.random.normal(0, 1, self.dimension)  # type: ignore
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
-        candidate = self.create_candidate.from_data(message.args[0])
+        candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
         message.meta["uid"] = candidate.uid
         return candidate
 
@@ -213,11 +214,11 @@ class RecastOptimizer(base.Optimizer):
             if self._messaging_thread.error is not None:
                 raise RuntimeError(f"Recast optimizer raised an error:\n{self._messaging_thread.error}") from self._messaging_thread.error
 
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
-        x = candidate.data
+        x = candidate.get_standardized_data(reference=self.parametrization)
         assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
@@ -228,7 +229,7 @@ class RecastOptimizer(base.Optimizer):
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
         messages[0].result = value  # post the value, and the thread will deal with it
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
     def _internal_provide_recommendation(self) -> base.ArrayLike:

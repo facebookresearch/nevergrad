@@ -46,7 +46,7 @@ def test_sequential_executor() -> None:
 
 
 def test_get_nash() -> None:
-    zeroptim = Zero(instrumentation=1, budget=4, num_workers=1)
+    zeroptim = Zero(parametrization=1, budget=4, num_workers=1)
     for k in range(4):
         array = (float(k),)
         zeroptim.archive[array] = utils.Value(k)
@@ -142,3 +142,26 @@ def test_pruning_sensible_default(dimension: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
     assert pruning.min_len == 36
     assert pruning.max_len == expected_max
+
+
+def test_uid_queue() -> None:
+    uidq = utils.UidQueue()
+    for uid in ["a", "b", "c"]:
+        uidq.tell(uid)
+    for uid in ["a", "b"]:
+        assert uidq.ask() == uid
+    uidq.tell("b")
+    for uid in ["c", "b", "a", "c", "b", "a"]:
+        assert uidq.ask() == uid
+    # discarding (in asked, and in told)
+    uidq.discard("b")
+    for uid in ["c", "a", "c", "a"]:
+        assert uidq.ask() == uid
+    uidq.tell("a")
+    uidq.discard("a")
+    for uid in ["c", "c"]:
+        assert uidq.ask() == uid
+    # clearing
+    uidq.clear()
+    with pytest.raises(RuntimeError):
+        uidq.ask()

@@ -79,7 +79,7 @@ class BaseChoice(core.Dict):
 
 # TODO ordered tag
 class Choice(BaseChoice):
-    """Parameter which choses one of the provided choice options as a value.
+    """Unordered categorical parameter, randomly choosing one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn randomly from the softmax of weights which are
     updated during the optimization.
@@ -165,7 +165,7 @@ class Choice(BaseChoice):
 
 
 class TransitionChoice(BaseChoice):
-    """Parameter which choses one of the provided choice options as a value.
+    """Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn using transitions between current choice and the next/previous ones.
 
