@@ -3,8 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Tuple, Any, Callable, List, Dict
+from typing import Tuple, Any, Callable, List, Dict, Optional
 import numpy as np
+import random
 from nevergrad.common.typetools import ArrayLike
 from .hypervolume import HypervolumeIndicator
 
@@ -59,7 +60,7 @@ class MultiobjectiveFunction:
         else:
             # Now we compute for each axis
             # First we prune.
-            self.pareto_front  # pylint: disable=pointless-statement
+            self._filter_pareto_front()
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
@@ -73,10 +74,8 @@ class MultiobjectiveFunction:
         # The following is not. It should be called locally.
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
-    @property
-    def pareto_front(self) -> List[ArgsKwargs]:
-        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
-        for the function
+    def _filter_pareto_front(self):
+        """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict).
         """
         new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
@@ -88,4 +87,41 @@ class MultiobjectiveFunction:
             if should_be_added:
                 new_points.append((argskwargs, losses))
         self._points = new_points
-        return [p[0] for p in self._points]
+
+    def pareto_front(self, size: Optional[int] = None, subset: str = "random") -> List[ArgsKwargs]:
+        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
+
+        Parameters
+        ------------
+        size:  int (optional)
+            if provided, selects a subset of the full pareto front with the given maximum size
+        subset: str
+            method for selecting the subset ("random, "loss-covering", "domain-covering")
+
+        Returns
+        --------
+        list
+            the list of elements of the pareto front
+        """
+        self._filter_pareto_front()
+        if size is None:  # No limit: we return the full set.
+            return [p[0] for p in self._points]
+        if subset == "random":
+            return random.sample([p[0] for p in self._points], size)
+        possibilities: List[Any] = []
+        scores : List[float] = []
+        for u in range(30):
+            possibilities += [random.sample(self._points, size)]
+            score: float = 0.
+            for v, vloss in self._points:
+                best_score = float("inf")
+                for p, ploss in possibilities[-1]:
+                    if subset == "loss-covering":
+                        best_score = min(best_score, np.linalg.norm(ploss - vloss))
+                    elif subset == "domain-covering":
+                        best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
+                    else:
+                        raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
+                score += best_score ** 2
+            scores += [score]
+        return [p[0] for p in possibilities[scores.index(min(scores))]]

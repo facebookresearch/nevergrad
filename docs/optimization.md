@@ -169,6 +169,11 @@ recommendation = optimizer.minimize(f)
 
 # The function embeds its Pareto-front:
 print("My Pareto front:", [x[0][0] for x in f.pareto_front])
+
+# It can also provides a subset:
+print("My Pareto front:", [x[0][0] for x in f.subset_pareto_front(9, "random")])
+print("My Pareto front:", [x[0][0] for x in f.subset_pareto_front(9, "loss-covering")])
+print("My Pareto front:", [x[0][0] for x in f.subset_pareto_front(9, "domain-covering")])
 ```
 
 
