@@ -42,40 +42,35 @@ Let's define the parametrization for a function taking 3 positional arguments an
 
 We then define a parameter holding all these parameters, with a standardized space of dimension 5 (as the sum of the dimensions above):
 
-.. code-block:: python
-
-    instru = ng.p.Instrumentation(arg1, arg2, "blublu", value=value)
-    print(instru.dimension)
-    >>> 5
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_0
+    :end-before: DOC_PARAM_1
 
 
 You can then directly perform optimization on a function given its parametrization:
 
-.. code-block:: python
 
-    def myfunction(arg1, arg2, arg3, value=3):
-        print(arg1, arg2, arg3)
-        return value**2
-
-    optimizer = ng.optimizers.OnePlusOne(parametrization=instru, budget=100)
-    recommendation = optimizer.minimize(myfunction)
-    print(recommendation.value)
-    >>> (('b', 'e', 'blublu'), {'value': -0.00014738768964717153})
-
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_1
+    :end-before: DOC_PARAM_2
 
 
 Here is a glipse of what happens on the optimization space:
 
-.. code-block:: python
-
-    instru.set_standardized_data([1, -80, -80, 80, 3])
-    print(instru.args, instru.kwargs)
-    >>> (('b', 'e', 'blublu'), {'value': 3.0})
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_2
+    :end-before: DOC_PARAM_3
 
 With this code:
 
-- b is selected because 1 > 0 (the index is 1 for values above 0, and 0 for values under 0 since there are 2 values).
-- e is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80)) = 1
+- :code:`b` is selected because 1 > 0 (the index is 1 for values above 0, and 0 for values under 0 since there are 2 values).
+- :code:`e` is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80)) = 1
 - :code:`value=3` because the last value of the standardized space (i.e. 3) corresponds to the value of the last kwargs.
 
 
@@ -98,16 +93,11 @@ We provide tooling for this situation but this is hacky, so if you can avoid it,
 - **prepare the command to execute** that will run your code. Make sure that the last printed line is just a float, which is the value to base the optimization upon. We will be doing minimization here, so this value must decrease for better results.
 - **instantiate** your code into a function using the :code:`FolderFunction` class:
 
-.. code-block:: python
-
-    from nevergrad.parametrization import FolderFunction
-    folder = "nevergrad/parametrization/examples" # folder containing the code
-    command = ["python", "examples/script.py"]  # command to run from right outside the provided folder
-    func = FolderFunction(folder, command, clean_copy=True)
-    print(func.placeholders)  # will print the number of variables of the function
-    # prints: [Placeholder('value1', 'this is a comment'), Placeholder('value2', None), Placeholder('string', None)]
-    print(func(value1=2, value2=3, string="blublu"))
-    # prints: 12.0
+.. literalinclude:: ../nevergrad/parametrization/test_instantiate.py
+    :language: python
+    :dedent: 8
+    :start-after: DOC_INSTANTIATE_0
+    :end-before: DOC_INSTANTIATE_1
 
 - **parametrize** the function (see Parametrization section just above).
 

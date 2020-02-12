@@ -119,3 +119,27 @@ def test_folder_function() -> None:
     np.testing.assert_equal(output, 24)
     output = func(value1=98, value2=12, string="blublu")
     np.testing.assert_equal(output, 12)
+
+
+# pylint: disable=reimported,redefined-outer-name
+def test_folder_function_doc() -> None:
+    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+        # DOC_INSTANTIATE_0
+        import sys
+        from pathlib import Path
+        import nevergrad as ng
+        from nevergrad.parametrization import FolderFunction
+
+        # nevergrad/parametrization/examples contains a script
+        example_folder = Path(ng.__file__).parent / "parametrization" / "examples"
+        python = sys.executable
+        command = [python, "examples/script.py"]  # command to run from right outside the provided folder
+        # create a function from the folder
+        func = FolderFunction(example_folder, command, clean_copy=True)
+
+        # print the number of variables of the function:
+        print(func.placeholders)
+        # prints: [Placeholder('value1', 'this is a comment'), Placeholder('value2', None), Placeholder('string', None)]
+        # and run it (the script prints 12 at the end)
+        assert func(value1=2, value2=3, string="blublu") == 12.0
+        # DOC_INSTANTIATE_1
