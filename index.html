@@ -89,7 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nevergrad</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
@@ -172,10 +172,11 @@
 <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
+<span class="c1"># optimization on x as an array of shape (2,)</span>
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># best value</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="p">[</span><span class="mf">0.49971112</span> <span class="mf">0.5002944</span> <span class="p">]</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>  <span class="c1"># best value</span>
+<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944 ]</span>
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/TwoPointsDE.gif"><img alt="_images/TwoPointsDE.gif" src="_images/TwoPointsDE.gif" style="width: 400px;" /></a>
@@ -193,8 +194,8 @@
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#basic-example">Basic example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#using-several-workers">Using several workers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#ask-and-tell-interface">Ask and tell interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimization.html#optimization-with-constraints">Optimization with constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#choosing-an-optimizer">Choosing an optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#optimization-with-constraints">Optimization with constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#optimizing-machine-learning-hyperparameters">Optimizing machine learning hyperparameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">Example of chaining, or inoculation, or initialization of an evolutionary algorithm</a></li>
 <li class="toctree-l2"><a class="reference internal" href="optimization.html#multiobjective-minimization-with-nevergrad">Multiobjective minimization with Nevergrad</a></li>
@@ -256,7 +257,7 @@
 <li class="toctree-l2"><a class="reference internal" href="benchmarks.html#list-of-benchmarks">List of benchmarks</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to nevergrad</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nevergrad</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="contributing.html#general-considerations">General considerations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="contributing.html#our-development-process">Our Development Process</a></li>
 <li class="toctree-l3"><a class="reference internal" href="contributing.html#pull-requests">Pull Requests</a></li>

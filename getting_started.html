@@ -95,7 +95,7 @@
 <li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nevergrad</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
@@ -180,7 +180,7 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 <p><strong>Notes</strong>:</p>
 <ul class="simple">
 <li><p>with <code class="code docutils literal notranslate"><span class="pre">zhs</span></code> you will need to run <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'nevergrad[all]'</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nevergrad[all]</span></code></p></li>
-<li><p>under Windows, you may need to preinstall torch (for <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> or <code class="code docutils literal notranslate"><span class="pre">all</span></code> installations) using instructions [here](<a class="reference external" href="https://pytorch.org/get-started/locally/">https://pytorch.org/get-started/locally/</a>).</p></li>
+<li><p>under Windows, you may need to preinstall torch (for <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> or <code class="code docutils literal notranslate"><span class="pre">all</span></code> installations) using Pytorch <a class="reference external" href="https://pytorch.org/get-started/locally/">installation instructions</a>.</p></li>
 </ul>
 </div>
 <div class="section" id="basic-optimization-example">
@@ -192,19 +192,20 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
+<span class="c1"># optimization on x as an array of shape (2,)</span>
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="p">)</span>  <span class="c1"># optimal args and kwargs</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">Array</span><span class="p">{(</span><span class="mi">2</span><span class="p">,)}[</span><span class="n">recombination</span><span class="o">=</span><span class="n">average</span><span class="p">,</span><span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">]:[</span><span class="mf">0.49971112</span> <span class="mf">0.5002944</span> <span class="p">]</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>  <span class="c1"># best value</span>
+<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944 ]</span>
 </pre></div>
 </div>
 <p><code class="code docutils literal notranslate"><span class="pre">parametrization=n</span></code> is a shortcut to state that the function has only one variable, of dimension <code class="code docutils literal notranslate"><span class="pre">n</span></code>,
-See the [parametrization tutorial](docs/parametrization.md) for more complex parametrizations.</p>
+See the <a class="reference internal" href="parametrization.html#parametrizing"><span class="std std-ref">parametrization tutorial</span></a> for more complex parametrizations.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">recommendation</span></code> holds the optimal value(s) found by the for the provided function. It can be
 directly accessed through <code class="code docutils literal notranslate"><span class="pre">recommendation.value</span></code> which is here a <code class="code docutils literal notranslate"><span class="pre">np.ndarray</span></code> of size 2.</p>
 <p>You can print the full list of optimizers with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
-<span class="k">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>
 <p>The [optimization documentation](docs/optimization.md) contains more information on how to use several workers,
