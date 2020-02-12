@@ -61,7 +61,7 @@ class MultiobjectiveFunction:
         else:
             # Now we compute for each axis
             # First we prune.
-            self.pareto_front  # pylint: disable=pointless-statement
+            self.filter_pareto_front  # pylint: disable=pointless-statement
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
@@ -75,8 +75,7 @@ class MultiobjectiveFunction:
         # The following is not. It should be called locally.
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
-    @property
-    def pareto_front(self) -> List[ArgsKwargs]:
+    def filter_pareto_front(self):
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
         for the function
         """
@@ -90,14 +89,17 @@ class MultiobjectiveFunction:
             if should_be_added:
                 new_points.append((argskwargs, losses))
         self._points = new_points
-        return [p[0] for p in self._points]
 
-    def subset_pareto_front(self, size: int = 8, method: str = "loss-covering") -> List[ArgsKwargs]:
+    def pareto_front(self, size: Optional[int] = None, method: Optional[str] = None) -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
         for the function - restricted to number elements covering as well as possible the domain 
         (domain-covering) or the losses (loss-covering) or just randomly (random)..
         """
-        self.pareto_front
+        self.filter_pareto_front()
+        if method is None:
+            method = "random"
+        if size is None:  # No limit: we return the full set.
+            return [p[0] for p in self._points]
         if method == "random":
             return random.sample([p[0] for p in self._points], size)
         possibilities: List[Any] = []
@@ -117,3 +119,4 @@ class MultiobjectiveFunction:
                 score += best_score ** 2
             scores += [score]
         return [p[0] for p in possibilities[scores.index(min(scores))]]
+        #return [p[0] for p in possibilities[scores.index(min(scores))]]
