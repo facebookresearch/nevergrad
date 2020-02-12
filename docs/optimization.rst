@@ -171,7 +171,8 @@ We can then minimize as usual:
 Multiobjective minimization with Nevergrad
 ------------------------------------------
 
-Let us minimize f1 and f2 (two objective functions) assuming that values above 2.5 are of no interest.
+Multiobjective minimization is a work in progress in `nevergrad`, you should expect a few API changes before it converges to a stable solution.
+Let us minimize `f1` and `f2` (two objective functions) assuming that values above 2.5 are of no interest.
 
 .. code-block:: python
 
@@ -186,7 +187,12 @@ Let us minimize f1 and f2 (two objective functions) assuming that values above 2
     recommendation = optimizer.minimize(f)
 
     # The function embeds its Pareto-front:
-    print("My Pareto front:", [x[0][0] for x in f.pareto_front])
+     print("My Pareto front:", [x[0][0] for x in f.pareto_front()])
+
+    # It can also provide a subset:
+    print("My Pareto front:", [x[0][0] for x in f.subset_pareto_front(9, "random")])
+    print("My Pareto front:", [x[0][0] for x in f.subset_pareto_front(9, "loss-covering")])
+    print("My Pareto front:", [x[0][0] for x in f.subset_pareto_front(9, "domain-covering")])   print("My Pareto front:", [x[0][0] for x in f.pareto_front])
 
 
 Reproducibility
