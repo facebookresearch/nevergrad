@@ -89,7 +89,7 @@ class MultiobjectiveFunction:
                 new_points.append((argskwargs, losses))
         self._points = new_points
 
-    def pareto_front(self, size: Optional[int] = None, subset: Optional[str] = "random") -> List[ArgsKwargs]:
+    def pareto_front(self, size: Optional[int] = None, subset: str = "random") -> List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
 
         Parameters
