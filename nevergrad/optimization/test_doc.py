@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 import nevergrad as ng
-# pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object
+# pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 
 
 def test_simplest_example() -> None:
@@ -107,3 +107,19 @@ def test_doc_constrained_optimization() -> None:
         # >>> [1.00037625, 0.50683314]
         # DOC_CONSTRAINED_1
     np.testing.assert_array_almost_equal(recommendation.value, [1, 0.5], decimal=1)
+
+
+def test_callback_doc() -> None:
+    # DOC_CALLBACK_0
+    import nevergrad as ng
+
+    def my_function(x):
+        return abs(sum(x - 1))
+
+    def print_candidate_and_value(optimizer, candidate, value):
+        print(candidate, value)
+
+    optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=4)
+    optimizer.register_callback("tell", print_candidate_and_value)
+    optimizer.minimize(my_function)  # triggers a print at each tell within minimize
+    # DOC_CALLBACK_1

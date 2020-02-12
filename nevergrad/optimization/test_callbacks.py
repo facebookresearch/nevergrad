@@ -24,7 +24,7 @@ def test_log_parameters(tmp_path: Path) -> None:
                                    blublu=ng.p.Choice(cases),
                                    array=ng.p.Array(shape=(3, 2)))
     optimizer = optimizerlib.NoisyOnePlusOne(parametrization=instrum, budget=32)
-    optimizer.register_callback("tell", callbacks.ParametersLogger(filepath, append=False))
+    optimizer.register_callback("tell", ng.callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)
     # pickling
     logger = callbacks.ParametersLogger(filepath)
@@ -37,3 +37,13 @@ def test_log_parameters(tmp_path: Path) -> None:
     # deletion
     logger = callbacks.ParametersLogger(filepath, append=False)
     assert not logger.load()
+
+
+def test_dump_callback(tmp_path: Path) -> None:
+    filepath = tmp_path / "pickle.pkl"
+    optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=32)
+    optimizer.register_callback("tell", ng.callbacks.OptimizerDump(filepath))
+    cand = optimizer.ask()
+    assert not filepath.exists()
+    optimizer.tell(cand, 0)
+    assert filepath.exists()
