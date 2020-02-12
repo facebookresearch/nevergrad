@@ -25,7 +25,7 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
     :end-before: DOC_SIMPLEST_1
 
 
-.. image:: ../TwoPointsDE.gif
+.. image:: ./resources/TwoPointsDE.gif
   :width: 400
 
 *Convergence of a population of points to the minima with two-points DE.*
