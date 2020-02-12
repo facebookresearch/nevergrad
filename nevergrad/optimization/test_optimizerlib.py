@@ -119,6 +119,7 @@ SLOW = [
     "EDA",
     "MEDA",
     "MicroCMA",
+    "ES",
 ]
 DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: tp.List[str] = []
@@ -365,12 +366,19 @@ def test_parametrization_optimizer_reproducibility() -> None:
     np.testing.assert_equal(recom.kwargs["y"], 67)
 
 
+def test_parallel_es() -> None:
+    opt = optlib.EvolutionStrategy(popsize=3, offsprings=None)(4, budget=20, num_workers=5)
+    for k in range(35):
+        cand = opt.ask()  # asking should adapt to the parallelization
+        if not k:
+            opt.tell(cand, 1)
+
+
 def test_constrained_optimization() -> None:
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     with warnings.catch_warnings():
-        # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=UserWarning)
         optimizer.parametrization.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
     recom = optimizer.minimize(_square)
@@ -388,5 +396,5 @@ def test_parametrization_offset(name: str) -> None:
         optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
-        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.args[0][0]}"
+        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
         optimizer.tell(candidate, 0)

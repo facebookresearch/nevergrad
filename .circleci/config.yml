@@ -36,6 +36,7 @@ commands:
           command: |
             . venv/bin/activate
             pip install -e .[all]
+            pip install git+https://github.com/numpy/numpy-stubs@master
 
 
 jobs:
@@ -108,7 +109,20 @@ jobs:
             pip install repo/dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
+      - run:
+          name: Build docs
+          command: |
+            . venv/bin/activate
+            cd docs/
+            make html
+            make linkcheck
 
+      - persist_to_workspace:
+          root: docs/_build
+          paths: html
+
+      # - store_artifacts:
+      #     path: docs/_build/html
 
   mypy:
     executor: ubuntu-python36
@@ -141,6 +155,29 @@ jobs:
           command: |
             . venv/bin/activate
             pytest nevergrad --durations=20 --cov=nevergrad
+
+  docs-deploy:
+    docker:
+      - image: node:8.10.0
+    steps:
+      - checkout
+        #- add_ssh_keys:
+        #  fingerprints:
+        #    - "XXXX"
+        #
+      - attach_workspace:
+          at: docs/_build
+
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "ci-build"
+            git config user.name "ci-build"
+
+       # - run:
+       #     name: Deploy docs to gh-pages branch
+       #     command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
 
 
   windows-pytests:
@@ -187,3 +224,9 @@ workflows:
       - mypy
       - pytests
       - windows-pytests
+      - docs-deploy:
+          requires:
+            - install
+          filters:
+            branches:
+              only: master
