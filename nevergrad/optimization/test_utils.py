@@ -85,13 +85,6 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(RuntimeError, archive.items)
 
 
-class Partitest(utils.Individual):
-
-    def __init__(self, number: int) -> None:
-        super().__init__([])
-        self.number = number
-
-
 def test_pruning() -> None:
     archive = utils.Archive[utils.Value]()
     for k in range(3):

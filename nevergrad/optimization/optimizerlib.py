@@ -618,7 +618,6 @@ class PSO(base.Optimizer):
 
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
         if particle._frozen and "boxed_data" in particle._meta:
-            print("getting from freeze")
             return particle._meta["boxed_data"]  # type: ignore
         boxed_data = self._TRANSFORM.forward(particle.get_standardized_data(reference=self.parametrization))
         if particle._frozen:  # only save is frozen
@@ -656,7 +655,7 @@ class PSO(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         # nearly same as DE
-        candidate._meta["value"] = value
+        candidate._meta["loss"] = value
         worst: tp.Optional[p.Parameter] = None
         if not len(self.population) < self.llambda:
             worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
@@ -671,6 +670,8 @@ class PSO(base.Optimizer):
             candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
         self.population[candidate.uid] = candidate
         self._uid_queue.tell(candidate.uid)
+        if value < self._best._meta.get("loss", float("inf")):
+            self._best = candidate
 
 
 @registry.register
