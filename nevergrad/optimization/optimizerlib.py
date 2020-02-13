@@ -680,7 +680,7 @@ class PSO(base.Optimizer):
         uid = self._uid_queue.ask()
         particle = self.population.get_queued(remove=False)
         assert uid == particle.uid
-        # particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
+        particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
         candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
