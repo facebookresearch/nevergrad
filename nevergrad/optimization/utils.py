@@ -7,11 +7,9 @@ import warnings
 import operator
 import typing as tp
 from uuid import uuid4
-from collections import OrderedDict
 import numpy as np
 from nevergrad.common.tools import OrderedSet
 from nevergrad.common.typetools import ArrayLike
-from nevergrad.parametrization import parameter as p
 
 
 class Value:
@@ -299,7 +297,7 @@ class Pruning:
         return cls(min_len, max(max_len, max_len_1gb))
 
 
-class Individual:
+class Individual:  # TODO remove
 
     def __init__(self, x: ArrayLike) -> None:
         self.x = np.array(x, copy=False)
@@ -310,87 +308,6 @@ class Individual:
 
     def __repr__(self) -> str:
         return f"Indiv<{self.x}, {self.value}>"
-
-
-X = tp.TypeVar('X', bound=tp.Union[Individual, p.Parameter])
-
-
-class Population(tp.Generic[X]):
-    """Handle a population
-    This could have a nicer interface... but it is already good enough
-    Note: favor the use of UidQueue instead
-    """
-
-    def __init__(self, particles: tp.Iterable[X]) -> None:
-        self._particles = OrderedDict({p.uid: p for p in particles})  # dont modify manually (needs updated uid to index)
-        self._queue = tp.Deque[str]()
-        self._uids: tp.List[str] = []
-        self.extend(self._particles.values())
-
-    @property
-    def uids(self) -> tp.List[str]:
-        """Don't modify manually
-        """
-        return self._uids
-
-    def __repr__(self) -> str:
-        particles = [p for p in self._particles.values()]
-        return f"Population({particles})"
-
-    def __getitem__(self, uid: str) -> X:
-        parti = self._particles[uid]
-        if parti.uid != uid:
-            raise RuntimeError("Something went horribly wrong in the Population structure")
-        return parti
-
-    def __iter__(self) -> tp.Iterator[X]:
-        return iter(self._particles.values())
-
-    def extend(self, particles: tp.Iterable[X]) -> None:
-        """Adds new particles
-        The new particles are queued left (first out of queue)
-        """
-        particles = list(particles)
-        self._uids.extend(p.uid for p in particles)
-        self._particles.update({p.uid: p for p in particles})  # dont modify manually (needs updated uid to index)
-        self._queue.extendleft(p.uid for p in reversed(particles))
-
-    def __len__(self) -> int:
-        return len(self._particles)
-
-    def is_queue_empty(self) -> bool:
-        return not self._queue
-
-    def get_queued(self, remove: bool = False) -> X:
-        if not self._queue:
-            raise RuntimeError("Queue is empty, you tried to ask more than population size")
-        uid = self._queue[0]  # pylint: disable=unsubscriptable-object
-        if remove:
-            self._queue.popleft()
-        return self._particles[uid]
-
-    def set_queued(self, particle: X) -> None:
-        if particle.uid not in self._particles:
-            raise ValueError("Individual is not part of the population")
-        self._queue.append(particle.uid)
-
-    def replace(self, oldie: X, newbie: X) -> None:
-        """Replaces an old particle by a new particle.
-        The new particle is queue left (first out of queue)
-        """
-        if oldie.uid not in self._particles:
-            raise ValueError("Individual is not part of the population")
-        if newbie.uid in self._particles:
-            raise ValueError("Individual is already in the population")
-        del self._particles[oldie.uid]
-        self._particles[newbie.uid] = newbie
-        self._uids = [newbie.uid if u == oldie.uid else u for u in self._uids]
-        # update queue
-        try:
-            self._queue.remove(oldie.uid)
-        except ValueError:
-            pass
-        self._queue.appendleft(newbie.uid)
 
 
 class UidQueue:

@@ -92,32 +92,6 @@ class Partitest(utils.Individual):
         self.number = number
 
 
-def test_population_queue() -> None:
-    particles = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particles[2:])
-    _ = repr(pop)
-    pop.extend(particles[:2])  # should append queue on the left
-    p = pop.get_queued()
-    assert p.number == 0
-    nums = [pop.get_queued(remove=True).number for _ in range(4)]
-    np.testing.assert_equal(nums, [0, 1, 2, 3])
-    np.testing.assert_raises(RuntimeError, pop.get_queued)  # nothing more in queue
-    pop.set_queued(particles[1])
-    p = pop.get_queued()
-    assert p.number == 1
-    np.testing.assert_raises(ValueError, pop.set_queued, Partitest(5))  # not in pop
-
-
-def test_population_replace() -> None:
-    particles = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particles)
-    pop.replace(particles[2], Partitest(5))
-    assert pop.get_queued().number == 5
-    for uid in pop.uids:
-        # checks that it exists and correctly linked
-        pop[uid]  # pylint: disable= pointless-statement
-
-
 def test_pruning() -> None:
     archive = utils.Archive[utils.Value]()
     for k in range(3):
