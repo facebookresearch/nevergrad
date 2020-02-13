@@ -641,9 +641,6 @@ class PSO(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self._population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
-        self._best._meta["loss"] = float("inf")
-        self.best_x = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
-        self.best_value = float("inf")
         self._omega = 0.5 / np.log(2.0)
         self._phip = 0.5 + np.log(2.0)
         self._phig = 0.5 + np.log(2.0)
@@ -684,7 +681,8 @@ class PSO(base.Optimizer):
         assert uid == particle.uid
         old = True
         if old:
-            particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
+            best_x = self._get_boxed_data(self._best)
+            particle.mutate(best_x=best_x, omega=self._omega, phip=self._phip, phig=self._phig)
             candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position(),
                                                                                   reference=self.parametrization)
         else:
@@ -720,7 +718,7 @@ class PSO(base.Optimizer):
         return new_part
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self._PARTICULE.transform.forward(self.best_x)
+        return self._best.get_standardized_data(reference=self.parametrization)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
@@ -733,9 +731,7 @@ class PSO(base.Optimizer):
         particle.value = value
         candidate._meta["loss"] = value
         self._population[uid] = candidate
-        if value < self._best._meta["loss"]:
-            self.best_x = np.array(particle.x, copy=True)
-            self.best_value = value
+        if value < self._best._meta.get("loss", float("inf")):
             self._best = candidate
         if value <= candidate.heritage.get("best_parent", candidate)._meta["loss"]:
             particle.best_x = np.array(particle.x, copy=False)
