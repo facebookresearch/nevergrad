@@ -636,11 +636,15 @@ class PSO(base.Optimizer):
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
         self.population: utils.Population[PSOParticle] = utils.Population([])
+        self._uid_queue = base.utils.UidQueue()
+        self._population: tp.Dict[str, p.Parameter] = {}
+        self._best = self.parametrization.spawn_child()
+        self._best._meta["loss"] = float("inf")
         self.best_x = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
         self.best_value = float("inf")
-        self.omega = 0.5 / np.log(2.0)
-        self.phip = 0.5 + np.log(2.0)
-        self.phig = 0.5 + np.log(2.0)
+        self._omega = 0.5 / np.log(2.0)
+        self._phip = 0.5 + np.log(2.0)
+        self._phig = 0.5 + np.log(2.0)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
@@ -649,12 +653,16 @@ class PSO(base.Optimizer):
             if self._wide:
                 # old initialization below seeds in the while R space, while other algorithms use normal distrib
                 data = self._PARTICULE.transform.forward(self._rng.uniform(0, 1, self.dimension))
+                candidate = param.spawn_child().set_standardized_data(data, reference=param)
+                candidate.heritage["lineage"] = candidate.uid
             else:
-                data = param.sample().get_standardized_data(reference=param)
+                candidate = param.sample()
+            # candidate._meta["speed"] = self._rng.uniform(-1.0, 1.0, candidate.dimension)
+            data = candidate.get_standardized_data(reference=param)
             self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
-            particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
+            particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
         candidate = self.parametrization.spawn_child().set_standardized_data(particle.get_transformed_position())
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
