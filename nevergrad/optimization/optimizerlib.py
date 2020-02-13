@@ -603,8 +603,13 @@ class PSOParticle(utils.Individual):
         dim = len(best_x)
         rp = self.random_state.uniform(0.0, 1.0, size=dim)
         rg = self.random_state.uniform(0.0, 1.0, size=dim)
+        print(self.uid, "old part best", self.best_x[:2])
+        print(self.uid, "best", best_x[:2])
+        print("x", self.x[:2])
+        print("speed", self.speed[:2])
         self.speed = omega * self.speed + phip * rp * (self.best_x - self.x) + phig * rg * (best_x - self.x)
-        print("old", self.speed + self.x)
+        print(omega, phip, phig, rp[:2], rg[:2])
+        print(self.uid, "old", self.speed[:2])
         self.x = np.clip(self.speed + self.x, self._eps, 1 - self._eps)
 
     def get_transformed_position(self) -> np.ndarray:
@@ -646,6 +651,7 @@ class PSO(base.Optimizer):
         self._phig = 0.5 + np.log(2.0)
 
     def _internal_ask_candidate(self) -> p.Parameter:
+        print("\n###### ", self._num_ask)
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self._population) < self.llambda:
             param = self.parametrization
@@ -658,11 +664,9 @@ class PSO(base.Optimizer):
                 candidate = param.sample()
             # candidate._meta["speed"] = self._rng.uniform(-1.0, 1.0, candidate.dimension)
             data = candidate.get_standardized_data(reference=param)
-            part = self._PARTICULE.from_data(data, random_state=self._rng)
-            part.uid = candidate.uid
-            part.uid = str(self.num_ask)
-            self.part_population[part.uid] = part
-            particle = part
+            particle = self._PARTICULE.from_data(data, random_state=self._rng)
+            particle.uid = str(self.num_ask)
+            self.part_population[particle.uid] = particle
             if not self.num_ask:
                 print("Initialization", data)
             candidate = self.parametrization.spawn_child().set_standardized_data(data)  # particle.get_transformed_position())
@@ -678,7 +682,7 @@ class PSO(base.Optimizer):
         uid = self._uid_queue.ask()
         particle = self.part_population[uid]
         assert uid == particle.uid
-        old = True
+        old = 0
         if old:
             best_x = self._get_boxed_data(self._best)
             particle.mutate(best_x=best_x, omega=self._omega, phip=self._phip, phig=self._phig)
@@ -697,8 +701,8 @@ class PSO(base.Optimizer):
             print("getting from freeze")
             return particle._meta["boxed_data"]  # type: ignore
         boxed_data = self._TRANSFORM.forward(particle.get_standardized_data(reference=self.parametrization))
-        if particle._frozen:  # only save is frozen
-            particle._meta["boxed_data"] = boxed_data
+        # if particle._frozen:  # only save is frozen
+        #    particle._meta["boxed_data"] = boxed_data
         return boxed_data
 
     def _spawn_mutated_particle(self, particle: p.Parameter) -> p.Parameter:
@@ -706,12 +710,18 @@ class PSO(base.Optimizer):
         speed: np.ndarray = particle.heritage["speed"]
         global_best_x = self._get_boxed_data(self._best)
         parent_best_x = self._get_boxed_data(particle.heritage.get("best_parent", particle))
+        print(particle.heritage["lineage"], "new part best", parent_best_x[:2])
+        print("best", global_best_x[:2])
+        print("x", x[:2])
+        print("speed", speed[:2])
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
+        print(self._omega, self._phip, self._phig, rp[:2], rg[:2])
         speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
-        print(particle.uid, "new", x + speed)
+        print(particle.heritage["lineage"], "new", speed[:2])
         data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        new_part.heritage["speed"] = speed
         return new_part
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -728,12 +738,16 @@ class PSO(base.Optimizer):
         particle.value = value
         candidate._meta["loss"] = value
         self._population[uid] = candidate
+        print("telling2 with parent best", self._get_boxed_data(candidate.heritage.get("best_parent", candidate))[:2])
         if value < self._best._meta.get("loss", float("inf")):
             self._best = candidate
         if value <= candidate.heritage.get("best_parent", candidate)._meta["loss"]:
+            print("Updating particlue best for", uid)
             particle.best_x = np.array(particle.x, copy=False)
             particle.best_value = value
             candidate.heritage["best_parent"] = candidate
+        else:
+            print("Candidate best unchanged", self._get_boxed_data(candidate.heritage.get("best_parent", candidate))[:2])
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
