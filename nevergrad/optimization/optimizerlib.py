@@ -577,8 +577,8 @@ class PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    _TRANSFORM = transforms.ArctanBound(0, 1)
-    _EPS = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders
+    _TRANSFORM: transforms.Transform = transforms.ArctanBound(0, 1)
+    _EPS: tp.Optional[float] = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders, no clipping if None
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -605,7 +605,8 @@ class PSO(base.Optimizer):
             else:
                 candidate = param.sample()
             self.population[candidate.uid] = candidate
-            candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
+            dim = self.parametrization.dimension
+            candidate.heritage["speed"] = self._rng.normal(size=dim) if self._EPS is None else self._rng.uniform(-1, 1, dim)
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
@@ -628,7 +629,10 @@ class PSO(base.Optimizer):
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
-        data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
+        data = speed + x
+        if self._EPS is not None:
+            data = np.clip(data, self._EPS, 1 - self._EPS)
+        data = self._TRANSFORM.backward(data)
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
         new_part.heritage["speed"] = speed
         return new_part
@@ -668,6 +672,13 @@ class PSO(base.Optimizer):
         self._uid_queue.tell(candidate.uid)
         if value < self._best._meta.get("loss", float("inf")):
             self._best = candidate
+
+
+@registry.register
+class RealSpacePSO(PSO):
+
+    _TRANSFORM = transforms.Affine(1, 0)  # identity
+    _EPS = None
 
 
 @registry.register
