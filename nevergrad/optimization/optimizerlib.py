@@ -681,8 +681,8 @@ class PSO(base.Optimizer):
         particle = self.population.get_queued(remove=False)
         assert uid == particle.uid
         # particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
-        # candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
-        # candidate._meta["particle"] = particle
+        candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
+        candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
         print("Sent", uid[:8])
@@ -700,9 +700,10 @@ class PSO(base.Optimizer):
         x = self._get_boxed_data(particle)
         speed: np.ndarray = particle._meta["speed"]
         global_best_x = self._get_boxed_data(self._best)
+        parent_best_x = self._get_boxed_data(particle.heritage.get("best_parent", particle))
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
-        speed = self._omega * speed + self._phip * rp * (best_x - x) + self._phig * rg * (best_x - x)
+        speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
         data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
         return new_part
@@ -721,13 +722,16 @@ class PSO(base.Optimizer):
             return
         particle.value = value
         candidate._meta["loss"] = value
+        self._population[uid] = candidate
         if value < self._best._meta["loss"]:
             self.best_x = np.array(particle.x, copy=True)
             self.best_value = value
             self._best = candidate
+        # if value < candidate.heritage.get("best_parent", candidate)._meta["loss"]:
         if value < particle.best_value:
             particle.best_x = np.array(particle.x, copy=False)
             particle.best_value = value
+            candidate.heritage["best_parent"] = particle
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
