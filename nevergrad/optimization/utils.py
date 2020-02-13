@@ -6,7 +6,6 @@
 import warnings
 import operator
 import typing as tp
-from uuid import uuid4
 import numpy as np
 from nevergrad.common.tools import OrderedSet
 from nevergrad.common.typetools import ArrayLike
@@ -295,19 +294,6 @@ class Pruning:
         max_len = 10 * 3 * min_len  # len after pruning can be up to 3 min_len, amortize with an order of magnitude
         max_len_1gb = 1024**3 // (dimension * 8)
         return cls(min_len, max(max_len, max_len_1gb))
-
-
-class Individual:  # TODO remove
-
-    def __init__(self, x: ArrayLike) -> None:
-        self.x = np.array(x, copy=False)
-        self.uid = uuid4().hex
-        self.value: tp.Optional[float] = None
-        self._parameters = np.array([])
-        self._active = True
-
-    def __repr__(self) -> str:
-        return f"Indiv<{self.x}, {self.value}>"
 
 
 class UidQueue:
