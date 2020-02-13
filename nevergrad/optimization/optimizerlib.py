@@ -722,7 +722,7 @@ class PSO(base.Optimizer):
             return
         particle.value = value
         candidate._meta["loss"] = value
-        self._population[uid] = candidate
+        #self._population[uid] = candidate
         if value < self._best._meta["loss"]:
             self.best_x = np.array(particle.x, copy=True)
             self.best_value = value
