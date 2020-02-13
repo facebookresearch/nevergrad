@@ -728,7 +728,7 @@ class PSO(base.Optimizer):
             self.best_x = np.array(particle.x, copy=True)
             self.best_value = value
             self._best = candidate
-        if value < candidate.heritage.get("best_parent", self.parametrization)._meta.get("loss", float("inf")):
+        if value <= candidate.heritage.get("best_parent", candidate)._meta["loss"]:
             particle.best_x = np.array(particle.x, copy=False)
             particle.best_value = value
             candidate.heritage["best_parent"] = candidate
