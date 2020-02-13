@@ -637,7 +637,7 @@ class PSO(base.Optimizer):
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
-        self.population: utils.Population[PSOParticle] = utils.Population([])
+        self.part_population: Dict[str, PSOParticle] = {}
         self._uid_queue = base.utils.UidQueue()
         self._population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
@@ -647,7 +647,7 @@ class PSO(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
-        if len(self.population) < self.llambda:
+        if len(self._population) < self.llambda:
             param = self.parametrization
             if self._wide:
                 # old initialization below seeds in the while R space, while other algorithms use normal distrib
@@ -661,8 +661,8 @@ class PSO(base.Optimizer):
             part = self._PARTICULE.from_data(data, random_state=self._rng)
             part.uid = candidate.uid
             part.uid = str(self.num_ask)
-            self.population.extend([part])
-            particle = self.population.get_queued(remove=False)
+            self.part_population[part.uid] = part
+            particle = part
             if not self.num_ask:
                 print("Initialization", data)
             candidate = self.parametrization.spawn_child().set_standardized_data(data)  # particle.get_transformed_position())
@@ -672,12 +672,11 @@ class PSO(base.Optimizer):
             candidate._meta["particle"] = particle
             candidate.heritage["speed"] = particle.speed
             assert particle.uid == candidate.uid
-            self.population.get_queued(remove=True)
             # only remove at the last minute (safer for checkpointing)
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
-        particle = self.population.get_queued(remove=False)
+        particle = self.part_population[uid]
         assert uid == particle.uid
         old = True
         if old:
@@ -690,7 +689,6 @@ class PSO(base.Optimizer):
             particle.speed = candidate.heritage["speed"]
             particle.x = self._TRANSFORM.forward(candidate.get_standardized_data(reference=self.parametrization))
         candidate._meta["particle"] = particle
-        self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
         return candidate
 
@@ -714,7 +712,6 @@ class PSO(base.Optimizer):
         print(particle.uid, "new", x + speed)
         data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
-        raise Exception
         return new_part
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -737,7 +734,6 @@ class PSO(base.Optimizer):
             particle.best_x = np.array(particle.x, copy=False)
             particle.best_value = value
             candidate.heritage["best_parent"] = candidate
-        self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
