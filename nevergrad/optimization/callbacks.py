@@ -86,6 +86,7 @@ class ParametersLogger:
                 "#num-tell": optimizer.num_tell,
                 "#num-tell-not-asked": optimizer.num_tell_not_asked,
                 "#uid": candidate.uid,
+                "#lineage": candidate.heritage["lineage"],
                 "#generation": candidate.generation,
                 "#parents_uids": [],
                 "#loss": value}
