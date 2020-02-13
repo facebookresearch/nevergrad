@@ -89,6 +89,24 @@ All algorithms have strengths and weaknesses. Questionable rules of thumb could 
 - :code:`ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. :code:`num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
 - :code:`RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
 
+Adding callbacks
+----------------
+
+You can add callbacks to the :code:`ask` and :code:`tell` methods through the :code:`register_callback`  method.
+The functions/callbacks registeed on :code:`ask` must have signature :code:`callback (optimizer)` and functions registered on :code:`tell`
+must have signature :code:`function(optimizer, candidate, value)`.
+
+The example below shows a callback which prints :code:`candidate` and :code:`value` on :code:`tell`:
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_CALLBACK_0
+    :end-before: DOC_CALLBACK_1
+
+
+Two callbacks are available through :code:`ng.callbacks`, see the :ref:`callbacks module documentation <callbacks>`. 
+
 
 Optimization with constraints
 -----------------------------
@@ -157,11 +175,11 @@ We can then minimize as usual:
 Multiobjective minimization with Nevergrad
 ------------------------------------------
 
-Multiobjective minimization is a work in progress in `nevergrad`, you should expect a few API changes before it converges to a stable solution.
-Let us minimize `f1` and `f2` (two objective functions) assuming that values above 2.5 are of no interest.
+Multiobjective minimization is a work in progress in :code:`nevergrad`, you should expect a few API changes before it converges to a stable solution.
+Let us minimize :code:`f1` and :code:`f2` (two objective functions) assuming that values above 2.5 are of no interest.
 
 
-.. literalinclude:: ../nevergrad/optimization/test_doc.py
+.. literalinclude:: ../nevergrad/functions/multiobjective/test_core.py
     :language: python
     :dedent: 4
     :start-after: DOC_MULTIOBJ_0

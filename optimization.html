@@ -88,6 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#using-several-workers">Using several workers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ask-and-tell-interface">Ask and tell interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#choosing-an-optimizer">Choosing an optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-callbacks">Adding callbacks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optimization-with-constraints">Optimization with constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optimizing-machine-learning-hyperparameters">Optimizing machine learning hyperparameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">Example of chaining, or inoculation, or initialization of an evolutionary algorithm</a></li>
@@ -248,6 +249,27 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 - <code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> is excellent for super parallel cases (fully one-shot, i.e. <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> = budget included) or for very multimodal cases (such as some of our MLDA problems); don’t use softmax with this optimizer.
 - <code class="code docutils literal notranslate"><span class="pre">RandomSearch</span></code> is the classical random search baseline; don’t use softmax with this optimizer.</p>
 </div>
+<div class="section" id="adding-callbacks">
+<h2>Adding callbacks<a class="headerlink" href="#adding-callbacks" title="Permalink to this headline">¶</a></h2>
+<p>You can add callbacks to the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods through the <code class="code docutils literal notranslate"><span class="pre">register_callback</span></code>  method.
+The functions/callbacks registeed on <code class="code docutils literal notranslate"><span class="pre">ask</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">callback</span> <span class="pre">(optimizer)</span></code> and functions registered on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>
+must have signature <code class="code docutils literal notranslate"><span class="pre">function(optimizer,</span> <span class="pre">candidate,</span> <span class="pre">value)</span></code>.</p>
+<p>The example below shows a callback which prints <code class="code docutils literal notranslate"><span class="pre">candidate</span></code> and <code class="code docutils literal notranslate"><span class="pre">value</span></code> on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
+
+<span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">print_candidate_and_value</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="s2">&quot;tell&quot;</span><span class="p">,</span> <span class="n">print_candidate_and_value</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">my_function</span><span class="p">)</span>  <span class="c1"># triggers a print at each tell within minimize</span>
+</pre></div>
+</div>
+<p>Two callbacks are available through <code class="code docutils literal notranslate"><span class="pre">ng.callbacks</span></code>, see the <a class="reference internal" href="optimizers_ref.html#callbacks"><span class="std std-ref">callbacks module documentation</span></a>.</p>
+</div>
 <div class="section" id="optimization-with-constraints">
 <h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this headline">¶</a></h2>
 <p>Nevergrad has a mechanism for cheap constraints.
@@ -312,8 +334,8 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </div>
 <div class="section" id="multiobjective-minimization-with-nevergrad">
 <h2>Multiobjective minimization with Nevergrad<a class="headerlink" href="#multiobjective-minimization-with-nevergrad" title="Permalink to this headline">¶</a></h2>
-<p>Multiobjective minimization is a work in progress in <cite>nevergrad</cite>, you should expect a few API changes before it converges to a stable solution.
-Let us minimize <cite>f1</cite> and <cite>f2</cite> (two objective functions) assuming that values above 2.5 are of no interest.</p>
+<p>Multiobjective minimization is a work in progress in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>, you should expect a few API changes before it converges to a stable solution.
+Let us minimize <code class="code docutils literal notranslate"><span class="pre">f1</span></code> and <code class="code docutils literal notranslate"><span class="pre">f2</span></code> (two objective functions) assuming that values above 2.5 are of no interest.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
 <span class="kn">from</span> <span class="nn">nevergrad.functions</span> <span class="kn">import</span> <span class="n">MultiobjectiveFunction</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
@@ -328,9 +350,9 @@ Let us minimize <cite>f1</cite> and <cite>f2</cite> (two objective functions) as
 <span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">()])</span>
 
 <span class="c1"># It can also provide a subset:</span>
-<span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">)])</span>
-<span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;loss-covering&quot;</span><span class="p">)])</span>
-<span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;domain-covering&quot;</span><span class="p">)])</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;random&quot;</span><span class="p">)])</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;loss-covering&quot;</span><span class="p">)])</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;domain-covering&quot;</span><span class="p">)])</span>
 </pre></div>
 </div>
 </div>

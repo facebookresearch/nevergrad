@@ -87,9 +87,10 @@
 <li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Optimizers API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#optimizer-api">Optimizer API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#callbacks">Callbacks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#configurable-optimizers">Configurable optimizers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optimizers">Optimizers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#optimizer-api">Optimizer API</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
@@ -163,6 +164,328 @@
             
   <div class="section" id="optimizers-api-reference">
 <h1>Optimizers API Reference<a class="headerlink" href="#optimizers-api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="optimizer-api">
+<h2>Optimizer API<a class="headerlink" href="#optimizer-api" title="Permalink to this headline">¶</a></h2>
+<p>All te optimizers share the following common API:</p>
+<dl class="class">
+<dt id="nevergrad.optimizers.base.Optimizer">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">Optimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Algorithm framework with 3 main functions:</p>
+<ul class="simple">
+<li><p><cite>ask()</cite> which provides a candidate on which to evaluate the function to optimize.</p></li>
+<li><p><cite>tell(candidate, value)</cite> which lets you provide the values associated to points.</p></li>
+<li><p><cite>provide_recommendation()</cite> which provides the best final candidate.</p></li>
+</ul>
+<p>Typically, one would call <cite>ask()</cite> num_workers times, evaluate the
+function on these num_workers points in parallel, update with the fitness value when the
+evaluations is finished, and iterate until the budget is over. At the very end,
+one would call provide_recommendation for the estimated optimum.</p>
+<p>This class is abstract, it provides internal equivalents for the 3 main functions,
+among which at least <cite>_internal_ask_candidate</cite> has to be overridden.</p>
+<p>Each optimizer instance should be used only once, with the initial provided budget</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parametrization</strong> (<em>int</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – either the dimension of the optimization space, or its parametrization</p></li>
+<li><p><strong>budget</strong> (<em>int/None</em>) – number of allowed evaluations</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – number of evaluations which will be run in parallel at once</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.ask">
+<code class="sig-name descname">ask</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.ask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides a point to explore.
+This function can be called multiple times to explore several points in parallel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The candidate to try on the objective function. p.Parameter have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
+on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.dimension">
+<em class="property">property </em><code class="sig-name descname">dimension</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of the optimization space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.dump">
+<code class="sig-name descname">dump</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pickles the optimizer into a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.load">
+<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; X<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a pickle and checks that the class is correct.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.minimize">
+<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param">objective_function: Callable[[...], float], executor: Optional[nevergrad.common.typetools.ExecutorLike] = None, batch_mode: bool = False, verbosity: int = 0</em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimization (minimization) procedure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>objective_function</strong> (<em>callable</em>) – A callable to optimize (minimize)</p></li>
+<li><p><strong>executor</strong> (<em>Executor</em>) – An executor object, with method <cite>submit(callable, *args, **kwargs)</cite> and returning a Future-like object
+with methods <cite>done() -&gt; bool</cite> and <cite>result() -&gt; float</cite>. The executor role is to dispatch the execution of
+the jobs locally/on a cluster/with multithreading depending on the implementation.
+Eg: <cite>concurrent.futures.ThreadPoolExecutor</cite></p></li>
+<li><p><strong>batch_mode</strong> (<em>bool</em>) – when num_workers = n &gt; 1, whether jobs are executed by batch (n function evaluations are launched,
+we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
+another one)</p></li>
+<li><p><strong>verbosity</strong> (<em>int</em>) – print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
+on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>for evaluation purpose and with the current implementation, it is better to use batch_mode=True</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.num_ask">
+<em class="property">property </em><code class="sig-name descname">num_ask</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_ask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time the <cite>ask</cite> method was called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.num_tell">
+<em class="property">property </em><code class="sig-name descname">num_tell</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time the <cite>tell</cite> method was called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.num_tell_not_asked">
+<em class="property">property </em><code class="sig-name descname">num_tell_not_asked</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell_not_asked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time the <cite>tell</cite> method was called on candidates that were not asked for by the optimizer
+(or were suggested).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.provide_recommendation">
+<code class="sig-name descname">provide_recommendation</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.provide_recommendation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides the best point to use as a minimum, given the budget that was used</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
+on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.recommend">
+<code class="sig-name descname">recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.recommend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
+on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.register_callback">
+<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param">name: str, callback: Union[Callable[[Optimizer, p.Parameter, float], None], Callable[[Optimizer], None]]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a callback method called either when <cite>tell</cite> or <cite>ask</cite> are called, with the same
+arguments (including the optimizer / self). This can be useful for custom logging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – name of the method to register the callback for (either <cite>ask</cite> or <cite>tell</cite>)</p></li>
+<li><p><strong>callback</strong> (<em>callable</em>) – a callable taking the same parameters as the method it is registered upon (including self)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.remove_all_callbacks">
+<code class="sig-name descname">remove_all_callbacks</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.remove_all_callbacks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes all registered callables</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.suggest">
+<code class="sig-name descname">suggest</code><span class="sig-paren">(</span><em class="sig-param">*args: Any</em>, <em class="sig-param">**kwargs: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.suggest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Suggests a new point to ask.
+It will be asked at the next call (last in first out).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> (<em>Any</em>) – positional arguments matching the parametrization pattern.</p></li>
+<li><p><strong>*kwargs</strong> (<em>Any</em>) – keyword arguments matching the parametrization pattern.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>This relies on optmizers implementing a way to deal with unasked candidate.
+Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
+at “tell” time.</p></li>
+<li><p>LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
+calling optimizer.create_candidate.from_call.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.Optimizer.tell">
+<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param">candidate: nevergrad.parametrization.core.Parameter</em>, <em class="sig-param">value: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides the optimizer with the evaluation of a fitness value for a candidate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.ndarray</em>) – point where the function was evaluated</p></li>
+<li><p><strong>value</strong> (<em>float</em>) – value of the function</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The candidate should generally be one provided by <cite>ask()</cite>, but can be also
+a non-asked candidate. To create a p.Parameter instance from args and kwargs,
+you can use <cite>optimizer.create_candidate.from_call(*args, **kwargs)</cite>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="callbacks">
+<span id="id1"></span><h2>Callbacks<a class="headerlink" href="#callbacks" title="Permalink to this headline">¶</a></h2>
+<p>Callbacks can be registered through the <code class="code docutils literal notranslate"><span class="pre">optimizer.register_callback</span></code> for call on either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods. Two of them are available through the
+<cite>ng.callbacks</cite> namespace.</p>
+<span class="target" id="module-nevergrad.callbacks"></span><dl class="class">
+<dt id="nevergrad.callbacks.OptimizerDump">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">OptimizerDump</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.OptimizerDump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dumps the optimizer to a pickle file at every call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the pickle file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.callbacks.ParametersLogger">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">ParametersLogger</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path], append: bool = True, order: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.ParametersLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logs parameter and run information throughout into a file during
+optimization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – the path to dump data to</p></li>
+<li><p><strong>append</strong> (<em>bool</em>) – whether to append the file (otherwise it replaces it)</p></li>
+<li><p><strong>order</strong> (<em>int</em>) – order of the internal/model parameters to extract</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">ParametersLogger</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="s2">&quot;tell&quot;</span><span class="p">,</span>  <span class="n">logger</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span>
+<span class="n">list_of_dict_of_data</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Arrays are converted to lists</p>
+</div>
+<dl class="method">
+<dt id="nevergrad.callbacks.ParametersLogger.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads data from the log file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.callbacks.ParametersLogger.load_flattened">
+<code class="sig-name descname">load_flattened</code><span class="sig-paren">(</span><em class="sig-param">max_list_elements: int = 24</em><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.load_flattened" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads data from the log file, and splits lists (arrays) into multiple arguments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>max_list_elements</strong> (<em>int</em>) – Maximum number of elements displayed from the array, each element is given a
+unique id of type list_name#i0_i1_…</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.callbacks.ParametersLogger.to_hiplot_experiment">
+<code class="sig-name descname">to_hiplot_experiment</code><span class="sig-paren">(</span><em class="sig-param">max_list_elements: int = 24</em><span class="sig-paren">)</span> &#x2192; Any<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.to_hiplot_experiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the logs into an hiplot experiment for display.</p>
+<dl class="simple">
+<dt>max_list_elements: int</dt><dd><p>maximum number of elements of list/arrays to export (only the first elements are extracted)</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">exp</span> <span class="o">=</span> <span class="n">logs</span><span class="o">.</span><span class="n">to_hiplot_experiment</span><span class="p">()</span>
+<span class="n">exp</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">force_full_width</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>You can easily change the axes of the XY plot:
+<code class="code docutils literal notranslate"><span class="pre">exp.display_data(hip.Displays.XY).update({'axis_x':</span> <span class="pre">'0#0',</span> <span class="pre">'axis_y':</span> <span class="pre">'0#1'})</span></code></p></li>
+<li><p>For more context about hiplot, check:</p>
+<ul>
+<li><p>blogpost: <a class="reference external" href="https://ai.facebook.com/blog/hiplot-high-dimensional-interactive-plots-made-easy/">https://ai.facebook.com/blog/hiplot-high-dimensional-interactive-plots-made-easy/</a></p></li>
+<li><p>github repo: <a class="reference external" href="https://github.com/facebookresearch/hiplot">https://github.com/facebookresearch/hiplot</a></p></li>
+<li><p>documentation: <a class="reference external" href="https://facebookresearch.github.io/hiplot/">https://facebookresearch.github.io/hiplot/</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="configurable-optimizers">
 <h2>Configurable optimizers<a class="headerlink" href="#configurable-optimizers" title="Permalink to this headline">¶</a></h2>
 <p>Configurable optimizers share the following API to create optimizers instances:</p>
@@ -397,11 +720,11 @@ Each algorithm is fed with what happened before it.</p>
 </div>
 <div class="section" id="optimizers">
 <h2>Optimizers<a class="headerlink" href="#optimizers" title="Permalink to this headline">¶</a></h2>
-<p>Here are all the other optimizers available in <cite>nevergrad</cite>:</p>
+<p>Here are all the other optimizers available in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>:</p>
 <div class="admonition caution">
 <p class="admonition-title">Caution</p>
 <p>Only non-family-based optimizers are listed in the documentation,
-you can get a full list of available optimizers with <cite>sorted(nevergrad.optimizers.registry.keys())</cite></p>
+you can get a full list of available optimizers with <code class="code docutils literal notranslate"><span class="pre">sorted(nevergrad.optimizers.registry.keys())</span></code></p>
 </div>
 <span class="target" id="module-nevergrad.optimization.optimizerlib"></span><dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.ASCMA2PDEthird">
@@ -553,32 +876,6 @@ Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO
 2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
 <a class="reference external" href="https://ieeexplore.ieee.org/document/6557848">https://ieeexplore.ieee.org/document/6557848</a></p>
 </div>
-</dd></dl>
-
-<dl class="class">
-<dt id="nevergrad.optimization.optimizerlib.PSOParticle">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PSOParticle</code><span class="sig-paren">(</span><em class="sig-param">x: numpy.ndarray, value: Optional[float], speed: numpy.ndarray, best_x: numpy.ndarray, best_value: float, random_state: numpy.random.mtrand.RandomState</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSOParticle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Particle for the PSO algorithm, holding relevant information (in [0,1] box)</p>
-<dl class="method">
-<dt id="nevergrad.optimization.optimizerlib.PSOParticle.from_data">
-<em class="property">classmethod </em><code class="sig-name descname">from_data</code><span class="sig-paren">(</span><em class="sig-param">data: numpy.ndarray</em>, <em class="sig-param">random_state: numpy.random.mtrand.RandomState</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.optimizerlib.PSOParticle<a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSOParticle.from_data" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimization.optimizerlib.PSOParticle.get_transformed_position">
-<code class="sig-name descname">get_transformed_position</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSOParticle.get_transformed_position" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimization.optimizerlib.PSOParticle.mutate">
-<code class="sig-name descname">mutate</code><span class="sig-paren">(</span><em class="sig-param">best_x: numpy.ndarray</em>, <em class="sig-param">omega: float</em>, <em class="sig-param">phip: float</em>, <em class="sig-param">phig: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSOParticle.mutate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="nevergrad.optimization.optimizerlib.PSOParticle.transform">
-<code class="sig-name descname">transform</code><em class="property"> = Reverted(name=Rv(At(0,1)), transform=ArctanBound(a_max=[1], a_min=[0], name=At(0,1), shape=(1,)))</em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSOParticle.transform" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -769,238 +1066,6 @@ This version uses a non-standard initialization with high standard deviation.</p
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">cGA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.cGA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implementation of the discrete cGA algorithm</p>
 <p><a class="reference external" href="https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf">https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf</a></p>
-</dd></dl>
-
-</div>
-<div class="section" id="optimizer-api">
-<h2>Optimizer API<a class="headerlink" href="#optimizer-api" title="Permalink to this headline">¶</a></h2>
-<p>All te optimizers share the following common API:</p>
-<dl class="class">
-<dt id="nevergrad.optimizers.base.Optimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">Optimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Algorithm framework with 3 main functions:</p>
-<ul class="simple">
-<li><p><cite>ask()</cite> which provides a candidate on which to evaluate the function to optimize.</p></li>
-<li><p><cite>tell(candidate, value)</cite> which lets you provide the values associated to points.</p></li>
-<li><p><cite>provide_recommendation()</cite> which provides the best final candidate.</p></li>
-</ul>
-<p>Typically, one would call <cite>ask()</cite> num_workers times, evaluate the
-function on these num_workers points in parallel, update with the fitness value when the
-evaluations is finished, and iterate until the budget is over. At the very end,
-one would call provide_recommendation for the estimated optimum.</p>
-<p>This class is abstract, it provides internal equivalents for the 3 main functions,
-among which at least <cite>_internal_ask_candidate</cite> has to be overridden.</p>
-<p>Each optimizer instance should be used only once, with the initial provided budget</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>parametrization</strong> (<em>int</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – either the dimension of the optimization space, or its parametrization</p></li>
-<li><p><strong>budget</strong> (<em>int/None</em>) – number of allowed evaluations</p></li>
-<li><p><strong>num_workers</strong> (<em>int</em>) – number of evaluations which will be run in parallel at once</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.ask">
-<code class="sig-name descname">ask</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.ask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides a point to explore.
-This function can be called multiple times to explore several points in parallel</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate to try on the objective function. p.Parameter have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.dimension">
-<em class="property">property </em><code class="sig-name descname">dimension</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dimension" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dimension of the optimization space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.dump">
-<code class="sig-name descname">dump</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dump" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pickles the optimizer into a file.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.load">
-<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; X<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads a pickle and checks that the class is correct.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.minimize">
-<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param">objective_function: Callable[[...], float], executor: Optional[nevergrad.common.typetools.ExecutorLike] = None, batch_mode: bool = False, verbosity: int = 0</em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optimization (minimization) procedure</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>objective_function</strong> (<em>callable</em>) – A callable to optimize (minimize)</p></li>
-<li><p><strong>executor</strong> (<em>Executor</em>) – An executor object, with method <cite>submit(callable, *args, **kwargs)</cite> and returning a Future-like object
-with methods <cite>done() -&gt; bool</cite> and <cite>result() -&gt; float</cite>. The executor role is to dispatch the execution of
-the jobs locally/on a cluster/with multithreading depending on the implementation.
-Eg: <cite>concurrent.futures.ThreadPoolExecutor</cite></p></li>
-<li><p><strong>batch_mode</strong> (<em>bool</em>) – when num_workers = n &gt; 1, whether jobs are executed by batch (n function evaluations are launched,
-we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
-another one)</p></li>
-<li><p><strong>verbosity</strong> (<em>int</em>) – print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>for evaluation purpose and with the current implementation, it is better to use batch_mode=True</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.num_ask">
-<em class="property">property </em><code class="sig-name descname">num_ask</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_ask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of time the <cite>ask</cite> method was called.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.num_tell">
-<em class="property">property </em><code class="sig-name descname">num_tell</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of time the <cite>tell</cite> method was called.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.num_tell_not_asked">
-<em class="property">property </em><code class="sig-name descname">num_tell_not_asked</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell_not_asked" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of time the <cite>tell</cite> method was called on candidates that were not asked for by the optimizer
-(or were suggested).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.provide_recommendation">
-<code class="sig-name descname">provide_recommendation</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.provide_recommendation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides the best point to use as a minimum, given the budget that was used</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.recommend">
-<code class="sig-name descname">recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.recommend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.register_callback">
-<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param">name: str, callback: Union[Callable[[Optimizer, p.Parameter, float], None], Callable[[Optimizer], None]]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a callback method called either when <cite>tell</cite> or <cite>ask</cite> are called, with the same
-arguments (including the optimizer / self). This can be useful for custom logging.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<em>str</em>) – name of the method to register the callback for (either <cite>ask</cite> or <cite>tell</cite>)</p></li>
-<li><p><strong>callback</strong> (<em>callable</em>) – a callable taking the same parameters as the method it is registered upon (including self)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.remove_all_callbacks">
-<code class="sig-name descname">remove_all_callbacks</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.remove_all_callbacks" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes all registered callables</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.suggest">
-<code class="sig-name descname">suggest</code><span class="sig-paren">(</span><em class="sig-param">*args: Any</em>, <em class="sig-param">**kwargs: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.suggest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Suggests a new point to ask.
-It will be asked at the next call (last in first out).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>*args</strong> (<em>Any</em>) – positional arguments matching the parametrization pattern.</p></li>
-<li><p><strong>*kwargs</strong> (<em>Any</em>) – keyword arguments matching the parametrization pattern.</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>This relies on optmizers implementing a way to deal with unasked candidate.
-Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
-at “tell” time.</p></li>
-<li><p>LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
-calling optimizer.create_candidate.from_call.</p></li>
-</ul>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="nevergrad.optimizers.base.Optimizer.tell">
-<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param">candidate: nevergrad.parametrization.core.Parameter</em>, <em class="sig-param">value: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides the optimizer with the evaluation of a fitness value for a candidate.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>np.ndarray</em>) – point where the function was evaluated</p></li>
-<li><p><strong>value</strong> (<em>float</em>) – value of the function</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The candidate should generally be one provided by <cite>ask()</cite>, but can be also
-a non-asked candidate. To create a p.Parameter instance from args and kwargs,
-you can use <cite>optimizer.create_candidate.from_call(*args, **kwargs)</cite>.</p>
-</div>
-</dd></dl>
-
 </dd></dl>
 
 </div>
