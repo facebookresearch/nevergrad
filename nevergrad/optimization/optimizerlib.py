@@ -626,7 +626,7 @@ class PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    _TRANSFORM = transforms.ArctanBound(0, 1).reverted()
+    _TRANSFORM = transforms.ArctanBound(0, 1)
     _PARTICULE = PSOParticle
     _EPS = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders
 
@@ -671,6 +671,7 @@ class PSO(base.Optimizer):
             candidate.heritage["lineage"] = candidate.uid
             self._population[candidate.uid] = candidate
             candidate._meta["particle"] = particle
+            candidate.heritage["speed"] = particle.speed
             assert particle.uid == candidate.uid
             self.population.get_queued(remove=True)
             # only remove at the last minute (safer for checkpointing)
@@ -683,6 +684,7 @@ class PSO(base.Optimizer):
         particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
         candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position(),
                                                                               reference=self.parametrization)
+        # candidate = self._spawn_mutated_particle(self._population[uid])
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
@@ -699,7 +701,7 @@ class PSO(base.Optimizer):
 
     def _spawn_mutated_particle(self, particle: p.Parameter) -> p.Parameter:
         x = self._get_boxed_data(particle)
-        speed: np.ndarray = particle._meta["speed"]
+        speed: np.ndarray = particle.heritage["speed"]
         global_best_x = self._get_boxed_data(self._best)
         parent_best_x = self._get_boxed_data(particle.heritage.get("best_parent", particle))
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
