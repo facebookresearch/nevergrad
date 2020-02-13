@@ -680,9 +680,9 @@ class PSO(base.Optimizer):
         uid = self._uid_queue.ask()
         particle = self.population.get_queued(remove=False)
         assert uid == particle.uid
-        particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
-        candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
-        candidate._meta["particle"] = particle
+        # particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
+        # candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
+        # candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
         print("Sent", uid[:8])
@@ -699,7 +699,7 @@ class PSO(base.Optimizer):
     def _spawn_mutated_particle(self, particle: p.Parameter) -> p.Parameter:
         x = self._get_boxed_data(particle)
         speed: np.ndarray = particle._meta["speed"]
-        best_x = self._get_boxed_data(self._best)
+        global_best_x = self._get_boxed_data(self._best)
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = self._omega * speed + self._phip * rp * (best_x - x) + self._phig * rg * (best_x - x)
@@ -716,13 +716,15 @@ class PSO(base.Optimizer):
         print("Received", particle.uid[:8], uid[:8])
         self._uid_queue.tell(uid)
         assert particle.uid == uid
-        if not particle._active:
+        if uid not in self._population:
             self._internal_tell_not_asked(candidate, value)
             return
         particle.value = value
-        if value < self.best_value:
+        candidate._meta["loss"] = value
+        if value < self._best._meta["loss"]:
             self.best_x = np.array(particle.x, copy=True)
             self.best_value = value
+            self._best = candidate
         if value < particle.best_value:
             particle.best_x = np.array(particle.x, copy=False)
             particle.best_value = value
