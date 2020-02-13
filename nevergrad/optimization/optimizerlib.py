@@ -622,6 +622,8 @@ class PSO(base.Optimizer):
     2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
     https://ieeexplore.ieee.org/document/6557848
     """
+    # TODO: the initial speed is probably way too big
+    # the recommendation test requires 200 iterations for the mutation to actually be useful
 
     # pylint: disable=too-many-instance-attributes
 
