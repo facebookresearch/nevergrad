@@ -660,15 +660,32 @@ class PSO(base.Optimizer):
                 candidate = param.sample()
             # candidate._meta["speed"] = self._rng.uniform(-1.0, 1.0, candidate.dimension)
             data = candidate.get_standardized_data(reference=param)
+            part = self._PARTICULE.from_data(data, random_state=self._rng)
+            part.uid = candidate.uid
+            self.population.extend([part])
+            print("Queued", part.uid[:8])
+            particle = self.population.get_queued(remove=False)
+            print("Dequeued", particle.uid[:8])
+            candidate = self.parametrization.spawn_child().set_standardized_data(particle.get_transformed_position())
+            candidate.uid = particle.uid
+            candidate.heritage["lineage"] = candidate.uid
             self._population[candidate.uid] = candidate
-            self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
+            candidate._meta["particle"] = particle
+            assert particle.uid == candidate.uid
+            self.population.get_queued(remove=True)
+            # only remove at the last minute (safer for checkpointing)
+            self._uid_queue.asked.add(candidate.uid)
+            print("Sent", particle.uid[:8], candidate.uid[:8])
+            return candidate
+        uid = self._uid_queue.ask()
         particle = self.population.get_queued(remove=False)
-        if particle.value is not None:  # particle was already initialized
-            particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
-        candidate = self.parametrization.spawn_child().set_standardized_data(particle.get_transformed_position())
+        assert uid == particle.uid
+        particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
+        candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
+        print("Sent", uid[:8])
         return candidate
 
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
@@ -695,6 +712,10 @@ class PSO(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
+        uid = candidate.heritage["lineage"]
+        print("Received", particle.uid[:8], uid[:8])
+        self._uid_queue.tell(uid)
+        assert particle.uid == uid
         if not particle._active:
             self._internal_tell_not_asked(candidate, value)
             return
