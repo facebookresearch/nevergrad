@@ -1592,12 +1592,13 @@ class EMNA_TBPSA(TBPSA):
         self.current_center: np.ndarray = np.zeros(self.dimension)
         self._loss_record: List[float] = []
         # population
-        self._evaluated_population: List[base.utils.Individual] = []
+        self.population: List[p.Parameter] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x  # Naive version for now
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        candidate._meta["loss"] = value
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -1616,23 +1617,20 @@ class EMNA_TBPSA(TBPSA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        particle = base.utils.Individual(data)
-        particle._parameters = np.array([candidate._meta["sigma"]])
-        particle.value = value
-        self._evaluated_population.append(particle)
-        if len(self._evaluated_population) >= self.llambda:
+        self.population.append(candidate)
+        if len(self.population) >= self.llambda:
             # Sorting the population.
-            self._evaluated_population.sort(key=lambda p: p.value)
+            self.population.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
+                                      for c in self.population[: self.mu]) / self.mu
+            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.population[: self.mu]]
             # EMNA update
-            t1 = [(self._evaluated_population[i].x - self.current_center)**2 for i in range(self.mu)]
             self.sigma = np.sqrt(sum(t1) / (self.mu))
             imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
             if self.num_workers / self.dimension > 16:
                 self.sigma /= imp
-            self._evaluated_population = []
+            self.population = []
 
 
 @registry.register
