@@ -15,7 +15,6 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
-from . import utils
 from . import base
 from . import mutations
 from .base import registry as registry
@@ -489,7 +488,7 @@ class TBPSA(base.Optimizer):
         self.current_center: np.ndarray = np.zeros(self.dimension)
         self._loss_record: List[float] = []
         # population
-        self._evaluated_population: List[base.utils.Individual] = []
+        self.population: List[p.Parameter] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
@@ -502,6 +501,7 @@ class TBPSA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        candidate._meta["loss"] = value
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -520,19 +520,15 @@ class TBPSA(base.Optimizer):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        particle = base.utils.Individual(data)
-        particle._parameters = np.array([candidate._meta["sigma"]])
-        particle.value = value
-        self._evaluated_population.append(particle)
-        if len(self._evaluated_population) >= self.llambda:
+        self.population.append(candidate)
+        if len(self.population) >= self.llambda:
             # Sorting the population.
-            self._evaluated_population.sort(key=lambda p: p.value)
+            self.population.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
-            self.sigma = np.exp(np.sum(np.log([p._parameters[0]
-                                               for p in self._evaluated_population[: self.mu]])) / self.mu)
-            self._evaluated_population = []
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
+                                      for c in self.population[: self.mu]) / self.mu
+            self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.population[: self.mu]])) / self.mu)
+            self.population = []
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
