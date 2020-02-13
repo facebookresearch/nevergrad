@@ -15,7 +15,6 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
-from nevergrad.functions import MultiobjectiveFunction
 from . import utils
 from . import base
 from . import mutations
@@ -627,7 +626,9 @@ class PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
+    _TRANSFORM = transforms.ArctanBound(0, 1).reverted()
     _PARTICULE = PSOParticle
+    _EPS = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -659,6 +660,7 @@ class PSO(base.Optimizer):
                 candidate = param.sample()
             # candidate._meta["speed"] = self._rng.uniform(-1.0, 1.0, candidate.dimension)
             data = candidate.get_standardized_data(reference=param)
+            self._population[candidate.uid] = candidate
             self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
         particle = self.population.get_queued(remove=False)
         if particle.value is not None:  # particle was already initialized
@@ -668,6 +670,25 @@ class PSO(base.Optimizer):
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
         return candidate
+
+    def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
+        if particle._frozen and "boxed_data" in particle._meta:
+            return particle._meta["boxed_data"]  # type: ignore
+        boxed_data = self._TRANSFORM.forward(particle.get_standardized_data(reference=self.parametrization))
+        if particle._frozen:  # only save is frozen
+            particle._meta["boxed_data"] = boxed_data
+        return boxed_data
+
+    def _spawn_mutated_particle(self, particle: p.Parameter) -> p.Parameter:
+        x = self._get_boxed_data(particle)
+        speed: np.ndarray = particle._meta["speed"]
+        best_x = self._get_boxed_data(self._best)
+        rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
+        rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
+        speed = self._omega * speed + self._phip * rp * (best_x - x) + self._phig * rg * (best_x - x)
+        data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
+        new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        return new_part
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self._PARTICULE.transform.forward(self.best_x)
