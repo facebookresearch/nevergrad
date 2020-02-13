@@ -681,7 +681,8 @@ class PSO(base.Optimizer):
         particle = self.population.get_queued(remove=False)
         assert uid == particle.uid
         particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
-        candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position())
+        candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position(),
+                                                                              reference=self.parametrization)
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
@@ -715,23 +716,22 @@ class PSO(base.Optimizer):
         particle: PSOParticle = candidate._meta["particle"]
         uid = candidate.heritage["lineage"]
         print("Received", particle.uid[:8], uid[:8])
-        self._uid_queue.tell(uid)
         assert particle.uid == uid
         if uid not in self._population:
             self._internal_tell_not_asked(candidate, value)
             return
+        self._uid_queue.tell(uid)
         particle.value = value
         candidate._meta["loss"] = value
-        #self._population[uid] = candidate
+        self._population[uid] = candidate
         if value < self._best._meta["loss"]:
             self.best_x = np.array(particle.x, copy=True)
             self.best_value = value
             self._best = candidate
-        # if value < candidate.heritage.get("best_parent", candidate)._meta["loss"]:
-        if value < particle.best_value:
+        if value < candidate.heritage.get("best_parent", self.parametrization)._meta.get("loss", float("inf")):
             particle.best_x = np.array(particle.x, copy=False)
             particle.best_value = value
-            candidate.heritage["best_parent"] = particle
+            candidate.heritage["best_parent"] = candidate
         self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
