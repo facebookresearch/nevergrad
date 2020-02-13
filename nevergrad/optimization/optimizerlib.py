@@ -604,6 +604,7 @@ class PSOParticle(utils.Individual):
         rp = self.random_state.uniform(0.0, 1.0, size=dim)
         rg = self.random_state.uniform(0.0, 1.0, size=dim)
         self.speed = omega * self.speed + phip * rp * (self.best_x - self.x) + phig * rg * (best_x - self.x)
+        print("old", self.speed + self.x)
         self.x = np.clip(self.speed + self.x, self._eps, 1 - self._eps)
 
     def get_transformed_position(self) -> np.ndarray:
@@ -662,11 +663,12 @@ class PSO(base.Optimizer):
             data = candidate.get_standardized_data(reference=param)
             part = self._PARTICULE.from_data(data, random_state=self._rng)
             part.uid = candidate.uid
+            part.uid = str(self.num_ask)
             self.population.extend([part])
-            print("Queued", part.uid[:8])
             particle = self.population.get_queued(remove=False)
-            print("Dequeued", particle.uid[:8])
-            candidate = self.parametrization.spawn_child().set_standardized_data(particle.get_transformed_position())
+            if not self.num_ask:
+                print("Initialization", data)
+            candidate = self.parametrization.spawn_child().set_standardized_data(data)  # particle.get_transformed_position())
             candidate.uid = particle.uid
             candidate.heritage["lineage"] = candidate.uid
             self._population[candidate.uid] = candidate
@@ -676,23 +678,27 @@ class PSO(base.Optimizer):
             self.population.get_queued(remove=True)
             # only remove at the last minute (safer for checkpointing)
             self._uid_queue.asked.add(candidate.uid)
-            print("Sent", particle.uid[:8], candidate.uid[:8])
             return candidate
         uid = self._uid_queue.ask()
         particle = self.population.get_queued(remove=False)
         assert uid == particle.uid
-        particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
-        candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position(),
-                                                                              reference=self.parametrization)
-        # candidate = self._spawn_mutated_particle(self._population[uid])
+        old = True
+        if old:
+            particle.mutate(best_x=self.best_x, omega=self._omega, phip=self._phip, phig=self._phig)
+            candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position(),
+                                                                                  reference=self.parametrization)
+        else:
+            candidate = self._spawn_mutated_particle(self._population[uid])
+            particle.speed = candidate.heritage["speed"]
+            particle.x = self._TRANSFORM.forward(candidate.get_standardized_data(reference=self.parametrization))
         candidate._meta["particle"] = particle
         self.population.get_queued(remove=True)
         # only remove at the last minute (safer for checkpointing)
-        print("Sent", uid[:8])
         return candidate
 
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
         if particle._frozen and "boxed_data" in particle._meta:
+            print("getting from freeze")
             return particle._meta["boxed_data"]  # type: ignore
         boxed_data = self._TRANSFORM.forward(particle.get_standardized_data(reference=self.parametrization))
         if particle._frozen:  # only save is frozen
@@ -707,8 +713,10 @@ class PSO(base.Optimizer):
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
+        print(particle.uid, "new", x + speed)
         data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        raise Exception
         return new_part
 
     def _internal_provide_recommendation(self) -> ArrayLike:
@@ -717,7 +725,6 @@ class PSO(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         particle: PSOParticle = candidate._meta["particle"]
         uid = candidate.heritage["lineage"]
-        print("Received", particle.uid[:8], uid[:8])
         assert particle.uid == uid
         if uid not in self._population:
             self._internal_tell_not_asked(candidate, value)
