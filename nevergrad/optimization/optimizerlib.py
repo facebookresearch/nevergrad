@@ -642,7 +642,6 @@ class PSO(base.Optimizer):
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
-        self.part_population: Dict[str, PSOParticle] = {}
         self._uid_queue = base.utils.UidQueue()
         self._population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
@@ -664,35 +663,16 @@ class PSO(base.Optimizer):
                 candidate = param.sample()
             # candidate._meta["speed"] = self._rng.uniform(-1.0, 1.0, candidate.dimension)
             data = candidate.get_standardized_data(reference=param)
-            particle = self._PARTICULE.from_data(data, random_state=self._rng)
-            particle.uid = str(self.num_ask)
-            self.part_population[particle.uid] = particle
-            if not self.num_ask:
-                print("Initialization", data)
             candidate = self.parametrization.spawn_child().set_standardized_data(data)  # particle.get_transformed_position())
-            candidate.uid = particle.uid
+            candidate.uid = str(self.num_ask)
             candidate.heritage["lineage"] = candidate.uid
             self._population[candidate.uid] = candidate
-            candidate._meta["particle"] = particle
-            candidate.heritage["speed"] = particle.speed
-            assert particle.uid == candidate.uid
+            candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, data.size)
             # only remove at the last minute (safer for checkpointing)
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
-        particle = self.part_population[uid]
-        assert uid == particle.uid
-        old = 0
-        if old:
-            best_x = self._get_boxed_data(self._best)
-            particle.mutate(best_x=best_x, omega=self._omega, phip=self._phip, phig=self._phig)
-            candidate = self._population[uid].spawn_child().set_standardized_data(particle.get_transformed_position(),
-                                                                                  reference=self.parametrization)
-        else:
-            candidate = self._spawn_mutated_particle(self._population[uid])
-            particle.speed = candidate.heritage["speed"]
-            particle.x = self._TRANSFORM.forward(candidate.get_standardized_data(reference=self.parametrization))
-        candidate._meta["particle"] = particle
+        candidate = self._spawn_mutated_particle(self._population[uid])
         # only remove at the last minute (safer for checkpointing)
         return candidate
 
@@ -728,14 +708,11 @@ class PSO(base.Optimizer):
         return self._best.get_standardized_data(reference=self.parametrization)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        particle: PSOParticle = candidate._meta["particle"]
         uid = candidate.heritage["lineage"]
-        assert particle.uid == uid
         if uid not in self._population:
             self._internal_tell_not_asked(candidate, value)
             return
         self._uid_queue.tell(uid)
-        particle.value = value
         candidate._meta["loss"] = value
         self._population[uid] = candidate
         print("telling2 with parent best", self._get_boxed_data(candidate.heritage.get("best_parent", candidate))[:2])
@@ -743,8 +720,6 @@ class PSO(base.Optimizer):
             self._best = candidate
         if value <= candidate.heritage.get("best_parent", candidate)._meta["loss"]:
             print("Updating particlue best for", uid)
-            particle.best_x = np.array(particle.x, copy=False)
-            particle.best_value = value
             candidate.heritage["best_parent"] = candidate
         else:
             print("Candidate best unchanged", self._get_boxed_data(candidate.heritage.get("best_parent", candidate))[:2])
