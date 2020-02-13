@@ -4,12 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 from .optimization import optimizerlib as optimizers  # busy namespace, likely to be simplified
-from .optimization import families
-from .optimization import callbacks
+from .optimization import families as families
+from .optimization import callbacks as callbacks
 from .parametrization import parameter as p
 
 
-__all__ = ["Instrumentation", "var", "optimizers", "families", "callbacks", "p"]
+__all__ = ["optimizers", "families", "callbacks", "p"]
 
 
 __version__ = "0.3.2"

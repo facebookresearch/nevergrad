@@ -56,17 +56,19 @@ class ParametersLogger:
     order: int
         order of the internal/model parameters to extract
 
-    Usage
-    -----
-    logger = ParametersLogger(filepath)
-    optimizer.register_callback("tell",  logger)
-    optimizer.minimize()
-    list_of_dict_of_data = logger.load()
+    Example
+    -------
+
+    .. code-block:: python
+
+        logger = ParametersLogger(filepath)
+        optimizer.register_callback("tell",  logger)
+        optimizer.minimize()
+        list_of_dict_of_data = logger.load()
 
     Note
     ----
-    - arrays are converted to lists
-    - this class will eventually contain display methods
+    Arrays are converted to lists
     """
 
     def __init__(self, filepath: tp.Union[str, Path], append: bool = True, order: int = 1) -> None:
@@ -139,17 +141,24 @@ class ParametersLogger:
     def to_hiplot_experiment(self, max_list_elements: int = 24) -> tp.Any:  # no typing here since Hiplot is not a hard requirement
         """Converts the logs into an hiplot experiment for display.
 
+        Parameter
+        ---------
+        max_list_elements: int
+            maximum number of elements of list/arrays to export (only the first elements are extracted)
 
         Example
         -------
-        exp = logs.to_hiplot_experiment()
-        exp.display(force_full_width=True)
+        .. code-block:: python
+
+            exp = logs.to_hiplot_experiment()
+            exp.display(force_full_width=True)
 
         Note
         ----
         - You can easily change the axes of the XY plot:
-          exp.display_data(hip.Displays.XY).update({'axis_x': '0#0', 'axis_y': '0#1'})
+          :code:`exp.display_data(hip.Displays.XY).update({'axis_x': '0#0', 'axis_y': '0#1'})`
         - For more context about hiplot, check:
+
           - blogpost: https://ai.facebook.com/blog/hiplot-high-dimensional-interactive-plots-made-easy/
           - github repo: https://github.com/facebookresearch/hiplot
           - documentation: https://facebookresearch.github.io/hiplot/
@@ -167,3 +176,19 @@ class ParametersLogger:
         # for the record, some more options:
         exp.display_data(hip.Displays.XY).update({'lines_thickness': 1.0, 'lines_opacity': 1.0})
         return exp
+
+
+class OptimizerDump:
+    """Dumps the optimizer to a pickle file at every call.
+
+    Parameters
+    ----------
+    filepath: str or Path
+        path to the pickle file
+    """
+
+    def __init__(self, filepath: tp.Union[str, Path]) -> None:
+        self._filepath = filepath
+
+    def __call__(self, opt: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        opt.dump(self._filepath)
