@@ -15,13 +15,12 @@ from unittest.mock import patch
 import pytest
 import numpy as np
 import pandas as pd
-from bayes_opt.util import acq_max
 from scipy import stats
+from bayes_opt.util import acq_max
 import nevergrad as ng
 from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
-from . import utils
 from . import optimizerlib as optlib
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
@@ -81,9 +80,6 @@ def check_optimizer(
     if budget > 100:
         slope, intercept = fitness.get_factors()
         print(f"For your information: slope={slope} and intercept={intercept}")
-    # check population queue
-    if hasattr(optimizer, "population") and isinstance(optimizer.population, utils.Population):  # type: ignore
-        assert len(optimizer.population._queue) == len(set(optimizer.population._queue)), "Queue has duplicated items"  # type: ignore
     # make sure we are correctly tracking the best values
     archive = optimizer.archive
     assert optimizer.current_bests["pessimistic"].pessimistic_confidence_bound == min(
@@ -319,7 +315,7 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
-# this test is added because some generic class (like Population) can fail to be pickled
+# this test is added because some generic class can fail to be pickled
 def test_population_pickle(name: str) -> None:
     # example of work around:
     # "self.population = base.utils.Population[DEParticle]([])"

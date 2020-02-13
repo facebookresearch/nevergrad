@@ -15,7 +15,6 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.common.typetools import ArrayLike
-from nevergrad.functions import MultiobjectiveFunction
 from . import utils
 from . import base
 from . import mutations
@@ -566,51 +565,6 @@ class NoisyBandit(base.Optimizer):
         return self.current_bests["optimistic"].x
 
 
-class PSOParticle(utils.Individual):
-    """Particle for the PSO algorithm, holding relevant information (in [0,1] box)
-    """
-
-    transform = transforms.ArctanBound(0, 1).reverted()
-    _eps = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders
-
-    # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        x: np.ndarray,
-        value: Optional[float],
-        speed: np.ndarray,
-        best_x: np.ndarray,
-        best_value: float,
-        random_state: np.random.RandomState,
-    ) -> None:
-        super().__init__(x)
-        self.speed = speed
-        self.value = value
-        self.best_x = best_x
-        self.best_value = best_value
-        self.random_state = random_state
-
-    @classmethod
-    def from_data(cls, data: np.ndarray, random_state: np.random.RandomState) -> "PSOParticle":
-        position = cls.transform.backward(data)
-        speed = random_state.uniform(-1.0, 1.0, data.size)
-        return cls(position, None, speed, position, float("inf"), random_state=random_state)
-
-    def __repr__(self) -> str:
-        # return f"{self.__class__.__name__}<position: {self.get_transformed_position()}, fitness: {self.value}, best: {self.best_value}>"
-        return f"{self.__class__.__name__}<position: {self.x}, {self.get_transformed_position()}>"
-
-    def mutate(self, best_x: np.ndarray, omega: float, phip: float, phig: float) -> None:
-        dim = len(best_x)
-        rp = self.random_state.uniform(0.0, 1.0, size=dim)
-        rg = self.random_state.uniform(0.0, 1.0, size=dim)
-        self.speed = omega * self.speed + phip * rp * (self.best_x - self.x) + phig * rg * (best_x - self.x)
-        self.x = np.clip(self.speed + self.x, self._eps, 1 - self._eps)
-
-    def get_transformed_position(self) -> np.ndarray:
-        return self.transform.forward(self.x)
-
-
 @registry.register
 class PSO(base.Optimizer):
     """Partially following SPSO2011. However, no randomization of the population order.
@@ -627,7 +581,8 @@ class PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    _PARTICULE = PSOParticle
+    _TRANSFORM = transforms.ArctanBound(0, 1)
+    _EPS = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -635,12 +590,12 @@ class PSO(base.Optimizer):
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
         self.llambda = max(40, num_workers)
-        self.population: utils.Population[PSOParticle] = utils.Population([])
-        self.best_x = np.zeros(self.dimension, dtype=float)  # TODO: use current best instead?
-        self.best_value = float("inf")
-        self.omega = 0.5 / np.log(2.0)
-        self.phip = 0.5 + np.log(2.0)
-        self.phig = 0.5 + np.log(2.0)
+        self._uid_queue = base.utils.UidQueue()
+        self.population: tp.Dict[str, p.Parameter] = {}
+        self._best = self.parametrization.spawn_child()
+        self._omega = 0.5 / np.log(2.0)
+        self._phip = 0.5 + np.log(2.0)
+        self._phig = 0.5 + np.log(2.0)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
@@ -648,51 +603,75 @@ class PSO(base.Optimizer):
             param = self.parametrization
             if self._wide:
                 # old initialization below seeds in the while R space, while other algorithms use normal distrib
-                data = self._PARTICULE.transform.forward(self._rng.uniform(0, 1, self.dimension))
+                data = self._TRANSFORM.backward(self._rng.uniform(0, 1, self.dimension))
+                candidate = param.spawn_child().set_standardized_data(data, reference=param)
+                candidate.heritage["lineage"] = candidate.uid
             else:
-                data = param.sample().get_standardized_data(reference=param)
-            self.population.extend([self._PARTICULE.from_data(data, random_state=self._rng)])
-        particle = self.population.get_queued(remove=False)
-        if particle.value is not None:  # particle was already initialized
-            particle.mutate(best_x=self.best_x, omega=self.omega, phip=self.phip, phig=self.phig)
-        candidate = self.parametrization.spawn_child().set_standardized_data(particle.get_transformed_position())
-        candidate._meta["particle"] = particle
-        self.population.get_queued(remove=True)
-        # only remove at the last minute (safer for checkpointing)
+                candidate = param.sample()
+            self.population[candidate.uid] = candidate
+            candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
+            self._uid_queue.asked.add(candidate.uid)
+            return candidate
+        uid = self._uid_queue.ask()
+        candidate = self._spawn_mutated_particle(self.population[uid])
         return candidate
 
+    def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
+        if particle._frozen and "boxed_data" in particle._meta:
+            return particle._meta["boxed_data"]  # type: ignore
+        boxed_data = self._TRANSFORM.forward(particle.get_standardized_data(reference=self.parametrization))
+        if particle._frozen:  # only save is frozen
+            particle._meta["boxed_data"] = boxed_data
+        return boxed_data
+
+    def _spawn_mutated_particle(self, particle: p.Parameter) -> p.Parameter:
+        x = self._get_boxed_data(particle)
+        speed: np.ndarray = particle.heritage["speed"]
+        global_best_x = self._get_boxed_data(self._best)
+        parent_best_x = self._get_boxed_data(particle.heritage.get("best_parent", particle))
+        rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
+        rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
+        speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
+        data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
+        new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        new_part.heritage["speed"] = speed
+        return new_part
+
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self._PARTICULE.transform.forward(self.best_x)
+        return self._best.get_standardized_data(reference=self.parametrization)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        particle: PSOParticle = candidate._meta["particle"]
-        if not particle._active:
+        uid = candidate.heritage["lineage"]
+        if uid not in self.population:
             self._internal_tell_not_asked(candidate, value)
             return
-        particle.value = value
-        if value < self.best_value:
-            self.best_x = np.array(particle.x, copy=True)
-            self.best_value = value
-        if value < particle.best_value:
-            particle.best_x = np.array(particle.x, copy=False)
-            particle.best_value = value
-        self.population.set_queued(particle)  # update when everything is well done (safer for checkpointing)
+        candidate._meta["loss"] = value
+        self._uid_queue.tell(uid)
+        self.population[uid] = candidate
+        if value < self._best._meta.get("loss", float("inf")):
+            self._best = candidate
+        if value <= candidate.heritage.get("best_parent", candidate)._meta["loss"]:
+            candidate.heritage["best_parent"] = candidate
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        x = candidate.get_standardized_data(reference=self.parametrization)
-        if len(self.population) < self.llambda:
-            particle = self._PARTICULE.from_data(x, random_state=self._rng)
-            self.population.extend([particle])
-        else:
-            worst_part = max(iter(self.population), key=lambda p: p.best_value)  # or fitness?
-            if worst_part.best_value < value:
+        # nearly same as DE
+        candidate._meta["loss"] = value
+        worst: tp.Optional[p.Parameter] = None
+        if not len(self.population) < self.llambda:
+            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
+            if worst._meta.get("value", float("inf")) < value:
                 return  # no need to update
-            particle = self._PARTICULE.from_data(x, random_state=self._rng)
-            worst_part._active = False
-            self.population.replace(worst_part, particle)
-        # go through standard tell
-        candidate._meta["particle"] = particle
-        self._internal_tell_candidate(candidate, value)
+            else:
+                uid = worst.heritage["lineage"]
+                del self.population[uid]
+                self._uid_queue.discard(uid)
+        candidate.heritage["lineage"] = candidate.uid  # new lineage
+        if "speed" not in candidate.heritage:
+            candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
+        self.population[candidate.uid] = candidate
+        self._uid_queue.tell(candidate.uid)
+        if value < self._best._meta.get("loss", float("inf")):
+            self._best = candidate
 
 
 @registry.register
