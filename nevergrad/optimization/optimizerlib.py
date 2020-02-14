@@ -280,11 +280,12 @@ class EDA(base.Optimizer):
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # Evaluated population
-        self.evaluated_population: List[ArrayLike] = []
-        self.evaluated_population_sigma: List[float] = []
-        self.evaluated_population_fitness: List[float] = []
+        self.population: tp.List[p.Parameter] = []
         # Archive
         self.archive_fitness: List[float] = []
+        # ugly hack to track generations in parameters
+        self._first_of_generation: p.Parameter = self.parametrization
+        self._first_of_generation._meta["outdated"] = True
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
@@ -295,30 +296,23 @@ class EDA(base.Optimizer):
         data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["sigma"] = mutated_sigma
+        if self._first_of_generation._meta.get("outdated", False):
+            self._first_of_generation = candidate
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.covariance = 0.1 * np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+        candidate._meta["loss"] = value
+        self.population.append(candidate)
+        if len(self.population) >= self.llambda:
+            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
+            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
+            self.covariance = 0.1 * np.cov(np.array(population_data).T)
             # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            arrays = [d for d in population_data[:self.mu]]
             self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
+            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:self.mu]]) / self.mu)
+            self.population = []
+            self._first_of_generation._meta["outdated"] = True
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
@@ -355,27 +349,7 @@ class PCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.covariance = np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
-            # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
+        super()._internal_tell_candidate(candidate, value)
 
 
 @registry.register
@@ -409,28 +383,19 @@ class MPCEDA(EDA):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self.archive_fitness = []
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+        candidate._meta["loss"] = value
+        self.population.append(candidate)
+        if len(self.population) >= self.llambda:
+            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
+            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
             self.covariance *= 0.9
-            self.covariance += 0.1 * np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            self.covariance += 0.1 * np.cov(np.array(population_data).T)
             # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            arrays = [d for d in population_data[:self.mu]]
             self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
+            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:self.mu]]) / self.mu)
+            self.population = []
+            self._first_of_generation._meta["outdated"] = True
 
 
 @registry.register
@@ -444,28 +409,19 @@ class MEDA(EDA):
     # pylint: disable=too-many-instance-attributes
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
+        candidate._meta["loss"] = value
+        self.population.append(candidate)
+        if len(self.population) >= self.llambda:
+            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
+            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
             self.covariance *= 0.9
-            self.covariance += 0.1 * np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
+            self.covariance += 0.1 * np.cov(np.array(population_data).T)
             # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
+            arrays = [d for d in population_data[:self.mu]]
             self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
+            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:self.mu]]) / self.mu)
+            self.population = []
+            self._first_of_generation._meta["outdated"] = True
 
 
 @registry.register
