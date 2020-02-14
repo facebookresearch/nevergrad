@@ -268,7 +268,7 @@ class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA
     """
 
-    def __init__(self, llambda: int, mu: int, dimension: int, num_workers: int = 1):
+    def __init__(self, llambda: int, mu: int, dimension: int, num_workers: int = 1) -> None:
         self.llambda = max(llambda, num_workers)
         self.mu = mu
         self.dimension = dimension
