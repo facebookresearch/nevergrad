@@ -328,6 +328,8 @@ class EDA(base.Optimizer):
         data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
         parent = self.parents[self.num_ask % len(self.parents)]
         candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid  # for tracking
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
