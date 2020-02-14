@@ -676,6 +676,9 @@ class PSO(base.Optimizer):
 
 @registry.register
 class RealSpacePSO(PSO):
+    """Experimental
+    Version of PSO acting directly in R instead of a boxed domain.
+    """
 
     _TRANSFORM = transforms.Affine(1, 0)  # identity
     _EPS = None
