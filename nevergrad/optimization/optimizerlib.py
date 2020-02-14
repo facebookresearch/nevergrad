@@ -315,11 +315,9 @@ class EDA(base.Optimizer):
         dim = self.dimension
         self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
-        # Evaluated population
-        self.population: tp.List[p.Parameter] = []
-        # ugly hack to track generations in parameters
-        self._first_of_generation: p.Parameter = self.parametrization
-        self._first_of_generation._meta["outdated"] = True
+        # Population
+        self.children: tp.List[p.Parameter] = []
+        self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
@@ -328,29 +326,28 @@ class EDA(base.Optimizer):
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
-        candidate = self._first_of_generation.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
         candidate._meta["sigma"] = mutated_sigma
-        if self._first_of_generation._meta.get("outdated", False):
-            self._first_of_generation = candidate
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
-        self.population.append(candidate)
+        self.children.append(candidate)
         if self._POPSIZE_ADAPTATION:
             self.popsize.add_value(value)
-        if len(self.population) >= self.popsize.llambda:
-            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
-            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
+        if len(self.children) >= self.popsize.llambda:
+            self.children = sorted(self.children, key=lambda c: c._meta["loss"])
+            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
             self.covariance *= 0.9 if self._COVARIANCE_MEMORY else 0
             self.covariance += 0.1 * np.cov(np.array(population_data).T)
-            # Computing the new parent.
+            # Computing the new parent
             mu = self.popsize.mu
             arrays = [d for d in population_data[:mu]]
             self.current_center = sum(arrays) / mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:mu]]) / mu)
-            self.population = []
-            self._first_of_generation._meta["outdated"] = True
+            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.children[:mu]]) / mu)
+            self.parents = self.children[:mu]
+            self.children = []
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
@@ -390,11 +387,9 @@ class TBPSA(base.Optimizer):
         dim = self.dimension
         self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
-        # ugly hack to track generations in parameters
-        self._first_of_generation: p.Parameter = self.parametrization
-        self._first_of_generation._meta["outdated"] = True
         # population
-        self.population: List[p.Parameter] = []
+        self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
+        self.children: List[p.Parameter] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
@@ -402,26 +397,26 @@ class TBPSA(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        candidate = self._first_of_generation.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid  # for tracking
         candidate._meta["sigma"] = mutated_sigma
-        if self._first_of_generation._meta.get("outdated", False):
-            self._first_of_generation = candidate
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
         self.popsize.add_value(value)
-        self.population.append(candidate)
-        if len(self.population) >= self.popsize.llambda:
+        self.children.append(candidate)
+        if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.population.sort(key=lambda c: c._meta["loss"])
+            self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            self.population = self.population[: self.popsize.mu]
+            self.parents = self.children[: self.popsize.mu]
+            self.children = []
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.population) / self.popsize.mu
-            self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.population])) / self.popsize.mu)
-            self.population = []
-            self._first_of_generation._meta["outdated"] = True
+                                      for c in self.parents) / self.popsize.mu
+            self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents])) / self.popsize.mu)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
@@ -1536,22 +1531,22 @@ class EMNA_TBPSA(TBPSA):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
         self.popsize.add_value(value)
-        self.population.append(candidate)
-        if len(self.population) >= self.popsize.llambda:
+        self.children.append(candidate)
+        if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.population.sort(key=lambda c: c._meta["loss"])
+            self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
             mu = self.popsize.mu
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.population[: mu]) / mu
-            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.population[: mu]]
+                                      for c in self.children[: mu]) / mu
+            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.children[: mu]]
             # EMNA update
             self.sigma = np.sqrt(sum(t1) / (mu))
             imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
             if self.num_workers / self.dimension > 16:
                 self.sigma /= imp
-            self.population = []
-            self._first_of_generation._meta["outdated"] = True
+            self.parents = self.children[: mu]
+            self.children = []
 
 
 @registry.register
