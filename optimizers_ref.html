@@ -800,18 +800,12 @@ Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.MEDA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MEDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MEDA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation.</p>
-<p>Population-size equal to lambda = 4 x dimension.
-Test by comparing the first fifth and the last fifth of the 5lambda evaluations.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.MPCEDA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MPCEDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MPCEDA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation.</p>
-<p>Population-size equal to lambda = 4 x dimension.
-Test by comparing the first fifth and the last fifth of the 5lambda evaluations.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.MultiCMA">
@@ -860,10 +854,7 @@ Infinite arms: we add one arm when <cite>20 * #ask &gt;= #arms ** 3</cite>.</p>
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.PCEDA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PCEDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PCEDA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation.</p>
-<p>Population-size equal to lambda = 4 x dimension.
-Test by comparing the first fifth and the last fifth of the 5lambda evaluations.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.PSO">
@@ -964,6 +955,13 @@ It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 <dt id="nevergrad.optimization.optimizerlib.Portfolio">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Portfolio</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passive portfolio of CMA, 2-pt DE and Scr-Hammersley.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="nevergrad.optimization.optimizerlib.RealSpacePSO">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">RealSpacePSO</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.RealSpacePSO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experimental
+Version of PSO acting directly in R instead of a boxed domain.</p>
 </dd></dl>
 
 <dl class="class">
