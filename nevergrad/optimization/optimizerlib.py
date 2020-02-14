@@ -487,6 +487,9 @@ class TBPSA(base.Optimizer):
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         self._loss_record: List[float] = []
+        # ugly hack to track generations in parameters
+        self._first_of_generation: p.Parameter = self.parametrization
+        self._first_of_generation._meta["outdated"] = True
         # population
         self.population: List[p.Parameter] = []
 
@@ -496,8 +499,10 @@ class TBPSA(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        candidate = self.parametrization.spawn_child().set_standardized_data(individual)
+        candidate = self._first_of_generation.spawn_child().set_standardized_data(individual, reference=self.parametrization)
         candidate._meta["sigma"] = mutated_sigma
+        if self._first_of_generation._meta.get("outdated", False):
+            self._first_of_generation = candidate
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
@@ -529,6 +534,7 @@ class TBPSA(base.Optimizer):
                                       for c in self.population[: self.mu]) / self.mu
             self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.population[: self.mu]])) / self.mu)
             self.population = []
+            self._first_of_generation._meta["outdated"] = True
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
