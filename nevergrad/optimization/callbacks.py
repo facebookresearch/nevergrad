@@ -94,6 +94,8 @@ class ParametersLogger:
             configopt = optimizer._parameters  # type: ignore
             if isinstance(configopt, base.ParametrizedFamily):
                 data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
+        if isinstance(candidate._meta.get("sigma"), float):
+            data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
         for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
