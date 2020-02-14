@@ -161,10 +161,11 @@ jobs:
       - image: node:8.10.0
     steps:
       - checkout
-        #- add_ssh_keys:
-        #  fingerprints:
-        #    - "XXXX"
-        #
+
+      - add_ssh_keys:
+          fingerprints:
+            - "56:6e:1b:3b:57:c1:1e:7b:5a:cc:3d:bf:c3:1f:d2:48"
+
       - attach_workspace:
           at: docs/_build
 
@@ -175,9 +176,9 @@ jobs:
             git config user.email "ci-build"
             git config user.name "ci-build"
 
-       # - run:
-       #     name: Deploy docs to gh-pages branch
-       #     command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
 
 
   windows-pytests:
@@ -224,9 +225,9 @@ workflows:
       - mypy
       - pytests
       - windows-pytests
-      # - docs-deploy:
-      #     requires:
-      #       - install
-      #     filters:
-      #       branches:
-      #         only: master
+      - docs-deploy:
+          requires:
+            - install
+          filters:
+            branches:
+              only: master
