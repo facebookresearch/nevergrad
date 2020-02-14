@@ -18,7 +18,7 @@ from nevergrad.common.typetools import ArrayLike
 from . import base
 from . import mutations
 from .base import registry as registry
-from .base import addCompare
+from .base import addCompare  # pylint: disable=unused-import
 from .base import InefficientSettingsWarning as InefficientSettingsWarning
 from .base import IntOrParameter
 from . import sequences
@@ -133,7 +133,11 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
     _optimizer_class = _OnePlusOne
 
     def __init__(
-        self, *, noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None, mutation: str = "gaussian", crossover: bool = False
+        self,
+        *,
+        noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        mutation: str = "gaussian",
+        crossover: bool = False
     ) -> None:
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -260,6 +264,7 @@ MilliCMA = ParametrizedCMA(scale=1e-3).with_name("MilliCMA", register=True)
 MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
 
 
+# pylint: disable=too-many-instance-attributes
 @registry.register
 class EDA(base.Optimizer):
     """Test-based population-size adaptation.
@@ -268,7 +273,8 @@ class EDA(base.Optimizer):
     Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    _POPSIZE_ADAPTATION = False
+    _COVARIANCE_MEMORY = False
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -282,7 +288,7 @@ class EDA(base.Optimizer):
         # Evaluated population
         self.population: tp.List[p.Parameter] = []
         # Archive
-        self.archive_fitness: List[float] = []
+        self._loss_archive: List[float] = []
         # ugly hack to track generations in parameters
         self._first_of_generation: p.Parameter = self.parametrization
         self._first_of_generation._meta["outdated"] = True
@@ -294,7 +300,7 @@ class EDA(base.Optimizer):
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
-        candidate = self.parametrization.spawn_child().set_standardized_data(data)
+        candidate = self._first_of_generation.spawn_child().set_standardized_data(data, reference=self.parametrization)
         candidate._meta["sigma"] = mutated_sigma
         if self._first_of_generation._meta.get("outdated", False):
             self._first_of_generation = candidate
@@ -303,10 +309,13 @@ class EDA(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
         self.population.append(candidate)
+        if self._POPSIZE_ADAPTATION:
+            self._popsize_adaptation(value)
         if len(self.population) >= self.llambda:
             self.population = sorted(self.population, key=lambda c: c._meta["loss"])
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
-            self.covariance = 0.1 * np.cov(np.array(population_data).T)
+            self.covariance *= 0.9 if self._COVARIANCE_MEMORY else 0
+            self.covariance += 0.1 * np.cov(np.array(population_data).T)
             # Computing the new parent.
             arrays = [d for d in population_data[:self.mu]]
             self.current_center = sum(arrays) / self.mu  # type: ignore
@@ -317,22 +326,11 @@ class EDA(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
-
-@registry.register
-class PCEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.archive_fitness += [value]
-        if len(self.archive_fitness) >= 5 * self.llambda:
-            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4 * self.llambda, 5 * self.llambda)]
+    def _popsize_adaptation(self, value: float) -> None:
+        self._loss_archive += [value]
+        if len(self._loss_archive) >= 5 * self.llambda:
+            first_fifth = [self._loss_archive[i] for i in range(self.llambda)]
+            last_fifth = [self._loss_archive[i] for i in range(4 * self.llambda, 5 * self.llambda)]
             mean1 = sum(first_fifth) / float(self.llambda)
             std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
             mean2 = sum(last_fifth) / float(self.llambda)
@@ -348,80 +346,25 @@ class PCEDA(EDA):
             if self.num_workers > 1:
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
-            self.archive_fitness = []
-        super()._internal_tell_candidate(candidate, value)
+            self._loss_archive = []
+
+
+@registry.register
+class PCEDA(EDA):
+    _POPSIZE_ADAPTATION = True
+    _COVARIANCE_MEMORY = False
 
 
 @registry.register
 class MPCEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.archive_fitness += [value]
-        if len(self.archive_fitness) >= 5 * self.llambda:
-            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4 * self.llambda, 5 * self.llambda)]
-            mean1 = sum(first_fifth) / float(self.llambda)
-            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
-            mean2 = sum(last_fifth) / float(self.llambda)
-            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
-            z = (mean1 - mean2) / (np.sqrt(std1 ** 2 + std2 ** 2))
-            if z < 2.0:
-                self.mu *= 2
-            else:
-                self.mu = int(self.mu * 0.84)
-                if self.mu < self.dimension:
-                    self.mu = self.dimension
-            self.llambda = 4 * self.mu
-            if self.num_workers > 1:
-                self.llambda = max(self.llambda, self.num_workers)
-                self.mu = self.llambda // 4
-            self.archive_fitness = []
-        candidate._meta["loss"] = value
-        self.population.append(candidate)
-        if len(self.population) >= self.llambda:
-            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
-            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
-            self.covariance *= 0.9
-            self.covariance += 0.1 * np.cov(np.array(population_data).T)
-            # Computing the new parent.
-            arrays = [d for d in population_data[:self.mu]]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:self.mu]]) / self.mu)
-            self.population = []
-            self._first_of_generation._meta["outdated"] = True
+    _POPSIZE_ADAPTATION = True
+    _COVARIANCE_MEMORY = True
 
 
 @registry.register
 class MEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["loss"] = value
-        self.population.append(candidate)
-        if len(self.population) >= self.llambda:
-            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
-            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
-            self.covariance *= 0.9
-            self.covariance += 0.1 * np.cov(np.array(population_data).T)
-            # Computing the new parent.
-            arrays = [d for d in population_data[:self.mu]]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:self.mu]]) / self.mu)
-            self.population = []
-            self._first_of_generation._meta["outdated"] = True
+    _POPSIZE_ADAPTATION = False
+    _COVARIANCE_MEMORY = True
 
 
 @registry.register
@@ -744,7 +687,16 @@ class SplitOptimizer(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, multivariate_optimizer: base.OptimizerFamily = CMA, monovariate_optimizer: base.OptimizerFamily = RandomSearch) -> None:
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            num_optims: Optional[int] = None,
+            num_vars: Optional[List[Any]] = None,
+            multivariate_optimizer: base.OptimizerFamily = CMA,
+            monovariate_optimizer: base.OptimizerFamily = RandomSearch
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
@@ -809,7 +761,14 @@ class SplitOptimizer3(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 3 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 3,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -818,7 +777,14 @@ class SplitOptimizer5(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 5 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 5,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -827,7 +793,14 @@ class SplitOptimizer9(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 9 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 9,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -836,7 +809,14 @@ class SplitOptimizer13(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 13 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 13,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -1441,7 +1421,13 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        arity: Optional[int] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
             arity = len(parametrization.possibilities) if hasattr(parametrization, "possibilities") else 2  # type: ignore
