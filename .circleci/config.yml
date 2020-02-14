@@ -228,6 +228,6 @@ workflows:
       - docs-deploy:
           requires:
             - install
-          # filters:
-          #   branches:
-          #     only: master
+          filters:
+            branches:
+              only: master
