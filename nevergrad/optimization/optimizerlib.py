@@ -18,7 +18,7 @@ from nevergrad.common.typetools import ArrayLike
 from . import base
 from . import mutations
 from .base import registry as registry
-from .base import addCompare
+from .base import addCompare  # pylint: disable=unused-import
 from .base import InefficientSettingsWarning as InefficientSettingsWarning
 from .base import IntOrParameter
 from . import sequences
@@ -133,7 +133,11 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
     _optimizer_class = _OnePlusOne
 
     def __init__(
-        self, *, noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None, mutation: str = "gaussian", crossover: bool = False
+        self,
+        *,
+        noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        mutation: str = "gaussian",
+        crossover: bool = False
     ) -> None:
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -260,248 +264,18 @@ MilliCMA = ParametrizedCMA(scale=1e-3).with_name("MilliCMA", register=True)
 MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
 
 
-@registry.register
-class EDA(base.Optimizer):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+class _PopulationSizeController:
+    """Population control scheme for TBPSA and EDA
     """
 
-    # pylint: disable=too-many-instance-attributes
+    def __init__(self, llambda: int, mu: int, dimension: int, num_workers: int = 1) -> None:
+        self.llambda = max(llambda, num_workers)
+        self.mu = mu
+        self.dimension = dimension
+        self.num_workers = num_workers
+        self._loss_record: tp.List[float] = []
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.sigma = 1
-        self.covariance = np.identity(self.dimension)
-        self.mu = self.dimension
-        self.llambda = 4 * self.dimension
-        if num_workers is not None:
-            self.llambda = max(self.llambda, num_workers)
-        self.current_center: np.ndarray = np.zeros(self.dimension)
-        # Evaluated population
-        self.evaluated_population: List[ArrayLike] = []
-        self.evaluated_population_sigma: List[float] = []
-        self.evaluated_population_fitness: List[float] = []
-        # Archive
-        self.archive_fitness: List[float] = []
-
-    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
-        return self.current_center
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
-        assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
-        candidate = self.parametrization.spawn_child().set_standardized_data(data)
-        candidate._meta["sigma"] = mutated_sigma
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.covariance = 0.1 * np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
-            # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
-
-
-@registry.register
-class PCEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.archive_fitness += [value]
-        if len(self.archive_fitness) >= 5 * self.llambda:
-            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4 * self.llambda, 5 * self.llambda)]
-            mean1 = sum(first_fifth) / float(self.llambda)
-            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
-            mean2 = sum(last_fifth) / float(self.llambda)
-            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
-            z = (mean1 - mean2) / (np.sqrt(std1 ** 2 + std2 ** 2))
-            if z < 2.0:
-                self.mu *= 2
-            else:
-                self.mu = int(self.mu * 0.84)
-                if self.mu < self.dimension:
-                    self.mu = self.dimension
-            self.llambda = 4 * self.mu
-            if self.num_workers > 1:
-                self.llambda = max(self.llambda, self.num_workers)
-                self.mu = self.llambda // 4
-            self.archive_fitness = []
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.covariance = np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
-            # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
-
-
-@registry.register
-class MPCEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.archive_fitness += [value]
-        if len(self.archive_fitness) >= 5 * self.llambda:
-            first_fifth = [self.archive_fitness[i] for i in range(self.llambda)]
-            last_fifth = [self.archive_fitness[i] for i in range(4 * self.llambda, 5 * self.llambda)]
-            mean1 = sum(first_fifth) / float(self.llambda)
-            std1 = np.std(first_fifth) / np.sqrt(self.llambda - 1)
-            mean2 = sum(last_fifth) / float(self.llambda)
-            std2 = np.std(last_fifth) / np.sqrt(self.llambda - 1)
-            z = (mean1 - mean2) / (np.sqrt(std1 ** 2 + std2 ** 2))
-            if z < 2.0:
-                self.mu *= 2
-            else:
-                self.mu = int(self.mu * 0.84)
-                if self.mu < self.dimension:
-                    self.mu = self.dimension
-            self.llambda = 4 * self.mu
-            if self.num_workers > 1:
-                self.llambda = max(self.llambda, self.num_workers)
-                self.mu = self.llambda // 4
-            self.archive_fitness = []
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.covariance *= 0.9
-            self.covariance += 0.1 * np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
-            # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
-
-
-@registry.register
-class MEDA(EDA):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self.evaluated_population += [data]
-        self.evaluated_population_fitness += [value]
-        self.evaluated_population_sigma += [candidate._meta["sigma"]]
-        if len(self.evaluated_population) >= self.llambda:
-            # Sorting the population.
-            sorted_pop_with_sigma_and_fitness = [
-                (i, s, f)
-                for f, i, s in sorted(zip(self.evaluated_population_fitness, self.evaluated_population, self.evaluated_population_sigma), key=lambda t: t[0])
-            ]
-            self.evaluated_population = [p[0] for p in sorted_pop_with_sigma_and_fitness]
-            self.covariance *= 0.9
-            self.covariance += 0.1 * np.cov(np.array(self.evaluated_population).T)
-            self.evaluated_population_sigma = [p[1] for p in sorted_pop_with_sigma_and_fitness]
-            self.evaluated_population_fitness = [p[2] for p in sorted_pop_with_sigma_and_fitness]
-            # Computing the new parent.
-            arrays = [np.asarray(self.evaluated_population[i]) for i in range(self.mu)]
-            self.current_center = sum(arrays) / self.mu  # type: ignore
-            self.sigma = np.exp(sum([np.log(self.evaluated_population_sigma[i]) for i in range(self.mu)]) / self.mu)
-            self.evaluated_population = []
-            self.evaluated_population_sigma = []
-            self.evaluated_population_fitness = []
-
-
-@registry.register
-class TBPSA(base.Optimizer):
-    """Test-based population-size adaptation.
-
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.sigma = 1
-        self.mu = self.dimension
-        self.llambda = 4 * self.dimension
-        if num_workers is not None:
-            self.llambda = max(self.llambda, num_workers)
-        self.current_center: np.ndarray = np.zeros(self.dimension)
-        self._loss_record: List[float] = []
-        # population
-        self.population: List[p.Parameter] = []
-
-    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
-        return self.current_center
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
-        individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-        candidate = self.parametrization.spawn_child().set_standardized_data(individual)
-        candidate._meta["sigma"] = mutated_sigma
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["loss"] = value
+    def add_value(self, value: float) -> None:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
@@ -520,15 +294,134 @@ class TBPSA(base.Optimizer):
                 self.llambda = max(self.llambda, self.num_workers)
                 self.mu = self.llambda // 4
             self._loss_record = []
+
+
+# pylint: disable=too-many-instance-attributes
+@registry.register
+class EDA(base.Optimizer):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+
+    _POPSIZE_ADAPTATION = False
+    _COVARIANCE_MEMORY = False
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        self.covariance = np.identity(self.dimension)
+        dim = self.dimension
+        self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # Evaluated population
+        self.population: tp.List[p.Parameter] = []
+        # ugly hack to track generations in parameters
+        self._first_of_generation: p.Parameter = self.parametrization
+        self._first_of_generation._meta["outdated"] = True
+
+    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
+        return self.current_center
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
+        assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
+        data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
+        candidate = self._first_of_generation.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        candidate._meta["sigma"] = mutated_sigma
+        if self._first_of_generation._meta.get("outdated", False):
+            self._first_of_generation = candidate
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        candidate._meta["loss"] = value
         self.population.append(candidate)
-        if len(self.population) >= self.llambda:
+        if self._POPSIZE_ADAPTATION:
+            self.popsize.add_value(value)
+        if len(self.population) >= self.popsize.llambda:
+            self.population = sorted(self.population, key=lambda c: c._meta["loss"])
+            population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.population]
+            self.covariance *= 0.9 if self._COVARIANCE_MEMORY else 0
+            self.covariance += 0.1 * np.cov(np.array(population_data).T)
+            # Computing the new parent.
+            mu = self.popsize.mu
+            arrays = [d for d in population_data[:mu]]
+            self.current_center = sum(arrays) / mu  # type: ignore
+            self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.population[:mu]]) / mu)
+            self.population = []
+            self._first_of_generation._meta["outdated"] = True
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
+@registry.register
+class PCEDA(EDA):
+    _POPSIZE_ADAPTATION = True
+    _COVARIANCE_MEMORY = False
+
+
+@registry.register
+class MPCEDA(EDA):
+    _POPSIZE_ADAPTATION = True
+    _COVARIANCE_MEMORY = True
+
+
+@registry.register
+class MEDA(EDA):
+    _POPSIZE_ADAPTATION = False
+    _COVARIANCE_MEMORY = True
+
+
+@registry.register
+class TBPSA(base.Optimizer):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        dim = self.dimension
+        self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # ugly hack to track generations in parameters
+        self._first_of_generation: p.Parameter = self.parametrization
+        self._first_of_generation._meta["outdated"] = True
+        # population
+        self.population: List[p.Parameter] = []
+
+    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
+        return self.current_center
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
+        individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
+        candidate = self._first_of_generation.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        candidate._meta["sigma"] = mutated_sigma
+        if self._first_of_generation._meta.get("outdated", False):
+            self._first_of_generation = candidate
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        candidate._meta["loss"] = value
+        self.popsize.add_value(value)
+        self.population.append(candidate)
+        if len(self.population) >= self.popsize.llambda:
             # Sorting the population.
             self.population.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
+            self.population = self.population[: self.popsize.mu]
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.population[: self.mu]) / self.mu
-            self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.population[: self.mu]])) / self.mu)
+                                      for c in self.population) / self.popsize.mu
+            self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.population])) / self.popsize.mu)
             self.population = []
+            self._first_of_generation._meta["outdated"] = True
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
@@ -577,8 +470,8 @@ class PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    _TRANSFORM = transforms.ArctanBound(0, 1)
-    _EPS = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders
+    _TRANSFORM: transforms.Transform = transforms.ArctanBound(0, 1)
+    _EPS: tp.Optional[float] = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders, no clipping if None
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -605,7 +498,8 @@ class PSO(base.Optimizer):
             else:
                 candidate = param.sample()
             self.population[candidate.uid] = candidate
-            candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
+            dim = self.parametrization.dimension
+            candidate.heritage["speed"] = self._rng.normal(size=dim) if self._EPS is None else self._rng.uniform(-1, 1, dim)
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
@@ -628,7 +522,10 @@ class PSO(base.Optimizer):
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
-        data = self._TRANSFORM.backward(np.clip(speed + x, self._EPS, 1 - self._EPS))
+        data = speed + x
+        if self._EPS is not None:
+            data = np.clip(data, self._EPS, 1 - self._EPS)
+        data = self._TRANSFORM.backward(data)
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
         new_part.heritage["speed"] = speed
         return new_part
@@ -668,6 +565,16 @@ class PSO(base.Optimizer):
         self._uid_queue.tell(candidate.uid)
         if value < self._best._meta.get("loss", float("inf")):
             self._best = candidate
+
+
+@registry.register
+class RealSpacePSO(PSO):
+    """Experimental
+    Version of PSO acting directly in R instead of a boxed domain.
+    """
+
+    _TRANSFORM = transforms.Affine(1, 0)  # identity
+    _EPS = None
 
 
 @registry.register
@@ -768,7 +675,16 @@ class SplitOptimizer(base.Optimizer):
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[Any]] = None, multivariate_optimizer: base.OptimizerFamily = CMA, monovariate_optimizer: base.OptimizerFamily = RandomSearch) -> None:
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            num_optims: Optional[int] = None,
+            num_vars: Optional[List[Any]] = None,
+            multivariate_optimizer: base.OptimizerFamily = CMA,
+            monovariate_optimizer: base.OptimizerFamily = RandomSearch
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars:
             if num_optims:
@@ -833,7 +749,14 @@ class SplitOptimizer3(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 3 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 3, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 3,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -842,7 +765,14 @@ class SplitOptimizer5(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 5 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 5, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 5,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -851,7 +781,14 @@ class SplitOptimizer9(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 9 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 9, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 9,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -860,7 +797,14 @@ class SplitOptimizer13(SplitOptimizer):
     """Same as SplitOptimizer, but with default at 13 optimizers.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, num_optims: int = 13, num_vars: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        num_optims: int = 13,
+        num_vars: Optional[List[Any]] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
 
 
@@ -1465,7 +1409,13 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        arity: Optional[int] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
             arity = len(parametrization.possibilities) if hasattr(parametrization, "possibilities") else 2  # type: ignore
@@ -1580,57 +1530,28 @@ class EMNA_TBPSA(TBPSA):
     """Test-based population-size adaptation with EMNA.
     """
 
-    # pylint: disable=too-many-instance-attributes
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.sigma = 1
-        self.mu = self.dimension
-        self.llambda = 4 * self.dimension
-        if num_workers is not None:
-            self.llambda = max(self.llambda, num_workers)
-        self.current_center: np.ndarray = np.zeros(self.dimension)
-        self._loss_record: List[float] = []
-        # population
-        self.population: List[p.Parameter] = []
-
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x  # Naive version for now
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
-        self._loss_record += [value]
-        if len(self._loss_record) >= 5 * self.llambda:
-            first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-self.llambda:]
-            means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
-            stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
-            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
-            if z < 2.0:
-                self.mu *= 2
-            else:
-                self.mu = int(self.mu * 0.84)
-                if self.mu < self.dimension:
-                    self.mu = self.dimension
-            self.llambda = 4 * self.mu
-            if self.num_workers > 1:
-                self.llambda = max(self.llambda, self.num_workers)
-                self.mu = self.llambda // 4
-            self._loss_record = []
+        self.popsize.add_value(value)
         self.population.append(candidate)
-        if len(self.population) >= self.llambda:
+        if len(self.population) >= self.popsize.llambda:
             # Sorting the population.
             self.population.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
+            mu = self.popsize.mu
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.population[: self.mu]) / self.mu
-            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.population[: self.mu]]
+                                      for c in self.population[: mu]) / mu
+            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.population[: mu]]
             # EMNA update
-            self.sigma = np.sqrt(sum(t1) / (self.mu))
-            imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+            self.sigma = np.sqrt(sum(t1) / (mu))
+            imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
             if self.num_workers / self.dimension > 16:
                 self.sigma /= imp
             self.population = []
+            self._first_of_generation._meta["outdated"] = True
 
 
 @registry.register

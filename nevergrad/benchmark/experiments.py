@@ -743,13 +743,13 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
 @registry.register
 def photonics(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
-    popsizes = [10, 40, 100]
+    popsizes = [40, 100]
     es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
           for recomb in [0.1, 1] for pop in popsizes]
     es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
-                                         offsprings={10: 20, 40: 60, 100: 150}[pop])
+                                         offsprings={40: 60, 100: 150}[pop])
            for only in [True, False] for recomb in [0.1, 1] for pop in popsizes]
-    algos = ["TwoPointsDE", "DE", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
+    algos = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
     for method in ["clipping", "tanh", "arctan"]:
         # , "chirped"]]:  # , "morpho"]]:
         for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg"]]:
