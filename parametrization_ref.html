@@ -573,7 +573,7 @@ by the same reference in the exact same state (no mutation)</p></li>
 
 <dl class="method">
 <dt id="nevergrad.p.Parameter.get_value_hash">
-<code class="sig-name descname">get_value_hash</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Hashable<a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_value_hash</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; collections.abc.Hashable<a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hashable object representing the current value of the instance</p>
 </dd></dl>
 
@@ -627,7 +627,7 @@ other instances.</p>
 
 <dl class="method">
 <dt id="nevergrad.p.Parameter.register_cheap_constraint">
-<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param">func: Callable[[Any], bool]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param">func: Callable[Any, bool]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a new constraint on the parameter values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

@@ -206,19 +206,19 @@ where it is easier to define operations.</p>
 <span class="n">value</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Scalar</span><span class="p">()</span>
 
 <span class="n">instru</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Instrumentation</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="s2">&quot;blublu&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">instru</span><span class="o">.</span><span class="n">dimension</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">instru</span><span class="o">.</span><span class="n">dimension</span><span class="p">)</span>
 <span class="c1"># &gt;&gt;&gt; 5</span>
 </pre></div>
 </div>
 <p>You can then directly perform optimization on a function given its parametrization:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
 <span class="k">def</span> <span class="nf">myfunction</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
-    <span class="k">print</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">value</span><span class="o">**</span><span class="mi">2</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instru</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">myfunction</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 <span class="c1"># &gt;&gt;&gt; ((&#39;b&#39;, &#39;e&#39;, &#39;blublu&#39;), {&#39;value&#39;: -0.00014738768964717153})</span>
 </pre></div>
 </div>
@@ -255,7 +255,7 @@ where it is easier to define operations.</p>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">nevergrad</span> <span class="kn">as</span> <span class="nn">ng</span>
+<span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 <span class="kn">from</span> <span class="nn">nevergrad.parametrization</span> <span class="kn">import</span> <span class="n">FolderFunction</span>
 
 <span class="c1"># nevergrad/parametrization/examples contains a script</span>
@@ -263,10 +263,10 @@ where it is easier to define operations.</p>
 <span class="n">python</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">executable</span>
 <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="n">python</span><span class="p">,</span> <span class="s2">&quot;examples/script.py&quot;</span><span class="p">]</span>  <span class="c1"># command to run from right outside the provided folder</span>
 <span class="c1"># create a function from the folder</span>
-<span class="n">func</span> <span class="o">=</span> <span class="n">FolderFunction</span><span class="p">(</span><span class="n">example_folder</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">clean_copy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">func</span> <span class="o">=</span> <span class="n">FolderFunction</span><span class="p">(</span><span class="n">example_folder</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">clean_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># print the number of variables of the function:</span>
-<span class="k">print</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">placeholders</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">placeholders</span><span class="p">)</span>
 <span class="c1"># prints: [Placeholder(&#39;value1&#39;, &#39;this is a comment&#39;), Placeholder(&#39;value2&#39;, None), Placeholder(&#39;string&#39;, None)]</span>
 <span class="c1"># and run it (the script prints 12 at the end)</span>
 <span class="k">assert</span> <span class="n">func</span><span class="p">(</span><span class="n">value1</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">value2</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="s2">&quot;blublu&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mf">12.0</span>

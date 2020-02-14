@@ -233,7 +233,7 @@ on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</
 
 <dl class="method">
 <dt id="nevergrad.optimizers.base.Optimizer.minimize">
-<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param">objective_function: Callable[[...], float], executor: Optional[nevergrad.common.typetools.ExecutorLike] = None, batch_mode: bool = False, verbosity: int = 0</em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param">objective_function: Callable[..., float], executor: Optional[nevergrad.common.typetools.ExecutorLike] = None, batch_mode: bool = False, verbosity: int = 0</em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimization (minimization) procedure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -329,7 +329,7 @@ on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</
 
 <dl class="method">
 <dt id="nevergrad.optimizers.base.Optimizer.register_callback">
-<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param">name: str, callback: Union[Callable[[Optimizer, p.Parameter, float], None], Callable[[Optimizer], None]]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param">name: str, callback: Union[Callable[[Optimizer, p.Parameter, float], None], Callable[Optimizer, None]]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a callback method called either when <cite>tell</cite> or <cite>ask</cite> are called, with the same
 arguments (including the optimizer / self). This can be useful for custom logging.</p>
 <dl class="field-list simple">
@@ -464,7 +464,7 @@ unique id of type list_name#i0_i1_…</p>
 </dl>
 <p class="rubric">Example</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">exp</span> <span class="o">=</span> <span class="n">logs</span><span class="o">.</span><span class="n">to_hiplot_experiment</span><span class="p">()</span>
-<span class="n">exp</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">force_full_width</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">exp</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">force_full_width</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition note">
