@@ -250,8 +250,8 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
     assert optimso.no_parallelization
     #
-    optimso = optlib.ParametrizedCMA(diagonal=True)
-    np.testing.assert_equal(repr(optimso), "ParametrizedCMA(diagonal=True)")
+    optimcma = optlib.ParametrizedCMA(diagonal=True)
+    np.testing.assert_equal(repr(optimcma), "ParametrizedCMA(diagonal=True)")
 
 
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
