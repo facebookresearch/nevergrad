@@ -113,7 +113,7 @@ class MultiobjectiveFunction:
         for u in range(30):
             possibilities += [random.sample(self._points, size)]
             if subset == "hypervolume":
-                scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])
+                scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])]
             else:
                 score: float = 0.
                 for v, vloss in self._points:
