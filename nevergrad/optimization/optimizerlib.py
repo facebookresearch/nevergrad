@@ -1091,30 +1091,61 @@ class _FakeFunction:
 
 class _BO(base.Optimizer):
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        initialization: Optional[str] = None,
+        init_budget: Optional[int] = None,
+        middle_point: bool = False,
+        utility_kind: str = "ucb",  # bayes_opt default
+        utility_kappa: float = 2.576,
+        utility_xi: float = 0.0,
+        gp_parameters: Optional[Dict[str, Any]] = None,
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedBO()
         self._transform = transforms.ArctanBound(0, 1)
         self._bo: Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction()
+        # configuration
+        assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f"Unknown init {initialization}"
+        self.initialization = initialization
+        self.init_budget = init_budget
+        self.middle_point = middle_point
+        self.utility_kind = utility_kind
+        self.utility_kappa = utility_kappa
+        self.utility_xi = utility_xi
+        self.gp_parameters = {} if gp_parameters is None else gp_parameters
+        if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
+            noisy = not parametrization.descriptors.deterministic
+            cont = parametrization.descriptors.continuous
+            if noisy or not cont:
+                warnings.warn(
+                    "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
+                    "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
+                    "Find more information on BayesianOptimization's github.\n"
+                    "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
+                    InefficientSettingsWarning,
+                )
 
     @property
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
-            params = self._parameters
             bounds = {f"x{i}": (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            if self._parameters.gp_parameters is not None:
-                self._bo.set_gp_params(**self._parameters.gp_parameters)
+            if self.gp_parameters is not None:
+                self._bo.set_gp_params(**self.gp_parameters)
             # init
-            init = params.initialization
-            if params.middle_point:
+            init = self.initialization
+            if self.middle_point:
                 self._bo.probe([0.5] * self.dimension, lazy=True)
             elif init is None:
                 self._bo._queue.add(self._bo._space.random_sample())
             if init is not None:
-                init_budget = int(np.sqrt(self.budget) if params.init_budget is None else params.init_budget)
-                init_budget -= params.middle_point
+                init_budget = int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget)
+                init_budget -= self.middle_point
                 if init_budget > 0:
                     sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
                         init
@@ -1124,8 +1155,7 @@ class _BO(base.Optimizer):
         return self._bo
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        params = self._parameters
-        util = UtilityFunction(kind=params.utility_kind, kappa=params.utility_kappa, xi=params.utility_xi)
+        util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
         try:
             x_probe = next(self.bo._queue)
         except StopIteration:
@@ -1153,7 +1183,7 @@ class _BO(base.Optimizer):
         return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
 
 
-class ParametrizedBO(base.ParametrizedFamily):
+class ParametrizedBO(base.ConfiguredOptimizer):
     """Bayesian optimization
 
     Parameters
@@ -1175,8 +1205,8 @@ class ParametrizedBO(base.ParametrizedFamily):
     """
 
     no_parallelization = True
-    _optimizer_class = _BO
 
+    # pylint: disable=unused-argument
     def __init__(
         self,
         *,
@@ -1188,30 +1218,7 @@ class ParametrizedBO(base.ParametrizedFamily):
         utility_xi: float = 0.0,
         gp_parameters: Optional[Dict[str, Any]] = None,
     ) -> None:
-        assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f"Unknown init {initialization}"
-        self.initialization = initialization
-        self.init_budget = init_budget
-        self.middle_point = middle_point
-        self.utility_kind = utility_kind
-        self.utility_kappa = utility_kappa
-        self.utility_xi = utility_xi
-        self.gp_parameters = gp_parameters
-        super().__init__()
-
-    def __call__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
-        gp_params = {} if self.gp_parameters is None else self.gp_parameters
-        if isinstance(parametrization, p.Parameter) and gp_params.get("alpha", 0) == 0:
-            noisy = not parametrization.descriptors.deterministic
-            cont = parametrization.descriptors.continuous
-            if noisy or not cont:
-                warnings.warn(
-                    "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
-                    "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
-                    "Find more information on BayesianOptimization's github.\n"
-                    "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                    InefficientSettingsWarning,
-                )
-        return super().__call__(parametrization, budget, num_workers)
+        super().__init__(_BO, locals())
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
