@@ -88,8 +88,6 @@ class EvolutionStrategy(base.ConfiguredOptimizer):
     The API is going to evolve
     """
 
-    _optimizer_class = _EvolutionStrategy
-
     # pylint: disable=unused-argument
     def __init__(
             self,

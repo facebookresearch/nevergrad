@@ -213,8 +213,6 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         and "large" max(num_workers, 30, 7 * dimension).
     """
 
-    _optimizer_class = _DE
-
     # pylint: disable=unused-argument
     def __init__(
         self,

@@ -87,8 +87,6 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
     recast = True
     no_parallelization = True
 
-    _optimizer_class = _ScipyMinimizeBase
-
     # pylint: disable=unused-argument
     def __init__(
         self,

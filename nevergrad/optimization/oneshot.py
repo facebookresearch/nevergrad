@@ -275,7 +275,6 @@ class SamplingSearch(base.ConfiguredOptimizer):
     """
 
     one_shot = True
-    _optimizer_class = _SamplingSearch
 
     # pylint: disable=unused-argument,too-many-arguments
     def __init__(

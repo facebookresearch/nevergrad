@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
 import pickle
 import warnings
 from pathlib import Path
@@ -488,31 +487,6 @@ def addCompare(optimizer: Optimizer) -> None:
             self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
 
     setattr(optimizer.__class__, 'compare', compare)
-
-
-class OptimizationPrinter:
-    """Printer to register as callback in an optimizer, for printing
-    best point regularly.
-
-    Parameters
-    ----------
-    num_eval: int
-        max number of evaluation before performing another print
-    num_sec: float
-        max number of seconds before performing another print
-    """
-
-    def __init__(self, num_eval: int = 0, num_sec: float = 60) -> None:
-        self._num_eval = max(0, int(num_eval))
-        self._last_time: Optional[float] = None
-        self._num_sec = num_sec
-
-    def __call__(self, optimizer: Optimizer, *args: Any, **kwargs: Any) -> None:
-        if self._last_time is None:
-            self._last_time = time.time()
-        if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_tell % self._num_eval):
-            x = optimizer.provide_recommendation()
-            print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
 
 class OptimizerFamily:
