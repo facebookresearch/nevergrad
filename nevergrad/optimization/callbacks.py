@@ -144,8 +144,8 @@ class ParametersLogger:
     def to_hiplot_experiment(self, max_list_elements: int = 24) -> tp.Any:  # no typing here since Hiplot is not a hard requirement
         """Converts the logs into an hiplot experiment for display.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         max_list_elements: int
             maximum number of elements of list/arrays to export (only the first elements are extracted)
 
