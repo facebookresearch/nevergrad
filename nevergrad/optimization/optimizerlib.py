@@ -685,22 +685,19 @@ class SplitOptimizer(base.Optimizer):
             parametrization: IntOrParameter,
             budget: Optional[int] = None,
             num_workers: int = 1,
-            num_optims: Optional[int] = None,
-            num_vars: Optional[List[Any]] = None,
+            num_optims: int = 2,
+            num_vars: Optional[List[int]] = None,
             multivariate_optimizer: ConfigOptim = CMA,
             monovariate_optimizer: ConfigOptim = RandomSearch
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if num_vars:
+        if num_vars is not None:
             if num_optims:
                 assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
             else:
                 num_optims = len(num_vars)
             assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
-        else:
-            if not num_optims:  # if no num_vars and no num_optims, just assume 2.
-                num_optims = 2
-            # num_vars not given: we will distribute variables equally.
+        # if num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
         self.num_optims = num_optims
@@ -748,69 +745,33 @@ class SplitOptimizer(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-# Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
-@registry.register
-class SplitOptimizer3(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 3 optimizers.
+class ConfSplitOptimizer(base.ConfiguredOptimizer):
+    """Configurable split optimizer
+
+    Parameters
+    ----------
+    num_optims: int
+        number of optimizers
+    num_vars: optional list of int
+        number of variable per optimizer.
     """
 
+    # pylint: disable=unused-argument
     def __init__(
         self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 3,
-        num_vars: Optional[List[Any]] = None
+        *,
+        num_optims: int = 2,
+        num_vars: tp.Optional[tp.List[int]] = None,
+        multivariate_optimizer: ConfigOptim = CMA,
+        monovariate_optimizer: ConfigOptim = RandomSearch
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+        super().__init__(SplitOptimizer, locals())
 
 
-@registry.register
-class SplitOptimizer5(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 5 optimizers.
-    """
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 5,
-        num_vars: Optional[List[Any]] = None
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
-
-
-@registry.register
-class SplitOptimizer9(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 9 optimizers.
-    """
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 9,
-        num_vars: Optional[List[Any]] = None
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
-
-
-@registry.register
-class SplitOptimizer13(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 13 optimizers.
-    """
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 13,
-        num_vars: Optional[List[Any]] = None
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+SplitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name("SplitOptimizer3", register=True)
+SplitOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name("SplitOptimizer5", register=True)
+SplitOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name("SplitOptimizer9", register=True)
+SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name("SplitOptimizer13", register=True)
 
 
 @registry.register

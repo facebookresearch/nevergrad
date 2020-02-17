@@ -619,8 +619,9 @@ class ConfiguredOptimizer:
         self._OptimizerClass = OptimizerClass
         config.pop("self", None)  # self comes from "locals()"
         config.pop("__class__", None)  # self comes from "locals()"
-        self.config = ngtools.different_from_defaults(instance=self, instance_dict=config, check_mismatches=True)
-        params = ", ".join(f"{x}={y!r}" for x, y in sorted(self.config.items()))
+        self.config = config  # keep all, to avoid weird behavior at mismatch between optim and configoptim
+        diff = ngtools.different_from_defaults(instance=self, instance_dict=config, check_mismatches=True)
+        params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
         self.name = f"{self.__class__.__name__}({params})"
 
     def __call__(
