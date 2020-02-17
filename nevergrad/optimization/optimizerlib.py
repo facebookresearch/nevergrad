@@ -1322,7 +1322,6 @@ class Chaining(base.ConfiguredOptimizer):
         the corresponding budgets for each optimizer but the last one
 
     """
-    _optimizer_class = _Chain
 
     # pylint: disable=unused-argument
     def __init__(
