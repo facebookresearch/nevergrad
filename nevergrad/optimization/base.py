@@ -532,7 +532,7 @@ class OptimizerFamily:
         return load(Optimizer, filepath)
 
 
-class ParametrizedFamily(OptimizerFamily):
+class P2arametrizedFamily(OptimizerFamily):
     """This is a special case of an optimizer family for which the family instance serves to*
     hold the parameters.
     This class assumes that the attributes are set to the init parameters.

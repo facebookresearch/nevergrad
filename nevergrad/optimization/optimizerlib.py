@@ -1266,30 +1266,34 @@ class PBIL(base.Optimizer):
 
 class _Chain(base.Optimizer):
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [LHSSearch, DE],
+        budgets: tp.Sequence[tp.Union[str, int]] = (10,),
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = Chaining([LHSSearch, DE], [10])  # needs a default
         # delayed initialization
-        self._optimizers_: List[base.Optimizer] = []
-
-    @property
-    def _optimizers(self) -> List[base.Optimizer]:
-        if not self._optimizers_:
-            self._optimizers_ = []
-            converter = {"num_workers": self.num_workers, "dimension": self.dimension,
-                         "half": self.budget // 2 if self.budget else self.num_workers,
-                         "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
-            budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
-            last_budget = None if self.budget is None else self.budget - sum(budgets)
-            for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
-                self._optimizers_.append(opt(self.parametrization, budget=budget, num_workers=self.num_workers))
-        return self._optimizers_
+        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
+        self.optimizers: tp.List[base.Optimizer] = []
+        converter = {"num_workers": self.num_workers, "dimension": self.dimension,
+                     "half": self.budget // 2 if self.budget else self.num_workers,
+                     "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
+        self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
+        last_budget = None if self.budget is None else self.budget - sum(self.budgets)
+        assert len(optimizers) == len(self.budgets) + 1
+        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
+        for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
+            self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Which algorithm are we playing with ?
         sum_budget = 0.0
-        opt = self._optimizers[0]
-        for opt in self._optimizers:
+        opt = self.optimizers[0]
+        for opt in self.optimizers:
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_ask < sum_budget:
                 break
@@ -1299,13 +1303,13 @@ class _Chain(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         # Let us inform all concerned algorithms
         sum_budget = 0.0
-        for opt in self._optimizers:
+        for opt in self.optimizers:
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_tell < sum_budget:
                 opt.tell(candidate, value)
 
 
-class Chaining(base.ParametrizedFamily):
+class Chaining(base.ConfiguredOptimizer):
     """
     A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
     Each algorithm is fed with what happened before it.
@@ -1320,14 +1324,13 @@ class Chaining(base.ParametrizedFamily):
     """
     _optimizer_class = _Chain
 
-    def __init__(self, optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]]],
-                 budgets: tp.Sequence[tp.Union[str, int]]) -> None:
-        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
-        self.budgets = tuple(budgets)
-        self.optimizers = tuple(optimizers)
-        assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
-        super().__init__()
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]]],
+        budgets: tp.Sequence[tp.Union[str, int]]
+    ) -> None:
+        super().__init__(_Chain, locals())
 
 
 chainCMASQP = Chaining([CMA, SQP], ["half"]).set_name("chainCMASQP", register=True)
