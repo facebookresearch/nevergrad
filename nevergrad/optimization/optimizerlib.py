@@ -670,9 +670,6 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
-ConfigOptim = tp.Union[base.OptimizerFamily, base.ConfiguredOptimizer]
-
-
 @registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
@@ -700,8 +697,8 @@ class SplitOptimizer(base.Optimizer):
             num_workers: int = 1,
             num_optims: tp.Optional[int] = None,
             num_vars: Optional[List[int]] = None,
-            multivariate_optimizer: ConfigOptim = CMA,
-            monovariate_optimizer: ConfigOptim = RandomSearch
+            multivariate_optimizer: base.ConfiguredOptimizer = CMA,
+            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:
@@ -778,8 +775,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         *,
         num_optims: int = 2,
         num_vars: tp.Optional[tp.List[int]] = None,
-        multivariate_optimizer: ConfigOptim = CMA,
-        monovariate_optimizer: ConfigOptim = RandomSearch
+        multivariate_optimizer: base.ConfiguredOptimizer = CMA,
+        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
@@ -1326,7 +1323,7 @@ class Chaining(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(
         self,
-        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]]],
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]],
         budgets: tp.Sequence[tp.Union[str, int]]
     ) -> None:
         super().__init__(_Chain, locals())

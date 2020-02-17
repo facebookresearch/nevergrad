@@ -47,7 +47,7 @@ class Fitness:
 
 
 def check_optimizer(
-        optimizer_cls: tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]],
+        optimizer_cls: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]],
         budget: int = 300,
         verify_value: bool = True
 ) -> None:
@@ -124,7 +124,7 @@ UNSEEDABLE: tp.List[str] = []
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
-    if isinstance(optimizer_cls, (base.OptimizerFamily, base.ConfiguredOptimizer)):
+    if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert hasattr(optlib, name)  # make sure registration matches name in optlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # the following context manager speeds up BO tests
