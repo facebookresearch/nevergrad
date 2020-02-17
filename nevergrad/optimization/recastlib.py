@@ -6,6 +6,7 @@
 from typing import Optional, Callable, Dict
 import numpy as np
 from scipy import optimize as scipyoptimize
+from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 from . import recaster
@@ -13,15 +14,15 @@ from . import recaster
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
-        self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._parameters = ScipyOptimizer()
         self.multirun = 1  # work in progress
         self.initial_guess: Optional[base.ArrayLike] = None
 
 #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
@@ -29,7 +30,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(instrumentation=self.instrumentation, budget=self.budget, num_workers=self.num_workers)
+        subinstance = self.__class__(parametrization=self.parametrization, budget=self.budget, num_workers=self.num_workers)
         subinstance._parameters = self._parameters
         return subinstance._optimization_function
 

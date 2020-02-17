@@ -7,10 +7,8 @@ import pickle
 import typing as tp
 import pytest
 import numpy as np
-from .core import Constant
 from . import utils
 from . import parameter as par
-from . import helpers
 
 
 def test_array_basics() -> None:
@@ -172,18 +170,6 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,classes",
-    [(par.Array(shape=(2, 2)), [par.Array]),
-     (par.Tuple(12), [par.Tuple, Constant]),
-     (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
-     ]
-)
-def test_list_parameter_instances(param: par.Parameter, classes: tp.List[tp.Type[par.Parameter]]) -> None:
-    outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
-    assert outputs == classes
-
-
-@pytest.mark.parametrize(  # type: ignore
     "param,continuous,deterministic,ordered",
     [(par.Array(shape=(2, 2)), True, True, True),
      (par.Choice([True, False]), True, False, False),
@@ -233,9 +219,13 @@ def test_array_recombination() -> None:
     assert param2.value[0] == 2.5
 
 
+def _false(value: tp.Any) -> bool:  # pylint: disable=unused-argument
+    return False
+
+
 def test_endogeneous_constraint() -> None:
     param = par.Scalar(1.0, mutable_sigma=True)
-    param.sigma.register_cheap_constraint(lambda x: False)
+    param.sigma.register_cheap_constraint(_false)
     assert not param.satisfies_constraints()
 
 
@@ -269,7 +259,7 @@ def test_log() -> None:
     # automatic
     log = par.Log(a_min=0.001, a_max=0.1)
     assert log.value == 0.01
-    log.set_standardized_data(np.array([4.999]))
+    log.set_standardized_data([4.999])
     np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
 
 
@@ -300,3 +290,22 @@ def test_descriptors() -> None:
     d3 = d1 & d2
     assert d3.continuous is False
     assert d3.deterministic is True
+
+
+@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint"])  # type: ignore
+@pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
+@pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
+def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float) -> None:
+    mbound = 10000
+    param = par.Array(init=2 * np.ones((2, 3))).set_bounds([1, 1, 1], [mbound] * 3, method=method, full_range_sampling=True)
+    if method in ("arctan", "tanh") and exponent is not None:
+        with pytest.raises(RuntimeError):
+            param.set_mutation(exponent=exponent)
+        return
+    else:
+        param.set_mutation(exponent=exponent, sigma=sigma)
+        new_param = param.sample()
+        val = new_param.value
+        assert np.any(np.abs(val) > 10)
+        assert np.all(val <= mbound)
+        assert np.all(val >= 1)

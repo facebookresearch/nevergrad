@@ -19,53 +19,53 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
-import typing as tp
 import numpy as np
+from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.utils import Crossover
 from . import photonics
 from ..base import ExperimentFunction
-from ... import instrumentation as inst
 
 
-def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> inst.Instrumentation:
-    """Creates appropriate instrumentation for a Photonics problem
+def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
+    """Creates appropriate parametrization for a Photonics problem
 
     Parameters
     name: str
         problem name, among bragg, chirped and morpho
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
-    transform: str
+    bounding_method: str
         transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
 
     Returns
     -------
     Instrumentation
-        the instrumentation for the problem
+        the parametrization for the problem
     """
     assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
-    n = dimension // 4
-    arrays: tp.List[inst.var.Array] = []
     if name == "bragg":
-        # n multiple of 2, from 16 to 80
-        # domain (n=60): [2,3]^30 x [0,300]^30
-        arrays.extend([inst.var.Array(n).bounded(2, 3, transform=transform) for _ in range(2)])
-        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(2)])
+        shape = (2, dimension // 2)
+        bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
-        # n multiple of 2, from 10 to 80
-        # domain (n=60): [0,300]^60
-        arrays = [inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(4)]
+        shape = (1, dimension)
+        bounds = [(0, 300)]
     elif name == "morpho":
-        # n multiple of 4, from 16 to 60
-        # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform),
-                       inst.var.Array(n).bounded(0, 600, transform=transform),
-                       inst.var.Array(n).bounded(30, 600, transform=transform),
-                       inst.var.Array(n).bounded(0, 300, transform=transform)])
+        shape = (4, dimension // 4)
+        bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]
     else:
         raise NotImplementedError(f"Transform for {name} is not implemented")
-    instrumentation = inst.Instrumentation(*arrays)
-    assert instrumentation.dimension == dimension
-    return instrumentation
+    assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
+    b_array = np.array(bounds)
+    assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
+    init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
+    array = p.Array(init=init)
+    if bounding_method not in ("arctan", "tanh"):
+        # sigma must be adapted for clipping and constraint methods
+        array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))  # type: ignore
+    array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
+    array.set_recombination(Crossover(2, structured_dimensions=(0,))).set_name("")
+    assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
+    return array
 
 
 class Photonics(ExperimentFunction):
@@ -112,17 +112,16 @@ class Photonics(ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, transform: str = "tanh") -> None:
-        assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
+    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping") -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        super().__init__(self._compute, _make_instrumentation(name=name, dimension=dimension, transform=transform))
-        self.register_initialization(name=name, dimension=dimension, transform=transform)
-        self._descriptors.update(name=name)
+        super().__init__(self._compute, _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method))
+        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method)
+        self._descriptors.update(name=name, bounding_method=bounding_method)
 
-    def _compute(self, *x: np.ndarray) -> float:
-        x_cat = np.concatenate(x)
+    def _compute(self, x: np.ndarray) -> float:
+        x_cat = x.ravel()
         assert x_cat.size == self.dimension
         try:
             output = self._base_func(x_cat)

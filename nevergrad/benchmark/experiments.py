@@ -3,18 +3,21 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 from typing import Iterator, Optional, List, Union, Any
 import numpy as np
 import nevergrad as ng
-from ..functions import ExperimentFunction
-from ..functions import ArtificialFunction
-from ..functions import MultiobjectiveFunction
-from ..functions import mlda as _mlda
-from ..functions.arcoating import ARCoating
-from ..functions.powersystems import PowerSystem
-from ..functions.stsp import STSP
-from ..functions import rl
-from ..functions.games import game
+from nevergrad.functions import ExperimentFunction
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions import MultiobjectiveFunction
+from nevergrad.functions import mlda as _mlda
+from nevergrad.functions.photonics import Photonics
+from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.powersystems import PowerSystem
+from nevergrad.functions.stsp import STSP
+from nevergrad.functions import rl
+from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -56,7 +59,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 @registry.register
 def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
-    """Discrete test bed, including useless variables, 5 values or 2 values per character. 
+    """Discrete test bed, including useless variables, 5 values or 2 values per character.
     Poorly designed, should be reimplemented from scratch using a decent instrumentation."""
     seedg = create_seed_generator(seed)
     names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
@@ -171,7 +174,7 @@ def multimodal(seed: Optional[int] = None, para: bool = False) -> Iterator[Exper
               "MultiCMA", "TripleCMA", "MultiScaleCMA"]
     if not para:
         optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
-    #+ list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -191,7 +194,8 @@ def paramultimodal(seed: Optional[int] = None) -> Iterator[Experiment]:
     internal_generator = multimodal(seed, para=True)
     for xp in internal_generator:
         yield xp
-                    
+
+
 # pylint: disable=redefined-outer-name
 @registry.register
 def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False, noise: bool = False, hd: bool = False) -> Iterator[Experiment]:
@@ -203,7 +207,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
     if not parallel:
         optims += ["SQP", "Cobyla", "Powell", "chainCMASQP", "chainCMAPowell"]
-    #optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
+    # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
@@ -296,11 +300,10 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
-def _positive_sum(args_kwargs: Any) -> bool:
-    args, kwargs = args_kwargs
-    if kwargs or len(args) != 1 or not isinstance(args[0], np.ndarray):
-        raise ValueError(f"Unexpected inputs {args} and {kwargs}")
-    return float(np.sum(args[0])) > 0
+def _positive_sum(data: np.ndarray) -> bool:
+    if not isinstance(data, np.ndarray):
+        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+    return float(np.sum(data)) > 0
 
 
 @registry.register
@@ -718,3 +721,40 @@ def manyobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
             for budget in list(range(100, 5901, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def far_optimum_es(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    popsizes = [5, 40]
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
+          for recomb in [0, 1] for pop in popsizes]
+    es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
+                                         offsprings=10 if pop == 5 else 60)
+           for only in [True, False] for recomb in [0, 1] for pop in popsizes]
+    optimizers = ["CMA", "TwoPointsDE"] + es  # type: ignore
+    for func in FarOptimumFunction.itercases():
+        for optim in optimizers:
+            for budget in [100, 400, 1000, 4000, 10000]:
+                yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def photonics(seed: tp.Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    popsizes = [40, 100]
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
+          for recomb in [0.1, 1] for pop in popsizes]
+    es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
+                                         offsprings={40: 60, 100: 150}[pop])
+           for only in [True, False] for recomb in [0.1, 1] for pop in popsizes]
+    algos = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
+    for method in ["clipping", "tanh", "arctan"]:
+        # , "chirped"]]:  # , "morpho"]]:
+        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg"]]:
+            for budget in [1e2, 1e3, 1e4, 1e5, 1e6]:
+                for algo in algos:
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp

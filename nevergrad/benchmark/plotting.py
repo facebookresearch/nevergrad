@@ -168,7 +168,6 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                     yindices = sorted(set([c[1] for c in df.unique(fixed)]))
                 except TypeError:
                     yindices = list(set([c[1] for c in df.unique(fixed)]))
-                    
                 for _ in range(len(xindices)):
                     best_algo += [[]]
                 for i in range(len(xindices)):

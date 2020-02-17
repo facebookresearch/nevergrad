@@ -31,7 +31,7 @@ def _replace_relative_links(regex: Match[str]) -> str:
     link = regex.group("link")
     name = regex.group("name")
     if not link.startswith("http") and Path(link).exists():
-        githuburl = ("github.com/facebookresearch/nevergrad/blob/master" if not link.endswith(".gif") else
+        githuburl = ("github.com/facebookresearch/nevergrad/blob/master" if not link.endswith((".png", ".gif")) else
                      "raw.githubusercontent.com/facebookresearch/nevergrad/master")
         string = f"[{name}](https://{githuburl}/{link})"
     return string
@@ -50,8 +50,6 @@ version = match.group("version")
 
 
 # setup
-print(requirements["dev"])
-
 setup(
     name="nevergrad",
     version=version,
