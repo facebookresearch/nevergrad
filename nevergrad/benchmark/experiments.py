@@ -30,6 +30,30 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
+def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    # Continuous case
+    names = ["hm", "rastrigin"]  #, "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
+    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
+    names += ["cigar", "ellipsoid", "stepellipsoid"]  #"altcigar", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
+    # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl) for name in names
+        for rotation in [True, False]
+        for nl in [0., 100.]
+        for num_blocks in [1]
+        for d in ([2, 40, 100, 3000])
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [50, 500, 5000, 50000]:
+                    for nw in [1, 100]:
+                        xp = Experiment(function, optim, num_workers=nw,
+                                        budget=budget, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
 # Discrete functions on {0,1}^d.
 @registry.register
 def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
