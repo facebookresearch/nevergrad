@@ -685,19 +685,22 @@ class SplitOptimizer(base.Optimizer):
             parametrization: IntOrParameter,
             budget: Optional[int] = None,
             num_workers: int = 1,
-            num_optims: int = 2,
+            num_optims: tp.Optional[int] = None,
             num_vars: Optional[List[int]] = None,
             multivariate_optimizer: ConfigOptim = CMA,
             monovariate_optimizer: ConfigOptim = RandomSearch
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:
-            if num_optims:
+            if num_optims is not None:
                 assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
             else:
                 num_optims = len(num_vars)
             assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
-        # if num_vars not given: we will distribute variables equally.
+        else:
+            if num_optims is None:  # if no num_vars and no num_optims, just assume 2.
+                num_optims = 2
+            # if num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
         self.num_optims = num_optims
