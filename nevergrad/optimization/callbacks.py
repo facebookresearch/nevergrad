@@ -90,10 +90,10 @@ class ParametersLogger:
                 "#generation": candidate.generation,
                 "#parents_uids": [],
                 "#loss": value}
-        if hasattr(optimizer, "_parameters"):
-            configopt = optimizer._parameters  # type: ignore
-            if isinstance(configopt, base.ParametrizedFamily):
-                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
+        if hasattr(optimizer, "_configured_optimizer"):
+            configopt = optimizer._configured_optimizer  # type: ignore
+            if isinstance(configopt, base.ConfiguredOptimizer):
+                data.update({"#optimizer#" + x: y for x, y in configopt.config.items()})
         if isinstance(candidate._meta.get("sigma"), float):
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:

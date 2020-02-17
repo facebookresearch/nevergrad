@@ -618,6 +618,8 @@ class ConfiguredOptimizer:
             parametrization=parametrization, budget=budget, num_workers=num_workers, **self.config
         )
         run.name = self.name
+        # hacky but convenient to have around:
+        run._configured_optimizer = self  # type: ignore
         return run
 
     def __repr__(self) -> str:
