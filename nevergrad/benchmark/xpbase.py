@@ -117,7 +117,7 @@ class Experiment:
 
     # pylint: disable=too-many-arguments
     def __init__(self, function: fbase.ExperimentFunction,
-                 optimizer: Union[str, obase.OptimizerFamily], budget: int, num_workers: int = 1,
+                 optimizer: Union[str, obase.ConfiguredOptimizer, obase.OptimizerFamily], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "

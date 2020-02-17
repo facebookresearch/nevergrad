@@ -623,6 +623,8 @@ class ConfiguredOptimizer:
         diff = ngtools.different_from_defaults(instance=self, instance_dict=config, check_mismatches=True)
         params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
         self.name = f"{self.__class__.__name__}({params})"
+        # try instantiating for init checks
+        self(parametrization=4, budget=100)
 
     def __call__(
         self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
