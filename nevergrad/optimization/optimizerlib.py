@@ -199,13 +199,13 @@ class _CMA(base.Optimizer):
     # pylint: too-many-arguments
     def __init__(
             self,
-            instrumentation: IntOrParameter,
+            parametrization: IntOrParameter,
             budget: Optional[int] = None,
             num_workers: int = 1,
             scale: float = 1.0,
             diagonal: bool = False
     ) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
         self._diagonal = diagonal
         self._es: Optional[cma.CMAEvolutionStrategy] = None
@@ -247,8 +247,8 @@ class _CMA(base.Optimizer):
         return self.es.result.xbest  # type: ignore
 
 
-class ParametrizedCMA(base.ParametrizedFamily):
-    """TODO
+class ParametrizedCMA(base.ConfiguredOptimizer):
+    """CMA-ES optimizer, wrapping external implementation: https://github.com/CMA-ES/pycma
 
     Parameters
     ----------
@@ -258,16 +258,15 @@ class ParametrizedCMA(base.ParametrizedFamily):
         use the diagonal version of CMA (advised in big dimension)
     """
 
-    _optimizer_class = _CMA
-
+    # pylint: disable=unused-argument
     def __init__(self, *, scale: float = 1.0, diagonal: bool = False) -> None:
-        super().__init__()
+        super().__init__(_CMA, locals())
 
 
-CMA = ParametrizedCMA().with_name("CMA", register=True)
-DiagonalCMA = ParametrizedCMA(diagonal=True).with_name("DiagonalCMA", register=True)
-MilliCMA = ParametrizedCMA(scale=1e-3).with_name("MilliCMA", register=True)
-MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
+CMA = ParametrizedCMA().set_name("CMA", register=True)
+DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
+MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 
 
 class _PopulationSizeController:
@@ -658,6 +657,9 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
+ConfigOptim = tp.Union[base.OptimizerFamily, base.ConfiguredOptimizer]
+
+
 @registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
@@ -685,8 +687,8 @@ class SplitOptimizer(base.Optimizer):
             num_workers: int = 1,
             num_optims: Optional[int] = None,
             num_vars: Optional[List[Any]] = None,
-            multivariate_optimizer: base.OptimizerFamily = CMA,
-            monovariate_optimizer: base.OptimizerFamily = RandomSearch
+            multivariate_optimizer: ConfigOptim = CMA,
+            monovariate_optimizer: ConfigOptim = RandomSearch
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars:
@@ -1334,7 +1336,7 @@ class Chaining(base.ParametrizedFamily):
     """
     _optimizer_class = _Chain
 
-    def __init__(self, optimizers: tp.Sequence[tp.Union[base.OptimizerFamily, tp.Type[base.Optimizer]]],
+    def __init__(self, optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]]],
                  budgets: tp.Sequence[tp.Union[str, int]]) -> None:
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
         self.budgets = tuple(budgets)

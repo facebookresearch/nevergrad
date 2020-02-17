@@ -40,7 +40,7 @@ class Descriptors:
         return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(f"{x}={y}" for x, y in sorted(different_from_defaults(self, check_mismatches=True).items()))
+        diff = ",".join(f"{x}={y}" for x, y in sorted(different_from_defaults(instance=self, check_mismatches=True).items()))
         return f"{self.__class__.__name__}({diff})"
 
 

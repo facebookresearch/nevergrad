@@ -47,7 +47,7 @@ class Fitness:
 
 
 def check_optimizer(
-        optimizer_cls: tp.Union[base.OptimizerFamily, tp.Type[base.Optimizer]],
+        optimizer_cls: tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]],
         budget: int = 300,
         verify_value: bool = True
 ) -> None:
