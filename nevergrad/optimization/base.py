@@ -20,7 +20,7 @@ from ..common.decorators import Registry
 from . import utils
 
 
-registry = Registry[Union["OptimizerFamily", Type["Optimizer"]]]()
+registry = Registry[Union["OptimizerFamily", "ConfiguredOptimizer", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "p.Parameter", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
 Y = TypeVar("Y")
@@ -539,6 +539,9 @@ class OptimizerFamily:
         return self._repr
 
     def with_name(self, name: str, register: bool = False) -> "OptimizerFamily":
+        return self.set_name(name, register=register)
+
+    def set_name(self, name: str, register: bool = False) -> "OptimizerFamily":
         self._repr = name
         if register:
             registry.register_name(name, self)
@@ -565,7 +568,7 @@ class ParametrizedFamily(OptimizerFamily):
     _optimizer_class: Optional[Type[Optimizer]] = None
 
     def __init__(self) -> None:
-        different = ngtools.different_from_defaults(self, check_mismatches=True)
+        different = ngtools.different_from_defaults(instance=self, check_mismatches=True)
         super().__init__(**different)
 
     def config(self) -> tp.Dict[str, tp.Any]:
@@ -599,3 +602,58 @@ class ParametrizedFamily(OptimizerFamily):
         """
         assert self._optimizer_class is not None
         return load(self._optimizer_class, filepath)
+
+
+class ConfiguredOptimizer:
+    """This is a special case of an optimizer family for optimizers taking more than
+    3 init arguments
+    """
+
+    # optimizer qualifiers
+    recast = False  # algorithm which were not designed to work with the suggest/update pattern
+    one_shot = False  # algorithm designed to suggest all budget points at once
+    no_parallelization = False  # algorithm which is designed to run sequentially only
+    hashed = False
+
+    def __init__(self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any]) -> None:
+        self._OptimizerClass = OptimizerClass
+        config.pop("self", None)  # self comes from "locals()"
+        config.pop("__class__", None)  # self comes from "locals()"
+        self.config = config  # keep all, to avoid weird behavior at mismatch between optim and configoptim
+        diff = ngtools.different_from_defaults(instance=self, instance_dict=config, check_mismatches=True)
+        params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
+        self.name = f"{self.__class__.__name__}({params})"
+
+    def __call__(
+        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+    ) -> Optimizer:
+        """Creates an optimizer from the parametrization
+
+        Parameters
+        ----------
+        instrumentation: int or Instrumentation
+            either the dimension of the optimization space, or its instrumentation
+        budget: int/None
+            number of allowed evaluations
+        num_workers: int
+            number of evaluations which will be run in parallel at once
+        """
+        run = self._OptimizerClass(   # type: ignore
+            parametrization=parametrization, budget=budget, num_workers=num_workers, **self.config
+        )
+        run.name = self.name
+        return run
+
+    def __repr__(self) -> str:
+        return self.name
+
+    def set_name(self, name: str, register: bool = False) -> "ConfiguredOptimizer":
+        self.name = name
+        if register:
+            registry.register_name(name, self)
+        return self
+
+    def load(self, filepath: Union[str, Path]) -> "Optimizer":
+        """Loads a pickle and checks that it is an Optimizer.
+        """
+        return self._OptimizerClass.load(filepath)
