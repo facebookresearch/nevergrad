@@ -267,7 +267,12 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, *, scale: float = 1.0, diagonal: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        scale: float = 1.0,
+        diagonal: bool = False
+    ) -> None:
         super().__init__(_CMA, locals())
 
 
