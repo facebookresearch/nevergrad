@@ -11,7 +11,7 @@ Noisy optimization
 
 Created with command: 
 
-.. code-block:: 
+.. code-block:: bash
 
     python -m nevergrad.benchmark noise --seed=12 --repetitions=10 --plot
 
