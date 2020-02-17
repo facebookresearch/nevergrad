@@ -261,10 +261,7 @@ def test_tell_not_asked(name: str) -> None:
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         opt = optlib.registry[name](parametrization=param, budget=2, num_workers=2)
-    if name == "PSO":
-        opt.llambda = 2  # type: ignore
-    else:
-        opt._llambda = 2  # type: ignore
+    opt.llambda = 2  # type: ignore
     t_10 = opt.parametrization.spawn_child(new_value=10)
     t_100 = opt.parametrization.spawn_child(new_value=100)
     assert not opt.population  # type: ignore
