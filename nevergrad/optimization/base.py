@@ -644,6 +644,9 @@ class ConfiguredOptimizer:
         run.name = self.name
         return run
 
+    def __repr__(self) -> str:
+        return self.name
+
     def set_name(self, name: str, register: bool = False) -> "ConfiguredOptimizer":
         self.name = name
         if register:
