@@ -55,14 +55,13 @@ def test_base_example() -> None:
     recommendation = optimizer.provide_recommendation()
     # DOC_BASE_4
     import nevergrad as ng
-    import nevergrad.parametrization.parameter as p
     
     def onemax(*x):
         return len(x) - x.count(1)
     
     # Discrete, ordered
-    variables = list(p.TransitionChoice(list(range(7))) for _ in range(10))
-    instrum = p.Instrumentation(*variables)
+    variables = list(ng.p.TransitionChoice(list(range(7))) for _ in range(10))
+    instrum = ng.p.Instrumentation(*variables)
     optimizer = ng.optimizers.DiscreteOnePlusOne(parametrization=instrum, budget=100, num_workers=1)
     
     recommendation = optimizer.provide_recommendation()
@@ -73,6 +72,7 @@ def test_base_example() -> None:
     
     recommendation = optimizer.provide_recommendation()
     print(recommendation.value)
+    # >>> ((1, 1, 0, 1, 1, 4, 1, 1, 1, 1), {})
     # DOC_BASE_5
 
 

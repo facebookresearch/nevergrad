@@ -52,6 +52,15 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
                                         budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+    # Discrete, ordered
+    for nv in [10, 50, 200]:
+        for optim in optims:
+            for nw in [1, 10]:
+                for budget in [500, 5000]:
+                    for func in [TODO]
+                        variables = list(p.TransitionChoice(list(range(7))) for _ in range(nv))
+                        instrum = p.Instrumentation(*variables)
+                        yield Experiment(ExperimentFunction(lambda x: sum(x.^2), instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 # Discrete functions on {0,1}^d.
