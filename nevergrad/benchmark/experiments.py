@@ -21,6 +21,7 @@ from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
+from .optgroups import get_optimizers
 
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
@@ -52,8 +53,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     for func in functions:
         for optim in optims:
             for nw in [1, 10]:
-                for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
-                               1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
+                for budget in range(100, 3001, 100):
                     yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
@@ -78,8 +78,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
-                           1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
+            for budget in range(100, 3001, 100):
                 yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -287,10 +286,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Testing optimizers on ill-conditionned parallel optimization.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
-              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
-              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+    optims = get_optimizers("standard1")
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -311,10 +307,7 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     """Many optimizers on ill cond problems with constraints.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
-              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
-              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+    optims = get_optimizers("standard1")
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
