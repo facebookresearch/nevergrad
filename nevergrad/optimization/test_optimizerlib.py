@@ -22,6 +22,7 @@ from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
 from . import optimizerlib as optlib
+from . import experimentalvariants as xpvariants
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 
@@ -310,7 +311,7 @@ def test_optimization_doc_parametrization_example() -> None:
 
 
 def test_optimization_discrete_with_one_sample() -> None:
-    optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
+    optimizer = xpvariants.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
 
 
@@ -331,7 +332,7 @@ def test_bo_parametrization_and_parameters() -> None:
     # parametrization
     parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
-        optlib.QRBO(parametrization, budget=10)
+        xpvariants.QRBO(parametrization, budget=10)
     with pytest.warns(None) as record:
         opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
     assert not record, record.list  # no warning

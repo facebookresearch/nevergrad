@@ -29,7 +29,6 @@ from . import sequences
 from .differentialevolution import *  # noqa: F403
 from .es import *  # noqa: F403
 from .oneshot import *  # noqa: F403
-from .rescaledoneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 
@@ -163,9 +162,10 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
+DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
-DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").set_name(
     "OptimisticDiscreteOnePlusOne", register=True
 )
@@ -174,29 +174,6 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=("random", 1.0),
 )
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
     mutation="doublefastga").set_name("DoubleFastGADiscreteOnePlusOne", register=True)
-FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="fastga").set_name("FastGADiscreteOnePlusOne", register=True)
-DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="doublefastga").set_name(
-    "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="fastga").set_name(
-    "FastGAOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").set_name(
-    "FastGANoisyDiscreteOnePlusOne", register=True
-)
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="portfolio").set_name("PortfolioDiscreteOnePlusOne", register=True)
-PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="portfolio").set_name(
-    "PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="portfolio").set_name(
-    "PortfolioNoisyDiscreteOnePlusOne", register=True
-)
-CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
-RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="discrete", noise_handling="optimistic"
-).set_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
 RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
@@ -278,8 +255,6 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
-MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
-MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 
 
 class _PopulationSizeController:
@@ -601,7 +576,6 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
 
 
 RealSpacePSO = ConfiguredPSO().set_name("RealSpacePSO", register=True)
-WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name("WidePSO", register=True)  # non-standard init
 
 
 @registry.register
@@ -780,12 +754,6 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
     ) -> None:
         super().__init__(SplitOptimizer, locals())
-
-
-SplitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name("SplitOptimizer3", register=True)
-SplitOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name("SplitOptimizer5", register=True)
-SplitOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name("SplitOptimizer9", register=True)
-SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name("SplitOptimizer13", register=True)
 
 
 @registry.register
@@ -1056,8 +1024,8 @@ class MultiScaleCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
             CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-            MilliCMA(self.parametrization, budget=None, num_workers=num_workers),
-            MicroCMA(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(scale=1e-3)(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(scale=1e-6)(self.parametrization, budget=None, num_workers=num_workers),
         ]
         assert budget is not None
         self.budget_before_choosing = budget // 3
@@ -1220,10 +1188,6 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
-RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
-QRBO = ParametrizedBO(initialization="Hammersley").set_name("QRBO", register=True)
-MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).set_name("MidQRBO", register=True)
-LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
 
 
 @registry.register
@@ -1330,62 +1294,7 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
-chainCMASQP = Chaining([CMA, SQP], ["half"]).set_name("chainCMASQP", register=True)
-chainCMASQP.no_parallelization = True
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
-chainCMAPowell.no_parallelization = True
-
-chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).set_name("chainDEwithR", register=True)
-chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).set_name("chainDEwithRsqrt", register=True)
-chainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).set_name("chainDEwithRdim", register=True)
-chainDEwithR30 = Chaining([RandomSearch, DE], [30]).set_name("chainDEwithR30", register=True)
-chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).set_name("chainDEwithLHS", register=True)
-chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).set_name("chainDEwithLHSsqrt", register=True)
-chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).set_name("chainDEwithLHSdim", register=True)
-chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).set_name("chainDEwithLHS30", register=True)
-chainDEwithMetaRecentering = Chaining([MetaRecentering, DE], ["num_workers"]).set_name("chainDEwithMetaRecentering", register=True)
-chainDEwithMetaRecenteringsqrt = Chaining([MetaRecentering, DE], ["sqrt"]).set_name("chainDEwithMetaRecenteringsqrt", register=True)
-chainDEwithMetaRecenteringdim = Chaining([MetaRecentering, DE], ["dimension"]).set_name("chainDEwithMetaRecenteringdim", register=True)
-chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).set_name("chainDEwithMetaRecentering30", register=True)
-
-chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).set_name("chainBOwithR", register=True)
-chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).set_name("chainBOwithRsqrt", register=True)
-chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).set_name("chainBOwithRdim", register=True)
-chainBOwithR30 = Chaining([RandomSearch, BO], [30]).set_name("chainBOwithR30", register=True)
-chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).set_name("chainBOwithLHS30", register=True)
-chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).set_name("chainBOwithLHSsqrt", register=True)
-chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).set_name("chainBOwithLHSdim", register=True)
-chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).set_name("chainBOwithLHS", register=True)
-chainBOwithMetaRecentering30 = Chaining([MetaRecentering, BO], [30]).set_name("chainBOwithMetaRecentering30", register=True)
-chainBOwithMetaRecenteringsqrt = Chaining([MetaRecentering, BO], ["sqrt"]).set_name("chainBOwithMetaRecenteringsqrt", register=True)
-chainBOwithMetaRecenteringdim = Chaining([MetaRecentering, BO], ["dimension"]).set_name("chainBOwithMetaRecenteringdim", register=True)
-chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).set_name("chainBOwithMetaRecentering", register=True)
-
-chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).set_name("chainPSOwithR", register=True)
-chainPSOwithRsqrt = Chaining([RandomSearch, PSO], ["sqrt"]).set_name("chainPSOwithRsqrt", register=True)
-chainPSOwithRdim = Chaining([RandomSearch, PSO], ["dimension"]).set_name("chainPSOwithRdim", register=True)
-chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).set_name("chainPSOwithR30", register=True)
-chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).set_name("chainPSOwithLHS30", register=True)
-chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).set_name("chainPSOwithLHSsqrt", register=True)
-chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).set_name("chainPSOwithLHSdim", register=True)
-chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).set_name("chainPSOwithLHS", register=True)
-chainPSOwithMetaRecentering30 = Chaining([MetaRecentering, PSO], [30]).set_name("chainPSOwithMetaRecentering30", register=True)
-chainPSOwithMetaRecenteringsqrt = Chaining([MetaRecentering, PSO], ["sqrt"]).set_name("chainPSOwithMetaRecenteringsqrt", register=True)
-chainPSOwithMetaRecenteringdim = Chaining([MetaRecentering, PSO], ["dimension"]).set_name("chainPSOwithMetaRecenteringdim", register=True)
-chainPSOwithMetaRecentering = Chaining([MetaRecentering, PSO], ["num_workers"]).set_name("chainPSOwithMetaRecentering", register=True)
-
-chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).set_name("chainCMAwithR", register=True)
-chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).set_name("chainCMAwithRsqrt", register=True)
-chainCMAwithRdim = Chaining([RandomSearch, CMA], ["dimension"]).set_name("chainCMAwithRdim", register=True)
-chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).set_name("chainCMAwithR30", register=True)
-chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).set_name("chainCMAwithLHS30", register=True)
-chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).set_name("chainCMAwithLHSsqrt", register=True)
-chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).set_name("chainCMAwithLHSdim", register=True)
-chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).set_name("chainCMAwithLHS", register=True)
-chainCMAwithMetaRecentering30 = Chaining([MetaRecentering, CMA], [30]).set_name("chainCMAwithMetaRecentering30", register=True)
-chainCMAwithMetaRecenteringsqrt = Chaining([MetaRecentering, CMA], ["sqrt"]).set_name("chainCMAwithMetaRecenteringsqrt", register=True)
-chainCMAwithMetaRecenteringdim = Chaining([MetaRecentering, CMA], ["dimension"]).set_name("chainCMAwithMetaRecenteringdim", register=True)
-chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).set_name("chainCMAwithMetaRecentering", register=True)
 
 
 @registry.register
