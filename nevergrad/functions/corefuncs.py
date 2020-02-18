@@ -312,17 +312,17 @@ def lunacek(x: np.ndarray) -> float:
 
 
 @registry.register_with_info(no_transform=True)
-def onemax(y: np.ndarray) -> float:
+def discrete_onemax(y: np.ndarray) -> float:
     return _onemax(list(y))
 
 
 @registry.register_with_info(no_transform=True)
-def jump(y: np.ndarray) -> float:
+def discrete_jump(y: np.ndarray) -> float:
     return _jump(list(y))
 
 
 @registry.register_with_info(no_transform=True)
-def leadingones(y: np.ndarray) -> float:
+def discrete_leadingones(y: np.ndarray) -> float:
     return _leadingones(list(y))
 
 

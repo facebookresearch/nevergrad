@@ -66,7 +66,7 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in optims:
             for nw in [1, 10]:
                 for budget in [500, 5000]:
-                    for func in [ng.functions.onemax, ng.functions.leadingones, ng.functions.jump]:
+                    for func in [ng.functions.discrete_onemax, ng.functions.discrete_leadingones, ng.functions.discrete_jump]:
                         for arity in [2, 7]:
                             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
                             instrum = ng.p.Instrumentation(*variables)
