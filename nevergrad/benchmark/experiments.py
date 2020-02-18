@@ -66,11 +66,11 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in optims:
             for nw in [1, 10]:
                 for budget in [500, 5000]:
-                    for func in [ng.functions.discrete_onemax, ng.functions.discrete_leadingones, ng.functions.discrete_jump]:
+                    for discrete_func in [ng.functions.discrete_onemax, ng.functions.discrete_leadingones, ng.functions.discrete_jump]:
                         for arity in [2, 7]:
                             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
                             instrum = ng.p.Instrumentation(*variables)
-                            yield Experiment(ExperimentFunction(func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
+                            yield Experiment(ExperimentFunction(discrete_func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
     mofuncs: List[PackedFunctions] = []
 
     # The multiobjective case.
