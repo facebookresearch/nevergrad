@@ -311,17 +311,14 @@ def lunacek(x: np.ndarray) -> float:
 # following functions using discretization should not be used with translation/rotation
 
 
-@registry.register_with_info(no_transform=True)
 def discrete_onemax(y: np.ndarray) -> float:
     return _onemax(list(y))
 
 
-@registry.register_with_info(no_transform=True)
 def discrete_jump(y: np.ndarray) -> float:
     return _jump(list(y))
 
 
-@registry.register_with_info(no_transform=True)
 def discrete_leadingones(y: np.ndarray) -> float:
     return _leadingones(list(y))
 
