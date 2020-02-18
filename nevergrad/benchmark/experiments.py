@@ -45,6 +45,7 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for num_blocks in [1]
         for d in ([2, 40, 100, 3000])
     ]
+    optims = ["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
     for optim in optims:
         for function in functions:
             for budget in [50, 500, 5000, 50000]:
@@ -60,7 +61,7 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
                 for budget in [500, 5000]:
                     for func in [lambda x: x.count(1)]:
                         variables = list(p.TransitionChoice(list(range(7))) for _ in range(nv))
-                        instrum = p.Instrumentation(*variables)
+                        instrum = ng.p.Instrumentation(*variables)
                         yield Experiment(ExperimentFunction(func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
