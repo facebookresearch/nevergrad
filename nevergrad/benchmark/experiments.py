@@ -7,6 +7,7 @@ import typing as tp
 from typing import Iterator, Optional, List, Union, Any
 import numpy as np
 import nevergrad as ng
+import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
@@ -33,19 +34,20 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 @registry.register
 def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
-    # Continuous case
+    ## Continuous case
+
     # First, a few functions with constraints.
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
     for func in functions:
         func.parametrization.register_cheap_constraint(_positive_sum)
+
     # Then, let us build a constraint-free case. We include the noisy case.
-    names = ["hm", "rastrigin"]  #, "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
-    names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
-    names += ["cigar", "ellipsoid", "stepellipsoid"]  #"altcigar", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
+    names = ["hm", "rastrigin", "sphere", "doublelinearslope", "stepdoublelinearslope", "cigar", "ellipsoid", "stepellipsoid"]
+
     # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
-    functions = [
+    functions += [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl) for name in names
         for rotation in [True, False]
         for nl in [0., 100.]
@@ -66,7 +68,7 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
         for optim in optims:
             for nw in [1, 10]:
                 for budget in [500, 5000]:
-                    for discrete_func in [ng.functions.discrete_onemax, ng.functions.discrete_leadingones, ng.functions.discrete_jump]:
+                    for discrete_func in [corefuncs.discrete_onemax, corefuncs.discrete_leadingones, corefuncs.discrete_jump]:
                         for arity in [2, 7]:
                             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
                             instrum = ng.p.Instrumentation(*variables)
