@@ -196,9 +196,18 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 class _CMA(base.Optimizer):
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    # pylint: too-many-arguments
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            scale: float = 1.0,
+            diagonal: bool = False
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedCMA()
+        self._scale = scale
+        self._diagonal = diagonal
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
         self.listx: tp.List[ArrayLike] = []
@@ -209,9 +218,8 @@ class _CMA(base.Optimizer):
     def es(self) -> cma.CMAEvolutionStrategy:
         if self._es is None:
             popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
-            diag = self._parameters.diagonal
-            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": diag, "verbose": 0}
-            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._parameters.scale, inopts=inopts)
+            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> ArrayLike:
@@ -239,8 +247,8 @@ class _CMA(base.Optimizer):
         return self.es.result.xbest  # type: ignore
 
 
-class ParametrizedCMA(base.ParametrizedFamily):
-    """TODO
+class ParametrizedCMA(base.ConfiguredOptimizer):
+    """CMA-ES optimizer, wrapping external implementation: https://github.com/CMA-ES/pycma
 
     Parameters
     ----------
@@ -250,18 +258,15 @@ class ParametrizedCMA(base.ParametrizedFamily):
         use the diagonal version of CMA (advised in big dimension)
     """
 
-    _optimizer_class = _CMA
-
+    # pylint: disable=unused-argument
     def __init__(self, *, scale: float = 1.0, diagonal: bool = False) -> None:
-        self.scale = scale
-        self.diagonal = diagonal
-        super().__init__()
+        super().__init__(_CMA, locals())
 
 
-CMA = ParametrizedCMA().with_name("CMA", register=True)
-DiagonalCMA = ParametrizedCMA(diagonal=True).with_name("DiagonalCMA", register=True)
-MilliCMA = ParametrizedCMA(scale=1e-3).with_name("MilliCMA", register=True)
-MicroCMA = ParametrizedCMA(scale=1e-6).with_name("MicroCMA", register=True)
+CMA = ParametrizedCMA().set_name("CMA", register=True)
+DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
+MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 
 
 class _PopulationSizeController:
@@ -652,6 +657,9 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
+ConfigOptim = tp.Union[base.OptimizerFamily, base.ConfiguredOptimizer]
+
+
 @registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
@@ -677,22 +685,22 @@ class SplitOptimizer(base.Optimizer):
             parametrization: IntOrParameter,
             budget: Optional[int] = None,
             num_workers: int = 1,
-            num_optims: Optional[int] = None,
-            num_vars: Optional[List[Any]] = None,
-            multivariate_optimizer: base.OptimizerFamily = CMA,
-            monovariate_optimizer: base.OptimizerFamily = RandomSearch
+            num_optims: tp.Optional[int] = None,
+            num_vars: Optional[List[int]] = None,
+            multivariate_optimizer: ConfigOptim = CMA,
+            monovariate_optimizer: ConfigOptim = RandomSearch
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if num_vars:
-            if num_optims:
+        if num_vars is not None:
+            if num_optims is not None:
                 assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
             else:
                 num_optims = len(num_vars)
             assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
         else:
-            if not num_optims:  # if no num_vars and no num_optims, just assume 2.
+            if num_optims is None:  # if no num_vars and no num_optims, just assume 2.
                 num_optims = 2
-            # num_vars not given: we will distribute variables equally.
+            # if num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
         self.num_optims = num_optims
@@ -740,69 +748,33 @@ class SplitOptimizer(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-# Olivier: I think Jeremy will kill for doing this that way, protect me when he is back:
-@registry.register
-class SplitOptimizer3(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 3 optimizers.
+class ConfSplitOptimizer(base.ConfiguredOptimizer):
+    """Configurable split optimizer
+
+    Parameters
+    ----------
+    num_optims: int
+        number of optimizers
+    num_vars: optional list of int
+        number of variable per optimizer.
     """
 
+    # pylint: disable=unused-argument
     def __init__(
         self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 3,
-        num_vars: Optional[List[Any]] = None
+        *,
+        num_optims: int = 2,
+        num_vars: tp.Optional[tp.List[int]] = None,
+        multivariate_optimizer: ConfigOptim = CMA,
+        monovariate_optimizer: ConfigOptim = RandomSearch
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+        super().__init__(SplitOptimizer, locals())
 
 
-@registry.register
-class SplitOptimizer5(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 5 optimizers.
-    """
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 5,
-        num_vars: Optional[List[Any]] = None
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
-
-
-@registry.register
-class SplitOptimizer9(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 9 optimizers.
-    """
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 9,
-        num_vars: Optional[List[Any]] = None
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
-
-
-@registry.register
-class SplitOptimizer13(SplitOptimizer):
-    """Same as SplitOptimizer, but with default at 13 optimizers.
-    """
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: Optional[int] = None,
-        num_workers: int = 1,
-        num_optims: int = 13,
-        num_vars: Optional[List[Any]] = None
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, num_optims=num_optims, num_vars=num_vars)
+SplitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name("SplitOptimizer3", register=True)
+SplitOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name("SplitOptimizer5", register=True)
+SplitOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name("SplitOptimizer9", register=True)
+SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name("SplitOptimizer13", register=True)
 
 
 @registry.register
@@ -1328,7 +1300,7 @@ class Chaining(base.ParametrizedFamily):
     """
     _optimizer_class = _Chain
 
-    def __init__(self, optimizers: tp.Sequence[tp.Union[base.OptimizerFamily, tp.Type[base.Optimizer]]],
+    def __init__(self, optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]]],
                  budgets: tp.Sequence[tp.Union[str, int]]) -> None:
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
         self.budgets = tuple(budgets)
