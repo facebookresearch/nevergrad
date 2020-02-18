@@ -1295,6 +1295,7 @@ class Chaining(base.ConfiguredOptimizer):
 
 
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
+chainCMAPowell.no_parallelization = True
 
 
 @registry.register

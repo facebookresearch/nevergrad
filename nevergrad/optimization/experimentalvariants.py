@@ -5,7 +5,7 @@
 
 from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
-from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, Powell  # type: ignore
+from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering  # type: ignore
 from .optimizerlib import (
     ParametrizedOnePlusOne,
     ParametrizedCMA,
@@ -41,9 +41,6 @@ MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
 MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 
 # OnePlusOne
-DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="doublefastga"
-).set_name("DoubleFastGADiscreteOnePlusOne", register=True)
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
     "FastGADiscreteOnePlusOne", register=True
 )
@@ -68,9 +65,6 @@ PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="discrete", noise_handling="optimistic"
 ).set_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
-RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="portfolio", noise_handling="optimistic"
-).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 # BO
 RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
@@ -86,9 +80,6 @@ WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name(
 )  # non-standard init
 
 # Recentering
-MetaRecentering = SamplingSearch(
-    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
-).set_name("MetaRecentering", register=True)
 MetaCauchyRecentering = SamplingSearch(
     cauchy=True, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaCauchyRecentering", register=True)
@@ -184,11 +175,6 @@ ORecentering0ScrHaltonSearch = SamplingSearch(
 # Chaining
 chainCMASQP = Chaining([CMA, SQP], ["half"]).set_name("chainCMASQP", register=True)
 chainCMASQP.no_parallelization = True
-chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name(
-    "chainCMAPowell", register=True
-)
-chainCMAPowell.no_parallelization = True
-
 chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).set_name(
     "chainDEwithR", register=True
 )
