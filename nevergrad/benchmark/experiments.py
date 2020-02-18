@@ -60,9 +60,10 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
             for nw in [1, 10]:
                 for budget in [500, 5000]:
                     for func in [lambda x: x.count(1)]:
-                        variables = list(ng.p.TransitionChoice(list(range(7))) for _ in range(nv))
-                        instrum = ng.p.Instrumentation(*variables)
-                        yield Experiment(ExperimentFunction(func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
+                        for arity in [2, 7]:
+                            variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
+                            instrum = ng.p.Instrumentation(*variables)
+                            yield Experiment(ExperimentFunction(func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 # Discrete functions on {0,1}^d.
