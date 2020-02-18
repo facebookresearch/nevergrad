@@ -312,6 +312,21 @@ def lunacek(x: np.ndarray) -> float:
 
 
 @registry.register_with_info(no_transform=True)
+def onemax(y: np.ndarray) --> float:
+    return _onemax(list(y))
+
+
+@registry.register_with_info(no_transform=True)
+def jump(y: np.ndarray) --> float:
+    return _jump(list(y))
+
+
+@registry.register_with_info(no_transform=True)
+def leadingones(y: np.ndarray) --> float:
+    return _leadingones(list(y))
+
+
+@registry.register_with_info(no_transform=True)
 def hardonemax(y: np.ndarray) -> float:
     """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
     return _onemax(discretization.threshold_discretization(y))
