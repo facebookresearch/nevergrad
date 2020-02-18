@@ -196,7 +196,6 @@ class _SamplingSearch(OneShotOptimizer):
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
                         }
-            # TODO fix
             internal_budget = (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
             self._sampler_instance = samplers[self._sampler](
                 self.dimension, internal_budget, scrambling=self.scrambled, random_state=self._rng)
