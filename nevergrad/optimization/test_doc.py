@@ -48,7 +48,7 @@ def test_base_example() -> None:
     import nevergrad as ng
     def square(x, y=12):
         return sum((x - .5)**2) + abs(y)
-    instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())  # We are working on R^2.
+    instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())  # We are working on R^2 x R.
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100, num_workers=1)
 
     for _ in range(optimizer.budget):
@@ -57,7 +57,8 @@ def test_base_example() -> None:
         optimizer.tell(x, loss)
 
     recommendation = optimizer.provide_recommendation()
-    print(recommendation.value)    # DOC_BASE_4
+    print(recommendation.value)    
+# DOC_BASE_4
 
 
 def test_print_all_optimizers() -> None:
