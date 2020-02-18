@@ -493,8 +493,21 @@ unique id of type list_name#i0_i1_…</p>
 <dl class="class">
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">ConfiguredOptimizer</code><span class="sig-paren">(</span><em class="sig-param">OptimizerClass: Type[nevergrad.optimization.base.Optimizer], config: Dict[str, Any], as_config: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is a special case of an optimizer family for optimizers taking more than
-3 init arguments</p>
+<dd><p>Creates optimizer-like instances with configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>OptimizerClass</strong> (<em>type</em>) – class of the optimizer to configure</p></li>
+<li><p><strong>config</strong> (<em>dict</em>) – dictionnary of all the configurations</p></li>
+<li><p><strong>as_config</strong> (<em>bool</em>) – whether to provide all config as kwargs to the optimizer instantiation (default, see ConfiguredCMA for an example),
+or through a config kwarg referencing self. (if True, see EvolutionStrategy for an example)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This provides a default repr which can be bypassed through set_name</p>
+</div>
 <dl class="method">
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer.__call__">
 <code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.Optimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.__call__" title="Permalink to this definition">¶</a></dt>
@@ -514,6 +527,12 @@ unique id of type list_name#i0_i1_…</p>
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer.load">
 <code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.Optimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a pickle and checks that it is an Optimizer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nevergrad.optimizers.base.ConfiguredOptimizer.set_name">
+<code class="sig-name descname">set_name</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">register: bool = False</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.ConfiguredOptimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.set_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a new representation for the instance</p>
 </dd></dl>
 
 </dd></dl>
