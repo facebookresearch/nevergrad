@@ -490,8 +490,21 @@ def addCompare(optimizer: Optimizer) -> None:
 
 
 class ConfiguredOptimizer:
-    """This is a special case of an optimizer family for optimizers taking more than
-    3 init arguments
+    """Creates optimizer-like instances with configuration.
+
+    Parameters
+    ----------
+    OptimizerClass: type
+        class of the optimizer to configure
+    config: dict
+        dictionnary of all the configurations
+    as_config: bool
+        whether to provide all config as kwargs to the optimizer instantiation (default, see ConfiguredCMA for an example),
+        or through a config kwarg referencing self. (if True, see EvolutionStrategy for an example)
+
+    Note
+    ----
+    This provides a default repr which can be bypassed through set_name
     """
 
     # optimizer qualifiers
@@ -542,6 +555,8 @@ class ConfiguredOptimizer:
         return self.name
 
     def set_name(self, name: str, register: bool = False) -> "ConfiguredOptimizer":
+        """Set a new representation for the instance
+        """
         self.name = name
         if register:
             registry.register_name(name, self)
