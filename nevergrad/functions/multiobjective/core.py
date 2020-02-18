@@ -96,7 +96,7 @@ class MultiobjectiveFunction:
         size:  int (optional)
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
-            method for selecting the subset ("random, "loss-covering", "domain-covering")
+            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
 
         Returns
         --------
@@ -112,16 +112,19 @@ class MultiobjectiveFunction:
         scores : List[float] = []
         for u in range(30):
             possibilities += [random.sample(self._points, size)]
-            score: float = 0.
-            for v, vloss in self._points:
-                best_score = float("inf")
-                for p, ploss in possibilities[-1]:
-                    if subset == "loss-covering":
-                        best_score = min(best_score, np.linalg.norm(ploss - vloss))
-                    elif subset == "domain-covering":
-                        best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
-                    else:
-                        raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
-                score += best_score ** 2
-            scores += [score]
+            if subset == "hypervolume":
+                scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])]
+            else:
+                score: float = 0.
+                for v, vloss in self._points:
+                    best_score = float("inf")
+                    for p, ploss in possibilities[-1]:
+                        if subset == "loss-covering":
+                            best_score = min(best_score, np.linalg.norm(ploss - vloss))
+                        elif subset == "domain-covering":
+                            best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
+                        else:
+                            raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
+                    score += best_score ** 2
+                scores += [score]
         return [p[0] for p in possibilities[scores.index(min(scores))]]
