@@ -324,7 +324,7 @@ chainCMAwithMetaRecentering = Chaining(
 ).set_name("chainCMAwithMetaRecentering", register=True)
 
 # SplitOptimizer
-plitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name(
+SplitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name(
     "SplitOptimizer3", register=True
 )
 SplitOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name(
