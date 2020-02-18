@@ -16,17 +16,25 @@ class _EvolutionStrategy(base.Optimizer):
     The behavior is going to evolve
     """
 
-    def __init__(self, parametrization: base.IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: base.IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        config: tp.Optional["EvolutionStrategy"] = None
+    ) -> None:
         if budget is not None and budget < 60:
             warnings.warn("ES algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = EvolutionStrategy()
         self._population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = UidQueue()
         self._waiting: tp.List[p.Parameter] = []
+        # configuration
+        self._config = EvolutionStrategy() if config is None else config
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        if self.num_ask < self._parameters.popsize:
+        if self.num_ask < self._config.popsize:
             param = self.parametrization.sample()
             assert param.uid == param.heritage["lineage"]  # this is an assumption used below
             self._uid_queue.asked.add(param.uid)
@@ -35,7 +43,7 @@ class _EvolutionStrategy(base.Optimizer):
         uid = self._uid_queue.ask()
         param = self._population[uid].spawn_child()
         param.mutate()
-        ratio = self._parameters.recombination_ratio
+        ratio = self._config.recombination_ratio
         if ratio and self._rng.rand() < ratio:
             selected = self._rng.choice(list(self._population))
             param.recombine(self._population[selected])
@@ -43,35 +51,34 @@ class _EvolutionStrategy(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["value"] = value
-        if self._parameters.offsprings is None:
+        if self._config.offsprings is None:
             uid = candidate.heritage["lineage"]
             self._uid_queue.tell(uid)
             parent_value = float('inf') if uid not in self._population else self._population[uid]._meta["value"]
             if value < parent_value:
                 self._population[uid] = candidate
         else:
-            if candidate.parents_uids[0] not in self._population and len(self._population) < self._parameters.popsize:
+            if candidate.parents_uids[0] not in self._population and len(self._population) < self._config.popsize:
                 self._population[candidate.uid] = candidate
                 self._uid_queue.tell(candidate.uid)
             else:
                 self._waiting.append(candidate)
-            if len(self._waiting) >= self._parameters.offsprings:
-                choices = self._waiting + ([] if self._parameters.only_offsprings else list(self._population.values()))
+            if len(self._waiting) >= self._config.offsprings:
+                choices = self._waiting + ([] if self._config.only_offsprings else list(self._population.values()))
                 choices.sort(key=lambda x: x._meta["value"])
-                self._population = {x.uid: x for x in choices[:self._parameters.popsize]}
+                self._population = {x.uid: x for x in choices[:self._config.popsize]}
                 self._uid_queue.clear()
                 self._waiting.clear()
                 for uid in self._population:
                     self._uid_queue.tell(uid)
 
 
-class EvolutionStrategy(base.ParametrizedFamily):
+class EvolutionStrategy(base.ConfiguredOptimizer):
     """Experimental evolution-strategy-like algorithm
     The API is going to evolve
     """
 
-    _optimizer_class = _EvolutionStrategy
-
+    # pylint: disable=unused-argument
     def __init__(
             self,
             *,
@@ -81,6 +88,7 @@ class EvolutionStrategy(base.ParametrizedFamily):
             only_offsprings: bool = False,
             # de_step: bool = False,
     ) -> None:
+        super().__init__(_EvolutionStrategy, locals(), as_config=True)
         assert offsprings is None or not only_offsprings or offsprings > popsize
         if only_offsprings:
             assert offsprings is not None, "only_offsprings only work if offsprings is not None (non-DE mode)"
@@ -89,13 +97,11 @@ class EvolutionStrategy(base.ParametrizedFamily):
         self.popsize = popsize
         self.offsprings = offsprings
         self.only_offsprings = only_offsprings
-        # self.de_step = de_step
-        super().__init__()
 
 
-RecES = EvolutionStrategy(recombination_ratio=1, only_offsprings=True, offsprings=60).with_name("RecES", register=True)
-RecMixES = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsprings=20).with_name("RecMixES", register=True)
-RecMutDE = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsprings=None).with_name("RecMutDE", register=True)
-ES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60).with_name("ES", register=True)
-MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=20).with_name("MixES", register=True)
-MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).with_name("MutDE", register=True)
+RecES = EvolutionStrategy(recombination_ratio=1, only_offsprings=True, offsprings=60).set_name("RecES", register=True)
+RecMixES = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsprings=20).set_name("RecMixES", register=True)
+RecMutDE = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsprings=None).set_name("RecMutDE", register=True)
+ES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60).set_name("ES", register=True)
+MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=20).set_name("MixES", register=True)
+MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).set_name("MutDE", register=True)

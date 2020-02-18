@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
 import pickle
 import warnings
 from pathlib import Path
@@ -20,7 +19,7 @@ from ..common.decorators import Registry
 from . import utils
 
 
-registry = Registry[Union["OptimizerFamily", "ConfiguredOptimizer", Type["Optimizer"]]]()
+registry = Registry[Union["ConfiguredOptimizer", Type["Optimizer"]]]()
 _OptimCallBack = Union[Callable[["Optimizer", "p.Parameter", float], None], Callable[["Optimizer"], None]]
 X = TypeVar("X", bound="Optimizer")
 Y = TypeVar("Y")
@@ -490,120 +489,6 @@ def addCompare(optimizer: Optimizer) -> None:
     setattr(optimizer.__class__, 'compare', compare)
 
 
-class OptimizationPrinter:
-    """Printer to register as callback in an optimizer, for printing
-    best point regularly.
-
-    Parameters
-    ----------
-    num_eval: int
-        max number of evaluation before performing another print
-    num_sec: float
-        max number of seconds before performing another print
-    """
-
-    def __init__(self, num_eval: int = 0, num_sec: float = 60) -> None:
-        self._num_eval = max(0, int(num_eval))
-        self._last_time: Optional[float] = None
-        self._num_sec = num_sec
-
-    def __call__(self, optimizer: Optimizer, *args: Any, **kwargs: Any) -> None:
-        if self._last_time is None:
-            self._last_time = time.time()
-        if (time.time() - self._last_time) > self._num_sec or (self._num_eval and not optimizer.num_tell % self._num_eval):
-            x = optimizer.provide_recommendation()
-            print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
-
-
-class OptimizerFamily:
-    """Factory/family of optimizers.
-    This class only provides a very general pattern for it and enable its instances for use in
-    benchmarks.
-    """
-
-    # this class will probably evolve in the near future
-    # the naming pattern is not yet very clear, better ideas are welcome
-
-    # optimizer qualifiers
-    recast = False  # algorithm which were not designed to work with the suggest/update pattern
-    one_shot = False  # algorithm designed to suggest all budget points at once
-    no_parallelization = False  # algorithm which is designed to run sequentially only
-    hashed = False
-
-    def __init__(self, **kwargs: Any) -> None:  # keyword only, to be as explicit as possible
-        self._kwargs = kwargs
-        params = ", ".join(f"{x}={y!r}" for x, y in sorted(kwargs.items()))
-        self._repr = f"{self.__class__.__name__}({params})"  # ugly hack
-
-    def __repr__(self) -> str:
-        return self._repr
-
-    def with_name(self, name: str, register: bool = False) -> "OptimizerFamily":
-        return self.set_name(name, register=register)
-
-    def set_name(self, name: str, register: bool = False) -> "OptimizerFamily":
-        self._repr = name
-        if register:
-            registry.register_name(name, self)
-        return self
-
-    def __call__(
-        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
-    ) -> Optimizer:
-        raise NotImplementedError
-
-    def load(self, filepath: Union[str, Path]) -> "Optimizer":
-        """Loads a pickle and checks that it is an Optimizer.
-        """
-        return load(Optimizer, filepath)
-
-
-class ParametrizedFamily(OptimizerFamily):
-    """This is a special case of an optimizer family for which the family instance serves to*
-    hold the parameters.
-    This class assumes that the attributes are set to the init parameters.
-    See oneshot.py for examples
-    """
-
-    _optimizer_class: Optional[Type[Optimizer]] = None
-
-    def __init__(self) -> None:
-        different = ngtools.different_from_defaults(instance=self, check_mismatches=True)
-        super().__init__(**different)
-
-    def config(self) -> tp.Dict[str, tp.Any]:
-        return {x: y for x, y in self.__dict__.items() if not x.startswith("_")}
-
-    def __call__(
-        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
-    ) -> Optimizer:
-        """Creates an optimizer from the parametrization
-
-        Parameters
-        ----------
-        parametrization: int or Parameter
-            either the dimension of the optimization space, or its parametrization
-        budget: int/None
-            number of allowed evaluations
-        num_workers: int
-            number of evaluations which will be run in parallel at once
-        """
-        assert self._optimizer_class is not None
-        # pylint: disable=not-callable
-        run = self._optimizer_class(parametrization, budget, num_workers)
-        assert hasattr(run, "_parameters")
-        assert isinstance(run._parameters, self.__class__)  # type: ignore
-        run._parameters = self  # type: ignore
-        run.name = repr(self)
-        return run
-
-    def load(self, filepath: Union[str, Path]) -> "Optimizer":
-        """Loads a pickle and checks that it corresponds to the correct family of optimizer
-        """
-        assert self._optimizer_class is not None
-        return load(self._optimizer_class, filepath)
-
-
 class ConfiguredOptimizer:
     """This is a special case of an optimizer family for optimizers taking more than
     3 init arguments
@@ -615,14 +500,22 @@ class ConfiguredOptimizer:
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any]) -> None:
+    def __init__(self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
         config.pop("self", None)  # self comes from "locals()"
         config.pop("__class__", None)  # self comes from "locals()"
-        self.config = config  # keep all, to avoid weird behavior at mismatch between optim and configoptim
+        self._as_config = as_config
+        self._config = config  # keep all, to avoid weird behavior at mismatch between optim and configoptim
         diff = ngtools.different_from_defaults(instance=self, instance_dict=config, check_mismatches=True)
         params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
         self.name = f"{self.__class__.__name__}({params})"
+        if not as_config:
+            # try instantiating for init checks
+            # if as_config: check can be done before setting attributes
+            self(parametrization=4, budget=100)
+
+    def config(self) -> tp.Dict[str, tp.Any]:
+        return dict(self._config)
 
     def __call__(
         self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
@@ -638,10 +531,11 @@ class ConfiguredOptimizer:
         num_workers: int
             number of evaluations which will be run in parallel at once
         """
-        run = self._OptimizerClass(   # type: ignore
-            parametrization=parametrization, budget=budget, num_workers=num_workers, **self.config
-        )
+        config = dict(config=self) if self._as_config else self._config
+        run = self._OptimizerClass(parametrization=parametrization, budget=budget, num_workers=num_workers, **config)  # type: ignore
         run.name = self.name
+        # hacky but convenient to have around:
+        run._configured_optimizer = self  # type: ignore
         return run
 
     def __repr__(self) -> str:

@@ -13,13 +13,23 @@ from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
+
     def __init__(
-        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        method: str = "Nelder-Mead",
+        random_restart: bool = False
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = ScipyOptimizer()
         self.multirun = 1  # work in progress
         self.initial_guess: Optional[base.ArrayLike] = None
+        # configuration
+        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        self.method = method
+        self.random_restart = random_restart
 
 #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
@@ -30,8 +40,12 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(parametrization=self.parametrization, budget=self.budget, num_workers=self.num_workers)
-        subinstance._parameters = self._parameters
+        subinstance = self.__class__(
+            parametrization=self.parametrization,
+            budget=self.budget,
+            num_workers=self.num_workers,
+            method=self.method,
+            random_restart=self.random_restart)
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
@@ -46,8 +60,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
-                best_x if not self._parameters.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                method=self._parameters.method,
+                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                method=self.method,
                 options=options,
                 tol=0,
             )
@@ -58,7 +72,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         return best_x
 
 
-class ScipyOptimizer(base.ParametrizedFamily):
+class ScipyOptimizer(base.ConfiguredOptimizer):
     """Scripy optimizers in a ask and tell format
 
     Parameters
@@ -73,21 +87,22 @@ class ScipyOptimizer(base.ParametrizedFamily):
     recast = True
     no_parallelization = True
 
-    _optimizer_class = _ScipyMinimizeBase
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        method: str = "Nelder-Mead",
+        random_restart: bool = False
+    ) -> None:
+        super().__init__(_ScipyMinimizeBase, locals())
 
-    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
-        self.method = method
-        self.random_restart = random_restart
-        super().__init__()
 
-
-NelderMead = ScipyOptimizer(method="Nelder-Mead").with_name("NelderMead", register=True)
-Powell = ScipyOptimizer(method="Powell").with_name("Powell", register=True)
-RPowell = ScipyOptimizer(method="Powell", random_restart=True).with_name("RPowell", register=True)
-Cobyla = ScipyOptimizer(method="COBYLA").with_name("Cobyla", register=True)
-RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).with_name("RCobyla", register=True)
-SQP = ScipyOptimizer(method="SLSQP").with_name("SQP", register=True)
+NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
+Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
+RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
+Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
+RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
+SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
-RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).with_name("RSQP", register=True)
+RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.

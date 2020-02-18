@@ -6,7 +6,7 @@
 from typing import Iterator, Optional, List, Union
 import numpy as np
 from nevergrad import optimizers
-from ..optimization.base import OptimizerFamily
+from ..optimization.base import ConfiguredOptimizer
 from ..functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
@@ -32,7 +32,7 @@ def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
-    optims: List[Union[str, OptimizerFamily]] = ["OnePlusOne", optimizers.DifferentialEvolution()]
+    optims: List[Union[str, ConfiguredOptimizer]] = ["OnePlusOne", optimizers.DifferentialEvolution()]
     for _ in range(5):
         for optim in optims:
             yield Experiment(function, optimizer=optim, num_workers=2, budget=4, seed=next(seedg))

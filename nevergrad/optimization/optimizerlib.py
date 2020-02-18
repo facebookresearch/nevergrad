@@ -45,14 +45,34 @@ class _OnePlusOne(base.Optimizer):
     performs quite well in such a context - this is naturally close to 1+lambda.
     """
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        mutation: str = "gaussian",
+        crossover: bool = False
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedOnePlusOne()
         self._sigma: float = 1
+        # configuration
+        if noise_handling is not None:
+            if isinstance(noise_handling, str):
+                assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+            else:
+                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
+                assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
+                assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
+        self.noise_handling = noise_handling
+        self.mutation = mutation
+        self.crossover = crossover
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=too-many-return-statements, too-many-branches
-        noise_handling = self._parameters.noise_handling
+        noise_handling = self.noise_handling
         if not self._num_ask:
             return np.zeros(self.dimension)  # type: ignore
         # for noisy version
@@ -67,10 +87,10 @@ class _OnePlusOne(base.Optimizer):
                     return self.current_bests["optimistic"].x
         # crossover
         mutator = mutations.Mutator(self._rng)
-        if self._parameters.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
+        if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
         # mutating
-        mutation = self._parameters.mutation
+        mutation = self.mutation
         pessimistic = self.current_bests["pessimistic"].x
         if mutation == "gaussian":  # standard case
             return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -95,7 +115,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
 
 
-class ParametrizedOnePlusOne(base.ParametrizedFamily):
+class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
     """Simple but sometimes powerfull class of optimization algorithm.
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
@@ -130,8 +150,7 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     """
 
-    _optimizer_class = _OnePlusOne
-
+    # pylint: disable=unused-argument
     def __init__(
         self,
         *,
@@ -139,59 +158,48 @@ class ParametrizedOnePlusOne(base.ParametrizedFamily):
         mutation: str = "gaussian",
         crossover: bool = False
     ) -> None:
-        if noise_handling is not None:
-            if isinstance(noise_handling, str):
-                assert noise_handling in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-            else:
-                assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
-                assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
-                assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
-        self.noise_handling = noise_handling
-        self.mutation = mutation
-        self.crossover = crossover
-        super().__init__()
+        super().__init__(_OnePlusOne, locals())
 
 
-OnePlusOne = ParametrizedOnePlusOne().with_name("OnePlusOne", register=True)
-NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").with_name("NoisyOnePlusOne", register=True)
+OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
+NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
-DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("DiscreteOnePlusOne", register=True)
-OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").with_name(
+    noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
+DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").set_name(
     "OptimisticDiscreteOnePlusOne", register=True
 )
-NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=("random", 1.0), mutation="discrete").with_name(
+NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=("random", 1.0), mutation="discrete").set_name(
     "NoisyDiscreteOnePlusOne", register=True
 )
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
+    mutation="doublefastga").set_name("DoubleFastGADiscreteOnePlusOne", register=True)
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
-DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="doublefastga").with_name(
+    mutation="fastga").set_name("FastGADiscreteOnePlusOne", register=True)
+DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="doublefastga").set_name(
     "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True
 )
-FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="fastga").with_name(
+FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="fastga").set_name(
     "FastGAOptimisticNoisyDiscreteOnePlusOne", register=True
 )
-FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").with_name(
+FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").set_name(
     "FastGANoisyDiscreteOnePlusOne", register=True
 )
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
-PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="portfolio").with_name(
+    mutation="portfolio").set_name("PortfolioDiscreteOnePlusOne", register=True)
+PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="portfolio").set_name(
     "PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True
 )
-PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="portfolio").with_name(
+PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="portfolio").set_name(
     "PortfolioNoisyDiscreteOnePlusOne", register=True
 )
-CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").with_name("CauchyOnePlusOne", register=True)
+CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="discrete", noise_handling="optimistic"
-).with_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
+).set_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
 RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
-).with_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
+).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
 class _CMA(base.Optimizer):
@@ -259,7 +267,12 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, *, scale: float = 1.0, diagonal: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        scale: float = 1.0,
+        diagonal: bool = False
+    ) -> None:
         super().__init__(_CMA, locals())
 
 
@@ -657,9 +670,6 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
-ConfigOptim = tp.Union[base.OptimizerFamily, base.ConfiguredOptimizer]
-
-
 @registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
@@ -687,8 +697,8 @@ class SplitOptimizer(base.Optimizer):
             num_workers: int = 1,
             num_optims: tp.Optional[int] = None,
             num_vars: Optional[List[int]] = None,
-            multivariate_optimizer: ConfigOptim = CMA,
-            monovariate_optimizer: ConfigOptim = RandomSearch
+            multivariate_optimizer: base.ConfiguredOptimizer = CMA,
+            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:
@@ -765,8 +775,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         *,
         num_optims: int = 2,
         num_vars: tp.Optional[tp.List[int]] = None,
-        multivariate_optimizer: ConfigOptim = CMA,
-        monovariate_optimizer: ConfigOptim = RandomSearch
+        multivariate_optimizer: base.ConfiguredOptimizer = CMA,
+        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
@@ -1078,30 +1088,61 @@ class _FakeFunction:
 
 class _BO(base.Optimizer):
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        initialization: Optional[str] = None,
+        init_budget: Optional[int] = None,
+        middle_point: bool = False,
+        utility_kind: str = "ucb",  # bayes_opt default
+        utility_kappa: float = 2.576,
+        utility_xi: float = 0.0,
+        gp_parameters: Optional[Dict[str, Any]] = None,
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = ParametrizedBO()
         self._transform = transforms.ArctanBound(0, 1)
         self._bo: Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction()
+        # configuration
+        assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f"Unknown init {initialization}"
+        self.initialization = initialization
+        self.init_budget = init_budget
+        self.middle_point = middle_point
+        self.utility_kind = utility_kind
+        self.utility_kappa = utility_kappa
+        self.utility_xi = utility_xi
+        self.gp_parameters = {} if gp_parameters is None else gp_parameters
+        if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
+            noisy = not parametrization.descriptors.deterministic
+            cont = parametrization.descriptors.continuous
+            if noisy or not cont:
+                warnings.warn(
+                    "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
+                    "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
+                    "Find more information on BayesianOptimization's github.\n"
+                    "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
+                    InefficientSettingsWarning,
+                )
 
     @property
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
-            params = self._parameters
             bounds = {f"x{i}": (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            if self._parameters.gp_parameters is not None:
-                self._bo.set_gp_params(**self._parameters.gp_parameters)
+            if self.gp_parameters is not None:
+                self._bo.set_gp_params(**self.gp_parameters)
             # init
-            init = params.initialization
-            if params.middle_point:
+            init = self.initialization
+            if self.middle_point:
                 self._bo.probe([0.5] * self.dimension, lazy=True)
             elif init is None:
                 self._bo._queue.add(self._bo._space.random_sample())
             if init is not None:
-                init_budget = int(np.sqrt(self.budget) if params.init_budget is None else params.init_budget)
-                init_budget -= params.middle_point
+                init_budget = int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget)
+                init_budget -= self.middle_point
                 if init_budget > 0:
                     sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
                         init
@@ -1111,8 +1152,7 @@ class _BO(base.Optimizer):
         return self._bo
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        params = self._parameters
-        util = UtilityFunction(kind=params.utility_kind, kappa=params.utility_kappa, xi=params.utility_xi)
+        util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
         try:
             x_probe = next(self.bo._queue)
         except StopIteration:
@@ -1140,7 +1180,7 @@ class _BO(base.Optimizer):
         return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
 
 
-class ParametrizedBO(base.ParametrizedFamily):
+class ParametrizedBO(base.ConfiguredOptimizer):
     """Bayesian optimization
 
     Parameters
@@ -1162,8 +1202,8 @@ class ParametrizedBO(base.ParametrizedFamily):
     """
 
     no_parallelization = True
-    _optimizer_class = _BO
 
+    # pylint: disable=unused-argument
     def __init__(
         self,
         *,
@@ -1175,37 +1215,14 @@ class ParametrizedBO(base.ParametrizedFamily):
         utility_xi: float = 0.0,
         gp_parameters: Optional[Dict[str, Any]] = None,
     ) -> None:
-        assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f"Unknown init {initialization}"
-        self.initialization = initialization
-        self.init_budget = init_budget
-        self.middle_point = middle_point
-        self.utility_kind = utility_kind
-        self.utility_kappa = utility_kappa
-        self.utility_xi = utility_xi
-        self.gp_parameters = gp_parameters
-        super().__init__()
-
-    def __call__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
-        gp_params = {} if self.gp_parameters is None else self.gp_parameters
-        if isinstance(parametrization, p.Parameter) and gp_params.get("alpha", 0) == 0:
-            noisy = not parametrization.descriptors.deterministic
-            cont = parametrization.descriptors.continuous
-            if noisy or not cont:
-                warnings.warn(
-                    "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
-                    "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
-                    "Find more information on BayesianOptimization's github.\n"
-                    "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                    InefficientSettingsWarning,
-                )
-        return super().__call__(parametrization, budget, num_workers)
+        super().__init__(_BO, locals())
 
 
-BO = ParametrizedBO().with_name("BO", register=True)
-RBO = ParametrizedBO(initialization="random").with_name("RBO", register=True)
-QRBO = ParametrizedBO(initialization="Hammersley").with_name("QRBO", register=True)
-MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).with_name("MidQRBO", register=True)
-LBO = ParametrizedBO(initialization="LHS").with_name("LBO", register=True)
+BO = ParametrizedBO().set_name("BO", register=True)
+RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
+QRBO = ParametrizedBO(initialization="Hammersley").set_name("QRBO", register=True)
+MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).set_name("MidQRBO", register=True)
+LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
 
 
 @registry.register
@@ -1246,30 +1263,34 @@ class PBIL(base.Optimizer):
 
 class _Chain(base.Optimizer):
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [LHSSearch, DE],
+        budgets: tp.Sequence[tp.Union[str, int]] = (10,),
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._parameters = Chaining([LHSSearch, DE], [10])  # needs a default
         # delayed initialization
-        self._optimizers_: List[base.Optimizer] = []
-
-    @property
-    def _optimizers(self) -> List[base.Optimizer]:
-        if not self._optimizers_:
-            self._optimizers_ = []
-            converter = {"num_workers": self.num_workers, "dimension": self.dimension,
-                         "half": self.budget // 2 if self.budget else self.num_workers,
-                         "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
-            budgets = [converter[b] if isinstance(b, str) else b for b in self._parameters.budgets]
-            last_budget = None if self.budget is None else self.budget - sum(budgets)
-            for opt, budget in zip(self._parameters.optimizers, budgets + [last_budget]):  # type: ignore
-                self._optimizers_.append(opt(self.parametrization, budget=budget, num_workers=self.num_workers))
-        return self._optimizers_
+        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
+        self.optimizers: tp.List[base.Optimizer] = []
+        converter = {"num_workers": self.num_workers, "dimension": self.dimension,
+                     "half": self.budget // 2 if self.budget else self.num_workers,
+                     "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
+        self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
+        last_budget = None if self.budget is None else self.budget - sum(self.budgets)
+        assert len(optimizers) == len(self.budgets) + 1
+        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
+        for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
+            self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Which algorithm are we playing with ?
         sum_budget = 0.0
-        opt = self._optimizers[0]
-        for opt in self._optimizers:
+        opt = self.optimizers[0]
+        for opt in self.optimizers:
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_ask < sum_budget:
                 break
@@ -1279,13 +1300,13 @@ class _Chain(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         # Let us inform all concerned algorithms
         sum_budget = 0.0
-        for opt in self._optimizers:
+        for opt in self.optimizers:
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_tell < sum_budget:
                 opt.tell(candidate, value)
 
 
-class Chaining(base.ParametrizedFamily):
+class Chaining(base.ConfiguredOptimizer):
     """
     A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
     Each algorithm is fed with what happened before it.
@@ -1298,74 +1319,72 @@ class Chaining(base.ParametrizedFamily):
         the corresponding budgets for each optimizer but the last one
 
     """
-    _optimizer_class = _Chain
 
-    def __init__(self, optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]]],
-                 budgets: tp.Sequence[tp.Union[str, int]]) -> None:
-        # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
-        self.budgets = tuple(budgets)
-        self.optimizers = tuple(optimizers)
-        assert len(self.optimizers) == len(self.budgets) + 1
-        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)  # type: ignore
-        super().__init__()
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]],
+        budgets: tp.Sequence[tp.Union[str, int]]
+    ) -> None:
+        super().__init__(_Chain, locals())
 
 
-chainCMASQP = Chaining([CMA, SQP], ["half"]).with_name("chainCMASQP", register=True)
+chainCMASQP = Chaining([CMA, SQP], ["half"]).set_name("chainCMASQP", register=True)
 chainCMASQP.no_parallelization = True
-chainCMAPowell = Chaining([CMA, Powell], ["half"]).with_name("chainCMAPowell", register=True)
+chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
 
-chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).with_name("chainDEwithR", register=True)
-chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).with_name("chainDEwithRsqrt", register=True)
-chainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).with_name("chainDEwithRdim", register=True)
-chainDEwithR30 = Chaining([RandomSearch, DE], [30]).with_name("chainDEwithR30", register=True)
-chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).with_name("chainDEwithLHS", register=True)
-chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).with_name("chainDEwithLHSsqrt", register=True)
-chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).with_name("chainDEwithLHSdim", register=True)
-chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).with_name("chainDEwithLHS30", register=True)
-chainDEwithMetaRecentering = Chaining([MetaRecentering, DE], ["num_workers"]).with_name("chainDEwithMetaRecentering", register=True)
-chainDEwithMetaRecenteringsqrt = Chaining([MetaRecentering, DE], ["sqrt"]).with_name("chainDEwithMetaRecenteringsqrt", register=True)
-chainDEwithMetaRecenteringdim = Chaining([MetaRecentering, DE], ["dimension"]).with_name("chainDEwithMetaRecenteringdim", register=True)
-chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).with_name("chainDEwithMetaRecentering30", register=True)
+chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).set_name("chainDEwithR", register=True)
+chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).set_name("chainDEwithRsqrt", register=True)
+chainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).set_name("chainDEwithRdim", register=True)
+chainDEwithR30 = Chaining([RandomSearch, DE], [30]).set_name("chainDEwithR30", register=True)
+chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).set_name("chainDEwithLHS", register=True)
+chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).set_name("chainDEwithLHSsqrt", register=True)
+chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).set_name("chainDEwithLHSdim", register=True)
+chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).set_name("chainDEwithLHS30", register=True)
+chainDEwithMetaRecentering = Chaining([MetaRecentering, DE], ["num_workers"]).set_name("chainDEwithMetaRecentering", register=True)
+chainDEwithMetaRecenteringsqrt = Chaining([MetaRecentering, DE], ["sqrt"]).set_name("chainDEwithMetaRecenteringsqrt", register=True)
+chainDEwithMetaRecenteringdim = Chaining([MetaRecentering, DE], ["dimension"]).set_name("chainDEwithMetaRecenteringdim", register=True)
+chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).set_name("chainDEwithMetaRecentering30", register=True)
 
-chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).with_name("chainBOwithR", register=True)
-chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).with_name("chainBOwithRsqrt", register=True)
-chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).with_name("chainBOwithRdim", register=True)
-chainBOwithR30 = Chaining([RandomSearch, BO], [30]).with_name("chainBOwithR30", register=True)
-chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).with_name("chainBOwithLHS30", register=True)
-chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).with_name("chainBOwithLHSsqrt", register=True)
-chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).with_name("chainBOwithLHSdim", register=True)
-chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).with_name("chainBOwithLHS", register=True)
-chainBOwithMetaRecentering30 = Chaining([MetaRecentering, BO], [30]).with_name("chainBOwithMetaRecentering30", register=True)
-chainBOwithMetaRecenteringsqrt = Chaining([MetaRecentering, BO], ["sqrt"]).with_name("chainBOwithMetaRecenteringsqrt", register=True)
-chainBOwithMetaRecenteringdim = Chaining([MetaRecentering, BO], ["dimension"]).with_name("chainBOwithMetaRecenteringdim", register=True)
-chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).with_name("chainBOwithMetaRecentering", register=True)
+chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).set_name("chainBOwithR", register=True)
+chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).set_name("chainBOwithRsqrt", register=True)
+chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).set_name("chainBOwithRdim", register=True)
+chainBOwithR30 = Chaining([RandomSearch, BO], [30]).set_name("chainBOwithR30", register=True)
+chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).set_name("chainBOwithLHS30", register=True)
+chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).set_name("chainBOwithLHSsqrt", register=True)
+chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).set_name("chainBOwithLHSdim", register=True)
+chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).set_name("chainBOwithLHS", register=True)
+chainBOwithMetaRecentering30 = Chaining([MetaRecentering, BO], [30]).set_name("chainBOwithMetaRecentering30", register=True)
+chainBOwithMetaRecenteringsqrt = Chaining([MetaRecentering, BO], ["sqrt"]).set_name("chainBOwithMetaRecenteringsqrt", register=True)
+chainBOwithMetaRecenteringdim = Chaining([MetaRecentering, BO], ["dimension"]).set_name("chainBOwithMetaRecenteringdim", register=True)
+chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).set_name("chainBOwithMetaRecentering", register=True)
 
-chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).with_name("chainPSOwithR", register=True)
-chainPSOwithRsqrt = Chaining([RandomSearch, PSO], ["sqrt"]).with_name("chainPSOwithRsqrt", register=True)
-chainPSOwithRdim = Chaining([RandomSearch, PSO], ["dimension"]).with_name("chainPSOwithRdim", register=True)
-chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).with_name("chainPSOwithR30", register=True)
-chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).with_name("chainPSOwithLHS30", register=True)
-chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).with_name("chainPSOwithLHSsqrt", register=True)
-chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).with_name("chainPSOwithLHSdim", register=True)
-chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).with_name("chainPSOwithLHS", register=True)
-chainPSOwithMetaRecentering30 = Chaining([MetaRecentering, PSO], [30]).with_name("chainPSOwithMetaRecentering30", register=True)
-chainPSOwithMetaRecenteringsqrt = Chaining([MetaRecentering, PSO], ["sqrt"]).with_name("chainPSOwithMetaRecenteringsqrt", register=True)
-chainPSOwithMetaRecenteringdim = Chaining([MetaRecentering, PSO], ["dimension"]).with_name("chainPSOwithMetaRecenteringdim", register=True)
-chainPSOwithMetaRecentering = Chaining([MetaRecentering, PSO], ["num_workers"]).with_name("chainPSOwithMetaRecentering", register=True)
+chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).set_name("chainPSOwithR", register=True)
+chainPSOwithRsqrt = Chaining([RandomSearch, PSO], ["sqrt"]).set_name("chainPSOwithRsqrt", register=True)
+chainPSOwithRdim = Chaining([RandomSearch, PSO], ["dimension"]).set_name("chainPSOwithRdim", register=True)
+chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).set_name("chainPSOwithR30", register=True)
+chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).set_name("chainPSOwithLHS30", register=True)
+chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).set_name("chainPSOwithLHSsqrt", register=True)
+chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).set_name("chainPSOwithLHSdim", register=True)
+chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).set_name("chainPSOwithLHS", register=True)
+chainPSOwithMetaRecentering30 = Chaining([MetaRecentering, PSO], [30]).set_name("chainPSOwithMetaRecentering30", register=True)
+chainPSOwithMetaRecenteringsqrt = Chaining([MetaRecentering, PSO], ["sqrt"]).set_name("chainPSOwithMetaRecenteringsqrt", register=True)
+chainPSOwithMetaRecenteringdim = Chaining([MetaRecentering, PSO], ["dimension"]).set_name("chainPSOwithMetaRecenteringdim", register=True)
+chainPSOwithMetaRecentering = Chaining([MetaRecentering, PSO], ["num_workers"]).set_name("chainPSOwithMetaRecentering", register=True)
 
-chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).with_name("chainCMAwithR", register=True)
-chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).with_name("chainCMAwithRsqrt", register=True)
-chainCMAwithRdim = Chaining([RandomSearch, CMA], ["dimension"]).with_name("chainCMAwithRdim", register=True)
-chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).with_name("chainCMAwithR30", register=True)
-chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).with_name("chainCMAwithLHS30", register=True)
-chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).with_name("chainCMAwithLHSsqrt", register=True)
-chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).with_name("chainCMAwithLHSdim", register=True)
-chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).with_name("chainCMAwithLHS", register=True)
-chainCMAwithMetaRecentering30 = Chaining([MetaRecentering, CMA], [30]).with_name("chainCMAwithMetaRecentering30", register=True)
-chainCMAwithMetaRecenteringsqrt = Chaining([MetaRecentering, CMA], ["sqrt"]).with_name("chainCMAwithMetaRecenteringsqrt", register=True)
-chainCMAwithMetaRecenteringdim = Chaining([MetaRecentering, CMA], ["dimension"]).with_name("chainCMAwithMetaRecenteringdim", register=True)
-chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).with_name("chainCMAwithMetaRecentering", register=True)
+chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).set_name("chainCMAwithR", register=True)
+chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).set_name("chainCMAwithRsqrt", register=True)
+chainCMAwithRdim = Chaining([RandomSearch, CMA], ["dimension"]).set_name("chainCMAwithRdim", register=True)
+chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).set_name("chainCMAwithR30", register=True)
+chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).set_name("chainCMAwithLHS30", register=True)
+chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).set_name("chainCMAwithLHSsqrt", register=True)
+chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).set_name("chainCMAwithLHSdim", register=True)
+chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).set_name("chainCMAwithLHS", register=True)
+chainCMAwithMetaRecentering30 = Chaining([MetaRecentering, CMA], [30]).set_name("chainCMAwithMetaRecentering30", register=True)
+chainCMAwithMetaRecenteringsqrt = Chaining([MetaRecentering, CMA], ["sqrt"]).set_name("chainCMAwithMetaRecenteringsqrt", register=True)
+chainCMAwithMetaRecenteringdim = Chaining([MetaRecentering, CMA], ["dimension"]).set_name("chainCMAwithMetaRecenteringdim", register=True)
+chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).set_name("chainCMAwithMetaRecentering", register=True)
 
 
 @registry.register

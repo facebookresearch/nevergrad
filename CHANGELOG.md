@@ -8,6 +8,13 @@
   - `candidate_maker` (not needed anymore)
   - `optimize` methods of `Optimizer` (renamed to `minimize`)
   - all the `instrumentation` subpackage (replaced by `parametrization`) and its legacy methods (`set_cheap_constraint_checker` etc)
+- Propagate parametrization system features (generation tracking, ...) to `TBPSA`, `PSO` and `EDA` based algorithms.
+- Rewrote multiobjective core system [#484](https://github.com/facebookresearch/nevergrad/pull/484).
+- Removed `ParametrizedOptimizer` and `OptimizerFamily` in favor of `ConfiguredOptimizer` with simpler usage [#518](https://github.com/facebookresearch/nevergrad/pull/518) [#521](https://github.com/facebookresearch/nevergrad/pull/521).
+- Activated Windows CI (still a bit flaky, with a few deactivated tests).
+- Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
+- Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
+
 
 ## v0.3.2 (2019-02-05)
 

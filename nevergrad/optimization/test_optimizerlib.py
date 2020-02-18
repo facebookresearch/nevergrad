@@ -47,7 +47,7 @@ class Fitness:
 
 
 def check_optimizer(
-        optimizer_cls: tp.Union[base.ConfiguredOptimizer, base.OptimizerFamily, tp.Type[base.Optimizer]],
+        optimizer_cls: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]],
         budget: int = 300,
         verify_value: bool = True
 ) -> None:
@@ -124,7 +124,7 @@ UNSEEDABLE: tp.List[str] = []
 @pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
-    if isinstance(optimizer_cls, (base.OptimizerFamily, base.ConfiguredOptimizer)):
+    if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert hasattr(optlib, name)  # make sure registration matches name in optlib
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # the following context manager speeds up BO tests
@@ -261,10 +261,7 @@ def test_tell_not_asked(name: str) -> None:
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
         opt = optlib.registry[name](parametrization=param, budget=2, num_workers=2)
-    if name == "PSO":
-        opt.llambda = 2  # type: ignore
-    else:
-        opt._llambda = 2  # type: ignore
+    opt.llambda = 2  # type: ignore
     t_10 = opt.parametrization.spawn_child(new_value=10)
     t_100 = opt.parametrization.spawn_child(new_value=100)
     assert not opt.population  # type: ignore
@@ -349,12 +346,12 @@ def test_chaining() -> None:
     optimizer = optlib.Chaining([optlib.LHSSearch, optlib.HaltonSearch, optlib.OnePlusOne], budgets)(2, 40)
     optimizer.minimize(_square)
     expected = [(7, 7, 0), (19, 19 + 7, 7), (14, 14 + 19 + 7, 19 + 7)]
-    for (ex_ask, ex_tell, ex_tell_not_asked), opt in zip(expected, optimizer._optimizers):  # type: ignore
+    for (ex_ask, ex_tell, ex_tell_not_asked), opt in zip(expected, optimizer.optimizers):  # type: ignore
         assert opt.num_ask == ex_ask
         assert opt.num_tell == ex_tell
         assert opt.num_tell_not_asked == ex_tell_not_asked
     optimizer.ask()
-    assert optimizer._optimizers[-1].num_ask == 15  # type: ignore
+    assert optimizer.optimizers[-1].num_ask == 15  # type: ignore
 
 
 def test_parametrization_optimizer_reproducibility() -> None:
