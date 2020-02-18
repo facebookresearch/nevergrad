@@ -30,6 +30,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
+@registry.register
 def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     # Continuous case
