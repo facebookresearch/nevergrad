@@ -5,25 +5,45 @@
 
 import inspect
 import itertools
-from typing import Callable, Iterator, Any
+import typing as tp
+from pathlib import Path
+import pytest
 import numpy as np
-from ..functions.mlda import datasets
-from ..functions import rl
-from ..common import testing
-from ..common.tools import Selector
+from nevergrad.functions.mlda import datasets
+from nevergrad.functions import rl
+from nevergrad.common import testing
+from nevergrad.common.tools import Selector
 from .xpbase import Experiment
 from . import experiments
+from . import optgroups
 
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
-def test_experiments_registry(name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
+def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
     if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld"}:
         check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
 
 
-def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
+@pytest.fixture(scope="module")  # type: ignore
+def recorder() -> tp.Generator[tp.Dict[str, tp.List[optgroups.Optim]], None, None]:
+    record: tp.Dict[str, tp.List[optgroups.Optim]] = {}
+    yield record
+    groups = sorted(record.items())
+    string = "\n\n".join(f"{x} = {repr(y)}" for x, y in groups)
+    filepath = Path(__file__).with_name("optimizer_groups.txt")
+    filepath.write_text(string)
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.parametrize("name", [name for name in optgroups.registry])  # type: ignore
+def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Optim]]) -> None:
+    maker = optgroups.registry[name]
+    recorder[name] = list(maker())
+
+
+def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     generators = [maker() for _ in range(2)]
     # check 1 sample
     sample = next(maker())
@@ -42,7 +62,7 @@ def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
             )
 
 
-def check_seedable(maker: Any) -> None:
+def check_seedable(maker: tp.Any) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """

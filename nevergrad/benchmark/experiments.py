@@ -286,7 +286,7 @@ def illcondipara(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Testing optimizers on ill-conditionned parallel optimization.
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("standard1")
+    optims = get_optimizers("large")
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -307,7 +307,7 @@ def constrained_illconditioned_parallel(seed: Optional[int] = None) -> Iterator[
     """Many optimizers on ill cond problems with constraints.
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("standard1")
+    optims = get_optimizers("large")
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -368,7 +368,7 @@ def hdbo4d(seed: Optional[int] = None) -> Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:
-        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x):
+        for optim in get_optimizers("all_bo"):
             for rotation in [False]:
                 for d in [20]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:
@@ -384,7 +384,7 @@ def spsa_benchmark(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Some optimizers on a noisy optimization problem. This benchmark is based on the noise benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
+    optims = get_optimizers("spsa")
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:

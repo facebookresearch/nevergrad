@@ -1,0 +1,13 @@
+all_bo = ['BO', 'LBO', 'MidQRBO', 'QRBO', 'RBO', 'chainBOwithLHS', 'chainBOwithLHS30', 'chainBOwithLHSdim', 'chainBOwithLHSsqrt', 'chainBOwithMetaRecentering', 'chainBOwithMetaRecentering30', 'chainBOwithMetaRecenteringdim', 'chainBOwithMetaRecenteringsqrt', 'chainBOwithR', 'chainBOwithR30', 'chainBOwithRdim', 'chainBOwithRsqrt']
+
+cma = ['DiagonalCMA', 'CMA']
+
+competence_map = ['NGO', 'Shiva']
+
+competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiva', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
+
+large = ['NGO', 'Shiva', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'ASCMADEthird', 'ASCMADEQRthird', 'ASCMA2PDEthird', 'CMandAS2', 'CMandAS', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'SQPCMA']
+
+spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']
+
+test = ['PSO', 'NGO', 'Shiva', 'DiagonalCMA', 'CMA', 'DE', 'TwoPointsDE', 'TBPSA', 'OnePlusOne', 'Zero', 'RandomSearch', 'AlmostRotationInvariantDE', DifferentialEvolution(crossover='dimension')]
