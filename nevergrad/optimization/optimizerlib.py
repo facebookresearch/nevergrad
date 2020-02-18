@@ -485,14 +485,25 @@ class PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    _TRANSFORM: transforms.Transform = transforms.ArctanBound(0, 1)
-    _EPS: tp.Optional[float] = 0.0  # to clip to [eps, 1 - eps] for transform not defined on borders, no clipping if None
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: Optional[int] = None,
+        num_workers: int = 1,
+        transform: str = "arctan",
+        wide: bool = False,  # legacy, to be removed if not needed anymore
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._wide = False
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
+        cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
+            arctan=(0, transforms.ArctanBound(0, 1)),
+            identity=(None, transforms.Affine(1, 0)),
+            gaussian=(1e-10, transforms.CumulativeDensity()),
+        )
+        # eps is used for clipping to make sure it is admissible
+        self._eps, self._transform = cases[transform]
+        self._wide = wide
         self.llambda = max(40, num_workers)
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
@@ -507,14 +518,14 @@ class PSO(base.Optimizer):
             param = self.parametrization
             if self._wide:
                 # old initialization below seeds in the while R space, while other algorithms use normal distrib
-                data = self._TRANSFORM.backward(self._rng.uniform(0, 1, self.dimension))
+                data = self._transform.backward(self._rng.uniform(0, 1, self.dimension))
                 candidate = param.spawn_child().set_standardized_data(data, reference=param)
                 candidate.heritage["lineage"] = candidate.uid
             else:
                 candidate = param.sample()
             self.population[candidate.uid] = candidate
             dim = self.parametrization.dimension
-            candidate.heritage["speed"] = self._rng.normal(size=dim) if self._EPS is None else self._rng.uniform(-1, 1, dim)
+            candidate.heritage["speed"] = self._rng.normal(size=dim) if self._eps is None else self._rng.uniform(-1, 1, dim)
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
@@ -524,7 +535,7 @@ class PSO(base.Optimizer):
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
         if particle._frozen and "boxed_data" in particle._meta:
             return particle._meta["boxed_data"]  # type: ignore
-        boxed_data = self._TRANSFORM.forward(particle.get_standardized_data(reference=self.parametrization))
+        boxed_data = self._transform.forward(particle.get_standardized_data(reference=self.parametrization))
         if particle._frozen:  # only save is frozen
             particle._meta["boxed_data"] = boxed_data
         return boxed_data
@@ -538,9 +549,9 @@ class PSO(base.Optimizer):
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = self._omega * speed + self._phip * rp * (parent_best_x - x) + self._phig * rg * (global_best_x - x)
         data = speed + x
-        if self._EPS is not None:
-            data = np.clip(data, self._EPS, 1 - self._EPS)
-        data = self._TRANSFORM.backward(data)
+        if self._eps is not None:
+            data = np.clip(data, self._eps, 1 - self._eps)
+        data = self._transform.backward(data)
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
         new_part.heritage["speed"] = speed
         return new_part
@@ -582,25 +593,15 @@ class PSO(base.Optimizer):
             self._best = candidate
 
 
-@registry.register
-class RealSpacePSO(PSO):
-    """Experimental
-    Version of PSO acting directly in R instead of a boxed domain.
-    """
+class ConfiguredPSO(base.ConfiguredOptimizer):
 
-    _TRANSFORM = transforms.Affine(1, 0)  # identity
-    _EPS = None
+    # pylint: disable=unused-argument
+    def __init__(self, transform: str = "identity", wide: bool = False) -> None:
+        super().__init__(PSO, locals())
 
 
-@registry.register
-class WidePSO(PSO):
-    """Partially following SPSO2011. However, no randomization of the population order.
-    This version uses a non-standard initialization with high standard deviation.
-    """
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._wide = True
+RealSpacePSO = ConfiguredPSO().set_name("RealSpacePSO", register=True)
+WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name("WidePSO", register=True)  # non-standard init
 
 
 @registry.register
