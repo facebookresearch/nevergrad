@@ -75,33 +75,14 @@ class _DE(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        initialization: str = "gaussian",
-        scale: tp.Union[str, float] = 1.,
-        recommendation: str = "optimistic",
-        crossover: tp.Union[str, float] = .5,
-        F1: float = .8,
-        F2: float = .8,
-        popsize: str = "standard"
+        config: tp.Optional["DifferentialEvolution"] = None
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in ["gaussian", "LHS", "QR"]
-        assert isinstance(scale, float) or scale == "mini"
-        assert popsize in ["large", "dimension", "standard"]
-        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
-        self.initialization = initialization
-        self.recommendation = recommendation
-        # parameters
-        self.F1 = F1
-        self.F2 = F2
-        self.crossover = crossover
-        self.popsize = popsize
-        self.scale = scale if not isinstance(scale, str) else 1.0
-        if isinstance(scale, str):
-            assert scale == "mini"  # computing on demand because it requires to know the dimension
-            self.scale = float(1. / np.sqrt(self.dimension))
+        # config
+        self._config = DifferentialEvolution() if config is None else config
+        self.scale = float(1. / np.sqrt(self.dimension)) if isinstance(self._config.scale, str) else self._config.scale
         pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
-        self.llambda = max(30, self.num_workers, pop_choice[popsize])
+        self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         # internals
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
@@ -111,8 +92,8 @@ class _DE(base.Optimizer):
         self.sampler: tp.Optional[sequences.Sampler] = None
 
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
-        if self.recommendation != "noisy":
-            return self.current_bests[self.recommendation].x
+        if self._config.recommendation != "noisy":
+            return self.current_bests[self._config.recommendation].x
         med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
         good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
@@ -121,7 +102,7 @@ class _DE(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
-            init = self.initialization
+            init = self._config.initialization
             if self.sampler is None and init != "gaussian":
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
@@ -140,11 +121,11 @@ class _DE(base.Optimizer):
         uids = list(self.population)
         indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
         data_a, data_b = (indiv.get_standardized_data(reference=self.parametrization) for indiv in indivs)
-        donor = (data + self.F1 * (data_a - data_b) +
-                 self.F2 * (self.current_bests["pessimistic"].x - data))
+        donor = (data + self._config.F1 * (data_a - data_b) +
+                 self._config.F2 * (self.current_bests["pessimistic"].x - data))
         candidate.parents_uids.extend([i.uid for i in indivs])
         # apply crossover
-        co = self.crossover
+        co = self._config.crossover
         if co == "parametrization":
             candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
@@ -213,7 +194,6 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         and "large" max(num_workers, 30, 7 * dimension).
     """
 
-    # pylint: disable=unused-argument
     def __init__(
         self,
         *,
@@ -225,11 +205,19 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         F2: float = .8,
         popsize: str = "standard"
     ) -> None:
-        super().__init__(_DE, locals())
-
-    def __call__(self, parametrization: IntOrParameter,
-                 budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
-        return super().__call__(parametrization, budget, num_workers)
+        super().__init__(_DE, locals(), as_config=True)
+        assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
+        assert initialization in ["gaussian", "LHS", "QR"]
+        assert isinstance(scale, float) or scale == "mini"
+        assert popsize in ["large", "dimension", "standard"]
+        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
+        self.initialization = initialization
+        self.scale = scale
+        self.recommendation = recommendation
+        self.F1 = F1
+        self.F2 = F2
+        self.crossover = crossover
+        self.popsize = popsize
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)

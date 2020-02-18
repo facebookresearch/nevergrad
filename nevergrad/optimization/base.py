@@ -500,16 +500,22 @@ class ConfiguredOptimizer:
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any]) -> None:
+    def __init__(self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
         config.pop("self", None)  # self comes from "locals()"
         config.pop("__class__", None)  # self comes from "locals()"
-        self.config = config  # keep all, to avoid weird behavior at mismatch between optim and configoptim
+        self._as_config = as_config
+        self._config = config  # keep all, to avoid weird behavior at mismatch between optim and configoptim
         diff = ngtools.different_from_defaults(instance=self, instance_dict=config, check_mismatches=True)
         params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
         self.name = f"{self.__class__.__name__}({params})"
-        # try instantiating for init checks
-        self(parametrization=4, budget=100)
+        if not as_config:
+            # try instantiating for init checks
+            # if as_config: check can be done before setting attributes
+            self(parametrization=4, budget=100)
+
+    def config(self) -> tp.Dict[str, tp.Any]:
+        return dict(self._config)
 
     def __call__(
         self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
@@ -525,9 +531,8 @@ class ConfiguredOptimizer:
         num_workers: int
             number of evaluations which will be run in parallel at once
         """
-        run = self._OptimizerClass(   # type: ignore
-            parametrization=parametrization, budget=budget, num_workers=num_workers, **self.config
-        )
+        config = dict(config=self) if self._as_config else self._config
+        run = self._OptimizerClass(parametrization=parametrization, budget=budget, num_workers=num_workers, **config)  # type: ignore
         run.name = self.name
         # hacky but convenient to have around:
         run._configured_optimizer = self  # type: ignore

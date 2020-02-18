@@ -346,12 +346,12 @@ def test_chaining() -> None:
     optimizer = optlib.Chaining([optlib.LHSSearch, optlib.HaltonSearch, optlib.OnePlusOne], budgets)(2, 40)
     optimizer.minimize(_square)
     expected = [(7, 7, 0), (19, 19 + 7, 7), (14, 14 + 19 + 7, 19 + 7)]
-    for (ex_ask, ex_tell, ex_tell_not_asked), opt in zip(expected, optimizer._optimizers):  # type: ignore
+    for (ex_ask, ex_tell, ex_tell_not_asked), opt in zip(expected, optimizer.optimizers):  # type: ignore
         assert opt.num_ask == ex_ask
         assert opt.num_tell == ex_tell
         assert opt.num_tell_not_asked == ex_tell_not_asked
     optimizer.ask()
-    assert optimizer._optimizers[-1].num_ask == 15  # type: ignore
+    assert optimizer.optimizers[-1].num_ask == 15  # type: ignore
 
 
 def test_parametrization_optimizer_reproducibility() -> None:

@@ -93,7 +93,7 @@ class ParametersLogger:
         if hasattr(optimizer, "_configured_optimizer"):
             configopt = optimizer._configured_optimizer  # type: ignore
             if isinstance(configopt, base.ConfiguredOptimizer):
-                data.update({"#optimizer#" + x: y for x, y in configopt.config.items()})
+                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
         if isinstance(candidate._meta.get("sigma"), float):
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
