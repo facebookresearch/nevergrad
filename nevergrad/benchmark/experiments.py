@@ -34,6 +34,13 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     # Continuous case
+    # First, a few functions with constraints.
+    functions = [
+        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
+    ]
+    for func in functions:
+        func.parametrization.register_cheap_constraint(_positive_sum)
+    # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin"]  #, "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "ellipsoid", "stepellipsoid"]  #"altcigar", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
@@ -54,7 +61,7 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
                                         budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
-    # Discrete, ordered
+    # Discrete, unordered.
     for nv in [10, 50, 200]:
         for optim in optims:
             for nw in [1, 10]:
@@ -64,6 +71,20 @@ def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
                             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
                             instrum = ng.p.Instrumentation(*variables)
                             yield Experiment(ExperimentFunction(func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
+    mofuncs: List[PackedFunctions] = []
+
+    # The multiobjective case.
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "cigar", "hm"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+                                         ArtificialFunction(name2, block_dimension=7)],
+                                        upper_bounds=np.array((50., 50.)))]
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in [2000, 4000, 8000]:
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
 
 
 # Discrete functions on {0,1}^d.
@@ -712,7 +733,6 @@ class PackedFunctions(ExperimentFunction):
 
 @registry.register
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: List[PackedFunctions] = []
