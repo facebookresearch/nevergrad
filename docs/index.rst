@@ -14,6 +14,8 @@ Quick start
 
     pip install nevergrad
 
+You can find other installation options in the :ref:`Getting started section <getting_started>`.
+
 Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
 
 Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
