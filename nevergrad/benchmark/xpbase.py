@@ -30,7 +30,7 @@ class OptimizerSettings:
     Eventually, this class should be moved to be directly used for defining experiments.
     """
 
-    def __init__(self, optimizer: Union[str, obase.ConfiguredOptimizer, obase.OptimizerFamily], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+    def __init__(self, optimizer: Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
         self._setting_names = [x for x in locals() if x != "self"]
         if isinstance(optimizer, str):
             assert optimizer in optimizer_registry, f"{optimizer} is not registered"
@@ -50,7 +50,7 @@ class OptimizerSettings:
     def __repr__(self) -> str:
         return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
 
-    def _get_factory(self) -> Union[Type[obase.Optimizer], obase.OptimizerFamily, obase.ConfiguredOptimizer]:
+    def _get_factory(self) -> Union[Type[obase.Optimizer], obase.ConfiguredOptimizer]:
         return optimizer_registry[self.optimizer] if isinstance(self.optimizer, str) else self.optimizer
 
     @property
@@ -117,7 +117,7 @@ class Experiment:
 
     # pylint: disable=too-many-arguments
     def __init__(self, function: fbase.ExperimentFunction,
-                 optimizer: Union[str, obase.OptimizerFamily], budget: int, num_workers: int = 1,
+                 optimizer: Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: Optional[int] = None,
                  ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "

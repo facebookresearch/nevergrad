@@ -68,35 +68,32 @@ class _DE(base.Optimizer):
     Initial population: pure random.
     """
     # pylint: disable=too-many-locals, too-many-nested-blocks,too-many-instance-attributes
-    # pylint: disable=too-many-branches, too-many-statements
+    # pylint: disable=too-many-branches, too-many-statements, too-many-arguments
 
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["DifferentialEvolution"] = None
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        # config
+        self._config = DifferentialEvolution() if config is None else config
+        self.scale = float(1. / np.sqrt(self.dimension)) if isinstance(self._config.scale, str) else self._config.scale
+        pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
+        self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
+        # internals
+        if budget is not None and budget < 60:
+            warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
         self._penalize_cheap_violations = True
-        self._parameters = DifferentialEvolution()
-        self._llambda: tp.Optional[int] = None
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[sequences.Sampler] = None
 
-    @property
-    def scale(self) -> float:
-        scale = self._parameters.scale
-        if isinstance(scale, str):
-            assert scale == "mini"  # computing on demand because it requires to know the dimension
-            return float(1. / np.sqrt(self.dimension))
-        return scale
-
-    @property
-    def llambda(self) -> int:
-        if self._llambda is None:  # computing on demand because it requires to know the dimension
-            pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
-            self._llambda = max(30, self.num_workers, pop_choice[self._parameters.popsize])
-        return self._llambda
-
     def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
-        if self._parameters.recommendation != "noisy":
-            return self.current_bests[self._parameters.recommendation].x
+        if self._config.recommendation != "noisy":
+            return self.current_bests[self._config.recommendation].x
         med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
         good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
@@ -105,7 +102,7 @@ class _DE(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
-            init = self._parameters.initialization
+            init = self._config.initialization
             if self.sampler is None and init != "gaussian":
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
@@ -124,11 +121,11 @@ class _DE(base.Optimizer):
         uids = list(self.population)
         indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
         data_a, data_b = (indiv.get_standardized_data(reference=self.parametrization) for indiv in indivs)
-        donor = (data + self._parameters.F1 * (data_a - data_b) +
-                 self._parameters.F2 * (self.current_bests["pessimistic"].x - data))
+        donor = (data + self._config.F1 * (data_a - data_b) +
+                 self._config.F2 * (self.current_bests["pessimistic"].x - data))
         candidate.parents_uids.extend([i.uid for i in indivs])
         # apply crossover
-        co = self._parameters.crossover
+        co = self._config.crossover
         if co == "parametrization":
             candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
@@ -165,7 +162,7 @@ class _DE(base.Optimizer):
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
-class DifferentialEvolution(base.ParametrizedFamily):
+class DifferentialEvolution(base.ConfiguredOptimizer):
     """Differential evolution algorithms.
 
     Default pop size is 30
@@ -197,12 +194,18 @@ class DifferentialEvolution(base.ParametrizedFamily):
         and "large" max(num_workers, 30, 7 * dimension).
     """
 
-    _optimizer_class = _DE
-
-    def __init__(self, *, initialization: str = "gaussian", scale: tp.Union[str, float] = 1.,
-                 recommendation: str = "optimistic", crossover: tp.Union[str, float] = .5,
-                 F1: float = .8, F2: float = .8, popsize: str = "standard") -> None:
-        # initial checks
+    def __init__(
+        self,
+        *,
+        initialization: str = "gaussian",
+        scale: tp.Union[str, float] = 1.,
+        recommendation: str = "optimistic",
+        crossover: tp.Union[str, float] = .5,
+        F1: float = .8,
+        F2: float = .8,
+        popsize: str = "standard"
+    ) -> None:
+        super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
@@ -211,32 +214,24 @@ class DifferentialEvolution(base.ParametrizedFamily):
         self.initialization = initialization
         self.scale = scale
         self.recommendation = recommendation
-        # parameters
         self.F1 = F1
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
-        super().__init__()
-
-    def __call__(self, parametrization: IntOrParameter,
-                 budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
-        if budget is not None and budget < 60:
-            warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
-        return super().__call__(parametrization, budget, num_workers)
 
 
-DE = DifferentialEvolution().with_name("DE", register=True)
-OnePointDE = DifferentialEvolution(crossover="onepoint").with_name("OnePointDE", register=True)
-TwoPointsDE = DifferentialEvolution(crossover="twopoints").with_name("TwoPointsDE", register=True)
-ParametrizationDE = DifferentialEvolution(crossover="parametrization").with_name("ParametrizationDE", register=True)
-LhsDE = DifferentialEvolution(initialization="LHS").with_name("LhsDE", register=True)
-QrDE = DifferentialEvolution(initialization="QR").with_name("QrDE", register=True)
-MiniDE = DifferentialEvolution(scale="mini").with_name("MiniDE", register=True)
-MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").with_name("MiniLhsDE", register=True)
-MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").with_name("MiniQrDE", register=True)
-NoisyDE = DifferentialEvolution(recommendation="noisy").with_name("NoisyDE", register=True)
-AlmostRotationInvariantDE = DifferentialEvolution(crossover=.9).with_name("AlmostRotationInvariantDE", register=True)
-AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=.9, popsize="dimension").with_name(
+DE = DifferentialEvolution().set_name("DE", register=True)
+OnePointDE = DifferentialEvolution(crossover="onepoint").set_name("OnePointDE", register=True)
+TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
+ParametrizationDE = DifferentialEvolution(crossover="parametrization").set_name("ParametrizationDE", register=True)
+LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
+QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
+MiniDE = DifferentialEvolution(scale="mini").set_name("MiniDE", register=True)
+MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").set_name("MiniLhsDE", register=True)
+MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").set_name("MiniQrDE", register=True)
+NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
+AlmostRotationInvariantDE = DifferentialEvolution(crossover=.9).set_name("AlmostRotationInvariantDE", register=True)
+AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=.9, popsize="dimension").set_name(
     "AlmostRotationInvariantDEAndBigPop", register=True)
-RotationInvariantDE = DifferentialEvolution(crossover=1., popsize="dimension").with_name("RotationInvariantDE", register=True)
-BPRotationInvariantDE = DifferentialEvolution(crossover=1., popsize="large").with_name("BPRotationInvariantDE", register=True)
+RotationInvariantDE = DifferentialEvolution(crossover=1., popsize="dimension").set_name("RotationInvariantDE", register=True)
+BPRotationInvariantDE = DifferentialEvolution(crossover=1., popsize="large").set_name("BPRotationInvariantDE", register=True)

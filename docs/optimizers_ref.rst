@@ -27,7 +27,7 @@ Configurable optimizers
 
 Configurable optimizers share the following API to create optimizers instances:
 
-.. autoclass:: nevergrad.optimizers.base.ParametrizedFamily
+.. autoclass:: nevergrad.optimizers.base.ConfiguredOptimizer
     :members:
     :special-members: __call__
 

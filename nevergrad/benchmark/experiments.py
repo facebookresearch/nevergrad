@@ -709,7 +709,7 @@ def double_o_seven(seed: Optional[int] = None) -> Iterator[Experiment]:
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
-            dde = ng.optimizers.DifferentialEvolution(crossover="dimension").with_name("DiscreteDE")
+            dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
             for optim in ["PSO", "NGO", "Shiva", "DiagonalCMA", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne", "Zero",
                           "RandomSearch", "AlmostRotationInvariantDE", dde]:
                 for env_budget in [5000, 10000, 20000, 40000]:

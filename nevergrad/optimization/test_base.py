@@ -129,29 +129,11 @@ def test_compare() -> None:
     np.testing.assert_almost_equal(result.value[0], 1., decimal=2)
 
 
-class StupidFamily(base.OptimizerFamily):
-
-    def __call__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> base.Optimizer:
-        assert isinstance(self, StupidFamily), f"This is self: {self}"
-        class_ = base.registry["Zero"] if self._kwargs.get("zero", True) else base.registry["StupidRandom"]
-        run = class_(parametrization=parametrization, budget=budget, num_workers=num_workers)
-        run.name = self._repr
-        return run
-
-
-def test_optimizer_family() -> None:
-    for zero in [True, False]:
-        optf = StupidFamily(zero=zero)
-        opt = optf(parametrization=2, budget=4, num_workers=1)
-        recom = opt.minimize(test_optimizerlib.Fitness([.5, -.8]))
-        np.testing.assert_equal(recom.value == np.zeros(2), zero)
-
-
 def test_naming() -> None:
-    optf = StupidFamily(zero=True)
+    optf = optimizerlib.RandomSearchMaker(stupid=True)
     opt = optf(parametrization=2, budget=4, num_workers=1)
     instru_str = "Array{(2,)}[recombination=average,sigma=1.0]"
-    np.testing.assert_equal(repr(opt), f"Instance of StupidFamily(zero=True)(parametrization={instru_str}, budget=4, num_workers=1)")
-    optf.with_name("BlubluOptimizer", register=True)
+    np.testing.assert_equal(repr(opt), f"Instance of RandomSearchMaker(stupid=True)(parametrization={instru_str}, budget=4, num_workers=1)")
+    optf.set_name("BlubluOptimizer", register=True)
     opt = base.registry["BlubluOptimizer"](parametrization=2, budget=4, num_workers=1)
     np.testing.assert_equal(repr(opt), f"Instance of BlubluOptimizer(parametrization={instru_str}, budget=4, num_workers=1)")
