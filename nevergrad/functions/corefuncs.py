@@ -353,7 +353,7 @@ def onemax5(y: np.ndarray) -> float:
     """Softmax discretization of onemax with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return _onemax(discretization.softmax_discretization(y, 5))
+    return onemax(discretization.softmax_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
@@ -361,7 +361,7 @@ def jump5(y: np.ndarray) -> float:
     """Softmax discretization of jump with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return _jump(discretization.softmax_discretization(y, 5))
+    return jump(discretization.softmax_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
@@ -369,7 +369,7 @@ def leadingones5(y: np.ndarray) -> float:
     """Softmax discretization of leadingones with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return _leadingones(discretization.softmax_discretization(y, 5))
+    return leadingones(discretization.softmax_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
