@@ -33,6 +33,11 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 @registry.register
 def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Yet Another Wide Black-Box Optimization Benchmark.
+    The goal is basically to have a very wide family of problems: continuous and discrete,
+    noisy and noise-free, mono- and multi-objective,  constrained and not constrained, sequential
+    and parallel.
+    """
     seedg = create_seed_generator(seed)
     ## Continuous case
 
