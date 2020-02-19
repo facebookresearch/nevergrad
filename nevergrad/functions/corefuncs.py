@@ -13,7 +13,7 @@ from nevergrad.common.decorators import Registry
 registry = Registry[Callable[[np.ndarray], float]]()
 
 
-def _onemax(x: List[int]) -> float:
+def onemax(x: List[int]) -> float:
     """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
     It is originally designed for lists of bits. It just counts the number of 1,
@@ -24,7 +24,7 @@ def _onemax(x: List[int]) -> float:
     return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
-def _leadingones(x: List[int]) -> float:
+def leadingones(x: List[int]) -> float:
     """leadingones is the second most classical discrete function, adapted for minimization.
 
     Returns len(x) - number of initial 1. I.e.
@@ -38,7 +38,7 @@ def _leadingones(x: List[int]) -> float:
     return 0
 
 
-def _jump(x: List[int]) -> float:  # TODO: docstring?
+def jump(x: List[int]) -> float:  # TODO: docstring?
     """There exists variants of jump functions; we are in minimization.
 
     The principle of a jump function is that local descent does not succeed.
