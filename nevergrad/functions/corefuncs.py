@@ -46,7 +46,7 @@ def _jump(x: List[int]) -> float:  # TODO: docstring?
     """
     n = len(x)
     m = n // 4
-    o = n - _onemax(x)
+    o = n - onemax(x)
     if o == n or o <= n - m:
         return n - m - o
     return o  # Deceptive part.
@@ -311,70 +311,41 @@ def lunacek(x: np.ndarray) -> float:
 # following functions using discretization should not be used with translation/rotation
 
 
-def discrete_onemax(y: np.ndarray) -> float:
-    return _onemax(list(y))
-
-
-def discrete_jump(y: np.ndarray) -> float:
-    return _jump(list(y))
-
-
-def discrete_leadingones(y: np.ndarray) -> float:
-    return _leadingones(list(y))
-
 
 @registry.register_with_info(no_transform=True)
 def hardonemax(y: np.ndarray) -> float:
     """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return _onemax(discretization.threshold_discretization(y))
+    return onemax(discretization.threshold_discretization(y))
 
 
 @registry.register_with_info(no_transform=True)
 def hardjump(y: np.ndarray) -> float:
     """Hardjump, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return _jump(discretization.threshold_discretization(y))
+    return jump(discretization.threshold_discretization(y))
 
 
 @registry.register_with_info(no_transform=True)
 def hardleadingones(y: np.ndarray) -> float:
     """Leading ones, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return _leadingones(discretization.threshold_discretization(y))
+    return leadingones(discretization.threshold_discretization(y))
 
 
 @registry.register_with_info(no_transform=True)
 def hardonemax5(y: np.ndarray) -> float:
     """Hardonemax, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return _onemax(discretization.threshold_discretization(y, 5))
+    return onemax(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
 def hardjump5(y: np.ndarray) -> float:
     """Jump, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return _jump(discretization.threshold_discretization(y, 5))
+    return jump(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
 def hardleadingones5(y: np.ndarray) -> float:
     """Leadingones, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return _leadingones(discretization.threshold_discretization(y, 5))
-
-
-@registry.register_with_info(no_transform=True)
-def onemax(y: np.ndarray) -> float:
-    """Softmax discretization of onemax (This multiplies the dimension by 2)."""
-    return _onemax(discretization.softmax_discretization(y))
-
-
-@registry.register_with_info(no_transform=True)
-def jump(y: np.ndarray) -> float:
-    """Softmax discretization of jump (This multiplies the dimension by 2)."""
-    return _jump(discretization.softmax_discretization(y))
-
-
-@registry.register_with_info(no_transform=True)
-def leadingones(y: np.ndarray) -> float:
-    """Softmax discretization of leadingones (This multiplies the dimension by 2)."""
-    return _leadingones(discretization.softmax_discretization(y))
+    return leadingones(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
