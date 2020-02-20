@@ -32,6 +32,18 @@ class TorchOptimizer:
     -----
     - This is experimental, the API may evolve
     - This does not support parallelization (multiple asks).
+
+
+    Example
+    -------
+    ..code::python
+
+        module = ...
+        optimizer = helpers.TorchOptimizer("OnePlusOne", module)
+        for x, y in batcher():
+            loss = compute_loss(module(x), y)
+            optimizer.step(loss)
+
     """  # tested in functions.rl since torch is only loaded there
 
     def __init__(
