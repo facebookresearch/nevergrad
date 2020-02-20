@@ -7,6 +7,7 @@ import typing as tp
 from typing import Iterator, Optional, List, Union, Any
 import numpy as np
 import nevergrad as ng
+import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
@@ -28,6 +29,69 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
 # for black (since lists are way too long...):
 # fmt: off
+
+
+@registry.register
+def yawidebbob(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Yet Another Wide Black-Box Optimization Benchmark.
+    The goal is basically to have a very wide family of problems: continuous and discrete,
+    noisy and noise-free, mono- and multi-objective,  constrained and not constrained, sequential
+    and parallel.
+    """
+    seedg = create_seed_generator(seed)
+    ## Continuous case
+
+    # First, a few functions with constraints.
+    functions = [
+        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
+    ]
+    for func in functions:
+        func.parametrization.register_cheap_constraint(_positive_sum)
+
+    # Then, let us build a constraint-free case. We include the noisy case.
+    names = ["hm", "rastrigin", "sphere", "doublelinearslope", "stepdoublelinearslope", "cigar", "ellipsoid", "stepellipsoid"]
+
+    # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    functions += [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl) for name in names
+        for rotation in [True, False]
+        for nl in [0., 100.]
+        for num_blocks in [1]
+        for d in ([2, 40, 100, 3000])
+    ]
+    optims = ["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
+    for optim in optims:
+        for function in functions:
+            for budget in [50, 500, 5000, 50000]:
+                    for nw in [1, 100]:
+                        xp = Experiment(function, optim, num_workers=nw,
+                                        budget=budget, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+    # Discrete, unordered.
+    for nv in [10, 50, 200]:
+        for optim in optims:
+            for nw in [1, 10]:
+                for budget in [500, 5000]:
+                    for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                        for arity in [2, 7]:
+                            variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
+                            instrum = ng.p.Instrumentation(*variables)
+                            yield Experiment(ExperimentFunction(discrete_func, instrum), optim, num_workers=nw, budget=budget, seed=next(seedg))
+    mofuncs: List[PackedFunctions] = []
+
+    # The multiobjective case.
+    for name1 in ["sphere", "cigar"]:
+        for name2 in ["sphere", "cigar", "hm"]:
+            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+                                         ArtificialFunction(name2, block_dimension=7)],
+                                        upper_bounds=np.array((50., 50.)))]
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in [2000, 4000, 8000]:
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
 
 
 # Discrete functions on {0,1}^d.
@@ -676,7 +740,6 @@ class PackedFunctions(ExperimentFunction):
 
 @registry.register
 def multiobjective_example(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: List[PackedFunctions] = []
