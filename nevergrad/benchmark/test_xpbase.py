@@ -8,12 +8,12 @@ import contextlib
 from unittest.mock import patch
 from typing import Optional, List, Any
 import numpy as np
-from ..common import testing
-from ..optimization import test_base
-from ..functions import ArtificialFunction
-from ..functions import ExperimentFunction
-from ..functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
-from .. import instrumentation as inst
+from nevergrad.parametrization import parameter as p
+from nevergrad.common import testing
+from nevergrad.optimization import test_base
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import ExperimentFunction
+from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
 
@@ -90,7 +90,7 @@ def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optio
 class Function(ExperimentFunction):
 
     def __init__(self, dimension: int):
-        super().__init__(self.oracle_call, inst.Instrumentation(inst.var.Gaussian(0, 1, shape=[dimension])))
+        super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
         self.register_initialization(dimension=dimension)
 
     def oracle_call(self, x: np.ndarray) -> float:

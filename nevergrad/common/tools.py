@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
+import inspect
 import warnings
 import itertools
 import collections
@@ -56,6 +57,14 @@ def roundrobin(*iterables: tp.Iterable[tp.Any]) -> tp.Iterator[tp.Any]:
 class Selector(pd.DataFrame):  # type: ignore
     """Pandas dataframe class with a simplified selection function
     """
+
+    @property
+    def _constructor_expanddim(self) -> tp.Type["Selector"]:
+        return Selector
+
+    @property
+    def _constructor(self) -> tp.Type["Selector"]:
+        return Selector
 
     # pylint: disable=arguments-differ
     def select(self, **kwargs: tp.Union[str, tp.Sequence[str], tp.Callable[[tp.Any], bool]]) -> "Selector":
@@ -218,3 +227,39 @@ class OrderedSet(tp.MutableSet[X]):
 
     def __len__(self) -> int:
         return len(self._data)
+
+
+def different_from_defaults(
+    *,
+    instance: tp.Any,
+    instance_dict: tp.Optional[tp.Dict[str, tp.Any]] = None,
+    check_mismatches: bool = False
+) -> tp.Dict[str, tp.Any]:
+    """Checks which attributes are different from defaults arguments
+
+    Parameters
+    ----------
+    instance: object
+        the object to change
+    instance_dict: dict
+        the dict corresponding to the instance, if not provided it's self.__dict__
+    check_mismatches: bool
+        checks that the attributes match the parameters
+
+    Note
+    ----
+    This is convenient for short repr of data structures
+    """
+    defaults = {
+        x: y.default for x, y in inspect.signature(instance.__class__.__init__).parameters.items() if x not in ["self", "__class__"]
+    }
+    if instance_dict is None:
+        instance_dict = instance.__dict__
+    if check_mismatches:
+        diff = set(defaults.keys()).symmetric_difference(instance_dict.keys())
+        if diff:  # this is to help during development
+            raise RuntimeError(f"Mismatch between attributes and arguments of {instance}: {diff}")
+    else:
+        defaults = {x: y for x, y in defaults.items() if x in instance.__dict__}
+    # only print non defaults
+    return {x: instance_dict[x] for x, y in defaults.items() if y != instance_dict[x] and not x.startswith("_")}

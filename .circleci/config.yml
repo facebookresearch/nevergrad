@@ -2,20 +2,46 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-version: 2
-jobs:
-  build:
+version: 2.1
+
+
+orbs:
+  win: circleci/windows@2.2.0
+
+
+
+# the set up in which the ubuntu jobs will run:
+executors:
+  ubuntu-python36:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
       - image: circleci/python:3.6.1
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
     working_directory: ~/repo
+
+
+commands:
+  ubuntu_restore_all:
+    description: "Restores virtual env with full install from cache, and update dependencies if need be."
+    steps:
+      - checkout
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          # fallback to installing main requirements
+          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+
+      - run:
+          name: "[all] Install dependencies"
+          command: |
+            . venv/bin/activate
+            pip install -e .[all]
+            pip install git+https://github.com/numpy/numpy-stubs@master
+
+
+jobs:
+  install:
+    executor: ubuntu-python36
 
     steps:
       - checkout
@@ -32,7 +58,15 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
             pip install -e .
+
+      - run:
+          name: "[no-extra] Print installation"
+          when: always
+          command: |
+            . venv/bin/activate
+            pip freeze
 
       - save_cache:
           name: "[no-extra] Save cache"
@@ -46,28 +80,57 @@ jobs:
             . venv/bin/activate
             python -m nevergrad.optimization.requirements_check  # calls a bit of everything
 
-      # Download and cache dependencies for "main"
-
-      - restore_cache:
-          name: "[all] Restore cache"
-          keys:
-          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
-          # fallback to installing main requirements
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
-
-      - run:
-          name: "[all] Install dependencies"
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install --upgrade pip
-            pip install -e .[all]
+      - ubuntu_restore_all
 
       - save_cache:
+          # only this one saves cache to avoid race conditions
           name: "[all] Save cache"
           paths:
             - ./venv
           key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: "[all] Print installation"
+          when: always
+          command: |
+            . venv/bin/activate
+            pip freeze
+
+      - run:
+          name: "Run wheel and check package"
+          when: always
+          command: |
+            . venv/bin/activate
+            python setup.py sdist bdist_wheel
+            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+            python3 -m venv test_wheel
+            . test_wheel/bin/activate
+            cd ..  # don't use nevergrad locally
+            pip install repo/dist/nevergrad-*any.whl
+            python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
+
+      - run:
+          name: Build docs
+          command: |
+            . venv/bin/activate
+            cd docs/
+            make html
+            make linkcheck
+
+      - persist_to_workspace:
+          root: docs/_build
+          paths: html
+
+      # - store_artifacts:
+      #     path: docs/_build/html
+
+  mypy:
+    executor: ubuntu-python36
+
+    steps:
+
+      - ubuntu_restore_all
+
 
       # Run all tests
 
@@ -78,6 +141,14 @@ jobs:
             mypy --version
             mypy nevergrad
 
+
+  pytests:
+    executor: ubuntu-python36
+
+    steps:
+
+      - ubuntu_restore_all
+
       - run:
           name: "[all] Run pytest"
           when: always
@@ -85,10 +156,78 @@ jobs:
             . venv/bin/activate
             pytest nevergrad --durations=20 --cov=nevergrad
 
+  docs-deploy:
+    docker:
+      - image: node:8.10.0
+    steps:
+      - checkout
+
+      - add_ssh_keys:
+          fingerprints:
+            - "56:6e:1b:3b:57:c1:1e:7b:5a:cc:3d:bf:c3:1f:d2:48"
+
+      - attach_workspace:
+          at: docs/_build
+
       - run:
-          name: "Run wheel and check files presence"
-          when: always
+          name: Install and configure dependencies
           command: |
-            . venv/bin/activate
-            python setup.py sdist bdist_wheel
-            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "ci-build"
+            git config user.name "ci-build"
+
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+
+
+  windows-pytests:
+    executor:
+      name: win/default
+      shell: bash.exe
+
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          name: "[all] Restore cache"
+          keys:
+          - v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: Setup nevergrad in virtualenv
+          command: |
+            py -3 -m venv venv
+            . ./venv/Scripts/activate
+            pip install -U pip
+            pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install .[all]
+
+      - save_cache:
+          name: "[all] Save cache"
+          paths:
+            - ./venv
+          key: v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: pytest
+          command: |
+            . ./venv/Scripts/activate
+            pytest nevergrad -v
+
+
+workflows:
+  version: 2
+  all_ci:
+    jobs:
+      - install
+      - mypy
+      - pytests
+      - windows-pytests
+      - docs-deploy:
+          requires:
+            - install
+          filters:
+            branches:
+              only: master

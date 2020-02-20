@@ -56,9 +56,9 @@ class BoundChecker:
         return True
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class Array(core.Parameter):
-    """Array variable of a given shape.
+    """Array parameter with customizable mutation and recombination.
 
     Parameters
     ----------
@@ -148,9 +148,13 @@ class Array(core.Parameter):
         if not self.full_range_sampling:
             return super().sample()
         child = self.spawn_child()
-        std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
+        func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
+        std_bounds = tuple(func(b * np.ones(self.value.shape)) for b in self.bounds)
         diff = std_bounds[1] - std_bounds[0]
-        child.set_standardized_data(std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff, deterministic=False)
+        new_data = std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff
+        if self.exponent is None:
+            new_data = self._to_reduced_space(new_data)
+        child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)
         child.heritage["lineage"] = child.uid
         return child
 
@@ -166,6 +170,7 @@ class Array(core.Parameter):
             maximum value
         method: str
             One of the following choices:
+
             - "clipping": clips the values inside the bounds. This is efficient but leads
               to over-sampling on the bounds.
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
@@ -177,7 +182,7 @@ class Array(core.Parameter):
             - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
               to unexpected behaviors.
         full_range_sampling: bool
-            this changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
+            Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
             to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
             "sample" method is used by some algorithms to create an initial population.
 
@@ -218,6 +223,12 @@ class Array(core.Parameter):
             if min_dist < 3.0:
                 warnings.warn(f"Bounds are {min_dist} sigma away from each other at the closest, "
                               "you should aim for at least 3 for better quality.")
+        return self
+
+    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter, utils.Crossover]) -> A:
+        assert self._parameters is not None
+        self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
+                                                      else core.Constant(recombination))
         return self
 
     def set_mutation(self: A, sigma: tp.Optional[tp.Union[float, "Array"]] = None, exponent: tp.Optional[float] = None) -> A:
@@ -268,7 +279,7 @@ class Array(core.Parameter):
     def _internal_set_standardized_data(self: A, data: np.ndarray, reference: A, deterministic: bool = False) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
-        data_reduc = (sigma * (data + reference._get_ref_data())).reshape(reference._value.shape)
+        data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
         self._value = data_reduc if reference.exponent is None else reference.exponent**data_reduc
         self._ref_data = None
         if reference.bound_transform is not None:
@@ -305,15 +316,19 @@ class Array(core.Parameter):
         if not others:
             return
         recomb = self.parameters["recombination"].value
-        all_p = [self] + list(others)
-        if recomb == "average":
-            self.set_standardized_data(np.mean([p.get_standardized_data(reference=self) for p in all_p], axis=0), deterministic=False)
+        all_params = [self] + list(others)
+        if isinstance(recomb, str) and recomb == "average":
+            all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
+            self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
+        elif isinstance(recomb, utils.Crossover):
+            crossover = recomb.apply([p.value for p in all_params], self.random_state)
+            self.value = crossover
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
 
 class Scalar(Array):
-    """Parameter representing a scalar
+    """Parameter representing a scalar.
 
     Parameters
     ----------
@@ -333,7 +348,7 @@ class Scalar(Array):
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
-        return self._value[0] if not self.integer else int(self._value[0])  # type: ignore
+        return self._value[0] if not self.integer else int(np.round(self._value[0]))  # type: ignore
 
     @value.setter
     def value(self, value: float) -> None:
@@ -344,7 +359,7 @@ class Scalar(Array):
 
 
 class Log(Scalar):
-    """Parameter representing a log distributed value between 0 and infinity
+    """Parameter representing a log distributed scalar between 0 and infinity.
 
     Parameters
     ----------

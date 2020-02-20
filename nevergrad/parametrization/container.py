@@ -3,10 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import warnings
 import typing as tp
-import numpy as np
-from nevergrad.common.typetools import ArrayLike
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
 
@@ -54,11 +51,11 @@ class Tuple(Dict):
 
 
 class Instrumentation(Tuple):
-    """Parameter holding args and kwargs:
+    """Container of parameters available through `args` and `kwargs` attributes.
     The parameter provided as input are used to provide values for
-    an arg tuple and a kwargs dictp.
-    "value" attribue returns (args, kwargs), but each can be independantly
-    accessed through the "args" and "kwargs" methods
+    an `arg` tuple and a `kwargs` dict.
+    `value` attribue returns `(args, kwargs)`, but each can be independantly
+    accessed through the `args` and `kwargs` properties.
 
     Parameters
     ----------
@@ -70,15 +67,14 @@ class Instrumentation(Tuple):
     Note
     ----
     When used in conjonction with the "minimize" method of an optimizer,
-    functions call use func(*param.args, **param.kwargs) instead of
-    func(param.value). This is for simplifying the parametrization of
+    functions call use `func(*param.args, **param.kwargs)` instead of
+    `func(param.value)`. This is for simplifying the parametrization of
     multiparameter functions.
     """
 
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(Tuple(*args), Dict(**kwargs))
         self._sanity_check(list(self[0]._content.values()) + list(self[1]._content.values()))  # type: ignore
-        self._compatibility_: tp.Optional["Instrumentation"] = None  # TODO remove when compatibility is over
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
@@ -87,86 +83,3 @@ class Instrumentation(Tuple):
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
-
-    # # # THE FOLLOWING IS ONLY FOR TEMPORARY (PARTIAL) COMPATIBILITY
-
-    def with_name(self: Ins, name: str) -> Ins:
-        return self.set_name(name)
-
-    def cheap_constraint_check(self, *args: tp.Any, **kwargs: tp.Any) -> bool:
-        child = self.spawn_child()
-        child.value = (args, kwargs)
-        return child.satisfies_constraints()
-
-    @property
-    def continuous(self) -> bool:
-        warnings.warn('"continuous" is deprecated, please use "descriptors.continuous" instead', DeprecationWarning)
-        return self.descriptors.continuous
-
-    @property
-    def noisy(self) -> bool:
-        warnings.warn('"noisy" is deprecated, please use "not descriptors.deterministic" instead', DeprecationWarning)
-        return not self.descriptors.deterministic
-
-    @property
-    def probably_noisy(self) -> bool:
-        warnings.warn('"probably_noisy" is deprecated, please use "not descriptors.deterministic_function" instead', DeprecationWarning)
-        return not self.descriptors.deterministic_function
-
-    @property
-    def is_nonmetrizable(self) -> bool:
-        warnings.warn('"is_nonmetrizable" is deprecated, please use "not descriptors.metrizable" instead', DeprecationWarning)
-        return not self.descriptors.metrizable
-
-    @property
-    def _compatibility(self) -> "Instrumentation":
-        if self._compatibility_ is None:
-            self._compatibility_ = self.spawn_child()
-        return self._compatibility_
-
-    def arguments_to_data(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
-        """Converts args and kwargs into data in np.ndarray format
-        """
-        self._compatibility.value = (args, kwargs)
-        return self._compatibility.get_standardized_data(reference=self)
-
-    def data_to_arguments(self, data: ArrayLike, deterministic: bool = False) -> ArgsKwargs:
-        """Converts data to arguments
-        Parameters
-        ----------
-        data: ArrayLike (list/tuple of floats, np.ndarray)
-            the data in the optimization space
-        deterministic: bool
-            whether the conversion should be deterministic (some variables can be stochastic, if deterministic=True
-            the most likely output will be used)
-        Returns
-        -------
-        args: Tuple[Any]
-            the positional arguments corresponding to the instance initialization positional arguments
-        kwargs: Dict[str, Any]
-            the keyword arguments corresponding to the instance initialization keyword arguments
-        """
-        self._compatibility.set_standardized_data(np.array(data, copy=False), reference=self, deterministic=deterministic)
-        return self._compatibility.value  # type: ignore
-
-    def set_cheap_constraint_checker(self, func: tp.Callable[..., bool]) -> None:
-        warnings.warn("set_cheap_constraint_checker is deprecated in favor of register_cheap_constraint with "
-                      "slightly different API:\nthe registered function must only take one argument (the value"
-                      " of the parameter, for an Instrumentation, this is a tuple countaining the tuple of args "
-                      "and the dict of kwargs")
-        self.register_cheap_constraint(FunctionPack(func))
-
-    def get_summary(self, data: ArrayLike) -> str:
-        raise RuntimeError("Summary is now suppressed because new parametrization is easier to analyze")
-
-
-class FunctionPack:
-
-    def __init__(self, func: tp.Callable[..., bool]) -> None:
-        self.func = func
-
-    def __call__(self, value: ArgsKwargs) -> bool:
-        return self.func(*value[0], **value[1])
-
-
-# # # END OF COMPATIBILITY REQUIREMENT

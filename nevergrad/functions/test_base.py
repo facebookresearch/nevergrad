@@ -5,8 +5,7 @@
 
 import typing as tp
 import numpy as np
-from nevergrad.instrumentation import Instrumentation
-from nevergrad.instrumentation import variables as var
+from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from . import base
 
@@ -16,24 +15,25 @@ def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> tp.Tuple[tp.Tuple[tp.Any, ..
 
 
 def test_experimented_function() -> None:
-    ifunc = base.ExperimentFunction(_arg_return, Instrumentation(  # type: ignore
-        var.SoftmaxCategorical([1, 12]),
+    ifunc = base.ExperimentFunction(_arg_return, p.Instrumentation(  # type: ignore
+        p.Choice([1, 12]),
         "constant",
-        var.Gaussian(0, 1, [2, 2]),
+        p.Array(shape=(2, 2)),
         constkwarg="blublu",
-        plop=var.SoftmaxCategorical([3, 4]),
+        plop=p.Choice([3, 4]),
     ))
     np.testing.assert_equal(ifunc.dimension, 8)
     data = [-100.0, 100, 1, 2, 3, 4, 100, -100]
-    args0, kwargs0 = ifunc.parametrization.data_to_arguments(np.array(data))
+    args0, kwargs0 = ifunc.parametrization.spawn_child().set_standardized_data(data).value
     output = ifunc(*args0, **kwargs0)  # this is very stupid and should be removed when Parameter is in use
     args: tp.Any = output[0]  # type: ignore
     kwargs: tp.Any = output[1]  # type: ignore
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
-    instru_str = ("Instrumentation(Tuple(SoftmaxCategorical(choices=Tuple(1,12),"
-                  "weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,G(0,1)),"
-                  "Dict(constkwarg=blublu,plop=SoftmaxCategorical(choices=Tuple(3,4),"
+    instru_str = ("Instrumentation(Tuple(Choice(choices=Tuple(1,12),"
+                  "weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,"
+                  "Array{(2,2)}[recombination=average,sigma=1.0]),"
+                  "Dict(constkwarg=blublu,plop=Choice(choices=Tuple(3,4),"
                   "weights=Array{(2,)}[recombination=average,sigma=1.0])))")
     testing.printed_assert_equal(
         ifunc.descriptors,
@@ -41,18 +41,18 @@ def test_experimented_function() -> None:
             "dimension": 8,
             "name": "_arg_return",
             "function_class": "ExperimentFunction",
-            "instrumentation": instru_str,
+            "parametrization": instru_str,
         },
     )
 
 
 def test_instrumented_function_kwarg_order() -> None:
-    ifunc = base.ExperimentFunction(_arg_return, Instrumentation(  # type: ignore
-        kw4=var.SoftmaxCategorical([1, 0]), kw2="constant", kw3=var.Array(2, 2), kw1=var.Gaussian(2, 2)
+    ifunc = base.ExperimentFunction(_arg_return, p.Instrumentation(  # type: ignore
+        kw4=p.Choice([1, 0]), kw2="constant", kw3=p.Array(shape=(2, 2)), kw1=p.Scalar(2.0).set_mutation(sigma=2.0)
     ))
     np.testing.assert_equal(ifunc.dimension, 7)
     data = np.array([-1, 1, 2, 3, 4, 100, -100])
-    args0, kwargs0 = ifunc.parametrization.data_to_arguments(data)
+    args0, kwargs0 = ifunc.parametrization.spawn_child().set_standardized_data(data).value
     # this is very stupid and should be removed when Parameter is in use
     kwargs: tp.Any = ifunc(*args0, **kwargs0)[1]   # type: ignore
     testing.printed_assert_equal(kwargs, {"kw1": 0, "kw2": "constant", "kw3": [[1, 2], [3, 4]], "kw4": 1})
@@ -63,24 +63,24 @@ class _Callable:
         return abs(x + y)
 
 
-def test_callable_instrumentation() -> None:
-    ifunc = base.ExperimentFunction(lambda x: x ** 2, var.Gaussian(2, 2))  # type: ignore
+def test_callable_parametrization() -> None:
+    ifunc = base.ExperimentFunction(lambda x: x ** 2, p.Scalar(2).set_mutation(2))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
-    ifunc = base.ExperimentFunction(_Callable(), var.Gaussian(2, 2))
+    ifunc = base.ExperimentFunction(_Callable(), p.Scalar(2).set_mutation(sigma=2))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
 
 
-def test_deterministic_data_to_arguments() -> None:
-    instru = Instrumentation(var.SoftmaxCategorical([0, 1, 2, 3]), y=var.SoftmaxCategorical([0, 1, 2, 3]))
+def test_deterministic_data_setter() -> None:
+    instru = p.Instrumentation(p.Choice([0, 1, 2, 3]), y=p.Choice([0, 1, 2, 3]))
     ifunc = base.ExperimentFunction(_Callable(), instru)
     data = [0.01, 0, 0, 0, 0.01, 0, 0, 0]
     for _ in range(20):
-        args, kwargs = ifunc.parametrization.data_to_arguments(data, deterministic=True)
+        args, kwargs = ifunc.parametrization.spawn_child().set_standardized_data(data, deterministic=True).value
         testing.printed_assert_equal(args, [0])
         testing.printed_assert_equal(kwargs, {"y": 0})
     arg_sum, kwarg_sum = 0, 0
     for _ in range(24):
-        args, kwargs = ifunc.parametrization.data_to_arguments(data, deterministic=False)
+        args, kwargs = ifunc.parametrization.spawn_child().set_standardized_data(data, deterministic=False).value
         arg_sum += args[0]
         kwarg_sum += kwargs["y"]
     assert arg_sum != 0
@@ -88,15 +88,13 @@ def test_deterministic_data_to_arguments() -> None:
 
 
 @testing.parametrized(
-    floats=((var.Gaussian(0, 1), var.Array(1).asscalar()), True, False),
-    array_int=((var.Gaussian(0, 1), var.Array(1).asscalar(int)), False, False),
-    softmax_noisy=((var.SoftmaxCategorical(["blue", "red"]), var.Array(1)), True, True),
-    softmax_deterministic=((var.SoftmaxCategorical(["blue", "red"], deterministic=True), var.Array(1)), False, False),
-    ordered_discrete=((var.OrderedDiscrete([True, False]), var.Array(1)), False, False),
-
-
+    floats=((p.Scalar(), p.Scalar(init=12.0)), True, False),
+    array_int=((p.Scalar(), p.Array(shape=(1,)).set_integer_casting()), False, False),
+    softmax_noisy=((p.Choice(["blue", "red"]), p.Array(shape=(1,))), True, True),
+    softmax_deterministic=((p.Choice(["blue", "red"], deterministic=True), p.Array(shape=(1,))), False, False),
+    ordered_discrete=((p.TransitionChoice([True, False]), p.Array(shape=(1,))), False, False),
 )
-def test_instrumentation_continuous_noisy(variables: tp.Tuple[var.Variable, ...], continuous: bool, noisy: bool) -> None:
-    instru = Instrumentation(*variables)
-    assert instru.continuous == continuous
-    assert instru.noisy == noisy
+def test_parametrization_continuous_noisy(variables: tp.Tuple[p.Parameter, ...], continuous: bool, noisy: bool) -> None:
+    instru = p.Instrumentation(*variables)
+    assert instru.descriptors.continuous == continuous
+    assert instru.descriptors.deterministic != noisy
