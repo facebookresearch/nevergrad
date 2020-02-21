@@ -1560,7 +1560,7 @@ class EMNA(base.Optimizer):
             # EMNA update
             stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
             self.sigma = np.sqrt(sum(stdd) / (self.mu))
-            if self.num_workers / self.dimension > 16:
+            if self.num_workers / self.dimension > 16: # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
@@ -1588,10 +1588,10 @@ class EMNA_TBPSA(base.Optimizer):
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
-        self.mu = self.dimension
-        self.llambda = 4 * self.dimension
-        if num_workers is not None:
-            self.llambda = max(self.llambda, num_workers)
+        dim = self.dimension
+        lltmp = max(4*dim, num_workers)
+        mutmp = lltmp // 4
+        self.popsize = _PopulationSizeController(llambda=lltmp, mu=mutmp, dimension=dim, num_workers=num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
         self.parents: List[p.Parameter] = [self.parametrization]
@@ -1599,7 +1599,6 @@ class EMNA_TBPSA(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_center
-        #return self.current_bests["optimistic"].x  # Naive version
 
     def _internal_ask_candidate(self) -> p.Parameter:
         individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
@@ -1612,24 +1611,34 @@ class EMNA_TBPSA(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
+        self.popsize.add_value(value)
         self.children.append(candidate)
-        if len(self.children) >= self.llambda:
+        if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            self.parents = self.children[: self.mu]
+            self.parents = self.children[: self.popsize.mu]
             self.children = []
-            self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.mu  # type: ignore
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.popsize.mu  # type: ignore
             # EMNA update
-            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
-            self.sigma = np.sqrt(sum(stdd) / (self.mu))
+            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
+            self.sigma = np.sqrt(sum(stdd) / (self.popsize.mu))
             if self.num_workers / self.dimension > 16:
-                imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+                imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         base.TellNotAskedNotSupportedError
 
+
+@registry.register
+class Naive_EMNA_TBPSA(EMNA_TBPSA):
+    """Simple Estimation of Multivariate Normal Algorithm (EMNA).
+       Noiseless implementation
+    """
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["optimistic"].x  # Naive version
 
 
 
