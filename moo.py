@@ -49,8 +49,8 @@ for dim in [2, 10, 100]:
         ax[0].plot(scoresdomain, scoresloss, '*')
         ax[1].plot(scoreshyper, scoresloss, '*')
         
-        ax[0].set(ylabel='Loss-covering', xlabel='Domain-covering', title=f'correlation{np.corrcoef(scoresdomain,scoresloss)[0][1]}')
-        ax[1].set(xlabel='Hypervolume', title=f'correlation{np.corrcoef(scoreshyper,scoresloss)[0][1]}')
+        ax[0].set(ylabel='Loss-covering', xlabel='Domain-covering', title=f'correlation{np.corrcoef(scoresdomain,scoresloss)[0][1]:.2f}')
+        ax[1].set(xlabel='Hypervolume', title=f'correlation{np.corrcoef(scoreshyper,scoresloss)[0][1]:.2f}')
         ax[0].grid()
         ax[1].grid()
         
