@@ -207,6 +207,26 @@ def parallel(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
+def harderparallel(seed: Optional[int] = None) -> Iterator[Experiment]:
+    """Parallel optimization on 3 classical objective functions."""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
+    optims = ["EMNA", "CMA", "NaiveTBPSA"]
+    #optims = ["EMNA", "EMNA_TBPSA", "CMA", "NaiveTBPSA", "ANISO_EMNA_TBPSA"]
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [5, 25]
+        for uv_factor in [0, 5]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000, 10000]:
+                for num_workers in [int(budget / 10), int(budget / 5), int(budget / 3)]:
+                    yield Experiment(func, optim, budget=budget, num_workers=num_workers, seed=next(seedg))
+
+
+@registry.register
 def oneshot(seed: Optional[int] = None) -> Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
     seedg = create_seed_generator(seed)

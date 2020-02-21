@@ -1515,32 +1515,122 @@ class NGO(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-class EMNA_TBPSA(TBPSA):
-    """Test-based population-size adaptation with EMNA.
+@registry.register
+class EMNA(base.Optimizer):
+    """Simple Estimation of Multivariate Normal Algorithm (EMNA).
     """
 
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        self.mu = self.dimension
+        self.llambda = 4 * self.dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # population
+        self.parents: List[p.Parameter] = [self.parametrization]
+        self.children: List[p.Parameter] = []
+
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x  # Naive version for now
+        return self.current_center
+        #return self.current_bests["optimistic"].x  # Naive version
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid
+        candidate._meta["sigma"] = self.sigma
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
-        self.popsize.add_value(value)
         self.children.append(candidate)
-        if len(self.children) >= self.popsize.llambda:
+        if len(self.children) >= self.llambda:
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            mu = self.popsize.mu
-            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.children[: mu]) / mu
-            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.children[: mu]]
-            # EMNA update
-            self.sigma = np.sqrt(sum(t1) / (mu))
-            imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
-            if self.num_workers / self.dimension > 16:
-                self.sigma /= imp
-            self.parents = self.children[: mu]
+            self.parents = self.children[: self.mu]
             self.children = []
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.mu  # type: ignore
+            # EMNA update
+            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(stdd) / (self.mu))
+            if self.num_workers / self.dimension > 16:
+                imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+                self.sigma /= imp
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        base.TellNotAskedNotSupportedError
+
+
+@registry.register
+class Naive_EMNA(EMNA):
+    """Simple Estimation of Multivariate Normal Algorithm (EMNA).
+       Noiseless implementation
+    """
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["optimistic"].x  # Naive version
+
+
+@registry.register
+class EMNA_TBPSA(base.Optimizer):
+    """Simple Estimation of Multivariate Normal Algorithm (EMNA).
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.sigma = 1
+        self.mu = self.dimension
+        self.llambda = 4 * self.dimension
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # population
+        self.parents: List[p.Parameter] = [self.parametrization]
+        self.children: List[p.Parameter] = []
+
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_center
+        #return self.current_bests["optimistic"].x  # Naive version
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid
+        candidate._meta["sigma"] = self.sigma
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        candidate._meta["loss"] = value
+        self.children.append(candidate)
+        if len(self.children) >= self.llambda:
+            # Sorting the population.
+            self.children.sort(key=lambda c: c._meta["loss"])
+            # Computing the new parent.
+            self.parents = self.children[: self.mu]
+            self.children = []
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.mu  # type: ignore
+            # EMNA update
+            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
+            self.sigma = np.sqrt(sum(stdd) / (self.mu))
+            if self.num_workers / self.dimension > 16:
+                imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+                self.sigma /= imp
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        base.TellNotAskedNotSupportedError
+
+
 
 
 @registry.register
