@@ -27,7 +27,7 @@ def bragg(X: np.ndarray) -> float:
     n = np.concatenate(([1], np.sqrt(X[0:bar]), [1.7320508075688772]))
     Type = np.arange(0, bar + 2)
     hauteur = np.concatenate(([0], X[bar : 2 * bar], [0]))
-    tmp = np.tan(2 * np.pi * n[Type] * hauteur[Type] / lam)
+    tmp = np.tan(2 * np.pi * n[Type] * hauteur / lam)
     # Specific to this substrate.
     Z = n[-1]
     for k in range(np.size(Type) - 1, 0, -1):
