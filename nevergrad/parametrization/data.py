@@ -342,7 +342,7 @@ class Scalar(Array):
     Parameters
     ----------
     init: optional float
-        initial value of the scalar
+        initial value of the scalar (defaults to 0.0 if both bounds are not provided)
     lower: optional float
         minimum value if any
     upper: optional float
@@ -360,7 +360,7 @@ class Scalar(Array):
 
     def __init__(
         self,
-        init: float = 0.0,
+        init: tp.Optional[float] = None,
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = True
@@ -368,7 +368,9 @@ class Scalar(Array):
         bounded = all(a is not None for a in (lower, upper))
         if bounded:
             if init is None:
-                init = (lower + upper) / 2.0
+                init = (lower + upper) / 2.0  # type: ignore
+        if init is None:
+            init = 0.0
         super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
         if bounded:
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore

@@ -263,6 +263,15 @@ def test_log() -> None:
     np.testing.assert_almost_equal(log.value, 0.09992, decimal=5)
 
 
+def test_bounded_scalar() -> None:
+    scalar = par.Scalar(lower=0.0, upper=0.6)
+    np.testing.assert_almost_equal(scalar.sigma.value, 0.1)
+    np.testing.assert_almost_equal(scalar.value, 0.3)
+    # partial
+    with pytest.raises(ValueError):
+        scalar = par.Scalar(lower=1.0)
+
+
 def test_ordered_choice() -> None:
     choice = par.TransitionChoice([0, 1, 2, 3], transitions=[-1000000, 10])
     assert len(choice) == 4
