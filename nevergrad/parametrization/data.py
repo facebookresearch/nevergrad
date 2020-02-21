@@ -372,7 +372,8 @@ class Scalar(Array):
         super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
         if bounded:
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
-        self.set_bounds(lower=lower, upper=upper, full_range_sampling=True)
+        if any(a is not None for a in (lower, upper)):
+            self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
@@ -441,7 +442,8 @@ class Log(Scalar):
         a_max: tp.Optional[float] = None,
     ) -> None:
         lower, upper = _a_min_max_deprecation(**locals())
-        if all(a is not None for a in (lower, upper)):
+        bounded = all(a is not None for a in (lower, upper))
+        if bounded:
             if init is None:
                 init = float(np.sqrt(lower * upper))  # type: ignore
             if exponent is None:
@@ -453,4 +455,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping", full_range_sampling=True)
+            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded)
