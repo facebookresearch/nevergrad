@@ -23,9 +23,9 @@ class BoundChecker:
 
     Parameter
     ---------
-    a_min: float or None
+    lower: float or None
         minimum value
-    a_max: float or None
+    upper: float or None
         maximum value
 
     Note
@@ -33,8 +33,8 @@ class BoundChecker:
     Not all bounds are necessary (data can be partially bounded, or not at all actually)
     """
 
-    def __init__(self, a_min: BoundValue = None, a_max: BoundValue = None) -> None:
-        self.bounds = (a_min, a_max)
+    def __init__(self, lower: BoundValue = None, upper: BoundValue = None) -> None:
+        self.bounds = (lower, upper)
 
     def __call__(self, value: np.ndarray) -> bool:
         """Checks whether the array lies within the bounds
@@ -158,15 +158,23 @@ class Array(core.Parameter):
         child.heritage["lineage"] = child.uid
         return child
 
-    def set_bounds(self: A, a_min: BoundValue = None, a_max: BoundValue = None,
-                   method: str = "clipping", full_range_sampling: bool = False) -> A:
-        """Bounds all real values into [a_min, a_max] using a provided method
+    # pylint: disable=unused-argument
+    def set_bounds(
+        self: A,
+        lower: BoundValue = None,
+        upper: BoundValue = None,
+        method: str = "clipping",
+        full_range_sampling: bool = False,
+        a_min: BoundValue = None,
+        a_max: BoundValue = None,
+    ) -> A:
+        """Bounds all real values into [lower, upper] using a provided method
 
         Parameters
         ----------
-        a_min: float or None
+        lower: float or None
             minimum value
-        a_max: float or None
+        upper: float or None
             maximum value
         method: str
             One of the following choices:
@@ -176,7 +184,7 @@ class Array(core.Parameter):
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
               reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
               dimension.
-            - "arctan": maps the space [a_min, a_max] to to all [-inf, inf] using arctan transform. This is efficient
+            - "arctan": maps the space [lower, upper] to to all [-inf, inf] using arctan transform. This is efficient
               but it completely reshapes the space (a mutation in the center of the space will be larger than a mutation
               close to the bounds), and reaching the bounds is equivalent to reaching the infinity.
             - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
@@ -191,7 +199,8 @@ class Array(core.Parameter):
         - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
-        bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (a_min, a_max))
+        lower, upper = _a_min_max_deprecation(**locals())
+        bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (lower, upper))
         both_bounds = all(b is not None for b in bounds)
         # preliminary checks
         if self.bound_transform is not None:
@@ -201,9 +210,9 @@ class Array(core.Parameter):
         checker = BoundChecker(*bounds)
         if not checker(self.value):
             raise ValueError("Current value is not within bounds, please update it first")
-        if not (a_min is None or a_max is None):
+        if not (lower is None or upper is None):
             if (bounds[0] >= bounds[1]).any():  # type: ignore
-                raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")
+                raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
         # update instance
         transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound)
         if method in transforms:
@@ -358,20 +367,39 @@ class Scalar(Array):
         self._value = np.array([value], dtype=float)
 
 
+# pylint: disable=unused-argument
+def _a_min_max_deprecation(
+    a_min: tp.Any,
+    a_max: tp.Any,
+    lower: tp.Any,
+    upper: tp.Any,
+    **kwargs: tp.Any
+) -> tp.Tuple[tp.Any, tp.Any]:
+    if a_min is not None:
+        warnings.warn('"a_min" is deprecated in favor of "lower" for clarity', DeprecationWarning)
+        assert lower is None, "Use only lower, and not a_min"
+        lower = a_min
+    if a_max is not None:
+        warnings.warn('"a_max" is deprecated in favor of "upper" for clarity', DeprecationWarning)
+        assert upper is None, "Use only upper, and not a_max"
+        upper = a_max
+    return lower, upper
+
+
 class Log(Scalar):
     """Parameter representing a log distributed scalar between 0 and infinity.
 
     Parameters
     ----------
     init: float or None
-        initial value of the variable. If not provided, it is set to the middle of a_min and a_max in log space
+        initial value of the variable. If not provided, it is set to the middle of lower and upper in log space
     exponent: float or None
         exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
         By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
         at 5 sigma in the transformed space.
-    a_min: float or None
+    lower: float or None
         minimum value if any (> 0)
-    a_max: float or None
+    upper: float or None
         maximum value if any
     mutable_sigma: bool
         whether the mutation standard deviation must mutate as well (for mutation based algorithms)
@@ -387,20 +415,23 @@ class Log(Scalar):
         *,
         init: tp.Optional[float] = None,
         exponent: tp.Optional[float] = None,
+        lower: tp.Optional[float] = None,
+        upper: tp.Optional[float] = None,
+        mutable_sigma: bool = False,
         a_min: tp.Optional[float] = None,
         a_max: tp.Optional[float] = None,
-        mutable_sigma: bool = False,
     ) -> None:
-        if all(a is not None for a in (a_min, a_max)):
+        lower, upper = _a_min_max_deprecation(**locals())
+        if all(a is not None for a in (lower, upper)):
             if init is None:
-                init = float(np.sqrt(a_min * a_max))  # type: ignore
+                init = float(np.sqrt(lower * upper))  # type: ignore
             if exponent is None:
-                exponent = float(np.exp((np.log(a_max) - np.log(a_min)) / 10.0))
+                exponent = float(np.exp((np.log(upper) - np.log(lower)) / 10.0))
         if init is None:
-            raise ValueError("You must define either a init value or both a_min and a_max bounds")
+            raise ValueError("You must define either a init value or both lower and upper bounds")
         if exponent is None:
             exponent = 2.0
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
-        if any(a is not None for a in (a_min, a_max)):
-            self.set_bounds(a_min, a_max, method="clipping")
+        if any(a is not None for a in (lower, upper)):
+            self.set_bounds(lower, upper, method="clipping")

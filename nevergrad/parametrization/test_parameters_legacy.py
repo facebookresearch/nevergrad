@@ -133,14 +133,14 @@ def test_scalar() -> None:
 
 @pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.1), (-10, 0.001), (20, 0.1)])  # type: ignore
 def test_log(value: float, expected: float) -> None:
-    var = p.Log(a_min=0.001, a_max=0.1)
+    var = p.Log(lower=0.001, upper=0.1)
     out = var.spawn_child().set_standardized_data(np.array([value]))
     np.testing.assert_approx_equal(out.value, expected, significant=4)
     repr(var)
 
 
 def test_log_int() -> None:
-    var = p.Log(a_min=300, a_max=10000).set_integer_casting()
+    var = p.Log(lower=300, upper=10000).set_integer_casting()
     out = var.spawn_child().set_standardized_data(np.array([0]))
     assert out.value == 1732
 
@@ -148,6 +148,6 @@ def test_log_int() -> None:
 # note: 0.9/0.9482=0.9482/0.999
 @pytest.mark.parametrize("value,expected", [(0, 0.9482), (-11, 0.9), (10, 0.999)])  # type: ignore
 def test_log_9(value: float, expected: float) -> None:
-    var = p.Log(a_min=0.9, a_max=0.999)
+    var = p.Log(lower=0.9, upper=0.999)
     out = var.spawn_child().set_standardized_data(np.array([value]))
     np.testing.assert_approx_equal(out.value, expected, significant=4)

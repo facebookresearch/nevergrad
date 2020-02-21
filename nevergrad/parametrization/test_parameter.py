@@ -233,7 +233,7 @@ def test_endogeneous_constraint() -> None:
     "name", ["clipping", "arctan", "tanh", "constraint"]
 )
 def test_constraints(name: str) -> None:
-    param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, a_min=-100, a_max=100)
+    param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, lower=-100, upper=100)
     param.set_standardized_data(param.get_standardized_data(reference=param))
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
@@ -251,13 +251,13 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 def test_log() -> None:
     with pytest.warns(UserWarning) as record:
-        log = par.Log(a_min=0.001, a_max=0.1, init=0.02, exponent=2.0)
+        log = par.Log(lower=0.001, upper=0.1, init=0.02, exponent=2.0)
         assert log.value == 0.02
         assert not record
-        par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=10.0)
+        par.Log(lower=0.001, upper=0.1, init=0.01, exponent=10.0)
         assert len(record) == 1
     # automatic
-    log = par.Log(a_min=0.001, a_max=0.1)
+    log = par.Log(lower=0.001, upper=0.1)
     assert log.value == 0.01
     log.set_standardized_data([4.999])
     np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
