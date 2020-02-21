@@ -84,6 +84,7 @@ class VectorLinkedList:
 
     @staticmethod
     def sort_by_index(node_list: tp.List[VectorNode], dimension_index: int) -> tp.List[VectorNode]:
+        assert dimension_index < len(node_list[0].coordinates)
         """ Returns a sorted list of `VectorNode`, with the sorting key defined by the
         `dimension_index`-th coordinates of the nodes in the `node_list`."""
         return sorted(node_list, key=lambda node: node.coordinates[dimension_index])
