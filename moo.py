@@ -6,8 +6,8 @@ import numpy as np
 import random
 
 for dim in [2, 10, 100]:
-  for N in [2]:
-    for size in [2, 3, 5, 10]:
+  for N in [2, 3, 10]:
+    for size in [2, 5, 10, 100]:
 
         myshifts = []
         for u in range(N):
@@ -54,4 +54,4 @@ for dim in [2, 10, 100]:
         ax[0].grid()
         ax[1].grid()
         
-        fig.savefig(f"correl_dim{dim}_obj{N}_size{size}.png")
+        fig.savefig(f"correl_domaindim{dim}_numberofobjectivefunctions{N}_sizeofsampledparetosubset{size}.png")
