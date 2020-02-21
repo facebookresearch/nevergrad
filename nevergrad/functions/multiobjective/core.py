@@ -88,7 +88,7 @@ class MultiobjectiveFunction:
                 new_points.append((argskwargs, losses))
         self._points = new_points
 
-    def pareto_front(self, size: Optional[int] = None, subset: str = "random") -> List[ArgsKwargs]:
+    def pareto_front(self, size: Optional[int] = None, subset: str = "random"): # -> List[ArgsKwargs], List[Any]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
 
         Parameters
@@ -105,9 +105,9 @@ class MultiobjectiveFunction:
         """
         self._filter_pareto_front()
         if size is None or size >= len(self._points):  # No limit: we return the full set.
-            return [p[0] for p in self._points]
+            return [p[0] for p in self._points], []
         if subset == "random":
-            return random.sample([p[0] for p in self._points], size)
+            return random.sample([p[0] for p in self._points], size), []
         possibilities: List[Any] = []
         scores : List[float] = []
         localrandom = random.Random(0)
