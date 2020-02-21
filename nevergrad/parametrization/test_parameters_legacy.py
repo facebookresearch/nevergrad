@@ -109,28 +109,6 @@ def test_scalar() -> None:
     assert new_token.get_standardized_data(reference=token).tolist() == [1.]
 
 
-# def test_array_as_ascalar() -> None:
-#    var = variables.Array(1).exponentiated(10, -1).asscalar()
-#    data = np.array([2])
-#    output = var.spawn_child().set_standardized_data(data)
-#    assert output == wrap_arg(0.01)
-#    np.testing.assert_almost_equal(var.arguments_to_data(*output[0], **output[1]), data)
-#    #  int
-#    var = variables.Array(1).asscalar(int)
-#    assert var.spawn_child().set_standardized_data(np.array([.4])) == wrap_arg(0)
-#    assert var.spawn_child().set_standardized_data(np.array([-.4])) == wrap_arg(0)
-#    output = var.spawn_child().set_standardized_data(np.array([.6]))
-#    assert output == wrap_arg(1)
-#    assert type(output[0][0]) == int  # pylint: disable=unidiomatic-typecheck
-#    # errors
-#    with pytest.raises(RuntimeError):
-#        variables.Array(1).asscalar(int).asscalar(float)
-#    with pytest.raises(RuntimeError):
-#        variables.Array(2).asscalar(int)
-#    with pytest.raises(ValueError):
-#        variables.Array(1).asscalar(np.int64)  # type: ignore
-
-
 @pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.1), (-10, 0.001), (20, 0.1)])  # type: ignore
 def test_log(value: float, expected: float) -> None:
     var = p.Log(lower=0.001, upper=0.1)

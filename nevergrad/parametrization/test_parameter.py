@@ -259,8 +259,8 @@ def test_log() -> None:
     # automatic
     log = par.Log(lower=0.001, upper=0.1)
     assert log.value == 0.01
-    log.set_standardized_data([4.999])
-    np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
+    log.set_standardized_data([2.999])
+    np.testing.assert_almost_equal(log.value, 0.09992, decimal=5)
 
 
 def test_ordered_choice() -> None:

@@ -341,19 +341,38 @@ class Scalar(Array):
 
     Parameters
     ----------
-    init: float
+    init: optional float
         initial value of the scalar
+    lower: optional float
+        minimum value if any
+    upper: optional float
+        maximum value if any
     mutable_sigma: bool
         whether the mutation standard deviation must mutate as well (for mutation based algorithms)
 
-    Note
-    ----
-    More specific behaviors can be obtained throught the following methods:
-    set_bounds, set_mutation
+    Notes
+    -----
+    - if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
+      Also, if init is not provided, it will be set to the middle value.
+    - More specific behaviors can be obtained throught the following methods:
+     set_bounds, set_mutation
     """
 
-    def __init__(self, init: float = 0.0, mutable_sigma: bool = True) -> None:
+    def __init__(
+        self,
+        init: float = 0.0,
+        lower: tp.Optional[float] = None,
+        upper: tp.Optional[float] = None,
+        mutable_sigma: bool = True
+    ) -> None:
+        bounded = all(a is not None for a in (lower, upper))
+        if bounded:
+            if init is None:
+                init = (lower + upper) / 2.0
         super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
+        if bounded:
+            self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
+        self.set_bounds(lower=lower, upper=upper, full_range_sampling=True)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
@@ -396,7 +415,7 @@ class Log(Scalar):
     exponent: float or None
         exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
         By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
-        at 5 sigma in the transformed space.
+        at 3 sigma in the transformed space.
     lower: float or None
         minimum value if any (> 0)
     upper: float or None
@@ -426,7 +445,7 @@ class Log(Scalar):
             if init is None:
                 init = float(np.sqrt(lower * upper))  # type: ignore
             if exponent is None:
-                exponent = float(np.exp((np.log(upper) - np.log(lower)) / 10.0))
+                exponent = float(np.exp((np.log(upper) - np.log(lower)) / 6.0))  # 99.7% of values within the bounds
         if init is None:
             raise ValueError("You must define either a init value or both lower and upper bounds")
         if exponent is None:
@@ -434,4 +453,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping")
+            self.set_bounds(lower, upper, method="clipping", full_range_sampling=True)
