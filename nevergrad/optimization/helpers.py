@@ -1,3 +1,4 @@
+import inspect
 import typing as tp
 import numpy as np
 import nevergrad as ng
@@ -53,12 +54,15 @@ class TorchOptimizer:
         bound: float = 20.0,
     ) -> None:
         self.parameters = list(parameters)
+        if isinstance(cls, str):
+            cls = optimizerlib.registry[cls]
+        elif not isinstance(cls, base.ConfiguredOptimizer):
+            if not (inspect.isclass(cls) and issubclass(cls, base.Optimizer)):
+                raise TypeError('"cls" must be a str, a ConfiguredOptimizer instance, or an Optimizer class')
         args = (
             ng.p.Array(init=np.array(p.data, dtype=np.float)).set_bounds(-bound, bound, method="clipping")
             for p in self.parameters
         )  # bounded to avoid overflows
-        if isinstance(cls, str):
-            cls = optimizerlib.registry[cls]
         self.optimizer = cls(ng.p.Tuple(*args), budget=None, num_workers=1)
         self.candidate = self.optimizer.ask()
 

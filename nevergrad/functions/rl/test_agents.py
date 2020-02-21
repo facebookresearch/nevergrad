@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
 from nevergrad.optimization import optimizerlib
 from nevergrad.optimization import helpers
 from . import agents
@@ -69,9 +70,13 @@ def test_partial_double_seven() -> None:
 
 def test_torch_optimization() -> None:
     module = agents.Perceptron(input_shape=(2,), output_size=1)
-    torchopt = helpers.TorchOptimizer(module.parameters(), "OnePlusOne")
+    torchopt = helpers.TorchOptimizer(module.parameters(), optimizerlib.OnePlusOne)
     # pylint: disable=not-callable
     x = module.forward(agents.torch.tensor(np.array([2, 3], dtype=np.float32))).item()
     torchopt.step(3.0)
     y = module.forward(agents.torch.tensor(np.array([2, 3], dtype=np.float32))).item()
     assert x != y
+    # Other instanciations
+    helpers.TorchOptimizer(module.parameters(), "OnePlusOne")
+    with pytest.raises(TypeError):
+        helpers.TorchOptimizer(module.parameters(), 12)  # type: ignore
