@@ -69,7 +69,7 @@ def test_partial_double_seven() -> None:
 
 def test_torch_optimization() -> None:
     module = agents.Perceptron(input_shape=(2,), output_size=1)
-    torchopt = helpers.TorchOptimizer("OnePlusOne", module)
+    torchopt = helpers.TorchOptimizer(module.parameters(), "OnePlusOne")
     # pylint: disable=not-callable
     x = module.forward(agents.torch.tensor(np.array([2, 3], dtype=np.float32))).item()
     torchopt.step(3.0)
