@@ -110,8 +110,9 @@ class MultiobjectiveFunction:
             return random.sample([p[0] for p in self._points], size)
         possibilities: List[Any] = []
         scores : List[float] = []
-        for u in range(30):
-            possibilities += [random.sample(self._points, size)]
+        localrandom = random.Random(0)
+        for u in range(60):
+            possibilities += [localrandom.sample(self._points, size)]
             if subset == "hypervolume":
                 scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])]
             else:
@@ -127,4 +128,4 @@ class MultiobjectiveFunction:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2
                 scores += [score]
-        return [p[0] for p in possibilities[scores.index(min(scores))]]
+        return [p[0] for p in possibilities[scores.index(min(scores))]], scores
