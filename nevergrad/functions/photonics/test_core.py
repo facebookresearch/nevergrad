@@ -113,7 +113,7 @@ GOOD_CHIRPED = [89.04887416, 109.54188095, 89.74520725, 121.81700431,
 @testing.parametrized(
     morpho=("morpho", 1.127904, None),
     chirped=("chirped", 0.944114, None),
-    good_chirped=("chirped", 0.837215, GOOD_CHIRPED),
+    good_chirped=("chirped", 0.837215, GOOD_CHIRPED),  # supposed to be better
     bragg=("bragg", 0.96776, None)
 )
 def test_photonics_values_random(name: str, expected: float, data: tp.Optional[tp.List[float]]) -> None:
