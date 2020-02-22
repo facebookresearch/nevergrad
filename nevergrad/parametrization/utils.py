@@ -167,6 +167,8 @@ def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.ra
 
 
 class Crossover:
+    """ Experimental, the API will evolve
+    """
 
     def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
         self.num_points = num_points
