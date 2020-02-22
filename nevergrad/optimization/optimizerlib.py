@@ -452,7 +452,7 @@ class NaiveTBPSA(TBPSA):
 
 
 @registry.register
-class ANISO_TBPSA(TBPSA):
+class AnisoTBPSA(TBPSA):
     """Test-based population-size adaptation.
 
     Population-size equal to lambda = 4 x dimension.
@@ -503,7 +503,7 @@ class ANISO_TBPSA(TBPSA):
 
 
 @registry.register
-class NaiveTBPSA(TBPSA):
+class NaiveAnisoTBPSA(TBPSA):
     def _internal_provide_recommendation(self) -> ArrayLike:
         return self.current_bests["optimistic"].x
 
