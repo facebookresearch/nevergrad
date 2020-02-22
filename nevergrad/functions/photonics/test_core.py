@@ -113,17 +113,17 @@ GOOD_CHIRPED = [89.04887416, 109.54188095, 89.74520725, 121.81700431,
 @testing.parametrized(
     morpho=("morpho", 1.127904, None),
     chirped=("chirped", 0.944114, None),
-    good_chirped=("chirped", 0.837215, GOOD_CHIRPED),  # supposed to be better
+    good_chirped=("chirped", 0.275923, GOOD_CHIRPED),  # supposed to be better
     bragg=("bragg", 0.96776, None)
 )
 def test_photonics_values_random(name: str, expected: float, data: tp.Optional[tp.List[float]]) -> None:
     if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
+    size = len(data) if data is not None else (16 if name != "morpho" else 4)
+    photo = core.Photonics(name, size)
     if data is None:
-        size = 16 if name != "morpho" else 4
         x = np.random.RandomState(12).normal(0, 1, size=size)
+        candidate = photo.parametrization.spawn_child().set_standardized_data(x)
     else:
-        x = np.array(data)
-    photo = core.Photonics(name, x.size)
-    candidate = photo.parametrization.spawn_child().set_standardized_data(x)
+        candidate = photo.parametrization.spawn_child(new_value=[data])
     np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
