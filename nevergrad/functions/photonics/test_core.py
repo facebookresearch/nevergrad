@@ -102,7 +102,7 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
 
 @testing.parametrized(
     morpho=("morpho", 1.127904),
-    chirped=("chirped", 0.937039),
+    chirped=("chirped", 0.94411397),
     bragg=("bragg", 0.96776)
 )
 def test_photonics_values_random(name: str, expected: float) -> None:

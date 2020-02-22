@@ -46,7 +46,7 @@ def chirped(X: np.ndarray) -> float:
     r = np.zeros(np.size(lam)) + 0j
     for m in range(0, np.size(lam)):
         # Specific to this substrate.
-        tmp = np.tan(2 * np.pi * n[Type] * hauteur[Type] / lam[m])
+        tmp = np.tan(2 * np.pi * n[Type] * hauteur / lam[m])
         Z = 1.7320508075688772
         for k in range(np.size(Type) - 1, 0, -1):
             Z = (Z - 1j * n[Type[k]] * tmp[k]) / (1 - 1j * tmp[k] * Z / n[Type[k]])
