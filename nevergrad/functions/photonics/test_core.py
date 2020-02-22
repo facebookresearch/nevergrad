@@ -100,17 +100,31 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
 
 
+GOOD_CHIRPED = [89.04887416, 109.54188095, 89.74520725, 121.81700431,
+                179.99830918, 124.38222473, 95.31017129, 116.0239629,
+                92.92345776, 118.06108198, 179.99965859, 116.89288181,
+                88.90191494, 110.30816229, 93.11974992, 137.42629858,
+                118.81810084, 110.74139708, 85.15270955, 100.9382438,
+                81.44070951, 100.6382896, 84.97336252, 110.59252719,
+                134.89164276, 121.84205195, 89.28450356, 106.72776991,
+                85.77168797, 102.33562547]
+
+
 @testing.parametrized(
-    morpho=("morpho", 1.127904),
-    chirped=("chirped", 0.944114),
-    bragg=("bragg", 0.96776)
+    morpho=("morpho", 1.127904, None),
+    chirped=("chirped", 0.944114, None),
+    good_chirped=("chirped", 0.837215, GOOD_CHIRPED),
+    bragg=("bragg", 0.96776, None)
 )
-def test_photonics_values_random(name: str, expected: float) -> None:
+def test_photonics_values_random(name: str, expected: float, data: tp.Optional[tp.List[float]]) -> None:
     if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
-    size = 16 if name != "morpho" else 4
-    photo = core.Photonics(name, size)
-    np.random.seed(12)
-    x = np.random.normal(0, 1, size=size)
+    if data is None:
+        size = 16 if name != "morpho" else 4
+        np.random.seed(12)
+        x = np.random.normal(0, 1, size=size)
+    else:
+        x = np.array(data)
+    photo = core.Photonics(name, x.size)
     candidate = photo.parametrization.spawn_child().set_standardized_data(x)
     np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
