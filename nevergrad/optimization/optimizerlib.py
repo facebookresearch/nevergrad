@@ -452,6 +452,63 @@ class NaiveTBPSA(TBPSA):
 
 
 @registry.register
+class ANISO_TBPSA(TBPSA):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        dim = self.dimension
+        self.sigma = np.ones(dim)
+        self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # population
+        self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
+        self.children: List[p.Parameter] = []
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1, self.dimension) / np.sqrt(self.dimension))
+        individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid  # for tracking
+        candidate._meta["sigma"] = mutated_sigma
+        return candidate
+
+#    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+#        candidate._meta["loss"] = value
+#        self.popsize.add_value(value)
+#        self.children.append(candidate)
+#        if len(self.children) >= self.popsize.llambda:
+#            # Sorting the population.
+#            self.children.sort(key=lambda c: c._meta["loss"])
+#            # Computing the new parent.
+#            self.parents = self.children[: self.popsize.mu]
+#            self.children = []
+#            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
+#                                      for c in self.parents) / self.popsize.mu
+#            self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents])) / self.popsize.mu)
+
+#    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+#        data = candidate.get_standardized_data(reference=self.parametrization)
+#        sigma = np.linalg.norm(data - self.current_center) / np.sqrt(self.dimension)  # educated guess
+#        candidate._meta["sigma"] = sigma
+#        self._internal_tell_candidate(candidate, value)  # go through standard pipeline
+
+
+@registry.register
+class NaiveTBPSA(TBPSA):
+    def _internal_provide_recommendation(self) -> ArrayLike:
+        return self.current_bests["optimistic"].x
+
+
+@registry.register
 class NoisyBandit(base.Optimizer):
     """UCB.
     This is upper confidence bound (adapted to minimization),
