@@ -47,7 +47,7 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
         bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
         shape = (1, dimension)
-        bounds = [(0, 300)]
+        bounds = [(30, 180)]
     elif name == "morpho":
         shape = (4, dimension // 4)
         bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]
