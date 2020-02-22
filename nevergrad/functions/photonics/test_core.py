@@ -121,8 +121,7 @@ def test_photonics_values_random(name: str, expected: float, data: tp.Optional[t
         raise SkipTest("Too slow in CircleCI")
     if data is None:
         size = 16 if name != "morpho" else 4
-        np.random.seed(12)
-        x = np.random.normal(0, 1, size=size)
+        x = np.random.RandomState(12).normal(0, 1, size=size)
     else:
         x = np.array(data)
     photo = core.Photonics(name, x.size)
