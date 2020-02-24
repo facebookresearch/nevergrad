@@ -15,7 +15,7 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value], method: str) -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "fteytaud") -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
@@ -387,47 +387,47 @@ AvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_bes
 AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_best").set_name(
     "AvgCauchyLHSSearch", register=True)
 
-EAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_meunier_best").set_name("AvgHaltonSearch", register=True)
+EAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_meunier_best").set_name("EAvgHaltonSearch", register=True)
 EAvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_meunier_best").set_name(
-    "AvgHaltonSearchPlusMiddlePoint", register=True)
-EAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_meunier_best").set_name("AvgLargeHaltonSearch", register=True)
+    "EAvgHaltonSearchPlusMiddlePoint", register=True)
+EAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_meunier_best").set_name("EAvgLargeHaltonSearch", register=True)
 EAvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_meunier_best").set_name(
-    "AvgLargeScrHaltonSearch", register=True)
+    "EAvgLargeScrHaltonSearch", register=True)
 EAvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgLargeHaltonSearchPlusMiddlePoint", register=True)
+    scale=100., middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgLargeHaltonSearchPlusMiddlePoint", register=True)
 EAvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgSmallHaltonSearchPlusMiddlePoint", register=True)
-EAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_meunier_best").set_name("AvgScrHaltonSearch", register=True)
+    scale=.01, middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgSmallHaltonSearchPlusMiddlePoint", register=True)
+EAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgScrHaltonSearch", register=True)
 EAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    middle_point=True, scrambled=True, recommendation_rule="average_of_meunier_best").set_name("AvgScrHaltonSearchPlusMiddlePoint", register=True)
+    middle_point=True, scrambled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgScrHaltonSearchPlusMiddlePoint", register=True)
 EAvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, scrambled=True, recommendation_rule="average_of_meunier_best").set_name("AvgLargeScrHaltonSearchPlusMiddlePoint", register=True)
+    scale=100., middle_point=True, scrambled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgLargeScrHaltonSearchPlusMiddlePoint", register=True)
 EAvgSmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, scrambled=True, recommendation_rule="average_of_meunier_best").set_name("AvgSmallScrHaltonSearchPlusMiddlePoint", register=True)
+    scale=.01, middle_point=True, scrambled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgSmallScrHaltonSearchPlusMiddlePoint", register=True)
 EAvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="average_of_meunier_best").set_name(
-    "AvgHammersleySearch", register=True)
+    "EAvgHammersleySearch", register=True)
 EAvgHammersleySearchPlusMiddlePoint = SamplingSearch(
-    sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgHammersleySearchPlusMiddlePoint", register=True)
+    sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgHammersleySearchPlusMiddlePoint", register=True)
 EAvgLargeHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgLargeHammersleySearchPlusMiddlePoint", register=True)
+    scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgLargeHammersleySearchPlusMiddlePoint", register=True)
 EAvgSmallHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgSmallHammersleySearchPlusMiddlePoint", register=True)
+    scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgSmallHammersleySearchPlusMiddlePoint", register=True)
 EAvgLargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgLargeScrHammersleySearchPlusMiddlePoint", register=True)
+    scrambled=True, scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgLargeScrHammersleySearchPlusMiddlePoint", register=True)
 EAvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
+    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
 EAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("AvgScrHammersleySearchPlusMiddlePoint", register=True)
+    scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_meunier_best").set_name("EAvgScrHammersleySearchPlusMiddlePoint", register=True)
 EAvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
-                                          recommendation_rule="average_of_meunier_best").set_name("AvgLargeHammersleySearch", register=True)
+                                          recommendation_rule="average_of_meunier_best").set_name("EAvgLargeHammersleySearch", register=True)
 EAvgLargeScrHammersleySearch = SamplingSearch(
-    scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_meunier_best").set_name("AvgLargeScrHammersleySearch", register=True)
+    scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgLargeScrHammersleySearch", register=True)
 EAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
-                                        recommendation_rule="average_of_meunier_best").set_name("AvgScrHammersleySearch", register=True)
+                                        recommendation_rule="average_of_meunier_best").set_name("EAvgScrHammersleySearch", register=True)
 EAvgRescaleScrHammersleySearch = SamplingSearch(
-    sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_meunier_best").set_name("AvgRescaleScrHammersleySearch", register=True)
+    sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgRescaleScrHammersleySearch", register=True)
 EAvgCauchyScrHammersleySearch = SamplingSearch(
-    cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_meunier_best").set_name("AvgCauchyScrHammersleySearch", register=True)
-EAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_meunier_best").set_name("AvgLHSSearch", register=True)
+    cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_meunier_best").set_name("EAvgCauchyScrHammersleySearch", register=True)
+EAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_meunier_best").set_name("EAvgLHSSearch", register=True)
 EAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_meunier_best").set_name(
-    "AvgCauchyLHSSearch", register=True)
+    "EAvgCauchyLHSSearch", register=True)
