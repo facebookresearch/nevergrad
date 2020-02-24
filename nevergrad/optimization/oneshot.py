@@ -21,7 +21,7 @@ def avg_of_k_best(archive: utils.Archive[utils.Value], method: str) -> ArrayLike
     dimension = len(items[0][0])
     if method == "fteytaud":
         k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
-    else
+    else:
         k = max(1, len(archive) // (2**dimension))
     k = 1 if k < 1 else k
     # Wasted time.
