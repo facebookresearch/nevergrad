@@ -15,11 +15,14 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.Value], method: str) -> ArrayLike:
     # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
-    k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
+    if method == "fteytaud":
+        k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
+    else
+        k = max(1, len(archive) // (2**dimension))
     k = 1 if k < 1 else k
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
@@ -97,7 +100,9 @@ class _RandomSearch(OneShotOptimizer):
         if self.stupid:
             return self._internal_ask()
         if self.recommendation_rule == "average_of_best":
-            return avg_of_k_best(self.archive)
+            return avg_of_k_best(self.archive, "fteytaud")
+        if self.recommendation_rule == "average_of_meunier_best":
+            return avg_of_k_best(self.archive, "lmeunier")
         return super()._internal_provide_recommendation()
 
 
@@ -121,7 +126,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
          - "random": uses a randomized pattern for the scale.
          - "auto": scales in function of dimension and budget (see XXX)
     recommendation_rule: str
-        "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
+        "average_of_best" or "pessimistic" or "average_of_meunier_best"; "pessimistic" is 
+        the default and implies selecting the pessimistic best.
     """
 
     one_shot = True
