@@ -14,6 +14,9 @@
 - Activated Windows CI (still a bit flaky, with a few deactivated tests).
 - Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
 - Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
+- Some variants of algorithms have been removed from the `ng.optimizers` namespace to simplify it. All such variants can be easily created
+  using the corresponding `ConfiguredOptimizer`. Also, adding `import nevergrad.optimization.experimentalvariants` will populate `ng.optimizers.registry`
+  with all variants.
 
 
 ## v0.3.2 (2019-02-05)
