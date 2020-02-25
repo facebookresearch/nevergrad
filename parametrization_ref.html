@@ -181,10 +181,10 @@ The parametrization subpackage will help you do thanks to:</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*[, init, shape, …])</p></td>
 <td><p>Array parameter with customizable mutation and recombination.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>([init, mutable_sigma])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>([init, lower, upper, …])</p></td>
 <td><p>Parameter representing a scalar.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, a_min, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, lower, …])</p></td>
 <td><p>Parameter representing a log distributed scalar between 0 and infinity.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Dict</span></code></a>(**parameters)</p></td>
@@ -225,13 +225,13 @@ set_bounds, set_mutation, set_integer_casting</p>
 </div>
 <dl class="method">
 <dt id="nevergrad.p.Array.set_bounds">
-<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param">a_min: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">a_max: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">method: str = 'clipping'</em>, <em class="sig-param">full_range_sampling: bool = False</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bounds all real values into [a_min, a_max] using a provided method</p>
+<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param">lower: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">upper: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">method: str = 'clipping'</em>, <em class="sig-param">full_range_sampling: bool = False</em>, <em class="sig-param">a_min: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">a_max: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bounds all real values into [lower, upper] using a provided method</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>a_min</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value</p></li>
-<li><p><strong>a_max</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value</p></li>
+<li><p><strong>lower</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value</p></li>
+<li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value</p></li>
 <li><p><strong>method</strong> (<em>str</em>) – <p>One of the following choices:</p>
 <ul>
 <li><p>”clipping”: clips the values inside the bounds. This is efficient but leads
@@ -239,7 +239,7 @@ to over-sampling on the bounds.</p></li>
 <li><p>”constraint”: adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
 reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
 dimension.</p></li>
-<li><p>”arctan”: maps the space [a_min, a_max] to to all [-inf, inf] using arctan transform. This is efficient
+<li><p>”arctan”: maps the space [lower, upper] to to all [-inf, inf] using arctan transform. This is efficient
 but it completely reshapes the space (a mutation in the center of the space will be larger than a mutation
 close to the bounds), and reaching the bounds is equivalent to reaching the infinity.</p></li>
 <li><p>”tanh”: same as “arctan”, but with a “tanh” transform. “tanh” saturating much faster than “arctan”, it can lead
@@ -306,39 +306,45 @@ x2 or /2 “on average” on the value at each mutation.</p></li>
 
 <dl class="class">
 <dt id="nevergrad.p.Scalar">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Scalar</code><span class="sig-paren">(</span><em class="sig-param">init: float = 0.0</em>, <em class="sig-param">mutable_sigma: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Scalar" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Scalar</code><span class="sig-paren">(</span><em class="sig-param">init: Optional[float] = None</em>, <em class="sig-param">lower: Optional[float] = None</em>, <em class="sig-param">upper: Optional[float] = None</em>, <em class="sig-param">mutable_sigma: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Scalar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Array</span></code></p>
 <p>Parameter representing a scalar.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>float</em>) – initial value of the scalar</p></li>
+<li><p><strong>init</strong> (<em>optional float</em>) – initial value of the scalar (defaults to 0.0 if both bounds are not provided)</p></li>
+<li><p><strong>lower</strong> (<em>optional float</em>) – minimum value if any</p></li>
+<li><p><strong>upper</strong> (<em>optional float</em>) – maximum value if any</p></li>
 <li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
 </ul>
 </dd>
 </dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>By default, this is an unbounded scalar with Gaussian mutations.
-More specific behaviors can be obtained throught the following methods:
-set_bounds, set_mutation</p>
-</div>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>by default, this is an unbounded scalar with Gaussian mutations.</p></li>
+<li><p>if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
+Also, if init is not provided, it will be set to the middle value.</p></li>
+<li><p>More specific behaviors can be obtained throught the following methods:</p></li>
+</ul>
+<blockquote>
+<div><p>set_bounds, set_mutation</p>
+</div></blockquote>
 </dd></dl>
 
 <dl class="class">
 <dt id="nevergrad.p.Log">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Log</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">init: Optional[float] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em>, <em class="sig-param">a_min: Optional[float] = None</em>, <em class="sig-param">a_max: Optional[float] = None</em>, <em class="sig-param">mutable_sigma: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Log" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Log</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">init: Optional[float] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em>, <em class="sig-param">lower: Optional[float] = None</em>, <em class="sig-param">upper: Optional[float] = None</em>, <em class="sig-param">mutable_sigma: bool = False</em>, <em class="sig-param">a_min: Optional[float] = None</em>, <em class="sig-param">a_max: Optional[float] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Scalar</span></code></p>
 <p>Parameter representing a log distributed scalar between 0 and infinity.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>float</em><em> or </em><em>None</em>) – initial value of the variable. If not provided, it is set to the middle of a_min and a_max in log space</p></li>
+<li><p><strong>init</strong> (<em>float</em><em> or </em><em>None</em>) – initial value of the variable. If not provided, it is set to the middle of lower and upper in log space</p></li>
 <li><p><strong>exponent</strong> (<em>float</em><em> or </em><em>None</em>) – exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
 By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
-at 5 sigma in the transformed space.</p></li>
-<li><p><strong>a_min</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value if any (&gt; 0)</p></li>
-<li><p><strong>a_max</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value if any</p></li>
+at 3 sigma in the transformed space.</p></li>
+<li><p><strong>lower</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value if any (&gt; 0)</p></li>
+<li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value if any</p></li>
 <li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
 </ul>
 </dd>
