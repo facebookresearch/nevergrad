@@ -53,7 +53,10 @@ class MultiobjectiveFunction:
         # We compute the hypervolume
         if self._auto_bound > 0:
             self._auto_bound -= 1
-            self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
+            if self._upper_bounds is not None:
+                self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
+            else:
+                self._upper_bounds = np.array(losses)
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
