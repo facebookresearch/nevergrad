@@ -341,7 +341,7 @@ CauchyScrHammersleySearch = SamplingSearch(
 LHSSearch = SamplingSearch(sampler="LHS").set_name("LHSSearch", register=True)
 CauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).set_name("CauchyLHSSearch", register=True)
 
-
+# Recommendation rule = average of k best, with k = min(d, lambda/4), as in the paper by F. Teytaud.
 AvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_best").set_name("AvgHaltonSearch", register=True)
 AvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_best").set_name(
     "AvgHaltonSearchPlusMiddlePoint", register=True)
@@ -387,6 +387,7 @@ AvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_bes
 AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_best").set_name(
     "AvgCauchyLHSSearch", register=True)
 
+# Recommendation rule = average of k best, with k = n / 2^d, i.e. average exponentially decreasing with the dimension.
 EAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_meunier_best").set_name("EAvgHaltonSearch", register=True)
 EAvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_meunier_best").set_name(
     "EAvgHaltonSearchPlusMiddlePoint", register=True)
