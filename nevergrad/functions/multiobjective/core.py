@@ -37,7 +37,7 @@ class MultiobjectiveFunction:
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
         if upper_bounds is None:
-            self._upper_bounds = None
+            self._upper_bounds = np.array([0.])
             self._auto_bound = 10
         else:
             self._upper_bounds = np.array(upper_bounds, copy=False)
@@ -57,6 +57,7 @@ class MultiobjectiveFunction:
                 self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
             else:
                 self._upper_bounds = np.array(losses)
+                
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
