@@ -42,18 +42,19 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
     Instrumentation
         the parametrization for the problem
     """
-    assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
     if name == "bragg":
         shape = (2, dimension // 2)
         bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
         shape = (1, dimension)
-        bounds = [(0, 300)]
+        bounds = [(30, 180)]
     elif name == "morpho":
         shape = (4, dimension // 4)
         bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]
     else:
         raise NotImplementedError(f"Transform for {name} is not implemented")
+    divisor = max(2, len(bounds))
+    assert not dimension % divisor, f"points length should be a multiple of {divisor}, got {dimension}"
     assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object

@@ -352,6 +352,7 @@ class Scalar(Array):
 
     Notes
     -----
+    - by default, this is an unbounded scalar with Gaussian mutations.
     - if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
       Also, if init is not provided, it will be set to the middle value.
     - More specific behaviors can be obtained throught the following methods:
@@ -428,6 +429,7 @@ class Log(Scalar):
 
     Note
     ----
+    By default this is a positive variable, mutated by Gaussian mutation in log-scale.
     More specific behaviors can be obtained throught the following methods:
     set_bounds, set_mutation
     """
