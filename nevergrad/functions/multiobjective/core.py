@@ -51,8 +51,8 @@ class MultiobjectiveFunction:
         and update the state of the function with new points if it belongs to the pareto front
         """
         # We compute the hypervolume
-        if self.auto_bound > 0:
-            self.auto_bound -= 1
+        if self._auto_bound > 0:
+            self._auto_bound -= 1
             self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
