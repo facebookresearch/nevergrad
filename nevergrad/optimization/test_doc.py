@@ -45,7 +45,13 @@ def test_base_example() -> None:
     with futures.ThreadPoolExecutor(max_workers=optimizer.num_workers) as executor:
         recommendation = optimizer.minimize(square, executor=executor, batch_mode=False)
     # DOC_BASE_3
-    optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=10, num_workers=1)
+    import nevergrad as ng
+    
+    def square(x, y=12):
+        return sum((x - .5)**2) + abs(y)
+    
+    instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())  # We are working on R^2 x R.
+    optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100, num_workers=1)
 
     for _ in range(optimizer.budget):
         x = optimizer.ask()
@@ -53,7 +59,28 @@ def test_base_example() -> None:
         optimizer.tell(x, loss)
 
     recommendation = optimizer.provide_recommendation()
+    print(recommendation.value)    
     # DOC_BASE_4
+    import nevergrad as ng
+    
+    def onemax(*x):
+        return len(x) - x.count(1)
+    
+    # Discrete, ordered
+    variables = list(ng.p.TransitionChoice(list(range(7))) for _ in range(10))
+    instrum = ng.p.Instrumentation(*variables)
+    optimizer = ng.optimizers.DiscreteOnePlusOne(parametrization=instrum, budget=100, num_workers=1)
+    
+    recommendation = optimizer.provide_recommendation()
+    for _ in range(optimizer.budget):
+        x = optimizer.ask()
+        loss = onemax(*x.args, **x.kwargs)
+        optimizer.tell(x, loss)
+    
+    recommendation = optimizer.provide_recommendation()
+    print(recommendation.value)
+    # >>> ((1, 1, 0, 1, 1, 4, 1, 1, 1, 1), {})
+    # DOC_BASE_5
 
 
 def test_print_all_optimizers() -> None:

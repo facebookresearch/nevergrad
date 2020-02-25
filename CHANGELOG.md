@@ -16,7 +16,11 @@
 - Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
 - Some variants of algorithms have been removed from the `ng.optimizers` namespace to simplify it. All such variants can be easily created
   using the corresponding `ConfiguredOptimizer`. Also, adding `import nevergrad.optimization.experimentalvariants` will populate `ng.optimizers.registry`
-  with all variants [#528](https://github.com/facebookresearch/nevergrad/pull/528).
+  with all variants, and they are all available for benchmarks [#528](https://github.com/facebookresearch/nevergrad/pull/528).
+- Renamed `a_min` and `a_max` in `Array`, `Scalar` and `Log` parameters for clarity.
+  Using old names will raise a deprecation warning for the time being.
+- Scalar now takes optional `lower` and `upper` bounds at initialization, and `sigma` (and optionnally `init`)
+  if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
 
 
 ## v0.3.2 (2019-02-05)
