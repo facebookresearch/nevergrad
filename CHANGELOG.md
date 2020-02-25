@@ -14,6 +14,10 @@
 - Activated Windows CI (still a bit flaky, with a few deactivated tests).
 - Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
 - Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
+- Renamed `a_min` and `a_max` in `Array`, `Scalar` and `Log` parameters for clarity.
+  Using old names will raise a deprecation warning for the time being.
+- Scalar now takes optional `lower` and `upper` bounds at initialization, and `sigma` (and optionnally `init`)
+  if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
 
 
 ## v0.3.2 (2019-02-05)
