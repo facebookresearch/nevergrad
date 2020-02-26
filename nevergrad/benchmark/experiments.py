@@ -742,7 +742,7 @@ def manyobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "OnePlusOne", "TwoPointsDE"]
     mofuncs: tp.List[PackedFunctions] = []
-    name_combinations = itertools.product(["sphere", "cigar"], ["shere", "hm"], ["sphere", "ellipsoid"],
+    name_combinations = itertools.product(["sphere", "cigar"], ["sphere", "hm"], ["sphere", "ellipsoid"],
                                           ["rastrigin", "rosenbrock"], ["hm", "rosenbrock"], ["rastrigin", "cigar"])
     for names in name_combinations:
         mofuncs += [PackedFunctions([ArtificialFunction(name, block_dimension=6) for name in names],
