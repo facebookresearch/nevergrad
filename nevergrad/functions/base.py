@@ -173,6 +173,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     verbose: bool
         whether to also print a message if the leaderboard was updated
     """
+    loss = np.round(loss, decimals=13)  # this is probably already too precise for the machine
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])
     if filepath.exists():
@@ -184,6 +185,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
             bests.loc[identifier, "loss"] = loss
             string = "[" + ",".join(str(x) for x in array.ravel()) + "]"
             bests.loc[identifier, "array"] = string
+            bests = bests.loc[sorted(x for x in bests.index), :]
             bests.to_csv(filepath)
             if verbose:
                 print(f"New best value for {identifier}: {loss}\nwith: {string}")
