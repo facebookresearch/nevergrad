@@ -169,6 +169,7 @@ def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.ra
 class Mutation:
     """Custom mutation or recombination
     This is an experimental API
+    TODO: Evolve it to encompass use of sigma if need be
     """
 
     def __repr__(self) -> str:
