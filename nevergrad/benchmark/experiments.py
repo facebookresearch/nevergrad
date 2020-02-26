@@ -291,7 +291,6 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
     if not parallel:
         optims += ["SQP", "Cobyla", "Powell", "chainCMASQP", "chainCMAPowell"]
-    optims = ["NaiveEMNA", "NaiveAnisoEMNA", "NaiveTBPSA"]
     # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
