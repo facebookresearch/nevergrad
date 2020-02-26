@@ -62,7 +62,7 @@ def test_photonics_recombination() -> None:
         arrays.append(func.parametrization.spawn_child())  # type: ignore
         arrays[-1].value = num * np.ones(arrays[0].value.shape)
     arrays[0].recombine(arrays[1])
-    expected = [71, 50, 71, 71]
+    expected = [71, 50, 50, 50]
     np.testing.assert_array_equal(arrays[0].value, np.ones((4, 1)).dot(np.array(expected)[None, :]))
 
 
@@ -95,6 +95,7 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
         raise SkipTest("Too slow in CircleCI")
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
+    np.testing.assert_almost_equal(photo.evaluation_function(value * np.ones(16)), expected, decimal=4)
 
 
 GOOD_CHIRPED = [89.04887416, 109.54188095, 89.74520725, 121.81700431,

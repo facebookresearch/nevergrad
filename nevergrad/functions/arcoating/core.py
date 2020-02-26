@@ -61,12 +61,12 @@ class ARCoating(ExperimentFunction):
         self.ep0 = 1
         self.epf = 9
         self.epmin = 1
-        init = (self.epmin + self.epf) / 2.0 * np.ones((1, nbslab))
+        init = (self.epmin + self.epf) / 2.0 * np.ones((nbslab,))
         sigma = (self.epf - self.ep0) / 6
         array = ng.p.Array(init=init, mutable_sigma=True,)
         array.set_mutation(sigma=sigma)
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
-        array.set_recombination(Crossover(2, structured_dimensions=(0,))).set_name("")
+        array.set_recombination(Crossover(0)).set_name("")
         super().__init__(self._get_minimum_average_reflexion, array)
         self.register_initialization(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)

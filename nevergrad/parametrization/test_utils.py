@@ -73,9 +73,9 @@ def test_flatten_parameter_order(order: int, keys: tp.Iterable[str]) -> None:
 def test_crossover() -> None:
     x1 = 4 * np.ones((2, 3))
     x2 = 5 * np.ones((2, 3))
-    co = utils.Crossover(0, (0,))
+    co = utils.Crossover(axis=1)
     out = co.apply((x1, x2), rng=np.random.RandomState(12))
-    expected = np.ones((2, 1)).dot([[5, 5, 4]])
+    expected = np.ones((2, 1)).dot([[4, 5, 4]])
     np.testing.assert_array_equal(out, expected)
 
 
@@ -88,38 +88,18 @@ def test_rolling() -> None:
     assert repr(roll) == "Rolling(axis=(0,))"
 
 
-def test_random_crossover() -> None:
-    arrays = [k * np.ones((2, 2)) for k in range(30)]
-    co = utils.Crossover(0)
-    out = co.apply(arrays)
-    assert 0 in out
-
-
 @testing.parametrized(
-    p2i2=(42, 2, 2, [0, 0, 1, 1, 1, 0]),
-    p5i6=(42, 5, 6, [3, 0, 1, 2, 5, 4]),
-    p1i2=(42, 1, 2, [0, 0, 1, 1, 1, 1]),
-    p2i3=(42, 2, 3, [1, 1, 2, 2, 2, 0]),
-    p3i2=(42, 2, 2, [0, 0, 1, 1, 1, 0]),
+    all_none=(None, None),
+    d2=((1, 2), None),
+    d1=((1), None),
 )
-def test_kpoint_crossover(seed: int, points: int, indiv: int, expected: tp.List[int]) -> None:
-    rng = np.random.RandomState(seed)
-    crossover = utils.Crossover(points)
-    donors = [k * np.ones(len(expected)) for k in range(indiv)]
-    output = crossover.apply(donors, rng)
-    np.testing.assert_array_equal(output, expected)
-
-
-@testing.parametrized(
-    small=(1, 5, [0]),
-    keep_first=(2, 1000, [0, 871]),
-    two_points=(3, 2, [0, 1, 0]),
-    two_points_big=(3, 1000, [518, 871, 0]),
-)
-def test_make_crossover_sequence(num_sections: int, num_individuals: int, expected: tp.List[int]) -> None:
-    rng = np.random.RandomState(12)
-    out = utils._make_crossover_sequence(num_sections=num_sections, num_individuals=num_individuals, rng=rng)
-    assert out == expected
+def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Optional[int]) -> None:
+    shape = (6, 8, 10)
+    x1 = 4 * np.ones(shape)
+    x2 = 5 * np.ones(shape)
+    co = utils.Crossover(axis=axis, max_size=max_size)
+    out = co.apply((x1, x2), rng=np.random.RandomState(12))
+    np.testing.assert_array_equal(out.shape, shape)  # this basically only test that it did not raise an error
 
 
 def test_descriptors() -> None:
