@@ -72,7 +72,7 @@ def check_optimizer(
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
-                print(f"Attemp #{k}: failed with best point {tuple(candidate.args[0])} and #{num_workers} and #{budget}")
+                print(f"Attemp #{k}: failed with best point {tuple(candidate.args[0])}")
                 if k == num_attempts:
                     raise e
             else:
