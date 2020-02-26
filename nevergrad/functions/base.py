@@ -173,7 +173,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     verbose: bool
         whether to also print a message if the leaderboard was updated
     """
-    loss = np.round(loss, decimals=13)  # this is probably already too precise for the machine
+    loss = np.round(loss, decimals=12)  # this is probably already too precise for the machine
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])
     if filepath.exists():
