@@ -211,8 +211,7 @@ def harderparallel(seed: Optional[int] = None) -> Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    #optims = ["EMNA", "Naive_EMNA", "EMNA_TBPSA", "Naive_EMNA_TBPSA", "CMA", "NaiveTBPSA", "AnisoTBPSA", "NaiveAnisoTBPSA"]
-    optims = ["EMNA", "NaiveEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "EMNA_TBPSA", "Naive_EMNA_TBPSA", "CMA", "NaiveTBPSA"]#, "AnisoTBPSA", "NaiveAnisoTBPSA"]
+    optims = ["EMNA", "NaiveEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "EMNA_TBPSA", "Naive_EMNA_TBPSA", "CMA", "NaiveTBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
