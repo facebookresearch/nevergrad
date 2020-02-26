@@ -58,19 +58,17 @@ class MultiobjectiveFunction:
             self._lower_bounds = np.array(losses) if self._auto_bound == self._bound_budget else np.minimum(self._lower_bounds, np.array(losses))
             self._auto_bound -= 1
             if self._auto_bound == 0:
-                self._upper_bounds = self._upper_bounds + 5. * (self._upper_bounds - self._lower_bounds)
+                self._upper_bounds = self._upper_bounds + 1. * (self._upper_bounds - self._lower_bounds)
             self._points.append(((args, kwargs), np.array(losses)))
+            return 0.
         # We compute the hypervolume           
         if (losses - self._upper_bounds > 0).any():
-            return np.max(losses - self._upper_bounds)  # type: ignore
+            return 1e7 + 1e7 * np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
-            # if tuple(x) in self.pointset:  # TODO: comparison is not quite possible, is it necessary?
-            #    assert v == self.pointset[tuple(x)]  # We work noise-free...
             self._points.append(((args, kwargs), arr_losses))
-            # self.pointset[tuple(x)] = v
             return -new_volume
         else:
             if new_volume == self._best_volume:
