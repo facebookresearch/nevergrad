@@ -72,8 +72,6 @@ class MultiobjectiveFunction:
             self._points.append(((args, kwargs), arr_losses))
             return -new_volume
         else:
-            if new_volume == self._best_volume:
-                return 0.
             # Now we compute for each axis
             # First we prune.
             self._filter_pareto_front()
