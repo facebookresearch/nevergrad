@@ -59,6 +59,7 @@ class MultiobjectiveFunction:
             self._auto_bound -= 1
             if self._auto_bound == 0:
                 self._upper_bounds = self._upper_bounds + 1. * (self._upper_bounds - self._lower_bounds)
+                self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore                
             self._points.append(((args, kwargs), np.array(losses)))
             return 0.
         # We compute the hypervolume           
