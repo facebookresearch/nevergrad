@@ -1616,7 +1616,7 @@ class EMNA(base.Optimizer):
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.mu  # type: ignore
             # EMNA update
             stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
-            self.sigma = np.sqrt(sum(stdd) / (self.mu))
+            self.sigma = np.sqrt(sum(stdd) / (self.mu * self.dimension))
             if self.num_workers / self.dimension > 16: # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
@@ -1675,7 +1675,7 @@ class AnisoEMNA(EMNA):
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.mu  # type: ignore
             # EMNA update
             stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
-            self.sigma = np.sqrt(np.sum(stdd, axis=1) / (self.mu * self.dimension))
+            self.sigma = np.sqrt(np.sum(stdd, axis=1) / (self.mu))
             if self.num_workers / self.dimension > 16: # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
