@@ -85,6 +85,7 @@ class Array(core.Parameter):
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
+        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
         if init is not None:
             if shape is not None:
                 raise ValueError(err_msg)
