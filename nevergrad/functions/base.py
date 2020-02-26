@@ -161,6 +161,17 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     """Handy function for storing best results for challenging functions (eg.: Photonics)
     The best results are kept in a file that is automatically updated with new data.
     This may require installing nevergrad in dev mode.
+
+    Parameters
+    ----------
+    identifier: str
+        the identifier of the problem
+    loss: float
+        the new loss, if better than the one in the file, the file will be updated
+    array: np.ndarray
+        the array corresponding to the loss
+    verbose: bool
+        whether to also print a message if the leaderboard was updated
     """
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])
