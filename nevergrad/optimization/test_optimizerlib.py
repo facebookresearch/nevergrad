@@ -5,6 +5,7 @@
 
 import time
 import random
+import platform
 import tempfile
 import warnings
 import typing as tp
@@ -386,6 +387,8 @@ def test_constrained_optimization() -> None:
 def test_parametrization_offset(name: str) -> None:
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
+    if "Cobyla" in name and platform.system() == "Windows":
+        raise SkipTest("Cobyla is flaky on Windows for unknown reasons")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
     with warnings.catch_warnings():
         # tests do not need to be efficient
