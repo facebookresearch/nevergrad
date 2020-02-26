@@ -19,7 +19,9 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
+from pathlib import Path
 import numpy as np
+import pandas as pd
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization.utils import Crossover
 from . import photonics
@@ -67,6 +69,22 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
     array.set_recombination(Crossover(axis=1)).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
+
+
+def store_best_results(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:
+    filepath = Path(__file__).with_name("loss_records.csv")
+    bests = pd.DataFrame(columns=["loss", "array"])
+    if filepath.exists():
+        bests = pd.read_csv(filepath, index_col=0)
+    if identifier not in bests:
+        bests.loc[identifier, :] = (float("inf"), "")
+    if not bests.loc[identifier, "loss"] < loss:  # works for nan
+        bests.loc[identifier, "loss"] = loss
+        string = "[" + ",".join(str(x) for x in array.ravel()) + "]"
+        bests.loc[identifier, "array"] = string
+        bests.to_csv(filepath)
+        if verbose:
+            print("New best value for {identifier}: {loss}\nwith: {string}")
 
 
 class Photonics(ExperimentFunction):
@@ -124,9 +142,7 @@ class Photonics(ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         loss = self.function(x)
-        datastr = ", ".join([str(x) for x in x.ravel()])
-        string = f"# {self.name}([{datastr}]) = {loss}"
-        print(string)  # log this for the record
+        store_best_results(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
     def _compute(self, x: np.ndarray) -> float:
