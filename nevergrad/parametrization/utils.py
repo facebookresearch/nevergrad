@@ -170,33 +170,34 @@ class Crossover:
     """ Experimental, the API will evolve
     """
 
-    def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
-        self.num_points = num_points
-        self.structured_dimensions = sorted(structured_dimensions)
+    def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]) -> None:
+        self.axis = (axis,) if isinstance(axis, int) else axis
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.num_points}, {self.structured_dimensions})"
+        return f"{self.__class__.__name__}({self.axis})"
 
     def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
-        if len(arrays) > 30:
-            warnings.warn("Crossover can only handle up to 30 arrays")
-            arrays = arrays[:30]
+        arrays = list(arrays)
+        if len(arrays) != 2:
+            raise Exception("Crossover can only be applied between 2 individuals")
+        assert array[0].shape == array[1].shape, "Individuals should have the same shape"
         if rng is None:
             rng = np.random.RandomState()
-        shape = tuple(d for k, d in enumerate(arrays[0].shape) if k not in self.structured_dimensions)
-        choices = np.zeros(shape, dtype=int)
+        axis = tuple(range(array[0].dim)
+
+
         if not self.num_points:
-            choices = rng.randint(0, len(arrays), size=choices.shape)
+            choices=rng.randint(0, len(arrays), size=choices.shape)
             if 0 not in choices:
-                choices.ravel()[rng.randint(choices.size)] = 0  # always involve first element
+                choices.ravel()[rng.randint(choices.size)]=0  # always involve first element
         elif choices.ndim == 1:
-            bounds = sorted(rng.choice(shape[0] - 1, size=self.num_points, replace=False).tolist())  # 0 to n - 2
-            bounds = [0] + [1 + b for b in bounds] + [shape[0]]
-            indices = _make_crossover_sequence(len(bounds) - 1, len(arrays), rng)
+            bounds=sorted(rng.choice(shape[0] - 1, size=self.num_points, replace=False).tolist())  # 0 to n - 2
+            bounds=[0] + [1 + b for b in bounds] + [shape[0]]
+            indices=_make_crossover_sequence(len(bounds) - 1, len(arrays), rng)
             for start, end, index in zip(bounds[:-1], bounds[1:], indices):
-                choices[start:end] = index
+                choices[start:end]=index
         else:
             raise NotImplementedError
         for d in self.structured_dimensions:
-            choices = np.expand_dims(choices, d)
+            choices=np.expand_dims(choices, d)
         return np.choose(choices, arrays)  # type:ignore
