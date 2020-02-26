@@ -75,10 +75,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
             instrum = ng.p.Instrumentation(*variables)
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                dfunc = ExperimentFunction(discrete_func, instrum)
                 for optim in optims:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
-                            dfunc = ExperimentFunction(discrete_func, instrum)
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
     mofuncs: tp.List[PackedFunctions] = []
 
