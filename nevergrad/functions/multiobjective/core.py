@@ -36,12 +36,14 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
-        self._bound_budget = 10
+        self._bound_budget = 100
         if upper_bounds is None:
             self._upper_bounds = np.array([0.])
+            self._lower_bounds = np.array([0.])
             self._auto_bound = self._bound_budget
         else:
             self._upper_bounds = np.array(upper_bounds, copy=False)
+            self._lower_bounds = np.array(upper_bounds, copy=False)
             self._auto_bound = 0
         self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
@@ -56,7 +58,7 @@ class MultiobjectiveFunction:
             self._lower_bounds = np.array(losses) if self._auto_bound == self._bound_budget else np.minimum(self._lower_bounds, np.array(losses))
             self._auto_bound -= 1
             if self._auto_bound == 0:
-                self._upper_bounds = self._upper_bounds + 10. * (self._upper_bounds - self._lower_bounds)
+                self._upper_bounds = self._upper_bounds + 50. * (self._upper_bounds - self._lower_bounds)
         # We compute the hypervolume           
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
