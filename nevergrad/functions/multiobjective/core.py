@@ -64,7 +64,7 @@ class MultiobjectiveFunction:
             return 0.
         # We compute the hypervolume           
         if (losses - self._upper_bounds > 0).any():
-            return 1e7 + 1e7 * np.max(losses - self._upper_bounds)  # type: ignore
+            return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
