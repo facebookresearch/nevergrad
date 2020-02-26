@@ -36,15 +36,13 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
-        self._bound_budget = 100
+        self._auto_bound = 0
+        self._auto_upper_bounds = np.array([-float('inf')])  
+        self._auto_lower_bounds = np.array([float('inf')])
         if upper_bounds is None:
-            self._upper_bounds = np.array([0.])
-            self._lower_bounds = np.array([0.])
-            self._auto_bound = self._bound_budget
+            self._auto_bound = 15
         else:
-            self._upper_bounds = np.array(upper_bounds, copy=False)
-            self._lower_bounds = np.array(upper_bounds, copy=False)
-            self._auto_bound = 0
+            self._upper_bounds = upper_bounds
             self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
@@ -53,12 +51,13 @@ class MultiobjectiveFunction:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
+        losses = np.array(losses, copy=False)
         if self._auto_bound > 0:
-            self._upper_bounds = np.array(losses) if self._auto_bound == self._bound_budget else np.maximum(self._upper_bounds, np.array(losses))
-            self._lower_bounds = np.array(losses) if self._auto_bound == self._bound_budget else np.minimum(self._lower_bounds, np.array(losses))
+            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)
+            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)            
             self._auto_bound -= 1
             if self._auto_bound == 0:
-                self._upper_bounds = self._upper_bounds + 1. * (self._upper_bounds - self._lower_bounds)
+                self._upper_bounds = self._auto_upper_bounds + 0. * (self._auto_upper_bounds - self._auto_lower_bounds)
                 self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore                
             self._points.append(((args, kwargs), np.array(losses)))
             return 0.
