@@ -42,6 +42,7 @@ class MultiobjectiveFunction:
         if upper_bounds is None:
             self._auto_bound = 15
         else:
+            self._upper_bounds = upper_bounds
             self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
