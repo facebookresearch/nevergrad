@@ -83,7 +83,7 @@ class Array(core.Parameter):
             mutable_sigma: bool = False
     ) -> None:
         sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
-        super().__init__(sigma=sigma, recombination="average")
+        super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         if init is not None:
             if shape is not None:
@@ -240,7 +240,27 @@ class Array(core.Parameter):
                                                       else core.Constant(recombination))
         return self
 
-    def set_mutation(self: A, sigma: tp.Optional[tp.Union[float, "Array"]] = None, exponent: tp.Optional[float] = None) -> A:
+    def mutate(self) -> None:
+        """Mutate parameters of the instance, and then its value
+        """
+        self._check_frozen()
+        self.parameters.mutate()
+        mutation = self.parameters["mutation"].value
+        if isinstance(mutation, str):
+            if mutation in ["gaussian", "cauchy"]:
+                func = (self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy)
+                self.set_standardized_data(func(size=self.dimension), deterministic=False)
+            else:
+                raise NotImplementedError('Mutation "{mutation}" is not implemented')
+        else:  # TODO: Add a isinstance when API is ready
+            self.value = mutation.apply([self.value], self.random_state)
+
+    def set_mutation(
+        self: A,
+        sigma: tp.Optional[tp.Union[float, "Array"]] = None,
+        exponent: tp.Optional[float] = None,
+        custom: tp.Optional[tp.Union[str, core.Parameter]] = None
+    ) -> A:
         """Output will be cast to integer(s) through deterministic rounding.
 
         Parameters
@@ -252,6 +272,10 @@ class Array(core.Parameter):
         exponent: float
             exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
             x2 or /2 "on average" on the value at each mutation.
+        custom: str or Parameter
+            custom mutation which can be a string ("gaussian" or "cauchy")
+            or Mutation/Recombination like object
+            or a Parameter which value is either of those
 
         Returns
         -------
@@ -272,6 +296,8 @@ class Array(core.Parameter):
             if np.min(self._value.ravel()) <= 0:
                 raise RuntimeError("Cannot convert to logarithmic mode with current non-positive value, please update it firstp.")
             self.exponent = exponent
+        if custom is not None:
+            self.parameters._content["mutation"] = core.as_parameter(custom)
         return self
 
     def set_integer_casting(self: A) -> A:

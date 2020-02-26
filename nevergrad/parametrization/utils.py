@@ -207,7 +207,10 @@ class Rolling:
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]):
         self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
 
-    def apply(self, data: np.ndarray, rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+        arrays = list(arrays)
+        assert len(arrays) == 1
+        data = arrays[0]
         if rng is None:
             rng = np.random.RandomState()
         axis = tuple(range(data.dim)) if self.axis is None else self.axis
