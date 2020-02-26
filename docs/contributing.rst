@@ -102,7 +102,7 @@ Implementations are however spread into several files:
 
 - `optimizerlib.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_: this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
 - `oneshot.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/oneshot.py>`_: this is where one-shot optimizers are implemented
-- `differentialevolution.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/differentialevolution.py>`_: this is where evolutionary algorithms are implemented.
+- `differentialevolution.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/differentialevolution.py>`_: this is where differential evolution algorithms are implemented.
 - `recastlib.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/recastlib.py>`_: this is where we implement ask & tell versions of existing Python implementations which do not follow this pattern. The underlying class which helps spawn a subprocess to run the existing implementation into is in `recaster.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/recaster.py>`_. Hopefully, you won't need this.
 
 If you implement one new algorithm and if this algorithm is not one-shot/evolutionary/recast, you should implement it into `optimizerlib.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_. If you implement a whole family of algorithms, you are welcome to create a new corresponding file.

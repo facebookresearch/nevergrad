@@ -7,7 +7,6 @@ import os
 import sys
 import shutil
 import tempfile
-import warnings
 import subprocess
 import typing as tp
 from pathlib import Path
@@ -152,49 +151,69 @@ class CommandFunction:
         return stdout
 
 
-def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.random.RandomState) -> tp.List[int]:
-    assert num_individuals > 1
-    indices = rng.permutation(num_individuals).tolist()
-    while len(indices) < num_sections:
-        new_indices = rng.permutation(num_individuals).tolist()
-        if new_indices[0] == indices[-1]:
-            new_indices[0], new_indices[-1] = new_indices[-1], new_indices[0]
-        indices.extend(new_indices)
-    indices = indices[:num_sections]
-    if 0 not in indices:
-        indices[rng.randint(num_sections)] = 0  # always involve first element
-    return indices  # type: ignore
-
-
 class Crossover:
+    """Operator for merging part of an array into another one
 
-    def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
-        self.num_points = num_points
-        self.structured_dimensions = sorted(structured_dimensions)
+    Parameters
+    ----------
+    axis: None or int or tuple of ints
+        the axis (or axes) on which the merge will happen. This axis will be split into 3 parts: the first and last one will take
+        value from the first array, the middle one from the second array.
+    max_size: None or int
+        maximum size of the part taken from the second array. By default, this is at most around half the number of total elements of the
+        array to the power of 1/number of axis.
+
+
+    Notes
+    -----
+    - this is experimental, the API may evolve
+    - when using several axis, the size of the second array part is the same on each axis (aka a square in 2D, a cube in 3D, ...)
+
+    Examples:
+    ---------
+    - 2-dimensional array, with crossover on dimension 1:
+      0 1 0 0
+      0 1 0 0
+      0 1 0 0
+    - 2-dimensional array, with crossover on dimensions 0 and 1:
+      0 0 0 0
+      0 1 1 0
+      0 1 1 0
+
+
+    """
+
+    def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None, max_size: tp.Optional[int] = None) -> None:
+        self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        self.max_size = max_size
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.num_points}, {self.structured_dimensions})"
+        return f"{self.__class__.__name__}({self.axis})"
 
     def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
-        if len(arrays) > 30:
-            warnings.warn("Crossover can only handle up to 30 arrays")
-            arrays = arrays[:30]
+        # checks
+        arrays = list(arrays)
+        if len(arrays) != 2:
+            raise Exception("Crossover can only be applied between 2 individuals")
+        shape = arrays[0].shape
+        assert shape == arrays[1].shape, "Individuals should have the same shape"
+        # settings
         if rng is None:
             rng = np.random.RandomState()
-        shape = tuple(d for k, d in enumerate(arrays[0].shape) if k not in self.structured_dimensions)
-        choices = np.zeros(shape, dtype=int)
-        if not self.num_points:
-            choices = rng.randint(0, len(arrays), size=choices.shape)
-            if 0 not in choices:
-                choices.ravel()[rng.randint(choices.size)] = 0  # always involve first element
-        elif choices.ndim == 1:
-            bounds = sorted(rng.choice(shape[0] - 1, size=self.num_points, replace=False).tolist())  # 0 to n - 2
-            bounds = [0] + [1 + b for b in bounds] + [shape[0]]
-            indices = _make_crossover_sequence(len(bounds) - 1, len(arrays), rng)
-            for start, end, index in zip(bounds[:-1], bounds[1:], indices):
-                choices[start:end] = index
-        else:
-            raise NotImplementedError
-        for d in self.structured_dimensions:
-            choices = np.expand_dims(choices, d)
-        return np.choose(choices, arrays)  # type:ignore
+        axis = tuple(range(len(shape))) if self.axis is None else self.axis
+        max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if self.max_size is None else self.max_size
+        max_size = min(max_size, *(shape[a] - 1 for a in axis))
+        size = 1 if max_size == 1 else rng.randint(1, max_size)
+        # slices
+        slices = []
+        for a, s in enumerate(shape):
+            if a in axis:
+                if s <= 1:
+                    raise ValueError("Cannot crossover an shape with size 1")
+                start = rng.randint(s - size)
+                slices.append(slice(start, start + size))
+            else:
+                slices.append(slice(0, s))
+        result = np.array(arrays[0], copy=True)
+        result[tuple(slices)] = arrays[1][tuple(slices)]
+        return result

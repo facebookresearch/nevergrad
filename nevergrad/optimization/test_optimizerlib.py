@@ -5,6 +5,7 @@
 
 import time
 import random
+import platform
 import tempfile
 import warnings
 import typing as tp
@@ -22,6 +23,7 @@ from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
 from . import optimizerlib as optlib
+from . import experimentalvariants as xpvariants
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 
@@ -125,7 +127,7 @@ UNSEEDABLE: tp.List[str] = []
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
-        assert hasattr(optlib, name)  # make sure registration matches name in optlib
+        assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     print("Alors : {} et {}".format(name, verify))
     # the following context manager speeds up BO tests
@@ -311,7 +313,7 @@ def test_optimization_doc_parametrization_example() -> None:
 
 
 def test_optimization_discrete_with_one_sample() -> None:
-    optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
+    optimizer = xpvariants.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
 
 
@@ -332,7 +334,7 @@ def test_bo_parametrization_and_parameters() -> None:
     # parametrization
     parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
-        optlib.QRBO(parametrization, budget=10)
+        xpvariants.QRBO(parametrization, budget=10)
     with pytest.warns(None) as record:
         opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
     assert not record, record.list  # no warning
@@ -386,6 +388,8 @@ def test_constrained_optimization() -> None:
 def test_parametrization_offset(name: str) -> None:
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
+    if "Cobyla" in name and platform.system() == "Windows":
+        raise SkipTest("Cobyla is flaky on Windows for unknown reasons")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
     with warnings.catch_warnings():
         # tests do not need to be efficient

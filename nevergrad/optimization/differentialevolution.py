@@ -221,17 +221,9 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)
-OnePointDE = DifferentialEvolution(crossover="onepoint").set_name("OnePointDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
-ParametrizationDE = DifferentialEvolution(crossover="parametrization").set_name("ParametrizationDE", register=True)
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
-MiniDE = DifferentialEvolution(scale="mini").set_name("MiniDE", register=True)
-MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").set_name("MiniLhsDE", register=True)
-MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").set_name("MiniQrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(crossover=.9).set_name("AlmostRotationInvariantDE", register=True)
-AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=.9, popsize="dimension").set_name(
-    "AlmostRotationInvariantDEAndBigPop", register=True)
 RotationInvariantDE = DifferentialEvolution(crossover=1., popsize="dimension").set_name("RotationInvariantDE", register=True)
-BPRotationInvariantDE = DifferentialEvolution(crossover=1., popsize="large").set_name("BPRotationInvariantDE", register=True)
