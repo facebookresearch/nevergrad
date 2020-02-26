@@ -200,3 +200,16 @@ class Crossover:
         for d in self.structured_dimensions:
             choices = np.expand_dims(choices, d)
         return np.choose(choices, arrays)  # type:ignore
+
+
+class Rolling:
+
+    def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]):
+        self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+
+    def apply(self, data: np.ndarray, rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+        if rng is None:
+            rng = np.random.RandomState()
+        axis = tuple(range(data.dim)) if self.axis is None else self.axis
+        shifts = [rng.randint(data.shape[a]) for a in axis]
+        return np.roll(data, shifts, axis=axis)  # type: ignore

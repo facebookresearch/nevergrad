@@ -79,6 +79,14 @@ def test_crossover() -> None:
     np.testing.assert_array_equal(out, expected)
 
 
+def test_rolling() -> None:
+    x = np.arange(4)[:, None].dot(np.ones((1, 2)))
+    roll = utils.Rolling(0)
+    out = roll.apply(x, rng=np.random.RandomState(12))
+    expected = np.array([1, 2, 3, 0])[:, None].dot(np.ones((1, 2)))
+    np.testing.assert_array_equal(out, expected)
+
+
 def test_random_crossover() -> None:
     arrays = [k * np.ones((2, 2)) for k in range(30)]
     co = utils.Crossover(0)
