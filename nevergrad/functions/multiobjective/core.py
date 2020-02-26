@@ -36,9 +36,10 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
+        self._bound_budget = 10
         if upper_bounds is None:
             self._upper_bounds = np.array([0.])
-            self._auto_bound = 10
+            self._auto_bound = self._bound_budget
         else:
             self._upper_bounds = np.array(upper_bounds, copy=False)
             self._auto_bound = 0
@@ -50,11 +51,13 @@ class MultiobjectiveFunction:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
-        # We compute the hypervolume
         if self._auto_bound > 0:
+            self._upper_bounds = np.array(losses) if self._auto_bound == self._bound_budget else np.maximum(self._upper_bounds, np.array(losses))
+            self._lower_bounds = np.array(losses) if self._auto_bound == self._bound_budget else np.minimum(self._lower_bounds, np.array(losses))
             self._auto_bound -= 1
-            self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
-                
+            if self._auto_bound == 0:
+                self._upper_bounds = self._upper_bounds + 10. * (self._upper_bounds - self._lower_bounds)
+        # We compute the hypervolume           
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
@@ -67,6 +70,8 @@ class MultiobjectiveFunction:
             # self.pointset[tuple(x)] = v
             return -new_volume
         else:
+            if new_volume == self._best_volume:
+                return 0.
             # Now we compute for each axis
             # First we prune.
             self._filter_pareto_front()
