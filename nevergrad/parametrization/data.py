@@ -252,8 +252,10 @@ class Array(core.Parameter):
                 self.set_standardized_data(func(size=self.dimension), deterministic=False)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
-        else:  # TODO: Add a isinstance when API is ready
+        elif isinstance(mutation, utils.Mutation):
             self.value = mutation.apply([self.value], self.random_state)
+        else:
+            raise TypeError("Mutation must be a string or a Mutation instance")
 
     def set_mutation(
         self: A,

@@ -12,7 +12,7 @@ import subprocess
 import typing as tp
 from pathlib import Path
 import numpy as np
-from ..common.tools import different_from_defaults
+from nevergrad.common import tools as ngtools
 
 
 class Descriptors:
@@ -40,7 +40,7 @@ class Descriptors:
         return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(f"{x}={y}" for x, y in sorted(different_from_defaults(instance=self, check_mismatches=True).items()))
+        diff = ",".join(f"{x}={y}" for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items()))
         return f"{self.__class__.__name__}({diff})"
 
 
@@ -166,16 +166,26 @@ def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.ra
     return indices  # type: ignore
 
 
-class Crossover:
+class Mutation:
+    """Custom mutation or recombination
+    """
+
+    def __repr__(self) -> str:
+        diff = ngtools.different_from_defaults(instance=self, check_mismatches=True)
+        params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
+        return f"{self.__class__.__name__}({params})"
+
+    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+        raise NotImplementedError
+
+
+class Crossover(Mutation):
     """ Experimental, the API will evolve
     """
 
     def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
         self.num_points = num_points
         self.structured_dimensions = sorted(structured_dimensions)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.num_points}, {self.structured_dimensions})"
 
     def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
         if len(arrays) > 30:
@@ -202,7 +212,7 @@ class Crossover:
         return np.choose(choices, arrays)  # type:ignore
 
 
-class Rolling:
+class Rolling(Mutation):
 
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]):
         self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None

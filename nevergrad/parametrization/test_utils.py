@@ -82,9 +82,10 @@ def test_crossover() -> None:
 def test_rolling() -> None:
     x = np.arange(4)[:, None].dot(np.ones((1, 2)))
     roll = utils.Rolling(0)
-    out = roll.apply(x, rng=np.random.RandomState(12))
+    out = roll.apply([x], rng=np.random.RandomState(12))
     expected = np.array([1, 2, 3, 0])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
+    assert repr(roll) == "Rolling(axis=(0,))"
 
 
 def test_random_crossover() -> None:
