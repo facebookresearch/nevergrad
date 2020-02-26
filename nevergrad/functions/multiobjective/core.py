@@ -36,12 +36,11 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
-        self._bound_budget = 15
         self._auto_bound = 0
         self._auto_upper_bounds = np.array([-float('inf')])  
         self._auto_lower_bounds = np.array([float('inf')])
         if upper_bounds is None:
-            self._auto_bound = self.bound_budget
+            self._auto_bound = 15
         self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
