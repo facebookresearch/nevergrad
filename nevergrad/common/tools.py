@@ -3,6 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import site
+import glob
+import ctypes
 import time
 import inspect
 import warnings
@@ -13,6 +16,18 @@ import numpy as np
 import pandas as pd
 from .typetools import PathLike
 from . import testing
+
+
+def pytorch_import_fix() -> None:
+    """Hackfix needed before pytorch import ("dlopen: cannot load any more object with static TLS")
+    See issue #305
+    """
+    try:
+        for packages in site.getsitepackages():
+            for lib in glob.glob(f'{packages}/torch/lib/libgomp*.so*'):
+                ctypes.cdll.LoadLibrary(lib)
+    except Exception:  # pylint: disable=broad-except
+        pass
 
 
 def pairwise(iterable: tp.Iterable[tp.Any]) -> tp.Iterator[tp.Tuple[tp.Any, tp.Any]]:

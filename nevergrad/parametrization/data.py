@@ -339,6 +339,7 @@ class Scalar(Array):
 
     Note
     ----
+    By default, this is an unbounded scalar with Gaussian mutations.
     More specific behaviors can be obtained throught the following methods:
     set_bounds, set_mutation
     """
@@ -378,6 +379,7 @@ class Log(Scalar):
 
     Note
     ----
+    By default this is a positive variable, mutated by Gaussian mutation in log-scale.
     More specific behaviors can be obtained throught the following methods:
     set_bounds, set_mutation
     """

@@ -34,9 +34,14 @@ class MultiobjectiveFunction:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: ArrayLike) -> None:
+    def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
-        self._upper_bounds = np.array(upper_bounds, copy=False)
+        if upper_bounds is None:
+            self._upper_bounds = np.array([0.])
+            self._auto_bound = 10
+        else:
+            self._upper_bounds = np.array(upper_bounds, copy=False)
+            self._auto_bound = 0
         self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
@@ -46,6 +51,10 @@ class MultiobjectiveFunction:
         and update the state of the function with new points if it belongs to the pareto front
         """
         # We compute the hypervolume
+        if self._auto_bound > 0:
+            self._auto_bound -= 1
+            self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
+                
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
