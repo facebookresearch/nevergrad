@@ -34,7 +34,7 @@ def test_arcoating_recombination() -> None:
         arrays.append(func.parametrization.spawn_child())  # type: ignore
         arrays[-1].value = num * np.ones(arrays[0].value.shape)
     arrays[0].recombine(arrays[1])
-    expected = [[3., 3., 5., 5., 5., 3.]]
+    expected = [3., 3., 3., 5., 3., 3.]
     np.testing.assert_array_equal(arrays[0].value, expected)
 
 
