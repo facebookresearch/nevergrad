@@ -154,7 +154,13 @@ class CommandFunction:
 class Mutation:
     """Custom mutation or recombination
     This is an experimental API
-    TODO: Evolve it to encompass use of sigma if need be
+
+    Either implement:
+    - `_apply_array`  which provides a new np.ndarray from a list of arrays
+    - `apply` which updates the first p.Array instance
+
+    Mutation should take only one p.Array instance as argument, while
+    Recombinations should take several
     """
 
     def __repr__(self) -> str:
@@ -162,8 +168,13 @@ class Mutation:
         params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
         return f"{self.__class__.__name__}({params})"
 
-    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
-        raise NotImplementedError
+    def apply(self, arrays: tp.Sequence[tp.Any]) -> tp.Any:  # avoiding circular imports... restructuring needed eventually
+        new_value = self._apply_array([a._value for a in arrays], arrays[0].random_state)
+        arrays[0]._value = new_value
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
+        raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
+        return np.array([])  # pylint: disable=unreachable
 
 
 class Crossover(Mutation):
@@ -200,7 +211,7 @@ class Crossover(Mutation):
         self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
         self.max_size = max_size
 
-    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
         # checks
         arrays = list(arrays)
         if len(arrays) != 2:
@@ -208,8 +219,6 @@ class Crossover(Mutation):
         shape = arrays[0].shape
         assert shape == arrays[1].shape, "Individuals should have the same shape"
         # settings
-        if rng is None:
-            rng = np.random.RandomState()
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
         max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if self.max_size is None else self.max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
@@ -234,7 +243,7 @@ class Rolling(Mutation):
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]):
         self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
 
-    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = arrays[0]

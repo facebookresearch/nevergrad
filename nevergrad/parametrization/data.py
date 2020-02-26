@@ -254,7 +254,7 @@ class Array(core.Parameter):
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
         elif isinstance(mutation, utils.Mutation):
-            self.value = mutation.apply([self.value], self.random_state)
+            mutation.apply([self])
         else:
             raise TypeError("Mutation must be a string or a Mutation instance")
 
@@ -359,8 +359,7 @@ class Array(core.Parameter):
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
         elif isinstance(recomb, utils.Crossover):
-            crossover = recomb.apply([p.value for p in all_params], self.random_state)
-            self.value = crossover
+            recomb.apply(all_params)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
