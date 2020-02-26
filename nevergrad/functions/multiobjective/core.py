@@ -45,7 +45,7 @@ class MultiobjectiveFunction:
             self._upper_bounds = np.array(upper_bounds, copy=False)
             self._lower_bounds = np.array(upper_bounds, copy=False)
             self._auto_bound = 0
-        self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
+            self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
