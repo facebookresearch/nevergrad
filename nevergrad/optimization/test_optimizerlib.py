@@ -129,7 +129,6 @@ def test_optimizers(name: str) -> None:
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
-    print("Alors : {} et {}".format(name, verify))
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):

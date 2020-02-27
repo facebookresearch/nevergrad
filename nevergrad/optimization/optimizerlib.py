@@ -1434,7 +1434,7 @@ class EMNA(base.Optimizer):
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.sigma = 1.0
+        self.sigma: tp.Union[float, np.ndarray] = 1.0
         self.mu = self.dimension
         self.llambda = 4 * self.dimension
         if num_workers is not None:
