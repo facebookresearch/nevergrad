@@ -95,59 +95,21 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
-# Discrete functions on {0,1}^d.
 @registry.register
-def discrete2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Discrete test bed, including useless variables, binary only.
-    Poorly designed, should be reimplemented from scratch using a decent instrumentation."""
-    seedg = create_seed_generator(seed)
-    names = [n for n in ArtificialFunction.list_sorted_function_names()
-             if ("one" in n or "jump" in n) and ("5" not in n) and ("hard" in n)]
-    optims = ["NGO", "Shiva", "DiagonalCMA", "CMA"] + sorted(
-        x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
-        ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
-    )
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-        for name in names
-        for bd in [5, 30, 180]
-        for uv_factor in [0, 5, 10]
-        for n_blocks in [1]
-    ]
-    for func in functions:
-        for optim in optims:
-            for nw in [1, 10]:
-                for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
-                               1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    # Discrete, unordered.
+    for nv in [10, 50, 200]:
+        for arity in [2, 7]:
+            variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
+            instrum = ng.p.Instrumentation(*variables)
+            for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                dfunc = ExperimentFunction(discrete_func, instrum)
+                for optim in optims:
+                    for nw in [1, 10]:
+                        for budget in [500, 5000]:
+                            yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
-
-@registry.register
-def discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Discrete test bed, including useless variables, 5 values or 2 values per character.
-    Poorly designed, should be reimplemented from scratch using a decent instrumentation."""
-    seedg = create_seed_generator(seed)
-    names = [n for n in ArtificialFunction.list_sorted_function_names() if "one" in n or "jump" in n]
-    optims = ["NGO", "Shiva", "DiagonalCMA", "CMA"] + sorted(
-        x for x, y in ng.optimizers.registry.items()
-        if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
-    )
-    # Block dimension = dimension of a block on which the function "name" is applied. There are several blocks,
-    # and possibly useless variables; so the total dimension is num_blocks * block_dimension * (1+ uv_factor).
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-        for name in names
-        for bd in [5, 30, 180]
-        for uv_factor in [0, 5, 10]
-        for n_blocks in [1]
-    ]
-    for func in functions:
-        for optim in optims:
-            for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
-                           1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
+                            
 @registry.register
 def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
@@ -562,7 +524,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Unit commitment problem, i.e. management of dams for hydroelectric planning."""
     funcs: tp.List[ExperimentFunction] = []
     for dams in [3, 5, 9, 13]:
-        for depth_width in [3, 5, 9]:
+        for depth_width in [5]:
             funcs += [PowerSystem(dams, depth=depth_width, width=depth_width)]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
@@ -585,7 +547,7 @@ def powersystemssplit(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Bigger budget than the powersystems problem."""
     funcs: tp.List[ExperimentFunction] = []
     for dams in [3, 5, 9, 13]:
-        for depth_width in [3, 5, 9]:
+        for depth_width in [5]:
             funcs += [PowerSystem(dams, depth=depth_width, width=depth_width)]
     seedg = create_seed_generator(seed)
     algos = ["NGO", "Shiva", "DiagonalCMA",
