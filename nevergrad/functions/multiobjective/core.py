@@ -36,9 +36,10 @@ class MultiobjectiveFunction:
 
     def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
+        self._bound_budget = 10
         if upper_bounds is None:
             self._upper_bounds = np.array([0.])
-            self._auto_bound = 10
+            self._auto_bound = self._bound_budget
         else:
             self._upper_bounds = np.array(upper_bounds, copy=False)
             self._auto_bound = 0
@@ -50,38 +51,60 @@ class MultiobjectiveFunction:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
+        arr_losses = np.array(losses, copy=True)  #np.minimum(np.array(losses, copy=False), self._upper_bounds)
         # We compute the hypervolume
         if self._auto_bound > 0:
+            self._upper_bounds = arr_losses if self._auto_bound == self._bound_budget else np.maximum(self._upper_bounds, arr_losses)
+            self._lower_bounds = arr_losses if self._auto_bound == self._bound_budget else np.minimum(self._lower_bounds, arr_losses)
             self._auto_bound -= 1
-            self._upper_bounds = np.maximum(self._upper_bounds, np.array(losses))
+            #print("ub = ", self._upper_bounds, " lb = ", self._lower_bounds)
+            if self._auto_bound <= 0:
+                self._upper_bounds = self._upper_bounds + 2. * (self._upper_bounds - self._lower_bounds)
+                self._filter_pareto_front()
+            self._points.append(((args, kwargs), np.array(losses)))
+            #print('whereas ', len(self._points))
+            #print("*autobound...")
+            self._best_volume = -float("Inf")
+            self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore
+            return float("0")
                 
-        if (losses - self._upper_bounds > 0).any():
-            return np.max(losses - self._upper_bounds)  # type: ignore
-        arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
+        if (losses - self._upper_bounds > 0).any() or self._auto_bound > 0:
+            #print("*very bad...")
+            return 1e7 + 1e7 * np.max(losses - self._upper_bounds)  # type: ignore
+        #print("pareto set:")
+        #print([y for _, y in self._points] + [arr_losses])
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
+        #print('-->', new_volume)
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
+            #print(self._best_volume, "*great !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", new_volume)
             self._best_volume = new_volume
             # if tuple(x) in self.pointset:  # TODO: comparison is not quite possible, is it necessary?
             #    assert v == self.pointset[tuple(x)]  # We work noise-free...
             self._points.append(((args, kwargs), arr_losses))
-            # self.pointset[tuple(x)] = v
+            self._filter_pareto_front()
             return -new_volume
         else:
+            #if new_volume == self._best_volume:
+            #    #print("*tangent...", new_volume)
+            #    return 0.
             # Now we compute for each axis
             # First we prune.
-            self._filter_pareto_front()
+            if len(self._points) % 10 == 0:
+                self._filter_pareto_front()
             distance_to_pareto = float("Inf")
             for _, stored_losses in self._points:
                 if (stored_losses <= arr_losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(arr_losses - stored_losses))
             assert distance_to_pareto >= 0
+            #print("*bad")
             return -new_volume + distance_to_pareto
 
     def __call__(self, *args: Any, **kwargs: Any) -> float:
         # This part is stationary. It can be distributed.
         losses = self.multiobjective_function(*args, **kwargs)
         # The following is not. It should be called locally.
-        return self.compute_aggregate_loss(losses, *args, **kwargs)
+        value = self.compute_aggregate_loss(losses, *args, **kwargs)
+        return value
 
     def _filter_pareto_front(self):
         """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict).
@@ -89,12 +112,16 @@ class MultiobjectiveFunction:
         new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
             should_be_added = True
+            if (losses > self._upper_bounds).any():
+                should_be_added = False
+                break
             for _, other_losses in self._points:
                 if (other_losses <= losses).all() and (other_losses < losses).any():
                     should_be_added = False
                     break
             if should_be_added:
                 new_points.append((argskwargs, losses))
+        #print(len(self._points), ' --whereas--> ', len(new_points))
         self._points = new_points
 
 
