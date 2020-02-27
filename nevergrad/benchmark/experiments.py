@@ -98,6 +98,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
+    seedg = create_seed_generator(seed)
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
