@@ -98,6 +98,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
+    optims = ["DiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
+              "CMandAS2", "DDE", "FastGA", "PortfolioDiscreteOnePlusOne"]
+
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
