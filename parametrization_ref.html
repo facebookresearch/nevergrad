@@ -275,7 +275,7 @@ to creating a child with a value sampled uniformly (or log-uniformly) within the
 
 <dl class="method">
 <dt id="nevergrad.p.Array.set_mutation">
-<code class="sig-name descname">set_mutation</code><span class="sig-paren">(</span><em class="sig-param">sigma: Union[float</em>, <em class="sig-param">Array</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_mutation" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_mutation</code><span class="sig-paren">(</span><em class="sig-param">sigma: Union[float</em>, <em class="sig-param">Array</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em>, <em class="sig-param">custom: Union[str</em>, <em class="sig-param">nevergrad.parametrization.core.Parameter</em>, <em class="sig-param">None] = None</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_mutation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output will be cast to integer(s) through deterministic rounding.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -285,6 +285,9 @@ value. If a float is provided, it will either replace a previous float value, or
 of the Parameter.</p></li>
 <li><p><strong>exponent</strong> (<em>float</em>) – exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
 x2 or /2 “on average” on the value at each mutation.</p></li>
+<li><p><strong>custom</strong> (<em>str</em><em> or </em><a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – custom mutation which can be a string (“gaussian” or “cauchy”)
+or Mutation/Recombination like object
+or a Parameter which value is either of those</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
