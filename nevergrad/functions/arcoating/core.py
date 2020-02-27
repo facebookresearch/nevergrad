@@ -11,7 +11,7 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.parametrization.utils import Crossover
-from ..base import ExperimentFunction
+from .. import base
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
@@ -29,7 +29,7 @@ def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float)
     return R
 
 
-class ARCoating(ExperimentFunction):
+class ARCoating(base.ExperimentFunction):
     """
     Parameters
     ----------
@@ -61,12 +61,12 @@ class ARCoating(ExperimentFunction):
         self.ep0 = 1
         self.epf = 9
         self.epmin = 1
-        init = (self.epmin + self.epf) / 2.0 * np.ones((1, nbslab))
+        init = (self.epmin + self.epf) / 2.0 * np.ones((nbslab,))
         sigma = (self.epf - self.ep0) / 6
         array = ng.p.Array(init=init, mutable_sigma=True,)
         array.set_mutation(sigma=sigma)
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
-        array.set_recombination(Crossover(2, structured_dimensions=(0,))).set_name("")
+        array.set_recombination(Crossover(0)).set_name("")
         super().__init__(self._get_minimum_average_reflexion, array)
         self.register_initialization(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
@@ -81,3 +81,9 @@ class ARCoating(ExperimentFunction):
             RE = impedance_pix(x, self.dpix, lam, self.ep0, self.epf)  # only normal incidence
             value = value + RE / len(self.lambdas)
         return value
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        loss = self.function(x)
+        base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
+        return loss

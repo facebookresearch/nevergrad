@@ -49,10 +49,10 @@ def test_instrumentation() -> None:
     testing.printed_assert_equal(instru2.spawn_child().set_standardized_data(data, deterministic=True).value,
                                  instru.spawn_child().set_standardized_data(data, deterministic=True).value)
     # check naming
-    instru_str = ("Instrumentation(Tuple(Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],3),"
+    instru_str = ("Instrumentation(Tuple(Scalar[sigma=Log{exp=1.2}],3),"
                   "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
-                  "position=Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.]),"
-                  "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(4,)}[recombination=average,sigma=1.0])))")
+                  "position=Scalar[sigma=Log{exp=1.2}],transitions=[1. 1.]),"
+                  "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(4,)})))")
     testing.printed_assert_equal(instru.name, instru_str)
     testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
 
@@ -109,38 +109,16 @@ def test_scalar() -> None:
     assert new_token.get_standardized_data(reference=token).tolist() == [1.]
 
 
-# def test_array_as_ascalar() -> None:
-#    var = variables.Array(1).exponentiated(10, -1).asscalar()
-#    data = np.array([2])
-#    output = var.spawn_child().set_standardized_data(data)
-#    assert output == wrap_arg(0.01)
-#    np.testing.assert_almost_equal(var.arguments_to_data(*output[0], **output[1]), data)
-#    #  int
-#    var = variables.Array(1).asscalar(int)
-#    assert var.spawn_child().set_standardized_data(np.array([.4])) == wrap_arg(0)
-#    assert var.spawn_child().set_standardized_data(np.array([-.4])) == wrap_arg(0)
-#    output = var.spawn_child().set_standardized_data(np.array([.6]))
-#    assert output == wrap_arg(1)
-#    assert type(output[0][0]) == int  # pylint: disable=unidiomatic-typecheck
-#    # errors
-#    with pytest.raises(RuntimeError):
-#        variables.Array(1).asscalar(int).asscalar(float)
-#    with pytest.raises(RuntimeError):
-#        variables.Array(2).asscalar(int)
-#    with pytest.raises(ValueError):
-#        variables.Array(1).asscalar(np.int64)  # type: ignore
-
-
 @pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.1), (-10, 0.001), (20, 0.1)])  # type: ignore
 def test_log(value: float, expected: float) -> None:
-    var = p.Log(a_min=0.001, a_max=0.1)
+    var = p.Log(lower=0.001, upper=0.1)
     out = var.spawn_child().set_standardized_data(np.array([value]))
     np.testing.assert_approx_equal(out.value, expected, significant=4)
     repr(var)
 
 
 def test_log_int() -> None:
-    var = p.Log(a_min=300, a_max=10000).set_integer_casting()
+    var = p.Log(lower=300, upper=10000).set_integer_casting()
     out = var.spawn_child().set_standardized_data(np.array([0]))
     assert out.value == 1732
 
@@ -148,6 +126,6 @@ def test_log_int() -> None:
 # note: 0.9/0.9482=0.9482/0.999
 @pytest.mark.parametrize("value,expected", [(0, 0.9482), (-11, 0.9), (10, 0.999)])  # type: ignore
 def test_log_9(value: float, expected: float) -> None:
-    var = p.Log(a_min=0.9, a_max=0.999)
+    var = p.Log(lower=0.9, upper=0.999)
     out = var.spawn_child().set_standardized_data(np.array([value]))
     np.testing.assert_approx_equal(out.value, expected, significant=4)
