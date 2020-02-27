@@ -72,8 +72,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
-            instrum = ng.p.Instrumentation(*variables)
+            variables = (ng.p.TransitionChoice(range(arity)) for _ in range(nv))
+            instrum = ng.p.Instrumentation(ng.p.Tuple(*variables))
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 for optim in optims:
@@ -104,7 +104,7 @@ def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
+            variables = (ng.p.TransitionChoice(range(arity)) for _ in range(nv))
             instrum = ng.p.Instrumentation(ng.p.Tuple(*variables))
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
