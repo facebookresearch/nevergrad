@@ -11,7 +11,7 @@ import subprocess
 import typing as tp
 from pathlib import Path
 import numpy as np
-from ..common.tools import different_from_defaults
+from nevergrad.common import tools as ngtools
 
 
 class Descriptors:
@@ -39,7 +39,7 @@ class Descriptors:
         return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(f"{x}={y}" for x, y in sorted(different_from_defaults(instance=self, check_mismatches=True).items()))
+        diff = ",".join(f"{x}={y}" for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items()))
         return f"{self.__class__.__name__}({diff})"
 
 
@@ -151,7 +151,33 @@ class CommandFunction:
         return stdout
 
 
-class Crossover:
+class Mutation:
+    """Custom mutation or recombination
+    This is an experimental API
+
+    Either implement:
+    - `_apply_array`  which provides a new np.ndarray from a list of arrays
+    - `apply` which updates the first p.Array instance
+
+    Mutation should take only one p.Array instance as argument, while
+    Recombinations should take several
+    """
+
+    def __repr__(self) -> str:
+        diff = ngtools.different_from_defaults(instance=self, check_mismatches=True)
+        params = ", ".join(f"{x}={y!r}" for x, y in sorted(diff.items()))
+        return f"{self.__class__.__name__}({params})"
+
+    def apply(self, arrays: tp.Sequence[tp.Any]) -> tp.Any:  # avoiding circular imports... restructuring needed eventually
+        new_value = self._apply_array([a._value for a in arrays], arrays[0].random_state)
+        arrays[0]._value = new_value
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
+        raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
+        return np.array([])  # pylint: disable=unreachable
+
+
+class Crossover(Mutation):
     """Operator for merging part of an array into another one
 
     Parameters
@@ -179,18 +205,13 @@ class Crossover:
       0 0 0 0
       0 1 1 0
       0 1 1 0
-
-
     """
 
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None, max_size: tp.Optional[int] = None) -> None:
         self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
         self.max_size = max_size
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.axis})"
-
-    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
         # checks
         arrays = list(arrays)
         if len(arrays) != 2:
@@ -198,8 +219,6 @@ class Crossover:
         shape = arrays[0].shape
         assert shape == arrays[1].shape, "Individuals should have the same shape"
         # settings
-        if rng is None:
-            rng = np.random.RandomState()
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
         max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if self.max_size is None else self.max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
@@ -217,3 +236,19 @@ class Crossover:
         result = np.array(arrays[0], copy=True)
         result[tuple(slices)] = arrays[1][tuple(slices)]
         return result
+
+
+class Rolling(Mutation):
+
+    def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]):
+        self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
+        arrays = list(arrays)
+        assert len(arrays) == 1
+        data = arrays[0]
+        if rng is None:
+            rng = np.random.RandomState()
+        axis = tuple(range(data.dim)) if self.axis is None else self.axis
+        shifts = [rng.randint(data.shape[a]) for a in axis]
+        return np.roll(data, shifts, axis=axis)  # type: ignore
