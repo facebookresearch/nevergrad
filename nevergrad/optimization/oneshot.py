@@ -16,7 +16,7 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def convex_limit(points: np.array) -> int:
+def convex_limit(points: np.ndarray) -> int:
     """Given points in order from best to worst, 
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
     d = len(points[0])
