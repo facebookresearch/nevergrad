@@ -19,6 +19,7 @@ executors:
 
 
 commands:
+
   ubuntu_restore_all:
     description: "Restores virtual env with full install from cache, and update dependencies if need be."
     steps:
@@ -34,6 +35,7 @@ commands:
       - run:
           name: "[all] Install dependencies"
           command: |
+            python3 -m venv venv
             . venv/bin/activate
             pip install -e .[all]
             pip install git+https://github.com/numpy/numpy-stubs@master
