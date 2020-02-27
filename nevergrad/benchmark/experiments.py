@@ -105,7 +105,7 @@ def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
             variables = list(ng.p.TransitionChoice(list(range(arity))) for _ in range(nv))
-            instrum = ng.p.Instrumentation(*variables)
+            instrum = ng.p.Instrumentation(ng.p.Tuple(*variables))
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 for optim in optims:
@@ -113,7 +113,7 @@ def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         for budget in [500, 5000]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
-                            
+
 @registry.register
 def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
