@@ -11,7 +11,7 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common.typetools import ArrayLike
 from nevergrad.parametrization.utils import Crossover
-from ..base import ExperimentFunction
+from .. import base
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
@@ -29,7 +29,7 @@ def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float)
     return R
 
 
-class ARCoating(ExperimentFunction):
+class ARCoating(base.ExperimentFunction):
     """
     Parameters
     ----------
@@ -81,3 +81,9 @@ class ARCoating(ExperimentFunction):
             RE = impedance_pix(x, self.dpix, lam, self.ep0, self.epf)  # only normal incidence
             value = value + RE / len(self.lambdas)
         return value
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        loss = self.function(x)
+        base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
+        return loss

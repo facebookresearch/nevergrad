@@ -124,4 +124,5 @@ def test_photonics_values_random(name: str, expected: float, data: tp.Optional[t
         candidate = photo.parametrization.spawn_child().set_standardized_data(x)
     else:
         candidate = photo.parametrization.spawn_child(new_value=[data])
-    np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
+    for func in [photo, photo.evaluation_function]:
+        np.testing.assert_almost_equal(func(candidate.value), expected, decimal=4)  # type: ignore

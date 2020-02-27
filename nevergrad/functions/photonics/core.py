@@ -23,7 +23,7 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization.utils import Crossover
 from . import photonics
-from ..base import ExperimentFunction
+from .. import base
 
 
 def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
@@ -69,7 +69,7 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
     return array
 
 
-class Photonics(ExperimentFunction):
+class Photonics(base.ExperimentFunction):
     """Function calling photonics code
 
     Parameters
@@ -124,9 +124,7 @@ class Photonics(ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         loss = self.function(x)
-        datastr = ", ".join([str(x) for x in x.ravel()])
-        string = f"# {self.name}([{datastr}]) = {loss}"
-        print(string)  # log this for the record
+        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
     def _compute(self, x: np.ndarray) -> float:
