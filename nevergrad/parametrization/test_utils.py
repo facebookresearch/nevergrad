@@ -74,9 +74,18 @@ def test_crossover() -> None:
     x1 = 4 * np.ones((2, 3))
     x2 = 5 * np.ones((2, 3))
     co = utils.Crossover(axis=1)
-    out = co.apply((x1, x2), rng=np.random.RandomState(12))
+    out = co._apply_array((x1, x2), rng=np.random.RandomState(12))
     expected = np.ones((2, 1)).dot([[4, 5, 4]])
     np.testing.assert_array_equal(out, expected)
+
+
+def test_rolling() -> None:
+    x = np.arange(4)[:, None].dot(np.ones((1, 2)))
+    roll = utils.Rolling(0)
+    out = roll._apply_array([x], rng=np.random.RandomState(12))
+    expected = np.array([1, 2, 3, 0])[:, None].dot(np.ones((1, 2)))
+    np.testing.assert_array_equal(out, expected)
+    assert repr(roll) == "Rolling(axis=(0,))"
 
 
 @testing.parametrized(
@@ -89,7 +98,7 @@ def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Opti
     x1 = 4 * np.ones(shape)
     x2 = 5 * np.ones(shape)
     co = utils.Crossover(axis=axis, max_size=max_size)
-    out = co.apply((x1, x2), rng=np.random.RandomState(12))
+    out = co._apply_array((x1, x2), rng=np.random.RandomState(12))
     np.testing.assert_array_equal(out.shape, shape)  # this basically only test that it did not raise an error
 
 
