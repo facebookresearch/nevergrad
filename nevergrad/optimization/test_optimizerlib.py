@@ -206,7 +206,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.args[0])
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
-    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
+    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) or "BO" in name else 5
     np.testing.assert_array_almost_equal(
         candidate.args[0],
         recomkeeper.recommendations.loc[name, :][:dimension],
