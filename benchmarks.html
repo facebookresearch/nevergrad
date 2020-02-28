@@ -385,20 +385,6 @@ Looks somehow fractal.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="nevergrad.benchmark.experiments.discrete">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">discrete</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.discrete" title="Permalink to this definition">¶</a></dt>
-<dd><p>Discrete test bed, including useless variables, 5 values or 2 values per character.
-Poorly designed, should be reimplemented from scratch using a decent instrumentation.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="nevergrad.benchmark.experiments.discrete2">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">discrete2</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.discrete2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Discrete test bed, including useless variables, binary only.
-Poorly designed, should be reimplemented from scratch using a decent instrumentation.</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="nevergrad.benchmark.experiments.doe_dim10">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">doe_dim10</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.doe_dim10" title="Permalink to this definition">¶</a></dt>
 <dd><p>One-shot optimization in dimension 10 of the sphere function. No useless variables.</p>
@@ -535,6 +521,11 @@ even if white-box methods are not included though they could do this more effici
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">spsa_benchmark</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.spsa_benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Some optimizers on a noisy optimization problem. This benchmark is based on the noise benchmark.</p>
 </dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.wide_discrete">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">wide_discrete</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.wide_discrete" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="nevergrad.benchmark.experiments.yabbob">
