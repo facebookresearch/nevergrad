@@ -1524,9 +1524,6 @@ class EMNA(base.ConfiguredOptimizer):
 
 
 NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
-IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
-NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
-AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
 
 @registry.register
 class Shiva(NGO):

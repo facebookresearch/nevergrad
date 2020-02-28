@@ -20,4 +20,4 @@ from .oneshot import SamplingSearch
 
 
 __all__ = ["ParametrizedOnePlusOne", "ParametrizedBO", "DifferentialEvolution", "EvolutionStrategy",
-           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining"]
+           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining", "EMNA"]
