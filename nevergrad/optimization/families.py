@@ -9,6 +9,7 @@ Caution
 This module and its available classes are experimental and may change quickly in the near future.
 """
 from .optimizerlib import ParametrizedOnePlusOne
+from .optimizerlib import EMNA
 from .optimizerlib import ParametrizedBO
 from .optimizerlib import Chaining
 from .differentialevolution import DifferentialEvolution

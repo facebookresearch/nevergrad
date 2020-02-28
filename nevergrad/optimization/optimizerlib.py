@@ -1426,7 +1426,7 @@ class NGO(base.Optimizer):
 
 
 @registry.register
-class EMNA(base.Optimizer):
+class _EMNA(base.Optimizer):
     """Simple Estimation of Multivariate Normal Algorithm (EMNA).
     """
 
@@ -1496,6 +1496,37 @@ class EMNA(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         base.TellNotAskedNotSupportedError
 
+
+class EMNA(base.ConfiguredOptimizer):
+    """Estimation of Multivariate Normal Algorithm
+        This algorithm is quite efficient in a parallel context, i.e. when
+        the population size is large.
+
+        Parameters
+        ----------
+        - `"isotropic"`: if true: isotropic version on EMNA, i.e. we have an
+                                    identity matrix for the Gaussian
+                         else: anisotropic version, we here consider the
+                                    separable version, meaning we have a diagonal
+                                    matrix for the Gaussian
+        - `"naive"`: optimistic version. This parameter can be set to true for
+                    noiseless problems
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        isotropic: bool = True,
+        naive: bool = True
+    ) -> None:
+        super().__init__(_EMNA, locals())
+
+
+NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
+IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
+NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
+AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
 
 @registry.register
 class Shiva(NGO):
