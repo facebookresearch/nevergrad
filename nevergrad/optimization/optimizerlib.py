@@ -1498,19 +1498,19 @@ class _EMNA(base.Optimizer):
 
 
 class EMNA(base.ConfiguredOptimizer):
-    """Estimation of Multivariate Normal Algorithm
-        This algorithm is quite efficient in a parallel context, i.e. when
-        the population size is large.
+    """ Estimation of Multivariate Normal Algorithm
+    This algorithm is quite efficient in a parallel context, i.e. when
+    the population size is large.
 
-        Parameters
-        ----------
-        - `"isotropic"`: if true: isotropic version on EMNA, i.e. we have an
-                                    identity matrix for the Gaussian
-                         else: anisotropic version, we here consider the
-                                    separable version, meaning we have a diagonal
-                                    matrix for the Gaussian
-        - `"naive"`: optimistic version. This parameter can be set to true for
-                    noiseless problems
+    Parameters
+    ----------
+    isotropic: bool
+        isotropic version on EMNA if True, i.e. we have an
+        identity matrix for the Gaussian, else  we here consider the separable
+        version, meaning we have a diagonal matrix for the Gaussian (anisotropic)
+    naive: bool
+        set to False for noisy problem, so that the best points will be an 
+        average of the final population.
     """
 
     # pylint: disable=unused-argument
