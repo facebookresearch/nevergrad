@@ -218,6 +218,8 @@ class Parameter:
         substr = ""
         if self._parameters is not None and self.parameters:
             substr = f"[{self.parameters._get_parameters_str()}]"
+            if substr == "[]":
+                substr = ""
         return f"{self._get_name()}" + substr
 
     @name.setter
@@ -451,6 +453,7 @@ class Dict(Parameter):
         self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))
+        self._ignore_in_repr: tp.Dict[str, str] = {}  # hacky undocumented way to bypass boring representations
 
     def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
         """Check that all parameters are different
@@ -472,7 +475,8 @@ class Dict(Parameter):
         return len(self._content)
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, p.name) for k, p in self._content.items())
+        params = sorted((k, p.name) for k, p in self._content.items()
+                        if p.name != self._ignore_in_repr.get(k, "#ignoredrepr#"))
         return ",".join(f"{k}={n}" for k, n in params)
 
     def _get_name(self) -> str:

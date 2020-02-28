@@ -7,7 +7,7 @@ import pytest
 import numpy as np
 from ..common import testing
 from .test_base import CounterFunction
-from .optimizerlib import Zero
+from . import experimentalvariants as xpvariants
 from . import utils
 
 
@@ -46,7 +46,7 @@ def test_sequential_executor() -> None:
 
 
 def test_get_nash() -> None:
-    zeroptim = Zero(parametrization=1, budget=4, num_workers=1)
+    zeroptim = xpvariants.Zero(parametrization=1, budget=4, num_workers=1)
     for k in range(4):
         array = (float(k),)
         zeroptim.archive[array] = utils.Value(k)
