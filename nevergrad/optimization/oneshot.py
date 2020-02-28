@@ -39,8 +39,7 @@ def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth"
     elif method == "exp":
         k = max(1, len(archive) // (2**dimension))
     elif method == "hull":
-        k = np.concatenate(
-            convex_limit(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))), axis=0)
+        k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
     else:
         raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
     k = 1 if k < 1 else k
