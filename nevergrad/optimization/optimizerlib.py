@@ -1448,8 +1448,12 @@ class _EMNA(base.Optimizer):
             self.sigma = 1.0
         else:
             self.sigma = np.ones(self.dimension)
-        self.mu = self.dimension
-        self.llambda = 4 * self.dimension
+        self.mu = max(16,self.dimension)
+        self.llambda = 4 * self.mu
+        if self.llambda > budget:
+            self.llambda = budget
+            self.mu = self.llambda // 4
+            warnings.warn("Budget may be too small in front of the dimension for EMNA")
         if num_workers is not None:
             self.llambda = max(self.llambda, num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
@@ -1487,9 +1491,9 @@ class _EMNA(base.Optimizer):
             if self.isotropic:
                 self.sigma = np.sqrt(sum(stdd) / (self.mu * self.dimension))
             else:
-                self.sigma = np.sqrt(np.sum(stdd, axis=1) / (self.mu))
+                self.sigma = np.sqrt(np.sum(stdd, axis=0) / (self.mu))
 
-            if self.num_workers / self.dimension > 16: # faster decrease of sigma if large parallel context
+            if self.num_workers / self.dimension > 32: # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
