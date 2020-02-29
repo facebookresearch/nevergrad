@@ -5,6 +5,7 @@
 
 import time
 import random
+import platform
 import tempfile
 import warnings
 import typing as tp
@@ -205,7 +206,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.args[0])
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
-    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
+    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) or "BO" in name else 5
     np.testing.assert_array_almost_equal(
         candidate.args[0],
         recomkeeper.recommendations.loc[name, :][:dimension],
@@ -386,6 +387,8 @@ def test_constrained_optimization() -> None:
 def test_parametrization_offset(name: str) -> None:
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
+    if "Cobyla" in name and platform.system() == "Windows":
+        raise SkipTest("Cobyla is flaky on Windows for unknown reasons")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
     with warnings.catch_warnings():
         # tests do not need to be efficient

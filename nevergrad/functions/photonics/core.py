@@ -23,7 +23,7 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization.utils import Crossover
 from . import photonics
-from ..base import ExperimentFunction
+from .. import base
 
 
 def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
@@ -64,12 +64,12 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
         # sigma must be adapted for clipping and constraint methods
         array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))  # type: ignore
     array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
-    array.set_recombination(Crossover(2, structured_dimensions=(0,))).set_name("")
+    array.set_recombination(Crossover(axis=1)).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 
 
-class Photonics(ExperimentFunction):
+class Photonics(base.ExperimentFunction):
     """Function calling photonics code
 
     Parameters
@@ -120,6 +120,12 @@ class Photonics(ExperimentFunction):
         super().__init__(self._compute, _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method))
         self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method)
         self._descriptors.update(name=name, bounding_method=bounding_method)
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        loss = self.function(x)
+        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        return loss
 
     def _compute(self, x: np.ndarray) -> float:
         x_cat = x.ravel()
