@@ -1450,7 +1450,7 @@ class _EMNA(base.Optimizer):
             self.sigma = np.ones(self.dimension)
         self.mu = max(16,self.dimension)
         self.llambda = 4 * self.mu
-        if self.llambda > budget:
+        if budget is not None and self.llambda > budget:
             self.llambda = budget
             self.mu = self.llambda // 4
             warnings.warn("Budget may be too small in front of the dimension for EMNA")
