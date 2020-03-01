@@ -938,13 +938,18 @@ Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO
 
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedCMA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedCMA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">scale: float = 1.0</em>, <em class="sig-param">diagonal: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedCMA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedCMA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">scale: float = 1.0</em>, <em class="sig-param">popsize: Optional[int] = None</em>, <em class="sig-param">diagonal: bool = False</em>, <em class="sig-param">fcmaes: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedCMA" title="Permalink to this definition">¶</a></dt>
 <dd><p>CMA-ES optimizer, wrapping external implementation: <a class="reference external" href="https://github.com/CMA-ES/pycma">https://github.com/CMA-ES/pycma</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>scale</strong> (<em>float</em>) – scale of the search</p></li>
+<li><p><strong>popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>] </em><em>= None</em>) – population size, should be n * self.num_workers for int n &gt;= 1.
+default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))</p></li>
 <li><p><strong>diagonal</strong> (<em>bool</em>) – use the diagonal version of CMA (advised in big dimension)</p></li>
+<li><p><strong>fcmaes</strong> (<em>bool = False</em>) – use fast implementation, doesn’t support diagonal=True.
+produces equivalent results, preferable for high dimensions or
+if objective function evaluation is fast.</p></li>
 </ul>
 </dd>
 </dl>
