@@ -188,11 +188,15 @@ class _CMA(base.Optimizer):
             budget: Optional[int] = None,
             num_workers: int = 1,
             scale: float = 1.0,
-            diagonal: bool = False
+            popsize: Optional[int] = None,
+            diagonal: bool = False,
+            fcmaes: bool = False
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
+        self._popsize = popsize
         self._diagonal = diagonal
+        self._fcmaes = fcmaes
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
         self.listx: tp.List[ArrayLike] = []
@@ -200,11 +204,20 @@ class _CMA(base.Optimizer):
         self.to_be_asked: tp.Deque[np.ndarray] = deque()
 
     @property
-    def es(self) -> cma.CMAEvolutionStrategy:
+    def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
-            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
-            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if self._popsize is None else self._popsize
+            if self._fcmaes:
+                try:
+                    from fcmaes import cmaes
+                except ImportError as e:
+                    raise ImportError("Please install fcmaes (pip install fcmaes) to use FCMA optimizers") from e
+                self._es = cmaes.Cmaes(x0=np.zeros(self.dimension, dtype=np.float),
+                                   input_sigma=self._scale,
+                                   popsize=popsize, randn=self._rng.randn)
+            else:
+                inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> ArrayLike:
@@ -217,7 +230,10 @@ class _CMA(base.Optimizer):
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
             try:
-                self.es.tell(self.listx, self.listy)
+                if self._fcmaes:
+                    self.es.tell(self.listy, self.listx)
+                else:
+                    self.es.tell(self.listx, self.listy)
             except RuntimeError:
                 pass
             else:
@@ -227,10 +243,10 @@ class _CMA(base.Optimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._es is None:
             raise RuntimeError("Either ask or tell method should have been called before")
-        if self.es.result.xbest is None:
+        cma_best = self.es.best_x if self._fcmaes else self.es.result.xbest
+        if cma_best is None:
             return self.current_bests["pessimistic"].x
-        return self.es.result.xbest  # type: ignore
-
+        return cma_best
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
     """CMA-ES optimizer, wrapping external implementation: https://github.com/CMA-ES/pycma
@@ -239,8 +255,16 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     ----------
     scale: float
         scale of the search
+    popsize: Optional[int] = None
+        population size, should be n * self.num_workers for int n >= 1.
+        default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
+    fcmaes: bool = False
+        use fast implementation, doesn't support diagonal=True. 
+        produces equivalent results, preferable for high dimensions or
+        if objective function evaluation is fast. 
     """
 
     # pylint: disable=unused-argument
@@ -248,13 +272,18 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self,
         *,
         scale: float = 1.0,
-        diagonal: bool = False
+        popsize: Optional[int] = None,
+        diagonal: bool = False,
+        fcmaes: bool = False
     ) -> None:
-        super().__init__(_CMA, locals())
-
+        super().__init__(_CMA, locals())    
+        if fcmaes:
+            if diagonal:
+                raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
 
 class _PopulationSizeController:
