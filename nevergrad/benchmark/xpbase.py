@@ -30,7 +30,13 @@ class OptimizerSettings:
     Eventually, this class should be moved to be directly used for defining experiments.
     """
 
-    def __init__(self, optimizer: Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+    def __init__(
+        self,
+        optimizer: Union[str, obase.ConfiguredOptimizer],
+        budget: int,
+        num_workers: int = 1,
+        batch_mode: bool = True
+    ) -> None:
         self._setting_names = [x for x in locals() if x != "self"]
         if isinstance(optimizer, str):
             assert optimizer in optimizer_registry, f"{optimizer} is not registered"
@@ -129,6 +135,9 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: Optional[p.Parameter] = None
         self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
+        # make sure the random_state of the base function is created, so that spawning copy does not
+        # trigger a seed for the base function, but only for the copied function
+        self.function.parametrization.random_state  # pylint: disable=pointless-statement
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"

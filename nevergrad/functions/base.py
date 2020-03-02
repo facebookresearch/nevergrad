@@ -120,8 +120,8 @@ class ExperimentFunction:
                                                   f"{output} with descriptors {output._descriptors}.")
         else:
             # back to standard ExperimentFunction
-            ouptut = self.__class__(self.function, self.parametrization.copy())
-            ouptut._descriptors = self.descriptors
+            output = self.__class__(self.function, self.parametrization.copy())
+            output._descriptors = self.descriptors
         output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
         return output
 
