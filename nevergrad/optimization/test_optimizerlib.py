@@ -70,7 +70,7 @@ def check_optimizer(
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
             candidate = optimizer.minimize(fitness)
-        if verify_value and "chain" not in str(optimizer_cls) and "EMNA" not in str(optimizer_cls):
+        if verify_value and "chain" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
