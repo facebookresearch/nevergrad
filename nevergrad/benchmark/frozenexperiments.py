@@ -6,8 +6,9 @@
 from typing import Iterator, Optional, List, Union
 import numpy as np
 from nevergrad import optimizers
-from ..optimization.base import ConfiguredOptimizer
-from ..functions import ArtificialFunction
+from nevergrad.optimization.base import ConfiguredOptimizer
+from nevergrad.optimization import experimentalvariants  # pylint: disable=unused-import
+from nevergrad.functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment

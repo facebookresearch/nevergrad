@@ -31,10 +31,10 @@ def test_experimented_function() -> None:
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     instru_str = ("Instrumentation(Tuple(Choice(choices=Tuple(1,12),"
-                  "weights=Array{(2,)}[recombination=average,sigma=1.0]),constant,"
-                  "Array{(2,2)}[recombination=average,sigma=1.0]),"
+                  "weights=Array{(2,)}),constant,"
+                  "Array{(2,2)}),"
                   "Dict(constkwarg=blublu,plop=Choice(choices=Tuple(3,4),"
-                  "weights=Array{(2,)}[recombination=average,sigma=1.0])))")
+                  "weights=Array{(2,)})))")
     testing.printed_assert_equal(
         ifunc.descriptors,
         {

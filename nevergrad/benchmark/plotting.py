@@ -187,6 +187,14 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
+            try:
+                if name == "fight_all.png":
+                    with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                       f.write("ranking:\n")
+                       for i, algo in enumerate(data_df.columns[:8]):
+                           f.write(f"  algo {i}: {algo}\n")
+            except:
+                pass
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
