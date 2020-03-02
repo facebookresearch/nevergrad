@@ -735,6 +735,25 @@ Each algorithm is fed with what happened before it.</p>
 </dl>
 </dd></dl>
 
+<dl class="class">
+<dt id="nevergrad.families.EMNA">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">isotropic: bool = True</em>, <em class="sig-param">naive: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EMNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimation of Multivariate Normal Algorithm
+This algorithm is quite efficient in a parallel context, i.e. when
+the population size is large.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>isotropic</strong> (<em>bool</em>) – isotropic version on EMNA if True, i.e. we have an
+identity matrix for the Gaussian, else  we here consider the separable
+version, meaning we have a diagonal matrix for the Gaussian (anisotropic)</p></li>
+<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+average of the final population.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="optimizers">
 <h2>Optimizers<a class="headerlink" href="#optimizers" title="Permalink to this headline">¶</a></h2>
@@ -829,9 +848,22 @@ Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
 </dd></dl>
 
 <dl class="class">
-<dt id="nevergrad.optimization.optimizerlib.EMNA_TBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EMNA_TBPSA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EMNA_TBPSA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation with EMNA.</p>
+<dt id="nevergrad.optimization.optimizerlib.EMNA">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">isotropic: bool = True</em>, <em class="sig-param">naive: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EMNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimation of Multivariate Normal Algorithm
+This algorithm is quite efficient in a parallel context, i.e. when
+the population size is large.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>isotropic</strong> (<em>bool</em>) – isotropic version on EMNA if True, i.e. we have an
+identity matrix for the Gaussian, else  we here consider the separable
+version, meaning we have a diagonal matrix for the Gaussian (anisotropic)</p></li>
+<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+average of the final population.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="class">
