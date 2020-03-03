@@ -5,35 +5,22 @@
 
 import warnings
 import operator
-import site
-import glob
-import ctypes
 import copy as _copy
 from typing import Dict, Any, Optional, Callable, Tuple
-
-
-# Hackfix needed before pytorch import ("dlopen: cannot load any more object with static TLS")
-# See issue #305
-
-try:
-    for packages in site.getsitepackages():
-        for lib in glob.glob(f'{packages}/torch/lib/libgomp*.so*'):
-            ctypes.cdll.LoadLibrary(lib)
-except Exception:  # pylint: disable=broad-except
-    pass
-
-
-# pylint: disable=wrong-import-position
 import gym
 import numpy as np
-import torch as torch
-import torch.nn.functional as F
-from torch import nn
-from torch.utils.data import WeightedRandomSampler
+from nevergrad.common.tools import pytorch_import_fix
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 from . import base
 from . import envs
+pytorch_import_fix()
+
+# pylint: disable=wrong-import-position,wrong-import-order
+import torch as torch  # noqa
+import torch.nn.functional as F  # noqa
+from torch import nn  # noqa
+from torch.utils.data import WeightedRandomSampler  # noqa
 
 
 class RandomAgent(base.Agent):
@@ -115,7 +102,8 @@ class TorchAgent(base.Agent):
         return TorchAgent(_copy.deepcopy(self.module), self.deterministic)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
-        self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})  # type: ignore
+        # pylint: disable=not-callable
+        self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})
 
 
 class TorchAgentFunction(ExperimentFunction):

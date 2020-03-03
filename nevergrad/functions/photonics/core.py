@@ -21,12 +21,12 @@
 
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.parametrization.utils import Crossover
+from nevergrad.parametrization import utils as putils
 from . import photonics
-from ..base import ExperimentFunction
+from .. import base
 
 
-def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping") -> p.Array:
+def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> p.Array:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
@@ -42,18 +42,19 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
     Instrumentation
         the parametrization for the problem
     """
-    assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
     if name == "bragg":
         shape = (2, dimension // 2)
         bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
         shape = (1, dimension)
-        bounds = [(0, 300)]
+        bounds = [(30, 180)]
     elif name == "morpho":
         shape = (4, dimension // 4)
         bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]
     else:
         raise NotImplementedError(f"Transform for {name} is not implemented")
+    divisor = max(2, len(bounds))
+    assert not dimension % divisor, f"points length should be a multiple of {divisor}, got {dimension}"
     assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
@@ -61,14 +62,17 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
     array = p.Array(init=init)
     if bounding_method not in ("arctan", "tanh"):
         # sigma must be adapted for clipping and constraint methods
-        array.set_mutation(sigma=p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0))  # type: ignore
+        sigma = p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore
+        array.set_mutation(sigma=sigma)
+    if rolling:
+        array.set_mutation(custom=p.Choice(["gaussian", "cauchy", putils.Rolling(axis=1)]))
     array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
-    array.set_recombination(Crossover(2, structured_dimensions=(0,))).set_name("")
+    array.set_recombination(putils.Crossover(axis=1)).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 
 
-class Photonics(ExperimentFunction):
+class Photonics(base.ExperimentFunction):
     """Function calling photonics code
 
     Parameters
@@ -112,13 +116,21 @@ class Photonics(ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping") -> None:
+    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        super().__init__(self._compute, _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method))
-        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method)
-        self._descriptors.update(name=name, bounding_method=bounding_method)
+        param = _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
+        super().__init__(self._compute, param)
+        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
+        self._descriptors.update(name=name, bounding_method=bounding_method, rolling=rolling)
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        # pylint: disable=not-callable
+        loss = self.function(x)
+        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        return loss
 
     def _compute(self, x: np.ndarray) -> float:
         x_cat = x.ravel()

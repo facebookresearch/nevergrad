@@ -29,7 +29,6 @@ from . import sequences
 from .differentialevolution import *  # noqa: F403
 from .es import *  # noqa: F403
 from .oneshot import *  # noqa: F403
-from .rescaledoneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 
@@ -163,9 +162,10 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
+DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
-DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").set_name(
     "OptimisticDiscreteOnePlusOne", register=True
 )
@@ -174,29 +174,6 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=("random", 1.0),
 )
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
     mutation="doublefastga").set_name("DoubleFastGADiscreteOnePlusOne", register=True)
-FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="fastga").set_name("FastGADiscreteOnePlusOne", register=True)
-DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="doublefastga").set_name(
-    "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="fastga").set_name(
-    "FastGAOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").set_name(
-    "FastGANoisyDiscreteOnePlusOne", register=True
-)
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="portfolio").set_name("PortfolioDiscreteOnePlusOne", register=True)
-PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="portfolio").set_name(
-    "PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="portfolio").set_name(
-    "PortfolioNoisyDiscreteOnePlusOne", register=True
-)
-CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
-RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="discrete", noise_handling="optimistic"
-).set_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
 RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
@@ -211,11 +188,15 @@ class _CMA(base.Optimizer):
             budget: Optional[int] = None,
             num_workers: int = 1,
             scale: float = 1.0,
-            diagonal: bool = False
+            popsize: Optional[int] = None,
+            diagonal: bool = False,
+            fcmaes: bool = False
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
+        self._popsize = popsize
         self._diagonal = diagonal
+        self._fcmaes = fcmaes
         self._es: Optional[cma.CMAEvolutionStrategy] = None
         # delay initialization to ease implementation of variants
         self.listx: tp.List[ArrayLike] = []
@@ -223,11 +204,20 @@ class _CMA(base.Optimizer):
         self.to_be_asked: tp.Deque[np.ndarray] = deque()
 
     @property
-    def es(self) -> cma.CMAEvolutionStrategy:
+    def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
-            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
-            inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-            self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if self._popsize is None else self._popsize
+            if self._fcmaes:
+                try:
+                    from fcmaes import cmaes
+                except ImportError as e:
+                    raise ImportError("Please install fcmaes (pip install fcmaes) to use FCMA optimizers") from e
+                self._es = cmaes.Cmaes(x0=np.zeros(self.dimension, dtype=np.float),
+                                       input_sigma=self._scale,
+                                       popsize=popsize, randn=self._rng.randn)
+            else:
+                inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
         return self._es
 
     def _internal_ask(self) -> ArrayLike:
@@ -240,7 +230,10 @@ class _CMA(base.Optimizer):
         self.listy += [value]
         if len(self.listx) >= self.es.popsize:
             try:
-                self.es.tell(self.listx, self.listy)
+                if self._fcmaes:
+                    self.es.tell(self.listy, self.listx)
+                else:
+                    self.es.tell(self.listx, self.listy)
             except RuntimeError:
                 pass
             else:
@@ -250,9 +243,10 @@ class _CMA(base.Optimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._es is None:
             raise RuntimeError("Either ask or tell method should have been called before")
-        if self.es.result.xbest is None:
+        cma_best = self.es.best_x if self._fcmaes else self.es.result.xbest
+        if cma_best is None:
             return self.current_bests["pessimistic"].x
-        return self.es.result.xbest  # type: ignore
+        return cma_best
 
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
@@ -262,8 +256,16 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     ----------
     scale: float
         scale of the search
+    popsize: Optional[int] = None
+        population size, should be n * self.num_workers for int n >= 1.
+        default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
+    fcmaes: bool = False
+        use fast implementation, doesn't support diagonal=True.
+        produces equivalent results, preferable for high dimensions or
+        if objective function evaluation is fast.
     """
 
     # pylint: disable=unused-argument
@@ -271,15 +273,19 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self,
         *,
         scale: float = 1.0,
-        diagonal: bool = False
+        popsize: Optional[int] = None,
+        diagonal: bool = False,
+        fcmaes: bool = False
     ) -> None:
         super().__init__(_CMA, locals())
+        if fcmaes:
+            if diagonal:
+                raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
-MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
-MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
+FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
 
 class _PopulationSizeController:
@@ -601,7 +607,6 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
 
 
 RealSpacePSO = ConfiguredPSO().set_name("RealSpacePSO", register=True)
-WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name("WidePSO", register=True)  # non-standard init
 
 
 @registry.register
@@ -780,12 +785,6 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
     ) -> None:
         super().__init__(SplitOptimizer, locals())
-
-
-SplitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name("SplitOptimizer3", register=True)
-SplitOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name("SplitOptimizer5", register=True)
-SplitOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name("SplitOptimizer9", register=True)
-SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name("SplitOptimizer13", register=True)
 
 
 @registry.register
@@ -1056,8 +1055,8 @@ class MultiScaleCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
             CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-            MilliCMA(self.parametrization, budget=None, num_workers=num_workers),
-            MicroCMA(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(scale=1e-3)(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(scale=1e-6)(self.parametrization, budget=None, num_workers=num_workers),
         ]
         assert budget is not None
         self.budget_before_choosing = budget // 3
@@ -1220,10 +1219,6 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
-RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
-QRBO = ParametrizedBO(initialization="Hammersley").set_name("QRBO", register=True)
-MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).set_name("MidQRBO", register=True)
-LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
 
 
 @registry.register
@@ -1330,62 +1325,8 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
-chainCMASQP = Chaining([CMA, SQP], ["half"]).set_name("chainCMASQP", register=True)
-chainCMASQP.no_parallelization = True
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
-
-chainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).set_name("chainDEwithR", register=True)
-chainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).set_name("chainDEwithRsqrt", register=True)
-chainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).set_name("chainDEwithRdim", register=True)
-chainDEwithR30 = Chaining([RandomSearch, DE], [30]).set_name("chainDEwithR30", register=True)
-chainDEwithLHS = Chaining([LHSSearch, DE], ["num_workers"]).set_name("chainDEwithLHS", register=True)
-chainDEwithLHSsqrt = Chaining([LHSSearch, DE], ["sqrt"]).set_name("chainDEwithLHSsqrt", register=True)
-chainDEwithLHSdim = Chaining([LHSSearch, DE], ["dimension"]).set_name("chainDEwithLHSdim", register=True)
-chainDEwithLHS30 = Chaining([LHSSearch, DE], [30]).set_name("chainDEwithLHS30", register=True)
-chainDEwithMetaRecentering = Chaining([MetaRecentering, DE], ["num_workers"]).set_name("chainDEwithMetaRecentering", register=True)
-chainDEwithMetaRecenteringsqrt = Chaining([MetaRecentering, DE], ["sqrt"]).set_name("chainDEwithMetaRecenteringsqrt", register=True)
-chainDEwithMetaRecenteringdim = Chaining([MetaRecentering, DE], ["dimension"]).set_name("chainDEwithMetaRecenteringdim", register=True)
-chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).set_name("chainDEwithMetaRecentering30", register=True)
-
-chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).set_name("chainBOwithR", register=True)
-chainBOwithRsqrt = Chaining([RandomSearch, BO], ["sqrt"]).set_name("chainBOwithRsqrt", register=True)
-chainBOwithRdim = Chaining([RandomSearch, BO], ["dimension"]).set_name("chainBOwithRdim", register=True)
-chainBOwithR30 = Chaining([RandomSearch, BO], [30]).set_name("chainBOwithR30", register=True)
-chainBOwithLHS30 = Chaining([LHSSearch, BO], [30]).set_name("chainBOwithLHS30", register=True)
-chainBOwithLHSsqrt = Chaining([LHSSearch, BO], ["sqrt"]).set_name("chainBOwithLHSsqrt", register=True)
-chainBOwithLHSdim = Chaining([LHSSearch, BO], ["dimension"]).set_name("chainBOwithLHSdim", register=True)
-chainBOwithLHS = Chaining([LHSSearch, BO], ["num_workers"]).set_name("chainBOwithLHS", register=True)
-chainBOwithMetaRecentering30 = Chaining([MetaRecentering, BO], [30]).set_name("chainBOwithMetaRecentering30", register=True)
-chainBOwithMetaRecenteringsqrt = Chaining([MetaRecentering, BO], ["sqrt"]).set_name("chainBOwithMetaRecenteringsqrt", register=True)
-chainBOwithMetaRecenteringdim = Chaining([MetaRecentering, BO], ["dimension"]).set_name("chainBOwithMetaRecenteringdim", register=True)
-chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).set_name("chainBOwithMetaRecentering", register=True)
-
-chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).set_name("chainPSOwithR", register=True)
-chainPSOwithRsqrt = Chaining([RandomSearch, PSO], ["sqrt"]).set_name("chainPSOwithRsqrt", register=True)
-chainPSOwithRdim = Chaining([RandomSearch, PSO], ["dimension"]).set_name("chainPSOwithRdim", register=True)
-chainPSOwithR30 = Chaining([RandomSearch, PSO], [30]).set_name("chainPSOwithR30", register=True)
-chainPSOwithLHS30 = Chaining([LHSSearch, PSO], [30]).set_name("chainPSOwithLHS30", register=True)
-chainPSOwithLHSsqrt = Chaining([LHSSearch, PSO], ["sqrt"]).set_name("chainPSOwithLHSsqrt", register=True)
-chainPSOwithLHSdim = Chaining([LHSSearch, PSO], ["dimension"]).set_name("chainPSOwithLHSdim", register=True)
-chainPSOwithLHS = Chaining([LHSSearch, PSO], ["num_workers"]).set_name("chainPSOwithLHS", register=True)
-chainPSOwithMetaRecentering30 = Chaining([MetaRecentering, PSO], [30]).set_name("chainPSOwithMetaRecentering30", register=True)
-chainPSOwithMetaRecenteringsqrt = Chaining([MetaRecentering, PSO], ["sqrt"]).set_name("chainPSOwithMetaRecenteringsqrt", register=True)
-chainPSOwithMetaRecenteringdim = Chaining([MetaRecentering, PSO], ["dimension"]).set_name("chainPSOwithMetaRecenteringdim", register=True)
-chainPSOwithMetaRecentering = Chaining([MetaRecentering, PSO], ["num_workers"]).set_name("chainPSOwithMetaRecentering", register=True)
-
-chainCMAwithR = Chaining([RandomSearch, CMA], ["num_workers"]).set_name("chainCMAwithR", register=True)
-chainCMAwithRsqrt = Chaining([RandomSearch, CMA], ["sqrt"]).set_name("chainCMAwithRsqrt", register=True)
-chainCMAwithRdim = Chaining([RandomSearch, CMA], ["dimension"]).set_name("chainCMAwithRdim", register=True)
-chainCMAwithR30 = Chaining([RandomSearch, CMA], [30]).set_name("chainCMAwithR30", register=True)
-chainCMAwithLHS30 = Chaining([LHSSearch, CMA], [30]).set_name("chainCMAwithLHS30", register=True)
-chainCMAwithLHSsqrt = Chaining([LHSSearch, CMA], ["sqrt"]).set_name("chainCMAwithLHSsqrt", register=True)
-chainCMAwithLHSdim = Chaining([LHSSearch, CMA], ["dimension"]).set_name("chainCMAwithLHSdim", register=True)
-chainCMAwithLHS = Chaining([LHSSearch, CMA], ["num_workers"]).set_name("chainCMAwithLHS", register=True)
-chainCMAwithMetaRecentering30 = Chaining([MetaRecentering, CMA], [30]).set_name("chainCMAwithMetaRecentering30", register=True)
-chainCMAwithMetaRecenteringsqrt = Chaining([MetaRecentering, CMA], ["sqrt"]).set_name("chainCMAwithMetaRecenteringsqrt", register=True)
-chainCMAwithMetaRecenteringdim = Chaining([MetaRecentering, CMA], ["dimension"]).set_name("chainCMAwithMetaRecenteringdim", register=True)
-chainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).set_name("chainCMAwithMetaRecentering", register=True)
 
 
 @registry.register
@@ -1515,32 +1456,110 @@ class NGO(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-class EMNA_TBPSA(TBPSA):
-    """Test-based population-size adaptation with EMNA.
+class _EMNA(base.Optimizer):
+    """Simple Estimation of Multivariate Normal Algorithm (EMNA).
     """
 
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            isotropic: bool = True,
+            naive: bool = True
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.isotropic: bool = isotropic
+        self.naive: bool = naive
+        self.sigma: tp.Union[float, np.ndarray]
+        if self.isotropic:
+            self.sigma = 1.0
+        else:
+            self.sigma = np.ones(self.dimension)
+        self.mu = max(16, self.dimension)
+        self.llambda = 4 * self.mu
+        if budget is not None and self.llambda > budget:
+            self.llambda = budget
+            self.mu = self.llambda // 4
+            warnings.warn("Budget may be too small in front of the dimension for EMNA")
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # population
+        self.parents: List[p.Parameter] = [self.parametrization]
+        self.children: List[p.Parameter] = []
+
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x  # Naive version for now
+        if self.naive:
+            return self.current_bests["optimistic"].x
+        else:
+            return self.current_center
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid
+        candidate._meta["sigma"] = self.sigma
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
-        self.popsize.add_value(value)
         self.children.append(candidate)
-        if len(self.children) >= self.popsize.llambda:
+        if len(self.children) >= self.llambda:
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            mu = self.popsize.mu
-            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.children[: mu]) / mu
-            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.children[: mu]]
-            # EMNA update
-            self.sigma = np.sqrt(sum(t1) / (mu))
-            imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
-            if self.num_workers / self.dimension > 16:
-                self.sigma /= imp
-            self.parents = self.children[: mu]
+            self.parents = self.children[: self.mu]
             self.children = []
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
+                                      for c in self.parents) / self.mu
+            # EMNA update
+            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2
+                    for i in range(self.mu)]
+            if self.isotropic:
+                self.sigma = np.sqrt(sum(stdd) / (self.mu * self.dimension))
+            else:
+                self.sigma = np.sqrt(np.sum(stdd, axis=0) / (self.mu))
+
+            if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
+                imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+                self.sigma /= imp
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
+class EMNA(base.ConfiguredOptimizer):
+    """ Estimation of Multivariate Normal Algorithm
+    This algorithm is quite efficient in a parallel context, i.e. when
+    the population size is large.
+
+    Parameters
+    ----------
+    isotropic: bool
+        isotropic version on EMNA if True, i.e. we have an
+        identity matrix for the Gaussian, else  we here consider the separable
+        version, meaning we have a diagonal matrix for the Gaussian (anisotropic)
+    naive: bool
+        set to False for noisy problem, so that the best points will be an
+        average of the final population.
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        isotropic: bool = True,
+        naive: bool = True
+    ) -> None:
+        super().__init__(_EMNA, locals())
+
+
+NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
 @registry.register

@@ -34,10 +34,16 @@ class MultiobjectiveFunction:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: ArrayLike) -> None:
+    def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
-        self._upper_bounds = np.array(upper_bounds, copy=False)
-        self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
+        self._auto_bound = 0
+        self._auto_upper_bounds = np.array([-float('inf')])  
+        self._auto_lower_bounds = np.array([float('inf')])
+        if upper_bounds is None:
+            self._auto_bound = 15
+        else:
+            self._upper_bounds = upper_bounds
+            self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
         self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
@@ -45,17 +51,24 @@ class MultiobjectiveFunction:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
-        # We compute the hypervolume
+        losses = np.array(losses, copy=False)
+        if self._auto_bound > 0:
+            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)
+            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)            
+            self._auto_bound -= 1
+            if self._auto_bound == 0:
+                self._upper_bounds = self._auto_upper_bounds + 0. * (self._auto_upper_bounds - self._auto_lower_bounds)
+                self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore                
+            self._points.append(((args, kwargs), np.array(losses)))
+            return 0.
+        # We compute the hypervolume           
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
         new_volume: float = self._hypervolume.compute([y for _, y in self._points] + [arr_losses])
         if new_volume > self._best_volume:  # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
-            # if tuple(x) in self.pointset:  # TODO: comparison is not quite possible, is it necessary?
-            #    assert v == self.pointset[tuple(x)]  # We work noise-free...
             self._points.append(((args, kwargs), arr_losses))
-            # self.pointset[tuple(x)] = v
             return -new_volume
         else:
             # Now we compute for each axis
