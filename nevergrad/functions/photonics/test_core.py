@@ -66,6 +66,13 @@ def test_photonics_recombination() -> None:
     np.testing.assert_array_equal(arrays[0].value, np.ones((4, 1)).dot(np.array(expected)[None, :]))
 
 
+def test_photonics_custom_mutation() -> None:
+    func = core.Photonics("morpho", 16, rolling=True)
+    param = func.parametrization.spawn_child()
+    for _ in range(10):
+        param.mutate()
+
+
 def test_photonics_error() -> None:
     # check error
     photo = core.Photonics("bragg", 16)
