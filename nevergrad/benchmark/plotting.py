@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
+import re
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
@@ -195,6 +196,11 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                            f.write(f"  algo {i}: {algo}\n")
             except:
                 pass
+            name=re.sub(r'\([^()]*\)', '', name)
+            name=re.sub(r'\([^()]*\)', '', name)
+            name=re.sub(r'\([^()]*\)', '', name)
+            if len(name) > 80:
+                name = name[:40] + name[-40:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
@@ -214,6 +220,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        if len(description) > 80:
+            description = description[:40] + description[-40:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
         xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
