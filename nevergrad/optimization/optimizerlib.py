@@ -395,8 +395,7 @@ class MEDA(EDA):
     _COVARIANCE_MEMORY = True
 
 
-@registry.register
-class TBPSA(base.Optimizer):
+class _TBPSA(base.Optimizer):
     """Test-based population-size adaptation.
 
     Population-size equal to lambda = 4 x dimension.
@@ -405,9 +404,15 @@ class TBPSA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            naive: bool = True
+            ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
+        self.naive = naive
         dim = self.dimension
         self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
@@ -416,7 +421,10 @@ class TBPSA(base.Optimizer):
         self.children: List[p.Parameter] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
-        return self.current_center
+        if self.naive:
+            return self.current_bests["optimistic"].x
+        else:
+            return self.current_center
 
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
@@ -449,10 +457,27 @@ class TBPSA(base.Optimizer):
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
-@registry.register
-class NaiveTBPSA(TBPSA):
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x
+class ParametrizedTBPSA(base.ConfiguredOptimizer):
+    """Test-based population-size adaptation.
+    This algorithm is robust, and perfoms well for noisy problems and in large dimension
+
+    Parameters
+    ----------
+    naive: bool
+        set to False for noisy problem, so that the best points will be an 
+        average of the final population.
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        naive: bool = True
+    ) -> None:
+        super().__init__(_TBPSA, locals())
+
+
+NaiveTBPSA = ParametrizedTBPSA().set_name("NaiveTBPSA", register=True)
 
 
 @registry.register
