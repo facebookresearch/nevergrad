@@ -13,7 +13,6 @@ from .optimizerlib import (
     ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
-    ParametrizedTBPSA,
 )
 from .optimizerlib import CMA, Chaining, PSO, BO
 
@@ -87,10 +86,6 @@ WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name(
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
 NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
 AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
-
-
-# TBPSA
-TBPSA = ParametrizedTBPSA(naive=False).set_name("TBPSA", register=True)
 
 # Recentering
 MetaCauchyRecentering = SamplingSearch(

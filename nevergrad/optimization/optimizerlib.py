@@ -478,9 +478,8 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_TBPSA, locals())
 
-
+TBPSA = ParametrizedTBPSA(naive=False).set_name("TBPSA", register=True)
 NaiveTBPSA = ParametrizedTBPSA().set_name("NaiveTBPSA", register=True)
-
 
 @registry.register
 class NoisyBandit(base.Optimizer):
