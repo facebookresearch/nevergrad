@@ -213,8 +213,8 @@ class _CMA(base.Optimizer):
                 except ImportError as e:
                     raise ImportError("Please install fcmaes (pip install fcmaes) to use FCMA optimizers") from e
                 self._es = cmaes.Cmaes(x0=np.zeros(self.dimension, dtype=np.float),
-                                   input_sigma=self._scale,
-                                   popsize=popsize, randn=self._rng.randn)
+                                       input_sigma=self._scale,
+                                       popsize=popsize, randn=self._rng.randn)
             else:
                 inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
                 self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
@@ -248,6 +248,7 @@ class _CMA(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return cma_best
 
+
 class ParametrizedCMA(base.ConfiguredOptimizer):
     """CMA-ES optimizer, wrapping external implementation: https://github.com/CMA-ES/pycma
 
@@ -262,9 +263,9 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
     fcmaes: bool = False
-        use fast implementation, doesn't support diagonal=True. 
+        use fast implementation, doesn't support diagonal=True.
         produces equivalent results, preferable for high dimensions or
-        if objective function evaluation is fast. 
+        if objective function evaluation is fast.
     """
 
     # pylint: disable=unused-argument
@@ -276,10 +277,11 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         diagonal: bool = False,
         fcmaes: bool = False
     ) -> None:
-        super().__init__(_CMA, locals())    
+        super().__init__(_CMA, locals())
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
+
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
@@ -1479,7 +1481,6 @@ class NGO(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-@registry.register
 class _EMNA(base.Optimizer):
     """Simple Estimation of Multivariate Normal Algorithm (EMNA).
     """
@@ -1493,7 +1494,7 @@ class _EMNA(base.Optimizer):
             num_workers: int = 1,
             isotropic: bool = True,
             naive: bool = True
-            ) -> None:
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.isotropic: bool = isotropic
         self.naive: bool = naive
@@ -1502,7 +1503,7 @@ class _EMNA(base.Optimizer):
             self.sigma = 1.0
         else:
             self.sigma = np.ones(self.dimension)
-        self.mu = max(16,self.dimension)
+        self.mu = max(16, self.dimension)
         self.llambda = 4 * self.mu
         if budget is not None and self.llambda > budget:
             self.llambda = budget
@@ -1539,20 +1540,22 @@ class _EMNA(base.Optimizer):
             # Computing the new parent.
             self.parents = self.children[: self.mu]
             self.children = []
-            self.current_center = sum(c.get_standardized_data(reference=self.parametrization) for c in self.parents) / self.mu  # type: ignore
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
+                                      for c in self.parents) / self.mu
             # EMNA update
-            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.mu)]
+            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2
+                    for i in range(self.mu)]
             if self.isotropic:
                 self.sigma = np.sqrt(sum(stdd) / (self.mu * self.dimension))
             else:
                 self.sigma = np.sqrt(np.sum(stdd, axis=0) / (self.mu))
 
-            if self.num_workers / self.dimension > 32: # faster decrease of sigma if large parallel context
+            if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        base.TellNotAskedNotSupportedError
+        raise base.TellNotAskedNotSupportedError
 
 
 class EMNA(base.ConfiguredOptimizer):
@@ -1567,7 +1570,7 @@ class EMNA(base.ConfiguredOptimizer):
         identity matrix for the Gaussian, else  we here consider the separable
         version, meaning we have a diagonal matrix for the Gaussian (anisotropic)
     naive: bool
-        set to False for noisy problem, so that the best points will be an 
+        set to False for noisy problem, so that the best points will be an
         average of the final population.
     """
 
@@ -1582,6 +1585,7 @@ class EMNA(base.ConfiguredOptimizer):
 
 
 NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
+
 
 @registry.register
 class Shiva(NGO):
