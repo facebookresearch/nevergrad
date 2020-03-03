@@ -289,8 +289,9 @@ def test_tell_not_asked(name: str) -> None:
 def test_tbpsa_recom_with_update() -> None:
     budget = 20
     # set up problem
+    tbpsa = registry["TBPSA"]
     fitness = Fitness([0.5, -0.8, 0, 4])
-    optim = optlib.TBPSA(parametrization=4, budget=budget, num_workers=1)
+    optim = tbpsa(parametrization=4, budget=budget, num_workers=1)
     optim.parametrization.random_state.seed(12)
     optim.popsize.llambda = 3
     candidate = optim.minimize(fitness)
