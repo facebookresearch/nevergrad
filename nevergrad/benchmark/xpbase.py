@@ -37,7 +37,7 @@ class OptimizerSettings:
         num_workers: int = 1,
         batch_mode: bool = True
     ) -> None:
-        self._setting_names = [x for x in locals() if x != "self"]
+        self._setting_names = [x for x in locals() if x not in ["self", "optimizer"]]
         if isinstance(optimizer, str):
             assert optimizer in optimizer_registry, f"{optimizer} is not registered"
         self.optimizer = optimizer
@@ -82,7 +82,11 @@ class OptimizerSettings:
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
-            return all(getattr(self, attr) == getattr(other, attr) for attr in self._setting_names)
+            for attr in self._setting_names:
+                x, y = (getattr(settings, attr) for settings in [self, other])
+                if x != y:
+                    return False
+            return True
         return False
 
 
@@ -123,8 +127,8 @@ class Experiment:
 
     # pylint: disable=too-many-arguments
     def __init__(self, function: fbase.ExperimentFunction,
-                 optimizer: Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1,
-                 batch_mode: bool = True, seed: Optional[int] = None,
+                 optimizer: Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int=1,
+                 batch_mode: bool=True, seed: Optional[int]=None,
                  ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
                                                                 "derive from ng.functions.ExperimentFunction")
@@ -188,7 +192,7 @@ class Experiment:
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
 
-    def _run_with_error(self, callbacks: Optional[Dict[str, obase._OptimCallBack]] = None) -> None:
+    def _run_with_error(self, callbacks: Optional[Dict[str, obase._OptimCallBack]]=None) -> None:
         """Run an experiment with the provided artificial function and optimizer
 
         Parameter
