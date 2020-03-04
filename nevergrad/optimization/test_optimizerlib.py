@@ -292,7 +292,7 @@ def test_tbpsa_recom_with_update() -> None:
     fitness = Fitness([0.5, -0.8, 0, 4])
     optim = optlib.TBPSA(parametrization=4, budget=budget, num_workers=1)
     optim.parametrization.random_state.seed(12)
-    optim.popsize.llambda = 3
+    optim.popsize.llambda = 3 # type: ignore
     candidate = optim.minimize(fitness)
     np.testing.assert_almost_equal(candidate.args[0], [0.037964, 0.0433031, -0.4688667, 0.3633273])
 
