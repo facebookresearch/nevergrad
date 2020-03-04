@@ -18,13 +18,26 @@ Parameters
 
 - :code:`Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
 - :code:`TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
-- :code:`Array(shape=shape)`: describes a :code:`np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see :code:`set_bounds`, :code:`set_mutation`). This makes it a very flexible type of parameter. Eg. :code:`Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape :code:`(2, 3)`, with values bounded between 0 and 2.
-- :code:`Scalar(dtype)`: describes a float (the default) or an int.
-  and all :code:`Array` methods are therefore available.
-- :code:`Log(a_min, a_max)`: describes log distributed data between two bounds. Under the hood this uses an :code:`Scalar` with appropriate specifications for bounds and mutations.
+- :code:`Array(shape=shape)`: describes a :code:`np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see :code:`set_bounds`, :code:`set_mutation`). This makes it a very flexible type of parameter. Eg. :code:`Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape :code:`(2, 3)`, with values bounded between 0 and 2. It can be also set to an array of integers (see :code:`set_integer_casting`)
+- :code:`Scalar()`: describes a scalar. This parameter inherits from all :code:`Array` methods, so it can be bounded, projected to integers and mutation rate can be customized.
+- :code:`Log(lower, upper)`: describes log distributed data between two bounds. Under the hood this uses an :code:`Scalar` with appropriate specifications for bounds and mutations.
 - :code:`Instrumentation(*args, **kwargs)`: a container for other parameters. Values of parameters in the :code:`args` will be returned as a :code:`tuple` by :code:`param.args`, and
   values of parameters in the :code:`kwargs` will be returned as a :code:`dict` by :code:`param.kwargs` (in practice, :code:`param.value == (param.args, param.kwargs)`).
   This serves to parametrize functions taking multiple arguments, since you can then call the function with :code:`func(*param.args, **param.kwargs)`.
+
+
+Follow the link to the API reference for more details and options:
+
+.. autosummary::
+    nevergrad.p.Array
+    nevergrad.p.Scalar
+    nevergrad.p.Log
+    nevergrad.p.Dict
+    nevergrad.p.Tuple
+    nevergrad.p.Instrumentation
+    nevergrad.p.Choice
+    nevergrad.p.TransitionChoice
+
 
 Parametrization
 ---------------

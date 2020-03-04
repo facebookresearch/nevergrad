@@ -384,7 +384,7 @@ class Scalar(Array):
     - if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
       Also, if init is not provided, it will be set to the middle value.
     - More specific behaviors can be obtained throught the following methods:
-     set_bounds, set_mutation
+     :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
     def __init__(
@@ -438,7 +438,7 @@ def _a_min_max_deprecation(
 
 
 class Log(Scalar):
-    """Parameter representing a log distributed scalar between 0 and infinity.
+    """Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.
 
     Parameters
     ----------
@@ -457,9 +457,7 @@ class Log(Scalar):
 
     Note
     ----
-    By default this is a positive variable, mutated by Gaussian mutation in log-scale.
-    More specific behaviors can be obtained throught the following methods:
-    set_bounds, set_mutation
+    This class is only a wrapper over :code:`Scalar`.
     """
 
     def __init__(
