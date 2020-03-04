@@ -754,6 +754,19 @@ average of the final population.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="class">
+<dt id="nevergrad.families.ParametrizedTBPSA">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">naive: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test-based population-size adaptation.
+This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+average of the final population.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="optimizers">
 <h2>Optimizers<a class="headerlink" href="#optimizers" title="Permalink to this headline">¶</a></h2>
@@ -900,11 +913,6 @@ average of the final population.</p></li>
 </dd></dl>
 
 <dl class="class">
-<dt id="nevergrad.optimization.optimizerlib.NaiveTBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NaiveTBPSA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NaiveTBPSA" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.NoisyBandit">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NoisyBandit</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NoisyBandit" title="Permalink to this definition">¶</a></dt>
 <dd><p>UCB.
@@ -1026,6 +1034,19 @@ It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="nevergrad.optimization.optimizerlib.ParametrizedTBPSA">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">naive: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test-based population-size adaptation.
+This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+average of the final population.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.Portfolio">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Portfolio</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passive portfolio of CMA, 2-pt DE and Scr-Hammersley.</p>
@@ -1079,14 +1100,6 @@ opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)</p>
 <p>This is 5 parallel (by num_workers = 5).</p>
 <p>Be careful! The variables refer to the deep representation used by optimizers.
 For example, a categorical variable with 5 possible values becomes 5 continuous variables.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="nevergrad.optimization.optimizerlib.TBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">TBPSA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.TBPSA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation.</p>
-<p>Population-size equal to lambda = 4 x dimension.
-Test by comparing the first fifth and the last fifth of the 5lambda evaluations.</p>
 </dd></dl>
 
 <dl class="class">
