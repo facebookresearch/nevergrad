@@ -37,7 +37,7 @@ class OptimizerSettings:
         num_workers: int = 1,
         batch_mode: bool = True
     ) -> None:
-        self._setting_names = [x for x in locals() if x not in ["self", "optimizer"]]
+        self._setting_names = [x for x in locals() if x != "self"]
         if isinstance(optimizer, str):
             assert optimizer in optimizer_registry, f"{optimizer} is not registered"
         self.optimizer = optimizer
