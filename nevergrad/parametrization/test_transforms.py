@@ -14,10 +14,10 @@ from . import transforms
     affine=(transforms.Affine(3, 4), "Af(3,4)"),
     reverted=(transforms.Affine(3, 4).reverted(), "Rv(Af(3,4))"),
     exponentiate=(transforms.Exponentiate(3, 4), "Ex(3,4)"),
-    tanh=(transforms.TanhBound(3, 4), "Th(3,4)"),
+    tanh=(transforms.TanhBound(3.0, 4.5), "Th(3,4.5)"),
     arctan=(transforms.ArctanBound(3, 4), "At(3,4)"),
     cumdensity=(transforms.CumulativeDensity(), "Cd()"),
-    clipping=(transforms.Clipping(None, 1e12), "Cl(None,1000000000000.0)"),
+    clipping=(transforms.Clipping(None, 1e12), "Cl(None,1000000000000)"),
 )
 def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     x = np.random.normal(0, 1, size=12)
