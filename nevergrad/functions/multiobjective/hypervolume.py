@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
 # (C) Copyright 2020 Enthought, Inc., Austin, TX
 # All rights reserved.
 #
