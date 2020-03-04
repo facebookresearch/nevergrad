@@ -213,8 +213,8 @@ class _CMA(base.Optimizer):
                 except ImportError as e:
                     raise ImportError("Please install fcmaes (pip install fcmaes) to use FCMA optimizers") from e
                 self._es = cmaes.Cmaes(x0=np.zeros(self.dimension, dtype=np.float),
-                                   input_sigma=self._scale,
-                                   popsize=popsize, randn=self._rng.randn)
+                                       input_sigma=self._scale,
+                                       popsize=popsize, randn=self._rng.randn)
             else:
                 inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
                 self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
@@ -248,6 +248,7 @@ class _CMA(base.Optimizer):
             return self.current_bests["pessimistic"].x
         return cma_best
 
+
 class ParametrizedCMA(base.ConfiguredOptimizer):
     """CMA-ES optimizer, wrapping external implementation: https://github.com/CMA-ES/pycma
 
@@ -262,9 +263,9 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
     fcmaes: bool = False
-        use fast implementation, doesn't support diagonal=True. 
+        use fast implementation, doesn't support diagonal=True.
         produces equivalent results, preferable for high dimensions or
-        if objective function evaluation is fast. 
+        if objective function evaluation is fast.
     """
 
     # pylint: disable=unused-argument
@@ -276,10 +277,11 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         diagonal: bool = False,
         fcmaes: bool = False
     ) -> None:
-        super().__init__(_CMA, locals())    
+        super().__init__(_CMA, locals())
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
+
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
@@ -395,8 +397,7 @@ class MEDA(EDA):
     _COVARIANCE_MEMORY = True
 
 
-@registry.register
-class TBPSA(base.Optimizer):
+class _TBPSA(base.Optimizer):
     """Test-based population-size adaptation.
 
     Population-size equal to lambda = 4 x dimension.
@@ -405,9 +406,15 @@ class TBPSA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            naive: bool = True
+            ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
+        self.naive = naive
         dim = self.dimension
         self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
@@ -416,7 +423,10 @@ class TBPSA(base.Optimizer):
         self.children: List[p.Parameter] = []
 
     def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
-        return self.current_center
+        if self.naive:
+            return self.current_bests["optimistic"].x
+        else:
+            return self.current_center
 
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
@@ -449,11 +459,27 @@ class TBPSA(base.Optimizer):
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
-@registry.register
-class NaiveTBPSA(TBPSA):
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x
+class ParametrizedTBPSA(base.ConfiguredOptimizer):
+    """Test-based population-size adaptation.
+    This algorithm is robust, and perfoms well for noisy problems and in large dimension
 
+    Parameters
+    ----------
+    naive: bool
+        set to False for noisy problem, so that the best points will be an 
+        average of the final population.
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        naive: bool = True
+    ) -> None:
+        super().__init__(_TBPSA, locals())
+
+TBPSA = ParametrizedTBPSA(naive=False).set_name("TBPSA", register=True)
+NaiveTBPSA = ParametrizedTBPSA().set_name("NaiveTBPSA", register=True)
 
 @registry.register
 class NoisyBandit(base.Optimizer):
@@ -1454,32 +1480,110 @@ class NGO(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-class EMNA_TBPSA(TBPSA):
-    """Test-based population-size adaptation with EMNA.
+class _EMNA(base.Optimizer):
+    """Simple Estimation of Multivariate Normal Algorithm (EMNA).
     """
 
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: Optional[int] = None,
+            num_workers: int = 1,
+            isotropic: bool = True,
+            naive: bool = True
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.isotropic: bool = isotropic
+        self.naive: bool = naive
+        self.sigma: tp.Union[float, np.ndarray]
+        if self.isotropic:
+            self.sigma = 1.0
+        else:
+            self.sigma = np.ones(self.dimension)
+        self.mu = max(16, self.dimension)
+        self.llambda = 4 * self.mu
+        if budget is not None and self.llambda > budget:
+            self.llambda = budget
+            self.mu = self.llambda // 4
+            warnings.warn("Budget may be too small in front of the dimension for EMNA")
+        if num_workers is not None:
+            self.llambda = max(self.llambda, num_workers)
+        self.current_center: np.ndarray = np.zeros(self.dimension)
+        # population
+        self.parents: List[p.Parameter] = [self.parametrization]
+        self.children: List[p.Parameter] = []
+
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["optimistic"].x  # Naive version for now
+        if self.naive:
+            return self.current_bests["optimistic"].x
+        else:
+            return self.current_center
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
+        parent = self.parents[self.num_ask % len(self.parents)]
+        candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
+        if parent is self.parametrization:
+            candidate.heritage["lineage"] = candidate.uid
+        candidate._meta["sigma"] = self.sigma
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
-        self.popsize.add_value(value)
         self.children.append(candidate)
-        if len(self.children) >= self.popsize.llambda:
+        if len(self.children) >= self.llambda:
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            mu = self.popsize.mu
-            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.children[: mu]) / mu
-            t1 = [(c.get_standardized_data(reference=self.parametrization) - self.current_center)**2 for c in self.children[: mu]]
-            # EMNA update
-            self.sigma = np.sqrt(sum(t1) / (mu))
-            imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
-            if self.num_workers / self.dimension > 16:
-                self.sigma /= imp
-            self.parents = self.children[: mu]
+            self.parents = self.children[: self.mu]
             self.children = []
+            self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
+                                      for c in self.parents) / self.mu
+            # EMNA update
+            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2
+                    for i in range(self.mu)]
+            if self.isotropic:
+                self.sigma = np.sqrt(sum(stdd) / (self.mu * self.dimension))
+            else:
+                self.sigma = np.sqrt(np.sum(stdd, axis=0) / (self.mu))
+
+            if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
+                imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+                self.sigma /= imp
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
+class EMNA(base.ConfiguredOptimizer):
+    """ Estimation of Multivariate Normal Algorithm
+    This algorithm is quite efficient in a parallel context, i.e. when
+    the population size is large.
+
+    Parameters
+    ----------
+    isotropic: bool
+        isotropic version on EMNA if True, i.e. we have an
+        identity matrix for the Gaussian, else  we here consider the separable
+        version, meaning we have a diagonal matrix for the Gaussian (anisotropic)
+    naive: bool
+        set to False for noisy problem, so that the best points will be an
+        average of the final population.
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        isotropic: bool = True,
+        naive: bool = True
+    ) -> None:
+        super().__init__(_EMNA, locals())
+
+
+NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
 @registry.register

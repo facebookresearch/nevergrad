@@ -1,5 +1,10 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
 # (C) Copyright 2020 Enthought, Inc., Austin, TX
 # All rights reserved.
+#
+# This work is implemented under the Formulations and Computational Engineering (FORCE) project within Horizon 2020
+# (`NMBP-23-2016/721027 <https://www.the-force-project.eu>`_).
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.

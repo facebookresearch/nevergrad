@@ -178,7 +178,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     bests = pd.DataFrame(columns=["loss", "array"])
     if filepath.exists():
         bests = pd.read_csv(filepath, index_col=0)
-    if identifier not in bests:
+    if identifier not in bests.index:
         bests.loc[identifier, :] = (float("inf"), "")
     try:
         if not bests.loc[identifier, "loss"] < loss:  # works for nan

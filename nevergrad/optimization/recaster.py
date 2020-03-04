@@ -202,7 +202,8 @@ class RecastOptimizer(base.Optimizer):
             warnings.warn("Underlying optimizer has already converged, returning random points",
                           FinishedUnderlyingOptimizerWarning)
             self._check_error()
-            return np.random.normal(0, 1, self.dimension)  # type: ignore
+            data = np.random.normal(0, 1, self.dimension)
+            return self.parametrization.spawn_child().set_standardized_data(data)
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
