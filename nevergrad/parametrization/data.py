@@ -110,7 +110,7 @@ class Array(core.Parameter):
         descriptors: tp.List[str] = (["int"] if self.integer else
                                      ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else []))
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
-        descriptors += [f"{self.bound_transform}"] if self.bound_transform is not None else []
+        descriptors += [f"{self.bound_transform.name}"] if self.bound_transform is not None else []
         descriptors += ["constr"] if self._constraint_checkers else []
         description = ""
         if descriptors:

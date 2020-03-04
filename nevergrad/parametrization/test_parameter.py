@@ -156,6 +156,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
      (par.Tuple(12), "Tuple(12)"),
      (par.Dict(constant=12), "Dict(constant=12)"),
      (par.Scalar(), "Scalar[sigma=Log{exp=1.2}]"),
+     (par.Log(lower=3.2, upper=12.0, exponent=1.5), "Log{exp=1.5,Cl(3.2,12)}"),
      (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=1.2}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
