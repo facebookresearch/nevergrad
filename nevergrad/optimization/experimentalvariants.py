@@ -87,7 +87,6 @@ IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
 NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
 AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
 
-
 # Recentering
 MetaCauchyRecentering = SamplingSearch(
     cauchy=True, autorescale=True, sampler="Hammersley", scrambled=True
