@@ -185,7 +185,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <td><p>Parameter representing a scalar.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, lower, …])</p></td>
-<td><p>Parameter representing a log distributed scalar between 0 and infinity.</p></td>
+<td><p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Dict</span></code></a>(**parameters)</p></td>
 <td><p>Dictionary-valued parameter.</p></td>
@@ -271,6 +271,12 @@ to creating a child with a value sampled uniformly (or log-uniformly) within the
 <dd class="field-even"><p>self</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using integer casting makes the parameter discrete which can make the optimization more
+difficult. It is especially ill-adviced to use this with a range smaller than 10, or
+a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -330,7 +336,7 @@ Also, if init is not provided, it will be set to the middle value.</p></li>
 <li><p>More specific behaviors can be obtained throught the following methods:</p></li>
 </ul>
 <blockquote>
-<div><p>set_bounds, set_mutation</p>
+<div><p><code class="code docutils literal notranslate"><span class="pre">set_bounds</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_mutation</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_integer_casting</span></code></p>
 </div></blockquote>
 </dd></dl>
 
@@ -338,7 +344,7 @@ Also, if init is not provided, it will be set to the middle value.</p></li>
 <dt id="nevergrad.p.Log">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Log</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">init: Optional[float] = None</em>, <em class="sig-param">exponent: Optional[float] = None</em>, <em class="sig-param">lower: Optional[float] = None</em>, <em class="sig-param">upper: Optional[float] = None</em>, <em class="sig-param">mutable_sigma: bool = False</em>, <em class="sig-param">a_min: Optional[float] = None</em>, <em class="sig-param">a_max: Optional[float] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Scalar</span></code></p>
-<p>Parameter representing a log distributed scalar between 0 and infinity.</p>
+<p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -354,9 +360,7 @@ at 3 sigma in the transformed space.</p></li>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>By default this is a positive variable, mutated by Gaussian mutation in log-scale.
-More specific behaviors can be obtained throught the following methods:
-set_bounds, set_mutation</p>
+<p>This class is only a wrapper over <code class="code docutils literal notranslate"><span class="pre">Scalar</span></code>.</p>
 </div>
 </dd></dl>
 

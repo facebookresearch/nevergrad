@@ -179,14 +179,46 @@ The parametrization subpackage will help you do thanks to:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">Choice(items)</span></code>: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">TransitionChoice(items)</span></code>: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">Array(shape=shape)</span></code>: describes a <code class="code docutils literal notranslate"><span class="pre">np.ndarray</span></code> of any shape. The bounds of the array and the mutation of this array can be specified (see <code class="code docutils literal notranslate"><span class="pre">set_bounds</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_mutation</span></code>). This makes it a very flexible type of parameter. Eg. <code class="code docutils literal notranslate"><span class="pre">Array(shape=(2,</span> <span class="pre">3)).set_bounds(0,</span> <span class="pre">2)</span></code> encodes for an array of shape <code class="code docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">3)</span></code>, with values bounded between 0 and 2.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">Scalar(dtype)</span></code>: describes a float (the default) or an int.
-and all <code class="code docutils literal notranslate"><span class="pre">Array</span></code> methods are therefore available.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">Log(a_min,</span> <span class="pre">a_max)</span></code>: describes log distributed data between two bounds. Under the hood this uses an <code class="code docutils literal notranslate"><span class="pre">Scalar</span></code> with appropriate specifications for bounds and mutations.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Array(shape=shape)</span></code>: describes a <code class="code docutils literal notranslate"><span class="pre">np.ndarray</span></code> of any shape. The bounds of the array and the mutation of this array can be specified (see <code class="code docutils literal notranslate"><span class="pre">set_bounds</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_mutation</span></code>). This makes it a very flexible type of parameter. Eg. <code class="code docutils literal notranslate"><span class="pre">Array(shape=(2,</span> <span class="pre">3)).set_bounds(0,</span> <span class="pre">2)</span></code> encodes for an array of shape <code class="code docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">3)</span></code>, with values bounded between 0 and 2. It can be also set to an array of integers (see <code class="code docutils literal notranslate"><span class="pre">set_integer_casting</span></code>)</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Scalar()</span></code>: describes a scalar. This parameter inherits from all <code class="code docutils literal notranslate"><span class="pre">Array</span></code> methods, so it can be bounded, projected to integers and mutation rate can be customized.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Log(lower,</span> <span class="pre">upper)</span></code>: describes log distributed data between two bounds. Under the hood this uses an <code class="code docutils literal notranslate"><span class="pre">Scalar</span></code> with appropriate specifications for bounds and mutations.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">Instrumentation(*args,</span> <span class="pre">**kwargs)</span></code>: a container for other parameters. Values of parameters in the <code class="code docutils literal notranslate"><span class="pre">args</span></code> will be returned as a <code class="code docutils literal notranslate"><span class="pre">tuple</span></code> by <code class="code docutils literal notranslate"><span class="pre">param.args</span></code>, and
 values of parameters in the <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> will be returned as a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> by <code class="code docutils literal notranslate"><span class="pre">param.kwargs</span></code> (in practice, <code class="code docutils literal notranslate"><span class="pre">param.value</span> <span class="pre">==</span> <span class="pre">(param.args,</span> <span class="pre">param.kwargs)</span></code>).
 This serves to parametrize functions taking multiple arguments, since you can then call the function with <code class="code docutils literal notranslate"><span class="pre">func(*param.args,</span> <span class="pre">**param.kwargs)</span></code>.</p></li>
 </ul>
+<p>Follow the link to the API reference for more details and initialization options:</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*[, init, shape, …])</p></td>
+<td><p>Array parameter with customizable mutation and recombination.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>([init, lower, upper, …])</p></td>
+<td><p>Parameter representing a scalar.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, lower, …])</p></td>
+<td><p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Dict</span></code></a>(**parameters)</p></td>
+<td><p>Dictionary-valued parameter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Tuple</span></code></a>(*parameters)</p></td>
+<td><p>Tuple-valued parameter.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Instrumentation</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices[, deterministic])</p></td>
+<td><p>Unordered categorical parameter, randomly choosing one of the provided choice options as a value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices[, …])</p></td>
+<td><p>Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="parametrization">
 <h2>Parametrization<a class="headerlink" href="#parametrization" title="Permalink to this headline">¶</a></h2>
