@@ -309,6 +309,12 @@ class Array(core.Parameter):
         Returns
         -------
         self
+
+        Note
+        ----
+        Using integer casting makes the parameter discrete which can make the optimization more
+        difficult. It is especially ill-adviced to use this with a range smaller than 10, or
+        a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
         self.integer = True
         return self
