@@ -26,7 +26,7 @@ Parameters
   This serves to parametrize functions taking multiple arguments, since you can then call the function with :code:`func(*param.args, **param.kwargs)`.
 
 
-Follow the link to the API reference for more details and options:
+Follow the link to the API reference for more details and initialization options:
 
 .. autosummary::
     nevergrad.p.Array
