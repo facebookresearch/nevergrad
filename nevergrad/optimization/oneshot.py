@@ -32,6 +32,15 @@ def convex_limit(points: np.ndarray) -> int:
 
 def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
+    
+    Parameters
+    ----------
+    archive: utils.Archive[utils.Value]
+        Provides a random recommendation instead of the best point so far (for baseline)
+    method: str
+        If dimfourth, we use the Fteytaud heuristic, i.e. k = min(len(archive) // 4, dimension)
+        If exp, we use the Lmeunier method, i.e. k=max(1, len(archiv) // (2**dimension))
+        If hull, we use the maximum k <= dimfourth-value, such that the function looks quasiconvex on the k best points.
     """
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
