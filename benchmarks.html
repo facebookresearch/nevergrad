@@ -535,7 +535,7 @@ even if white-box methods are not included though they could do this more effici
 
 <dl class="function">
 <dt id="nevergrad.benchmark.experiments.yabbob">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yabbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em>, <em class="sig-param">parallel: bool = False</em>, <em class="sig-param">big: bool = False</em>, <em class="sig-param">noise: bool = False</em>, <em class="sig-param">hd: bool = False</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yabbob" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yabbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em>, <em class="sig-param">parallel: bool = False</em>, <em class="sig-param">big: bool = False</em>, <em class="sig-param">small: bool = False</em>, <em class="sig-param">noise: bool = False</em>, <em class="sig-param">hd: bool = False</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yabbob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Yet Another Black-Box Optimization Benchmark.
 Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.</p>
 </dd></dl>
@@ -565,6 +565,12 @@ This is different from the original BBOB/COCO from that point of view.</p>
 <dt id="nevergrad.benchmark.experiments.yaparabbob">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yaparabbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yaparabbob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parallel optimization counterpart of yabbob.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nevergrad.benchmark.experiments.yasmallbbob">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yasmallbbob</code><span class="sig-paren">(</span><em class="sig-param">seed: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; Iterator[nevergrad.benchmark.xpbase.Experiment]<a class="headerlink" href="#nevergrad.benchmark.experiments.yasmallbbob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of yabbob with less budget.</p>
 </dd></dl>
 
 <dl class="function">
