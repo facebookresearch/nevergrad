@@ -31,7 +31,8 @@ def convex_limit(points: np.ndarray) -> int:
 
 
 def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
-    # Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
+    """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
+    """
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
     if method == "dimfourth":
