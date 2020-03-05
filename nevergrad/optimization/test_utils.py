@@ -96,18 +96,17 @@ def test_pruning() -> None:
     # pruning
     pruning = utils.Pruning(min_len=1, max_len=3)
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
-    with pytest.warns(UserWarning):
-        archive = pruning(archive)
+    archive = pruning(archive)
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
     # should not change anything this time
     archive = pruning(archive)
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
-@pytest.mark.parametrize("dimension,expected_max", [(100, 1342177), (10000, 13421), (1000000, 1080)])  # type: ignore
+@pytest.mark.parametrize("dimension,expected_max", [(100, 1000), (200000, 671), (1000000, 300)])  # type: ignore
 def test_pruning_sensible_default(dimension: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
-    assert pruning.min_len == 36
+    assert pruning.min_len == 100
     assert pruning.max_len == expected_max
 
 
