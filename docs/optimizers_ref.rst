@@ -4,7 +4,7 @@ Optimizers API Reference
 Optimizer API
 -------------
 
-All te optimizers share the following common API:
+All the optimizers share the following common API:
 
 .. autoclass:: nevergrad.optimizers.base.Optimizer
     :members:

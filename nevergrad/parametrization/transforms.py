@@ -5,7 +5,7 @@
 
 import uuid
 import itertools
-from typing import Optional, Union, Tuple
+import typing as tp
 import numpy as np
 from scipy import stats
 from ..common.typetools import ArrayLike
@@ -102,16 +102,32 @@ class Exponentiate(Transform):
         return np.log(y) / (float(self.coeff) * np.log(self.base))  # type: ignore
 
 
+BoundType = tp.Optional[tp.Union[ArrayLike, float]]
+
+
+def _f(x: BoundType) -> BoundType:
+    """Format for prints:
+    array with one scalars are converted to floats
+    """
+    if isinstance(x, (np.ndarray, list, tuple)):
+        x = np.array(x, copy=False)
+        if x.shape == (1,):
+            x = float(x[0])
+    if isinstance(x, float) and x.is_integer():
+        x = int(x)
+    return x
+
+
 class BoundTransform(Transform):  # pylint: disable=abstract-method
 
     def __init__(
         self,
-        a_min: Optional[Union[ArrayLike, float]] = None,
-        a_max: Optional[Union[ArrayLike, float]] = None
+        a_min: BoundType = None,
+        a_max: BoundType = None
     ) -> None:
         super().__init__()
-        self.a_min: Optional[np.ndarray] = None
-        self.a_max: Optional[np.ndarray] = None
+        self.a_min: tp.Optional[np.ndarray] = None
+        self.a_max: tp.Optional[np.ndarray] = None
         for name, value in [("a_min", a_min), ("a_max", a_max)]:
             if value is not None:
                 isarray = isinstance(value, (tuple, list, np.ndarray))
@@ -121,7 +137,7 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
                 raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")
         if self.a_min is None and self.a_max is None:
             raise ValueError("At least one bound must be specified")
-        self.shape: Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
+        self.shape: tp.Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
 
     def _check_shape(self, x: np.ndarray) -> None:
         for dims in itertools.zip_longest(x.shape, self.shape, fillvalue=1):
@@ -141,15 +157,15 @@ class TanhBound(BoundTransform):
 
     def __init__(
         self,
-        a_min: Union[ArrayLike, float],
-        a_max: Union[ArrayLike, float]
+        a_min: tp.Union[ArrayLike, float],
+        a_max: tp.Union[ArrayLike, float]
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         if self.a_min is None or self.a_max is None:
             raise ValueError("Both bounds must be specified")
         self._b = .5 * (self.a_max + self.a_min)
         self._a = .5 * (self.a_max - self.a_min)
-        self.name = f"Th({a_min},{a_max})"
+        self.name = f"Th({_f(a_min)},{_f(a_max)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
@@ -174,11 +190,11 @@ class Clipping(BoundTransform):
 
     def __init__(
         self,
-        a_min: Optional[Union[ArrayLike, float]] = None,
-        a_max: Optional[Union[ArrayLike, float]] = None
+        a_min: BoundType = None,
+        a_max: BoundType = None
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
-        self.name = f"Cl({a_min},{a_max})"
+        self.name = f"Cl({_f(a_min)},{_f(a_max)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
@@ -204,15 +220,15 @@ class ArctanBound(BoundTransform):
 
     def __init__(
         self,
-        a_min: Union[ArrayLike, float],
-        a_max: Union[ArrayLike, float]
+        a_min: tp.Union[ArrayLike, float],
+        a_max: tp.Union[ArrayLike, float]
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         if self.a_min is None or self.a_max is None:
             raise ValueError("Both bounds must be specified")
         self._b = .5 * (self.a_max + self.a_min)
         self._a = (self.a_max - self.a_min) / np.pi
-        self.name = f"At({a_min},{a_max})"
+        self.name = f"At({_f(a_min)},{_f(a_max)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)

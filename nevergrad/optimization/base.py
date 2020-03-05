@@ -566,3 +566,9 @@ class ConfiguredOptimizer:
         """Loads a pickle and checks that it is an Optimizer.
         """
         return self._OptimizerClass.load(filepath)
+
+    def __eq__(self, other: tp.Any) -> tp.Any:
+        if self.__class__ == other.__class__:
+            if self._config == other._config:
+                return True
+        return False
