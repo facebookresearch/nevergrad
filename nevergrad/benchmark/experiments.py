@@ -60,7 +60,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_blocks in [1]
         for d in ([2, 40, 100, 3000])
     ]
-    optims = ["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
+    optims = ["XShiva"]  #["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
     for optim in optims:
         for function in functions:
             for budget in [50, 500, 5000, 50000]:
@@ -763,7 +763,8 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
                                          offsprings={40: 60, 100: 150}[pop])
            for only in [True, False] for recomb in [0.1, 1] for pop in popsizes]
-    algos = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA"] + es  # type: ignore
+    algos = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA",
+        "SplitOptimizer5", "Shiva", "NGO", "MultiCMA", "CMandAS2", "SplitOptimizer13"] + es  # type: ignore
     for method in ["clipping", "tanh", "arctan"]:
         # , "chirped"]]:  # , "morpho"]]:
         for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg"]]:
