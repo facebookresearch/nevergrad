@@ -237,7 +237,10 @@ class RecastOptimizer(base.Optimizer):
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
         else the best pessimistic point.
         """
-        assert self._messaging_thread is not None, 'Optimization was not even started'
+        if self._messaging_thread is None:  #Optimization was not even started
+            warnings.warn("Not enough runs, let us do our best anyway.")
+            return self.current_bests["pessimistic"].x
+
         if self._messaging_thread.output is not None:
             return self._messaging_thread.output  # type: ignore
         return self.current_bests["pessimistic"].x
