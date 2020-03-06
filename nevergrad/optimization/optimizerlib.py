@@ -179,9 +179,9 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
+# pylint: too-many-arguments, too-many-instance-attributes
 class _CMA(base.Optimizer):
 
-    # pylint: too-many-arguments
     def __init__(
             self,
             parametrization: IntOrParameter,
@@ -407,11 +407,11 @@ class _TBPSA(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
-            parametrization: IntOrParameter,
-            budget: Optional[int] = None,
-            num_workers: int = 1,
-            naive: bool = True
-            ) -> None:
+                 parametrization: IntOrParameter,
+                 budget: Optional[int] = None,
+                 num_workers: int = 1,
+                 naive: bool = True
+                 ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
         self.naive = naive
@@ -466,7 +466,7 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     Parameters
     ----------
     naive: bool
-        set to False for noisy problem, so that the best points will be an 
+        set to False for noisy problem, so that the best points will be an
         average of the final population.
     """
 
@@ -478,8 +478,10 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_TBPSA, locals())
 
+
 TBPSA = ParametrizedTBPSA(naive=False).set_name("TBPSA", register=True)
 NaiveTBPSA = ParametrizedTBPSA().set_name("NaiveTBPSA", register=True)
+
 
 @registry.register
 class NoisyBandit(base.Optimizer):
@@ -755,6 +757,8 @@ class SplitOptimizer(base.Optimizer):
 
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
             self.parametrizations += [p.Array(shape=(self.num_vars[i],))]
+            for param in self.parametrizations:
+                param.random_state = self.parametrization.random_state
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
                 self.optims += [multivariate_optimizer(self.parametrizations[i], budget, num_workers)]  # noqa: F405
