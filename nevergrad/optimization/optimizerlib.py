@@ -767,7 +767,7 @@ class SplitOptimizer(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         data: List[Any] = []
         for i in range(self.num_optims):
-            if progressive:
+            if self.progressive:
                 assert self.budget is not None
                 if i / self.num_optims > np.sqrt(1.2 * self._num_ask / self._budget):
                     data += [0.] * self.num_vars[i]
