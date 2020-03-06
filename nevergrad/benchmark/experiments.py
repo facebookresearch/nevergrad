@@ -564,8 +564,8 @@ def fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiva", "DiagonalCMA",
-             "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
              "OptimisticNoisyOnePlusOne"]
+    algos += [ConfSplitOptimizer(num_optims=num, progressive=True).set_name(f"ProgOptimizer{num}") for num in [3, 5, 9, 13]]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
