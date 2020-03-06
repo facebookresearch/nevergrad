@@ -8,7 +8,7 @@ import itertools
 import numpy as np
 import nevergrad as ng
 import nevergrad.functions.corefuncs as corefuncs
-from nevergrad.optimization import ConfSplitOptimizer
+from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
