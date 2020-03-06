@@ -728,7 +728,8 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: Optional[List[int]] = None,
             multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
+            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+            progressive: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:
@@ -744,6 +745,7 @@ class SplitOptimizer(base.Optimizer):
         if num_optims > self.dimension:
             num_optims = self.dimension
         self.num_optims = num_optims
+        self.progressive = progressive
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
         self.parametrizations: List[Any] = []
@@ -765,6 +767,10 @@ class SplitOptimizer(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         data: List[Any] = []
         for i in range(self.num_optims):
+            if progressive:
+                assert self.budget is not None
+                if i / self.num_optims > np.sqrt(1.2 * self._num_ask / self._budget):
+                    data += [0.] * self.num_vars[i]
             opt = self.optims[i]
             data += list(opt.ask().get_standardized_data(reference=opt.parametrization))
         assert len(data) == self.dimension
@@ -797,6 +803,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         number of optimizers
     num_vars: optional list of int
         number of variable per optimizer.
+    progressive: optional bool
     """
 
     # pylint: disable=unused-argument
@@ -806,7 +813,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_optims: int = 2,
         num_vars: tp.Optional[tp.List[int]] = None,
         multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
+        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+        progressive: bool = False
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
