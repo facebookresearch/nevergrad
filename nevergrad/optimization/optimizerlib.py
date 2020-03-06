@@ -708,6 +708,7 @@ class SplitOptimizer(base.Optimizer):
 
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
+    progressive: True if we want to progressively add optimizers during the optimization run.
 
     E.g. for 5 optimizers, each of them working on 2 variables, we can use:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
@@ -773,7 +774,7 @@ class SplitOptimizer(base.Optimizer):
         for i in range(self.num_optims):
             if self.progressive:
                 assert self.budget is not None
-                if i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
+                if i > 0 and i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
                     data += [0.] * self.num_vars[i]
                     continue
             opt = self.optims[i]
@@ -809,6 +810,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     num_vars: optional list of int
         number of variable per optimizer.
     progressive: optional bool
+        whether we progressively add optimizers.
     """
 
     # pylint: disable=unused-argument
