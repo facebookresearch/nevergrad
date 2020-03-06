@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import hashlib
 import os
 import argparse
 import itertools
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
+import re
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
@@ -187,6 +189,19 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
+            try:
+                if name == "fight_all.png":
+                    with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                       f.write("ranking:\n")
+                       for i, algo in enumerate(data_df.columns[:8]):
+                           f.write(f"  algo {i}: {algo}\n")
+            except:
+                pass
+            if len(name) > 80:
+                hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
+                name=re.sub(r'\([^()]*\)', '', name)
+                mid = len(name) // 2
+                name = name[:mid] + hash + name[mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
@@ -206,6 +221,9 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        if len(description) > 80:
+            hash = hashlib.md5(bytes(description, 'utf8')).hexdigest()
+            description = description[:40] + hash + description[-40:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
         xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
