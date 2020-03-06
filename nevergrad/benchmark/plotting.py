@@ -198,7 +198,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             except:
                 pass
             if len(name) > 80:
-                hash = hashlib.md5(bytearray(name)).hexdigest()
+                hash = hashlib.md5(bytes(name)).hexdigest()
                 name=re.sub(r'\([^()]*\)', '', name)
                 mid = len(name) // 2
                 name = name[:mid] + hash + name[mid:]
@@ -222,7 +222,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         if len(description) > 80:
-            hash = hashlib.md5(bytearray(description)).hexdigest()
+            hash = hashlib.md5(bytes(description)).hexdigest()
             description = description[:40] + hash + description[-40:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
