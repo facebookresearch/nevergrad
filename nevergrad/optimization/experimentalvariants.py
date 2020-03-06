@@ -347,16 +347,16 @@ SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
 
 
 # ProgOptimizer
-ProgOptimizer3 = ConfProgOptimizer(num_optims=3, progressive=True).set_name(
+ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True).set_name(
     "ProgOptimizer3", register=True
 )
-ProgOptimizer5 = ConfProgOptimizer(num_optims=5, progressive=True).set_name(
+ProgOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True).set_name(
     "ProgOptimizer5", register=True
 )
-ProgOptimizer9 = ConfProgOptimizer(num_optims=9, progressive=True).set_name(
+ProgOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True).set_name(
     "ProgOptimizer9", register=True
 )
-ProgOptimizer13 = ConfProgOptimizer(num_optims=13, progressive=True).set_name(
+ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True).set_name(
     "ProgOptimizer13", register=True
 )
 
