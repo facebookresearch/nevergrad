@@ -60,7 +60,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_blocks in [1]
         for d in ([2, 40, 100, 3000])
     ]
-    optims = ["XShiva"]  #["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
+    optims = ["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
     for optim in optims:
         for function in functions:
             for budget in [50, 500, 5000, 50000]:
