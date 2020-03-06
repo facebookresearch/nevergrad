@@ -709,6 +709,8 @@ class SplitOptimizer(base.Optimizer):
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
     progressive: True if we want to progressively add optimizers during the optimization run.
+    
+    If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
 
     E.g. for 5 optimizers, each of them working on 2 variables, we can use:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
