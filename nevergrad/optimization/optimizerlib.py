@@ -769,7 +769,7 @@ class SplitOptimizer(base.Optimizer):
         for i in range(self.num_optims):
             if self.progressive:
                 assert self.budget is not None
-                if i / self.num_optims > np.sqrt(1.2 * self._num_ask / self._budget):
+                if i / self.num_optims > np.sqrt(1.2 * self._num_ask / self.budget):
                     data += [0.] * self.num_vars[i]
             opt = self.optims[i]
             data += list(opt.ask().get_standardized_data(reference=opt.parametrization))
