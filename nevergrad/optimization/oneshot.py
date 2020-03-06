@@ -6,6 +6,7 @@
 from typing import Optional, Union
 import numpy as np
 from scipy import stats
+from scipy.spatial import ConvexHull
 from ..common.typetools import ArrayLike
 from . import sequences
 from . import base
@@ -15,11 +16,42 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
-    # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
+def convex_limit(points: np.ndarray) -> int:
+    """Given points in order from best to worst, 
+    Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
+    d = len(points[0])
+    hull = ConvexHull(points[:d+1], incremental=True)
+    k = min(d, len(points) // 4)
+    for i in range(d+1, len(points)):
+        hull.add_points(points[i:(i+1)])
+        if i not in hull.vertices:
+            k = i - 1
+            break
+    return k
+
+
+def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
+    """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
+    
+    Parameters
+    ----------
+    archive: utils.Archive[utils.Value]
+        Provides a random recommendation instead of the best point so far (for baseline)
+    method: str
+        If dimfourth, we use the Fteytaud heuristic, i.e. k = min(len(archive) // 4, dimension)
+        If exp, we use the Lmeunier method, i.e. k=max(1, len(archiv) // (2**dimension))
+        If hull, we use the maximum k <= dimfourth-value, such that the function looks quasiconvex on the k best points.
+    """
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
-    k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
+    if method == "dimfourth":
+        k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
+    elif method == "exp":
+        k = max(1, len(archive) // (2**dimension))
+    elif method == "hull":
+        k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
+    else:
+        raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
     k = 1 if k < 1 else k
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
@@ -97,7 +129,11 @@ class _RandomSearch(OneShotOptimizer):
         if self.stupid:
             return self._internal_ask()
         if self.recommendation_rule == "average_of_best":
-            return avg_of_k_best(self.archive)
+            return avg_of_k_best(self.archive, "dimfourth")
+        if self.recommendation_rule == "average_of_exp_best":
+            return avg_of_k_best(self.archive, "exp")
+        if self.recommendation_rule == "average_of_hull_best":
+            return avg_of_k_best(self.archive, "hull")
         return super()._internal_provide_recommendation()
 
 
@@ -121,7 +157,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
          - "random": uses a randomized pattern for the scale.
          - "auto": scales in function of dimension and budget (see XXX)
     recommendation_rule: str
-        "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
+        "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is 
+        the default and implies selecting the pessimistic best.
     """
 
     one_shot = True

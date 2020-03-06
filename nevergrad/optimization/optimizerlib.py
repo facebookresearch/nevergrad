@@ -179,9 +179,9 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
+# pylint: too-many-arguments, too-many-instance-attributes
 class _CMA(base.Optimizer):
 
-    # pylint: too-many-arguments
     def __init__(
             self,
             parametrization: IntOrParameter,
@@ -407,11 +407,11 @@ class _TBPSA(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
-            parametrization: IntOrParameter,
-            budget: Optional[int] = None,
-            num_workers: int = 1,
-            naive: bool = True
-            ) -> None:
+                 parametrization: IntOrParameter,
+                 budget: Optional[int] = None,
+                 num_workers: int = 1,
+                 naive: bool = True
+                 ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
         self.naive = naive
@@ -466,7 +466,7 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     Parameters
     ----------
     naive: bool
-        set to False for noisy problem, so that the best points will be an 
+        set to False for noisy problem, so that the best points will be an
         average of the final population.
     """
 
@@ -478,8 +478,10 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_TBPSA, locals())
 
+
 TBPSA = ParametrizedTBPSA(naive=False).set_name("TBPSA", register=True)
 NaiveTBPSA = ParametrizedTBPSA().set_name("NaiveTBPSA", register=True)
+
 
 @registry.register
 class NoisyBandit(base.Optimizer):
@@ -706,6 +708,9 @@ class SplitOptimizer(base.Optimizer):
 
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
+    progressive: True if we want to progressively add optimizers during the optimization run.
+    
+    If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
 
     E.g. for 5 optimizers, each of them working on 2 variables, we can use:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
@@ -728,7 +733,8 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: Optional[List[int]] = None,
             multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
+            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+            progressive: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:
@@ -744,6 +750,7 @@ class SplitOptimizer(base.Optimizer):
         if num_optims > self.dimension:
             num_optims = self.dimension
         self.num_optims = num_optims
+        self.progressive = progressive
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
         self.parametrizations: List[Any] = []
@@ -753,6 +760,8 @@ class SplitOptimizer(base.Optimizer):
 
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
             self.parametrizations += [p.Array(shape=(self.num_vars[i],))]
+            for param in self.parametrizations:
+                param.random_state = self.parametrization.random_state
             assert len(self.optims) == i
             if self.num_vars[i] > 1:
                 self.optims += [multivariate_optimizer(self.parametrizations[i], budget, num_workers)]  # noqa: F405
@@ -765,6 +774,11 @@ class SplitOptimizer(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         data: List[Any] = []
         for i in range(self.num_optims):
+            if self.progressive:
+                assert self.budget is not None
+                if i > 0 and i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
+                    data += [0.] * self.num_vars[i]
+                    continue
             opt = self.optims[i]
             data += list(opt.ask().get_standardized_data(reference=opt.parametrization))
         assert len(data) == self.dimension
@@ -797,6 +811,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         number of optimizers
     num_vars: optional list of int
         number of variable per optimizer.
+    progressive: optional bool
+        whether we progressively add optimizers.
     """
 
     # pylint: disable=unused-argument
@@ -806,8 +822,11 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_optims: int = 2,
         num_vars: tp.Optional[tp.List[int]] = None,
         multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch
+        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+        progressive: bool = False
     ) -> None:
+        if progressive:  # The progressive setting is typically for noisy optimization, hence we switch to a noisy optimizer.
+            multivariate_optimizer = OptimisticNoisyOnePlusOne
         super().__init__(SplitOptimizer, locals())
 
 
