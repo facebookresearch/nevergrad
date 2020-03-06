@@ -836,13 +836,14 @@ Each algorithm is fed with what happened before it.</p>
 
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.ConfSplitOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfSplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">num_optims: int = 2</em>, <em class="sig-param">num_vars: Optional[List[int]] = None</em>, <em class="sig-param">multivariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = CMA</em>, <em class="sig-param">monovariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = RandomSearch</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfSplitOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfSplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">num_optims: int = 2</em>, <em class="sig-param">num_vars: Optional[List[int]] = None</em>, <em class="sig-param">multivariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = CMA</em>, <em class="sig-param">monovariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = RandomSearch</em>, <em class="sig-param">progressive: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfSplitOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Configurable split optimizer</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>num_optims</strong> (<em>int</em>) – number of optimizers</p></li>
 <li><p><strong>num_vars</strong> (<em>optional list of int</em>) – number of variable per optimizer.</p></li>
+<li><p><strong>progressive</strong> (<em>optional bool</em>) – whether we progressively add optimizers.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1088,10 +1089,12 @@ Efficient implementation of Enhanced Adaptive Simultaneous Perturbation Algorith
 
 <dl class="class">
 <dt id="nevergrad.optimization.optimizerlib.SplitOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[int]] = None, multivariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = CMA, monovariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = RandomSearch</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SplitOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[int]] = None, multivariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = CMA, monovariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = RandomSearch, progressive: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SplitOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Combines optimizers, each of them working on their own variables.</p>
 <p>num_optims: number of optimizers
-num_vars: number of variable per optimizer.</p>
+num_vars: number of variable per optimizer.
+progressive: True if we want to progressively add optimizers during the optimization run.</p>
+<p>If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.</p>
 <p>E.g. for 5 optimizers, each of them working on 2 variables, we can use:
 opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
 or equivalently:
