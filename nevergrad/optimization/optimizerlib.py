@@ -771,6 +771,7 @@ class SplitOptimizer(base.Optimizer):
                 assert self.budget is not None
                 if i / self.num_optims > np.sqrt(1.2 * self._num_ask / self.budget):
                     data += [0.] * self.num_vars[i]
+                    continue
             opt = self.optims[i]
             data += list(opt.ask().get_standardized_data(reference=opt.parametrization))
         assert len(data) == self.dimension
@@ -816,6 +817,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
         progressive: bool = False
     ) -> None:
+        if progressive:  # The progressive setting is typically for noisy optimization, hence we switch to a noisy optimizer.
+            multivariate_optimizer = OptimisticNoisyOnePlusOne
         super().__init__(SplitOptimizer, locals())
 
 
