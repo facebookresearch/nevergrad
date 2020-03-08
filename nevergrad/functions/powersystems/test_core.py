@@ -14,7 +14,7 @@ def test_powersystem() -> None:
     value = func.function(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
 
-@patch("%s.core.plt" % __name__)
+@patch(f"{__name__}.core.plt")
 def test_make_plots(mock_plt):
     func = core.PowerSystem()
     func.losses = [0.1]
