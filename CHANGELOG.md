@@ -21,6 +21,7 @@
   Using old names will raise a deprecation warning for the time being.
 - Scalar now takes optional `lower` and `upper` bounds at initialization, and `sigma` (and optionnally `init`)
   if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
+- `archive` is pruned much more often, so you should not rely on it for storing all results, use a callback instead [#571](https://github.com/facebookresearch/nevergrad/pull/571)
 
 
 ## v0.3.2 (2019-02-05)
