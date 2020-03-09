@@ -5,6 +5,7 @@
 
 # pylint: disable=wrong-import-position, wrong-import-order
 from .__main__ import repeated_launch
+import sys
 import warnings
 import tempfile
 import itertools
@@ -13,9 +14,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib
-from ..optimization import optimizerlib
-from ..instrumentation.utils import CommandFunction
-from ..common import testing
+from nevergrad.optimization import optimizerlib
+from nevergrad.parametrization.utils import CommandFunction, FailedJobError
+from nevergrad.common import testing
 from . import core
 from .test_xpbase import DESCRIPTION_KEYS
 matplotlib.use('Agg')
@@ -41,9 +42,10 @@ def test_commandline_launch() -> None:
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "benchmark_launch_test.csv"
         # commandline test
-        CommandFunction(command=["python", "-m", "nevergrad.benchmark", "additional_experiment",
-                                 "--cap_index", "2", "--num_workers", "2", "--output", str(output),
-                                 "--imports", str(Path(__file__).parent / "additional" / "example.py")])()
+        with testing.skip_error_on_systems(FailedJobError, systems=("Windows")):  # TODO make it work on Windows!
+            CommandFunction(command=[sys.executable, "-m", "nevergrad.benchmark", "additional_experiment",
+                                     "--cap_index", "2", "--num_workers", "2", "--output", str(output),
+                                     "--imports", str(Path(__file__).parent / "additional" / "example.py")])()
         assert output.exists()
         df = core.tools.Selector.read_csv(str(output))
         testing.assert_set_equal(df.columns, DESCRIPTION_KEYS | {"offset"})  # "offset" comes from the custom function
@@ -133,4 +135,4 @@ def test_benchmark_chunk_resuming() -> None:
     with warnings.catch_warnings(record=True) as w:
         warnings.filterwarnings("ignore", category=optimizerlib.InefficientSettingsWarning)
         chunk.compute()
-        assert not w, "A warning was raised while it should not have (experiment could not be resumed)"
+        assert not w, f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"

@@ -1,27 +1,77 @@
-.. nevergrad documentation master file, created by
-   sphinx-quickstart on Mon Jun  3 16:46:02 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Nevergrad - A gradient-free optimization platform
+=================================================
 
-Welcome to nevergrad's documentation!
-=====================================
+.. image:: ./resources/Nevergrad-LogoMark.png
+
+This documentation is a work in progress, feel free to help us update/improve/restucture it!
+
+Quick start
+-----------
+
+:code:`nevergrad` is a Python 3.6+ library. It can be installed with:
+
+.. code-block:: bash
+
+    pip install nevergrad
+
+You can find other installation options in the :ref:`Getting started section <getting_started>`.
+
+Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
+
+Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_SIMPLEST_0
+    :end-before: DOC_SIMPLEST_1
+
+
+.. image:: ./resources/TwoPointsDE.gif
+  :width: 400
+
+*Convergence of a population of points to the minima with two-points DE.*
+
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents:
+   :caption: Contents
 
-   optimization.md
-   optimizers.rst
-   instrumentation.md
-   instrumentation_api.rst
-   machinelearning.md
-   benchmarking.md
-   benchmarks.md
-   adding_an_algorithm.md
+   getting_started.rst
+   optimization.rst
+   parametrization.rst
+   machinelearning.rst
+   optimizers_ref.rst
+   parametrization_ref.rst
+   benchmarking.rst
+   benchmarks.rst
+   contributing.rst
+   opencompetition2020.md
+
+
+Citing
+------
+
+.. code-block:: bibtex
+
+    @misc{nevergrad,
+        author = {J. Rapin and O. Teytaud},
+        title = {{Nevergrad - A gradient-free optimization platform}},
+        year = {2018},
+        publisher = {GitHub},
+        journal = {GitHub repository},
+        howpublished = {\url{https://GitHub.com/FacebookResearch/Nevergrad}},
+    }
+
+
+License
+-------
+
+:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/blob/master/LICENSE>`_ for additional details about it.
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

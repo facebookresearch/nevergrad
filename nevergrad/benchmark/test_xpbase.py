@@ -6,32 +6,19 @@
 import sys
 import contextlib
 from unittest.mock import patch
-from typing import Optional, List, Tuple, Any, Dict
+from typing import Optional, List, Any
 import numpy as np
-from ..common import testing
-from ..optimization import test_base
-from ..functions import ArtificialFunction
-from ..functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
-from .. import instrumentation as inst
-from . import execution
+from nevergrad.parametrization import parameter as p
+from nevergrad.common import testing
+from nevergrad.optimization import test_base
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import ExperimentFunction
+from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
 
 DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
                     "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
-
-
-class Function(inst.InstrumentedFunction, execution.PostponedObject):
-
-    def __init__(self, dimension: int):
-        super().__init__(self.oracle_call, inst.var.Gaussian(0, 1, shape=[dimension]))
-
-    def oracle_call(self, x: np.ndarray) -> float:
-        return float(x[0])
-
-    # pylint: disable=unused-argument
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
-        return 5 - value
 
 
 def test_run_artificial_function() -> None:
@@ -45,14 +32,19 @@ def test_run_artificial_function() -> None:
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
 
 
-def test_noisy_arificial_function_loss() -> None:
+def test_noisy_artificial_function_loss() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=.3)
-    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5)
+    seed = np.random.randint(99999)
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5, seed=seed)
     xp.run()
     loss_ref = xp.result["loss"]
-    xp._log_results(0., 0)
-    loss = xp.result["loss"]
-    np.testing.assert_equal(loss, loss_ref)
+    # now with copy
+    reco = xp.recommendation
+    assert reco is not None
+    np.random.seed(seed)
+    pfunc = func.copy()
+    np.testing.assert_equal(pfunc.evaluation_function(*reco.args, **reco.kwargs), loss_ref)
+    np.random.seed(None)
 
 
 def test_run_with_error() -> None:
@@ -93,6 +85,20 @@ def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optio
         value = next(generator)
         output.append(value if value is None else value % 1000)
     np.testing.assert_array_equal(output, expected)
+
+
+class Function(ExperimentFunction):
+
+    def __init__(self, dimension: int):
+        super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
+        self.register_initialization(dimension=dimension)
+
+    def oracle_call(self, x: np.ndarray) -> float:
+        return float(x[0])
+
+    # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
+        return 5 - value
 
 
 @testing.parametrized(

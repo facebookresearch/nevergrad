@@ -7,11 +7,11 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 from math import sqrt, tan, pi
-from typing import Any
 import numpy as np
+import nevergrad as ng
 from nevergrad.common.typetools import ArrayLike
-from ... import instrumentation as inst
-from ...instrumentation.core import Variable
+from nevergrad.parametrization.utils import Crossover
+from .. import base
 
 
 def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
@@ -29,23 +29,7 @@ def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float)
     return R
 
 
-class ARCoatingVariable(Variable):
-
-    def __init__(self, dimension: int, epmin: float, epf: float) -> None:
-        super().__init__()
-        self.epf = epf
-        self.epmin = epmin
-        self._specs.update(dimension=dimension)
-
-    # pylint: disable=unused-argument
-    def _data_to_arguments(self, data: np.ndarray, deterministic: bool = True) -> Any:
-        return ((self.epf - self.epmin) * .5 * (1 + np.tanh(data)) + self.epmin,), {}
-
-    def __repr__(self) -> str:
-        return "ARCoating"
-
-
-class ARCoating(inst.InstrumentedFunction):
+class ARCoating(base.ExperimentFunction):
     """
     Parameters
     ----------
@@ -67,7 +51,7 @@ class ARCoating(inst.InstrumentedFunction):
     University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
     """
 
-    def __init__(self, nbslab: int = 10, d_ar: int = 400) -> None:
+    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "clipping") -> None:
         # Wave length range
         self.lambdas = np.arange(400, 900, 5)  # lambda values from min to max, in nm
         # AR parameters
@@ -77,10 +61,18 @@ class ARCoating(inst.InstrumentedFunction):
         self.ep0 = 1
         self.epf = 9
         self.epmin = 1
-        super().__init__(self._get_minimum_average_reflexion, ARCoatingVariable(nbslab, self.epmin, self.epf))
-        self._descriptors.update(nbslab=nbslab, d_ar=d_ar)
+        init = (self.epmin + self.epf) / 2.0 * np.ones((nbslab,))
+        sigma = (self.epf - self.ep0) / 6
+        array = ng.p.Array(init=init, mutable_sigma=True,)
+        array.set_mutation(sigma=sigma)
+        array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
+        array.set_recombination(Crossover(0)).set_name("")
+        super().__init__(self._get_minimum_average_reflexion, array)
+        self.register_initialization(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
+        self._descriptors.update(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:
+        x = np.array(x, copy=False).ravel()
         assert len(x) == self.dimension, f"Expected dimension {self.dimension}, got {len(x)}"
         if np.min(x) < self.epmin or np.max(x) > self.epf:  # acceptability
             return float('inf')
@@ -89,3 +81,9 @@ class ARCoating(inst.InstrumentedFunction):
             RE = impedance_pix(x, self.dpix, lam, self.ep0, self.epf)  # only normal incidence
             value = value + RE / len(self.lambdas)
         return value
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        loss = self.function(x)
+        base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
+        return loss

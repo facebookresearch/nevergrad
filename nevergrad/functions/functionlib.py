@@ -4,24 +4,28 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
-from typing import List, Tuple, Any, Dict, Callable
+import itertools
+import typing as tp
 import numpy as np
+from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization import utils as putils
+from nevergrad.common import tools
+from nevergrad.common.typetools import ArrayLike
+from .base import ExperimentFunction
+from .multiobjective import MultiobjectiveFunction
 from . import utils
 from . import corefuncs
-from .. import instrumentation as inst
-from ..common import tools
-from ..common.typetools import ArrayLike
 
 
 class ArtificialVariable:
     # pylint: disable=too-many-instance-attributes,too-many-arguments
-    # TODO: refactor, this is not more used for instrumentation, so using the
+    # TODO: refactor, this is not more used for parametrization, so using the
     # Variable framework is not necessary
 
     def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
                  translation_factor: float, rotation: bool, hashing: bool, only_index_transform: bool) -> None:
         self._dimension = dimension
-        self._transforms: List[utils.Transform] = []
+        self._transforms: tp.List[utils.Transform] = []
         self.rotation = rotation
         self.translation_factor = translation_factor
         self.num_blocks = num_blocks
@@ -60,7 +64,7 @@ class ArtificialVariable:
         return "Photonics"
 
 
-class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils.NoisyBenchmarkFunction):
+class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
 
@@ -143,21 +147,26 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        super().__init__(self.noisy_function, inst.var.Array(1 if hashing else self._dimension))
-        self.instrumentation = self.instrumentation.with_name("")
+        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
+        if noise_level > 0:
+            parametrization.descriptors.deterministic_function = False
+        super().__init__(self.noisy_function, parametrization)
+        self.register_initialization(**self._parameters)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
         self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
                                  discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
         # transforms are initialized at runtime to avoid slow init
+        if hasattr(self._func, "get_postponing_delay"):
+            raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
 
     @property
     def dimension(self) -> int:
-        return self._dimension  # bypass the instrumentation one (because of the "hashing" case)  # TODO: remove
+        return self._dimension  # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
 
     @staticmethod
-    def list_sorted_function_names() -> List[str]:
+    def list_sorted_function_names() -> tp.List[str]:
         """Returns a sorted list of function names that can be used for the blocks
         """
         return sorted(corefuncs.registry)
@@ -175,7 +184,7 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -187,26 +196,22 @@ class ArtificialFunction(inst.InstrumentedFunction, utils.PostponedObject, utils
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def duplicate(self) -> "ArtificialFunction":
-        """Create an equivalent instance, initialized with the same settings
-        """
-        return self.__class__(**self._parameters)
-
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
+    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
+        args, kwargs = input_parameter
         assert not kwargs
         assert len(args) == 1
-        if isinstance(self._func, utils.PostponedObject):
+        if hasattr(self._func, "compute_pseudotime"):
             data = self._transform(args[0])
             total = 0.
             for block in data:
-                total += self._func.get_postponing_delay((block,), {}, value)
+                total += self._func.compute_pseudotime(((block,), {}), value)  # type: ignore
             return total
         return 1.
 
 
-def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func: Callable[[np.ndarray], float],
+def _noisy_call(x: np.ndarray, transf: tp.Callable[[np.ndarray], np.ndarray], func: tp.Callable[[np.ndarray], float],
                 noise_level: float, noise_dissymmetry: bool) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
@@ -218,3 +223,54 @@ def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func:
                 noise_level *= (1. + x_transf.ravel()[0] * 100.)
             noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
+
+
+class FarOptimumFunction(ExperimentFunction):
+    """Very simple 2D norm-1 function with optimal value at (x_optimum, 100)
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+            self,
+            independent_sigma: bool = True,
+            mutable_sigma: bool = True,
+            multiobjective: bool = False,
+            recombination: str = "crossover",
+            optimum: tp.Tuple[int, int] = (80, 100)
+    ) -> None:
+        assert recombination in ("crossover", "average")
+        self._optimum = np.array(optimum, dtype=float)
+        parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
+        init = np.array([1.0, 1.0] if independent_sigma else [1.0], dtype=float)
+        parametrization.set_mutation(
+            sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)  # type: ignore
+        )
+        parametrization.set_recombination("average" if recombination == "average" else putils.Crossover())
+        self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
+        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
+        descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
+                     multiobjective=multiobjective, optimum=optimum, recombination=recombination)
+        self._descriptors.update(descr)
+        self.register_initialization(**descr)
+
+    def _multifunc(self, x: np.ndarray) -> np.ndarray:
+        return np.abs(x - self._optimum)  # type: ignore
+
+    def _monofunc(self, x: np.ndarray) -> float:
+        return float(np.sum(self._multifunc(x)))
+
+    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+        return self._monofunc(args[0])
+
+    @classmethod
+    def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:
+        options = dict(independent_sigma=[True, False],
+                       mutable_sigma=[True, False],
+                       multiobjective=[True, False],
+                       recombination=["average", "crossover"],
+                       optimum=[(.8, 1), (80, 100), (.8, 100)]
+                       )
+        keys = sorted(options)
+        select = itertools.product(*(options[k] for k in keys))  # type: ignore
+        cases = (dict(zip(keys, s)) for s in select)
+        return (cls(**c) for c in cases)

@@ -7,7 +7,7 @@ import pytest
 import numpy as np
 from ..common import testing
 from .test_base import CounterFunction
-from .optimizerlib import Zero
+from . import experimentalvariants as xpvariants
 from . import utils
 
 
@@ -46,7 +46,7 @@ def test_sequential_executor() -> None:
 
 
 def test_get_nash() -> None:
-    zeroptim = Zero(instrumentation=1, budget=4, num_workers=1)
+    zeroptim = xpvariants.Zero(parametrization=1, budget=4, num_workers=1)
     for k in range(4):
         array = (float(k),)
         zeroptim.archive[array] = utils.Value(k)
@@ -85,39 +85,6 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(RuntimeError, archive.items)
 
 
-class Partitest(utils.Individual):
-
-    def __init__(self, number: int) -> None:
-        super().__init__([])
-        self.number = number
-
-
-def test_population_queue() -> None:
-    particles = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particles[2:])
-    _ = repr(pop)
-    pop.extend(particles[:2])  # should append queue on the left
-    p = pop.get_queued()
-    assert p.number == 0
-    nums = [pop.get_queued(remove=True).number for _ in range(4)]
-    np.testing.assert_equal(nums, [0, 1, 2, 3])
-    np.testing.assert_raises(RuntimeError, pop.get_queued)  # nothing more in queue
-    pop.set_queued(particles[1])
-    p = pop.get_queued()
-    assert p.number == 1
-    np.testing.assert_raises(ValueError, pop.set_queued, Partitest(5))  # not in pop
-
-
-def test_population_replace() -> None:
-    particles = [Partitest(k) for k in range(4)]
-    pop = utils.Population(particles)
-    pop.replace(particles[2], Partitest(5))
-    assert pop.get_queued().number == 5
-    for uid in pop.uids:
-        # checks that it exists and correctly linked
-        pop[uid]  # pylint: disable= pointless-statement
-
-
 def test_pruning() -> None:
     archive = utils.Archive[utils.Value]()
     for k in range(3):
@@ -142,3 +109,26 @@ def test_pruning_sensible_default(dimension: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
     assert pruning.min_len == 36
     assert pruning.max_len == expected_max
+
+
+def test_uid_queue() -> None:
+    uidq = utils.UidQueue()
+    for uid in ["a", "b", "c"]:
+        uidq.tell(uid)
+    for uid in ["a", "b"]:
+        assert uidq.ask() == uid
+    uidq.tell("b")
+    for uid in ["c", "b", "a", "c", "b", "a"]:
+        assert uidq.ask() == uid
+    # discarding (in asked, and in told)
+    uidq.discard("b")
+    for uid in ["c", "a", "c", "a"]:
+        assert uidq.ask() == uid
+    uidq.tell("a")
+    uidq.discard("a")
+    for uid in ["c", "c"]:
+        assert uidq.ask() == uid
+    # clearing
+    uidq.clear()
+    with pytest.raises(RuntimeError):
+        uidq.ask()
