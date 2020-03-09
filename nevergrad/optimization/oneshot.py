@@ -336,7 +336,7 @@ MetaRecentering = SamplingSearch(
 ).set_name("MetaRecentering", register=True)
 MetaLogRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
-).set_name("MetaRecentering", register=True)
+).set_name("MetaLogRecentering", register=True)
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = SamplingSearch(scale=100.).set_name("LargeHaltonSearch", register=True)
