@@ -277,7 +277,7 @@ class Pruning:
     @classmethod
     def sensible_default(cls, num_workers: int, dimension: int) -> 'Pruning':
         """ Very conservative pruning
-        - keep at least 100 elements, or 3 times num_workers, whatever is biggest
+        - keep at least 100 elements, or 7 times num_workers, whatever is biggest
         - keep at least 3 x min_len, or up to 10 x min_len if it does not exceed 1gb of data
 
         Parameters
