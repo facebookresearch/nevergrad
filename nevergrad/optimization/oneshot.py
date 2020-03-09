@@ -94,7 +94,7 @@ class _RandomSearch(OneShotOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale in ["auto", "random"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autolog"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
         self.stupid = stupid
@@ -116,8 +116,14 @@ class _RandomSearch(OneShotOptimizer):
             return self._opposable_data  # type: ignore
         scale = self.scale
         if isinstance(scale, str) and scale == "auto":
-            # Some variants use a rescaling depending on the budget and the dimension.
+            # Some variants use a rescaling depending on the budget and the dimension (1st version).
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if isinstance(scale, str) and scale == "autolog":
+            # Some variants use a rescaling depending on the budget and the dimension (2nde version).
+            if self.dimension - 4 * np.log(self.budget) > 1.: 
+                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
+            else:
+                scale = 1.
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self.cauchy
@@ -156,7 +162,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
-         - "auto": scales in function of dimension and budget (see XXX)
+         - "auto": scales in function of dimension and budget (version 1)
+         - "autolog": scales in function of dimension and budget (version 2)         
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
@@ -196,7 +203,7 @@ class _SamplingSearch(OneShotOptimizer):
         middle_point: bool = False,
         opposition_mode: Optional[str] = None,
         cauchy: bool = False,
-        autorescale: bool = False,
+        autorescale: Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
@@ -246,8 +253,13 @@ class _SamplingSearch(OneShotOptimizer):
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        if self.autorescale:
+        if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if self.autorescale == "autolog":
+            if self.dimension - 4 * np.log(self.budget) > 1.: 
+                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
+            else:
+                scale = 1.
         self._opposable_data = self.scale * (
             stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
         assert self._opposable_data is not None
@@ -278,8 +290,8 @@ class SamplingSearch(base.ConfiguredOptimizer):
         (instead of box).
     scale: float or "random"
         scalar for multiplying the suggested point values.
-    rescaled: bool
-        rescales the sampling pattern to reach the boundaries.
+    rescaled: bool or str
+        rescales the sampling pattern to reach the boundaries and/or applies automatic rescaling.
     recommendation_rule: str
         "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
 
@@ -310,7 +322,7 @@ class SamplingSearch(base.ConfiguredOptimizer):
         middle_point: bool = False,
         opposition_mode: Optional[str] = None,
         cauchy: bool = False,
-        autorescale: bool = False,
+        autorescale: Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
@@ -322,6 +334,15 @@ class SamplingSearch(base.ConfiguredOptimizer):
 MetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
+MetaLogRecentering = SamplingSearch(
+    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
+).set_name("MetaLogRecentering", register=True)
+AvgMetaRecentering = SamplingSearch(
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("AvgMetaRecentering", register=True)
+AvgMetaLogRecentering = SamplingSearch(
+    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("AvgMetaLogRecentering", register=True)
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = SamplingSearch(scale=100.).set_name("LargeHaltonSearch", register=True)
