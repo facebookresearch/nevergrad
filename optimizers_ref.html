@@ -672,7 +672,8 @@ spent yet (otherwise, restarts from best point)</p></li>
 <li><p><strong>scale</strong> (<em>float</em><em> or </em><em>&quot;random&quot;</em>) – <dl class="simple">
 <dt>scalar for multiplying the suggested point values, or string:</dt><dd><ul>
 <li><p>”random”: uses a randomized pattern for the scale.</p></li>
-<li><p>”auto”: scales in function of dimension and budget (see XXX)</p></li>
+<li><p>”auto”: scales in function of dimension and budget (version 1)</p></li>
+<li><p>”autolog”: scales in function of dimension and budget (version 2)</p></li>
 </ul>
 </dd>
 </dl>
@@ -686,7 +687,7 @@ the default and implies selecting the pessimistic best.</p></li>
 
 <dl class="class">
 <dt id="nevergrad.families.SamplingSearch">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">SamplingSearch</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">sampler: str = 'Halton'</em>, <em class="sig-param">scrambled: bool = False</em>, <em class="sig-param">middle_point: bool = False</em>, <em class="sig-param">opposition_mode: Optional[str] = None</em>, <em class="sig-param">cauchy: bool = False</em>, <em class="sig-param">autorescale: bool = False</em>, <em class="sig-param">scale: float = 1.0</em>, <em class="sig-param">rescaled: bool = False</em>, <em class="sig-param">recommendation_rule: str = 'pessimistic'</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.SamplingSearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">SamplingSearch</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">sampler: str = 'Halton'</em>, <em class="sig-param">scrambled: bool = False</em>, <em class="sig-param">middle_point: bool = False</em>, <em class="sig-param">opposition_mode: Optional[str] = None</em>, <em class="sig-param">cauchy: bool = False</em>, <em class="sig-param">autorescale: Union[bool</em>, <em class="sig-param">str] = False</em>, <em class="sig-param">scale: float = 1.0</em>, <em class="sig-param">rescaled: bool = False</em>, <em class="sig-param">recommendation_rule: str = 'pessimistic'</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.SamplingSearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a one-shot optimization method, hopefully better than random search
 by ensuring more uniformity.</p>
 <dl class="field-list simple">
@@ -699,7 +700,7 @@ than the original search.</p></li>
 <li><p><strong>cauchy</strong> (<em>bool</em>) – use Cauchy inverse distribution instead of Gaussian when fitting points to real space
 (instead of box).</p></li>
 <li><p><strong>scale</strong> (<em>float</em><em> or </em><em>&quot;random&quot;</em>) – scalar for multiplying the suggested point values.</p></li>
-<li><p><strong>rescaled</strong> (<em>bool</em>) – rescales the sampling pattern to reach the boundaries.</p></li>
+<li><p><strong>rescaled</strong> (<em>bool</em><em> or </em><em>str</em>) – rescales the sampling pattern to reach the boundaries and/or applies automatic rescaling.</p></li>
 <li><p><strong>recommendation_rule</strong> (<em>str</em>) – “average_of_best” or “pessimistic”; “pessimistic” is the default and implies selecting the pessimistic best.</p></li>
 </ul>
 </dd>
