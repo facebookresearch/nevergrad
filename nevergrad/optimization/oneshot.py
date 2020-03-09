@@ -120,7 +120,7 @@ class _RandomSearch(OneShotOptimizer):
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "autolog":
             # Some variants use a rescaling depending on the budget and the dimension (2nde version).
-            if self.dimension - 4 * np.log(self.fbudget) > 1.: 
+            if self.dimension - 4 * np.log(self.budget) > 1.: 
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
                 scale = 1.
