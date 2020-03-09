@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import warnings
 import operator
 import typing as tp
 import numpy as np
@@ -266,7 +265,6 @@ class Pruning:
     def __call__(self, archive: Archive[Value]) -> Archive[Value]:
         if len(archive) < self.max_len:
             return archive
-        warnings.warn("Pruning archive to save memory")
         quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
@@ -279,8 +277,8 @@ class Pruning:
     @classmethod
     def sensible_default(cls, num_workers: int, dimension: int) -> 'Pruning':
         """ Very conservative pruning
-        - keep at least min_len 3 times num_workers
-        - keep at most 30 times min_len or up to 1GB of array memory (whatever is biggest)
+        - keep at least 100 elements, or 7 times num_workers, whatever is biggest
+        - keep at least 3 x min_len, or up to 10 x min_len if it does not exceed 1gb of data
 
         Parameters
         ----------
@@ -289,11 +287,11 @@ class Pruning:
         dimension: int
             dimension of the optimization space
         """
-        # safer to keep at least 3 time the workers
-        min_len = 3 * num_workers
-        max_len = 10 * 3 * min_len  # len after pruning can be up to 3 min_len, amortize with an order of magnitude
+        # safer to keep at least 7 time the workers
+        min_len = max(100, 7 * num_workers)
         max_len_1gb = 1024**3 // (dimension * 8)
-        return cls(min_len, max(max_len, max_len_1gb))
+        max_len = max(3 * min_len, min(10 * min_len, max_len_1gb))
+        return cls(min_len, max_len)
 
 
 class UidQueue:

@@ -242,8 +242,8 @@ class _CMA(base.Optimizer):
 
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self._es is None:
-            raise RuntimeError("Either ask or tell method should have been called before")
-        cma_best = self.es.best_x if self._fcmaes else self.es.result.xbest
+            return self.current_bests["pessimistic"].x
+        cma_best: tp.Optional[ArrayLike] = self.es.best_x if self._fcmaes else self.es.result.xbest
         if cma_best is None:
             return self.current_bests["pessimistic"].x
         return cma_best
@@ -709,7 +709,7 @@ class SplitOptimizer(base.Optimizer):
     num_optims: number of optimizers
     num_vars: number of variable per optimizer.
     progressive: True if we want to progressively add optimizers during the optimization run.
-    
+
     If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
 
     E.g. for 5 optimizers, each of them working on 2 variables, we can use:
@@ -1220,7 +1220,10 @@ class _BO(base.Optimizer):
         self._fake_function._registered.clear()
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
+        if self.archive:
+            return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
+        else:
+            return super()._internal_provide_recommendation()
 
 
 class ParametrizedBO(base.ConfiguredOptimizer):

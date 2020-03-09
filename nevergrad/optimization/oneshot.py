@@ -17,7 +17,7 @@ from . import utils
 
 
 def convex_limit(points: np.ndarray) -> int:
-    """Given points in order from best to worst, 
+    """Given points in order from best to worst,
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
     d = len(points[0])
     hull = ConvexHull(points[:d+1], incremental=True)
@@ -32,7 +32,7 @@ def convex_limit(points: np.ndarray) -> int:
 
 def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
-    
+
     Parameters
     ----------
     archive: utils.Archive[utils.Value]
@@ -128,12 +128,13 @@ class _RandomSearch(OneShotOptimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self.stupid:
             return self._internal_ask()
-        if self.recommendation_rule == "average_of_best":
-            return avg_of_k_best(self.archive, "dimfourth")
-        if self.recommendation_rule == "average_of_exp_best":
-            return avg_of_k_best(self.archive, "exp")
-        if self.recommendation_rule == "average_of_hull_best":
-            return avg_of_k_best(self.archive, "hull")
+        elif self.archive:
+            if self.recommendation_rule == "average_of_best":
+                return avg_of_k_best(self.archive, "dimfourth")
+            if self.recommendation_rule == "average_of_exp_best":
+                return avg_of_k_best(self.archive, "exp")
+            if self.recommendation_rule == "average_of_hull_best":
+                return avg_of_k_best(self.archive, "hull")
         return super()._internal_provide_recommendation()
 
 
@@ -157,7 +158,7 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
          - "random": uses a randomized pattern for the scale.
          - "auto": scales in function of dimension and budget (see XXX)
     recommendation_rule: str
-        "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is 
+        "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
     """
 
@@ -253,7 +254,7 @@ class _SamplingSearch(OneShotOptimizer):
         return self._opposable_data
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        if self.recommendation_rule == "average_of_best":
+        if self.archive and self.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
         return super()._internal_provide_recommendation()
 

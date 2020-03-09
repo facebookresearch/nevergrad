@@ -63,6 +63,7 @@ def check_optimizer(
     for k in range(1, num_attempts + 1):
         fitness = Fitness(optimum)
         optimizer = optimizer_cls(parametrization=len(optimum), budget=budget, num_workers=num_workers)
+        assert isinstance(optimizer.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
