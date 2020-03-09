@@ -4,10 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
-from typing import Callable, Optional, Any
+import typing as tp
 import numpy as np
-from ..common.typetools import ArrayLike
-from ..common import testing
+import nevergrad as ng
+from nevergrad.common.typetools import ArrayLike
+from nevergrad.common import testing
 from . import recaster
 from . import optimizerlib
 
@@ -22,7 +23,7 @@ def test_message() -> None:
     np.testing.assert_equal(message.result, 3)
 
 
-def fake_caller(func: Callable[[int], int]) -> int:
+def fake_caller(func: tp.Callable[[int], int]) -> int:
     output = 0
     for k in range(10):
         output += func(k)
@@ -33,7 +34,7 @@ def fake_caller(func: Callable[[int], int]) -> int:
     finished=(10, 30),
     unfinished=(2, None),  # should not hang at deletion!
 )
-def test_messaging_thread(num_iter: int, output: Optional[int]) -> None:
+def test_messaging_thread(num_iter: int, output: tp.Optional[int]) -> None:
     thread = recaster.MessagingThread(fake_caller)
     num_answers = 0
     while num_answers < num_iter:
@@ -56,11 +57,11 @@ def fake_cost_function(x: ArrayLike) -> float:
 
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
 
-    def get_optimization_function(self) -> Callable[[Callable[..., Any]], ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], ArrayLike]:
         # create a new instance to avoid deadlock
         return self.__class__(self.parametrization, self.budget, self.num_workers)._optim_function
 
-    def _optim_function(self, func: Callable[..., Any]) -> ArrayLike:
+    def _optim_function(self, func: tp.Callable[..., tp.Any]) -> ArrayLike:
         suboptim = optimizerlib.OnePlusOne(parametrization=2, budget=self.budget)
         recom = suboptim.minimize(func)
         return recom.get_standardized_data(reference=self.parametrization)
@@ -83,21 +84,14 @@ def test_recast_optimizer_and_stop() -> None:
     optimizer.ask()
     # thread is not finished... but should not hang!
 
+
 def test_provide_recommendation() -> None:
-    nevergrad_optimizer = optimizerlib.OnePlusOne(instrumentation=2, budget=100)
-    # even if no ask&tell, recommendation should work:
-    assert nevergrad_optimizer.provide_recommendation() is not None
-
-    # the recommended solution should be the better one among
-    # all told solutions for OnePlusOne solver:
-    x1 = nevergrad_optimizer.ask()
-    nevergrad_optimizer.tell(x1, 10)
-    x2 = nevergrad_optimizer.ask()
-    nevergrad_optimizer.tell(x2, 5)
-    recommended_solution = nevergrad_optimizer.provide_recommendation()
-    for i in range(len(recommended_solution.data)):
-        assert recommended_solution.data[i] == x2.data[i]
-
-    scipy_optimizer = optimizerlib.SQP(instrumentation=2, budget=100)
-    # even if no ask&tell, recommendation should work:
-    assert scipy_optimizer.provide_recommendation() is not None
+    opt = optimizerlib.SQP(parametrization=2, budget=100)
+    assert isinstance(opt.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
+    # the recommended solution should be the better one among the told points
+    x1 = opt.ask()
+    opt.tell(x1, 10)
+    x2 = opt.ask()
+    opt.tell(x2, 5)
+    recommendation = opt.provide_recommendation()
+    np.testing.assert_array_almost_equal(recommendation.value, x2.value)
