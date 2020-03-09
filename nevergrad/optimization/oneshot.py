@@ -290,8 +290,8 @@ class SamplingSearch(base.ConfiguredOptimizer):
         (instead of box).
     scale: float or "random"
         scalar for multiplying the suggested point values.
-    rescaled: bool
-        rescales the sampling pattern to reach the boundaries.
+    rescaled: bool or str
+        rescales the sampling pattern to reach the boundaries and/or applies automatic rescaling.
     recommendation_rule: str
         "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
 
@@ -322,7 +322,7 @@ class SamplingSearch(base.ConfiguredOptimizer):
         middle_point: bool = False,
         opposition_mode: Optional[str] = None,
         cauchy: bool = False,
-        autorescale: bool = False,
+        autorescale: Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
@@ -332,10 +332,10 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 # pylint: disable=line-too-long
 MetaRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
 MetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
+    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
 ).set_name("MetaLogRecentering", register=True)
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
