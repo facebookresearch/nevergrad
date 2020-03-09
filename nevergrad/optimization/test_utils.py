@@ -103,10 +103,10 @@ def test_pruning() -> None:
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
-@pytest.mark.parametrize("dimension,expected_max", [(100, 1000), (200000, 671), (1000000, 300)])  # type: ignore
+@pytest.mark.parametrize("dimension,expected_max", [(100, 1680), (200000, 671), (1000000, 504)])  # type: ignore
 def test_pruning_sensible_default(dimension: int, expected_max: int) -> None:
-    pruning = utils.Pruning.sensible_default(num_workers=12, dimension=dimension)
-    assert pruning.min_len == 100
+    pruning = utils.Pruning.sensible_default(num_workers=24, dimension=dimension)
+    assert pruning.min_len == 168
     assert pruning.max_len == expected_max
 
 

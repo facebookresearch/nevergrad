@@ -287,10 +287,9 @@ class Pruning:
         dimension: int
             dimension of the optimization space
         """
-        # safer to keep at least 3 time the workers
-        min_len = max(100, 3 * num_workers)
+        # safer to keep at least 7 time the workers
+        min_len = max(100, 7 * num_workers)
         max_len_1gb = 1024**3 // (dimension * 8)
-        print(max_len_1gb)
         max_len = max(3 * min_len, min(10 * min_len, max_len_1gb))
         return cls(min_len, max_len)
 
