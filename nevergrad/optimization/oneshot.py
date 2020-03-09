@@ -116,8 +116,14 @@ class _RandomSearch(OneShotOptimizer):
             return self._opposable_data  # type: ignore
         scale = self.scale
         if isinstance(scale, str) and scale == "auto":
-            # Some variants use a rescaling depending on the budget and the dimension.
+            # Some variants use a rescaling depending on the budget and the dimension (1st version).
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if isinstance(scale, str) and scale == "autolog":
+            # Some variants use a rescaling depending on the budget and the dimension (2nde version).
+            if self.dimension - 4 * np.log(self.fbudget) > 1.: 
+                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
+            else:
+                scale = 1.
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self.cauchy
