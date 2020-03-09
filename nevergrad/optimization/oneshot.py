@@ -94,7 +94,7 @@ class _RandomSearch(OneShotOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale in ["auto", "random"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autolog"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
         self.stupid = stupid
@@ -162,7 +162,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
-         - "auto": scales in function of dimension and budget (see XXX)
+         - "auto": scales in function of dimension and budget (version 1)
+         - "autolog": scales in function of dimension and budget (version 2)         
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
