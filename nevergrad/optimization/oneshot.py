@@ -338,11 +338,11 @@ MetaLogRecentering = SamplingSearch(
     cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
 ).set_name("MetaLogRecentering", register=True)
 AvgMetaRecentering = SamplingSearch(
-    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
-).set_name("AvgMetaRecentering", register=True, recommendation_rule="average_of_hull_best")
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("AvgMetaRecentering", register=True)
 AvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
-).set_name("AvgMetaLogRecentering", register=True, recommendation_rule="average_of_hull_best")
+    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("AvgMetaLogRecentering", register=True)
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = SamplingSearch(scale=100.).set_name("LargeHaltonSearch", register=True)
