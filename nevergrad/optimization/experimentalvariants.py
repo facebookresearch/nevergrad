@@ -345,6 +345,20 @@ SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
     "SplitOptimizer13", register=True
 )
 
+# ProgOptimizer
+ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True).set_name(
+    "ProgOptimizer3", register=True
+)
+ProgOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True).set_name(
+    "ProgOptimizer5", register=True
+)
+ProgOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True).set_name(
+    "ProgOptimizer9", register=True
+)
+ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True).set_name(
+    "ProgOptimizer13", register=True
+)
+
 
 # Random search
 Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
