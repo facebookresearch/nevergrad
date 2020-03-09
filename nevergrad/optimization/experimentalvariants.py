@@ -86,6 +86,10 @@ WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name(
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
 NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
 AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
+IsoEMNATBPSA = EMNA(naive=False, populationSizeAdapatation=True).set_name("IsoEMNATBPSA", register=True)
+NaiveIsoEMNATBPSA = EMNA(populationSizeAdapatation=True).set_name("NaiveIsoEMNATBPSA", register=True)
+AinsoEMNATBPSA = EMNA(naive=False, isotropic=False, populationSizeAdapatation=True).set_name("AnisoEMNATBPSA", register=True)
+NaiveAnisoEMNATBPSA = EMNA(isotropic=False, populationSizeAdapatation=True).set_name("NaiveAnisoEMNATBPSA", register=True)
 
 # Recentering
 MetaCauchyRecentering = SamplingSearch(

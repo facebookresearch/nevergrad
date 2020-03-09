@@ -1492,24 +1492,33 @@ class _EMNA(base.Optimizer):
             budget: Optional[int] = None,
             num_workers: int = 1,
             isotropic: bool = True,
-            naive: bool = True
+            naive: bool = True,
+            populationSizeAdapatation: bool = False
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.isotropic: bool = isotropic
         self.naive: bool = naive
+        self.populationSizeAdapatation = populationSizeAdapatation
+        self.paraLimit = 16
+        # Sigma initialization
         self.sigma: tp.Union[float, np.ndarray]
         if self.isotropic:
             self.sigma = 1.0
         else:
             self.sigma = np.ones(self.dimension)
-        self.mu = max(16, self.dimension)
-        self.llambda = 4 * self.mu
-        if budget is not None and self.llambda > budget:
-            self.llambda = budget
-            self.mu = self.llambda // 4
-            warnings.warn("Budget may be too small in front of the dimension for EMNA")
-        if num_workers is not None:
-            self.llambda = max(self.llambda, num_workers)
+        # population size and parent size initializations
+        if not self.populationSizeAdapatation:
+            self.mu = max(16, self.dimension)
+            self.llambda = 4 * self.mu
+            if budget is not None and self.llambda > budget:
+                self.llambda = budget
+                self.mu = self.llambda // 4
+                warnings.warn("Budget may be too small in front of the dimension for EMNA")
+            if num_workers is not None:
+                self.llambda = max(self.llambda, num_workers)
+        else:
+            dim = self.dimension
+            self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
         self.parents: List[p.Parameter] = [self.parametrization]
@@ -1522,35 +1531,63 @@ class _EMNA(base.Optimizer):
             return self.current_center
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
+        tmp = self.sigma
+        if self.populationSizeAdapatation and self.popsize.llambda < self.paraLimit * self.dimension: # Population size not large enough for emna
+            mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
+            individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
+            tmp = mutated_sigma
+        else:
+            individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
         parent = self.parents[self.num_ask % len(self.parents)]
         candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
         if parent is self.parametrization:
             candidate.heritage["lineage"] = candidate.uid
-        candidate._meta["sigma"] = self.sigma
+        candidate._meta["sigma"] = tmp
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["loss"] = value
+        if self.populationSizeAdapatation:
+            self.popsize.add_value(value)
         self.children.append(candidate)
-        if len(self.children) >= self.llambda:
+        popSize = -1
+        mu = -1
+        if self.populationSizeAdapatation:
+            popSize = self.popsize.llambda
+            mu = self.popsize.mu
+        else:
+            popSize = self.llambda
+            mu = self.mu
+        if len(self.children) >= popSize:
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-            self.parents = self.children[: self.mu]
+            self.parents = self.children[: mu]
             self.children = []
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                                      for c in self.parents) / self.mu
-            # EMNA update
-            stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2
-                    for i in range(self.mu)]
-            if self.isotropic:
-                self.sigma = np.sqrt(sum(stdd) / (self.mu * self.dimension))
+                                      for c in self.parents) / mu
+            if self.populationSizeAdapatation:
+                if self.popsize.llambda < self.paraLimit * self.dimension: # Population size not large enough for emna
+                    if self.isotropic:
+                        self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents])) / mu)
+                    else:
+                        self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]), axis=0) / mu)
+                else:
+                    stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(mu)]
+                    if self.isotropic:
+                        self.sigma = np.sqrt(sum(stdd) / (mu * self.dimension))
+                    else:
+                        self.sigma = np.sqrt(np.sum(stdd, axis=0) / (mu))
             else:
-                self.sigma = np.sqrt(np.sum(stdd, axis=0) / (self.mu))
+                # EMNA update
+                stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(mu)]
+                if self.isotropic:
+                    self.sigma = np.sqrt(sum(stdd) / (mu * self.dimension))
+                else:
+                    self.sigma = np.sqrt(np.sum(stdd, axis=0) / (mu))
 
             if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
-                imp = max(1, (np.log(self.llambda) / 2)**(1 / self.dimension))
+                imp = max(1, (np.log(popSize) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
@@ -1578,7 +1615,8 @@ class EMNA(base.ConfiguredOptimizer):
         self,
         *,
         isotropic: bool = True,
-        naive: bool = True
+        naive: bool = True,
+        populationSizeAdapatation: bool = False
     ) -> None:
         super().__init__(_EMNA, locals())
 
