@@ -203,7 +203,7 @@ class _SamplingSearch(OneShotOptimizer):
         middle_point: bool = False,
         opposition_mode: Optional[str] = None,
         cauchy: bool = False,
-        autorescale: bool = False,
+        autorescale: Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
@@ -253,8 +253,13 @@ class _SamplingSearch(OneShotOptimizer):
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        if self.autorescale:
+        if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if self.autorescale == "autolog":
+            if self.dimension - 4 * np.log(self.budget) > 1.: 
+                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
+            else:
+                scale = 1.
         self._opposable_data = self.scale * (
             stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
         assert self._opposable_data is not None
@@ -327,6 +332,9 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 # pylint: disable=line-too-long
 MetaRecentering = SamplingSearch(
+    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
+).set_name("MetaRecentering", register=True)
+MetaLogRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
