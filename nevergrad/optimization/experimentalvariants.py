@@ -88,7 +88,7 @@ NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
 AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
 IsoEMNATBPSA = EMNA(naive=False, population_size_adaptation=True).set_name("IsoEMNATBPSA", register=True)
 NaiveIsoEMNATBPSA = EMNA(population_size_adaptation=True).set_name("NaiveIsoEMNATBPSA", register=True)
-AinsoEMNATBPSA = EMNA(naive=False, isotropic=False, population_size_adaptation=True).set_name("AnisoEMNATBPSA", register=True)
+AnisoEMNATBPSA = EMNA(naive=False, isotropic=False, population_size_adaptation=True).set_name("AnisoEMNATBPSA", register=True)
 NaiveAnisoEMNATBPSA = EMNA(isotropic=False, population_size_adaptation=True).set_name("NaiveAnisoEMNATBPSA", register=True)
 
 # Recentering

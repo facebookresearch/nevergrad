@@ -159,7 +159,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
-    optims = ["DiagonalCMA", "CMA", "NaiveTBPSA", "OnePlusOne", "DE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
+    optims = ["DiagonalCMA", "CMA", "NaiveTBPSA", "OnePlusOne", "DE", "AnisoEMNATBPSA", "NaiveIsoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
