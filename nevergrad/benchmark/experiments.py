@@ -195,7 +195,7 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -566,8 +566,28 @@ def fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiva", "DiagonalCMA",
              "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
              "OptimisticNoisyOnePlusOne"]
-    for budget in [1600, 3200, 6400, 12800]:
+    for budget in [1600, 3200, 6400, 12800, 25600, 51200]:
         for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Optimization of policies for games, namely direct policy search."""
+    funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiva", "DiagonalCMA",
+             "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+             "OptimisticNoisyOnePlusOne"]
+    for budget in [12800, 25600, 51200, 102400]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:

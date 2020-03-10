@@ -197,11 +197,11 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
                            f.write(f"  algo {i}: {algo}\n")
             except:
                 pass
-            if len(name) > 80:
+            if len(name) > 40:
                 hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
                 name=re.sub(r'\([^()]*\)', '', name)
-                mid = len(name) // 2
-                name = name[:mid] + hash + name[mid:]
+                mid = 40
+                name = name[:mid] + hash + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.

@@ -118,7 +118,12 @@ Base class features
 All algorithms derive from a base class named :code:`Optimizer` and are registered through a decorator. The implementation of the base class is `here <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/base.py>`_.
 This base class implements the :code:`ask` and :code:`tell` interface.
 
-It records all evaluated points through the :code:`archive` attribute of class :code:`Archive`. It can be seen be used as if it was of type :code:`Dict[np.ndarray, Value]`, but since :code:`np.ndarray` are not hashable, the underlying implementation converts arrays into bytes and register them into the :code:`archive.bytesdict` dictionary. :code:`Archive` however does not implement :code:`keys` and :code:`items` methods because converting from bytes to array is not very efficient, one should therefore integrate on :code:`bytesdict` and the keys can then be transformed back to arrays using :code:`np.frombuffer(key)`. See `OnePlusOne implementation <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_ for an example.
+It records a sample of the best evaluated points through the :code:`archive` attribute of class :code:`Archive`.  The archive can be seen be used as if it was of type
+:code:`Dict[np.ndarray, Value]`, but since :code:`np.ndarray` are not hashable, the underlying implementation converts arrays into bytes and
+register them into the :code:`archive.bytesdict` dictionary. :code:`Archive` however does not implement :code:`keys` and :code:`items` methods
+because converting from bytes to array is not very efficient, one should therefore integrate on :code:`bytesdict` and the keys can then be
+transformed back to arrays using :code:`np.frombuffer(key)`. See
+`OnePlusOne implementation <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_ for an example.
 
 
 The key tuple if the point location, and :code:`Value` is a class with attributes:
@@ -130,7 +135,9 @@ The key tuple if the point location, and :code:`Value` is a class with attribute
 For more details, see the implementation in `utils.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/utils.py>`_.
 
 Through the archive, you can therefore access most useful information about past evaluations. A pruning mechanism makes sure this archive does
-not grow too much. This pruning can be tuned through the :code:`pruning` attribute of the optimizer (the default is very conservative).
+not grow too much. This pruning can be tuned through the :code:`pruning` attribute of the optimizer.
+By default it keeps at least the best 100 points and cleans up when reaching 1000 points. It can be straightforwardly deactivated by setting optimizer's archive
+attribute to :code:`None`.
 
 The base :code:`Optimizer` class also tracks the best optimistic and pessimistic points through the :code:`current_bests` attribute which is of type:
 :code:`Dict[str, Point]`. The key string is either :code:`optimistic` or :code:`pessimistic`, and the :code:`Point` value is a :code:`Value` with an additional :code:`x` attribute, recording the location of the point.
