@@ -77,10 +77,10 @@ class Mutation(core.Parameter):
         raise RuntimeError("Mutation cannot be set.")
 
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
-        new_value = self._apply_array([a._value for a in arrays], arrays[0].random_state)
+        new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
 

@@ -6,6 +6,7 @@
 import typing as tp
 import numpy as np
 from .data import Mutation
+from .choice import Choice
 
 
 class Crossover(Mutation):
@@ -48,7 +49,7 @@ class Crossover(Mutation):
         """
         return f"{self.__class__.__name__}(axis={self.axis})"
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         # checks
         arrays = list(arrays)
         if len(arrays) != 2:
@@ -60,14 +61,14 @@ class Crossover(Mutation):
         max_size = self.parameters["max_size"].value
         max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if max_size is None else max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
-        size = 1 if max_size == 1 else rng.randint(1, max_size)
+        size = 1 if max_size == 1 else self.random_state.randint(1, max_size)
         # slices
         slices = []
         for a, s in enumerate(shape):
             if a in axis:
                 if s <= 1:
                     raise ValueError("Cannot crossover an shape with size 1")
-                start = rng.randint(s - size)
+                start = self.random_state.randint(s - size)
                 slices.append(slice(start, start + size))
             else:
                 slices.append(slice(0, s))
@@ -88,12 +89,40 @@ class Translation(Mutation):
         """
         return f"{self.__class__.__name__}(axis={self.axis})"
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray], rng: np.random.RandomState) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = arrays[0]
-        if rng is None:
-            rng = np.random.RandomState()
         axis = tuple(range(data.dim)) if self.axis is None else self.axis
-        shifts = [rng.randint(data.shape[a]) for a in axis]
+        shifts = [self.random_state.randint(data.shape[a]) for a in axis]
         return np.roll(data, shifts, axis=axis)  # type: ignore
+
+
+class TunedTranslation(Mutation):
+
+    def __init__(self, axis: int, shape: tp.Sequence[int]):
+        assert isinstance(axis, int)
+        self.shape = tuple(shape)
+        super().__init__(shift=Choice(range(1, shape[axis])))
+        self.axis = axis
+
+    @property
+    def shift(self) -> Choice:
+        return self.parameters["shift"]  # type: ignore
+
+    def _get_name(self) -> str:
+        """Internal implementation of parameter name. This should be value independant, and should not account
+        for internal/model parameters.
+        """
+        return f"{self.__class__.__name__}(axis={self.axis})"
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+        arrays = list(arrays)
+        assert len(arrays) == 1
+        data = arrays[0]
+        assert data.shape == self.shape
+        shift = self.shift.value
+        # update shift arrray
+        shifts = self.shift.weights.value
+        self.shift.weights.value = np.roll(shifts, shift)  # update probas
+        return np.roll(data, shift, axis=self.axis)  # type: ignore
