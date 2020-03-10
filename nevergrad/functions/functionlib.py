@@ -8,7 +8,6 @@ import itertools
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.parametrization import utils as putils
 from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
@@ -245,7 +244,7 @@ class FarOptimumFunction(ExperimentFunction):
         parametrization.set_mutation(
             sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)  # type: ignore
         )
-        parametrization.set_recombination("average" if recombination == "average" else putils.Crossover())
+        parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
         super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
         descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
