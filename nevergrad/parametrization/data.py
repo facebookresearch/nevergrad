@@ -15,6 +15,7 @@ from . import transforms as trans
 
 BoundValue = tp.Optional[tp.Union[float, int, np.int, np.float, np.ndarray]]
 A = tp.TypeVar("A", bound="Array")
+P = tp.TypeVar("P", bound="Parameter")
 
 
 class BoundChecker:
@@ -83,6 +84,15 @@ class Mutation(core.Parameter):
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
+
+    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
+        return np.array([])
+
+    # pylint: disable=unused-argument
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+        if np.array(data, copy=False).size:
+            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
+        return self
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
@@ -284,8 +294,10 @@ class Array(core.Parameter):
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
         elif isinstance(mutation, Mutation):
             mutation.apply([self])
+        elif callable(mutation):
+            mutation([self])
         else:
-            raise TypeError("Mutation must be a string or a Mutation instance")
+            raise TypeError("Mutation must be a string, a callable or a Mutation instance")
 
     def set_mutation(
         self: A,
@@ -395,6 +407,8 @@ class Array(core.Parameter):
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
         elif isinstance(recomb, Mutation):
             recomb.apply(all_params)
+        elif callable(recomb):
+            recomb(all_params)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

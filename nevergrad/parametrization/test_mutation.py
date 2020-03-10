@@ -26,7 +26,7 @@ def test_translation() -> None:
     out = roll._apply_array([x])
     expected = np.array([1, 2, 3, 0])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
-    assert repr(roll) == "Translation(axis=(0,))"
+    assert repr(roll) == "Translation[axis=(0,)]"
 
 
 def test_tuned_translation() -> None:
@@ -51,5 +51,5 @@ def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Opti
     co.random_state.seed(12)
     out = co._apply_array((x1, x2))
     np.testing.assert_array_equal(out.shape, shape)  # this basically only test that it did not raise an error
-    assert co.name.startswith("Crossover(axis="), f"Unexpected {co.name}"
-    assert co.name.endswith(f")[max_size={max_size}]"), f"Unexpected {co.name}"
+    assert co.name.startswith("Crossover[axis="), f"Unexpected {co.name}"
+    assert co.name.endswith(f",max_size={max_size}]"), f"Unexpected {co.name}"

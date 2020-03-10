@@ -5,6 +5,7 @@
 
 import typing as tp
 import numpy as np
+from . import core
 from .data import Mutation
 from .choice import Choice
 
@@ -40,14 +41,13 @@ class Crossover(Mutation):
     """
 
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None, max_size: tp.Optional[int] = None) -> None:
-        super().__init__(max_size=max_size)
-        self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        if not isinstance(axis, core.Parameter):
+            axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        super().__init__(max_size=max_size, axis=axis)
 
-    def _get_name(self) -> str:
-        """Internal implementation of parameter name. This should be value independant, and should not account
-        for internal/model parameters.
-        """
-        return f"{self.__class__.__name__}(axis={self.axis})"
+    @property
+    def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
+        return self.parameters["axis"].value  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         # checks
@@ -80,14 +80,13 @@ class Crossover(Mutation):
 class Translation(Mutation):
 
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]]):
-        super().__init__()
-        self.axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        if not isinstance(axis, core.Parameter):
+            axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        super().__init__(axis=axis)
 
-    def _get_name(self) -> str:
-        """Internal implementation of parameter name. This should be value independant, and should not account
-        for internal/model parameters.
-        """
-        return f"{self.__class__.__name__}(axis={self.axis})"
+    @property
+    def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
+        return self.parameters["axis"].value  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         arrays = list(arrays)
@@ -110,12 +109,6 @@ class TunedTranslation(Mutation):
     def shift(self) -> Choice:
         return self.parameters["shift"]  # type: ignore
 
-    def _get_name(self) -> str:
-        """Internal implementation of parameter name. This should be value independant, and should not account
-        for internal/model parameters.
-        """
-        return f"{self.__class__.__name__}(axis={self.axis})"
-
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         arrays = list(arrays)
         assert len(arrays) == 1
@@ -126,3 +119,9 @@ class TunedTranslation(Mutation):
         shifts = self.shift.weights.value
         self.shift.weights.value = np.roll(shifts, shift)  # update probas
         return np.roll(data, shift, axis=self.axis)  # type: ignore
+
+    def _internal_spawn_child(self) -> "TunedTranslation":
+        child = self.__class__(axis=self.axis, shape=self.shape)
+        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
+                                     for k, v in self.parameters._content.items()}
+        return child
