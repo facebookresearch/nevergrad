@@ -130,14 +130,15 @@ class LocalGaussian(Mutation):
     def apply(self, arrays: tp.Sequence[Array]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
-        data = arrays[0].value
+        data = np.zeros(arrays[0].value.shape)
         # settings
         axis = tuple(range(len(data.shape))) if self.axes is None else self.axes
         size = self.parameters["size"].value
         # slices
         slices = _make_slices(data.shape, axis, size, self.random_state)
         shape = data[tuple(slices)].shape
-        data[tuple(slices)] += arrays[0].sigma.value * self.random_state.normal(0, 1, size=shape)
+        data[tuple(slices)] += self.random_state.normal(0, 1, size=shape)
+        arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
 
 
 class TunedTranslation(Mutation):
