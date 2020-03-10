@@ -18,6 +18,7 @@ from . import transforms
     arctan=(transforms.ArctanBound(3, 4), "At(3,4)"),
     cumdensity=(transforms.CumulativeDensity(), "Cd()"),
     clipping=(transforms.Clipping(None, 1e12), "Cl(None,1000000000000)"),
+    fourrier=(transforms.Fourrier(), "F(0)"),
 )
 def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     x = np.random.normal(0, 1, size=12)
@@ -25,7 +26,6 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     x2 = transform.backward(y)
     np.testing.assert_array_almost_equal(x2, x)
     np.testing.assert_equal(transform.name, string)
-    print(f"{transform}")
 
 
 @testing.parametrized(
@@ -35,6 +35,8 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     tanh=(transforms.TanhBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     arctan=(transforms.ArctanBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     cumdensity=(transforms.CumulativeDensity(), [-10, 0, 10], [0, .5, 1]),
+
+
 )
 def test_vals(transform: transforms.Transform, x: List[float], expected: List[float]) -> None:
     y = transform.forward(np.array(x))

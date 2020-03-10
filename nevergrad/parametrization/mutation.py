@@ -6,6 +6,7 @@
 import typing as tp
 import numpy as np
 from . import core
+from .import transforms
 from .data import Mutation
 from .choice import Choice
 
@@ -40,10 +41,15 @@ class Crossover(Mutation):
       0 1 1 0
     """
 
-    def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None, max_size: tp.Optional[int] = None) -> None:
+    def __init__(
+        self,
+        axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
+        max_size: tp.Optional[int] = None,
+        fft: bool = False
+    ) -> None:
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
-        super().__init__(max_size=max_size, axis=axis)
+        super().__init__(max_size=max_size, axis=axis, fft=fft)
 
     @property
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
@@ -54,6 +60,9 @@ class Crossover(Mutation):
         arrays = list(arrays)
         if len(arrays) != 2:
             raise Exception("Crossover can only be applied between 2 individuals")
+        transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
+        if transf is not None:
+            arrays = [transf.forward(a) for a in arrays]
         shape = arrays[0].shape
         assert shape == arrays[1].shape, "Individuals should have the same shape"
         # settings
@@ -74,6 +83,8 @@ class Crossover(Mutation):
                 slices.append(slice(0, s))
         result = np.array(arrays[0], copy=True)
         result[tuple(slices)] = arrays[1][tuple(slices)]
+        if transf is not None:
+            result = transf.backward(result)
         return result
 
 

@@ -9,13 +9,17 @@ from nevergrad.common import testing
 from . import mutation
 
 
-def test_crossover() -> None:
-    x1 = 4 * np.ones((2, 3))
-    x2 = 5 * np.ones((2, 3))
-    co = mutation.Crossover(axis=1)
+@testing.parametrized(
+    fft=(True, [3, 3, 5, 5]),
+    real=(False, [4, 5, 5, 4]),
+)
+def test_crossover(fft: bool, expected: tp.List[int]) -> None:
+    x1 = 4 * np.ones((2, 4))
+    x2 = 5 * np.ones((2, 4)) if not fft else np.arange(8).reshape((2, 4))
+    co = mutation.Crossover(axis=1, fft=fft)
     co.random_state.seed(12)
     out = co._apply_array((x1, x2))
-    expected = np.ones((2, 1)).dot([[4, 5, 4]])
+    expected = np.ones((2, 1)).dot([expected])
     np.testing.assert_array_equal(out, expected)
 
 
@@ -36,6 +40,8 @@ def test_tuned_translation() -> None:
     out = roll._apply_array([x])
     expected = np.array([3, 0, 1, 2])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
+    roll.mutate()
+    assert np.sum(np.abs(roll.shift.weights.value)) > 0
 
 
 @testing.parametrized(
