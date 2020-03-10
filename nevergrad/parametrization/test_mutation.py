@@ -7,6 +7,7 @@ import typing as tp
 import numpy as np
 from nevergrad.common import testing
 from . import mutation
+from .data import Array
 
 
 @testing.parametrized(
@@ -21,6 +22,17 @@ def test_crossover(fft: bool, expected: tp.List[int]) -> None:
     out = co._apply_array((x1, x2))
     expected = np.ones((2, 1)).dot([expected])
     np.testing.assert_array_equal(out, expected)
+
+
+def test_local_gaussian() -> None:
+    init = 4.0 * np.ones((2, 4))
+    x = Array(init=np.array(init))
+    lg = mutation.LocalGaussian(axes=1, size=2)
+    lg.random_state.seed(12)
+    lg.apply([x])
+    print(x.value)
+    expected = np.ones((2, 1)).dot([[1, 0, 0, 1]])
+    np.testing.assert_array_equal(x.value == init, expected)
 
 
 def test_translation() -> None:
