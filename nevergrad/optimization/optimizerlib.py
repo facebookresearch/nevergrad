@@ -1499,7 +1499,7 @@ class _EMNA(base.Optimizer):
         self.isotropic: bool = isotropic
         self.naive: bool = naive
         self.population_size_adaptation = population_size_adaptation
-        self.min_coef_parallel_context: int = 16
+        self.min_coef_parallel_context: int = 8
         # Sigma initialization
         self.sigma: tp.Union[float, np.ndarray]
         if self.isotropic:
