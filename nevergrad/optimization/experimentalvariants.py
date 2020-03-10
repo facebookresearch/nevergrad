@@ -7,6 +7,8 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering  # type: ignore
 from .optimizerlib import (
+    OptimisticNoisyOnePlusOne,
+    OptimisticDiscreteOnePlusOne,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
     ConfiguredPSO,
@@ -346,17 +348,30 @@ SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
 )
 
 # ProgOptimizer
-ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True).set_name(
+ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer3", register=True
 )
-ProgOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True).set_name(
+ProgOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer5", register=True
 )
-ProgOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True).set_name(
+ProgOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer9", register=True
 )
-ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True).set_name(
+ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer13", register=True
+)
+# ProgOptimizer
+ProgDOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "ProgDOptimizer3", register=True
+)
+ProgDOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "ProgDOptimizer5", register=True
+)
+ProgDOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "ProgDOptimizer9", register=True
+)
+ProgDOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "ProgDOptimizer13", register=True
 )
 
 

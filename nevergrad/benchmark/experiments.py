@@ -565,7 +565,8 @@ def fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiva", "DiagonalCMA",
              "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-             "OptimisticNoisyOnePlusOne"]
+             "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
