@@ -15,7 +15,7 @@ from . import transforms as trans
 
 BoundValue = tp.Optional[tp.Union[float, int, np.int, np.float, np.ndarray]]
 A = tp.TypeVar("A", bound="Array")
-P = tp.TypeVar("P", bound="Parameter")
+P = tp.TypeVar("P", bound=core.Parameter)
 
 
 class BoundChecker:
@@ -74,14 +74,14 @@ class Mutation(core.Parameter):
         return self.apply
 
     @value.setter
-    def value(self, value: tp.Any) -> None:
+    def value(self, value: tp.Any) -> None:  # pylint: disable=unused-argument
         raise RuntimeError("Mutation cannot be set.")
 
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:  # pylint: disable=unused-argument
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
 

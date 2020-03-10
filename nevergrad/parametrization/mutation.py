@@ -55,7 +55,7 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
-    def _apply_array(self, arrays: tp.List[np.ndarray]) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         # checks
         if len(arrays) != 2:
             raise Exception("Crossover can only be applied between 2 individuals")
@@ -108,7 +108,7 @@ class Translation(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
-    def _apply_array(self, arrays: tp.List[np.ndarray]) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
         axis = tuple(range(data.dim)) if self.axis is None else self.axis
@@ -152,7 +152,7 @@ class TunedTranslation(Mutation):
     def shift(self) -> Choice:
         return self.parameters["shift"]  # type: ignore
 
-    def _apply_array(self, arrays: tp.List[np.ndarray]) -> np.ndarray:
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
         assert data.shape == self.shape
