@@ -331,6 +331,12 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 
 # pylint: disable=line-too-long
+OAvgMetaLogRecentering = SamplingSearch(
+    cauchy=False, autorescale="autolog", 
+    sampler="Hammersley", scrambled=True,
+    recommendation_rule="average_of_hull_best",
+    opposition_mode="opposite"
+).set_name("OAvgMetaLogRecentering", register=True)
 MetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
