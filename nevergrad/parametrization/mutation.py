@@ -8,7 +8,7 @@ import numpy as np
 from . import core
 from .import transforms
 from .data import Mutation as Mutation
-from .data import Array
+from .data import Array, Scalar
 from .choice import Choice
 
 
@@ -147,6 +147,52 @@ class LocalGaussian(Mutation):
         shape = data[tuple(slices)].shape
         data[tuple(slices)] += self.random_state.normal(0, 1, size=shape)
         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
+
+
+class ProbaLocalGaussian(Mutation):
+
+    def __init__(self, axis: int, shape: tp.Sequence[int]):
+        assert isinstance(axis, int)
+        self.shape = tuple(shape)
+        self.axis = axis
+        super().__init__(
+            positions=Array(shape=(shape[axis],)),
+            ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05)
+        )
+
+    def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
+        return self.parameters["axes"].value  # type: ignore
+
+    def apply(self, arrays: tp.Sequence[Array]) -> None:
+        arrays = list(arrays)
+        assert len(arrays) == 1
+        data = np.zeros(arrays[0].value.shape)
+        # settings
+        axis = (self.axis,)
+        length = self.shape[self.axis]
+        size = max(1, length * self.parameters["ratio"].value)
+        # slices
+        positions = 12
+        slices = _make_slices(data.shape, axis, size, self.random_state)
+        shape = data[tuple(slices)].shape
+        data[tuple(slices)] += self.random_state.normal(0, 1, size=shape)
+        arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
+
+    def _internal_spawn_child(self) -> "ProbaLocalGaussian":
+        child = self.__class__(axis=self.axis, shape=self.shape)
+        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
+                                     for k, v in self.parameters._content.items()}
+        return child
+
+
+def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
+    if window >= len(vector):
+        return np.ones((len(vector),))  # type: ignore
+    if window <= 1:
+        return vector
+    cumsum: np.ndarray = np.cumsum(np.concatenate((vector, vector[:window - 1])))
+    print(cumsum)
+    return cumsum[window - 1:] - cumsum[:-window + 1]  # type: ignore
 
 
 class TunedTranslation(Mutation):

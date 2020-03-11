@@ -71,3 +71,13 @@ def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Opti
     np.testing.assert_array_equal(out.shape, shape)  # this basically only test that it did not raise an error
     assert co.name.startswith("Crossover[axis="), f"Unexpected {co.name}"
     assert co.name.endswith(f",max_size={max_size}]"), f"Unexpected {co.name}"
+
+
+@testing.parametrized(
+    w1=(1, [1, 2, 4]),
+    w2=(2, [3, 6, 5]),
+    w3=(3, [1, 1, 1]),
+)
+def test_crossover_axis(window: int, expected: tp.List[int]) -> None:
+    output = mutation.rolling_mean(np.array([1, 2, 4]), window)
+    np.testing.assert_array_equal(output, expected)
