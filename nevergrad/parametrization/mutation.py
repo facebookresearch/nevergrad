@@ -55,6 +55,13 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
+    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+        new_value = self._apply_array([a._value for a in arrays])
+        bounds = arrays[0].bounds
+        if self.parameters["fft"].value and any(x is not None for x in bounds):
+            new_value = transforms.Clipping(a_min=bounds[0], a_max=bounds[1]).forward(new_value)
+        arrays[0].value = new_value
+
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         # checks
         if len(arrays) != 2:
