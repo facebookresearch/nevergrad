@@ -7,7 +7,8 @@ import typing as tp
 import numpy as np
 from . import core
 from .import transforms
-from .data import Mutation, Array
+from .data import Mutation as Mutation
+from .data import Array
 from .choice import Choice
 
 
