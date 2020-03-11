@@ -127,5 +127,3 @@ In case of questions, please do not hesitate to contact the organizers of the co
 - Baptiste Roziere (Facebook Artificial Intelligence Research, Paris, France)
 - Ofer M. Shir (Tel-Hai College and Migal Institute, Israel)
 - Olivier Teytaud (Facebook Artificial Intelligence Research, Paris, France)
-
-For all details, please check [https://gecco-2020.sigevo.org/index.html/Workshops](https://gecco-2020.sigevo.org/index.html/Workshops)
