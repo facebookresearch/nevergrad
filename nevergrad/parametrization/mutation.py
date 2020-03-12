@@ -190,9 +190,8 @@ def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
         return np.ones((len(vector),))  # type: ignore
     if window <= 1:
         return vector
-    cumsum: np.ndarray = np.cumsum(np.concatenate((vector, vector[:window - 1])))
-    print(cumsum)
-    return cumsum[window - 1:] - cumsum[:-window + 1]  # type: ignore
+    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[:window - 1])))
+    return cumsum[window:] - cumsum[:-window]  # type: ignore
 
 
 class TunedTranslation(Mutation):
