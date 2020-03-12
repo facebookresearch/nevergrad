@@ -77,7 +77,7 @@ def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Opti
     w1=(1, [1, 2, 5, 9]),
     w2=(2, [3, 7, 14, 10]),
     w3=(3, [8, 16, 15, 12]),
-    w4=(4, [1, 1, 1, 1]),
+    w4=(4, [17, 17, 17, 17]),
 )
 def test_rolling_mean(window: int, expected: tp.List[int]) -> None:
     output = mutation.rolling_mean(np.array([1, 2, 5, 9]), window)

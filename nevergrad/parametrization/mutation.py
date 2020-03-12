@@ -187,7 +187,7 @@ class ProbaLocalGaussian(Mutation):
 
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
     if window >= len(vector):
-        return np.ones((len(vector),))  # type: ignore
+        return np.sum(vector) * np.ones((len(vector),))  # type: ignore
     if window <= 1:
         return vector
     cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[:window - 1])))
