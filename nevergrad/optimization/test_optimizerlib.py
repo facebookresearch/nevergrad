@@ -223,6 +223,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     de_w=("DE", 50, 40, 40),
     de1=("OnePointDE", 10, 10, 30),
     de1_w=("OnePointDE", 50, 40, 40),
+    desqrt=("TwoPointsSqrtDE", 10, 10, 10),
     dim_d=("AlmostRotationInvariantDEAndBigPop", 50, 40, 51),
     dim=("AlmostRotationInvariantDEAndBigPop", 10, 40, 40),
     dim_d_rot=("RotationInvariantDE", 50, 40, 51),
