@@ -84,7 +84,7 @@ class _DE(base.Optimizer):
         pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension, "sqrt": 100}
         self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         if isinstance(self._config.popsize, str) and self._config.popsize == "sqrt" and budget is not None:
-            self.llamba = min(self.llambda, int(np.sqrt(budget)))
+            self.llamba = max(2, min(self.llambda, int(np.sqrt(budget))))
         # internals
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)

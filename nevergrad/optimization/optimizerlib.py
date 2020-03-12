@@ -196,7 +196,7 @@ class _CMA(base.Optimizer):
         self._scale = scale
         self._popsize = popsize if not isinstance(popsize, str) else 100
         if isinstance(popsize, str) and popsize == "sqrt" and budget is not None:
-            self._popsize = min(self._popsize, int(np.sqrt(budget)))
+            self._popsize = max(2, min(self._popsize, int(np.sqrt(budget))))
         self._diagonal = diagonal
         self._fcmaes = fcmaes
         self._es: Optional[cma.CMAEvolutionStrategy] = None
