@@ -158,7 +158,8 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
+    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO",
+              "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -176,7 +177,8 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA", "NaiveIsoEMNATBPSA", "IsoEMNATBPSA","NaiveAnisoEMNATBPSA","AnisoEMNATBPSA"]
+    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA",
+              "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -287,6 +289,36 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                     yield xp
 
 
+# pylint: disable=redefined-outer-name
+@registry.register
+def small_ml(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Yet Another Black-Box Optimization Benchmark.
+    Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
+    optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell", "Cobyla", "NGO", "Shiva", "TwoPointsSqrtDE", "CMASqrt"]
+    # funcs
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, useless_variables=uv)
+        for name in ArtificialFunction.list_sorted_function_names()
+        for rotation in [True, False]
+        for num_blocks in [1, 2]
+        for d in [2, 4, 8]
+        for uv in [d, 2 * d]
+    ]
+    budgets = [10, 50, 100, 200, 400]
+    for optim in optims:
+        for function in functions:
+            for budget in budgets:
+                for nw in [1, 2, 8, 16, 32]:
+                    if nw < budget / 4:
+                        xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
 @registry.register
 def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
@@ -301,6 +333,7 @@ def yasmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     internal_generator = yabbob(seed, parallel=False, big=False, small=True)
     for xp in internal_generator:
         yield xp
+
 
 @registry.register
 def yahdbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -330,8 +363,8 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
-#@registry.register
-#def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+# @registry.register
+# def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
 #    seedg = create_seed_generator(seed)
 #    names = ["sphere", "rastrigin", "cigar"]
@@ -801,7 +834,7 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                          offsprings={40: 60, 100: 150}[pop])
            for only in [True, False] for recomb in [0.1, 1] for pop in popsizes]
     algos = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA",
-        "SplitOptimizer5", "Shiva", "NGO", "MultiCMA", "CMandAS2", "SplitOptimizer13"] + es  # type: ignore
+             "SplitOptimizer5", "Shiva", "NGO", "MultiCMA", "CMandAS2", "SplitOptimizer13"] + es  # type: ignore
     for method in ["clipping", "tanh", "arctan"]:
         # , "chirped"]]:  # , "morpho"]]:
         for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg"]]:

@@ -22,6 +22,9 @@ from .optimizerlib import CMA, Chaining, PSO, BO
 OnePointDE = DifferentialEvolution(crossover="onepoint").set_name(
     "OnePointDE", register=True
 )
+TwoPointsSqrtDE = DifferentialEvolution(crossover="twopoints", popsize="sqrt").set_name(
+    "TwoPointsSqrtDE", register=True
+)
 ParametrizationDE = DifferentialEvolution(crossover="parametrization").set_name(
     "ParametrizationDE", register=True
 )
@@ -44,6 +47,7 @@ MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
 MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 FCMAs03 = ParametrizedCMA(fcmaes=True, scale=0.3).set_name("FCMAs03", register=True)
 FCMAp13 = ParametrizedCMA(fcmaes=True, scale=0.1, popsize=13).set_name("FCMAp13", register=True)
+CMASqrt = ParametrizedCMA(popsize="sqrt").set_name("CMASqrt", register=True)
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
@@ -541,14 +545,16 @@ AvgCauchyLHSSearch = SamplingSearch(
 EAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_exp_best").set_name("EAvgHaltonSearch", register=True)
 EAvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_exp_best").set_name(
     "EAvgHaltonSearchPlusMiddlePoint", register=True)
-EAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_exp_best").set_name("EAvgLargeHaltonSearch", register=True)
+EAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_exp_best").set_name(
+    "EAvgLargeHaltonSearch", register=True)
 EAvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_exp_best").set_name(
     "EAvgLargeScrHaltonSearch", register=True)
 EAvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=100., middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeHaltonSearchPlusMiddlePoint", register=True)
 EAvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=.01, middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgSmallHaltonSearchPlusMiddlePoint", register=True)
-EAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgScrHaltonSearch", register=True)
+EAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_exp_best").set_name(
+    "EAvgScrHaltonSearch", register=True)
 EAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgScrHaltonSearchPlusMiddlePoint", register=True)
 EAvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
@@ -570,11 +576,11 @@ EAvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
 EAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgScrHammersleySearchPlusMiddlePoint", register=True)
 EAvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
-                                          recommendation_rule="average_of_exp_best").set_name("EAvgLargeHammersleySearch", register=True)
+                                           recommendation_rule="average_of_exp_best").set_name("EAvgLargeHammersleySearch", register=True)
 EAvgLargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeScrHammersleySearch", register=True)
 EAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
-                                        recommendation_rule="average_of_exp_best").set_name("EAvgScrHammersleySearch", register=True)
+                                         recommendation_rule="average_of_exp_best").set_name("EAvgScrHammersleySearch", register=True)
 EAvgRescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_exp_best").set_name("EAvgRescaleScrHammersleySearch", register=True)
 EAvgCauchyScrHammersleySearch = SamplingSearch(
@@ -587,14 +593,16 @@ EAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_
 CHAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_hull_best").set_name("CHAvgHaltonSearch", register=True)
 CHAvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_hull_best").set_name(
     "CHAvgHaltonSearchPlusMiddlePoint", register=True)
-CHAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_hull_best").set_name("CHAvgLargeHaltonSearch", register=True)
+CHAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_hull_best").set_name(
+    "CHAvgLargeHaltonSearch", register=True)
 CHAvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_hull_best").set_name(
     "CHAvgLargeScrHaltonSearch", register=True)
 CHAvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=100., middle_point=True, recommendation_rule="average_of_hull_best").set_name("CHAvgLargeHaltonSearchPlusMiddlePoint", register=True)
 CHAvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
     scale=.01, middle_point=True, recommendation_rule="average_of_hull_best").set_name("CHAvgSmallHaltonSearchPlusMiddlePoint", register=True)
-CHAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_hull_best").set_name("CHAvgScrHaltonSearch", register=True)
+CHAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_hull_best").set_name(
+    "CHAvgScrHaltonSearch", register=True)
 CHAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True, recommendation_rule="average_of_hull_best").set_name("CHAvgScrHaltonSearchPlusMiddlePoint", register=True)
 CHAvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
@@ -616,11 +624,11 @@ CHAvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
 CHAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_hull_best").set_name("CHAvgScrHammersleySearchPlusMiddlePoint", register=True)
 CHAvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
-                                          recommendation_rule="average_of_hull_best").set_name("CHAvgLargeHammersleySearch", register=True)
+                                            recommendation_rule="average_of_hull_best").set_name("CHAvgLargeHammersleySearch", register=True)
 CHAvgLargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best").set_name("CHAvgLargeScrHammersleySearch", register=True)
 CHAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
-                                        recommendation_rule="average_of_hull_best").set_name("CHAvgScrHammersleySearch", register=True)
+                                          recommendation_rule="average_of_hull_best").set_name("CHAvgScrHammersleySearch", register=True)
 CHAvgRescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_hull_best").set_name("CHAvgRescaleScrHammersleySearch", register=True)
 CHAvgCauchyScrHammersleySearch = SamplingSearch(

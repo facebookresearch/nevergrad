@@ -188,13 +188,15 @@ class _CMA(base.Optimizer):
             budget: Optional[int] = None,
             num_workers: int = 1,
             scale: float = 1.0,
-            popsize: Optional[int] = None,
+            popsize: tp.Optional[tp.Union[str, int]] = None,
             diagonal: bool = False,
             fcmaes: bool = False
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
-        self._popsize = popsize
+        self._popsize = popsize if not isinstance(popsize, str) else 100
+        if isinstance(popsize, str) and popsize == "sqrt" and budget is not None:
+            self._popsize = min(self._popsize, int(np.sqrt(budget)))
         self._diagonal = diagonal
         self._fcmaes = fcmaes
         self._es: Optional[cma.CMAEvolutionStrategy] = None
@@ -273,14 +275,16 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self,
         *,
         scale: float = 1.0,
-        popsize: Optional[int] = None,
+        popsize: tp.Optional[tp.Union[int, str]] = None,
         diagonal: bool = False,
         fcmaes: bool = False
     ) -> None:
         super().__init__(_CMA, locals())
         if fcmaes:
             if diagonal:
-                raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
+                raise ValueError("fcmaes doesn't support diagonal=True, use fcmaes=False")
+        if isinstance(popsize, str) and popsize != "sqrt":
+            raise ValueError("Popsize should be an integer or 'sqrt'")
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
@@ -1574,15 +1578,19 @@ class _EMNA(base.Optimizer):
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
                                       for c in self.parents) / self.popsize.mu
             if self.population_size_adaptation:
-                if self.popsize.llambda < self.min_coef_parallel_context * self.dimension: # Population size not large enough for emna
-                    self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]), axis=0 if self.isotropic else None) / self.popsize.mu)
+                if self.popsize.llambda < self.min_coef_parallel_context * self.dimension:  # Population size not large enough for emna
+                    self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]),
+                                               axis=0 if self.isotropic else None) / self.popsize.mu)
                 else:
-                    stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
+                    stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) -
+                             self.current_center)**2 for i in range(self.popsize.mu)]
                     self.sigma = np.sqrt(np.sum(stdd) / (self.popsize.mu * (self.dimension if self.isotropic else 1)))
             else:
                 # EMNA update
-                stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
-                self.sigma = np.sqrt(np.sum(stdd, axis=0 if self.isotropic else None) / (self.popsize.mu * (self.dimension if self.isotropic else 1)))
+                stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) -
+                         self.current_center)**2 for i in range(self.popsize.mu)]
+                self.sigma = np.sqrt(np.sum(stdd, axis=0 if self.isotropic else None) /
+                                     (self.popsize.mu * (self.dimension if self.isotropic else 1)))
 
             if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))

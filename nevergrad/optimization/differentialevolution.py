@@ -81,8 +81,10 @@ class _DE(base.Optimizer):
         # config
         self._config = DifferentialEvolution() if config is None else config
         self.scale = float(1. / np.sqrt(self.dimension)) if isinstance(self._config.scale, str) else self._config.scale
-        pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
+        pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension, "sqrt": 100}
         self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
+        if isinstance(self._config.popsize, str) and self._config.popsize == "sqrt" and budget is not None:
+            self.llamba = min(self.llambda, int(np.sqrt(budget)))
         # internals
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
@@ -209,7 +211,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
-        assert popsize in ["large", "dimension", "standard"]
+        assert popsize in ["large", "dimension", "standard", "sqrt"]
         assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
         self.initialization = initialization
         self.scale = scale
