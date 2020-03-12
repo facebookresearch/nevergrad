@@ -1512,12 +1512,11 @@ class _EMNA(base.Optimizer):
         if not self.population_size_adaptation:
             self.popsize.mu = max(16, self.dimension)
             self.popsize.llambda = 4 * self.popsize.mu
+            self.popsize.llambda = max(self.popsize.llambda, num_workers)
             if budget is not None and self.popsize.llambda > budget:
                 self.popsize.llambda = budget
                 self.popsize.mu = self.popsize.llambda // 4
-                warnings.warn("Budget may be too small in front of the dimension for EMNA")
-            if num_workers is not None:
-                self.popsize.llambda = max(self.popsize.llambda, num_workers)
+                warnings.warn("Budget may be too small in front of the dimension for EMNA", base.InefficientSettingsWarning)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
         self.parents: List[p.Parameter] = [self.parametrization]
@@ -1532,11 +1531,8 @@ class _EMNA(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         sigma_tmp = self.sigma
         if self.population_size_adaptation and self.popsize.llambda < self.min_coef_parallel_context * self.dimension:
-            mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
-            individual = self.current_center + mutated_sigma * self._rng.normal(0, 1, self.dimension)
-            sigma_tmp = mutated_sigma
-        else:
-            individual = self.current_center + self.sigma * self._rng.normal(0, 1, self.dimension)
+            sigma_tmp = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
+        individual = self.current_center + sigma_tmp * self._rng.normal(0, 1, self.dimension)
         parent = self.parents[self.num_ask % len(self.parents)]
         candidate = parent.spawn_child().set_standardized_data(individual, reference=self.parametrization)
         if parent is self.parametrization:
