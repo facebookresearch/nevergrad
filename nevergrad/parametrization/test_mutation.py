@@ -35,6 +35,18 @@ def test_local_gaussian() -> None:
     np.testing.assert_array_equal(x.value == init, expected)
 
 
+def test_proba_local_gaussian() -> None:
+    init = 4.0 * np.ones((2, 8))
+    x = Array(init=np.array(init))
+    lg = mutation.ProbaLocalGaussian(axis=1, shape=x.value.shape)
+    lg.parameters["ratio"].value = .3
+    pattern = [0, 0, 100, 100, 0, 0, 0, 0]
+    lg.parameters["positions"].value = pattern
+    lg.apply([x])
+    expected = np.ones((2, 1)).dot([pattern]) == 0
+    np.testing.assert_array_equal(x.value == init, expected)
+
+
 def test_translation() -> None:
     x = np.arange(4)[:, None].dot(np.ones((1, 2)))
     roll = mutation.Translation(0)

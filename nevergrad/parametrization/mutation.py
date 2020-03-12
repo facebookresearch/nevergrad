@@ -101,7 +101,7 @@ def _make_slices(
             start = rng.randint(s - size)
             slices.append(slice(start, start + size))
         else:
-            slices.append(slice(0, s))
+            slices.append(slice(s))
     return slices
 
 
@@ -168,14 +168,16 @@ class ProbaLocalGaussian(Mutation):
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
         # settings
-        axis = (self.axis,)
         length = self.shape[self.axis]
-        size = max(1, length * self.parameters["ratio"].value)
+        size = int(max(1, np.round(length * self.parameters["ratio"].value)))
         # slices
-        positions = 12
-        slices = _make_slices(data.shape, axis, size, self.random_state)
-        shape = data[tuple(slices)].shape
-        data[tuple(slices)] += self.random_state.normal(0, 1, size=shape)
+        e_weights = np.exp(rolling_mean(self.parameters["positions"].value, size))
+        probas = e_weights / np.sum(e_weights)
+        index = np.random.choice(range(length), p=probas)
+        # update (inefficient)
+        shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
+        data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
+        data = np.roll(data, shift=index, axis=self.axis)
         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
 
     def _internal_spawn_child(self) -> "ProbaLocalGaussian":
