@@ -30,7 +30,6 @@ def test_local_gaussian() -> None:
     lg = mutation.LocalGaussian(axes=1, size=2)
     lg.random_state.seed(12)
     lg.apply([x])
-    print(x.value)
     expected = np.ones((2, 1)).dot([[1, 0, 0, 1]])
     np.testing.assert_array_equal(x.value == init, expected)
 
