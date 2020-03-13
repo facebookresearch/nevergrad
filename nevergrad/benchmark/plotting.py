@@ -8,6 +8,7 @@ import os
 import argparse
 import itertools
 from pathlib import Path
+import typing as tp
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
@@ -69,6 +70,25 @@ def _make_winners_df(df: pd.DataFrame, all_optimizers: List[str]) -> tools.Selec
     return winners
 
 
+def aggregate_winners(df: tools.Selector, categories: tp.List[str], all_optimizers: tp.List[str]) -> tp.Tuple[tools.Selector, int]:
+    """Computes the sum of winning rates on all cases corresponding to the categories
+
+    Returns
+    -------
+    Selector
+        the aggregate
+    int
+        the total number of cases
+    """
+    if not categories:
+        return _make_winners_df(df, all_optimizers), 1
+    subcases = df.unique(categories[0])
+    if len(subcases) == 1:
+        return aggregate_winners(df, categories[1:], all_optimizers)
+    iterdf, iternum = zip(*(aggregate_winners(df.loc[df.loc[:, categories[0]] == val], categories[1:], all_optimizers) for val in subcases))
+    return sum(iterdf), sum(iternum)  # type: ignore
+
+
 def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
     """Converts a dataframe counting number of victories into a sorted
     winrate dataframe. The algorithm which performs better than all other
@@ -106,7 +126,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 1, xpaxis: str = "budget", competencemaps: bool = False) -> None:
+def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1, xpaxis: str="budget", competencemaps: bool=False) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -192,14 +212,14 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
             try:
                 if name == "fight_all.png":
                     with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                       f.write("ranking:\n")
-                       for i, algo in enumerate(data_df.columns[:8]):
-                           f.write(f"  algo {i}: {algo}\n")
+                        f.write("ranking:\n")
+                        for i, algo in enumerate(data_df.columns[:8]):
+                            f.write(f"  algo {i}: {algo}\n")
             except:
                 pass
             if len(name) > 80:
                 hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
-                name=re.sub(r'\([^()]*\)', '', name)
+                name = re.sub(r'\([^()]*\)', '', name)
                 mid = len(name) // 2
                 name = name[:mid] + hash + name[mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
@@ -258,7 +278,7 @@ class XpPlotter:
     """
 
     def __init__(
-        self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str, name_style: Optional[Dict[str, Any]] = None, xaxis: str = "budget"
+        self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str, name_style: Optional[Dict[str, Any]]=None, xaxis: str="budget"
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
@@ -296,11 +316,14 @@ class XpPlotter:
             text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
-        if upperbound < np.inf:
-            upperbound_up = upperbound + 0.02 * (upperbound - lowerbound)
-            if logplot:
-                upperbound_up = 10 ** (np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound)))
-            self._ax.set_ylim(lowerbound, upperbound_up)
+        if not (np.isnan(upperbound) or np.isinf(upperbound)):
+            upperbound_up = upperbound
+            if not (np.isnan(lowerbound) or np.isinf(lowerbound)):
+                self._ax.set_ylim(bottom=lowerbound)
+                upperbound_up += 0.02 * (upperbound - lowerbound)
+                if logplot:
+                    upperbound_up = 10 ** (np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound)))
+            self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)
@@ -310,7 +333,7 @@ class XpPlotter:
         # self._fig.tight_layout()
 
     @staticmethod
-    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool=False) -> Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
         conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
         if not log:
@@ -436,12 +459,12 @@ class FightPlotter:
         self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
         divider = make_axes_locatable(self._ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        #self._fig.colorbar(im, cax=cax)
+        # self._fig.colorbar(im, cax=cax)
         self._fig.colorbar(self._cax, cax=cax)  # , orientation='horizontal')
         plt.tight_layout()
 
     @staticmethod
-    def winrates_from_selection(df: tools.Selector, categories: List[str], num_rows: int = 5) -> pd.DataFrame:
+    def winrates_from_selection(df: tools.Selector, categories: List[str], num_rows: int=5) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
 
@@ -456,18 +479,21 @@ class FightPlotter:
         """
         all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown
         num_rows = min(num_rows, len(all_optimizers))
-        victories = pd.DataFrame(index=all_optimizers, columns=all_optimizers, data=0.0)
         # iterate on all sub cases
-        subcases = df.unique(categories)
-        for subcase in subcases:  # TODO linearize this (precompute all subcases)? requires memory
-            subdf = df.select(**dict(zip(categories, subcase)))
-            victories += _make_winners_df(subdf, all_optimizers)
+        victories, total = aggregate_winners(df, categories, all_optimizers)
+        # subcases = df.unique(categories)
+        # for k, subcase in enumerate(subcases):  # TODO linearize this (precompute all subcases)? requires memory
+        #     # print(subcase)
+        #     subdf = df.select(**dict(zip(categories, subcase)))
+        #     victories += _make_winners_df(subdf, all_optimizers)
+        #     if k > 1000:
+        #         break
         winrates = _make_sorted_winrates_df(victories)
         mean_win = winrates.mean(axis=1)
         winrates.fillna(0.5)  # unplayed
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
-        sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), len(subcases)) for n in sorted_names]
+        sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, :len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
