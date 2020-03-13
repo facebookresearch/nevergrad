@@ -296,24 +296,26 @@ def small_ml(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "RealSpacePSO",
+    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "RealSpacePSO", "RealSpaceSqrtPSO",
               "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
     optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell", "Cobyla", "NGO", "Shiva", "TwoPointsSqrtDE", "CMASqrt"]
+
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
+    names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
+    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     # funcs
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, useless_variables=uv)
-        for name in ArtificialFunction.list_sorted_function_names()
+        ArtificialFunction(name, block_dimension=d, rotation=rotation)
+        for name in names
         for rotation in [True, False]
-        for num_blocks in [1, 2]
         for d in [2, 4, 8]
-        for uv in [d, 2 * d]
     ]
     budgets = [10, 50, 100, 200, 400]
     for optim in optims:
         for function in functions:
             for budget in budgets:
-                for nw in [1, 2, 8, 16, 32]:
+                for nw in [1, 2, 8, 16]:
                     if nw < budget / 4:
                         xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
