@@ -87,6 +87,9 @@ LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
 WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name(
     "WidePSO", register=True
 )  # non-standard init
+RealSpaceSqrtPSO = ConfiguredPSO(popsize="sqrt").set_name(
+    "RealSpaceSqrtPSO", register=True
+)  # non-standard init
 
 # EMNA
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)

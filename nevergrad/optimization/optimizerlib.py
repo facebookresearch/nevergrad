@@ -528,6 +528,7 @@ class PSO(base.Optimizer):
         num_workers: int = 1,
         transform: str = "arctan",
         wide: bool = False,  # legacy, to be removed if not needed anymore
+        popsize: tp.Optional[tp.Union[str, int]] = 40,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None and budget < 60:
@@ -540,7 +541,10 @@ class PSO(base.Optimizer):
         # eps is used for clipping to make sure it is admissible
         self._eps, self._transform = cases[transform]
         self._wide = wide
-        self.llambda = max(40, num_workers)
+        self.llambda = popsize if isinstance(popsize, int) else 100
+        if popsize == "sqrt" and budget is not None:
+            self.llambda = min(self.llambda, int(np.sqrt(budget)))
+        self.llambda = max(self.llambda, num_workers)
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
@@ -632,7 +636,7 @@ class PSO(base.Optimizer):
 class ConfiguredPSO(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
-    def __init__(self, transform: str = "identity", wide: bool = False) -> None:
+    def __init__(self, transform: str = "identity", wide: bool = False, popsize: tp.Union[int, str] = 40) -> None:
         super().__init__(PSO, locals())
 
 
