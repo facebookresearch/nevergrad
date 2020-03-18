@@ -113,7 +113,6 @@ class ParametersLogger:
                 f.write(json.dumps(data) + "\n")
         except Exception as e:  # pylint: disable=broad-except
             warnings.warn(f"Failing to json data: {e}")
-            raise e
 
     def load(self) -> tp.List[tp.Dict[str, tp.Any]]:
         """Loads data from the log file
