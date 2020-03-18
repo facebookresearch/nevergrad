@@ -820,7 +820,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     recombinable: tp.List[tp.Union[str, ConfiguredOptimizer]] = [
         ng.families.EvolutionStrategy(recombination_ratio=0.1, offsprings=200, popsize=40).set_name("ES"), "ParametrizationDE"
     ]
-    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", ]  # "RealSpacePSO", "OnePlusOne", "NaiveTBPSA", "CMA"]
+    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "RealSpacePSO", "OnePlusOne", "NaiveTBPSA", "CMA"]
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("structured")
     func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
