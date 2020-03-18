@@ -271,7 +271,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = utils.Point(x, self.archive[x])
                 if not (np.isnan(value) or value == np.inf):
-                    assert self.current_bests[name].x in self.archive, f"Best value should exist in the archive (num_tell={self.num_tell})"
+                    if not self.current_bests[name].x in self.archive:
+                        bval = self.current_bests[name].mean
+                        avals = (min(v.mean for v in self.archive.values()),
+                                 max(v.mean for v in self.archive.values()))
+                        raise RuntimeError(f"Best value should exist in the archive at num_tell={self.num_tell})\n"
+                                           f"Best value is {bval} and archive is within range {avals} for {name}")
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
