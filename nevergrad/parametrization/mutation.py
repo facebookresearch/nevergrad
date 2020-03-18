@@ -89,6 +89,28 @@ class Crossover(Mutation):
         return result
 
 
+class RavelCrossover(Crossover):
+    """Operator for merging part of an array into another one, after raveling
+
+    Parameters
+    ----------
+    max_size: None or int
+        maximum size of the part taken from the second array. By default, this is at most around half the number of total elements of the
+        array to the power of 1/number of axis.
+    """
+
+    def __init__(
+        self,
+        max_size: tp.Optional[int] = None,
+    ) -> None:
+        super().__init__(axis=0, max_size=max_size)
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+        shape = arrays[0].shape
+        out = super()._apply_array([a.ravel() for a in arrays])
+        return out.reshape(shape)
+
+
 def _make_slices(
     shape: tp.Tuple[int, ...],
     axes: tp.Tuple[int, ...],

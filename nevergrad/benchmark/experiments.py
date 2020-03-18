@@ -7,6 +7,7 @@ import typing as tp
 import itertools
 import numpy as np
 import nevergrad as ng
+from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
@@ -158,7 +159,8 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
+    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO",
+              "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -176,7 +178,8 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA", "NaiveIsoEMNATBPSA", "IsoEMNATBPSA","NaiveAnisoEMNATBPSA","AnisoEMNATBPSA"]
+    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA",
+              "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -244,7 +247,7 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False, noise: bool = False, hd: bool = False) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
@@ -809,3 +812,22 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
+
+
+@registry.register
+def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    recombinable: tp.List[tp.Union[str, ConfiguredOptimizer]] = [
+        ng.families.EvolutionStrategy(recombination_ratio=0.1, offsprings=200, popsize=40).set_name("ES"), "ParametrizationDE"
+    ]
+    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "RealSpacePSO", "OnePlusOne", "NaiveTBPSA", "CMA"]
+    func = Photonics("bragg", 80, bounding_method="clipping")
+    func.parametrization.set_name("structured")
+    func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
+    func_nostruct.parametrization.set_name("aligned").set_recombination(ng.p.mutation.RavelMutation())  # type: ignore
+    for budget in [1e3, 1e4, 1e5, 1e6]:
+        xpseed = next(seedg)
+        for algo in algos + recombinable:
+            yield Experiment(func, algo, int(budget), num_workers=1, seed=xpseed)
+        for algo in recombinable:
+            yield Experiment(func_nostruct, algo, int(budget), num_workers=1, seed=xpseed)
