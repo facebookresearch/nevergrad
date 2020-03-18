@@ -127,7 +127,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
 
 
 def _aggregate(df: pd.Series) -> str:
-    return ",".join(x for x in df if x)
+    return ",".join(x for x in df if isinstance(x, str) and x)
 
 
 def merge_parametrization_and_optimizer(df: tools.Selector) -> tools.Selector:
