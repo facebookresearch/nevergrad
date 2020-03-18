@@ -30,6 +30,17 @@ def convex_limit(points: np.ndarray) -> int:
     return k
 
 
+def hull_center(points: np.ndarray, k: int) -> np.ndarray:
+    d = len(points[0])
+    hull = ConvexHull(points[:k])
+    maxi = np.asarray(hull.vertices[0])
+    mini = np.asarray(hull.vertices[0])
+    for v in hull.vertices:
+        maxi = np.maximum(np.asarray(v), maxi)
+        mini = np.minimum(np.asarray(v), mini)
+    return 0.5 * (maxi + mini)
+
+
 def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
 
@@ -50,6 +61,7 @@ def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth"
         k = max(1, len(archive) // (2**dimension))
     elif method == "hull":
         k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
+        return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
     else:
         raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
     k = 1 if k < 1 else k
@@ -94,7 +106,7 @@ class _RandomSearch(OneShotOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autolog"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autolog", "autotune"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
         self.stupid = stupid
@@ -118,6 +130,8 @@ class _RandomSearch(OneShotOptimizer):
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension (1st version).
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if isinstance(scale, str) and scale == "autotune":
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
         if isinstance(scale, str) and scale == "autolog":
             # Some variants use a rescaling depending on the budget and the dimension (2nde version).
             if self.dimension - 4 * np.log(self.budget) > 1.: 
@@ -163,7 +177,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
          - "auto": scales in function of dimension and budget (version 1)
-         - "autolog": scales in function of dimension and budget (version 2)         
+         - "autolog": scales in function of dimension and budget (version 2)
+         - "autotune": scales in function of dimension and budget (version 3)
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
@@ -229,6 +244,7 @@ class _SamplingSearch(OneShotOptimizer):
             samplers = {"Halton": sequences.HaltonSampler,
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
+                        "Random":sequences.RandomSampler,
                         }
             internal_budget = (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
             self._sampler_instance = samplers[self._sampler](
@@ -255,11 +271,13 @@ class _SamplingSearch(OneShotOptimizer):
             sample = self._rescaler.apply(sample)
         if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if self.autorescale == "autotune":
+            self.scale = np.sqrt(np.log(self.budget) / self.dimension)
         if self.autorescale == "autolog":
             if self.dimension - 4 * np.log(self.budget) > 1.: 
-                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
+                self.scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
-                scale = 1.
+                self.scale = 1.
         self._opposable_data = self.scale * (
             stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
         assert self._opposable_data is not None
@@ -331,24 +349,35 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 
 # pylint: disable=line-too-long
-OAvgMetaLogRecentering = SamplingSearch(
+HOAvgMetaLogRecentering = SamplingSearch(
     cauchy=False, autorescale="autolog", 
     sampler="Hammersley", scrambled=True,
     recommendation_rule="average_of_hull_best",
     opposition_mode="opposite"
-).set_name("OAvgMetaLogRecentering", register=True)
+).set_name("HOAvgMetaLogRecentering", register=True)
 MetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
 MetaLogRecentering = SamplingSearch(
     cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
 ).set_name("MetaLogRecentering", register=True)
-AvgMetaRecentering = SamplingSearch(
+MetaTuneRecentering = SamplingSearch(
+    cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
+).set_name("MetaTuneRecentering", register=True)
+HAvgMetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("AvgMetaRecentering", register=True)
-AvgMetaLogRecentering = SamplingSearch(
+).set_name("HAvgMetaRecentering", register=True)
+HAvgMetaLogRecentering = SamplingSearch(
     cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("AvgMetaLogRecentering", register=True)
+).set_name("HAvgMetaLogRecentering", register=True)
+
+AvgMetaRecenteringNoHull = SamplingSearch(
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best"
+).set_name("AvgMetaRecenteringNoHull", register=True)
+AvgMetaLogRecenteringNoHull = SamplingSearch(
+    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best"
+).set_name("AvgMetaLogRecenteringNoHull", register=True)
+
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = SamplingSearch(scale=100.).set_name("LargeHaltonSearch", register=True)

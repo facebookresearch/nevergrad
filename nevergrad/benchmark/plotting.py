@@ -101,7 +101,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
         )
     err_inds = set(errordf.index)
     output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
-    assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
+    #assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
     output = tools.Selector(output.reset_index(drop=True))
     return output  # type: ignore
 
@@ -180,29 +180,32 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-            fplotter = FightPlotter(data_df)
-            # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
-            if order == 2 and competencemaps and best_algo:
-                print("\n#storing data for competence-map")
-                best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
-            # save
-            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-            name = "fight_all.png" if name == "fight_.png" else name
             try:
-                if name == "fight_all.png":
-                    with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                       f.write("ranking:\n")
-                       for i, algo in enumerate(data_df.columns[:8]):
-                           f.write(f"  algo {i}: {algo}\n")
-            except:
+                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+                fplotter = FightPlotter(data_df)
+                # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
+                if order == 2 and competencemaps and best_algo:
+                    print("\n#storing data for competence-map")
+                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+                # save
+                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+                name = "fight_all.png" if name == "fight_.png" else name
+                try:
+                    if name == "fight_all.png":
+                        with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                           f.write("ranking:\n")
+                           for i, algo in enumerate(data_df.columns[:8]):
+                               f.write(f"  algo {i}: {algo}\n")
+                except:
+                    pass
+                if len(name) > 40:
+                    hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
+                    name=re.sub(r'\([^()]*\)', '', name)
+                    mid = 40
+                    name = name[:mid] + hash + name[-mid:]
+                fplotter.save(str(output_folder / name), dpi=_DPI)
+            except:  # This is so dirty...
                 pass
-            if len(name) > 40:
-                hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
-                name=re.sub(r'\([^()]*\)', '', name)
-                mid = 40
-                name = name[:mid] + hash + name[-mid:]
-            fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
             print("\n# Competence map")
@@ -213,21 +216,25 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int = 
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
-    print("# Xp plots")
-    name_style = NameStyle()  # keep the same style for each algorithm
-    cases = df.unique(descriptors)
-    if not cases:
-        cases = [()]
-    for case in cases:
-        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        if len(description) > 80:
-            hash = hashlib.md5(bytes(description, 'utf8')).hexdigest()
-            description = description[:40] + hash + description[-40:]
-        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-        data = XpPlotter.make_data(subdf)
-        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-        xpplotter.save(out_filepath)
+    if max_combsize == 0:
+        print("# Xp plots")
+        name_style = NameStyle()  # keep the same style for each algorithm
+        cases = df.unique(descriptors)
+        if not cases:
+            cases = [()]
+        for case in cases:
+            subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+            description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+            if len(description) > 80:
+                hash = hashlib.md5(bytes(description, 'utf8')).hexdigest()
+                description = description[:40] + hash + description[-40:]
+            out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+            try:
+               data = XpPlotter.make_data(subdf)
+               xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+               xpplotter.save(out_filepath)
+            except:  # so dirty again...
+               pass
     plt.close("all")
 
 

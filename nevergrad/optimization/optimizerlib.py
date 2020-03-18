@@ -824,8 +824,6 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
         progressive: bool = False
     ) -> None:
-        if progressive:  # The progressive setting is typically for noisy optimization, hence we switch to a noisy optimizer.
-            multivariate_optimizer = OptimisticNoisyOnePlusOne
         super().__init__(SplitOptimizer, locals())
 
 
