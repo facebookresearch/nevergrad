@@ -158,7 +158,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE"]
+    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -176,7 +176,7 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA"]
+    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA", "NaiveIsoEMNATBPSA", "IsoEMNATBPSA","NaiveAnisoEMNATBPSA","AnisoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -302,6 +302,7 @@ def yasmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
+
 @registry.register
 def yahdbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
@@ -330,8 +331,8 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
-#@registry.register
-#def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+# @registry.register
+# def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
 #    seedg = create_seed_generator(seed)
 #    names = ["sphere", "rastrigin", "cigar"]
@@ -565,7 +566,8 @@ def fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiva", "DiagonalCMA",
              "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-             "OptimisticNoisyOnePlusOne"]
+             "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -793,18 +795,16 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
-    popsizes = [40, 100]
-    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
-          for recomb in [0.1, 1] for pop in popsizes]
-    es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
-                                         offsprings={40: 60, 100: 150}[pop])
-           for only in [True, False] for recomb in [0.1, 1] for pop in popsizes]
+    popsizes = [20, 40, 80]
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
+                                        offsprings=pop * 5)
+          for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
     algos = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA",
-        "SplitOptimizer5", "Shiva", "NGO", "MultiCMA", "CMandAS2", "SplitOptimizer13"] + es  # type: ignore
-    for method in ["clipping", "tanh", "arctan"]:
-        # , "chirped"]]:  # , "morpho"]]:
-        for func in [Photonics(x, 60 if x == "morpho" else 80, bounding_method=method) for x in ["bragg"]]:
-            for budget in [1e2, 1e3, 1e4, 1e5, 1e6]:
+             "SplitOptimizer5", "Shiva", "NGO", "MultiCMA", "CMandAS2", "SplitOptimizer13"] + es  # type: ignore
+    for method in ["clipping", "tanh"]:  # , "arctan"]:
+        for name in ["bragg", "chirped", "morpho"]:
+            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method)
+            for budget in [1e3, 1e4, 1e5, 1e6]:
                 for algo in algos:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
