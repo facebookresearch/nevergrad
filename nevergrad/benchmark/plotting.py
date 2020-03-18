@@ -140,7 +140,7 @@ def merge_parametrization_and_optimizer(df: tools.Selector) -> tools.Selector:
     return df.drop(columns=pkey)  # type: ignore
 
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements,too-many-branches
 def create_plots(
     df: pd.DataFrame,
     output_folder: PathLike,
@@ -192,7 +192,7 @@ def create_plots(
         max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         orders = [len(c) for c in df.unique(fixed)]
-        if len(orders):
+        if orders:
             assert min(orders) == max(orders)
             order = min(orders)
         else:
@@ -631,8 +631,11 @@ def main() -> None:
     )
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
     parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
+    parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
+    if args.merge_parametrization:
+        exp_df = merge_parametrization_and_optimizer(exp_df)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
