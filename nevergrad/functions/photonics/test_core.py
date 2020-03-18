@@ -56,6 +56,7 @@ def test_morpho_bounding_method_constraints() -> None:
 
 def test_photonics_recombination() -> None:
     func = core.Photonics("morpho", 16)
+    func.parametrization.set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     func.parametrization.random_state.seed(24)
     arrays: tp.List[ng.p.Array] = []
     for num in [50, 71]:

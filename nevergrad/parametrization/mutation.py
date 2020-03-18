@@ -110,6 +110,9 @@ class RavelCrossover(Crossover):
         out = super()._apply_array([a.ravel() for a in arrays])
         return out.reshape(shape)
 
+    def _internal_spawn_child(self) -> "RavelCrossover":
+        return RavelCrossover(max_size=self.parameters["max_size"])  # type: ignore
+
 
 def _make_slices(
     shape: tp.Tuple[int, ...],
