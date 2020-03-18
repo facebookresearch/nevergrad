@@ -129,6 +129,7 @@ class CommandFunction:
         with subprocess.Popen(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               shell=False, cwd=self.cwd, env=self.env) as process:
             try:
+                assert process.stdout is not None
                 for line in iter(process.stdout.readline, b''):
                     if not line:
                         break
