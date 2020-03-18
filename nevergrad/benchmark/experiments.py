@@ -825,7 +825,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     func.parametrization.set_name("structured")
     func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
     func_nostruct.parametrization.set_name("aligned").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
-    for budget in [1e2, 1e3]:  # , 1e4, 1e5, 1e6]:
+    for budget in [1e3, 1e4, 1e5, 1e6]:
         xpseed = next(seedg)
         for algo in algos + recombinable:
             yield Experiment(func, algo, int(budget), num_workers=1, seed=xpseed)
