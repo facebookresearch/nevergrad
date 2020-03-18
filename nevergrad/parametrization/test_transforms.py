@@ -35,8 +35,6 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     tanh=(transforms.TanhBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     arctan=(transforms.ArctanBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     cumdensity=(transforms.CumulativeDensity(), [-10, 0, 10], [0, .5, 1]),
-
-
 )
 def test_vals(transform: transforms.Transform, x: List[float], expected: List[float]) -> None:
     y = transform.forward(np.array(x))
