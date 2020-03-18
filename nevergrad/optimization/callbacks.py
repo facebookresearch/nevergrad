@@ -103,7 +103,7 @@ class ParametersLogger:
         for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
             val = param.value
             if inspect.ismethod(val):
-                val = repr(val.__self__)
+                val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
             if isinstance(param, p.Array):
                 val = param.sigma.value
