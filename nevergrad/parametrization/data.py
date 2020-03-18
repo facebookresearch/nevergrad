@@ -15,6 +15,7 @@ from . import transforms as trans
 
 BoundValue = tp.Optional[tp.Union[float, int, np.int, np.float, np.ndarray]]
 A = tp.TypeVar("A", bound="Array")
+P = tp.TypeVar("P", bound=core.Parameter)
 
 
 class BoundChecker:
@@ -54,6 +55,44 @@ class BoundChecker:
                 if np.any((value > bound) if k else (value < bound)):
                     return False
         return True
+
+
+class Mutation(core.Parameter):
+    """Custom mutation or recombination
+    This is an experimental API
+
+    Either implement:
+    - `_apply_array`  which provides a new np.ndarray from a list of arrays
+    - `apply` which updates the first p.Array instance
+
+    Mutation should take only one p.Array instance as argument, while
+    Recombinations should take several
+    """
+
+    @property
+    def value(self) -> tp.Callable[[tp.Sequence["Array"]], None]:
+        return self.apply
+
+    @value.setter
+    def value(self, value: tp.Any) -> None:  # pylint: disable=unused-argument
+        raise RuntimeError("Mutation cannot be set.")
+
+    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+        new_value = self._apply_array([a._value for a in arrays])
+        arrays[0]._value = new_value
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:  # pylint: disable=unused-argument
+        raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
+        return np.array([])  # pylint: disable=unreachable
+
+    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
+        return np.array([])
+
+    # pylint: disable=unused-argument
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+        if np.array(data, copy=False).size:
+            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
+        return self
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
@@ -235,7 +274,7 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
-    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter, utils.Crossover]) -> A:
+    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter]) -> A:
         assert self._parameters is not None
         self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
                                                       else core.Constant(recombination))
@@ -253,10 +292,12 @@ class Array(core.Parameter):
                 self.set_standardized_data(func(size=self.dimension), deterministic=False)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
-        elif isinstance(mutation, utils.Mutation):
+        elif isinstance(mutation, Mutation):
             mutation.apply([self])
+        elif callable(mutation):
+            mutation([self])
         else:
-            raise TypeError("Mutation must be a string or a Mutation instance")
+            raise TypeError("Mutation must be a string, a callable or a Mutation instance")
 
     def set_mutation(
         self: A,
@@ -364,8 +405,10 @@ class Array(core.Parameter):
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
-        elif isinstance(recomb, utils.Crossover):
+        elif isinstance(recomb, Mutation):
             recomb.apply(all_params)
+        elif callable(recomb):
+            recomb(all_params)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
