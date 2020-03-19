@@ -67,6 +67,18 @@ def test_photonics_recombination() -> None:
     np.testing.assert_array_equal(arrays[0].value, np.ones((4, 1)).dot(np.array(expected)[None, :]))
 
 
+def test_photonics_bragg_recombination() -> None:
+    func = core.Photonics("bragg", 8)
+    # func.parametrization.set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
+    func.parametrization.random_state.seed(24)
+    arrays = [func.parametrization.spawn_child() for _ in range(2)]
+    arrays[0].value = [[2, 2, 2, 2], [35, 35, 35, 35]]
+    arrays[1].value = [[3, 3, 3, 3], [45, 45, 45, 45]]
+    arrays[0].recombine(arrays[1])
+    expected = [[3, 2, 2, 2], [45, 35, 35, 35]]
+    np.testing.assert_array_equal(arrays[0].value, expected)
+
+
 def test_photonics_custom_mutation() -> None:
     func = core.Photonics("morpho", 16, rolling=True)
     param = func.parametrization.spawn_child()
