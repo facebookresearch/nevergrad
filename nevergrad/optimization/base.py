@@ -262,6 +262,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self.archive[x].add_evaluation(value)
         # update current best records
         # this may have to be improved if we want to keep more kinds of best values
+
         for name in ["optimistic", "pessimistic", "average"]:
             if np.array_equal(x, self.current_bests[name].x):  # reboot
                 y: bytes = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))  # type: ignore
@@ -272,9 +273,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     self.current_bests[name] = utils.Point(x, self.archive[x])
                 if not (np.isnan(value) or value == np.inf):
                     if not self.current_bests[name].x in self.archive:
-                        bval = self.current_bests[name].mean
-                        avals = (min(v.mean for v in self.archive.values()),
-                                 max(v.mean for v in self.archive.values()))
+                        bval = self.current_bests[name].get_estimation(name)
+                        avals = (min(v.get_estimation(name) for v in self.archive.values()),
+                                 max(v.get_estimation(name) for v in self.archive.values()))
                         raise RuntimeError(f"Best value should exist in the archive at num_tell={self.num_tell})\n"
                                            f"Best value is {bval} and archive is within range {avals} for {name}")
         if self.pruning is not None:
