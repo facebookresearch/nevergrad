@@ -237,6 +237,44 @@ def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 @registry.register
+def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
+    #optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("eta" in x or "Avg" in x))    # TODO
+    #optims.reverse()
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [2000, 20000]     #3, 10, 25, 200, 2000]
+        for uv_factor in [0]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000, 10000, 30000, 100000, 300000]:
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+@registry.register
+def newnewdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "eta" in x) and "mmers" not in x and "alto" not in x and "Avg" not in x)
+    #optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("eta" in x or "Avg" in x))    # TODO
+    #optims.reverse()
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [2000, 20000]     #3, 10, 25, 200, 2000]
+        for uv_factor in [0]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000, 10000, 30000, 100000, 300000]:
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+@registry.register
 def minidoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
     seedg = create_seed_generator(seed)
