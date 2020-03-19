@@ -269,7 +269,8 @@ class Pruning:
         threshold = float(self.min_len) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
-            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="nearest")
+            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
+        print(quantiles)
         new_archive = Archive[Value]()
         new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
         return new_archive
