@@ -195,3 +195,16 @@ class OptimizerDump:
 
     def __call__(self, opt: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
         opt.dump(self._filepath)
+
+
+class ProgressBar:
+    """Progress bar to register as callback in an optimizer
+    """
+
+    def __init__(self) -> None:
+        from tqdm import tqdm  # Inline import to avoid additional dependency
+        self.progress_bar = tqdm()
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        self.progress_bar.total = optimizer.budget
+        self.progress_bar.update(1)
