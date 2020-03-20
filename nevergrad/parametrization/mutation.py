@@ -180,11 +180,14 @@ class Jumping(Mutation):
         asdata = AxisSlicedArray(data, self.axis)
         init = self.random_state.randint(L)
         chunck = asdata[init: init + size]
+        print(chunck)
         remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size:]], axis=self.axis)
         # pylint: disable=unsubscriptable-object
         newpos = self.random_state.randint(remain.shape[self.axis])
+        print(L, init, newpos)
         asremain = AxisSlicedArray(remain, self.axis)
-        return np.concatenate([asremain[:newpos], chunck, asremain[newpos:]])  # type: ignore
+        print([x.shape for x in [data, chunck, asremain[:newpos], asremain[newpos:]]])
+        return np.concatenate([asremain[:newpos], chunck, asremain[newpos:]], axis=self.axis)  # type: ignore
 
 
 class LocalGaussian(Mutation):
