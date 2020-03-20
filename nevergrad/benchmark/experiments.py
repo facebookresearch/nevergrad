@@ -831,3 +831,28 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             yield Experiment(func, algo, int(budget), num_workers=1, seed=xpseed)
         for algo in recombinable:
             yield Experiment(func_nostruct, algo, int(budget), num_workers=1, seed=xpseed)
+
+
+@registry.register
+def bragg_structure_focus(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    recombinable: tp.List[tp.Union[str, ConfiguredOptimizer]] = [
+        ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=100).set_name("ES"), "ParametrizationDE"
+    ]
+    func = Photonics("bragg", 80, bounding_method="clipping")
+    func.parametrization.set_name("struct")
+    #
+    func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
+    func_nostruct.parametrization.set_name("non-struct").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
+    #
+    func_mix = Photonics("bragg", 80, bounding_method="clipping")
+    param = func_mix.parametrization
+    param.set_name("mix")
+    param.set_recombination(ng.p.Choice([ng.p.mutation.Crossover(axis=1), ng.p.mutation.RavelCrossover()]))  # type: ignore
+    param.set_mutation(custom=ng.p.Choice(["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1)]))  # type: ignore
+    #
+    for budget in [1e3, 1e4, 1e5, 1e6]:
+        xpseed = next(seedg)
+        for f in [func, func_nostruct, func_mix]:
+            for algo in recombinable:
+                yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
