@@ -818,9 +818,11 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     recombinable: tp.List[tp.Union[str, ConfiguredOptimizer]] = [
-        ng.families.EvolutionStrategy(recombination_ratio=0.1, offsprings=200, popsize=40).set_name("ES"), "ParametrizationDE"
+        ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=40).set_name("DES"),
+        ng.families.DifferentialEvolution(crossover="parametrization").set_name("Parametrization-DE")
     ]
-    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "RealSpacePSO", "OnePlusOne", "NaiveTBPSA", "CMA"]
+    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA"]
+    algos += [ng.optimizers.ConfiguredPSO().set_name("PSO"), ng.optimizers.ParametrizedOnePlusOne().set_name("1+1")]
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("structured")
     #
