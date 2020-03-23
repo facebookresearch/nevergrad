@@ -468,6 +468,14 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     naive: bool
         set to False for noisy problem, so that the best points will be an
         average of the final population.
+    
+    Note
+    ----
+    Derived from:
+    Hellwig, Michael & Beyer, Hans-Georg. (2016).
+    Evolution under Strong Noise: A Self-Adaptive Evolution Strategy
+    Reaches the Lower Performance Bound -- the pcCMSA-ES. 
+    https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf
     """
 
     # pylint: disable=unused-argument
