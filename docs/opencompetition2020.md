@@ -48,7 +48,7 @@ Nevergrad requires a CLA for contributors (see in the "Contributing to Nevergad"
 Documentations of your submissions can also be submitted for publication in the **GECCO companion materials**. 
 For all details, please check [https://gecco-2020.sigevo.org/index.html/Workshops](https://gecco-2020.sigevo.org/index.html/Workshops)
 Note that the page limit is **2 pages in ACM format**, including references
-Submission deadline: April 3, 2020
+Submission deadline: April 17, 2020
 Make sure to select the Open Optimization Competition 2020 as track when you submit your paper. 
 
 ## Dates
