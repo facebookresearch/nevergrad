@@ -121,7 +121,7 @@ class Array(core.Parameter):
             shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
-        sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
+        sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
@@ -274,7 +274,7 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
-    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter]) -> A:
+    def set_recombination(self: A, recombination: tp.Union[None, str, core.Parameter]) -> A:
         assert self._parameters is not None
         self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
                                                       else core.Constant(recombination))
@@ -301,7 +301,7 @@ class Array(core.Parameter):
 
     def set_mutation(
         self: A,
-        sigma: tp.Optional[tp.Union[float, "Array"]] = None,
+        sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
         custom: tp.Optional[tp.Union[str, core.Parameter]] = None
     ) -> A:
@@ -401,6 +401,8 @@ class Array(core.Parameter):
         if not others:
             return
         recomb = self.parameters["recombination"].value
+        if recomb is None:
+            return
         all_params = [self] + list(others)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
