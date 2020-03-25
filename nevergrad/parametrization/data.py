@@ -69,6 +69,13 @@ class Mutation(core.Parameter):
     Recombinations should take several
     """
 
+    order = -1
+
+    def __init__(self, **kwargs: tp.Any):
+        if self.order < 1:
+            raise RuntimeError("Mutation order should have been specified in the implementation")
+        super().__init__(**kwargs)
+
     @property
     def value(self) -> tp.Callable[[tp.Sequence["Array"]], None]:
         return self.apply
@@ -78,6 +85,11 @@ class Mutation(core.Parameter):
         raise RuntimeError("Mutation cannot be set.")
 
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
+        if len(arrays) != self.order:
+            raise Exception(f"{self.__class__.__name__} can only be applied between {self.order} individuals")
+        return self._apply(arrays)
+
+    def _apply(self, arrays: tp.Sequence["Array"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 

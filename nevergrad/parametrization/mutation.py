@@ -44,6 +44,8 @@ class Crossover(Mutation):
       0 1 1 0
     """
 
+    order = 2
+
     def __init__(
         self,
         axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
@@ -58,7 +60,7 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+    def _apply(self, arrays: tp.Sequence["Array"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         bounds = arrays[0].bounds
         if self.parameters["fft"].value and any(x is not None for x in bounds):
@@ -67,8 +69,6 @@ class Crossover(Mutation):
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         # checks
-        if len(arrays) != 2:
-            raise Exception("Crossover can only be applied between 2 individuals")
         transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
         if transf is not None:
             arrays = [transf.forward(a) for a in arrays]
@@ -98,6 +98,8 @@ class RavelCrossover(Crossover):
         maximum size of the part taken from the second array. By default, this is at most around half the number of total elements of the
         array to the power of 1/number of axis.
     """
+
+    order = 2
 
     def __init__(
         self,
@@ -134,6 +136,8 @@ def _make_slices(
 
 class Translation(Mutation):
 
+    order = 1
+
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
@@ -144,7 +148,6 @@ class Translation(Mutation):
         return self.parameters["axis"].value  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        assert len(arrays) == 1
         data = arrays[0]
         axis = tuple(range(data.dim)) if self.axis is None else self.axis
         shifts = [self.random_state.randint(data.shape[a]) for a in axis]
@@ -152,6 +155,8 @@ class Translation(Mutation):
 
 
 class AxisSlicedArray:
+
+    order = 2
 
     def __init__(self, array: np.ndarray, axis: int):
         self.array = array
@@ -167,6 +172,8 @@ class Jumping(Mutation):
     """Move a chunk for a position to another in an array
     """
 
+    order = 1
+
     def __init__(self, axis: int):
         super().__init__(axis=axis)
 
@@ -175,7 +182,6 @@ class Jumping(Mutation):
         return self.parameters["axis"].value  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        assert len(arrays) == 1
         data = arrays[0]
         L = data.shape[self.axis]
         size = self.random_state.randint(1, 5)
@@ -191,6 +197,8 @@ class Jumping(Mutation):
 
 class LocalGaussian(Mutation):
 
+    order = 1
+
     def __init__(self, size: tp.Union[int, core.Parameter], axes: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
         if not isinstance(axes, core.Parameter):
             axes = (axes,) if isinstance(axes, int) else tuple(axes) if axes is not None else None
@@ -200,9 +208,8 @@ class LocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def _apply(self, arrays: tp.Sequence[Array]) -> None:
         arrays = list(arrays)
-        assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
         # settings
         axis = tuple(range(len(data.shape))) if self.axes is None else self.axes
@@ -216,6 +223,8 @@ class LocalGaussian(Mutation):
 
 class ProbaLocalGaussian(Mutation):
 
+    order = 1
+
     def __init__(self, axis: int, shape: tp.Sequence[int]):
         assert isinstance(axis, int)
         self.shape = tuple(shape)
@@ -228,9 +237,8 @@ class ProbaLocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def _apply(self, arrays: tp.Sequence[Array]) -> None:
         arrays = list(arrays)
-        assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
         # settings
         length = self.shape[self.axis]
@@ -263,6 +271,8 @@ def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
 
 class TunedTranslation(Mutation):
 
+    order = 1
+
     def __init__(self, axis: int, shape: tp.Sequence[int]):
         assert isinstance(axis, int)
         self.shape = tuple(shape)
@@ -274,7 +284,6 @@ class TunedTranslation(Mutation):
         return self.parameters["shift"]  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        assert len(arrays) == 1
         data = arrays[0]
         assert data.shape == self.shape
         shift = self.shift.value
