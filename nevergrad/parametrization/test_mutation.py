@@ -24,6 +24,16 @@ def test_crossover(fft: bool, expected: tp.List[int]) -> None:
     np.testing.assert_array_equal(out, expected)
 
 
+def test_ravel_crossover() -> None:
+    x1 = 4 * np.ones((2, 4))
+    x2 = 5 * np.ones((2, 4))
+    co = mutation.RavelCrossover().spawn_child()
+    co.random_state.seed(12)
+    out = co._apply_array((x1, x2))
+    expected = [[4, 5, 5, 5], [4, 4, 4, 4]]
+    np.testing.assert_array_equal(out, expected)
+
+
 def test_local_gaussian() -> None:
     init = 4.0 * np.ones((2, 4))
     x = Array(init=np.array(init))
@@ -54,6 +64,16 @@ def test_translation() -> None:
     expected = np.array([1, 2, 3, 0])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
     assert repr(roll) == "Translation[axis=(0,)]"
+
+
+def test_jump() -> None:
+    x = np.arange(6)[:, None].dot(np.ones((1, 2)))
+    jump = mutation.Jumping(0)
+    jump.random_state.seed(38)
+    out = jump._apply_array([x])
+    expected = np.array([0, 3, 4, 1, 2, 5])[:, None].dot(np.ones((1, 2)))
+    np.testing.assert_array_equal(out, expected)
+    assert repr(jump) == "Jumping[axis=0]"
 
 
 def test_tuned_translation() -> None:

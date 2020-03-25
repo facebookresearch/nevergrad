@@ -9,7 +9,6 @@ import warnings
 import typing as tp
 import pytest
 import numpy as np
-import nevergrad as ng
 from nevergrad.common import testing
 from . import core
 
@@ -54,16 +53,16 @@ def test_morpho_bounding_method_constraints() -> None:
         assert np.all(output.value[2, :] >= 30)
 
 
-def test_photonics_recombination() -> None:
-    func = core.Photonics("morpho", 16)
+def test_photonics_bragg_recombination() -> None:
+    func = core.Photonics("bragg", 8)
+    # func.parametrization.set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     func.parametrization.random_state.seed(24)
-    arrays: tp.List[ng.p.Array] = []
-    for num in [50, 71]:
-        arrays.append(func.parametrization.spawn_child())  # type: ignore
-        arrays[-1].value = num * np.ones(arrays[0].value.shape)
+    arrays = [func.parametrization.spawn_child() for _ in range(2)]
+    arrays[0].value = [[2, 2, 2, 2], [35, 35, 35, 35]]
+    arrays[1].value = [[3, 3, 3, 3], [45, 45, 45, 45]]
     arrays[0].recombine(arrays[1])
-    expected = [71, 50, 50, 50]
-    np.testing.assert_array_equal(arrays[0].value, np.ones((4, 1)).dot(np.array(expected)[None, :]))
+    expected = [[3, 2, 2, 2], [45, 35, 35, 35]]
+    np.testing.assert_array_equal(arrays[0].value, expected)
 
 
 def test_photonics_custom_mutation() -> None:

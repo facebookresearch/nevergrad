@@ -5,6 +5,7 @@
 
 import hashlib
 import os
+import re
 import argparse
 import itertools
 from pathlib import Path
@@ -12,7 +13,6 @@ import typing as tp
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
-import re
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
@@ -126,7 +126,28 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1, xpaxis: str="budget", competencemaps: bool=False) -> None:
+def _aggregate(df: pd.Series) -> str:
+    return ",".join(x for x in df if isinstance(x, str) and x)
+
+
+def merge_parametrization_and_optimizer(df: tools.Selector) -> tools.Selector:
+    okey, pkey = "optimizer_name", "parametrization"
+    if len(df.unique(pkey)) > 1:
+        for optim in df.unique(okey):
+            inds = df.loc[:, okey] == optim
+            if len(df.loc[inds, :].unique(pkey)) > 1:
+                df.loc[inds, okey] = df.loc[inds, [okey, pkey]].agg(_aggregate, axis=1)
+    return df.drop(columns=pkey)  # type: ignore
+
+
+# pylint: disable=too-many-statements,too-many-branches
+def create_plots(
+    df: pd.DataFrame,
+    output_folder: PathLike,
+    max_combsize: int = 1,
+    xpaxis: str = "budget",
+    competencemaps: bool = False
+) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -171,7 +192,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1,
         max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         orders = [len(c) for c in df.unique(fixed)]
-        if len(orders):
+        if orders:
             assert min(orders) == max(orders)
             order = min(orders)
         else:
@@ -218,10 +239,10 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1,
             except:
                 pass
             if len(name) > 80:
-                hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
+                hash_ = hashlib.md5(bytes(name, 'utf8')).hexdigest()
                 name = re.sub(r'\([^()]*\)', '', name)
                 mid = len(name) // 2
-                name = name[:mid] + hash + name[mid:]
+                name = name[:mid] + hash_ + name[mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
@@ -242,8 +263,8 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1,
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         if len(description) > 80:
-            hash = hashlib.md5(bytes(description, 'utf8')).hexdigest()
-            description = description[:40] + hash + description[-40:]
+            hash_ = hashlib.md5(bytes(description, 'utf8')).hexdigest()
+            description = description[:40] + hash_ + description[-40:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
         xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
@@ -278,7 +299,7 @@ class XpPlotter:
     """
 
     def __init__(
-        self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str, name_style: Optional[Dict[str, Any]]=None, xaxis: str="budget"
+        self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str, name_style: Optional[Dict[str, Any]] = None, xaxis: str = "budget"
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
@@ -333,7 +354,7 @@ class XpPlotter:
         # self._fig.tight_layout()
 
     @staticmethod
-    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool=False) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
         conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
         if not log:
@@ -464,7 +485,7 @@ class FightPlotter:
         plt.tight_layout()
 
     @staticmethod
-    def winrates_from_selection(df: tools.Selector, categories: List[str], num_rows: int=5) -> pd.DataFrame:
+    def winrates_from_selection(df: tools.Selector, categories: List[str], num_rows: int = 5) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
 
@@ -610,8 +631,11 @@ def main() -> None:
     )
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
     parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
+    parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
+    if args.merge_parametrization:
+        exp_df = merge_parametrization_and_optimizer(exp_df)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
