@@ -8,6 +8,7 @@ import typing as tp
 import numpy as np
 from nevergrad.common.tools import OrderedSet
 from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
 
 
 class Value:
@@ -90,13 +91,13 @@ class Point(Value):
         the value estimation instance
     """
 
-    def __init__(self, x: ArrayLike, value: Value) -> None:
+    def __init__(self, parameter: p.Parameter, value: Value, reference: p.Parameter) -> None:
         assert isinstance(value, Value)
         super().__init__(value.mean)
         self.__dict__.update(value.__dict__)
-        assert not isinstance(x, (str, bytes))
-        self.x = np.array(x, copy=True)  # copy to avoid interfering with algorithms
-        self.x.flags.writeable = False  # make sure it is not modified!
+        self.parameter = parameter
+        self.parameter.freeze()
+        self.x = self.parameter.get_standardized_data(reference=reference)  # legacy
 
     def __repr__(self) -> str:
         return "Point<x: {}, mean: {}, count: {}>".format(self.x, self.mean, self.count)

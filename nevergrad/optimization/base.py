@@ -104,7 +104,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
-            x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf)) for x in ["optimistic", "pessimistic", "average"]
+            x: utils.Point(
+                self.parametrization.spawn_child(),
+                utils.Value(np.inf),
+                self.parametrization
+            ) for x in ["optimistic", "pessimistic", "average"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
@@ -241,8 +245,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self._update_archive_and_bests(data, value)
+        self._update_archive_and_bests(candidate, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
             self._asked.remove(candidate.uid)
@@ -251,7 +254,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
+    def _update_archive_and_bests(self, candidate: p.Parameter, value: float) -> None:
+        x = candidate.get_standardized_data(reference=self.parametrization)
         if not isinstance(value, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
