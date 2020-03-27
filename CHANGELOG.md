@@ -2,7 +2,8 @@
 
 ## master
 
-- Archive now stores the best corresponding candidate. This requires twice the memory compared to before the change.
+- `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
+- `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
 
 ## v0.4.0 (2019-03-09)
 
