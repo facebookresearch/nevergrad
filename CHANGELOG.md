@@ -2,6 +2,8 @@
 
 ## master
 
+- Archive now stores the best corresponding candidate. This requires twice the memory compared to before the change.
+
 ## v0.4.0 (2019-03-09)
 
 ### Breaking and important changes

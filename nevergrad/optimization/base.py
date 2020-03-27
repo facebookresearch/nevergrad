@@ -24,6 +24,7 @@ _OptimCallBack = Union[Callable[["Optimizer", "p.Parameter", float], None], Call
 X = TypeVar("X", bound="Optimizer")
 Y = TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
+_PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
 
 
 def load(cls: Type[X], filepath: Union[str, Path]) -> X:
@@ -102,13 +103,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError("No variable to optimize in this parametrization.")
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive: utils.Archive[utils.MultiValue] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
-            x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf)) for x in ["optimistic", "pessimistic", "average"]
+            x: utils.MultiValue(self.parametrization, np.inf) for x in ["optimistic", "pessimistic", "average"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
-        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = utils.Pruning.sensible_default(
+        self.pruning: tp.Optional[_PruningCallable] = utils.Pruning.sensible_default(
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
         # instance state
@@ -237,12 +238,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
                 "if you want to inoculate a point that as not been asked for"
             )
+        candidate.loss = value
         candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self._update_archive_and_bests(data, value)
+        self._update_archive_and_bests(candidate, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
             self._asked.remove(candidate.uid)
@@ -251,33 +252,40 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
+    def _update_archive_and_bests(self, candidate: p.Parameter, value: float) -> None:
+        x = candidate.get_standardized_data(reference=self.parametrization)
         if not isinstance(value, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
             warnings.warn(f"Updating fitness with {value} value")
+        mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
-            self.archive[x] = utils.Value(value)  # better not to stock the position as a Point (memory)
+            self.archive[x] = utils.MultiValue(candidate, value)  # better not to stock the position as a Point (memory)
         else:
-            self.archive[x].add_evaluation(value)
+            mvalue = self.archive[x]
+            mvalue.add_evaluation(value)
+            # both parameters should be non-None
+            if mvalue.parameter.loss > candidate.loss:  # type: ignore
+                mvalue.parameter = candidate   # keep best candidate
         # update current best records
         # this may have to be improved if we want to keep more kinds of best values
 
         for name in ["optimistic", "pessimistic", "average"]:
-            if np.array_equal(x, self.current_bests[name].x):  # reboot
-                y: bytes = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))  # type: ignore
+            if mvalue is self.current_bests[name]:  # reboot
+                best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
                 # rebuild best point may change, and which value did not track the updated value anyway
-                self.current_bests[name] = utils.Point(np.frombuffer(y), self.archive.bytesdict[y])
+                self.current_bests[name] = best
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
-                    self.current_bests[name] = utils.Point(x, self.archive[x])
-                if not (np.isnan(value) or value == np.inf):
-                    if not self.current_bests[name].x in self.archive:
-                        bval = self.current_bests[name].get_estimation(name)
-                        avals = (min(v.get_estimation(name) for v in self.archive.values()),
-                                 max(v.get_estimation(name) for v in self.archive.values()))
-                        raise RuntimeError(f"Best value should exist in the archive at num_tell={self.num_tell})\n"
-                                           f"Best value is {bval} and archive is within range {avals} for {name}")
+                    self.current_bests[name] = self.archive[x]
+                # deactivated checks
+                # if not (np.isnan(value) or value == np.inf):
+                #     if not self.current_bests[name].x in self.archive:
+                #         bval = self.current_bests[name].get_estimation(name)
+                #         avals = (min(v.get_estimation(name) for v in self.archive.values()),
+                #                  max(v.get_estimation(name) for v in self.archive.values()))
+                #         raise RuntimeError(f"Best value should exist in the archive at num_tell={self.num_tell})\n"
+                #                            f"Best value is {bval} and archive is within range {avals} for {name}")
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
