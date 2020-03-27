@@ -47,7 +47,7 @@ def test_run_with_array(name: str) -> None:
     all_4=(4, 0.5),
 )
 def test_get_roulette(num: int, expected: str) -> None:
-    param = np.p.Scalar(init=12.0)
+    param = ng.p.Scalar(init=12.0)
     rng = np.random.RandomState(24)
     archive = utils.Archive[utils.MultiValue]()
     for k in range(4):

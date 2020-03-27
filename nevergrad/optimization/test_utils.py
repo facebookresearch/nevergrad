@@ -13,7 +13,7 @@ from . import utils
 
 
 def test_value_and_point() -> None:
-    param = np.p.Scalar(init=12.0)
+    param = ng.p.Scalar(init=12.0)
     v = utils.MultiValue(param, 4, reference=param)
     np.testing.assert_equal(v.count, 1)
     v.add_evaluation(3)
@@ -84,7 +84,7 @@ def test_archive_errors() -> None:
 
 
 def test_pruning() -> None:
-    param = np.p.Scalar(init=12.0)
+    param = ng.p.Scalar(init=12.0)
     archive = utils.Archive[utils.MultiValue]()
     for k in range(3):
         value = utils.MultiValue(param, float(k), reference=param)
@@ -105,7 +105,7 @@ def test_pruning() -> None:
 @pytest.mark.parametrize("nw,dimension,expected_min,expected_max", [  # type: ignore
     (12, 8, 100, 1000),
     (24, 8, 168, 1680),
-    (24, 200000, 168, 671),
+    (24, 100000, 168, 671),
     (24, 1000000, 168, 504),
 ])
 def test_pruning_sensible_default(nw: int, dimension: int, expected_min: int, expected_max: int) -> None:
