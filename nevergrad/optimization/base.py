@@ -105,7 +105,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # keep a record of evaluations, and current bests which are updated at each new evaluation
         self.archive: utils.Archive[utils.MultiValue] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
-            x: utils.MultiValue(self.parametrization, np.inf) for x in ["optimistic", "pessimistic", "average"]
+            x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
+            for x in ["optimistic", "pessimistic", "average"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
@@ -260,7 +261,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             warnings.warn(f"Updating fitness with {value} value")
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
-            self.archive[x] = utils.MultiValue(candidate, value)  # better not to stock the position as a Point (memory)
+            self.archive[x] = utils.MultiValue(candidate, value, reference=self.parametrization)
         else:
             mvalue = self.archive[x]
             mvalue.add_evaluation(value)
@@ -487,6 +488,7 @@ def addCompare(optimizer: Optimizer) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.
 
+        ref = self.parametrization
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
         for candidate in losers:
@@ -498,7 +500,7 @@ def addCompare(optimizer: Optimizer) -> None:
         for i, candidate in enumerate(winners):
             self.tell(candidate, best_fitness_value - len(winners) + i)
             data = candidate.get_standardized_data(reference=self.parametrization)
-            self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
+            self.archive[data] = utils.MultiValue(candidate, best_fitness_value - len(winners) + i, reference=ref)
 
     setattr(optimizer.__class__, 'compare', compare)
 

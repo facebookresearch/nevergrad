@@ -5,7 +5,8 @@
 
 from typing import Union, List
 import numpy as np
-from ..common import testing
+import nevergrad as ng
+from nevergrad.common import testing
 from . import utils
 from .mutations import Mutator
 from .differentialevolution import Crossover
@@ -46,10 +47,11 @@ def test_run_with_array(name: str) -> None:
     all_4=(4, 0.5),
 )
 def test_get_roulette(num: int, expected: str) -> None:
+    param = np.p.Scalar(init=12.0)
     rng = np.random.RandomState(24)
-    archive = utils.Archive[utils.Value]()
+    archive = utils.Archive[utils.MultiValue]()
     for k in range(4):
-        archive[np.array([k + .5])] = utils.Value(k)
+        archive[np.array([k + .5])] = utils.MultiValue(param, k, reference=param)
     output = Mutator(rng).get_roulette(archive, num)
     np.testing.assert_equal(output, expected)
 

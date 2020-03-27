@@ -20,17 +20,17 @@ def convex_limit(points: np.ndarray) -> int:
     """Given points in order from best to worst,
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
     d = len(points[0])
-    hull = ConvexHull(points[:d+1], incremental=True)
+    hull = ConvexHull(points[:d + 1], incremental=True)
     k = min(d, len(points) // 4)
-    for i in range(d+1, len(points)):
-        hull.add_points(points[i:(i+1)])
+    for i in range(d + 1, len(points)):
+        hull.add_points(points[i: (i + 1)])
         if i not in hull.vertices:
             k = i - 1
             break
     return k
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
 
     Parameters
@@ -120,7 +120,7 @@ class _RandomSearch(OneShotOptimizer):
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "autolog":
             # Some variants use a rescaling depending on the budget and the dimension (2nde version).
-            if self.dimension - 4 * np.log(self.budget) > 1.: 
+            if self.dimension - 4 * np.log(self.budget) > 1.:
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
                 scale = 1.
@@ -163,7 +163,7 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
          - "auto": scales in function of dimension and budget (version 1)
-         - "autolog": scales in function of dimension and budget (version 2)         
+         - "autolog": scales in function of dimension and budget (version 2)
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
@@ -256,7 +256,7 @@ class _SamplingSearch(OneShotOptimizer):
         if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if self.autorescale == "autolog":
-            if self.dimension - 4 * np.log(self.budget) > 1.: 
+            if self.dimension - 4 * np.log(self.budget) > 1.:
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
                 scale = 1.
@@ -332,7 +332,7 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 # pylint: disable=line-too-long
 OAvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", 
+    cauchy=False, autorescale="autolog",
     sampler="Hammersley", scrambled=True,
     recommendation_rule="average_of_hull_best",
     opposition_mode="opposite"

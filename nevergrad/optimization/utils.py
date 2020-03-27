@@ -31,7 +31,7 @@ class MultiValue:
         the first evaluation of the value
     """
 
-    def __init__(self, parameter: p.Parameter, y: float) -> None:
+    def __init__(self, parameter: p.Parameter, y: float, *, reference: p.Parameter) -> None:
         self.count = 1
         self.mean = y
         self.square = y * y
@@ -39,6 +39,11 @@ class MultiValue:
         self.variance = 1.e6
         parameter.freeze()
         self.parameter = parameter
+        self._ref = reference
+
+    @property
+    def x(self) -> np.ndarray:  # for compatibility
+        return self.parameter.get_standardized_data(reference=self._ref)
 
     @property
     def optimistic_confidence_bound(self) -> float:
@@ -73,6 +78,9 @@ class MultiValue:
         self.count += 1
         factor: float = np.sqrt(float(self.count) / float(self.count - 1.))
         self.variance = factor * (self.square - self.mean**2)
+
+    def as_array(self, reference: p.Parameter) -> np.ndarray:
+        return self.parameter.get_standardized_data(reference=reference)
 
     def __repr__(self) -> str:
         return f"MultiValue<mean: {self.mean}, count: {self.count}, parameter: {self.parameter}>"

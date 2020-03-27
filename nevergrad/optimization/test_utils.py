@@ -5,14 +5,16 @@
 
 import pytest
 import numpy as np
-from ..common import testing
+import nevergrad as ng
+from nevergrad.common import testing
 from .test_base import CounterFunction
 from . import experimentalvariants as xpvariants
 from . import utils
 
 
 def test_value_and_point() -> None:
-    v = utils.Value(4)
+    param = np.p.Scalar(init=12.0)
+    v = utils.MultiValue(param, 4, reference=param)
     np.testing.assert_equal(v.count, 1)
     v.add_evaluation(3)
     np.testing.assert_equal(v.count, 2)
@@ -23,12 +25,7 @@ def test_value_and_point() -> None:
     assert v.get_estimation("optimistic") < v.get_estimation("pessimistic")
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
-    # now test point based on this value
-    p = utils.Point(np.array([0., 0]), v)
-    np.testing.assert_equal(p.mean, 3.5)
-    np.testing.assert_almost_equal(p.variance, 0.3536, decimal=4)
-    repr(p)
-    np.testing.assert_raises(AssertionError, utils.Point, (0, 0), 3)
+    assert v.parameter.value == 12
 
 
 def test_sequential_executor() -> None:
@@ -47,9 +44,10 @@ def test_sequential_executor() -> None:
 
 def test_get_nash() -> None:
     zeroptim = xpvariants.Zero(parametrization=1, budget=4, num_workers=1)
+    param = zeroptim.parametrization
     for k in range(4):
         array = (float(k),)
-        zeroptim.archive[array] = utils.Value(k)
+        zeroptim.archive[array] = utils.MultiValue(param, k, reference=param)
         zeroptim.archive[array].count += (4 - k)
     nash = utils._get_nash(zeroptim)
     testing.printed_assert_equal(nash, [((2,), 3), ((1,), 4), ((0,), 5)])
@@ -86,11 +84,12 @@ def test_archive_errors() -> None:
 
 
 def test_pruning() -> None:
-    archive = utils.Archive[utils.Value]()
+    param = np.p.Scalar(init=12.0)
+    archive = utils.Archive[utils.MultiValue]()
     for k in range(3):
-        value = utils.Value(float(k))
+        value = utils.MultiValue(param, float(k), reference=param)
         archive[(float(k),)] = value
-    value = utils.Value(1.)
+    value = utils.MultiValue(param, 1., reference=param)
     value.add_evaluation(1.)
     archive[(3.,)] = value
     # pruning
