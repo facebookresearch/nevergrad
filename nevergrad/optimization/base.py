@@ -207,7 +207,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
           Some optimizers may not support it and will raise a :code:`TellNotAskedNotSupportedError`
           at :code:`tell` time.
         - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
-          creating a new candidate with :code:`optimizer.parametrization.create_candidate(new_value)`
+          creating a new candidate with :code:`optimizer.parametrization.spawn_child(new_value)`
         """
         if isinstance(self.parametrization, p.Instrumentation):
             new_value: tp.Any = (args, kwargs)
@@ -230,10 +230,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         The candidate should generally be one provided by :code:`ask()`, but can be also
         a non-asked candidate. To create a p.Parameter instance from args and kwargs,
-        you can use :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`
+        you can use :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`:
 
-        Examples:
         - for an :code:`Array(shape(2,))`: :code:`optimizer.parametrization.spawn_child(new_value=[12, 12])`
+
         - for an :code:`Instrumentation`: :code:`optimizer.parametrization.spawn_child(new_value=(args, kwargs))`
 
         Alternatively, you can provide a suggestion with :code:`optimizer.suggest(*args, **kwargs)`, the next :code:`ask`
