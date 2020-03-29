@@ -167,7 +167,7 @@ def test_inoculation() -> None:
     # you can then use to tell the loss
     optim.tell(candidate, 2.0)
     # DOC_INOCULATION_1
-    param = ng.p.Instrumentation(ng.Choice(["a", "b", "c"], lr=ng.p.Log(lower=0.001, upper=1.0)))
+    param = ng.p.Instrumentation(ng.p.Choice(["a", "b", "c"]), lr=ng.p.Log(lower=0.001, upper=1.0))
     optim = ng.optimizers.OnePlusOne(parametrization=param, budget=100)
     optim.suggest("c", lr=0.02)
     candidate = optim.ask()
