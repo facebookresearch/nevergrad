@@ -172,16 +172,16 @@
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">Optimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Algorithm framework with 3 main functions:</p>
 <ul class="simple">
-<li><p><cite>ask()</cite> which provides a candidate on which to evaluate the function to optimize.</p></li>
-<li><p><cite>tell(candidate, value)</cite> which lets you provide the values associated to points.</p></li>
-<li><p><cite>provide_recommendation()</cite> which provides the best final candidate.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">ask()</span></code> which provides a candidate on which to evaluate the function to optimize.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">tell(candidate,</span> <span class="pre">value)</span></code> which lets you provide the values associated to points.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">provide_recommendation()</span></code> which provides the best final candidate.</p></li>
 </ul>
-<p>Typically, one would call <cite>ask()</cite> num_workers times, evaluate the
+<p>Typically, one would call <code class="code docutils literal notranslate"><span class="pre">ask()</span></code> num_workers times, evaluate the
 function on these num_workers points in parallel, update with the fitness value when the
 evaluations is finished, and iterate until the budget is over. At the very end,
 one would call provide_recommendation for the estimated optimum.</p>
 <p>This class is abstract, it provides internal equivalents for the 3 main functions,
-among which at least <cite>_internal_ask_candidate</cite> has to be overridden.</p>
+among which at least <code class="code docutils literal notranslate"><span class="pre">_internal_ask_candidate</span></code> has to be overridden.</p>
 <p>Each optimizer instance should be used only once, with the initial provided budget</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -199,8 +199,8 @@ among which at least <cite>_internal_ask_candidate</cite> has to be overridden.<
 This function can be called multiple times to explore several points in parallel</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate to try on the objective function. p.Parameter have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+<dd class="field-odd"><p>The candidate to try on the objective function. <code class="code docutils literal notranslate"><span class="pre">p.Parameter</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code>
+which can be directly used on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
@@ -239,19 +239,19 @@ on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>objective_function</strong> (<em>callable</em>) – A callable to optimize (minimize)</p></li>
-<li><p><strong>executor</strong> (<em>Executor</em>) – An executor object, with method <cite>submit(callable, *args, **kwargs)</cite> and returning a Future-like object
-with methods <cite>done() -&gt; bool</cite> and <cite>result() -&gt; float</cite>. The executor role is to dispatch the execution of
+<li><p><strong>executor</strong> (<em>Executor</em>) – An executor object, with method <code class="code docutils literal notranslate"><span class="pre">submit(callable,</span> <span class="pre">*args,</span> <span class="pre">**kwargs)</span></code> and returning a Future-like object
+with methods <code class="code docutils literal notranslate"><span class="pre">done()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> and <code class="code docutils literal notranslate"><span class="pre">result()</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code>. The executor role is to dispatch the execution of
 the jobs locally/on a cluster/with multithreading depending on the implementation.
-Eg: <cite>concurrent.futures.ThreadPoolExecutor</cite></p></li>
-<li><p><strong>batch_mode</strong> (<em>bool</em>) – when num_workers = n &gt; 1, whether jobs are executed by batch (n function evaluations are launched,
+Eg: <code class="code docutils literal notranslate"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code></p></li>
+<li><p><strong>batch_mode</strong> (<em>bool</em>) – when <code class="code docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">=</span> <span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>, whether jobs are executed by batch (<code class="code docutils literal notranslate"><span class="pre">n</span></code> function evaluations are launched,
 we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
 another one)</p></li>
 <li><p><strong>verbosity</strong> (<em>int</em>) – print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+<dd class="field-even"><p>The candidate with minimal value. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
@@ -288,7 +288,7 @@ on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</
 <dl class="method">
 <dt id="nevergrad.optimizers.base.Optimizer.num_tell_not_asked">
 <em class="property">property </em><code class="sig-name descname">num_tell_not_asked</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell_not_asked" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of time the <cite>tell</cite> method was called on candidates that were not asked for by the optimizer
+<dd><p>Number of time the <code class="code docutils literal notranslate"><span class="pre">tell</span></code> method was called on candidates that were not asked for by the optimizer
 (or were suggested).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -303,8 +303,8 @@ on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</
 <dd><p>Provides the best point to use as a minimum, given the budget that was used</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
@@ -318,8 +318,8 @@ on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</
 <dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. p.Parameters have field <cite>args</cite> and <cite>kwargs</cite> which can be directly used
-on the function (<cite>objective_function(*candidate.args, **candidate.kwargs)</cite>).</p>
+<dd class="field-odd"><p>The candidate with minimal value. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
@@ -335,7 +335,7 @@ arguments (including the optimizer / self). This can be useful for custom loggin
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<em>str</em>) – name of the method to register the callback for (either <cite>ask</cite> or <cite>tell</cite>)</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – name of the method to register the callback for (either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code>)</p></li>
 <li><p><strong>callback</strong> (<em>callable</em>) – a callable taking the same parameters as the method it is registered upon (including self)</p></li>
 </ul>
 </dd>
@@ -365,10 +365,10 @@ It will be asked at the next call (last in first out).</p>
 <p class="admonition-title">Note</p>
 <ul class="simple">
 <li><p>This relies on optmizers implementing a way to deal with unasked candidate.
-Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
-at “tell” time.</p></li>
+Some optimizers may not support it and will raise a <code class="code docutils literal notranslate"><span class="pre">TellNotAskedNotSupportedError</span></code>
+at <code class="code docutils literal notranslate"><span class="pre">tell</span></code> time.</p></li>
 <li><p>LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
-calling optimizer.create_candidate.from_call.</p></li>
+creating a new candidate with <code class="code docutils literal notranslate"><span class="pre">optimizer.parametrization.spawn_child(new_value)</span></code></p></li>
 </ul>
 </div>
 </dd></dl>
@@ -387,9 +387,15 @@ calling optimizer.create_candidate.from_call.</p></li>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The candidate should generally be one provided by <cite>ask()</cite>, but can be also
+<p>The candidate should generally be one provided by <code class="code docutils literal notranslate"><span class="pre">ask()</span></code>, but can be also
 a non-asked candidate. To create a p.Parameter instance from args and kwargs,
-you can use <cite>optimizer.create_candidate.from_call(*args, **kwargs)</cite>.</p>
+you can use <code class="code docutils literal notranslate"><span class="pre">candidate</span> <span class="pre">=</span> <span class="pre">optimizer.parametrization.spawn_child(new_value=your_value)</span></code>:</p>
+<ul class="simple">
+<li><p>for an <code class="code docutils literal notranslate"><span class="pre">Array(shape(2,))</span></code>: <code class="code docutils literal notranslate"><span class="pre">optimizer.parametrization.spawn_child(new_value=[12,</span> <span class="pre">12])</span></code></p></li>
+<li><p>for an <code class="code docutils literal notranslate"><span class="pre">Instrumentation</span></code>: <code class="code docutils literal notranslate"><span class="pre">optimizer.parametrization.spawn_child(new_value=(args,</span> <span class="pre">kwargs))</span></code></p></li>
+</ul>
+<p>Alternatively, you can provide a suggestion with <code class="code docutils literal notranslate"><span class="pre">optimizer.suggest(*args,</span> <span class="pre">**kwargs)</span></code>, the next <code class="code docutils literal notranslate"><span class="pre">ask</span></code>
+will use this suggestion.</p>
 </div>
 </dd></dl>
 
