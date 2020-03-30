@@ -140,14 +140,26 @@ def test_uid_queue() -> None:
 
 
 def test_bound_scaler() -> None:
-    param = p.Instrumentation(
+    ref = p.Instrumentation(
         p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
         lr=p.Log(lower=0.001, upper=1000),
-        stuff=p.Scalar(lower=-2, upper=2),
+        stuff=p.Scalar(lower=-1, upper=2),
         value=p.Scalar(),
         letter=p.Choice("abc"),
     )
+    param = ref.spawn_child()
     scaler = utils.BoundScaler(param)
     output = scaler.transform([1.0] * param.dimension, lambda x: x)
-    print(output)
+    param.set_standardized_data(output)
+    (array,), values = param.value
+    np.testing.assert_array_almost_equal(array, [[12, 12]])
+    assert values["stuff"] == 2
+    assert values["value"] == 1
+    np.testing.assert_almost_equal(values["lr"], 1000)
+    # again, on the middle point
+    output = scaler.transform([0] * param.dimension, lambda x: x)
+    param.set_standardized_data(output)
+    np.testing.assert_almost_equal(param.value[1]["lr"], 1.0)
+    np.testing.assert_almost_equal(param.value[1]["stuff"], 0.5)
+
     raise Exception

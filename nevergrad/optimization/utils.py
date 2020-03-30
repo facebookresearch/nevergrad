@@ -372,22 +372,24 @@ class BoundScaler:
             output += cls.list_arrays(subpar)
         return output
 
-    def transform(self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+    def transform(self, x: ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
         """Transform from [0, 1] to the space between bounds
         """
         start = 0
         y = np.array(x, copy=True)
         for ref in self._ref_arrays:
-            end = ref.dimension
+            end = start + ref.dimension
             if any(b is None for b in ref.bounds):
                 y[start: end] = unbounded_transform(y[start: end])
             else:
                 array = ref.spawn_child()
-                if array.exponent is None:
-                    print("this", array)
-                    value = ref.bounds[0] + (ref.bounds[1] - ref.bounds[0]) * y[start:end].reshape(ref._value.shape)  # type: ignore
-                    array._value = value
-                    print(array, value)
-                    y[start: end] = array.get_standardized_data(reference=ref)
+                bounds: tp.List[tp.Any] = list(ref.bounds)
+                if array.exponent is not None:
+                    bounds = [np.log(b) for b in bounds]
+                value = bounds[0] + (bounds[1] - bounds[0]) * y[start:end].reshape(ref._value.shape)
+                if array.exponent is not None:
+                    value = np.exp(value)
+                array._value = value
+                y[start: end] = array.get_standardized_data(reference=ref)
             start = end
         return y
