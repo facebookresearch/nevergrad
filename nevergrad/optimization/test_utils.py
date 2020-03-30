@@ -143,10 +143,11 @@ def test_bound_scaler() -> None:
     param = p.Instrumentation(
         p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
         lr=p.Log(lower=0.001, upper=1000),
-        dropout=p.Scalar(lower=0, upper=1),
+        stuff=p.Scalar(lower=-2, upper=2),
         value=p.Scalar(),
         letter=p.Choice("abc"),
     )
     scaler = utils.BoundScaler(param)
-    print(scaler.bounded)
+    output = scaler.transform([1.0] * param.dimension, lambda x: x)
+    print(output)
     raise Exception

@@ -343,28 +343,21 @@ class UidQueue:
 
 class BoundScaler:
 
-    def __init__(self, parameter: p.Parameter) -> None:
-        self.parameter = parameter.spawn_child()
-        self.parameter.set_standardized_data(np.linspace(-1, 1, self.parameter.dimension))
-        expected = self.parameter.get_standardized_data(reference=parameter)
-        arrays = self.align_parameters(self.parameter)
-        ref_arrays = self.align_parameters(parameter)
-        check = np.concatenate([x.get_standardized_data(reference=y) for x, y in zip(arrays, ref_arrays)], axis=0)
-        print("a", check)
-        print("b", expected)
+    def __init__(self, reference: p.Parameter) -> None:
+        self.reference = reference.spawn_child()
+        self.reference.freeze()
+        # initial check
+        parameter = self.reference.spawn_child()
+        parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
+        expected = parameter.get_standardized_data(reference=self.reference)
+        self._ref_arrays = self.list_arrays(self.reference)
+        arrays = self.list_arrays(parameter)
+        check = np.concatenate([x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0)
         if not np.allclose(check, expected):
-            raise RuntimeError(f"Failed to find bounds for {parameter}")
-        bounds = np.zeros((2, parameter.dimension))
-        for k in range(2):
-            bs = [np.ones(x._value.shape) * (np.nan if x.bounds[k] is None else x.bounds[k]) for x in arrays]
-            bounds[k, :] = np.concatenate([b.ravel() for b in bs], axis=0)
-        self.unbounded = np.isnan(np.sum(bounds, axis=0))
-        self.bounded = np.logical_not(self.unbounded)
-        self.minimum = bounds[0, self.bounded]
-        self.range = bounds[1, self.bounded] - bounds[0, self.bounded]
+            raise RuntimeError(f"Failed to find bounds for {reference}")
 
     @classmethod
-    def align_parameters(cls, parameter: p.Parameter) -> tp.List[p.Array]:
+    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Array]:
         """Computes a list of data (Array) parameters in the same order as in
         the standardized data space.
         """
@@ -376,13 +369,25 @@ class BoundScaler:
             raise RuntimeError(f"Unsupported parameter {parameter}")
         output: tp.List[p.Array] = []
         for _, subpar in sorted(parameter._content.items()):
-            output += cls.align_parameters(subpar)
+            output += cls.list_arrays(subpar)
         return output
 
     def transform(self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
         """Transform from [0, 1] to the space between bounds
         """
+        start = 0
         y = np.array(x, copy=True)
-        y[self.unbounded] = unbounded_transform(x[self.unbounded])
-        y[self.bounded] = self.minimum + x[self.bounded] * self.range
+        for ref in self._ref_arrays:
+            end = ref.dimension
+            if any(b is None for b in ref.bounds):
+                y[start: end] = unbounded_transform(y[start: end])
+            else:
+                array = ref.spawn_child()
+                if array.exponent is None:
+                    print("this", array)
+                    value = ref.bounds[0] + (ref.bounds[1] - ref.bounds[0]) * y[start:end].reshape(ref._value.shape)  # type: ignore
+                    array._value = value
+                    print(array, value)
+                    y[start: end] = array.get_standardized_data(reference=ref)
+            start = end
         return y
