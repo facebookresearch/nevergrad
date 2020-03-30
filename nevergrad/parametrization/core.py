@@ -492,8 +492,11 @@ class Dict(Parameter):
 
     @value.setter
     def value(self, value: tp.Dict[str, tp.Any]) -> None:
+        cls = self.__class__.__name__
+        if not isinstance(value, dict):
+            raise TypeError(f"{cls} value must be a dict, got: {value}")
         if set(value) != set(self._content):
-            raise ValueError(f"Got input keys {set(value)} but expected {set(self._content)}")
+            raise ValueError(f"Got input keys {set(value)} for {cls} but expected {set(self._content)}")
         for key, val in value.items():
             as_parameter(self._content[key]).value = val
 
