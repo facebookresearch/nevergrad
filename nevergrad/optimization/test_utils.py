@@ -161,5 +161,3 @@ def test_bound_scaler() -> None:
     param.set_standardized_data(output)
     np.testing.assert_almost_equal(param.value[1]["lr"], 1.0)
     np.testing.assert_almost_equal(param.value[1]["stuff"], 0.5)
-
-    raise Exception

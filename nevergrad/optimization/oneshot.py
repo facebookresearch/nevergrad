@@ -221,6 +221,8 @@ class _SamplingSearch(OneShotOptimizer):
         self.scale = scale
         self.rescaled = rescaled
         self.recommendation_rule = recommendation_rule
+        # rescale to the bounds if both are provided
+        self._scaler = utils.BoundScaler(self.parametrization)
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -260,8 +262,11 @@ class _SamplingSearch(OneShotOptimizer):
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
                 scale = 1.
-        self._opposable_data = self.scale * (
-            stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
+
+        def transf(x: np.ndarray) -> np.ndarray:
+            return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
+
+        self._opposable_data = self._scaler.transform(sample, transf)
         assert self._opposable_data is not None
         return self._opposable_data
 
