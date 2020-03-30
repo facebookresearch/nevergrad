@@ -5,7 +5,8 @@
 
 import pytest
 import numpy as np
-from ..common import testing
+from nevergrad.common import testing
+from nevergrad.parametrization import parameter as p
 from .test_base import CounterFunction
 from . import experimentalvariants as xpvariants
 from . import utils
@@ -24,10 +25,10 @@ def test_value_and_point() -> None:
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
     # now test point based on this value
-    p = utils.Point(np.array([0., 0]), v)
-    np.testing.assert_equal(p.mean, 3.5)
-    np.testing.assert_almost_equal(p.variance, 0.3536, decimal=4)
-    repr(p)
+    pt = utils.Point(np.array([0., 0]), v)
+    np.testing.assert_equal(pt.mean, 3.5)
+    np.testing.assert_almost_equal(pt.variance, 0.3536, decimal=4)
+    repr(pt)
     np.testing.assert_raises(AssertionError, utils.Point, (0, 0), 3)
 
 
@@ -136,3 +137,16 @@ def test_uid_queue() -> None:
     uidq.clear()
     with pytest.raises(RuntimeError):
         uidq.ask()
+
+
+def test_bound_scaler() -> None:
+    param = p.Instrumentation(
+        p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
+        lr=p.Log(lower=0.001, upper=1000),
+        dropout=p.Scalar(lower=0, upper=1),
+        value=p.Scalar(),
+        letter=p.Choice("abc"),
+    )
+    scaler = utils.BoundScaler(param)
+    print(scaler.bounded)
+    raise Exception

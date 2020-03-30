@@ -8,6 +8,7 @@ import typing as tp
 import numpy as np
 from nevergrad.common.tools import OrderedSet
 from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
 
 
 class Value:
@@ -338,3 +339,50 @@ class UidQueue:
             self.asked.discard(uid)
         else:
             self.told.remove(uid)
+
+
+class BoundScaler:
+
+    def __init__(self, parameter: p.Parameter) -> None:
+        self.parameter = parameter.spawn_child()
+        self.parameter.set_standardized_data(np.linspace(-1, 1, self.parameter.dimension))
+        expected = self.parameter.get_standardized_data(reference=parameter)
+        arrays = self.align_parameters(self.parameter)
+        ref_arrays = self.align_parameters(parameter)
+        check = np.concatenate([x.get_standardized_data(reference=y) for x, y in zip(arrays, ref_arrays)], axis=0)
+        print("a", check)
+        print("b", expected)
+        if not np.allclose(check, expected):
+            raise RuntimeError(f"Failed to find bounds for {parameter}")
+        bounds = np.zeros((2, parameter.dimension))
+        for k in range(2):
+            bs = [np.ones(x._value.shape) * (np.nan if x.bounds[k] is None else x.bounds[k]) for x in arrays]
+            bounds[k, :] = np.concatenate([b.ravel() for b in bs], axis=0)
+        self.unbounded = np.isnan(np.sum(bounds, axis=0))
+        self.bounded = np.logical_not(self.unbounded)
+        self.minimum = bounds[0, self.bounded]
+        self.range = bounds[1, self.bounded] - bounds[0, self.bounded]
+
+    @classmethod
+    def align_parameters(cls, parameter: p.Parameter) -> tp.List[p.Array]:
+        """Computes a list of data (Array) parameters in the same order as in
+        the standardized data space.
+        """
+        if isinstance(parameter, p.Array):
+            return [parameter]
+        elif isinstance(parameter, p.Constant):
+            return []
+        if not isinstance(parameter, p.Dict):
+            raise RuntimeError(f"Unsupported parameter {parameter}")
+        output: tp.List[p.Array] = []
+        for _, subpar in sorted(parameter._content.items()):
+            output += cls.align_parameters(subpar)
+        return output
+
+    def transform(self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+        """Transform from [0, 1] to the space between bounds
+        """
+        y = np.array(x, copy=True)
+        y[self.unbounded] = unbounded_transform(x[self.unbounded])
+        y[self.bounded] = self.minimum + x[self.bounded] * self.range
+        return y

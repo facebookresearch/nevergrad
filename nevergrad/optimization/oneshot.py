@@ -7,7 +7,6 @@ import typing as tp
 import numpy as np
 from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
-from nevergrad.parametrization import parameter as p
 from nevergrad.common.typetools import ArrayLike
 from . import sequences
 from . import base
@@ -15,38 +14,6 @@ from .base import IntOrParameter
 from . import utils
 
 # In some cases we will need the average of the k best.
-
-
-class ParameterBounds:
-
-    def __init__(self, parameter: p.Parameter) -> None:
-        self.parameter = parameter.spawn_child()
-        self.parameter.set_standardized_data(np.arange(-1, 1, self.parameter.dimension))
-        self.bounds = np.zeros((2, parameter.dimension))
-        expected = self.parameter.get_standardized_data(reference=parameter)
-        arrays = self.align_parameters(self.parameter)
-        check = np.concatenate([x._value.ravel() for x in arrays], axis=0)
-        if not np.isclose(check, expected):
-            raise RuntimeError(f"Failed to find bounds for {parameter}")
-        for k in range(2):
-            bounds = [np.ones(x._value.shape) * (np.nan if x.bounds[k] is None else x.bounds[k]) for x in arrays]
-            self.bounds[k, :] = np.concatenate([b.ravel() for b in bounds], axis=0)
-
-    @staticmethod
-    def align_parameters(parameter: p.Parameter) -> tp.List[p.Array]:
-        """Computes a list of data (Array) parameters in the same order as in
-        the standardized data space.
-        """
-        if isinstance(parameter, p.Array):
-            return [parameter]
-        elif isinstance(parameter, p.Constant):
-            return []
-        if not isinstance(parameter, p.Dict):
-            raise RuntimeError(f"Unsupported parameter {parameter}")
-        output: tp.List[p.Array] = []
-        for _, subpar in sorted(parameter._content.items()):
-            output += ParameterBounds.align_parameters(subpar)
-        return output
 
 
 def convex_limit(points: np.ndarray) -> int:
