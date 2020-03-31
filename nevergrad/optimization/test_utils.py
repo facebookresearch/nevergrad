@@ -142,8 +142,10 @@ def test_uid_queue() -> None:
 def test_bound_scaler() -> None:
     ref = p.Instrumentation(
         p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
+        p.Array(shape=(2,)).set_bounds(-12, 12, full_range_sampling=False),
         lr=p.Log(lower=0.001, upper=1000),
         stuff=p.Scalar(lower=-1, upper=2),
+        unbounded=p.Scalar(lower=-1, init=0.0),
         value=p.Scalar(),
         letter=p.Choice("abc"),
     )
@@ -151,9 +153,11 @@ def test_bound_scaler() -> None:
     scaler = utils.BoundScaler(param)
     output = scaler.transform([1.0] * param.dimension, lambda x: x)
     param.set_standardized_data(output)
-    (array,), values = param.value
-    np.testing.assert_array_almost_equal(array, [[12, 12]])
+    (array1, array2), values = param.value
+    np.testing.assert_array_almost_equal(array1, [[12, 12]])
+    np.testing.assert_array_almost_equal(array2, [1, 1])
     assert values["stuff"] == 2
+    assert values["unbounded"] == 1
     assert values["value"] == 1
     np.testing.assert_almost_equal(values["lr"], 1000)
     # again, on the middle point

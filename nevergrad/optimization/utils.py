@@ -407,7 +407,7 @@ class BoundScaler:
         start = 0
         for ref in self._ref_arrays:
             end = start + ref.dimension
-            if any(b is None for b in ref.bounds):
+            if any(b is None for b in ref.bounds) or not ref.full_range_sampling:
                 x[start: end] = unbounded_transform(x[start: end])
             else:
                 array = ref.spawn_child()
