@@ -2,6 +2,11 @@
 
 ## master
 
+- Quasi-random samplers (`LHSSearch`, `HammersleySearch`, `HaltonSearch` etc...) now sample in the full range of bounded
+  variables when the `full_range_sampling` is `True` [598](https://github.com/facebookresearch/nevergrad/pull/598).
+  This required some ugly hacks, help is most welcome to find nices solutions.
+- `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
+
 ## v0.4.0 (2019-03-09)
 
 ### Breaking and important changes
