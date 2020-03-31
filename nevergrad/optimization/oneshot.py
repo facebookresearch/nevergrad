@@ -23,14 +23,14 @@ def convex_limit(points: np.ndarray) -> int:
     hull = ConvexHull(points[: d + 1], incremental=True)
     k = min(d, len(points) // 4)
     for i in range(d + 1, len(points)):
-        hull.add_points(points[i:(i + 1)])
+        hull.add_points(points[i: (i + 1)])
         if i not in hull.vertices:
             k = i - 1
             break
     return k
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
 
     Parameters
