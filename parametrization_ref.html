@@ -225,7 +225,7 @@ set_bounds, set_mutation, set_integer_casting</p>
 </div>
 <dl class="method">
 <dt id="nevergrad.p.Array.set_bounds">
-<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param">lower: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">upper: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">method: str = 'clipping'</em>, <em class="sig-param">full_range_sampling: bool = False</em>, <em class="sig-param">a_min: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">a_max: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param">lower: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">upper: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">method: str = 'clipping'</em>, <em class="sig-param">full_range_sampling: Optional[bool] = None</em>, <em class="sig-param">a_min: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em>, <em class="sig-param">a_max: Union[float</em>, <em class="sig-param">int</em>, <em class="sig-param">numpy.ndarray</em>, <em class="sig-param">None] = None</em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bounds all real values into [lower, upper] using a provided method</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -246,9 +246,10 @@ close to the bounds), and reaching the bounds is equivalent to reaching the infi
 to unexpected behaviors.</p></li>
 </ul>
 </p></li>
-<li><p><strong>full_range_sampling</strong> (<em>bool</em>) – Changes the default behavior of the “sample” method (aka creating a child and mutating it from the current instance)
-to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
-“sample” method is used by some algorithms to create an initial population.</p></li>
+<li><p><strong>full_range_sampling</strong> (<em>Optional bool</em>) – Changes the default behavior of the “sample” method (aka creating a child and mutating it from the current instance)
+or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
+the while range of the bounds. The “sample” method is used by some algorithms to create an initial population.
+This is activated by default if both bounds are provided.</p></li>
 </ul>
 </dd>
 </dl>
