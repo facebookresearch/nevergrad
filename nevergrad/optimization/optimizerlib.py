@@ -73,7 +73,9 @@ class _OnePlusOne(base.Optimizer):
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self.noise_handling
         if not self._num_ask:
-            return self.parametrization.spawn_child()
+            out = self.parametrization.spawn_child()
+            out._meta["sigma"] = self._sigma
+            return out
         # for noisy version
         if noise_handling is not None:
             limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
@@ -97,7 +99,9 @@ class _OnePlusOne(base.Optimizer):
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (self._rng.normal(0, 1, self.dimension) if mutation == "gaussian" else
                     self._rng.standard_cauchy(self.dimension))
-            return pessimistic.set_standardized_data(self._sigma * step)  # type: ignore
+            out = pessimistic.set_standardized_data(self._sigma * step)
+            out._meta["sigma"] = self._sigma
+            return out
         else:
             pessimistic_data = pessimistic.get_standardized_data(reference=ref)
             if mutation == "crossover":
