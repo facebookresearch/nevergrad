@@ -69,11 +69,13 @@ class _OnePlusOne(base.Optimizer):
         self.mutation = mutation
         self.crossover = crossover
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self.noise_handling
         if not self._num_ask:
-            return np.zeros(self.dimension)
+            out = self.parametrization.spawn_child()
+            out._meta["sigma"] = self._sigma
+            return out
         # for noisy version
         if noise_handling is not None:
             limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
@@ -81,33 +83,41 @@ class _OnePlusOne(base.Optimizer):
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
                     idx = self._rng.choice(len(self.archive))
-                    return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
+                    return list(self.archive.values())[idx].parameter.spawn_child()  # type: ignore
                 elif strategy == "optimistic":
-                    return self.current_bests["optimistic"].parameter.get_standardized_data(reference=self.parametrization)
+                    return self.current_bests["optimistic"].parameter.spawn_child()
         # crossover
         mutator = mutations.Mutator(self._rng)
-        pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(reference=self.parametrization)
+        pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
-            return mutator.crossover(pessimistic, mutator.get_roulette(self.archive, num=2))
+            data = mutator.crossover(pessimistic.get_standardized_data(reference=ref),
+                                     mutator.get_roulette(self.archive, num=2))
+            return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
         mutation = self.mutation
-        if mutation == "gaussian":  # standard case
-            return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
-        elif mutation == "cauchy":
-            return pessimistic + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
-        elif mutation == "crossover":
-            if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutator.portfolio_discrete_mutation(pessimistic)
-            else:
-                return mutator.crossover(pessimistic, mutator.get_roulette(self.archive, num=2))
+        if mutation in ("gaussian", "cauchy"):  # standard case
+            step = (self._rng.normal(0, 1, self.dimension) if mutation == "gaussian" else
+                    self._rng.standard_cauchy(self.dimension))
+            out = pessimistic.set_standardized_data(self._sigma * step)
+            out._meta["sigma"] = self._sigma
+            return out
         else:
-            func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
-                "discrete": mutator.discrete_mutation,
-                "fastga": mutator.doerr_discrete_mutation,
-                "doublefastga": mutator.doubledoerr_discrete_mutation,
-                "portfolio": mutator.portfolio_discrete_mutation,
-            }[mutation]
-            return func(pessimistic)
+            pessimistic_data = pessimistic.get_standardized_data(reference=ref)
+            if mutation == "crossover":
+                if self._num_ask % 2 == 0 or len(self.archive) < 3:
+                    data = mutator.portfolio_discrete_mutation(pessimistic_data)
+                else:
+                    data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            else:
+                func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
+                    "discrete": mutator.discrete_mutation,
+                    "fastga": mutator.doerr_discrete_mutation,
+                    "doublefastga": mutator.doubledoerr_discrete_mutation,
+                    "portfolio": mutator.portfolio_discrete_mutation,
+                }[mutation]
+                data = func(pessimistic_data)
+            return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian

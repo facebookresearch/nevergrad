@@ -8,6 +8,7 @@
   variables when the `full_range_sampling` is `True` [598](https://github.com/facebookresearch/nevergrad/pull/598).
   This required some ugly hacks, help is most welcome to find nices solutions.
 - `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
+- Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [599](https://github.com/facebookresearch/nevergrad/pull/599).
 
 
 ## v0.4.0 (2019-03-09)
