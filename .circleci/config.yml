@@ -105,14 +105,14 @@ jobs:
             . venv/bin/activate
             rm -rf dist  # make sure it's clean
             python setup.py sdist bdist_wheel
+            mkdir nevergrad-build
+            cp -r dist nevergrad-build/
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             cd ..  # don't use nevergrad locally
             pip install repo/dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
-            mkdir nevergrad-build
-            mv dist nevergrad-build/
 
       - persist_to_workspace:
           root: nevergrad-build
