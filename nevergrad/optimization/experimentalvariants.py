@@ -404,9 +404,6 @@ SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
 )
 
 # ProgOptimizer
-VinBerProgOptimizer = ConfSplitOptimizer(num_optims=13, progressive=True, berthier=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "VinBerProgOptimizer", register=True
-)
 ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer3", register=True
 )
@@ -420,9 +417,6 @@ ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivaria
     "ProgOptimizer13", register=True
 )
 # ProgOptimizer
-VinBerProgDOptimizer = ConfSplitOptimizer(num_optims=13, progressive=True, berthier=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "VinBerProgDOptimizer", register=True
-)
 ProgDOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgDOptimizer3", register=True
 )
@@ -576,8 +570,11 @@ AvgLargeScrHammersleySearch = SamplingSearch(
 AvgScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, recommendation_rule="average_of_best"
 ).set_name("AvgScrHammersleySearch", register=True)
+HCHAvgRandomSearch = SamplingSearch(
+    sampler="Random", recommendation_rule="average_of_hull_best"
+).set_name("HCHAvgRandomSearch", register=True)
 AvgRandomSearch = SamplingSearch(
-    sampler="Random", scrambled=True, recommendation_rule="average_of_best"
+    sampler="Random", recommendation_rule="average_of_best"
 ).set_name("AvgRandomSearch", register=True)
 AvgRescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley",
@@ -636,7 +633,7 @@ TEAvgLargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgLargeScrHammersleySearch", register=True)
 TEAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
                                         recommendation_rule="average_of_exp_best").set_name("TEAvgScrHammersleySearch", register=True)
-TEAvgRandomSearch = SamplingSearch(sampler="Random", scrambled=True,
+TEAvgRandomSearch = SamplingSearch(sampler="Random",
                                         recommendation_rule="average_of_exp_best").set_name("TEAvgRandomSearch", register=True)
 TEAvgRescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgRescaleScrHammersleySearch", register=True)
@@ -684,8 +681,6 @@ HCHAvgLargeScrHammersleySearch = SamplingSearch(
     scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best").set_name("HCHAvgLargeScrHammersleySearch", register=True)
 HCHAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
                                         recommendation_rule="average_of_hull_best").set_name("HCHAvgScrHammersleySearch", register=True)
-HCHAvgRandomSearch = SamplingSearch(sampler="Random", scrambled=True,
-                                        recommendation_rule="average_of_hull_best").set_name("HCHAvgRandomSearch", register=True)
 HCHAvgRescaleScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_hull_best").set_name("HCHAvgRescaleScrHammersleySearch", register=True)
 HCHAvgCauchyScrHammersleySearch = SamplingSearch(
