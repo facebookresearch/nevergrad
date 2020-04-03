@@ -430,25 +430,6 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
 
 
 @registry.register
-def doe_dim10(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """One-shot optimization in dimension 10 of the sphere function. No useless variables."""
-    names = ["sphere"]
-    seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x and ("ando" in x or "uto" in x))
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-        for name in names
-        for bd in [10]
-        for uv_factor in [0]
-        for n_blocks in [1]
-    ]
-    for func in functions:
-        for optim in optims:
-            for budget in [30, 100, 3000, 10000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
-
-@registry.register
 def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Noisy optimization methods on a few noisy problems.
     """
