@@ -5,15 +5,18 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import os
+import sys
+import typing as tp
 from pathlib import Path
-from typing import Dict, List, Match
 from setuptools import setup
 from setuptools import find_packages
+from setuptools.command.install import install
 
 
 # read requirements
 
-requirements: Dict[str, List[str]] = {}
+requirements: tp.Dict[str, tp.List[str]] = {}
 for extra in ["dev", "bench", "main"]:
     requirements[extra] = Path(f"requirements/{extra}.txt").read_text().splitlines()
 
@@ -24,7 +27,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
-def _replace_relative_links(regex: Match[str]) -> str:
+def _replace_relative_links(regex: tp.Match[str]) -> str:
     """Converts relative links into links to master
     """
     string = regex.group()
@@ -49,6 +52,18 @@ assert match is not None, "Could not find version in nevergrad/__init__.py"
 version = match.group("version")
 
 
+class VerifyVersionCommand(install):  # type: ignore
+    """Custom command to verify that the git tag matches CircleCI version
+        """
+    description = 'verify that the git tag matches CircleCI version'
+
+    def run(self) -> None:
+        tag = os.getenv('CIRCLE_TAG')
+        if tag != version:
+            info = f"Git tag: {tag} does not match the version of this app: {version}"
+            sys.exit(info)
+
+
 # setup
 setup(
     name="nevergrad",
@@ -69,4 +84,6 @@ setup(
                     "dev": requirements["dev"],
                     "benchmark": requirements["bench"]},
     package_data={"nevergrad": ["py.typed", "*.csv", "*.py"]},
+    python_requires='>=3.6',
+    cmdclass={'verify': VerifyVersionCommand},
 )
