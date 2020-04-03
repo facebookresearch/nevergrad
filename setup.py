@@ -52,7 +52,7 @@ assert match is not None, "Could not find version in nevergrad/__init__.py"
 version = match.group("version")
 
 
-class VerifyVersionCommand(install):  # type: ignore
+class VerifyCircleCiVersionCommand(install):  # type: ignore
     """Custom command to verify that the git tag matches CircleCI version
         """
     description = 'verify that the git tag matches CircleCI version'
@@ -85,5 +85,5 @@ setup(
                     "benchmark": requirements["bench"]},
     package_data={"nevergrad": ["py.typed", "*.csv", "*.py"]},
     python_requires='>=3.6',
-    cmdclass={'verify': VerifyVersionCommand},
+    cmdclass={'verify_ci_version': VerifyCircleCiVersionCommand},
 )

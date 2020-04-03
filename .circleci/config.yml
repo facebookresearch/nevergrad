@@ -240,10 +240,12 @@ jobs:
             echo -e "username = jrapin" >> ~/.pypirc
             # echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
-            # - run:
-            #     name: Verify tag
-            #     command: |
-            #       python setup.py verify
+      - run:
+          name: Verify tag
+          command: |
+            echo $CIRCLECI_TAG
+            echo $CIRCLE_TAG
+            python setup.py verify-circleci-version
 
       - run:
           name: upload to pypi
