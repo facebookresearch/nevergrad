@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from random import shuffle
 import typing as tp
 import itertools
 import numpy as np
@@ -53,7 +52,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "stepdoublelinearslope", "cigar", "ellipsoid", "stepellipsoid"]
-    names.reverse()
 
     # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     functions += [
@@ -63,7 +61,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_blocks in [1]
         for d in [2, 40, 100, 3000]
     ]
-    optims = ["X2Shiva", "NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
+    optims = ["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
     for optim in optims:
         for function in functions:
             for budget in [50, 500, 5000, 50000]:
@@ -213,26 +211,6 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for budget in [30, 100, 3000]:
                 yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
-@registry.register
-def avgdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
-    seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot) # and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "Avg" in x or "eta" in x) and "mmers" not in x and "alto" not in x and "mal" not in x and "esca" not in x and "arg" not in x)
-    #optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("eta" in x or "Avg" in x))    # TODO
-    optims = [o for o in optims if "TEA" in o] #"ando" in o and not "iddle" in o and not "auch" in o and not "esca" in o]
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
-        for name in names
-        for bd in [2000, 20000]     #3, 10, 25, 200, 2000]
-        for uv_factor in [0]
-    ]
-    budgets = [3000, 10000, 30000, 100000]
-    for func in functions:
-        for optim in optims:
-            for budget in budgets:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
 
 @registry.register
 def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -252,16 +230,13 @@ def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for budget in [30, 100, 3000, 10000, 30000, 100000]:
                 yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
+
 @registry.register
 def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    #names.reverse()
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "TEAvg" in x) #hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
-    #optims = [o for o in optims if "LHS" not in o]
-    #optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("eta" in x or "Avg" in x))    # TODO
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -269,50 +244,10 @@ def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for uv_factor in [0]
     ]
     budgets = [30, 100, 3000, 10000, 30000, 100000, 300000]
-    budgets.reverse()
     for func in functions:
         for optim in optims:
             for budget in budgets:
                 yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
-@registry.register
-def newnewdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
-    seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
-    names.reverse()
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "eta" in x) and "mmers" not in x and "alto" not in x and "Avg" not in x)
-    #optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("eta" in x or "Avg" in x))    # TODO
-    optims = [o for o in optims if "eta" in o and "ecen" in o]
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
-        for name in names
-        for bd in [20000, 2000, 20, 200]     #3, 10, 25, 200, 2000]
-        for uv_factor in [0]
-    ]
-    for func in functions:
-        for optim in optims:
-            for budget in [300000, 100000, 30, 100, 3000, 10000, 30000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
-@registry.register
-def minidoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
-    seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x) and "mmers" not in x and "alto" not in x)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "eta" in x)    # TODO
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor, translation_factor=0.3)
-        for name in names
-        for bd in [3, 10, 25, 200]
-        for uv_factor in [0]
-    ]
-    for func in functions:
-        for optim in optims:
-            for budget in [30, 100, 3000, 10000, 30000, 100000, 300000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
 
 
 @registry.register

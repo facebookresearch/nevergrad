@@ -121,7 +121,7 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
         )
     err_inds = set(errordf.index)
     output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
-    #assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
+    assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
     output = tools.Selector(output.reset_index(drop=True))
     return output  # type: ignore
 
