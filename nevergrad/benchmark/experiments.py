@@ -503,7 +503,7 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def paraalldes(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """All Bayesian optimization methods on various functions.
+    """All Bayesian optimization methods on various functions. Parallel version.
     """
     seedg = create_seed_generator(seed)
     for budget in [10, 100, 1000, 10000, 100000]:
@@ -519,7 +519,7 @@ def paraalldes(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def parahdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """All Bayesian optimization methods on various functions.
+    """All Bayesian optimization methods on various functions. Parallel version.
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:
