@@ -753,7 +753,6 @@ class SplitOptimizer(base.Optimizer):
             multivariate_optimizer: base.ConfiguredOptimizer = CMA,
             monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
             progressive: bool = False,
-            berthier: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:
@@ -770,7 +769,6 @@ class SplitOptimizer(base.Optimizer):
             num_optims = self.dimension
         self.num_optims = num_optims
         self.progressive = progressive
-        self.berthier = berthier
         self.optims: List[Any] = []
         self.num_vars: List[Any] = num_vars if num_vars else []
         self.parametrizations: List[Any] = []
@@ -796,10 +794,7 @@ class SplitOptimizer(base.Optimizer):
         for i in range(self.num_optims):
             if self.progressive:
                 assert self.budget is not None
-                if self.berthier:
-                    if i > 0 and sum(self.num_vars[:i]) > self._num_ask:
-                        continue
-                elif i > 0 and i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
+                if i > 0 and i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
                     data += [0.] * self.num_vars[i]
                     continue
             opt = self.optims[i]
@@ -847,7 +842,6 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         multivariate_optimizer: base.ConfiguredOptimizer = CMA,
         monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
         progressive: bool = False,
-        berthier: bool = False
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 

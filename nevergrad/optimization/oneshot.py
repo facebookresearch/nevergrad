@@ -41,7 +41,6 @@ def hull_center(points: np.ndarray, k: int) -> np.ndarray:
     return 0.5 * (maxi + mini)
 
 
-#def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
 def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
 
@@ -277,12 +276,6 @@ class _SamplingSearch(OneShotOptimizer):
         if self.autorescale == "autotune":
             self.scale = np.sqrt(np.log(self.budget) / self.dimension)
         if self.autorescale == "autolog":
-#            if self.dimension - 4 * np.log(self.budget) > 1.: 
-#                self.scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
-#            else:
-#                self.scale = 1.
-#        self._opposable_data = self.scale * (
-#            stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
             if self.dimension - 4 * np.log(self.budget) > 1.:
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:

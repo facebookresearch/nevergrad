@@ -277,7 +277,6 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
-    #def set_recombination(self: A, recombination: tp.Union[str, core.Parameter]) -> A:
     def set_recombination(self: A, recombination: tp.Union[None, str, core.Parameter]) -> A:
         assert self._parameters is not None
         self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)

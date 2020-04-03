@@ -128,7 +128,6 @@ def _make_slices(
             start = rng.randint(s - size)
             slices.append(slice(start, start + size))
         else:
-            #slices.append(slice(s))
             slices.append(slice(None))
     return slices
 
