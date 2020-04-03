@@ -245,7 +245,7 @@ jobs:
           command: |
             echo $CIRCLECI_TAG
             echo $CIRCLE_TAG
-            python setup.py verify-circleci-version
+            python setup.py verify_circleci_version
 
       - run:
           name: upload to pypi
@@ -280,3 +280,5 @@ workflows:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+          branches:
+            ignore: /.*/
