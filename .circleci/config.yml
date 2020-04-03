@@ -228,6 +228,8 @@ jobs:
       - image: python:3.6
     steps:
 
+      - checkout
+
       - attach_workspace:
           at: nevergrad-build
 
