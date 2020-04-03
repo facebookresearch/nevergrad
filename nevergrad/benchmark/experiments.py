@@ -135,26 +135,6 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def largedoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Large scale experiments for one-shot optimizers.
-    Very simple objective function (the sphere), various dimensions and numbers of useless variables."""
-    seedg = create_seed_generator(seed)
-    names = ["sphere"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x and "and" in x)
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-        for name in names
-        for bd in [1, 4, 20]
-        for uv_factor in [0, 10, 100]
-        for n_blocks in [1]
-    ]
-    for func in functions:
-        for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
-
-@registry.register
 def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
