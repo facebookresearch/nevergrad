@@ -222,31 +222,29 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             try:
-                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-                fplotter = FightPlotter(data_df)
-                # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
-                if order == 2 and competencemaps and best_algo:
-                    print("\n#storing data for competence-map")
-                    best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
-                # save
-                name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-                name = "fight_all.png" if name == "fight_.png" else name
-                try:
-                    if name == "fight_all.png":
-                        with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                           f.write("ranking:\n")
-                           for i, algo in enumerate(data_df.columns[:8]):
-                               f.write(f"  algo {i}: {algo}\n")
-                except:
-                    pass
-                if len(name) > 80:
-                    hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
-                    name=re.sub(r'\([^()]*\)', '', name)
-                    mid = 40
-                    name = name[:mid] + hash + name[-mid:]
-                fplotter.save(str(output_folder / name), dpi=_DPI)
-            except:  # This is so dirty... we do not want to break a run because of something weird in the data...
+            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            fplotter = FightPlotter(data_df)
+            # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
+            if order == 2 and competencemaps and best_algo:
+                print("\n#storing data for competence-map")
+                best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
+            # save
+            name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
+            name = "fight_all.png" if name == "fight_.png" else name
+            try:
+                if name == "fight_all.png":
+                    with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                       f.write("ranking:\n")
+                       for i, algo in enumerate(data_df.columns[:8]):
+                           f.write(f"  algo {i}: {algo}\n")
+            except:
                 pass
+            if len(name) > 80:
+                hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
+                name=re.sub(r'\([^()]*\)', '', name)
+                mid = 40
+                name = name[:mid] + hash + name[-mid:]
+            fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
             print("\n# Competence map")
