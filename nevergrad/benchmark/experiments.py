@@ -193,7 +193,7 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
+    """One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
@@ -211,7 +211,8 @@ def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
+    """One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified.
+    Tested on more dimensionalities than doe."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
