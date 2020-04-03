@@ -272,9 +272,9 @@ workflows:
       - pypi-deploy:
           requires:
             - install
-              #  - mypy
-              #  - pytests
-              #  - windows-pytests
-              #filters:
-              #  tags:
-              #    only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+            - mypy
+            - pytests
+            - windows-pytests
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
