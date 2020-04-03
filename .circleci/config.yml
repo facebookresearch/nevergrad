@@ -99,12 +99,6 @@ jobs:
             pip freeze
 
       - run:
-          name: Verify tag
-          command: |
-            . venv/bin/activate
-            python setup.py verify
-
-      - run:
           name: "Run wheel and check package"
           when: always
           command: |
@@ -242,6 +236,11 @@ jobs:
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = jrapin" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+
+      - run:
+          name: Verify tag
+          command: |
+            python setup.py verify
 
       - run:
           name: upload to pypi
