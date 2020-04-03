@@ -841,7 +841,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_vars: tp.Optional[tp.List[int]] = None,
         multivariate_optimizer: base.ConfiguredOptimizer = CMA,
         monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
-        progressive: bool = False,
+        progressive: bool = False
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
@@ -1592,15 +1592,6 @@ class _EMNA(base.Optimizer):
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
                                       for c in self.parents) / self.popsize.mu
             if self.population_size_adaptation:
-#                if self.popsize.llambda < self.min_coef_parallel_context * self.dimension: # Population size not large enough for emna
-#                    self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]), axis=0 if self.isotropic else None) / self.popsize.mu)
-#                else:
-#                    stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
-#                    self.sigma = np.sqrt(np.sum(stdd) / (self.popsize.mu * (self.dimension if self.isotropic else 1)))
-#            else:
-#                # EMNA update
-#                stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
-#                self.sigma = np.sqrt(np.sum(stdd, axis=0 if self.isotropic else None) / (self.popsize.mu * (self.dimension if self.isotropic else 1)))
                 if self.popsize.llambda < self.min_coef_parallel_context * self.dimension:  # Population size not large enough for emna
                     self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]),
                                                axis=0 if self.isotropic else None) / self.popsize.mu)
