@@ -238,7 +238,7 @@ jobs:
           command: |
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = jrapin" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+            # echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
             # - run:
             #     name: Verify tag
@@ -248,7 +248,7 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            python3 -m venv_deploy venv
+            python3 -m venv venv_deploy
             . venv_deploy/bin/activate
             pip install twine
             du -h nevergrad-build/dist/*
@@ -272,9 +272,9 @@ workflows:
       - pypi-deploy:
           requires:
             - install
-            - mypy
-            - pytests
-            - windows-pytests
+              # - mypy
+              # - pytests
+              # - windows-pytests
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
