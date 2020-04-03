@@ -58,7 +58,7 @@ def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth"
     if method == "dimfourth":
         k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
     elif method == "exp":
-        k = max(1, len(archive) // (2**dimension))
+        k = max(1, len(archive) // (1.1**dimension))
     elif method == "hull":
         k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
         return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)

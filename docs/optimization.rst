@@ -27,7 +27,8 @@ Defining the following parametrization instead will optimize on both :code:`x` (
     :start-after: DOC_BASE_1
     :end-before: DOC_BASE_2
 
-We can work in the discrete case as well, e.g. with the one-max function applied on {0,1,2,3,4,5,6}^10:
+We can work in the discrete case as well, e.g. with the one-max function applied on :code:`{0,1,2,3,4,5,6}^10`:
+
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
     :dedent: 4

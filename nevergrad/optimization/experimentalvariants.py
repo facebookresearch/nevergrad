@@ -5,7 +5,7 @@
 
 from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
-from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaLogRecentering  # type: ignore
+from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaLogRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
     OptimisticNoisyOnePlusOne,
     OptimisticDiscreteOnePlusOne,
@@ -88,6 +88,10 @@ WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name(
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
 NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
 AnisoEMNA = EMNA(naive=False, isotropic=False).set_name("AnisoEMNA", register=True)
+IsoEMNATBPSA = EMNA(naive=False, population_size_adaptation=True).set_name("IsoEMNATBPSA", register=True)
+NaiveIsoEMNATBPSA = EMNA(population_size_adaptation=True).set_name("NaiveIsoEMNATBPSA", register=True)
+AnisoEMNATBPSA = EMNA(naive=False, isotropic=False, population_size_adaptation=True).set_name("AnisoEMNATBPSA", register=True)
+NaiveAnisoEMNATBPSA = EMNA(isotropic=False, population_size_adaptation=True).set_name("NaiveAnisoEMNATBPSA", register=True)
 
 # Recentering
 MetaCauchyRecentering = SamplingSearch(
@@ -221,6 +225,32 @@ chainDEwithMetaRecenteringdim = Chaining([MetaRecentering, DE], ["dimension"]).s
 chainDEwithMetaRecentering30 = Chaining([MetaRecentering, DE], [30]).set_name(
     "chainDEwithMetaRecentering30", register=True
 )
+chainBOwithMetaTuneRecentering = Chaining([MetaTuneRecentering, BO], ["num_workers"]).set_name(
+    "chainBOwithMetaTuneRecentering", register=True
+)
+chainBOwithMetaTuneRecenteringsqrt = Chaining([MetaTuneRecentering, BO], ["sqrt"]).set_name(
+    "chainBOwithMetaTuneRecenteringsqrt", register=True
+)
+chainBOwithMetaTuneRecenteringdim = Chaining([MetaTuneRecentering, BO], ["dimension"]).set_name(
+    "chainBOwithMetaTuneRecenteringdim", register=True
+)
+chainBOwithMetaTuneRecentering30 = Chaining([MetaTuneRecentering, BO], [30]).set_name(
+    "chainBOwithMetaTuneRecentering30", register=True
+)
+
+chainDEwithMetaTuneRecentering = Chaining([MetaTuneRecentering, DE], ["num_workers"]).set_name(
+    "chainDEwithMetaTuneRecentering", register=True
+)
+chainDEwithMetaTuneRecenteringsqrt = Chaining([MetaTuneRecentering, DE], ["sqrt"]).set_name(
+    "chainDEwithMetaTuneRecenteringsqrt", register=True
+)
+chainDEwithMetaTuneRecenteringdim = Chaining([MetaTuneRecentering, DE], ["dimension"]).set_name(
+    "chainDEwithMetaTuneRecenteringdim", register=True
+)
+chainDEwithMetaTuneRecentering30 = Chaining([MetaTuneRecentering, DE], [30]).set_name(
+    "chainDEwithMetaTuneRecentering30", register=True
+)
+
 
 chainBOwithR = Chaining([RandomSearch, BO], ["num_workers"]).set_name(
     "chainBOwithR", register=True
@@ -374,6 +404,9 @@ SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
 )
 
 # ProgOptimizer
+VinBerProgOptimizer = ConfSplitOptimizer(num_optims=13, progressive=True, berthier=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
+    "VinBerProgOptimizer", register=True
+)
 ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer3", register=True
 )
@@ -387,6 +420,9 @@ ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivaria
     "ProgOptimizer13", register=True
 )
 # ProgOptimizer
+VinBerProgDOptimizer = ConfSplitOptimizer(num_optims=13, progressive=True, berthier=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "VinBerProgDOptimizer", register=True
+)
 ProgDOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgDOptimizer3", register=True
 )
@@ -563,52 +599,52 @@ AvgCauchyLHSSearch = SamplingSearch(
 ).set_name("AvgCauchyLHSSearch", register=True)
 
 # Recommendation rule = average of k best, with k = n / 2^d.
-EAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_exp_best").set_name("EAvgHaltonSearch", register=True)
-EAvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_exp_best").set_name(
-    "EAvgHaltonSearchPlusMiddlePoint", register=True)
-EAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_exp_best").set_name("EAvgLargeHaltonSearch", register=True)
-EAvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_exp_best").set_name(
-    "EAvgLargeScrHaltonSearch", register=True)
-EAvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeHaltonSearchPlusMiddlePoint", register=True)
-EAvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgSmallHaltonSearchPlusMiddlePoint", register=True)
-EAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgScrHaltonSearch", register=True)
-EAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgScrHaltonSearchPlusMiddlePoint", register=True)
-EAvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeScrHaltonSearchPlusMiddlePoint", register=True)
-EAvgSmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgSmallScrHaltonSearchPlusMiddlePoint", register=True)
-EAvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="average_of_exp_best").set_name(
-    "EAvgHammersleySearch", register=True)
-EAvgHammersleySearchPlusMiddlePoint = SamplingSearch(
-    sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgHammersleySearchPlusMiddlePoint", register=True)
-EAvgLargeHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeHammersleySearchPlusMiddlePoint", register=True)
-EAvgSmallHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgSmallHammersleySearchPlusMiddlePoint", register=True)
-EAvgLargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeScrHammersleySearchPlusMiddlePoint", register=True)
-EAvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
-EAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("EAvgScrHammersleySearchPlusMiddlePoint", register=True)
-EAvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
-                                          recommendation_rule="average_of_exp_best").set_name("EAvgLargeHammersleySearch", register=True)
-EAvgLargeScrHammersleySearch = SamplingSearch(
-    scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgLargeScrHammersleySearch", register=True)
-EAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
-                                        recommendation_rule="average_of_exp_best").set_name("EAvgScrHammersleySearch", register=True)
-EAvgRandomSearch = SamplingSearch(sampler="Random", scrambled=True,
-                                        recommendation_rule="average_of_exp_best").set_name("EAvgRandomSearch", register=True)
-EAvgRescaleScrHammersleySearch = SamplingSearch(
-    sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_exp_best").set_name("EAvgRescaleScrHammersleySearch", register=True)
-EAvgCauchyScrHammersleySearch = SamplingSearch(
-    cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best").set_name("EAvgCauchyScrHammersleySearch", register=True)
-EAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_exp_best").set_name("EAvgLHSSearch", register=True)
-EAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_exp_best").set_name(
-    "EAvgCauchyLHSSearch", register=True)
+TEAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_exp_best").set_name("TEAvgHaltonSearch", register=True)
+TEAvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_exp_best").set_name(
+    "TEAvgHaltonSearchPlusMiddlePoint", register=True)
+TEAvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_exp_best").set_name("TEAvgLargeHaltonSearch", register=True)
+TEAvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_exp_best").set_name(
+    "TEAvgLargeScrHaltonSearch", register=True)
+TEAvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=100., middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgLargeHaltonSearchPlusMiddlePoint", register=True)
+TEAvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=.01, middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgSmallHaltonSearchPlusMiddlePoint", register=True)
+TEAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgScrHaltonSearch", register=True)
+TEAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+    middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgScrHaltonSearchPlusMiddlePoint", register=True)
+TEAvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=100., middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgLargeScrHaltonSearchPlusMiddlePoint", register=True)
+TEAvgSmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+    scale=.01, middle_point=True, scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgSmallScrHaltonSearchPlusMiddlePoint", register=True)
+TEAvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="average_of_exp_best").set_name(
+    "TEAvgHammersleySearch", register=True)
+TEAvgHammersleySearchPlusMiddlePoint = SamplingSearch(
+    sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgHammersleySearchPlusMiddlePoint", register=True)
+TEAvgLargeHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgLargeHammersleySearchPlusMiddlePoint", register=True)
+TEAvgSmallHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgSmallHammersleySearchPlusMiddlePoint", register=True)
+TEAvgLargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scrambled=True, scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgLargeScrHammersleySearchPlusMiddlePoint", register=True)
+TEAvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
+TEAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+    scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_exp_best").set_name("TEAvgScrHammersleySearchPlusMiddlePoint", register=True)
+TEAvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
+                                          recommendation_rule="average_of_exp_best").set_name("TEAvgLargeHammersleySearch", register=True)
+TEAvgLargeScrHammersleySearch = SamplingSearch(
+    scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgLargeScrHammersleySearch", register=True)
+TEAvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
+                                        recommendation_rule="average_of_exp_best").set_name("TEAvgScrHammersleySearch", register=True)
+TEAvgRandomSearch = SamplingSearch(sampler="Random", scrambled=True,
+                                        recommendation_rule="average_of_exp_best").set_name("TEAvgRandomSearch", register=True)
+TEAvgRescaleScrHammersleySearch = SamplingSearch(
+    sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgRescaleScrHammersleySearch", register=True)
+TEAvgCauchyScrHammersleySearch = SamplingSearch(
+    cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best").set_name("TEAvgCauchyScrHammersleySearch", register=True)
+TEAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_exp_best").set_name("TEAvgLHSSearch", register=True)
+TEAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_exp_best").set_name(
+    "TEAvgCauchyLHSSearch", register=True)
 
 # Recommendation rule = by convex hull.
 HCHAvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_hull_best").set_name("HCHAvgHaltonSearch", register=True)

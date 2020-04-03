@@ -257,3 +257,22 @@ class CumulativeDensity(Transform):
         if np.max(y) > 1 or np.min(y) < 0:
             raise ValueError("Only data between 0 and 1 can be transformed back (bounds lead to infinity).")
         return stats.norm.ppf(y)  # type: ignore
+
+
+class Fourrier(Transform):
+
+    def __init__(
+        self,
+        axes: tp.Union[int, tp.Sequence[int]] = 0
+    ) -> None:
+        super().__init__()
+        self.axes: tp.Tuple[int, ...] = (axes,) if isinstance(axes, int) else tuple(axes)  # type: ignore
+        self.name = f"F({axes})"
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        if any(x.shape[a] % 2 for a in self.axes):
+            raise ValueError(f"Only even shapes are allowed for Fourrier transform, got {x.shape}")
+        return np.fft.rfftn(x, axes=self.axes, norm="ortho")  # type: ignore
+
+    def backward(self, y: np.ndarray) -> np.ndarray:
+        return np.fft.irfftn(y, axes=self.axes, norm="ortho")  # type: ignore

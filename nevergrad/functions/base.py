@@ -5,9 +5,9 @@
 
 import typing as tp
 from pathlib import Path
-from nevergrad.parametrization import parameter as p
 import numpy as np
 import pandas as pd
+from nevergrad.parametrization import parameter as p
 
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
@@ -35,10 +35,11 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
+        self._initialization_func: tp.Callable[..., EF] = self.__class__
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parametrization: p.Parameter
         self.parametrization = parametrization
@@ -114,7 +115,7 @@ class ExperimentFunction:
                                                   "(and make sure you don't use the same parametrization in the process), or "
                                                   "initialization parameters should be registered through 'register_initialization'")
             kwargs = {x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._initialization_kwargs.items()}
-            output = self.__class__(**kwargs)
+            output = self._initialization_func(**kwargs)
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")
