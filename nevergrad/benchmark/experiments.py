@@ -178,8 +178,7 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and ("ando" in str(y) or "HCH" in x or "auch" in x or "eta" in x))
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("eta" in x or "Avg" in x))    # TODO
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -197,8 +196,7 @@ def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and ("TEA" in x))    # TODO
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
