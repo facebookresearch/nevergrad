@@ -238,13 +238,11 @@ jobs:
           command: |
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = jrapin" >> ~/.pypirc
-            # echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
       - run:
           name: Verify tag
           command: |
-            echo $CIRCLECI_TAG
-            echo $CIRCLE_TAG
             python setup.py verify_circleci_version
 
       - run:
@@ -254,7 +252,7 @@ jobs:
             . venv_deploy/bin/activate
             pip install twine
             du -h nevergrad-build/dist/*
-            # twine upload nevergrad-build/dist/nevergrad-*
+            twine upload nevergrad-build/dist/nevergrad-*
 
 
 workflows:
@@ -274,9 +272,9 @@ workflows:
       - pypi-deploy:
           requires:
             - install
-              # - mypy
-              # - pytests
-              # - windows-pytests
+            - mypy
+            - pytests
+            - windows-pytests
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
