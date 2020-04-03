@@ -4,34 +4,48 @@
 # LICENSE file in the root directory of this source tree.
 
 import operator
+import warnings
 import typing as tp
 import numpy as np
+from nevergrad.parametrization import parameter as p
 from nevergrad.common.tools import OrderedSet
 from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
 
 
-class Value:
+class MultiValue:
     """Estimation of a value based on one or multiple evaluations.
     This class provides easy access to:
     - count: how many times the point was evaluated
     - mean: the mean value.
     - square: the mean square value
     - variance: the variance
+    - parameter: the corresponding Parameter
+
 
     It also provides access to optimistic and pessimistic bounds for the value.
 
     Parameter
     ---------
+    parameter: Parameter
+        the parameter for one of the evaluations
     y: float
         the first evaluation of the value
     """
 
-    def __init__(self, y: float) -> None:
+    def __init__(self, parameter: p.Parameter, y: float, *, reference: p.Parameter) -> None:
         self.count = 1
         self.mean = y
         self.square = y * y
         # TODO May be safer to use a default variance which depends on y for scale invariance?
         self.variance = 1.e6
+        parameter.freeze()
+        self.parameter = parameter
+        self._ref = reference
+
+    @property
+    def x(self) -> np.ndarray:  # for compatibility
+        return self.parameter.get_standardized_data(reference=self._ref)
 
     @property
     def optimistic_confidence_bound(self) -> float:
@@ -67,39 +81,11 @@ class Value:
         factor: float = np.sqrt(float(self.count) / float(self.count - 1.))
         self.variance = factor * (self.square - self.mean**2)
 
-    def __repr__(self) -> str:
-        return "Value<mean: {}, count: {}>".format(self.mean, self.count)
-
-
-class Point(Value):
-    """Coordinates and estimation of a point in space.
-    This class provides easy access to:
-    - x: the coordinates of the point
-    - count: how many times the point was evaluated
-    - mean: the mean value.
-    - square: the mean square value
-    - variance: the variance
-
-    It also provides access to optimistic and pessimistic bounds for the value.
-
-    Parameters
-    ----------
-    x: array-like
-        the coordinates
-    value: Value
-        the value estimation instance
-    """
-
-    def __init__(self, x: ArrayLike, value: Value) -> None:
-        assert isinstance(value, Value)
-        super().__init__(value.mean)
-        self.__dict__.update(value.__dict__)
-        assert not isinstance(x, (str, bytes))
-        self.x = np.array(x, copy=True)  # copy to avoid interfering with algorithms
-        self.x.flags.writeable = False  # make sure it is not modified!
+    def as_array(self, reference: p.Parameter) -> np.ndarray:
+        return self.parameter.get_standardized_data(reference=reference)
 
     def __repr__(self) -> str:
-        return "Point<x: {}, mean: {}, count: {}>".format(self.x, self.mean, self.count)
+        return f"MultiValue<mean: {self.mean}, count: {self.count}, parameter: {self.parameter}>"
 
 
 def _get_nash(optimizer: tp.Any) -> tp.List[tp.Tuple[tp.Tuple[float, ...], int]]:
@@ -262,15 +248,15 @@ class Pruning:
         self.min_len = min_len
         self.max_len = max_len
 
-    def __call__(self, archive: Archive[Value]) -> Archive[Value]:
+    def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
             return archive
         quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
-            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold)
-        new_archive = Archive[Value]()
+            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
+        new_archive = Archive[MultiValue]()
         new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
         return new_archive
 
@@ -289,7 +275,7 @@ class Pruning:
         """
         # safer to keep at least 7 time the workers
         min_len = max(100, 7 * num_workers)
-        max_len_1gb = 1024**3 // (dimension * 8)
+        max_len_1gb = 1024**3 // (dimension * 8 * 2)  # stored twice: as key and as Parameter
         max_len = max(3 * min_len, min(10 * min_len, max_len_1gb))
         return cls(min_len, max_len)
 
@@ -338,3 +324,84 @@ class UidQueue:
             self.asked.discard(uid)
         else:
             self.told.remove(uid)
+
+
+class BoundScaler:
+    """Hacky way to sample in the space defined by the parametrization.
+    Given an vector of values between 0 and 1,
+    the transform method samples in the bounds if provided,
+    or using the provided function otherwise.
+    This is used for samplers.
+    Code of parametrization and/or this helper should definitely be
+    updated to make it simpler and more robust
+
+    It warns in
+    """
+
+    def __init__(self, reference: p.Parameter) -> None:
+        self.reference = reference.spawn_child()
+        self.reference.freeze()
+        # initial check
+        parameter = self.reference.spawn_child()
+        parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
+        expected = parameter.get_standardized_data(reference=self.reference)
+        self._ref_arrays = self.list_arrays(self.reference)
+        arrays = self.list_arrays(parameter)
+        check = np.concatenate([x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0)
+        self.working = True
+        if not np.allclose(check, expected):
+            self.working = False
+            self._warn()
+
+    def _warn(self) -> None:
+        warnings.warn(f"Failed to find bounds for {self.reference}, quasi-random optimizer may be inefficient.\n"
+                      "Please open an issue on Nevergrad github")
+
+    @classmethod
+    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Array]:
+        """Computes a list of data (Array) parameters in the same order as in
+        the standardized data space.
+        """
+        if isinstance(parameter, p.Array):
+            return [parameter]
+        elif isinstance(parameter, p.Constant):
+            return []
+        if not isinstance(parameter, p.Dict):
+            raise RuntimeError(f"Unsupported parameter {parameter}")
+        output: tp.List[p.Array] = []
+        for _, subpar in sorted(parameter._content.items()):
+            output += cls.list_arrays(subpar)
+        return output
+
+    def transform(self, x: ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+        """Transform from [0, 1] to the space between bounds
+        """
+        y = np.array(x, copy=True)
+        if not self.working:
+            return unbounded_transform(y)
+        try:
+            out = self._transform(y, unbounded_transform)
+        except Exception:  # pylint: disable=broad-except
+            self._warn()
+            out = unbounded_transform(y)
+        return out
+
+    def _transform(self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+        # modifies x in place
+        start = 0
+        for ref in self._ref_arrays:
+            end = start + ref.dimension
+            if any(b is None for b in ref.bounds) or not ref.full_range_sampling:
+                x[start: end] = unbounded_transform(x[start: end])
+            else:
+                array = ref.spawn_child()
+                bounds: tp.List[tp.Any] = list(ref.bounds)
+                if array.exponent is not None:
+                    bounds = [np.log(b) for b in bounds]
+                value = bounds[0] + (bounds[1] - bounds[0]) * x[start:end].reshape(ref._value.shape)
+                if array.exponent is not None:
+                    value = np.exp(value)
+                array._value = value
+                x[start: end] = array.get_standardized_data(reference=ref)
+            start = end
+        return x

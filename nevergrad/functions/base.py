@@ -68,8 +68,6 @@ class ExperimentFunction:
     def parametrization(self, parametrization: p.Parameter) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
-        # TODO change to parametrization
-        self._descriptors.update(parametrization=parametrization.name, dimension=parametrization.dimension)
 
     @property
     def function(self) -> tp.Callable[..., float]:
@@ -85,7 +83,9 @@ class ExperimentFunction:
         """Description of the function parameterization, as a dict. This base class implementation provides function_class,
             noise_level, transform and dimension
         """
-        return dict(self._descriptors)  # Avoid external modification
+        desc = dict(self._descriptors)  # Avoid external modification
+        desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
+        return desc
 
     def __repr__(self) -> str:
         """Shows the function name and its summary
@@ -102,7 +102,7 @@ class ExperimentFunction:
         """
         if other.__class__ != self.__class__:
             return False
-        return bool(self._descriptors == other._descriptors)
+        return bool(self._descriptors == other._descriptors) and self.parametrization.name == other.parametrization.name
 
     def copy(self: EF) -> EF:
         """Provides a new equivalent instance of the class, possibly with
@@ -116,6 +116,8 @@ class ExperimentFunction:
                                                   "initialization parameters should be registered through 'register_initialization'")
             kwargs = {x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._initialization_kwargs.items()}
             output = self._initialization_func(**kwargs)
+            if output.parametrization.name != self.parametrization.name:
+                output.parametrization = self.parametrization.copy()
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")

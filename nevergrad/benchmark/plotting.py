@@ -5,6 +5,7 @@
 
 import hashlib
 import os
+import re
 import argparse
 import itertools
 from pathlib import Path
@@ -12,7 +13,6 @@ import typing as tp
 from typing import Iterator, List, Optional, Any, Dict, Tuple, NamedTuple
 import numpy as np
 import pandas as pd
-import re
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
@@ -126,7 +126,28 @@ def remove_errors(df: pd.DataFrame) -> tools.Selector:
     return output  # type: ignore
 
 
-def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1, xpaxis: str="budget", competencemaps: bool=False) -> None:
+def _aggregate(df: pd.Series) -> str:
+    return ",".join(x for x in df if isinstance(x, str) and x)
+
+
+def merge_parametrization_and_optimizer(df: tools.Selector) -> tools.Selector:
+    okey, pkey = "optimizer_name", "parametrization"
+    if len(df.unique(pkey)) > 1:
+        for optim in df.unique(okey):
+            inds = df.loc[:, okey] == optim
+            if len(df.loc[inds, :].unique(pkey)) > 1:
+                df.loc[inds, okey] = df.loc[inds, [okey, pkey]].agg(_aggregate, axis=1)
+    return df.drop(columns=pkey)  # type: ignore
+
+
+# pylint: disable=too-many-statements,too-many-branches
+def create_plots(
+    df: pd.DataFrame,
+    output_folder: PathLike,
+    max_combsize: int = 1,
+    xpaxis: str = "budget",
+    competencemaps: bool = False
+) -> None:
     """Saves all representing plots to the provided folder
 
     Parameters
@@ -171,7 +192,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1,
         max_combsize = max(max_combsize, 2)
     for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
         orders = [len(c) for c in df.unique(fixed)]
-        if len(orders):
+        if orders:
             assert min(orders) == max(orders)
             order = min(orders)
         else:
@@ -224,7 +245,7 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1,
                     mid = 40
                     name = name[:mid] + hash + name[-mid:]
                 fplotter.save(str(output_folder / name), dpi=_DPI)
-            except:
+            except:  # This is so dirty... we do not want to break a run because of something weird in the data...
                 pass
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
@@ -236,25 +257,21 @@ def create_plots(df: pd.DataFrame, output_folder: PathLike, max_combsize: int=1,
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
-    if max_combsize == 0:
-        print("# Xp plots")
-        name_style = NameStyle()  # keep the same style for each algorithm
-        cases = df.unique(descriptors)
-        if not cases:
-            cases = [()]
-        for case in cases:
-            subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-            description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-            if len(description) > 80:
-                hash = hashlib.md5(bytes(description, 'utf8')).hexdigest()
-                description = description[:40] + hash + description[-40:]
-            out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
-            try:
-               data = XpPlotter.make_data(subdf)
-               xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-               xpplotter.save(out_filepath)
-            except:  # so dirty again...
-               pass
+    print("# Xp plots")
+    name_style = NameStyle()  # keep the same style for each algorithm
+    cases = df.unique(descriptors)
+    if not cases:
+        cases = [()]
+    for case in cases:
+        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        if len(description) > 80:
+            hash_ = hashlib.md5(bytes(description, 'utf8')).hexdigest()
+            description = description[:40] + hash_ + description[-40:]
+        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+        data = XpPlotter.make_data(subdf)
+        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+        xpplotter.save(out_filepath)
     plt.close("all")
 
 
@@ -617,8 +634,11 @@ def main() -> None:
     )
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
     parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
+    parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
     args = parser.parse_args()
     exp_df = tools.Selector.read_csv(args.filepath)
+    if args.merge_parametrization:
+        exp_df = merge_parametrization_and_optimizer(exp_df)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"

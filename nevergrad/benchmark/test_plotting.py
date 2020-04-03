@@ -142,6 +142,17 @@ def test_compute_best_placements(positions: List[float], expected: List[float]) 
     np.testing.assert_array_equal(new_positions, expected)
 
 
+def test_merge_parametrization_and_optimizer() -> None:
+    df = pd.DataFrame(
+        columns=["optimizer_name", "parametrization", "val"],
+        data=[["o1", "p1", 1], ["o1", "p2", 2], ["o2", "p1", 3]]
+    )
+    out = plotting.merge_parametrization_and_optimizer(tools.Selector(df))
+    assert isinstance(out, tools.Selector)
+    assert out["optimizer_name"].tolist() == ["o1,p1", "o1,p2", "o2"]
+    assert out["val"].tolist() == [1, 2, 3]
+
+
 if __name__ == "__main__":
     # simple example which can be run with:
     # python -m nevergrad.benchmark.test_plotting

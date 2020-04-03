@@ -36,7 +36,7 @@ All contributions are directly made to either one of the tools, Nevergrad or IOH
 - [https://github.com/IOHprofiler/](https://github.com/IOHprofiler/) for IOHprofiler [for IOHprofiler, please use the competition branch of the repositories "IOHanalyzer" or "IOHexperimenter" for your submissions]
 
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.
-All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
+All pull requests not yet merged on December 1 2019 and opened before September 30, 2020 are eligible for the competition
 
 Nevergrad requires a CLA for contributors (see in the "Contributing to Nevergad" section of the [documentation](https://facebookresearch.github.io/nevergrad/)).
 
@@ -48,7 +48,7 @@ Nevergrad requires a CLA for contributors (see in the "Contributing to Nevergad"
 Documentations of your submissions can also be submitted for publication in the **GECCO companion materials**. 
 For all details, please check [https://gecco-2020.sigevo.org/index.html/Workshops](https://gecco-2020.sigevo.org/index.html/Workshops)
 Note that the page limit is **2 pages in ACM format**, including references
-Submission deadline: April 3, 2020
+Submission deadline: April 17, 2020
 Make sure to select the Open Optimization Competition 2020 as track when you submit your paper. 
 
 ## Dates

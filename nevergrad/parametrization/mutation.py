@@ -89,6 +89,31 @@ class Crossover(Mutation):
         return result
 
 
+class RavelCrossover(Crossover):
+    """Operator for merging part of an array into another one, after raveling
+
+    Parameters
+    ----------
+    max_size: None or int
+        maximum size of the part taken from the second array. By default, this is at most around half the number of total elements of the
+        array to the power of 1/number of axis.
+    """
+
+    def __init__(
+        self,
+        max_size: tp.Optional[int] = None,
+    ) -> None:
+        super().__init__(axis=0, max_size=max_size)
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+        shape = arrays[0].shape
+        out = super()._apply_array([a.ravel() for a in arrays])
+        return out.reshape(shape)
+
+    def _internal_spawn_child(self) -> "RavelCrossover":
+        return RavelCrossover(max_size=self.parameters["max_size"])  # type: ignore
+
+
 def _make_slices(
     shape: tp.Tuple[int, ...],
     axes: tp.Tuple[int, ...],
@@ -103,7 +128,8 @@ def _make_slices(
             start = rng.randint(s - size)
             slices.append(slice(start, start + size))
         else:
-            slices.append(slice(s))
+            #slices.append(slice(s))
+            slices.append(slice(None))
     return slices
 
 
@@ -124,6 +150,44 @@ class Translation(Mutation):
         axis = tuple(range(data.dim)) if self.axis is None else self.axis
         shifts = [self.random_state.randint(data.shape[a]) for a in axis]
         return np.roll(data, shifts, axis=axis)  # type: ignore
+
+
+class AxisSlicedArray:
+
+    def __init__(self, array: np.ndarray, axis: int):
+        self.array = array
+        self.axis = axis
+
+    def __getitem__(self, slice_: slice) -> np.ndarray:
+        assert isinstance(slice_, slice)
+        slices = tuple(slice_ if a == self.axis else slice(None) for a in range(self.array.ndim))
+        return self.array[slices]  # type: ignore
+
+
+class Jumping(Mutation):
+    """Move a chunk for a position to another in an array
+    """
+
+    def __init__(self, axis: int):
+        super().__init__(axis=axis)
+
+    @property
+    def axis(self) -> int:
+        return self.parameters["axis"].value  # type: ignore
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+        assert len(arrays) == 1
+        data = arrays[0]
+        L = data.shape[self.axis]
+        size = self.random_state.randint(1, 5)
+        asdata = AxisSlicedArray(data, self.axis)
+        init = self.random_state.randint(L)
+        chunck = asdata[init: init + size]
+        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size:]], axis=self.axis)
+        # pylint: disable=unsubscriptable-object
+        newpos = self.random_state.randint(remain.shape[self.axis])
+        asremain = AxisSlicedArray(remain, self.axis)
+        return np.concatenate([asremain[:newpos], chunck, asremain[newpos:]], axis=self.axis)  # type: ignore
 
 
 class LocalGaussian(Mutation):

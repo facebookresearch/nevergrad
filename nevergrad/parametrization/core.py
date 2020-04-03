@@ -32,6 +32,7 @@ class Parameter:
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
+        self.loss: tp.Optional[float] = None  # associated loss
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -353,6 +354,7 @@ class Parameter:
         This is used to run multiple experiments
         """
         child = self.spawn_child()
+        child._name = self._name
         child.random_state = None
         return child
 
@@ -491,8 +493,11 @@ class Dict(Parameter):
 
     @value.setter
     def value(self, value: tp.Dict[str, tp.Any]) -> None:
+        cls = self.__class__.__name__
+        if not isinstance(value, dict):
+            raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
         if set(value) != set(self._content):
-            raise ValueError(f"Got input keys {set(value)} but expected {set(self._content)}")
+            raise ValueError(f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}")
         for key, val in value.items():
             as_parameter(self._content[key]).value = val
 

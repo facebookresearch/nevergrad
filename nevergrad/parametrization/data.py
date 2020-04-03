@@ -121,7 +121,7 @@ class Array(core.Parameter):
             shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
-        sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
+        sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
@@ -204,7 +204,7 @@ class Array(core.Parameter):
         lower: BoundValue = None,
         upper: BoundValue = None,
         method: str = "clipping",
-        full_range_sampling: bool = False,
+        full_range_sampling: tp.Optional[bool] = None,
         a_min: BoundValue = None,
         a_max: BoundValue = None,
     ) -> A:
@@ -229,10 +229,11 @@ class Array(core.Parameter):
               close to the bounds), and reaching the bounds is equivalent to reaching the infinity.
             - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
               to unexpected behaviors.
-        full_range_sampling: bool
+        full_range_sampling: Optional bool
             Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
-            to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
-            "sample" method is used by some algorithms to create an initial population.
+            or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
+            the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
+            This is activated by default if both bounds are provided.
 
         Notes
         -----
@@ -242,6 +243,8 @@ class Array(core.Parameter):
         lower, upper = _a_min_max_deprecation(**locals())
         bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (lower, upper))
         both_bounds = all(b is not None for b in bounds)
+        if full_range_sampling is None:
+            full_range_sampling = both_bounds
         # preliminary checks
         if self.bound_transform is not None:
             raise RuntimeError("A bounding method has already been set")
@@ -274,7 +277,8 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
-    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter]) -> A:
+    #def set_recombination(self: A, recombination: tp.Union[str, core.Parameter]) -> A:
+    def set_recombination(self: A, recombination: tp.Union[None, str, core.Parameter]) -> A:
         assert self._parameters is not None
         self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
                                                       else core.Constant(recombination))
@@ -301,7 +305,7 @@ class Array(core.Parameter):
 
     def set_mutation(
         self: A,
-        sigma: tp.Optional[tp.Union[float, "Array"]] = None,
+        sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
         custom: tp.Optional[tp.Union[str, core.Parameter]] = None
     ) -> A:
@@ -401,6 +405,8 @@ class Array(core.Parameter):
         if not others:
             return
         recomb = self.parameters["recombination"].value
+        if recomb is None:
+            return
         all_params = [self] + list(others)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]

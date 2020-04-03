@@ -8,6 +8,7 @@ import typing as tp
 import itertools
 import numpy as np
 import nevergrad as ng
+from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
@@ -163,7 +164,8 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
+    optims = ["ScrHammersleySearch", "NGO", "Shiva", "DiagonalCMA", "CMA", "PSO",
+              "NaiveTBPSA", "OnePlusOne", "DE", "TwoPointsDE", "NaiveIsoEMNA", "NaiveIsoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -181,7 +183,8 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA", "NaiveIsoEMNATBPSA", "IsoEMNATBPSA","NaiveAnisoEMNATBPSA","AnisoEMNATBPSA"]
+    optims = ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA",
+              "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -356,7 +359,7 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False, noise: bool = False, hd: bool = False) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
@@ -1070,3 +1073,34 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
+
+
+@registry.register
+def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    recombinable: tp.List[tp.Union[str, ConfiguredOptimizer]] = [
+        ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=40).set_name("Pairwise-ES"),
+        ng.families.DifferentialEvolution(crossover="parametrization").set_name("Param-DE")
+    ]
+    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA"]
+    algos += [ng.optimizers.ConfiguredPSO().set_name("PSO"), ng.optimizers.ParametrizedOnePlusOne().set_name("1+1")]
+    func = Photonics("bragg", 80, bounding_method="clipping")
+    func.parametrization.set_name("struct")
+    #
+    func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
+    func_nostruct.parametrization.set_name("non-struct").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
+    #
+    func_mix = Photonics("bragg", 80, bounding_method="clipping")
+    param = func_mix.parametrization
+    param.set_name("mix")
+    param.set_recombination(ng.p.Choice([ng.p.mutation.Crossover(axis=1), ng.p.mutation.RavelCrossover()]))  # type: ignore
+    muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1), ng.p.mutation.Translation(axis=1)]
+    muts += [ng.p.mutation.LocalGaussian(axes=1, size=10)]
+    param.set_mutation(custom=ng.p.Choice(muts))  # type: ignore
+    for budget in [1e3, 1e4, 1e5, 1e6]:
+        xpseed = next(seedg)
+        for algo in algos:
+            yield Experiment(func, algo, int(budget), num_workers=1, seed=xpseed)
+        for f in [func, func_nostruct, func_mix]:
+            for algo in recombinable:
+                yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
