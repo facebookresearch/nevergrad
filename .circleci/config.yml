@@ -106,7 +106,7 @@ jobs:
             rm -rf dist  # make sure it's clean
             python setup.py sdist bdist_wheel
             mkdir nevergrad-build
-            mv -r dist nevergrad-build/
+            mv dist nevergrad-build/
             #
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
