@@ -212,6 +212,24 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                yield Experiment(func, optim, budget=budget, num_workers=budget // 5, seed=next(seedg))
+
+
+@registry.register
 def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator[Experiment]:
     """Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
     deceptivemultimodal."""
