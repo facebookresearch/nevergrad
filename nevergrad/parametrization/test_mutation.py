@@ -73,7 +73,7 @@ def test_jump() -> None:
     out = jump._apply_array([x])
     expected = np.array([0, 3, 4, 1, 2, 5])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
-    assert repr(jump) == "Jumping[axis=0]"
+    assert repr(jump) == "Jumping[axis=0,size=5]"
 
 
 def test_tuned_translation() -> None:
