@@ -167,18 +167,22 @@ class Jumping(Mutation):
     """Move a chunk for a position to another in an array
     """
 
-    def __init__(self, axis: int):
-        super().__init__(axis=axis)
+    def __init__(self, axis: int, size: int):
+        super().__init__(axis=axis, size=size)
 
     @property
     def axis(self) -> int:
         return self.parameters["axis"].value  # type: ignore
 
+    @property
+    def size(self) -> int:
+        return self.parameters["size"].value  # type: ignore
+
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
         L = data.shape[self.axis]
-        size = self.random_state.randint(1, 5)
+        size = self.random_state.randint(1, self.size)
         asdata = AxisSlicedArray(data, self.axis)
         init = self.random_state.randint(L)
         chunck = asdata[init: init + size]

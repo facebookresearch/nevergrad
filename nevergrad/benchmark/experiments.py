@@ -833,7 +833,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     param = func_mix.parametrization
     param.set_name("mix")
     param.set_recombination(ng.p.Choice([ng.p.mutation.Crossover(axis=1), ng.p.mutation.RavelCrossover()]))  # type: ignore
-    muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1), ng.p.mutation.Translation(axis=1)]
+    muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1, size=5), ng.p.mutation.Translation(axis=1)]
     muts += [ng.p.mutation.LocalGaussian(axes=1, size=10)]
     param.set_mutation(custom=ng.p.Choice(muts))  # type: ignore
     for budget in [1e3, 1e4, 1e5, 1e6]:
