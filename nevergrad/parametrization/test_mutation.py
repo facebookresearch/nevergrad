@@ -128,3 +128,17 @@ def test_correlate(axes: tp.Any, expected: tp.Any) -> None:
          [0, 0, 1, 0]]
     out = mutation.correlate(x, y, axes=axes)  # type: ignore
     np.testing.assert_array_almost_equal(out, expected)
+
+
+@testing.parametrized(
+    # verified values
+    one=(1, [[4, 0, 0, 0], [1, 0, 0, 0]]),
+    all_=(None, [[1, 0, 0, 0], [4, 0, 0, 0]]),
+)
+def test_align(axes: tp.Any, expected: tp.Any) -> None:
+    x = [[1, 0, 0, 0],
+         [2, 0, 0, 0]]
+    y = [[0, 0, 4, 0],
+         [0, 0, 1, 0]]
+    out = mutation.align_arrays(x, y, axes=axes)  # type: ignore
+    np.testing.assert_array_almost_equal(out, expected)

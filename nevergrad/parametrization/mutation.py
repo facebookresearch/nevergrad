@@ -324,3 +324,13 @@ def correlate(x: np.ndarray, y: np.ndarray, axes: AxesType = None) -> np.ndarray
     # return sanitized data (border values are redundant)
     slices = tuple(slice(d if a in axes_set else 1) for a, d in enumerate(shape))
     return out[slices]  # type: ignore
+
+
+def align_arrays(x: np.ndarray, y: np.ndarray, axes: AxesType = None) -> np.ndarray:
+    x, out = (np.array(z, copy=False) for z in (x, y))
+    corrs = correlate(x, out, axes=axes)
+    inds = np.unravel_index(np.argmax(corrs, axis=None), x.shape)
+    for a, shift in enumerate(inds):
+        if shift:
+            out = np.roll(out, shift, axis=a)  # type: ignore
+    return out
