@@ -113,3 +113,18 @@ def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Opti
 def test_rolling_mean(window: int, expected: tp.List[int]) -> None:
     output = mutation.rolling_mean(np.array([1, 2, 5, 9]), window)
     np.testing.assert_array_equal(output, expected)
+
+
+@testing.parametrized(
+    # verified values
+    one=(1, [[-0.12785536, -0.12785536, 0.28128178, -0.12785536]]),
+    all_=(None, [[-0.25571071, -0.25571071, 0.56256357, -0.25571071],
+                 [-0.25571071, -0.25571071, 0.97170071, -0.25571071]])
+)
+def test_correlate(axes: tp.Any, expected: tp.Any) -> None:
+    x = [[1, 0, 0, 0],
+         [2, 0, 0, 0]]
+    y = [[0, 0, 4, 0],
+         [0, 0, 1, 0]]
+    out = mutation.correlate(x, y, axes=axes)  # type: ignore
+    np.testing.assert_array_almost_equal(out, expected)

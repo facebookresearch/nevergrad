@@ -7,6 +7,7 @@
 
 import typing as tp
 import numpy as np
+from scipy import signal
 from . import core
 from .import transforms
 from .data import Mutation as Mutation
@@ -292,3 +293,34 @@ class TunedTranslation(Mutation):
         child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
                                      for k, v in self.parameters._content.items()}
         return child
+
+
+AxesType = tp.Optional[tp.Union[int, tp.Iterable[int]]]
+
+
+def correlate(x: np.ndarray, y: np.ndarray, axes: AxesType = None) -> np.ndarray:
+    """Correlate two arrays of same shape on 1 or several axes
+    """
+    arrays = [np.array(z, copy=False, dtype=float) for z in (x, y)]
+    shape = arrays[0].shape
+    if axes is None:
+        axes = range(len(shape))
+    axes_set = {axes} if isinstance(axes, int) else set(axes)
+    assert arrays[1].shape == shape
+    # reverse y since to have a correlation and not a convolution
+    slices = tuple(slice(None, None, -1) if a in axes_set else slice(None) for a, d in enumerate(shape))
+    arrays[1] = arrays[1][slices]
+    # normalize
+    for k, a in enumerate(arrays):
+        arrays[k] -= np.mean(a.ravel())
+        arrays[k] /= np.linalg.norm(arrays[k])
+    # tile to compute as periodic signal
+    arrays[0] = np.tile(arrays[0], [2 if d in axes_set else 1 for d in range(len(shape))])
+    out = signal.fftconvolve(arrays[0], arrays[1], mode='valid', axes=axes)
+    # average on non-correlation axes
+    mean_axes = tuple(d for d in range(len(shape)) if d not in axes_set)
+    if mean_axes:
+        out = np.mean(out, axis=mean_axes, keepdims=True)
+    # return sanitized data (border values are redundant)
+    slices = tuple(slice(d if a in axes_set else 1) for a, d in enumerate(shape))
+    return out[slices]  # type: ignore
