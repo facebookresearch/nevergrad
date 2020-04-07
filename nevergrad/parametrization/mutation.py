@@ -49,15 +49,20 @@ class Crossover(Mutation):
         self,
         axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
         max_size: tp.Optional[int] = None,
-        fft: bool = False
+        fft: bool = False,
+        align: bool = False,
     ) -> None:
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
-        super().__init__(max_size=max_size, axis=axis, fft=fft)
+        super().__init__(max_size=max_size, axis=axis, fft=fft, align=align)
 
     @property
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
+
+    @property
+    def align(self) -> bool:
+        return self.parameters["align"].value  # type: ignore
 
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
@@ -71,6 +76,9 @@ class Crossover(Mutation):
         if len(arrays) != 2:
             raise Exception("Crossover can only be applied between 2 individuals")
         transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
+        arrays = list(arrays)
+        if self.align:
+            arrays[1] = align_arrays(arrays[0], arrays[1], axes=self.axis)
         if transf is not None:
             arrays = [transf.forward(a) for a in arrays]
         shape = arrays[0].shape
@@ -332,5 +340,5 @@ def align_arrays(x: np.ndarray, y: np.ndarray, axes: AxesType = None) -> np.ndar
     inds = np.unravel_index(np.argmax(corrs, axis=None), x.shape)
     for a, shift in enumerate(inds):
         if shift:
-            out = np.roll(out, shift, axis=a)  # type: ignore
+            out = np.roll(out, shift, axis=a)
     return out
