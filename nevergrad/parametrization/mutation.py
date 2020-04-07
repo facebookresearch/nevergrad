@@ -78,7 +78,9 @@ class Crossover(Mutation):
         transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
         arrays = list(arrays)
         if self.align:
-            arrays[1] = align_arrays(arrays[0], arrays[1], axes=self.axis)
+            print("bef", arrays[1])
+            arrays[1] = align_arrays(arrays[0], np.array(arrays[1], copy=True), axes=self.axis)
+            print("aft", arrays[1])
         if transf is not None:
             arrays = [transf.forward(a) for a in arrays]
         shape = arrays[0].shape
@@ -309,7 +311,7 @@ AxesType = tp.Optional[tp.Union[int, tp.Iterable[int]]]
 def correlate(x: np.ndarray, y: np.ndarray, axes: AxesType = None) -> np.ndarray:
     """Correlate two arrays of same shape on 1 or several axes
     """
-    arrays = [np.array(z, copy=False, dtype=float) for z in (x, y)]
+    arrays = [np.array(z, copy=True, dtype=float) for z in (x, y)]
     shape = arrays[0].shape
     if axes is None:
         axes = range(len(shape))
@@ -321,7 +323,9 @@ def correlate(x: np.ndarray, y: np.ndarray, axes: AxesType = None) -> np.ndarray
     # normalize
     for k, a in enumerate(arrays):
         arrays[k] -= np.mean(a.ravel())
-        arrays[k] /= np.linalg.norm(arrays[k])
+        norm = np.linalg.norm(arrays[k])
+        if norm > 0:
+            arrays[k] /= norm
     # tile to compute as periodic signal
     arrays[0] = np.tile(arrays[0], [2 if d in axes_set else 1 for d in range(len(shape))])
     out = signal.fftconvolve(arrays[0], arrays[1], mode='valid', axes=axes)
