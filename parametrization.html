@@ -85,6 +85,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Parametrizing your optimization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preliminary-examples">Preliminary examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parametrization">Parametrization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parametrizing-external-code">Parametrizing external code</a><ul>
@@ -173,6 +174,79 @@ The parametrization subpackage will help you do thanks to:</p>
 <li><p>the <code class="code docutils literal notranslate"><span class="pre">parameter</span></code> modules (accessed by the shortcut <code class="code docutils literal notranslate"><span class="pre">nevergrad.p</span></code>) providing classes that should be used to specify each parameter.</p></li>
 <li><p>the <code class="code docutils literal notranslate"><span class="pre">FolderFunction</span></code> which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc…) or parameters in scripts.</p></li>
 </ul>
+<div class="section" id="preliminary-examples">
+<h2>Preliminary examples<a class="headerlink" href="#preliminary-examples" title="Permalink to this headline">¶</a></h2>
+<p>The code below defines a parametrization that creates a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> with 3 elements:</p>
+<ul class="simple">
+<li><p>a log-distributed scalar.</p></li>
+<li><p>an array of size 2.</p></li>
+<li><p>a random letter, which is either <code class="code docutils literal notranslate"><span class="pre">a</span></code>, <code class="code docutils literal notranslate"><span class="pre">b</span></code> or <code class="code docutils literal notranslate"><span class="pre">c</span></code>,</p></li>
+</ul>
+<p>The main attribute for users is the <code class="code docutils literal notranslate"><span class="pre">value</span></code> attribute, which provides the value of the defined <code class="code docutils literal notranslate"><span class="pre">dict</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+
+<span class="c1"># build a parameter providing a dict value:</span>
+<span class="n">param</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span>
+    <span class="c1"># logarithmically distributed float</span>
+    <span class="n">log</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Log</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+    <span class="c1"># one-dimensional array of length 2</span>
+    <span class="n">array</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,)),</span>
+    <span class="c1"># character, either &quot;a&quot; or &quot;b or &quot;c&quot;.</span>
+    <span class="n">char</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">])</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># {&#39;log&#39;: 0.01,</span>
+<span class="c1">#  &#39;array&#39;: array([0., 0.]),</span>
+<span class="c1">#  &#39;char&#39;: &#39;a&#39;}</span>
+</pre></div>
+</div>
+<p>Parametrization is central in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> since it is the interface between the optimization domain
+defined by the users, and the standardized representations used by the optimizers. The snippet below
+shows how to duplicate the parameter (i.e. spawn a child from the parameter), manually updating the value,
+and export to the standardized space. Unless implementing an algorithm, users should not have any need
+for this export. However, setting the <code class="code docutils literal notranslate"><span class="pre">value</span></code> manually can be used to provide an initial prior to
+the optimizer.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># create a new instance</span>
+<span class="n">child</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">spawn_child</span><span class="p">()</span>
+<span class="c1"># update its value</span>
+<span class="n">child</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;log&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+               <span class="s1">&#39;array&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">12.</span><span class="p">,</span> <span class="mf">13.</span><span class="p">]),</span>
+               <span class="s1">&#39;char&#39;</span><span class="p">:</span> <span class="s1">&#39;c&#39;</span><span class="p">}</span>
+
+<span class="c1"># export to standardized space</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get_standardized_data</span><span class="p">(</span><span class="n">reference</span><span class="o">=</span><span class="n">param</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="c1"># np.array([12., 13.,  0.,  0., 0.69, 0.90])</span>
+</pre></div>
+</div>
+<p>Similarly, optimizers can use <code class="code docutils literal notranslate"><span class="pre">mutate</span></code> and <code class="code docutils literal notranslate"><span class="pre">recombine</span></code> methods to update the value of parameters.
+You can easily check how parameters mutate, and mutation of <code class="code docutils literal notranslate"><span class="pre">Array</span></code> variables can be adapted to your need:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">param</span><span class="o">.</span><span class="n">mutate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># {&#39;log&#39;: 0.155,</span>
+<span class="c1">#  &#39;array&#39;: np.array([-0.966, 0.045]),</span>
+<span class="c1">#  &#39;char&#39;: &#39;a&#39;}</span>
+
+<span class="c1"># increase the step/sigma for array</span>
+<span class="c1"># (note that it&#39;s adviced to to this during the creation</span>
+<span class="c1">#  of the variable:</span>
+<span class="c1">#  array=ng.p.Array(shape=(2,)).set_mutation(sigma=10))</span>
+<span class="n">param</span><span class="p">[</span><span class="s2">&quot;array&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_mutation</span><span class="p">(</span><span class="n">sigma</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+<span class="n">param</span><span class="o">.</span><span class="n">mutate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># {&#39;log&#39;: 0.155,</span>
+<span class="c1">#  &#39;array&#39;: np.array([-9.47, 8.38]),  # larger mutation</span>
+<span class="c1">#  &#39;char&#39;: &#39;a&#39;}</span>
+
+</pre></div>
+</div>
+<p>Note that optimizer <code class="code docutils literal notranslate"><span class="pre">freeze</span></code> candidates to avoid modification their modification and border effects, however you can always spawn new parameters from them.</p>
+<p>Parametrization is also responsible for the randomness in nevergrad. They have a <code class="code docutils literal notranslate"><span class="pre">random_state</span></code> which can be set for reproducibility</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">param</span><span class="o">.</span><span class="n">random_state</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="parameters">
 <h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p>7 types of parameters are currently provided:</p>
