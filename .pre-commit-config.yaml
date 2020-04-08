@@ -12,7 +12,7 @@ repos:
       exclude: ^scripts/
       args: ['-i', '--max-line-length=140']
 -   repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v2.3.1
+    rev: v2.4.4
     hooks:
     - id: pylint
       exclude: ^scripts/
