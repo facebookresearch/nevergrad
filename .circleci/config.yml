@@ -259,19 +259,19 @@ workflows:
   version: 2
   all_ci:
     jobs:
-      - install
+      - install:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - mypy
+      - mypy:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - pytests
+      - pytests:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - windows-pytests
+      - windows-pytests:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
