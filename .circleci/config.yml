@@ -248,11 +248,9 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            python3 -m venv venv_deploy
-            . venv_deploy/bin/activate
-            pip install twine
+            . venv/bin/activate
             du -h nevergrad-build/dist/*
-            twine upload nevergrad-build/dist/nevergrad-*
+            twine upload nevergrad-build/dist/nevergrad-* --verbose
 
 
 workflows:
@@ -271,10 +269,7 @@ workflows:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - windows-pytests:
-          filters:
-            tags:
-              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - windows-pytests
       - docs-deploy:
           requires:
             - install
@@ -288,7 +283,6 @@ workflows:
             - install
             - mypy
             - pytests
-            - windows-pytests
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
