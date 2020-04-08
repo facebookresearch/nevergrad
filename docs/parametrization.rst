@@ -11,6 +11,34 @@ The parametrization subpackage will help you do thanks to:
 - the :code:`parameter` modules (accessed by the shortcut :code:`nevergrad.p`) providing classes that should be used to specify each parameter.
 - the :code:`FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
+
+Preliminary examples
+--------------------
+
+.. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_0
+    :end-before: DOC_PARAM_1
+
+.. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_10
+    :end-before: DOC_PARAM_11
+
+.. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_100
+    :end-before: DOC_PARAM_101
+
+.. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_PARAM_1000
+    :end-before: DOC_PARAM_1001
+
 Parameters
 ----------
 
