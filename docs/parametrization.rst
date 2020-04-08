@@ -15,11 +15,27 @@ The parametrization subpackage will help you do thanks to:
 Preliminary examples
 --------------------
 
+The code below defines a parametrization that creates a :code:`dict` with 3 elements:
+
+- a log-distributed scalar.
+- an array of size 2.
+- a random letter, which is either :code:`a`, :code:`b` or :code:`c`,
+
+The main attribute for users is the :code:`value` attribute, which provides the value of the defined :code:`dict`:
+
 .. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
     :language: python
     :dedent: 4
     :start-after: DOC_PARAM_0
     :end-before: DOC_PARAM_1
+
+
+Parametrization is central in :code:`nevergrad` since it is the interface between the optimization domain
+defined by the users, and the standardized representations used by the optimizers. The snippet below
+shows how to duplicate the parameter (i.e. spawn a child from the parameter), manually updating the value,
+and export to the standardized space. Unless implementing an algorithm, users should not have any need
+for this export. However, setting the :code:`value` manually can be used to provide an initial prior to
+the optimizer.
 
 .. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
     :language: python
@@ -27,11 +43,18 @@ Preliminary examples
     :start-after: DOC_PARAM_10
     :end-before: DOC_PARAM_11
 
+Similarly, optimizers can use :code:`mutate` and :code:`recombine` methods to update the value of parameters.
+You can easily check how parameters mutate, and mutation of :code:`Array` variables can be adapted to your need:
+
 .. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
     :language: python
     :dedent: 4
     :start-after: DOC_PARAM_100
     :end-before: DOC_PARAM_101
+
+Note that optimizer :code:`freeze` candidates to avoid modification their modification and border effects, however you can always spawn new parameters from them.
+
+Parametrization is also responsible for the randomness in nevergrad. They have a :code:`random_state` which can be set for reproducibility
 
 .. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
     :language: python

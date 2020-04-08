@@ -43,6 +43,18 @@ def test_param_example() -> None:
     # {'log': 0.155,
     #  'array': np.array([-0.966, 0.045]),
     #  'char': 'a'}
+
+    # increase the step/sigma for array
+    # (note that it's adviced to to this during the creation
+    #  of the variable:
+    #  array=ng.p.Array(shape=(2,)).set_mutation(sigma=10))
+    param["array"].set_mutation(sigma=10)  # type: ignore
+    param.mutate()
+    print(param.value)
+    # {'log': 0.155,
+    #  'array': np.array([-9.47, 8.38]),  # larger mutation
+    #  'char': 'a'}
+
     # DOC_PARAM_101
 
     # DOC_PARAM_1000
