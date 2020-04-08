@@ -223,6 +223,7 @@ jobs:
             . ./venv/Scripts/activate
             pytest nevergrad -v
 
+
   pypi-deploy:
     docker:
       - image: python:3.6
@@ -234,16 +235,16 @@ jobs:
           at: nevergrad-build
 
       - run:
-          name: init .pypirc
+          name: Create .pypirc
           command: |
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = jrapin" >> ~/.pypirc
-            #echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
-      # - run:
-      #     name: Verify tag
-      #     command: |
-      #       python setup.py verify_circleci_version
+      - run:
+          name: Verify tag
+          command: |
+            python setup.py verify_circleci_version
 
       - run:
           name: upload to pypi
@@ -251,7 +252,7 @@ jobs:
             . venv/bin/activate
             du -h nevergrad-build/dist/*
             twine check nevergrad-build/dist/nevergrad-*
-            # twine upload nevergrad-build/dist/nevergrad-* --verbose
+            twine upload nevergrad-build/dist/nevergrad-* --verbose
 
 
 workflows:
@@ -284,8 +285,8 @@ workflows:
             - install
             - mypy
             - pytests
-              #filters:
-              #  tags:
-              #    only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-              #  branches:
-              #    ignore: /.*/
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+            branches:
+              ignore: /.*/
