@@ -223,18 +223,19 @@ jobs:
             . ./venv/Scripts/activate
             pytest nevergrad -v
 
+
   pypi-deploy:
     docker:
       - image: python:3.6
     steps:
 
-      - checkout
+      - ubuntu_restore_all
 
       - attach_workspace:
           at: nevergrad-build
 
       - run:
-          name: init .pypirc
+          name: Create .pypirc
           command: |
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = jrapin" >> ~/.pypirc
@@ -250,6 +251,7 @@ jobs:
           command: |
             . venv/bin/activate
             du -h nevergrad-build/dist/*
+            twine check nevergrad-build/dist/nevergrad-*
             twine upload nevergrad-build/dist/nevergrad-* --verbose
 
 
