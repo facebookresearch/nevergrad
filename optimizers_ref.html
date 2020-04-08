@@ -167,9 +167,9 @@
 <div class="section" id="optimizer-api">
 <h2>Optimizer API<a class="headerlink" href="#optimizer-api" title="Permalink to this headline">¶</a></h2>
 <p>All the optimizers share the following common API:</p>
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimizers.base.Optimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">Optimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">Optimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Algorithm framework with 3 main functions:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">ask()</span></code> which provides a candidate on which to evaluate the function to optimize.</p></li>
@@ -192,7 +192,7 @@ among which at least <code class="code docutils literal notranslate"><span class
 </ul>
 </dd>
 </dl>
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.ask">
 <code class="sig-name descname">ask</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.ask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides a point to explore.
@@ -208,7 +208,7 @@ which can be directly used on the function (<code class="code docutils literal n
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.dimension">
 <em class="property">property </em><code class="sig-name descname">dimension</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dimension" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dimension of the optimization space.</p>
@@ -219,21 +219,21 @@ which can be directly used on the function (<code class="code docutils literal n
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.dump">
-<code class="sig-name descname">dump</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dump" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">dump</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>pathlib.Path<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.dump" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pickles the optimizer into a file.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.load">
-<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; X<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.load" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>pathlib.Path<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; X<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a pickle and checks that the class is correct.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.minimize">
-<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param">objective_function: Callable[..., float], executor: Optional[nevergrad.common.typetools.ExecutorLike] = None, batch_mode: bool = False, verbosity: int = 0</em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable[…, float]</span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typetools.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimization (minimization) procedure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -263,7 +263,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.num_ask">
 <em class="property">property </em><code class="sig-name descname">num_ask</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_ask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time the <cite>ask</cite> method was called.</p>
@@ -274,7 +274,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.num_tell">
 <em class="property">property </em><code class="sig-name descname">num_tell</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time the <cite>tell</cite> method was called.</p>
@@ -285,7 +285,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.num_tell_not_asked">
 <em class="property">property </em><code class="sig-name descname">num_tell_not_asked</code><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.num_tell_not_asked" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time the <code class="code docutils literal notranslate"><span class="pre">tell</span></code> method was called on candidates that were not asked for by the optimizer
@@ -297,7 +297,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.provide_recommendation">
 <code class="sig-name descname">provide_recommendation</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.provide_recommendation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the best point to use as a minimum, given the budget that was used</p>
@@ -312,7 +312,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.recommend">
 <code class="sig-name descname">recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.recommend" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
@@ -327,9 +327,9 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.register_callback">
-<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param">name: str, callback: Union[Callable[[Optimizer, p.Parameter, float], None], Callable[Optimizer, None]]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">callback</span><span class="p">:</span> <span class="n">Union[Callable[[Optimizer, p.Parameter, float], None], Callable[Optimizer, None]]</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a callback method called either when <cite>tell</cite> or <cite>ask</cite> are called, with the same
 arguments (including the optimizer / self). This can be useful for custom logging.</p>
 <dl class="field-list simple">
@@ -342,15 +342,15 @@ arguments (including the optimizer / self). This can be useful for custom loggin
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.remove_all_callbacks">
 <code class="sig-name descname">remove_all_callbacks</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.remove_all_callbacks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes all registered callables</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.suggest">
-<code class="sig-name descname">suggest</code><span class="sig-paren">(</span><em class="sig-param">*args: Any</em>, <em class="sig-param">**kwargs: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.suggest" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">suggest</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.suggest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Suggests a new point to ask.
 It will be asked at the next call (last in first out).</p>
 <dl class="field-list simple">
@@ -373,9 +373,9 @@ creating a new candidate with <code class="code docutils literal notranslate"><s
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.tell">
-<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param">candidate: nevergrad.parametrization.core.Parameter</em>, <em class="sig-param">value: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the optimizer with the evaluation of a fitness value for a candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -406,9 +406,9 @@ will use this suggestion.</p>
 <span id="id1"></span><h2>Callbacks<a class="headerlink" href="#callbacks" title="Permalink to this headline">¶</a></h2>
 <p>Callbacks can be registered through the <code class="code docutils literal notranslate"><span class="pre">optimizer.register_callback</span></code> for call on either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods. Two of them are available through the
 <cite>ng.callbacks</cite> namespace.</p>
-<span class="target" id="module-nevergrad.callbacks"></span><dl class="class">
+<span class="target" id="module-nevergrad.callbacks"></span><dl class="py class">
 <dt id="nevergrad.callbacks.OptimizerDump">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">OptimizerDump</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.OptimizerDump" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">OptimizerDump</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>pathlib.Path<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.OptimizerDump" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dumps the optimizer to a pickle file at every call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -417,9 +417,9 @@ will use this suggestion.</p>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.callbacks.ParametersLogger">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">ParametersLogger</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path], append: bool = True, order: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.ParametersLogger" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">ParametersLogger</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>pathlib.Path<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">append</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">order</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.ParametersLogger" title="Permalink to this definition">¶</a></dt>
 <dd><p>Logs parameter and run information throughout into a file during
 optimization.</p>
 <dl class="field-list simple">
@@ -442,15 +442,15 @@ optimization.</p>
 <p class="admonition-title">Note</p>
 <p>Arrays are converted to lists</p>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.callbacks.ParametersLogger.load">
-<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.load" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads data from the log file</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.callbacks.ParametersLogger.load_flattened">
-<code class="sig-name descname">load_flattened</code><span class="sig-paren">(</span><em class="sig-param">max_list_elements: int = 24</em><span class="sig-paren">)</span> &#x2192; List[Dict[str, Any]]<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.load_flattened" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">load_flattened</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_list_elements</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">24</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.load_flattened" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads data from the log file, and splits lists (arrays) into multiple arguments</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -460,9 +460,9 @@ unique id of type list_name#i0_i1_…</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.callbacks.ParametersLogger.to_hiplot_experiment">
-<code class="sig-name descname">to_hiplot_experiment</code><span class="sig-paren">(</span><em class="sig-param">max_list_elements: int = 24</em><span class="sig-paren">)</span> &#x2192; Any<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.to_hiplot_experiment" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">to_hiplot_experiment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_list_elements</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">24</span></em><span class="sig-paren">)</span> &#x2192; Any<a class="headerlink" href="#nevergrad.callbacks.ParametersLogger.to_hiplot_experiment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts the logs into an hiplot experiment for display.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -496,9 +496,9 @@ unique id of type list_name#i0_i1_…</p>
 <div class="section" id="configurable-optimizers">
 <h2>Configurable optimizers<a class="headerlink" href="#configurable-optimizers" title="Permalink to this headline">¶</a></h2>
 <p>Configurable optimizers share the following API to create optimizers instances:</p>
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">ConfiguredOptimizer</code><span class="sig-paren">(</span><em class="sig-param">OptimizerClass: Type[nevergrad.optimization.base.Optimizer], config: Dict[str, Any], as_config: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimizers.base.</code><code class="sig-name descname">ConfiguredOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">OptimizerClass</span><span class="p">:</span> <span class="n">Type<span class="p">[</span>nevergrad.optimization.base.Optimizer<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">as_config</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates optimizer-like instances with configuration.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -514,9 +514,9 @@ or through a config kwarg referencing self. (if True, see EvolutionStrategy for 
 <p class="admonition-title">Note</p>
 <p>This provides a default repr which can be bypassed through set_name</p>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer.__call__">
-<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.Optimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.Optimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates an optimizer from the parametrization</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -529,15 +529,15 @@ or through a config kwarg referencing self. (if True, see EvolutionStrategy for 
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer.load">
-<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">filepath: Union[str, pathlib.Path]</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.Optimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.load" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>pathlib.Path<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.Optimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a pickle and checks that it is an Optimizer.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="nevergrad.optimizers.base.ConfiguredOptimizer.set_name">
-<code class="sig-name descname">set_name</code><span class="sig-paren">(</span><em class="sig-param">name: str</em>, <em class="sig-param">register: bool = False</em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.ConfiguredOptimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.set_name" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">register</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.optimization.base.ConfiguredOptimizer<a class="headerlink" href="#nevergrad.optimizers.base.ConfiguredOptimizer.set_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set a new representation for the instance</p>
 </dd></dl>
 
@@ -549,9 +549,9 @@ or through a config kwarg referencing self. (if True, see EvolutionStrategy for 
 <p class="admonition-title">Caution</p>
 <p>This module and its available classes are experimental and may change quickly in the near future.</p>
 </div>
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.ParametrizedOnePlusOne">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param">*, noise_handling: Union[str, Tuple[str, float], None] = None, mutation: str = 'gaussian', crossover: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">noise_handling</span><span class="p">:</span> <span class="n">Union[str, Tuple[str, float], None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple but sometimes powerfull class of optimization algorithm.
 We use asynchronous updates, so that the 1+1 can actually be parallel and even
 performs quite well in such a context - this is naturally close to 1+lambda.</p>
@@ -587,9 +587,9 @@ going back to Schumer and Steiglitz (1968).
 It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.ParametrizedBO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedBO</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">initialization: Optional[str] = None</em>, <em class="sig-param">init_budget: Optional[int] = None</em>, <em class="sig-param">middle_point: bool = False</em>, <em class="sig-param">utility_kind: str = 'ucb'</em>, <em class="sig-param">utility_kappa: float = 2.576</em>, <em class="sig-param">utility_xi: float = 0.0</em>, <em class="sig-param">gp_parameters: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedBO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedBO</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">init_budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">middle_point</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">utility_kind</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'ucb'</span></em>, <em class="sig-param"><span class="n">utility_kappa</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">2.576</span></em>, <em class="sig-param"><span class="n">utility_xi</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gp_parameters</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedBO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bayesian optimization</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -606,9 +606,9 @@ It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.DifferentialEvolution">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">initialization: str = 'gaussian'</em>, <em class="sig-param">scale: Union[str</em>, <em class="sig-param">float] = 1.0</em>, <em class="sig-param">recommendation: str = 'optimistic'</em>, <em class="sig-param">crossover: Union[str</em>, <em class="sig-param">float] = 0.5</em>, <em class="sig-param">F1: float = 0.8</em>, <em class="sig-param">F2: float = 0.8</em>, <em class="sig-param">popsize: str = 'standard'</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'optimistic'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">F1</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">F2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'standard'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Differential evolution algorithms.</p>
 <p>Default pop size is 30
 We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
@@ -635,16 +635,16 @@ and “large” max(num_workers, 30, 7 * dimension).</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.EvolutionStrategy">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EvolutionStrategy</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">recombination_ratio: float = 0</em>, <em class="sig-param">popsize: int = 40</em>, <em class="sig-param">offsprings: Optional[int] = None</em>, <em class="sig-param">only_offsprings: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EvolutionStrategy" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EvolutionStrategy</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">recombination_ratio</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">40</span></em>, <em class="sig-param"><span class="n">offsprings</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">only_offsprings</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EvolutionStrategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Experimental evolution-strategy-like algorithm
 The API is going to evolve</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.ScipyOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ScipyOptimizer</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">method: str = 'Nelder-Mead'</em>, <em class="sig-param">random_restart: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ScipyOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ScipyOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'Nelder-Mead'</span></em>, <em class="sig-param"><span class="n">random_restart</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ScipyOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Scripy optimizers in a ask and tell format</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -657,9 +657,9 @@ spent yet (otherwise, restarts from best point)</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.RandomSearchMaker">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">RandomSearchMaker</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">middle_point: bool = False</em>, <em class="sig-param">stupid: bool = False</em>, <em class="sig-param">opposition_mode: Optional[str] = None</em>, <em class="sig-param">cauchy: bool = False</em>, <em class="sig-param">scale: Union[float</em>, <em class="sig-param">str] = 1.0</em>, <em class="sig-param">recommendation_rule: str = 'pessimistic'</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.RandomSearchMaker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">RandomSearchMaker</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">middle_point</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stupid</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">opposition_mode</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cauchy</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>float<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation_rule</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'pessimistic'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.RandomSearchMaker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides random suggestions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -691,9 +691,9 @@ the default and implies selecting the pessimistic best.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.SamplingSearch">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">SamplingSearch</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">sampler: str = 'Halton'</em>, <em class="sig-param">scrambled: bool = False</em>, <em class="sig-param">middle_point: bool = False</em>, <em class="sig-param">opposition_mode: Optional[str] = None</em>, <em class="sig-param">cauchy: bool = False</em>, <em class="sig-param">autorescale: Union[bool</em>, <em class="sig-param">str] = False</em>, <em class="sig-param">scale: float = 1.0</em>, <em class="sig-param">rescaled: bool = False</em>, <em class="sig-param">recommendation_rule: str = 'pessimistic'</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.SamplingSearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">SamplingSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">sampler</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'Halton'</span></em>, <em class="sig-param"><span class="n">scrambled</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">middle_point</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">opposition_mode</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cauchy</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">autorescale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>bool<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">rescaled</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">recommendation_rule</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'pessimistic'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.SamplingSearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a one-shot optimization method, hopefully better than random search
 by ensuring more uniformity.</p>
 <dl class="field-list simple">
@@ -728,9 +728,9 @@ This can be great in terms of discrepancy when the budget is not very high.</p><
 </ul>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.Chaining">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">Chaining</code><span class="sig-paren">(</span><em class="sig-param">optimizers: Sequence[Union[nevergrad.optimization.base.ConfiguredOptimizer, Type[nevergrad.optimization.base.Optimizer]]], budgets: Sequence[Union[str, int]]</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.Chaining" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">Chaining</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">optimizers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span>Union<span class="p">[</span>nevergrad.optimization.base.ConfiguredOptimizer<span class="p">, </span>Type<span class="p">[</span>nevergrad.optimization.base.Optimizer<span class="p">]</span><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budgets</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.Chaining" title="Permalink to this definition">¶</a></dt>
 <dd><p>A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
 Each algorithm is fed with what happened before it.</p>
 <dl class="field-list simple">
@@ -743,9 +743,9 @@ Each algorithm is fed with what happened before it.</p>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.EMNA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">isotropic: bool = True</em>, <em class="sig-param">naive: bool = True</em>, <em class="sig-param">population_size_adaptation: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EMNA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">isotropic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">population_size_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EMNA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimation of Multivariate Normal Algorithm
 This algorithm is quite efficient in a parallel context, i.e. when
 the population size is large.</p>
@@ -762,9 +762,9 @@ average of the final population.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.families.ParametrizedTBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">naive: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test-based population-size adaptation.
 This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
 <dl class="field-list simple">
@@ -792,51 +792,51 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 <p>Only non-family-based optimizers are listed in the documentation,
 you can get a full list of available optimizers with <code class="code docutils literal notranslate"><span class="pre">sorted(nevergrad.optimizers.registry.keys())</span></code></p>
 </div>
-<span class="target" id="module-nevergrad.optimization.optimizerlib"></span><dl class="class">
+<span class="target" id="module-nevergrad.optimization.optimizerlib"></span><dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ASCMA2PDEthird">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ASCMA2PDEthird</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ASCMA2PDEthird" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ASCMA2PDEthird</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ASCMA2PDEthird" title="Permalink to this definition">¶</a></dt>
 <dd><p>Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ASCMADEQRthird">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ASCMADEQRthird</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ASCMADEQRthird" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ASCMADEQRthird</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ASCMADEQRthird" title="Permalink to this definition">¶</a></dt>
 <dd><p>Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ASCMADEthird">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ASCMADEthird</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ASCMADEthird" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ASCMADEthird</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ASCMADEthird" title="Permalink to this definition">¶</a></dt>
 <dd><p>Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.CM">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CM</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CM" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CM</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CM" title="Permalink to this definition">¶</a></dt>
 <dd><p>Competence map, simplest.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.CMandAS">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CMandAS</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CMandAS" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CMandAS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CMandAS" title="Permalink to this definition">¶</a></dt>
 <dd><p>Competence map, with algorithm selection in one of the cases (2 CMAs).</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.CMandAS2">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CMandAS2</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CMandAS2" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CMandAS2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CMandAS2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Competence map, with algorithm selection in one of the cases (3 CMAs).</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.CMandAS3">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CMandAS3</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CMandAS3" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">CMandAS3</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CMandAS3" title="Permalink to this definition">¶</a></dt>
 <dd><p>Competence map, with algorithm selection in one of the cases (3 CMAs).</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.Chaining">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Chaining</code><span class="sig-paren">(</span><em class="sig-param">optimizers: Sequence[Union[nevergrad.optimization.base.ConfiguredOptimizer, Type[nevergrad.optimization.base.Optimizer]]], budgets: Sequence[Union[str, int]]</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Chaining" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Chaining</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">optimizers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span>Union<span class="p">[</span>nevergrad.optimization.base.ConfiguredOptimizer<span class="p">, </span>Type<span class="p">[</span>nevergrad.optimization.base.Optimizer<span class="p">]</span><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budgets</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Chaining" title="Permalink to this definition">¶</a></dt>
 <dd><p>A chaining consists in running algorithm 1 during T1, then algorithm 2 during T2, then algorithm 3 during T3, etc.
 Each algorithm is fed with what happened before it.</p>
 <dl class="field-list simple">
@@ -849,9 +849,9 @@ Each algorithm is fed with what happened before it.</p>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ConfSplitOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfSplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">num_optims: int = 2</em>, <em class="sig-param">num_vars: Optional[List[int]] = None</em>, <em class="sig-param">multivariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = CMA</em>, <em class="sig-param">monovariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = RandomSearch</em>, <em class="sig-param">progressive: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfSplitOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfSplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">num_optims</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">2</span></em>, <em class="sig-param"><span class="n">num_vars</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multivariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">CMA</span></em>, <em class="sig-param"><span class="n">monovariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">RandomSearch</span></em>, <em class="sig-param"><span class="n">progressive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfSplitOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Configurable split optimizer</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -864,22 +864,22 @@ Each algorithm is fed with what happened before it.</p>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ConfiguredPSO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfiguredPSO</code><span class="sig-paren">(</span><em class="sig-param">transform: str = 'identity'</em>, <em class="sig-param">wide: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfiguredPSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'identity'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.EDA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EDA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EDA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EDA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test-based population-size adaptation.</p>
 <p>Population-size equal to lambda = 4 x dimension.
 Test by comparing the first fifth and the last fifth of the 5lambda evaluations.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.EMNA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">isotropic: bool = True</em>, <em class="sig-param">naive: bool = True</em>, <em class="sig-param">population_size_adaptation: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EMNA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">isotropic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">population_size_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EMNA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimation of Multivariate Normal Algorithm
 This algorithm is quite efficient in a parallel context, i.e. when
 the population size is large.</p>
@@ -896,63 +896,63 @@ average of the final population.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.MEDA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MEDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MEDA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MEDA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MEDA" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.MPCEDA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MPCEDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MPCEDA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MPCEDA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MPCEDA" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.MultiCMA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MultiCMA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MultiCMA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MultiCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MultiCMA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Combining 3 CMAs. Exactly identical. Active selection at 1/10 of the budget.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.MultiScaleCMA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MultiScaleCMA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MultiScaleCMA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">MultiScaleCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MultiScaleCMA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.NGO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NGO</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NGO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Nevergrad optimizer by competence map.</p>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="nevergrad.optimization.optimizerlib.NGO.one_shot">
 <code class="sig-name descname">one_shot</code><em class="property"> = True</em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGO.one_shot" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.NoisyBandit">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NoisyBandit</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NoisyBandit" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NoisyBandit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NoisyBandit" title="Permalink to this definition">¶</a></dt>
 <dd><p>UCB.
 This is upper confidence bound (adapted to minimization),
 with very poor parametrization; in particular, the logarithmic term is set to zero.
 Infinite arms: we add one arm when <cite>20 * #ask &gt;= #arms ** 3</cite>.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.PBIL">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PBIL</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PBIL" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PBIL</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PBIL" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implementation of the discrete algorithm PBIL</p>
 <p><a class="reference external" href="https://www.ri.cmu.edu/pub_files/pub1/baluja_shumeet_1994_2/baluja_shumeet_1994_2.pdf">https://www.ri.cmu.edu/pub_files/pub1/baluja_shumeet_1994_2/baluja_shumeet_1994_2.pdf</a></p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.PCEDA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PCEDA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PCEDA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PCEDA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PCEDA" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.PSO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PSO</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1, transform: str = 'arctan', wide: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'arctan'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Partially following SPSO2011. However, no randomization of the population order.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -963,15 +963,15 @@ Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO
 </div>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParaPortfolio">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParaPortfolio</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParaPortfolio" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParaPortfolio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParaPortfolio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedBO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedBO</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">initialization: Optional[str] = None</em>, <em class="sig-param">init_budget: Optional[int] = None</em>, <em class="sig-param">middle_point: bool = False</em>, <em class="sig-param">utility_kind: str = 'ucb'</em>, <em class="sig-param">utility_kappa: float = 2.576</em>, <em class="sig-param">utility_xi: float = 0.0</em>, <em class="sig-param">gp_parameters: Optional[Dict[str</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedBO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedBO</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">init_budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">middle_point</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">utility_kind</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'ucb'</span></em>, <em class="sig-param"><span class="n">utility_kappa</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">2.576</span></em>, <em class="sig-param"><span class="n">utility_xi</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gp_parameters</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedBO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bayesian optimization</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -986,16 +986,16 @@ Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO
 </ul>
 </dd>
 </dl>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedBO.no_parallelization">
 <code class="sig-name descname">no_parallelization</code><em class="property"> = True</em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedBO.no_parallelization" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedCMA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedCMA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">scale: float = 1.0</em>, <em class="sig-param">popsize: Optional[int] = None</em>, <em class="sig-param">diagonal: bool = False</em>, <em class="sig-param">fcmaes: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedCMA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">diagonal</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fcmaes</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedCMA" title="Permalink to this definition">¶</a></dt>
 <dd><p>CMA-ES optimizer, wrapping external implementation: <a class="reference external" href="https://github.com/CMA-ES/pycma">https://github.com/CMA-ES/pycma</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1012,9 +1012,9 @@ if objective function evaluation is fast.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param">*, noise_handling: Union[str, Tuple[str, float], None] = None, mutation: str = 'gaussian', crossover: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">noise_handling</span><span class="p">:</span> <span class="n">Union[str, Tuple[str, float], None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple but sometimes powerfull class of optimization algorithm.
 We use asynchronous updates, so that the 1+1 can actually be parallel and even
 performs quite well in such a context - this is naturally close to 1+lambda.</p>
@@ -1050,9 +1050,9 @@ going back to Schumer and Steiglitz (1968).
 It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedTBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">naive: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test-based population-size adaptation.
 This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
 <dl class="field-list simple">
@@ -1071,15 +1071,15 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 </div>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.Portfolio">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Portfolio</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Portfolio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passive portfolio of CMA, 2-pt DE and Scr-Hammersley.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.SPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SPSA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SPSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SPSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>The First order SPSA algorithm as shown in [1,2,3], with implementation details
 from [4,5].</p>
 <ol class="arabic simple">
@@ -1091,28 +1091,28 @@ IEEE transactions on automatic control 37.3 (1992): 332-341.</p></li>
 <li><p>Pushpendre Rastogi, Jingyi Zhu, James C. Spall CISS (2016).
 Efficient implementation of Enhanced Adaptive Simultaneous Perturbation Algorithms.</p></li>
 </ol>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="nevergrad.optimization.optimizerlib.SPSA.no_parallelization">
 <code class="sig-name descname">no_parallelization</code><em class="property"> = True</em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SPSA.no_parallelization" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.SQPCMA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SQPCMA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SQPCMA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SQPCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SQPCMA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passive portfolio of CMA and many SQP.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.Shiva">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Shiva</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Shiva" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Shiva</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Shiva" title="Permalink to this definition">¶</a></dt>
 <dd><p>Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.SplitOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1, num_optims: Optional[int] = None, num_vars: Optional[List[int]] = None, multivariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = CMA, monovariate_optimizer: nevergrad.optimization.base.ConfiguredOptimizer = RandomSearch, progressive: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SplitOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">num_optims</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_vars</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multivariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">CMA</span></em>, <em class="sig-param"><span class="n">monovariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">RandomSearch</span></em>, <em class="sig-param"><span class="n">progressive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SplitOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Combines optimizers, each of them working on their own variables.</p>
 <p>num_optims: number of optimizers
 num_vars: number of variable per optimizer.
@@ -1129,15 +1129,15 @@ opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)</p>
 For example, a categorical variable with 5 possible values becomes 5 continuous variables.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.TripleCMA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">TripleCMA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.TripleCMA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">TripleCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.TripleCMA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget.</p>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.cGA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">cGA</code><span class="sig-paren">(</span><em class="sig-param">parametrization: Union[int, nevergrad.parametrization.core.Parameter], budget: Optional[int] = None, num_workers: int = 1, arity: Optional[int] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.cGA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">cGA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">arity</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.cGA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implementation of the discrete cGA algorithm</p>
 <p><a class="reference external" href="https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf">https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf</a></p>
 </dd></dl>
