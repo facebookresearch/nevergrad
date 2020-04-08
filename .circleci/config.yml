@@ -259,16 +259,30 @@ workflows:
   version: 2
   all_ci:
     jobs:
-      - install
-      - mypy
-      - pytests
-      - windows-pytests
+      - install:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - mypy:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - pytests:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - windows-pytests:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
       - docs-deploy:
           requires:
             - install
           filters:
             branches:
               only: master
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
       - pypi-deploy:
           requires:
             - install
