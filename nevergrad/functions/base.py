@@ -6,7 +6,6 @@
 import typing as tp
 from pathlib import Path
 import numpy as np
-import pandas as pd
 from nevergrad.parametrization import parameter as p
 
 
@@ -176,6 +175,8 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     verbose: bool
         whether to also print a message if the leaderboard was updated
     """
+    # pylint: disable=import-outside-toplevel
+    import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
     loss = np.round(loss, decimals=12)  # this is probably already too precise for the machine
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])
