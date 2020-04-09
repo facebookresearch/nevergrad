@@ -108,7 +108,7 @@ class BenchmarkChunk:
         self._id = (
             datetime.datetime.now().strftime("%y-%m-%d_%H%M")
             + "_"
-            + "".join(np.random.choice("abcdefghijklmnopqrstuvwxyz", 4))
+            + "".join(np.random.choice(list("abcdefghijklmnopqrstuvwxyz"), 4))
         )
 
     @property
