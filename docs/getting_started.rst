@@ -47,7 +47,7 @@ Optimizing (minimizing!) a function using an optimizer (here :code:`OnePlusOne`)
 :code:`parametrization=n` is a shortcut to state that the function has only one variable, of dimension :code:`n`,
 See the :ref:`parametrization tutorial <parametrizing>` for more complex parametrizations.
 
-:code:`recommendation` holds the optimal value(s) found by the for the provided function. It can be
+:code:`recommendation` holds the optimal value(s) found for the provided function. It can be
 directly accessed through :code:`recommendation.value` which is here a :code:`np.ndarray` of size 2.
 
 You can print the full list of optimizers with:
