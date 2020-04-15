@@ -26,7 +26,7 @@ the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
 
 **Notes**:
 
-- with :code:`zhs` you will need to run :code:`pip install 'nevergrad[all]'` instead of :code:`pip install nevergrad[all]`
+- with :code:`zsh` you will need to run :code:`pip install 'nevergrad[all]'` instead of :code:`pip install nevergrad[all]`
 - under Windows, you may need to preinstall torch (for :code:`benchmark` or :code:`all` installations) using Pytorch `installation instructions <https://pytorch.org/get-started/locally/>`_.
 
 
