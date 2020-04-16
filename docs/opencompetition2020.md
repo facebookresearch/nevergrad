@@ -36,7 +36,7 @@ All contributions are directly made to either one of the tools, Nevergrad or IOH
 - [https://github.com/IOHprofiler/](https://github.com/IOHprofiler/) for IOHprofiler [for IOHprofiler, please use the competition branch of the repositories "IOHanalyzer" or "IOHexperimenter" for your submissions]
 
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.
-All pull requests not yet merged on December 1 2019 and opened before June 1, 2020 are eligible for the competition
+All pull requests not yet merged on December 1 2019 and opened before September 30, 2020 are eligible for the competition
 
 Nevergrad requires a CLA for contributors (see in the "Contributing to Nevergad" section of the [documentation](https://facebookresearch.github.io/nevergrad/)).
 

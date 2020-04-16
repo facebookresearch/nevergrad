@@ -68,12 +68,12 @@ def test_translation() -> None:
 
 def test_jump() -> None:
     x = np.arange(6)[:, None].dot(np.ones((1, 2)))
-    jump = mutation.Jumping(0)
+    jump = mutation.Jumping(axis=0, size=5)
     jump.random_state.seed(38)
     out = jump._apply_array([x])
     expected = np.array([0, 3, 4, 1, 2, 5])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
-    assert repr(jump) == "Jumping[axis=0]"
+    assert repr(jump) == "Jumping[axis=0,size=5]"
 
 
 def test_tuned_translation() -> None:

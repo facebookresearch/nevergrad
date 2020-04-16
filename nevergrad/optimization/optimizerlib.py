@@ -69,11 +69,13 @@ class _OnePlusOne(base.Optimizer):
         self.mutation = mutation
         self.crossover = crossover
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
         noise_handling = self.noise_handling
         if not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+            out = self.parametrization.spawn_child()
+            out._meta["sigma"] = self._sigma
+            return out
         # for noisy version
         if noise_handling is not None:
             limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
@@ -81,33 +83,41 @@ class _OnePlusOne(base.Optimizer):
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
                     idx = self._rng.choice(len(self.archive))
-                    return np.frombuffer(list(self.archive.bytesdict.keys())[idx])  # type: ignore
+                    return list(self.archive.values())[idx].parameter.spawn_child()  # type: ignore
                 elif strategy == "optimistic":
-                    return self.current_bests["optimistic"].x
+                    return self.current_bests["optimistic"].parameter.spawn_child()
         # crossover
         mutator = mutations.Mutator(self._rng)
+        pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
-            return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
+            data = mutator.crossover(pessimistic.get_standardized_data(reference=ref),
+                                     mutator.get_roulette(self.archive, num=2))
+            return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
         mutation = self.mutation
-        pessimistic = self.current_bests["pessimistic"].x
-        if mutation == "gaussian":  # standard case
-            return pessimistic + self._sigma * self._rng.normal(0, 1, self.dimension)  # type: ignore
-        elif mutation == "cauchy":
-            return pessimistic + self._sigma * self._rng.standard_cauchy(self.dimension)  # type: ignore
-        elif mutation == "crossover":
-            if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutator.portfolio_discrete_mutation(pessimistic)
-            else:
-                return mutator.crossover(pessimistic, mutator.get_roulette(self.archive, num=2))
+        if mutation in ("gaussian", "cauchy"):  # standard case
+            step = (self._rng.normal(0, 1, self.dimension) if mutation == "gaussian" else
+                    self._rng.standard_cauchy(self.dimension))
+            out = pessimistic.set_standardized_data(self._sigma * step)
+            out._meta["sigma"] = self._sigma
+            return out
         else:
-            func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
-                "discrete": mutator.discrete_mutation,
-                "fastga": mutator.doerr_discrete_mutation,
-                "doublefastga": mutator.doubledoerr_discrete_mutation,
-                "portfolio": mutator.portfolio_discrete_mutation,
-            }[mutation]
-            return func(self.current_bests["pessimistic"].x)
+            pessimistic_data = pessimistic.get_standardized_data(reference=ref)
+            if mutation == "crossover":
+                if self._num_ask % 2 == 0 or len(self.archive) < 3:
+                    data = mutator.portfolio_discrete_mutation(pessimistic_data)
+                else:
+                    data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            else:
+                func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
+                    "discrete": mutator.discrete_mutation,
+                    "fastga": mutator.doerr_discrete_mutation,
+                    "doublefastga": mutator.doubledoerr_discrete_mutation,
+                    "portfolio": mutator.portfolio_discrete_mutation,
+                }[mutation]
+                data = func(pessimistic_data)
+            return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
@@ -240,12 +250,13 @@ class _CMA(base.Optimizer):
                 self.listx = []
                 self.listy = []
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_provide_recommendation(self) -> np.ndarray:
+        pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(reference=self.parametrization)
         if self._es is None:
-            return self.current_bests["pessimistic"].x
-        cma_best: tp.Optional[ArrayLike] = self.es.best_x if self._fcmaes else self.es.result.xbest
+            return pessimistic
+        cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._fcmaes else self.es.result.xbest
         if cma_best is None:
-            return self.current_bests["pessimistic"].x
+            return pessimistic
         return cma_best
 
 
@@ -468,13 +479,13 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     naive: bool
         set to False for noisy problem, so that the best points will be an
         average of the final population.
-    
+
     Note
     ----
     Derived from:
     Hellwig, Michael & Beyer, Hans-Georg. (2016).
     Evolution under Strong Noise: A Self-Adaptive Evolution Strategy
-    Reaches the Lower Performance Bound -- the pcCMSA-ES. 
+    Reaches the Lower Performance Bound -- the pcCMSA-ES.
     https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf
     """
 
@@ -1582,15 +1593,19 @@ class _EMNA(base.Optimizer):
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
                                       for c in self.parents) / self.popsize.mu
             if self.population_size_adaptation:
-                if self.popsize.llambda < self.min_coef_parallel_context * self.dimension: # Population size not large enough for emna
-                    self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]), axis=0 if self.isotropic else None) / self.popsize.mu)
+                if self.popsize.llambda < self.min_coef_parallel_context * self.dimension:  # Population size not large enough for emna
+                    self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents]),
+                                               axis=0 if self.isotropic else None) / self.popsize.mu)
                 else:
-                    stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
+                    stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) -
+                             self.current_center)**2 for i in range(self.popsize.mu)]
                     self.sigma = np.sqrt(np.sum(stdd) / (self.popsize.mu * (self.dimension if self.isotropic else 1)))
             else:
                 # EMNA update
-                stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) - self.current_center)**2 for i in range(self.popsize.mu)]
-                self.sigma = np.sqrt(np.sum(stdd, axis=0 if self.isotropic else None) / (self.popsize.mu * (self.dimension if self.isotropic else 1)))
+                stdd = [(self.parents[i].get_standardized_data(reference=self.parametrization) -
+                         self.current_center)**2 for i in range(self.popsize.mu)]
+                self.sigma = np.sqrt(np.sum(stdd, axis=0 if self.isotropic else None) /
+                                     (self.popsize.mu * (self.dimension if self.isotropic else 1)))
 
             if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
                 imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))

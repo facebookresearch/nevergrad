@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Union
+import typing as tp
 import numpy as np
 from scipy import stats
-from scipy.spatial import ConvexHull
-from ..common.typetools import ArrayLike
+from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
+from nevergrad.common.typetools import ArrayLike
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -20,17 +20,17 @@ def convex_limit(points: np.ndarray) -> int:
     """Given points in order from best to worst,
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
     d = len(points[0])
-    hull = ConvexHull(points[:d+1], incremental=True)
+    hull = ConvexHull(points[: d + 1], incremental=True)
     k = min(d, len(points) // 4)
-    for i in range(d+1, len(points)):
-        hull.add_points(points[i:(i+1)])
+    for i in range(d + 1, len(points)):
+        hull.add_points(points[i: (i + 1)])
         if i not in hull.vertices:
             k = i - 1
             break
     return k
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value], method: str = "dimfourth") -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
 
     Parameters
@@ -83,13 +83,13 @@ class _RandomSearch(OneShotOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         middle_point: bool = False,
         stupid: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        scale: Union[float, str] = 1.,
+        scale: tp.Union[float, str] = 1.,
         recommendation_rule: str = "pessimistic"
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -101,7 +101,7 @@ class _RandomSearch(OneShotOptimizer):
         self.recommendation_rule = recommendation_rule
         self.cauchy = cauchy
         self.scale = scale
-        self._opposable_data: Optional[np.ndarray] = None
+        self._opposable_data: tp.Optional[np.ndarray] = None
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
@@ -113,14 +113,14 @@ class _RandomSearch(OneShotOptimizer):
             return data
         if self.middle_point and not self._num_ask:
             self._opposable_data = np.zeros(self.dimension)
-            return self._opposable_data  # type: ignore
+            return self._opposable_data
         scale = self.scale
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension (1st version).
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "autolog":
             # Some variants use a rescaling depending on the budget and the dimension (2nde version).
-            if self.dimension - 4 * np.log(self.budget) > 1.: 
+            if self.dimension - 4 * np.log(self.budget) > 1.:
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
                 scale = 1.
@@ -163,7 +163,7 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
          - "auto": scales in function of dimension and budget (version 1)
-         - "autolog": scales in function of dimension and budget (version 2)         
+         - "autolog": scales in function of dimension and budget (version 2)
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
@@ -177,9 +177,9 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         *,
         middle_point: bool = False,
         stupid: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        scale: Union[float, str] = 1.,
+        scale: tp.Union[float, str] = 1.,
         recommendation_rule: str = "pessimistic"
     ) -> None:
         super().__init__(_RandomSearch, locals())
@@ -196,22 +196,22 @@ class _SamplingSearch(OneShotOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         sampler: str = "Halton",
         scrambled: bool = False,
         middle_point: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        autorescale: Union[bool, str] = False,
+        autorescale: tp.Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._sampler_instance: Optional[sequences.Sampler] = None
-        self._rescaler: Optional[sequences.Rescaler] = None
-        self._opposable_data: Optional[np.ndarray] = None
+        self._sampler_instance: tp.Optional[sequences.Sampler] = None
+        self._rescaler: tp.Optional[sequences.Rescaler] = None
+        self._opposable_data: tp.Optional[np.ndarray] = None
         self._sampler = sampler
         self.opposition_mode = opposition_mode
         self.middle_point = middle_point
@@ -221,6 +221,8 @@ class _SamplingSearch(OneShotOptimizer):
         self.scale = scale
         self.rescaled = rescaled
         self.recommendation_rule = recommendation_rule
+        # rescale to the bounds if both are provided
+        self._scaler = utils.BoundScaler(self.parametrization)
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -242,7 +244,7 @@ class _SamplingSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+            return np.zeros(self.dimension)
         mode = self.opposition_mode
         if self._opposable_data is not None and mode is not None:
             # weird mypy error, revealed as array, but not accepting substraction
@@ -256,12 +258,15 @@ class _SamplingSearch(OneShotOptimizer):
         if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if self.autorescale == "autolog":
-            if self.dimension - 4 * np.log(self.budget) > 1.: 
+            if self.dimension - 4 * np.log(self.budget) > 1.:
                 scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
             else:
                 scale = 1.
-        self._opposable_data = self.scale * (
-            stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
+
+        def transf(x: np.ndarray) -> np.ndarray:
+            return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
+
+        self._opposable_data = self._scaler.transform(sample, transf)
         assert self._opposable_data is not None
         return self._opposable_data
 
@@ -320,9 +325,9 @@ class SamplingSearch(base.ConfiguredOptimizer):
         sampler: str = "Halton",
         scrambled: bool = False,
         middle_point: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        autorescale: Union[bool, str] = False,
+        autorescale: tp.Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
@@ -332,7 +337,7 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 # pylint: disable=line-too-long
 OAvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", 
+    cauchy=False, autorescale="autolog",
     sampler="Hammersley", scrambled=True,
     recommendation_rule="average_of_hull_best",
     opposition_mode="opposite"
