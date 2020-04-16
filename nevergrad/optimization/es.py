@@ -105,3 +105,78 @@ RecMutDE = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsp
 ES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60).set_name("ES", register=True)
 MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=20).set_name("MixES", register=True)
 MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).set_name("MutDE", register=True)
+
+
+class _PoolOp(base.Optimizer):
+    """Experimental evolution-strategy-like algorithm
+    The behavior is going to evolve
+    """
+
+    def __init__(
+        self,
+        parametrization: base.IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        config: tp.Optional["EvolutionStrategy"] = None
+    ) -> None:
+        if budget is not None and budget < 60:
+            warnings.warn("ES algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._population: tp.Dict[str, p.Parameter] = {}
+        self._uid_queue = UidQueue()
+        self._waiting: tp.Dict[str, tp.List[p.Parameter]] = {}
+        # configuration
+        self._config = EvolutionStrategy() if config is None else config
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if self.num_ask < self._config.popsize:
+            param = self.parametrization.sample()
+            assert param.uid == param.heritage["lineage"]  # this is an assumption used below
+            self._uid_queue.asked.add(param.uid)
+            self._population[param.uid] = param
+            return param
+        uid = self._uid_queue.ask()
+        param = self._population[uid].spawn_child()
+        pool = [param_ for uid_, param_ in self._population.items() if uid_ != uid]
+        param.recombine(*pool, best=self.current_bests["average"].parameter)
+        return param
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        uid = candidate.heritage["lineage"]
+        self._uid_queue.tell(uid)
+        if uid not in self._population:
+            self._population[uid] = candidate
+            return
+        # past initialization
+        if self._config.offsprings is None:
+            if value < self._population[uid].loss:  # type: ignore
+                self._population[uid] = candidate
+        else:
+            waiting = self._waiting.setdefault(uid, [])
+            waiting.append(candidate)
+            if len(waiting) >= self._config.offsprings:
+                waiting.sort(key=lambda x: x.loss)
+                self._population[uid] = waiting[0]
+                waiting.clear()
+
+
+class PoolOp(base.ConfiguredOptimizer):
+    """Experimental evolution-strategy-like algorithm
+    The API is going to evolve
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+            self,
+            *,
+            popsize: int = 40,
+            offsprings: tp.Optional[int] = None,
+    ) -> None:
+        super().__init__(_PoolOp, locals(), as_config=True)
+        self.popsize = popsize
+        self.offsprings = offsprings
+
+
+PoolOpPair = PoolOp()
+PoolOp5 = PoolOp(offsprings=5)

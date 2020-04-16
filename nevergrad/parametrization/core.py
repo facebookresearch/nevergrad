@@ -108,7 +108,13 @@ class Parameter:
         child.heritage["lineage"] = child.uid
         return child
 
-    def recombine(self: P, *others: P) -> None:
+    def recombine(
+            self: P,
+            *others: P,
+            auto: bool = False,
+            best: tp.Optional[P] = None,
+
+    ) -> None:
         """Update value and parameters of this instance by combining it with
         other instances.
 
@@ -419,7 +425,12 @@ class Constant(Parameter):
             self.value = new_value  # check that it is equal
         return self  # no need to create another instance for a constant
 
-    def recombine(self: P, *others: P) -> None:
+    def recombine(
+        self: P,
+        *others: P,
+        auto: bool = False,
+        best: tp.Optional[P] = None,
+    ) -> None:
         pass
 
     def mutate(self) -> None:
@@ -541,14 +552,20 @@ class Dict(Parameter):
         child.heritage["lineage"] = child.uid
         return child
 
-    def recombine(self, *others: "Dict") -> None:
+    def recombine(
+        self: D,
+        *others: D,
+        auto: bool = False,
+        best: tp.Optional[D] = None,
+    ) -> None:
         if not others:
             return
         # pylint: disable=pointless-statement
         self.random_state  # make sure to create one before using
         assert all(isinstance(o, self.__class__) for o in others)
         for k, param in self._content.items():
-            param.recombine(*[o[k] for o in others])
+            kbest = None if best is None else best[k]
+            param.recombine(*[o[k] for o in others], auto=auto, best=kbest)
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()

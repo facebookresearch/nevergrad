@@ -84,6 +84,12 @@ class Mutation(core.Parameter):
     def value(self, value: tp.Any) -> None:  # pylint: disable=unused-argument
         raise RuntimeError("Mutation cannot be set.")
 
+    def apply_auto(self, arrays: tp.Sequence["Array"], best: tp.Optional["Array"] = None) -> None:  # pylint: disable=unused-argument
+        selected_arrays = [arrays[0]]
+        if self.order > 1:
+            selected_arrays += self.random_state.choice(arrays[1:], self.order - 1, replace=False)
+        return self.apply(selected_arrays)
+
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
         if len(arrays) != self.order:
             raise Exception(f"{self.__class__.__name__} can only be applied between {self.order} individuals")
@@ -412,7 +418,12 @@ class Array(core.Parameter):
         reduced = distribval / sigma
         return reduced.ravel()  # type: ignore
 
-    def recombine(self: A, *others: A) -> None:
+    def recombine(
+        self: A,
+        *others: A,
+        auto: bool = False,
+        best: tp.Optional[A] = None,
+    ) -> None:
         if not others:
             return
         recomb = self.parameters["recombination"].value
@@ -422,8 +433,13 @@ class Array(core.Parameter):
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
+        elif isinstance(recomb, str) and recomb == "mutate":
+            self.mutate()
         elif isinstance(recomb, Mutation):
-            recomb.apply(all_params)
+            if auto:
+                recomb.apply_auto(all_params, best=best)
+            else:
+                recomb.apply(all_params)
         elif callable(recomb):
             recomb(all_params)
         else:
