@@ -78,9 +78,7 @@ class Crossover(Mutation):
         transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
         arrays = list(arrays)
         if self.align:
-            print("bef", arrays[1])
             arrays[1] = align_arrays(arrays[0], np.array(arrays[1], copy=True), axes=self.axis)
-            print("aft", arrays[1])
         if transf is not None:
             arrays = [transf.forward(a) for a in arrays]
         shape = arrays[0].shape
