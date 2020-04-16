@@ -138,16 +138,16 @@ class _PoolOp(base.Optimizer):
             return param
         uid = self._uid_queue.ask()
         param = self._population[uid].spawn_child()
-        pool = [param_ for uid_, param_ in self._population.items() if uid_ != uid]
-        param.recombine(*pool, best=self.current_bests["average"].parameter)
+        if self._rng.randint(5):  # TODO adaptative
+            param.mutate()
+        else:
+            pool = [param_ for uid_, param_ in self._population.items() if uid_ != uid]
+            param.recombine(*pool, best=self.current_bests["average"].parameter)
         return param
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         uid = candidate.heritage["lineage"]
         self._uid_queue.tell(uid)
-        if uid not in self._population:
-            self._population[uid] = candidate
-            return
         # past initialization
         if self._config.offsprings is None:
             if value < self._population[uid].loss:  # type: ignore
@@ -178,5 +178,5 @@ class PoolOp(base.ConfiguredOptimizer):
         self.offsprings = offsprings
 
 
-PoolOpPair = PoolOp()
-PoolOp5 = PoolOp(offsprings=5)
+PoolOpPair = PoolOp().set_name("PoolOpPair", register=True)
+PoolOp5 = PoolOp(popsize=10, offsprings=5).set_name("PoolOp5", register=True)

@@ -433,8 +433,6 @@ class Array(core.Parameter):
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
-        elif isinstance(recomb, str) and recomb == "mutate":
-            self.mutate()
         elif isinstance(recomb, Mutation):
             if auto:
                 recomb.apply_auto(all_params, best=best)

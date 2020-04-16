@@ -119,6 +119,7 @@ SLOW = [
     "MEDA",
     "MicroCMA",
     "ES",
+    "PoolOpPair",
 ]
 DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: tp.List[str] = []
@@ -187,7 +188,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
     budget = {"WidePSO": 100, "PSO": 200, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
-    if isinstance(optimizer_cls, (optlib.DifferentialEvolution, optlib.EvolutionStrategy)):
+    if isinstance(optimizer_cls, (optlib.DifferentialEvolution, optlib.EvolutionStrategy, optlib.PoolOp)):
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
