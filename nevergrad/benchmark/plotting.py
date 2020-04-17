@@ -239,10 +239,10 @@ def create_plots(
             except:
                 pass
             if len(name) > 80:
-                hash = hashlib.md5(bytes(name, 'utf8')).hexdigest()
+                hashcode = hashlib.md5(bytes(name, 'utf8')).hexdigest()
                 name=re.sub(r'\([^()]*\)', '', name)
                 mid = 40
-                name = name[:mid] + hash + name[-mid:]
+                name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
