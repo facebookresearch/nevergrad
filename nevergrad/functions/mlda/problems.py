@@ -68,6 +68,10 @@ class Clustering(ExperimentFunction):
         assert name in ["Ruspini", "German towns"]
         points = datasets.get_data(name)
         pb = cls(points=points, num_clusters=num_clusters, rescale=rescale)
+        assert pb._initialization_kwargs is not None
+        del pb._initialization_kwargs["points"]
+        pb._initialization_kwargs["name"] = name
+        pb._initialization_func = cls.from_mlda  # type: ignore
         pb._descriptors.update(name=name)
         return pb
 
@@ -115,6 +119,8 @@ class Perceptron(ExperimentFunction):
         data = datasets.make_perceptron_data(name)
         pb = cls(data[:, 0], data[:, 1])
         pb._descriptors.update(name=name)
+        pb._initialization_kwargs = {"name": name}
+        pb._initialization_func = cls.from_mlda  # type: ignore
         return pb
 
     def apply(self, parameters: ArrayLike) -> np.ndarray:
@@ -186,6 +192,8 @@ class SammonMapping(ExperimentFunction):
             proximity = scipy.spatial.distance_matrix(raw_data, raw_data)  # for Virus, the proximity matrix must be computed
         pb = cls(proximity)
         pb._descriptors.update(name=name, rescale=rescale)
+        pb._initialization_kwargs = {"name": name, "rescale": rescale}
+        pb._initialization_func = cls.from_mlda  # type: ignore
         return pb
 
     @classmethod
@@ -198,6 +206,8 @@ class SammonMapping(ExperimentFunction):
         data[:, 1] = np.imag(idata)
         instance = cls(scipy.spatial.distance_matrix(data, data))
         instance._descriptors.update(name="circle", num_points=num_points)
+        instance._initialization_kwargs = {"num_points": num_points}
+        instance._initialization_func = cls.from_2d_circle  # type: ignore
         return instance
 
     def _compute_distance(self, x: np.ndarray) -> float:

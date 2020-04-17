@@ -16,3 +16,4 @@ from .data import Scalar as Scalar
 from .data import Log as Log
 from .choice import Choice as Choice
 from .choice import TransitionChoice as TransitionChoice
+from . import mutation

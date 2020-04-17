@@ -5,9 +5,8 @@
 
 import typing as tp
 from pathlib import Path
-from nevergrad.parametrization import parameter as p
 import numpy as np
-import pandas as pd
+from nevergrad.parametrization import parameter as p
 
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
@@ -35,10 +34,11 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
+        self._initialization_func: tp.Callable[..., EF] = self.__class__
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parametrization: p.Parameter
         self.parametrization = parametrization
@@ -67,8 +67,6 @@ class ExperimentFunction:
     def parametrization(self, parametrization: p.Parameter) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
-        # TODO change to parametrization
-        self._descriptors.update(parametrization=parametrization.name, dimension=parametrization.dimension)
 
     @property
     def function(self) -> tp.Callable[..., float]:
@@ -84,7 +82,9 @@ class ExperimentFunction:
         """Description of the function parameterization, as a dict. This base class implementation provides function_class,
             noise_level, transform and dimension
         """
-        return dict(self._descriptors)  # Avoid external modification
+        desc = dict(self._descriptors)  # Avoid external modification
+        desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
+        return desc
 
     def __repr__(self) -> str:
         """Shows the function name and its summary
@@ -101,7 +101,7 @@ class ExperimentFunction:
         """
         if other.__class__ != self.__class__:
             return False
-        return bool(self._descriptors == other._descriptors)
+        return bool(self._descriptors == other._descriptors) and self.parametrization.name == other.parametrization.name
 
     def copy(self: EF) -> EF:
         """Provides a new equivalent instance of the class, possibly with
@@ -114,7 +114,9 @@ class ExperimentFunction:
                                                   "(and make sure you don't use the same parametrization in the process), or "
                                                   "initialization parameters should be registered through 'register_initialization'")
             kwargs = {x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._initialization_kwargs.items()}
-            output = self.__class__(**kwargs)
+            output = self._initialization_func(**kwargs)
+            if output.parametrization.name != self.parametrization.name:
+                output.parametrization = self.parametrization.copy()
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")
@@ -173,6 +175,8 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     verbose: bool
         whether to also print a message if the leaderboard was updated
     """
+    # pylint: disable=import-outside-toplevel
+    import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
     loss = np.round(loss, decimals=12)  # this is probably already too precise for the machine
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])

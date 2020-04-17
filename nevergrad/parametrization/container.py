@@ -45,7 +45,9 @@ class Tuple(Dict):
 
     @value.setter
     def value(self, value: tp.Tuple[tp.Any]) -> None:
-        assert isinstance(value, tuple), "Value must be a tuple"
+        if not isinstance(value, tuple) or not len(value) == len(self):
+            cls = self.__class__.__name__
+            raise ValueError(f"{cls} value must be a tuple of size {len(self)}, got: {value}.\nCurrent value: {self.value}")
         for k, val in enumerate(value):
             core.as_parameter(self[k]).value = val
 

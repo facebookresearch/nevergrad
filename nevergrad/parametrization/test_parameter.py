@@ -155,15 +155,15 @@ def check_parameter_freezable(param: par.Parameter) -> None:
     [(par.Array(shape=(2, 2)), "Array{(2,2)}"),
      (par.Tuple(12), "Tuple(12)"),
      (par.Dict(constant=12), "Dict(constant=12)"),
-     (par.Scalar(), "Scalar[sigma=Log{exp=1.2}]"),
+     (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
      (par.Log(lower=3.2, upper=12.0, exponent=1.5), "Log{exp=1.5,Cl(3.2,12)}"),
-     (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=1.2}]"),
+     (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=2.0}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
      (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)})"),
      (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)})"),
      (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar["
-                                     "sigma=Log{exp=1.2}],transitions=[1. 1.])")
+                                     "sigma=Log{exp=2.0}],transitions=[1. 1.])")
      ]
 )
 def test_parameter_names(param: par.Parameter, name: str) -> None:

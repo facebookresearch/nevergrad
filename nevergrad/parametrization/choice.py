@@ -136,6 +136,13 @@ class Choice(BaseChoice):
         """
         return self["weights"]  # type: ignore
 
+    @property
+    def probabilities(self) -> np.ndarray:
+        """The probabilities used to draw the value
+        """
+        exp = np.exp(self.weights.value)
+        return exp / np.sum(exp)  # type: ignore
+
     def _find_and_set_value(self, value: tp.Any) -> int:
         index = super()._find_and_set_value(value)
         self._index = index

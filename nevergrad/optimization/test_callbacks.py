@@ -19,7 +19,7 @@ def _func(x: Any, y: Any, blublu: str, array: Any) -> float:
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
     cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
-    instrum = ng.p.Instrumentation(ng.p.Array(shape=(1,)),
+    instrum = ng.p.Instrumentation(ng.p.Array(shape=(1,)).set_mutation(custom=ng.p.mutation.Translation()),
                                    ng.p.Scalar(),
                                    blublu=ng.p.Choice(cases),
                                    array=ng.p.Array(shape=(3, 2)))
@@ -31,9 +31,9 @@ def test_log_parameters(tmp_path: Path) -> None:
     logs = logger.load_flattened()
     assert len(logs) == 32
     assert isinstance(logs[-1]["1"], float)
-    assert len(logs[-1]) == 33
+    assert len(logs[-1]) == 35
     logs = logger.load_flattened(max_list_elements=2)
-    assert len(logs[-1]) == 25
+    assert len(logs[-1]) == 27
     # deletion
     logger = callbacks.ParametersLogger(filepath, append=False)
     assert not logger.load()

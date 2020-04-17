@@ -2,23 +2,44 @@
 
 ## master
 
+- `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
+- `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
+- Quasi-random samplers (`LHSSearch`, `HammersleySearch`, `HaltonSearch` etc...) now sample in the full range of bounded
+  variables when the `full_range_sampling` is `True` [598](https://github.com/facebookresearch/nevergrad/pull/598).
+  This required some ugly hacks, help is most welcome to find nices solutions.
+- `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
+- Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [599](https://github.com/facebookresearch/nevergrad/pull/599).
+- Moved the `Selector` dataframe overlay so that basic requirements do not include `pandas` (only necessary for benchmarks) [609](https://github.com/facebookresearch/nevergrad/pull/609)
+- Changed the version name pattern (removed the `v`) to unify with `pypi` versions. Expect more frequent intermediary versions to be pushed (deployment has now been made pseudo-automatic).
+
+
+## v0.4.0 (2019-03-09)
+
+### Breaking and important changes
+
 - Removed all deprecated code [#499](https://github.com/facebookresearch/nevergrad/pull/499). That includes:
   - `instrumentation` as init parameter of an `Optimizer` (replaced by `parametrization`)
   - `instrumentation` as attribute of an `Optimizer` (replaced by `parametrization`)
   - `candidate_maker` (not needed anymore)
   - `optimize` methods of `Optimizer` (renamed to `minimize`)
   - all the `instrumentation` subpackage (replaced by `parametrization`) and its legacy methods (`set_cheap_constraint_checker` etc)
-- Propagate parametrization system features (generation tracking, ...) to `TBPSA`, `PSO` and `EDA` based algorithms.
-- Rewrote multiobjective core system [#484](https://github.com/facebookresearch/nevergrad/pull/484).
 - Removed `ParametrizedOptimizer` and `OptimizerFamily` in favor of `ConfiguredOptimizer` with simpler usage [#518](https://github.com/facebookresearch/nevergrad/pull/518) [#521](https://github.com/facebookresearch/nevergrad/pull/521).
-- Activated Windows CI (still a bit flaky, with a few deactivated tests).
-- Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
-- Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
 - Some variants of algorithms have been removed from the `ng.optimizers` namespace to simplify it. All such variants can be easily created
   using the corresponding `ConfiguredOptimizer`. Also, adding `import nevergrad.optimization.experimentalvariants` will populate `ng.optimizers.registry`
   with all variants, and they are all available for benchmarks [#528](https://github.com/facebookresearch/nevergrad/pull/528).
 - Renamed `a_min` and `a_max` in `Array`, `Scalar` and `Log` parameters for clarity.
   Using old names will raise a deprecation warning for the time being.
+- `archive` is pruned much more often (eg.: for `num_workers=1`, usually pruned to 100 elements when reaching 1000),
+  so you should not rely on it for storing all results, use a callback instead [#571](https://github.com/facebookresearch/nevergrad/pull/571).
+  If this is a problem for you, let us know why and we'll find a solution!
+
+### Other changes
+
+- Propagate parametrization system features (generation tracking, ...) to `TBPSA`, `PSO` and `EDA` based algorithms.
+- Rewrote multiobjective core system [#484](https://github.com/facebookresearch/nevergrad/pull/484).
+- Activated Windows CI (still a bit flaky, with a few deactivated tests).
+- Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
+- Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
 - Scalar now takes optional `lower` and `upper` bounds at initialization, and `sigma` (and optionnally `init`)
   if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
 

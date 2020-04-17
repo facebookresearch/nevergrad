@@ -63,6 +63,7 @@ def check_optimizer(
     for k in range(1, num_attempts + 1):
         fitness = Fitness(optimum)
         optimizer = optimizer_cls(parametrization=len(optimum), budget=budget, num_workers=num_workers)
+        assert isinstance(optimizer.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -399,3 +400,11 @@ def test_parametrization_offset(name: str) -> None:
         candidate = optimizer.ask()
         assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
         optimizer.tell(candidate, 0)
+
+
+def test_optimizer_sequence() -> None:
+    budget = 24
+    parametrization = ng.p.Tuple(*(ng.p.Scalar(lower=-12, upper=12) for _ in range(2)))
+    optimizer = optlib.LHSSearch(parametrization, budget=24)
+    points = [np.array(optimizer.ask().value) for _ in range(budget)]
+    assert sum(any(abs(x) > 11 for x in p) for p in points) > 0

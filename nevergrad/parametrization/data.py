@@ -15,6 +15,7 @@ from . import transforms as trans
 
 BoundValue = tp.Optional[tp.Union[float, int, np.int, np.float, np.ndarray]]
 A = tp.TypeVar("A", bound="Array")
+P = tp.TypeVar("P", bound=core.Parameter)
 
 
 class BoundChecker:
@@ -56,6 +57,44 @@ class BoundChecker:
         return True
 
 
+class Mutation(core.Parameter):
+    """Custom mutation or recombination
+    This is an experimental API
+
+    Either implement:
+    - `_apply_array`  which provides a new np.ndarray from a list of arrays
+    - `apply` which updates the first p.Array instance
+
+    Mutation should take only one p.Array instance as argument, while
+    Recombinations should take several
+    """
+
+    @property
+    def value(self) -> tp.Callable[[tp.Sequence["Array"]], None]:
+        return self.apply
+
+    @value.setter
+    def value(self, value: tp.Any) -> None:  # pylint: disable=unused-argument
+        raise RuntimeError("Mutation cannot be set.")
+
+    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+        new_value = self._apply_array([a._value for a in arrays])
+        arrays[0]._value = new_value
+
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:  # pylint: disable=unused-argument
+        raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
+        return np.array([])  # pylint: disable=unreachable
+
+    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
+        return np.array([])
+
+    # pylint: disable=unused-argument
+    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+        if np.array(data, copy=False).size:
+            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
+        return self
+
+
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class Array(core.Parameter):
     """Array parameter with customizable mutation and recombination.
@@ -82,7 +121,7 @@ class Array(core.Parameter):
             shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
-        sigma = Log(init=1.0, exponent=1.2, mutable_sigma=False) if mutable_sigma else 1.0
+        sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
@@ -165,7 +204,7 @@ class Array(core.Parameter):
         lower: BoundValue = None,
         upper: BoundValue = None,
         method: str = "clipping",
-        full_range_sampling: bool = False,
+        full_range_sampling: tp.Optional[bool] = None,
         a_min: BoundValue = None,
         a_max: BoundValue = None,
     ) -> A:
@@ -190,10 +229,11 @@ class Array(core.Parameter):
               close to the bounds), and reaching the bounds is equivalent to reaching the infinity.
             - "tanh": same as "arctan", but with a "tanh" transform. "tanh" saturating much faster than "arctan", it can lead
               to unexpected behaviors.
-        full_range_sampling: bool
+        full_range_sampling: Optional bool
             Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
-            to creating a child with a value sampled uniformly (or log-uniformly) within the while range of the bounds. The
-            "sample" method is used by some algorithms to create an initial population.
+            or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
+            the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
+            This is activated by default if both bounds are provided.
 
         Notes
         -----
@@ -203,6 +243,8 @@ class Array(core.Parameter):
         lower, upper = _a_min_max_deprecation(**locals())
         bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (lower, upper))
         both_bounds = all(b is not None for b in bounds)
+        if full_range_sampling is None:
+            full_range_sampling = both_bounds
         # preliminary checks
         if self.bound_transform is not None:
             raise RuntimeError("A bounding method has already been set")
@@ -235,7 +277,7 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
-    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter, utils.Crossover]) -> A:
+    def set_recombination(self: A, recombination: tp.Union[None, str, core.Parameter]) -> A:
         assert self._parameters is not None
         self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
                                                       else core.Constant(recombination))
@@ -253,14 +295,16 @@ class Array(core.Parameter):
                 self.set_standardized_data(func(size=self.dimension), deterministic=False)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
-        elif isinstance(mutation, utils.Mutation):
+        elif isinstance(mutation, Mutation):
             mutation.apply([self])
+        elif callable(mutation):
+            mutation([self])
         else:
-            raise TypeError("Mutation must be a string or a Mutation instance")
+            raise TypeError("Mutation must be a string, a callable or a Mutation instance")
 
     def set_mutation(
         self: A,
-        sigma: tp.Optional[tp.Union[float, "Array"]] = None,
+        sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
         custom: tp.Optional[tp.Union[str, core.Parameter]] = None
     ) -> A:
@@ -360,12 +404,16 @@ class Array(core.Parameter):
         if not others:
             return
         recomb = self.parameters["recombination"].value
+        if recomb is None:
+            return
         all_params = [self] + list(others)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
-        elif isinstance(recomb, utils.Crossover):
+        elif isinstance(recomb, Mutation):
             recomb.apply(all_params)
+        elif callable(recomb):
+            recomb(all_params)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
@@ -390,7 +438,7 @@ class Scalar(Array):
     - if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
       Also, if init is not provided, it will be set to the middle value.
     - More specific behaviors can be obtained throught the following methods:
-     :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
+      :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
     def __init__(
