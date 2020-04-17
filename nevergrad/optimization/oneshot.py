@@ -16,14 +16,19 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def convex_limit(points: np.ndarray) -> int:
+def convex_limit(struct_points: np.ndarray) -> int:
     """Given points in order from best to worst,
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
-    d = len(points[0])
-    hull = ConvexHull(points[: d + 1], incremental=True)
-    k = min(d, len(points) // 4)
-    for i in range(d + 1, len(points)):
-        hull.add_points(points[i: (i + 1)])
+    points = []
+    d = len(struct_points[0])
+    if len(struct_points) < 2*d + 2:
+        return len(struct_points) // 2
+    for i in range(0, min(2*d + 2, len(struct_points)), 2):
+        points += [struct_points[i]]
+    hull = ConvexHull(points, incremental=True)
+    k = len(points)
+    for i in range(d+1, len(points)):
+        hull.add_points(points[i:(i+1)])
         if i not in hull.vertices:
             k = i - 1
             break
@@ -61,10 +66,11 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
         k = max(1, int(len(archive) // (1.1**dimension)))
     elif method == "hull":
         k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
-        return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
+        # We might investigate the possibility to return the middle of the convex hull instead of averaging:
+        # return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
     else:
         raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
-    k = 1 if k < 1 else k
+    k = 1 if k < 1 else int(k)
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
     assert len(first_k_individuals) == k
