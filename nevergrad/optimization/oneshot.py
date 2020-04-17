@@ -66,6 +66,7 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
         k = max(1, int(len(archive) // (1.1**dimension)))
     elif method == "hull":
         k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
+        k = min(len(archive)// 4, min(k, len(archive) // (1.1*dimension)))
         # We might investigate the possibility to return the middle of the convex hull instead of averaging:
         # return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
     else:
