@@ -221,7 +221,6 @@ def create_plots(
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            try:
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -234,9 +233,9 @@ def create_plots(
             try:
                 if name == "fight_all.png":
                     with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                       f.write("ranking:\n")
-                       for i, algo in enumerate(data_df.columns[:8]):
-                           f.write(f"  algo {i}: {algo}\n")
+                        f.write("ranking:\n")
+                        for i, algo in enumerate(data_df.columns[:8]):
+                            f.write(f"  algo {i}: {algo}\n")
             except:
                 pass
             if len(name) > 80:
