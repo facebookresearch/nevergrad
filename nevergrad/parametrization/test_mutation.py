@@ -24,6 +24,20 @@ def test_crossover(fft: bool, expected: tp.List[int]) -> None:
     np.testing.assert_array_equal(out, expected)
 
 
+@testing.parametrized(
+    de=("de",),
+    overstep=("overstep",),
+    overbest=("overbest",),
+)
+def test_diff_step(method: str) -> None:
+    arrays = [Array(init=np.array(k * np.ones((2, 4)))) for k in range(11)]
+    assert arrays[0].value[0, 0] == 0
+    mut = mutation.DiffStep(method=method)
+    mut.random_state.seed(12)
+    mut.apply_auto(arrays, best=arrays[-1])
+    assert arrays[0].value[0, 0] != 0
+
+
 def test_ravel_crossover() -> None:
     x1 = 4 * np.ones((2, 4))
     x2 = 5 * np.ones((2, 4))

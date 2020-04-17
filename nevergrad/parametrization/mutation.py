@@ -89,6 +89,72 @@ class Crossover(Mutation):
         return result
 
 
+class DiffStep(Mutation):
+    """Operator for merging part of an array into another one
+
+    Parameters
+    ----------
+    axis: None or int or tuple of ints
+        the axis (or axes) on which the merge will happen. This axis will be split into 3 parts: the first and last one will take
+        value from the first array, the middle one from the second array.
+    max_size: None or int
+        maximum size of the part taken from the second array. By default, this is at most around half the number of total elements of the
+        array to the power of 1/number of axis.
+
+
+    Notes
+    -----
+    - this is experimental, the API may evolve
+    - when using several axis, the size of the second array part is the same on each axis (aka a square in 2D, a cube in 3D, ...)
+
+    Examples:
+    ---------
+    - 2-dimensional array, with crossover on dimension 1:
+      0 1 0 0
+      0 1 0 0
+      0 1 0 0
+    - 2-dimensional array, with crossover on dimensions 0 and 1:
+      0 0 0 0
+      0 1 1 0
+      0 1 1 0
+    """
+
+    order = 4
+
+    def __init__(
+        self,
+        method: str = "de"
+    ) -> None:
+        super().__init__(method=method)
+
+    def _apply(self, arrays: tp.Sequence[Array]) -> None:
+        raise NotImplementedError
+
+    @property
+    def method(self) -> str:
+        return self.parameters["method"].value  # type: ignore
+
+    def apply_auto(self, arrays: tp.Sequence[Array], best: tp.Optional[Array] = None) -> None:
+        F1, F2 = 0.8, 0.8
+        assert best is not None
+        base = arrays[0]
+        pool = [x for x in arrays if x is not base]
+        a_1, a_2 = self.random_state.choice(pool, 2, replace=False)
+        d_1, d_2, d_best = [a.get_standardized_data(reference=base) for a in [a_1, a_2, best]]
+        method = self.method
+        if method == "de":
+            diff = F1 * (d_1 - d_2) + F2 * d_best   # F2 * (d_best - data) with data = 0
+        elif method == "overstep":
+            diff = 2.0 * d_1  # (d_best - data) with data = 0
+            if a_1.loss is not None and base.loss is not None:
+                diff *= (1 if a_1.loss > base.loss else -1)
+        elif method == "overbest":
+            diff = 2.0 * d_best
+        else:
+            raise NotImplementedError(f'Unknown method "{method}"')
+        base.set_standardized_data(diff)
+
+
 class RavelCrossover(Crossover):
     """Operator for merging part of an array into another one, after raveling
 
