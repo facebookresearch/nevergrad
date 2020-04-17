@@ -212,7 +212,8 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
-        assert popsize in ["large", "dimension", "standard"]
+        if not isinstance(popsize, int):
+            assert popsize in ["large", "dimension", "standard"]
         assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
         self.initialization = initialization
         self.scale = scale
