@@ -299,7 +299,7 @@ class XpPlotter:
     """
 
     def __init__(
-        self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str, name_style: Optional[Dict[str, Any]]=None, xaxis: str="budget"
+        self, optim_vals: Dict[str, Dict[str, np.ndarray]], title: str, name_style: Optional[Dict[str, Any]] = None, xaxis: str="budget"
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
@@ -354,7 +354,7 @@ class XpPlotter:
         # self._fig.tight_layout()
 
     @staticmethod
-    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool=False) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_confidence_arrays(vals: Dict[str, np.ndarray], log: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
         conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
         if not log:
