@@ -608,7 +608,7 @@ It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 
 <dl class="py class">
 <dt id="nevergrad.families.DifferentialEvolution">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'optimistic'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">F1</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">F2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'standard'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'optimistic'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">F1</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">F2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'standard'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Differential evolution algorithms.</p>
 <p>Default pop size is 30
 We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
@@ -628,7 +628,7 @@ Initial population: pure random.</p>
 - “parametrization”: use the parametrization recombine method</p></li>
 <li><p><strong>F1</strong> (<em>float</em>) – differential weight #1</p></li>
 <li><p><strong>F2</strong> (<em>float</em>) – differential weight #2</p></li>
-<li><p><strong>popsize</strong> (<em>&quot;standard&quot;</em><em>, </em><em>&quot;dimension&quot;</em><em>, </em><em>&quot;large&quot;</em>) – size of the population to use. “standard” is max(num_workers, 30), “dimension” max(num_workers, 30, dimension +1)
+<li><p><strong>popsize</strong> (<em>int</em><em>, </em><em>&quot;standard&quot;</em><em>, </em><em>&quot;dimension&quot;</em><em>, </em><em>&quot;large&quot;</em>) – size of the population to use. “standard” is max(num_workers, 30), “dimension” max(num_workers, 30, dimension +1)
 and “large” max(num_workers, 30, 7 * dimension).</p></li>
 </ul>
 </dd>
@@ -745,7 +745,7 @@ Each algorithm is fed with what happened before it.</p>
 
 <dl class="py class">
 <dt id="nevergrad.families.EMNA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">isotropic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">population_size_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EMNA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">isotropic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">population_size_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">initial_popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.EMNA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimation of Multivariate Normal Algorithm
 This algorithm is quite efficient in a parallel context, i.e. when
 the population size is large.</p>
@@ -757,6 +757,8 @@ identity matrix for the Gaussian, else  we here consider the separable
 version, meaning we have a diagonal matrix for the Gaussian (anisotropic)</p></li>
 <li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
 average of the final population.</p></li>
+<li><p><strong>population_size_adaptation</strong> (<em>bool</em>) – population size automatically adapts to the landscape</p></li>
+<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
 </ul>
 </dd>
 </dl>
@@ -764,13 +766,16 @@ average of the final population.</p></li>
 
 <dl class="py class">
 <dt id="nevergrad.families.ParametrizedTBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">initial_popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test-based population-size adaptation.
 This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
-average of the final population.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+average of the final population.</p></li>
+<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
+</ul>
 </dd>
 </dl>
 <div class="admonition note">
@@ -879,7 +884,7 @@ Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.EMNA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">isotropic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">population_size_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EMNA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">EMNA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">isotropic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">population_size_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">initial_popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.EMNA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimation of Multivariate Normal Algorithm
 This algorithm is quite efficient in a parallel context, i.e. when
 the population size is large.</p>
@@ -891,6 +896,8 @@ identity matrix for the Gaussian, else  we here consider the separable
 version, meaning we have a diagonal matrix for the Gaussian (anisotropic)</p></li>
 <li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
 average of the final population.</p></li>
+<li><p><strong>population_size_adaptation</strong> (<em>bool</em>) – population size automatically adapts to the landscape</p></li>
+<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1052,13 +1059,16 @@ It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedTBPSA">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">initial_popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test-based population-size adaptation.
 This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
-average of the final population.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+average of the final population.</p></li>
+<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
+</ul>
 </dd>
 </dl>
 <div class="admonition note">
