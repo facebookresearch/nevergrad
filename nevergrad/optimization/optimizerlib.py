@@ -531,20 +531,8 @@ class NoisyBandit(base.Optimizer):
 
 @registry.register
 class PSO(base.Optimizer):
-    """Partially following SPSO2011. However, no randomization of the population order.
-
-    Note
-    ----
-    M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
-    Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
-    2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
-    https://ieeexplore.ieee.org/document/6557848
-    """
-    # TODO: the initial speed is probably way too big
-    # the recommendation test requires 200 iterations for the mutation to actually be useful
 
     # pylint: disable=too-many-instance-attributes
-
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -552,6 +540,7 @@ class PSO(base.Optimizer):
         num_workers: int = 1,
         transform: str = "arctan",
         wide: bool = False,  # legacy, to be removed if not needed anymore
+        popsize: tp.Optional[None] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None and budget < 60:
@@ -565,6 +554,8 @@ class PSO(base.Optimizer):
         self._eps, self._transform = cases[transform]
         self._wide = wide
         self.llambda = max(40, num_workers)
+        if popsize is not None:
+            self.llambda = popsize
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
@@ -654,9 +645,35 @@ class PSO(base.Optimizer):
 
 
 class ConfiguredPSO(base.ConfiguredOptimizer):
+    """Partially following SPSO2011. However, no randomization of the population order.
+
+    Parameters
+    ----------
+    transform: str
+        name of the transform to use to map from PSO optimization space to R-space.
+    wide: bool
+        if True: legacy initialization in [-1,1] box mapped to R
+    popsize: int
+        population size of the particle swarm. Defaults to max(40, num_workers)
+
+    Note
+    ----
+    - Using non-default "transform" and "wide" parameters can lead to extreme values
+    - Reference:
+      M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
+      Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
+      2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
+      https://ieeexplore.ieee.org/document/6557848
+    """
 
     # pylint: disable=unused-argument
-    def __init__(self, transform: str = "identity", wide: bool = False) -> None:
+    def __init__(
+        self,
+        transform: str = "identity",
+        wide: bool = False,
+        popsize: tp.Optional[None] = None,
+    ) -> None:
+        assert transform in ["arctan", "gaussian", "identity"]
         super().__init__(PSO, locals())
 
 
