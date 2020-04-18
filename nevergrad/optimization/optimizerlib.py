@@ -540,7 +540,7 @@ class PSO(base.Optimizer):
         num_workers: int = 1,
         transform: str = "arctan",
         wide: bool = False,  # legacy, to be removed if not needed anymore
-        popsize: tp.Optional[None] = None,
+        popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None and budget < 60:
@@ -671,7 +671,7 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
         self,
         transform: str = "identity",
         wide: bool = False,
-        popsize: tp.Optional[None] = None,
+        popsize: tp.Optional[int] = None,
     ) -> None:
         assert transform in ["arctan", "gaussian", "identity"]
         super().__init__(PSO, locals())
