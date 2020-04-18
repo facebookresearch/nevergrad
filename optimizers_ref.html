@@ -871,8 +871,29 @@ Each algorithm is fed with what happened before it.</p>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ConfiguredPSO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfiguredPSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'identity'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfiguredPSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'identity'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Partially following SPSO2011. However, no randomization of the population order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transform</strong> (<em>str</em>) – name of the transform to use to map from PSO optimization space to R-space.</p></li>
+<li><p><strong>wide</strong> (<em>bool</em>) – if True: legacy initialization in [-1,1] box mapped to R</p></li>
+<li><p><strong>popsize</strong> (<em>int</em>) – population size of the particle swarm. Defaults to max(40, num_workers)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Using non-default “transform” and “wide” parameters can lead to extreme values</p></li>
+<li><p>Reference:
+M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
+Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
+2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
+<a class="reference external" href="https://ieeexplore.ieee.org/document/6557848">https://ieeexplore.ieee.org/document/6557848</a></p></li>
+</ul>
+</div>
+</dd></dl>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.EDA">
@@ -959,16 +980,8 @@ Infinite arms: we add one arm when <cite>20 * #ask &gt;= #arms ** 3</cite>.</p>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.PSO">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'arctan'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Partially following SPSO2011. However, no randomization of the population order.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
-Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
-2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
-<a class="reference external" href="https://ieeexplore.ieee.org/document/6557848">https://ieeexplore.ieee.org/document/6557848</a></p>
-</div>
-</dd></dl>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'arctan'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PSO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParaPortfolio">
