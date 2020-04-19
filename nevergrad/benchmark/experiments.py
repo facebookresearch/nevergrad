@@ -217,6 +217,7 @@ def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    optims += ["CMA", "Shiva", "DE"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
