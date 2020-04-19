@@ -9,6 +9,8 @@
   This required some ugly hacks, help is most welcome to find nices solutions.
 - `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
 - Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [599](https://github.com/facebookresearch/nevergrad/pull/599).
+- Moved the `Selector` dataframe overlay so that basic requirements do not include `pandas` (only necessary for benchmarks) [609](https://github.com/facebookresearch/nevergrad/pull/609)
+- Changed the version name pattern (removed the `v`) to unify with `pypi` versions. Expect more frequent intermediary versions to be pushed (deployment has now been made pseudo-automatic).
 
 
 ## v0.4.0 (2019-03-09)

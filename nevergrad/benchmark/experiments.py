@@ -843,10 +843,10 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA"]
     algos += [ng.optimizers.ConfiguredPSO().set_name("PSO"), ng.optimizers.ParametrizedOnePlusOne().set_name("1+1")]
     func = Photonics("bragg", 80, bounding_method="clipping")
-    func.parametrization.set_name("struct")
+    func.parametrization.set_name("layer")
     #
     func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
-    func_nostruct.parametrization.set_name("non-struct").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
+    func_nostruct.parametrization.set_name("2pt").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     #
     func_mix = Photonics("bragg", 80, bounding_method="clipping")
     param = func_mix.parametrization
