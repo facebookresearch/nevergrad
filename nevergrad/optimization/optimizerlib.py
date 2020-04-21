@@ -207,12 +207,13 @@ class _CMA(base.Optimizer):
         self._popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
         self._diagonal = diagonal
         self._fcmaes = fcmaes
-        # delay initialization to ease implementation of variants
+        # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
-        self._parents = [self.parametrization]
-        self._es: tp.Any = None
         self._num_spawners = self._popsize // 2  # experimental, for visualization
+        self._parents = [self.parametrization]
+        # delay initialization to ease implementation of variants
+        self._es: tp.Any = None
 
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
