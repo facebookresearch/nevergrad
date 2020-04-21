@@ -250,13 +250,12 @@ class _CMA(base.Optimizer):
             except RuntimeError:
                 pass
             else:
-                self._to_be_told = sorted(self._to_be_told, key=lambda c: c.loss)
-                self._parents = self._to_be_told[: self._num_spawners]
+                self._parents = sorted(self._to_be_told, key=lambda c: c.loss)[: self._num_spawners]
                 self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(reference=self.parametrization)
-        if not self.num_tell:
+        if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._fcmaes else self.es.result.xbest
         if cma_best is None:
