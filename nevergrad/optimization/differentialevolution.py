@@ -147,6 +147,8 @@ class _DE(base.Optimizer):
         parent_value = self.population[uid]._meta.get("value", float("inf"))
         if value <= parent_value:
             self.population[uid] = candidate
+        elif self._config.propagate_heritage and value <= float("inf"):
+            self.population[uid].heritage.update(candidate.heritage)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["value"] = value
@@ -207,6 +209,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         F1: float = .8,
         F2: float = .8,
         popsize: tp.Union[str, int] = "standard",
+        propagate_heritage: bool = False,  # experimental
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
@@ -218,6 +221,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         self.initialization = initialization
         self.scale = scale
         self.recommendation = recommendation
+        self.propagate_heritage = propagate_heritage
         self.F1 = F1
         self.F2 = F2
         self.crossover = crossover

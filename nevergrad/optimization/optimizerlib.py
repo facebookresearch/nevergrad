@@ -200,55 +200,58 @@ class _CMA(base.Optimizer):
             scale: float = 1.0,
             popsize: Optional[int] = None,
             diagonal: bool = False,
-            fcmaes: bool = False
+            fcmaes: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
-        self._popsize = popsize
+        self._popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
         self._diagonal = diagonal
         self._fcmaes = fcmaes
-        self._es: Optional[cma.CMAEvolutionStrategy] = None
+        # internal attributes
+        self._to_be_asked: tp.Deque[np.ndarray] = deque()
+        self._to_be_told: tp.List[p.Parameter] = []
+        self._num_spawners = self._popsize // 2  # experimental, for visualization
+        self._parents = [self.parametrization]
         # delay initialization to ease implementation of variants
-        self.listx: tp.List[ArrayLike] = []
-        self.listy: tp.List[float] = []
-        self.to_be_asked: tp.Deque[np.ndarray] = deque()
+        self._es: tp.Any = None
 
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
-            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if self._popsize is None else self._popsize
-            if self._fcmaes:
+            if not self._fcmaes:
+                inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+            else:
                 try:
-                    from fcmaes import cmaes
+                    from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
                 except ImportError as e:
                     raise ImportError("Please install fcmaes (pip install fcmaes) to use FCMA optimizers") from e
                 self._es = cmaes.Cmaes(x0=np.zeros(self.dimension, dtype=np.float),
                                        input_sigma=self._scale,
-                                       popsize=popsize, randn=self._rng.randn)
-            else:
-                inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                                       popsize=self._popsize, randn=self._rng.randn)
         return self._es
 
-    def _internal_ask(self) -> ArrayLike:
-        if not self.to_be_asked:
-            self.to_be_asked.extend(self.es.ask())
-        return self.to_be_asked.popleft()
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if not self._to_be_asked:
+            self._to_be_asked.extend(self.es.ask())
+        data = self._to_be_asked.popleft()
+        parent = self._parents[self.num_ask % len(self._parents)]
+        candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        self.listx += [x]
-        self.listy += [value]
-        if len(self.listx) >= self.es.popsize:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        self._to_be_told.append(candidate)
+        if len(self._to_be_told) >= self.es.popsize:
+            listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
+            listy = [c.loss for c in self._to_be_told]
+            args = (listy, listx) if self._fcmaes else (listx, listy)
             try:
-                if self._fcmaes:
-                    self.es.tell(self.listy, self.listx)
-                else:
-                    self.es.tell(self.listx, self.listy)
+                self.es.tell(*args)
             except RuntimeError:
                 pass
             else:
-                self.listx = []
-                self.listy = []
+                self._parents = sorted(self._to_be_told, key=lambda c: c.loss)[: self._num_spawners]
+                self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(reference=self.parametrization)
