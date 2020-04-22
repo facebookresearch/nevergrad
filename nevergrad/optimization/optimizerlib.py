@@ -360,9 +360,10 @@ class EDA(base.Optimizer):
         return self.current_center
 
     def _internal_ask_candidate(self) -> p.Parameter:
+        self.sigma = 1
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
+        data = self._rng.multivariate_normal(self.current_center, mutated_sigma * self.covariance)
         parent = self.parents[self.num_ask % len(self.parents)]
         candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
         if parent is self.parametrization:
@@ -371,15 +372,12 @@ class EDA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["loss"] = value
         self.children.append(candidate)
         if self._POPSIZE_ADAPTATION:
             self.popsize.add_value(value)
         if len(self.children) >= self.popsize.llambda:
-            self.children = sorted(self.children, key=lambda c: c._meta["loss"])
+            self.children = sorted(self.children, key=lambda c: c.loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
-            self.covariance *= 0.9 if self._COVARIANCE_MEMORY else 0
-            self.covariance += 0.1 * np.cov(np.array(population_data).T)
             # Computing the new parent
             mu = self.popsize.mu
             arrays = population_data[:mu]
@@ -387,6 +385,13 @@ class EDA(base.Optimizer):
             self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.children[:mu]]) / mu)
             self.parents = self.children[:mu]
             self.children = []
+            # covariance
+            centered_arrays = [x - self.current_center for x in arrays]
+            dump = 0.9 if self._COVARIANCE_MEMORY else 0
+            self.covariance *= dump
+            self.covariance += (1 - dump) * np.cov(np.array(centered_arrays).T)
+            print("cov", self.covariance)
+            print("mu", self.current_center)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
