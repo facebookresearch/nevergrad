@@ -381,16 +381,14 @@ class EDA(base.Optimizer):
             arrays = population_data[:mu]
             # covariance
             centered_arrays = np.array([x - self.current_center for x in arrays])
-            dump = 0.9 if self._COVARIANCE_MEMORY else 0
-            self.covariance *= dump
-            self.covariance += (1 - dump) * centered_arrays.T.dot(centered_arrays)
+            mem_factor = 0.9 if self._COVARIANCE_MEMORY else 0
+            self.covariance *= mem_factor
+            self.covariance += (1 - mem_factor) * centered_arrays.T.dot(centered_arrays)
             # Computing the new parent
             self.current_center = sum(arrays) / mu  # type: ignore
             self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.children[:mu]]) / mu)
             self.parents = self.children[:mu]
             self.children = []
-            print("cov", self.covariance)
-            print("mu", self.current_center)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
