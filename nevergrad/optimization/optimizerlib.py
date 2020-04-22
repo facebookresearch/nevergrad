@@ -360,7 +360,6 @@ class EDA(base.Optimizer):
         return self.current_center
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        self.sigma = 1
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
         data = self._rng.multivariate_normal(self.current_center, mutated_sigma * self.covariance)
@@ -378,18 +377,18 @@ class EDA(base.Optimizer):
         if len(self.children) >= self.popsize.llambda:
             self.children = sorted(self.children, key=lambda c: c.loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
-            # Computing the new parent
             mu = self.popsize.mu
             arrays = population_data[:mu]
+            # covariance
+            centered_arrays = np.array([x - self.current_center for x in arrays])
+            dump = 0.9 if self._COVARIANCE_MEMORY else 0
+            self.covariance *= dump
+            self.covariance += (1 - dump) * centered_arrays.T.dot(centered_arrays)
+            # Computing the new parent
             self.current_center = sum(arrays) / mu  # type: ignore
             self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.children[:mu]]) / mu)
             self.parents = self.children[:mu]
             self.children = []
-            # covariance
-            centered_arrays = [x - self.current_center for x in arrays]
-            dump = 0.9 if self._COVARIANCE_MEMORY else 0
-            self.covariance *= dump
-            self.covariance += (1 - dump) * np.cov(np.array(centered_arrays).T)
             print("cov", self.covariance)
             print("mu", self.current_center)
 
