@@ -678,8 +678,8 @@ spent yet (otherwise, restarts from best point)</p></li>
 <li><p><strong>scale</strong> (<em>float</em><em> or </em><em>&quot;random&quot;</em>) – <dl class="simple">
 <dt>scalar for multiplying the suggested point values, or string:</dt><dd><ul>
 <li><p>”random”: uses a randomized pattern for the scale.</p></li>
-<li><p>”auto”: scales in function of dimension and budget (version 1)</p></li>
-<li><p>”autolog”: scales in function of dimension and budget (version 2)</p></li>
+<li><p>”auto”: scales in function of dimension and budget (version 1: sigma = (1+log(budget)) / (4log(dimension)) )</p></li>
+<li><p>”autotune”: scales in function of dimension and budget (version 2: sigma = sqrt(log(budget) / dimension) )</p></li>
 </ul>
 </dd>
 </dl>
@@ -1139,8 +1139,8 @@ Efficient implementation of Enhanced Adaptive Simultaneous Perturbation Algorith
 <dd><p>Combines optimizers, each of them working on their own variables.</p>
 <p>num_optims: number of optimizers
 num_vars: number of variable per optimizer.
-progressive: True if we want to progressively add optimizers during the optimization run.</p>
-<p>If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.</p>
+progressive: True if we want to progressively add optimizers during the optimization run.
+If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.</p>
 <p>E.g. for 5 optimizers, each of them working on 2 variables, we can use:
 opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
 or equivalently:
