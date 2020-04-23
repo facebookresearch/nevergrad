@@ -59,7 +59,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for rotation in [True, False]
         for nl in [0., 100.]
         for num_blocks in [1]
-        for d in ([2, 40, 100, 3000])
+        for d in [2, 40, 100, 3000]
     ]
     optims = ["NoisyDiscreteOnePlusOne", "Shiva", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
     for optim in optims:
@@ -135,26 +135,6 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def largedoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Large scale experiments for one-shot optimizers.
-    Very simple objective function (the sphere), various dimensions and numbers of useless variables."""
-    seedg = create_seed_generator(seed)
-    names = ["sphere"]
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-        for name in names
-        for bd in [1, 4, 20]
-        for uv_factor in [0, 10, 100]
-        for n_blocks in [1]
-    ]
-    for func in functions:
-        for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
-
-
-@registry.register
 def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 3 classical objective functions."""
     seedg = create_seed_generator(seed)
@@ -212,6 +192,43 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified."""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [2000, 20000]     #3, 10, 25, 200, 2000]
+        for uv_factor in [0]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000, 10000, 30000, 100000]:
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+
+@registry.register
+def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified.
+    Tested on more dimensionalities than doe."""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [2000, 20, 200, 20000]     #3, 10, 25, 200, 2000]
+        for uv_factor in [0]
+    ]
+    budgets = [30, 100, 3000, 10000, 30000, 100000, 300000]
+    for func in functions:
+        for optim in optims:
+            for budget in budgets:
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+
+                
 def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
     seedg = create_seed_generator(seed)
@@ -279,8 +296,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell"]
     if not parallel and not small:
         optims += ["Cobyla"]
-    if not small:
-        optims += ["NGO", "Shiva"]
+    optims += ["NGO", "Shiva"]
     # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
@@ -432,22 +448,30 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
 
 
 @registry.register
-def doe_dim10(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """One-shot optimization in dimension 10 of the sphere function. No useless variables."""
-    names = ["sphere"]
+def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Noisy optimization methods on a few noisy problems.
+    """
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "arg" not in x and "mal" not in x)
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-        for name in names
-        for bd in [10]
-        for uv_factor in [0]
-        for n_blocks in [1]
-    ]
-    for func in functions:
+    optims = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    #optims += ["NGO", "Shiva", "DiagonalCMA"] + sorted(
+    #    x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
+    #)
+    for budget in [25000, 50000, 100000]:
         for optim in optims:
-            for budget in [30, 100, 3000, 10000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+            for d in [20000, 200, 2000]: #TODO[2, 20, 200, 2000, 20000]:
+                for name in ["cigar", "altcigar", "ellipsoid", "altellipsoid"]:
+                    for noise_dissymmetry in [False, True]:
+                        function = ArtificialFunction(
+                            name=name,
+                            rotation=False,
+                            block_dimension=d,
+                            noise_level=10,
+                            noise_dissymmetry=noise_dissymmetry,
+                            translation_factor=1.0,
+                        )
+                        yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 
 @registry.register
@@ -455,13 +479,16 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Noisy optimization methods on a few noisy problems.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "Shiva", "DiagonalCMA"] + sorted(
+    optims = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims += ["NGO", "Shiva", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     )
-    for budget in [50000]:
+    for budget in [25000, 50000, 100000]:
         for optim in optims:
-            for d in [2, 20, 200]:
-                for name in ["sphere", "rosenbrock"]:
+            for d in [2, 20, 200, 2000]:
+                for name in ["sphere", "rosenbrock", "cigar", "hm"]:
                     for noise_dissymmetry in [False, True]:
                         function = ArtificialFunction(
                             name=name,
@@ -473,6 +500,55 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         )
                         yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
+
+@registry.register
+def paraalldes(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """All Bayesian optimization methods on various functions. Parallel version.
+    """
+    seedg = create_seed_generator(seed)
+    for budget in [10, 100, 1000, 10000, 100000]:
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "DE" in x and "Tune" in x):
+            for rotation in [False]:
+                for d in [5, 20, 100, 500, 2500]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:
+                        for u in [0]:
+                            function = ArtificialFunction(
+                                name=name, rotation=rotation, block_dimension=d, useless_variables=d * u, translation_factor=1.0
+                            )
+                            yield Experiment(function, optim, budget=budget, seed=next(seedg), num_workers=max(d, budget // 6))
+
+@registry.register
+def parahdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """All Bayesian optimization methods on various functions. Parallel version.
+    """
+    seedg = create_seed_generator(seed)
+    for budget in [25, 31, 37, 43, 50, 60]:
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x and "Tune" in x):
+            for rotation in [False]:
+                for d in [20, 2000]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:
+                        for u in [0]:
+                            function = ArtificialFunction(
+                                name=name, rotation=rotation, block_dimension=d, useless_variables=d * u, translation_factor=1.0
+                            )
+                            yield Experiment(function, optim, budget=budget, seed=next(seedg), num_workers=max(d, budget // 6))
+
+
+@registry.register
+def alldes(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """All Bayesian optimization methods on various functions.
+    """
+    seedg = create_seed_generator(seed)
+    for budget in [10, 100, 1000, 10000, 100000]:
+        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "DE" in x):
+            for rotation in [False]:
+                for d in [5, 20, 100]:
+                    for name in ["sphere", "cigar", "hm", "ellipsoid"]:
+                        for u in [0]:
+                            function = ArtificialFunction(
+                                name=name, rotation=rotation, block_dimension=d, useless_variables=d * u, translation_factor=1.0
+                            )
+                            yield Experiment(function, optim, budget=budget, seed=next(seedg))
 
 @registry.register
 def hdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -590,8 +666,29 @@ def fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    for budget in [1600, 3200, 6400, 12800]:
+    for budget in [1600, 3200, 6400, 12800, 25600, 51200]:
         for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Optimization of policies for games, namely direct policy search."""
+    funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
+    seedg = create_seed_generator(seed)
+    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
+             "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+             "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiva", "DiagonalCMA",
+             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    for budget in [12800, 25600, 51200, 102400]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:
@@ -612,6 +709,9 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer",
              "NGO", "Shiva", "DiagonalCMA", "SplitOptimizer3", "SplitOptimizer13"]
+    algos += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -634,6 +734,9 @@ def powersystemssplit(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos = ["NGO", "Shiva", "DiagonalCMA",
              "CMA", "Zero", "RandomSearch",
              "DE", "PSO", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
+    algos += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     for budget in [25600, 51200, 102400, 204800, 409600]:
         for num_workers in [1]:
             if num_workers < budget:
@@ -662,6 +765,27 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "NGO", "Shiva", "DiagonalCMA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+        for num_workers in [1, 10, 100]:
+            if num_workers < budget:
+                for algo in algos:
+                    for func in funcs:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MLDA (machine learning and data analysis) testbed, restricted to the K-means part."""
+    funcs: tp.List[ExperimentFunction] = [
+        _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10),
+                                                                         ("Ruspini", 50), ("German towns", 100)] for rescale in [True, False]
+    ]
+    seedg = create_seed_generator(seed)
+    algos = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
+               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:

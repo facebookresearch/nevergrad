@@ -23,7 +23,7 @@ from .exporttable import export_table
 # pylint: disable=too-many-locals
 
 
-_DPI = 100
+_DPI = 250
 
 
 # %% Basic tools
@@ -229,19 +229,17 @@ def create_plots(
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
-            try:
-                if name == "fight_all.png":
-                    with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                        f.write("ranking:\n")
-                        for i, algo in enumerate(data_df.columns[:8]):
-                            f.write(f"  algo {i}: {algo}\n")
-            except:
-                pass
+
+            if name == "fight_all.png":
+                with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                    f.write("ranking:\n")
+                    for i, algo in enumerate(data_df.columns[:8]):
+                        f.write(f"  algo {i}: {algo}\n")
             if len(name) > 80:
-                hash_ = hashlib.md5(bytes(name, 'utf8')).hexdigest()
-                name = re.sub(r'\([^()]*\)', '', name)
-                mid = len(name) // 2
-                name = name[:mid] + hash_ + name[mid:]
+                hashcode = hashlib.md5(bytes(name, 'utf8')).hexdigest()
+                name=re.sub(r'\([^()]*\)', '', name)
+                mid = 40
+                name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
         if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.

@@ -16,18 +16,34 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def convex_limit(points: np.ndarray) -> int:
+def convex_limit(struct_points: np.ndarray) -> int:
     """Given points in order from best to worst,
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
-    d = len(points[0])
-    hull = ConvexHull(points[: d + 1], incremental=True)
-    k = min(d, len(points) // 4)
-    for i in range(d + 1, len(points)):
-        hull.add_points(points[i: (i + 1)])
+    points = []
+    d = len(struct_points[0])
+    if len(struct_points) < 2*d + 2:
+        return len(struct_points) // 2
+    for i in range(0, min(2*d + 2, len(struct_points)), 2):
+        points += [struct_points[i]]
+    hull = ConvexHull(points, incremental=True)
+    k = len(points)
+    for i in range(d+1, len(points)):
+        hull.add_points(points[i:(i+1)])
         if i not in hull.vertices:
             k = i - 1
             break
     return k
+
+
+def hull_center(points: np.ndarray, k: int) -> np.ndarray:
+    d = len(points[0])
+    hull = ConvexHull(points[:k])
+    maxi = np.asarray(hull.vertices[0])
+    mini = np.asarray(hull.vertices[0])
+    for v in hull.vertices:
+        maxi = np.maximum(np.asarray(v), maxi)
+        mini = np.minimum(np.asarray(v), mini)
+    return 0.5 * (maxi + mini)
 
 
 def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
@@ -47,12 +63,15 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
     if method == "dimfourth":
         k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
     elif method == "exp":
-        k = max(1, len(archive) // (2**dimension))
+        k = max(1, int(len(archive) // (1.1 ** dimension)))
     elif method == "hull":
         k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
+        k = min(len(archive)// 4, min(k, int(len(archive) / (1.1 ** dimension))))
+        # We might investigate the possibility to return the middle of the convex hull instead of averaging:
+        # return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
     else:
         raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
-    k = 1 if k < 1 else k
+    k = 1 if k < 1 else int(k)
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
     assert len(first_k_individuals) == k
@@ -94,7 +113,7 @@ class _RandomSearch(OneShotOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autolog"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autotune"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
         self.stupid = stupid
@@ -118,12 +137,8 @@ class _RandomSearch(OneShotOptimizer):
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension (1st version).
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
-        if isinstance(scale, str) and scale == "autolog":
-            # Some variants use a rescaling depending on the budget and the dimension (2nde version).
-            if self.dimension - 4 * np.log(self.budget) > 1.:
-                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
-            else:
-                scale = 1.
+        if isinstance(scale, str) and scale == "autotune":
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self.cauchy
@@ -162,8 +177,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
-         - "auto": scales in function of dimension and budget (version 1)
-         - "autolog": scales in function of dimension and budget (version 2)
+         - "auto": scales in function of dimension and budget (version 1: sigma = (1+log(budget)) / (4log(dimension)) )
+         - "autotune": scales in function of dimension and budget (version 2: sigma = sqrt(log(budget) / dimension) )
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
@@ -231,6 +246,7 @@ class _SamplingSearch(OneShotOptimizer):
             samplers = {"Halton": sequences.HaltonSampler,
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
+                        "Random":sequences.RandomSampler,
                         }
             internal_budget = (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
             self._sampler_instance = samplers[self._sampler](
@@ -257,11 +273,8 @@ class _SamplingSearch(OneShotOptimizer):
             sample = self._rescaler.apply(sample)
         if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
-        if self.autorescale == "autolog":
-            if self.dimension - 4 * np.log(self.budget) > 1.:
-                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
-            else:
-                scale = 1.
+        if self.autorescale == "autotune":
+            self.scale = np.sqrt(np.log(self.budget) / self.dimension)
 
         def transf(x: np.ndarray) -> np.ndarray:
             return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
@@ -336,24 +349,19 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 
 # pylint: disable=line-too-long
-OAvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog",
-    sampler="Hammersley", scrambled=True,
-    recommendation_rule="average_of_hull_best",
-    opposition_mode="opposite"
-).set_name("OAvgMetaLogRecentering", register=True)
 MetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
-MetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
-).set_name("MetaLogRecentering", register=True)
-AvgMetaRecentering = SamplingSearch(
+MetaTuneRecentering = SamplingSearch(
+    cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
+).set_name("MetaTuneRecentering", register=True)
+HAvgMetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("AvgMetaRecentering", register=True)
-AvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("AvgMetaLogRecentering", register=True)
+).set_name("HAvgMetaRecentering", register=True)
+AvgMetaRecenteringNoHull = SamplingSearch(
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best"
+).set_name("AvgMetaRecenteringNoHull", register=True)
+
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = SamplingSearch(scale=100.).set_name("LargeHaltonSearch", register=True)
