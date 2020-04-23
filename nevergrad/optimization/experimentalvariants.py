@@ -5,7 +5,7 @@
 
 from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
-from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaLogRecentering, MetaTuneRecentering  # type: ignore
+from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
     OptimisticNoisyOnePlusOne,
     OptimisticDiscreteOnePlusOne,
@@ -287,32 +287,6 @@ chainBOwithMetaRecenteringdim = Chaining([MetaRecentering, BO], ["dimension"]).s
 )
 chainBOwithMetaRecentering = Chaining([MetaRecentering, BO], ["num_workers"]).set_name(
     "chainBOwithMetaRecentering", register=True
-)
-
-chainDEwithMetaLogRecentering30 = Chaining([MetaLogRecentering, DE], [30]).set_name(
-    "chainDEwithMetaLogRecentering30", register=True
-)
-chainDEwithMetaLogRecenteringsqrt = Chaining([MetaLogRecentering, DE], ["sqrt"]).set_name(
-    "chainDEwithMetaLogRecenteringsqrt", register=True
-)
-chainDEwithMetaLogRecenteringdim = Chaining([MetaLogRecentering, DE], ["dimension"]).set_name(
-    "chainDEwithMetaLogRecenteringdim", register=True
-)
-chainDEwithMetaLogRecentering = Chaining([MetaLogRecentering, DE], ["num_workers"]).set_name(
-    "chainDEwithMetaLogRecentering", register=True
-)
-
-chainBOwithMetaLogRecentering30 = Chaining([MetaLogRecentering, BO], [30]).set_name(
-    "chainBOwithMetaLogRecentering30", register=True
-)
-chainBOwithMetaLogRecenteringsqrt = Chaining([MetaLogRecentering, BO], ["sqrt"]).set_name(
-    "chainBOwithMetaLogRecenteringsqrt", register=True
-)
-chainBOwithMetaLogRecenteringdim = Chaining([MetaLogRecentering, BO], ["dimension"]).set_name(
-    "chainBOwithMetaLogRecenteringdim", register=True
-)
-chainBOwithMetaLogRecentering = Chaining([MetaLogRecentering, BO], ["num_workers"]).set_name(
-    "chainBOwithMetaLogRecentering", register=True
 )
 
 chainPSOwithR = Chaining([RandomSearch, PSO], ["num_workers"]).set_name(
