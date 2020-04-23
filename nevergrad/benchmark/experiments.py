@@ -228,6 +228,24 @@ def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for budget in budgets:
                 yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
+                
+def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)"""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
+    optims += ["CMA", "Shiva", "DE"]
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                yield Experiment(func, optim, budget=budget, num_workers=budget // 5, seed=next(seedg))
+
 
 @registry.register
 def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator[Experiment]:
@@ -949,16 +967,16 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA"]
     algos += [ng.optimizers.ConfiguredPSO().set_name("PSO"), ng.optimizers.ParametrizedOnePlusOne().set_name("1+1")]
     func = Photonics("bragg", 80, bounding_method="clipping")
-    func.parametrization.set_name("struct")
+    func.parametrization.set_name("layer")
     #
     func_nostruct = Photonics("bragg", 80, bounding_method="clipping")
-    func_nostruct.parametrization.set_name("non-struct").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
+    func_nostruct.parametrization.set_name("2pt").set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     #
     func_mix = Photonics("bragg", 80, bounding_method="clipping")
     param = func_mix.parametrization
     param.set_name("mix")
     param.set_recombination(ng.p.Choice([ng.p.mutation.Crossover(axis=1), ng.p.mutation.RavelCrossover()]))  # type: ignore
-    muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1), ng.p.mutation.Translation(axis=1)]
+    muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1, size=5), ng.p.mutation.Translation(axis=1)]
     muts += [ng.p.mutation.LocalGaussian(axes=1, size=10)]
     param.set_mutation(custom=ng.p.Choice(muts))  # type: ignore
     for budget in [1e3, 1e4, 1e5, 1e6]:

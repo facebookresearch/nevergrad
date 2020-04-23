@@ -200,55 +200,58 @@ class _CMA(base.Optimizer):
             scale: float = 1.0,
             popsize: Optional[int] = None,
             diagonal: bool = False,
-            fcmaes: bool = False
+            fcmaes: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
-        self._popsize = popsize
+        self._popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
         self._diagonal = diagonal
         self._fcmaes = fcmaes
-        self._es: Optional[cma.CMAEvolutionStrategy] = None
+        # internal attributes
+        self._to_be_asked: tp.Deque[np.ndarray] = deque()
+        self._to_be_told: tp.List[p.Parameter] = []
+        self._num_spawners = self._popsize // 2  # experimental, for visualization
+        self._parents = [self.parametrization]
         # delay initialization to ease implementation of variants
-        self.listx: tp.List[ArrayLike] = []
-        self.listy: tp.List[float] = []
-        self.to_be_asked: tp.Deque[np.ndarray] = deque()
+        self._es: tp.Any = None
 
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
-            popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if self._popsize is None else self._popsize
-            if self._fcmaes:
+            if not self._fcmaes:
+                inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+            else:
                 try:
-                    from fcmaes import cmaes
+                    from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
                 except ImportError as e:
                     raise ImportError("Please install fcmaes (pip install fcmaes) to use FCMA optimizers") from e
                 self._es = cmaes.Cmaes(x0=np.zeros(self.dimension, dtype=np.float),
                                        input_sigma=self._scale,
-                                       popsize=popsize, randn=self._rng.randn)
-            else:
-                inopts = {"popsize": popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                                       popsize=self._popsize, randn=self._rng.randn)
         return self._es
 
-    def _internal_ask(self) -> ArrayLike:
-        if not self.to_be_asked:
-            self.to_be_asked.extend(self.es.ask())
-        return self.to_be_asked.popleft()
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if not self._to_be_asked:
+            self._to_be_asked.extend(self.es.ask())
+        data = self._to_be_asked.popleft()
+        parent = self._parents[self.num_ask % len(self._parents)]
+        candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        return candidate
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
-        self.listx += [x]
-        self.listy += [value]
-        if len(self.listx) >= self.es.popsize:
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        self._to_be_told.append(candidate)
+        if len(self._to_be_told) >= self.es.popsize:
+            listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
+            listy = [c.loss for c in self._to_be_told]
+            args = (listy, listx) if self._fcmaes else (listx, listy)
             try:
-                if self._fcmaes:
-                    self.es.tell(self.listy, self.listx)
-                else:
-                    self.es.tell(self.listx, self.listy)
+                self.es.tell(*args)
             except RuntimeError:
                 pass
             else:
-                self.listx = []
-                self.listy = []
+                self._parents = sorted(self._to_be_told, key=lambda c: c.loss)[: self._num_spawners]
+                self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(reference=self.parametrization)
@@ -305,6 +308,7 @@ class _PopulationSizeController:
 
     def __init__(self, llambda: int, mu: int, dimension: int, num_workers: int = 1) -> None:
         self.llambda = max(llambda, num_workers)
+        self.min_mu = min(mu, dimension)
         self.mu = mu
         self.dimension = dimension
         self.num_workers = num_workers
@@ -321,9 +325,7 @@ class _PopulationSizeController:
             if z < 2.0:
                 self.mu *= 2
             else:
-                self.mu = int(self.mu * 0.84)
-                if self.mu < self.dimension:
-                    self.mu = self.dimension
+                self.mu = max(self.min_mu, int(self.mu * 0.84))
             self.llambda = 4 * self.mu
             if self.num_workers > 1:
                 self.llambda = max(self.llambda, self.num_workers)
@@ -380,7 +382,7 @@ class EDA(base.Optimizer):
             self.covariance += 0.1 * np.cov(np.array(population_data).T)
             # Computing the new parent
             mu = self.popsize.mu
-            arrays = [d for d in population_data[:mu]]
+            arrays = population_data[:mu]
             self.current_center = sum(arrays) / mu  # type: ignore
             self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.children[:mu]]) / mu)
             self.parents = self.children[:mu]
@@ -421,13 +423,20 @@ class _TBPSA(base.Optimizer):
                  parametrization: IntOrParameter,
                  budget: Optional[int] = None,
                  num_workers: int = 1,
-                 naive: bool = True
+                 naive: bool = True,
+                 initial_popsize: tp.Optional[int] = None,
                  ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
         self.naive = naive
-        dim = self.dimension
-        self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
+        if initial_popsize is None:
+            initial_popsize = self.dimension
+        self.popsize = _PopulationSizeController(
+            llambda=4 * initial_popsize,
+            mu=initial_popsize,
+            dimension=self.dimension,
+            num_workers=num_workers
+        )
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
         self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
@@ -479,6 +488,8 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     naive: bool
         set to False for noisy problem, so that the best points will be an
         average of the final population.
+    initial_popsize: Optional[int]
+        initial (and minimal) population size (default: 4 x dimension)
 
     Note
     ----
@@ -493,7 +504,8 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        naive: bool = True
+        naive: bool = True,
+        initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(_TBPSA, locals())
 
@@ -522,20 +534,8 @@ class NoisyBandit(base.Optimizer):
 
 @registry.register
 class PSO(base.Optimizer):
-    """Partially following SPSO2011. However, no randomization of the population order.
-
-    Note
-    ----
-    M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
-    Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
-    2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
-    https://ieeexplore.ieee.org/document/6557848
-    """
-    # TODO: the initial speed is probably way too big
-    # the recommendation test requires 200 iterations for the mutation to actually be useful
 
     # pylint: disable=too-many-instance-attributes
-
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -543,6 +543,7 @@ class PSO(base.Optimizer):
         num_workers: int = 1,
         transform: str = "arctan",
         wide: bool = False,  # legacy, to be removed if not needed anymore
+        popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None and budget < 60:
@@ -556,6 +557,8 @@ class PSO(base.Optimizer):
         self._eps, self._transform = cases[transform]
         self._wide = wide
         self.llambda = max(40, num_workers)
+        if popsize is not None:
+            self.llambda = popsize
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
@@ -645,9 +648,35 @@ class PSO(base.Optimizer):
 
 
 class ConfiguredPSO(base.ConfiguredOptimizer):
+    """Partially following SPSO2011. However, no randomization of the population order.
+
+    Parameters
+    ----------
+    transform: str
+        name of the transform to use to map from PSO optimization space to R-space.
+    wide: bool
+        if True: legacy initialization in [-1,1] box mapped to R
+    popsize: int
+        population size of the particle swarm. Defaults to max(40, num_workers)
+
+    Note
+    ----
+    - Using non-default "transform" and "wide" parameters can lead to extreme values
+    - Reference:
+      M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
+      Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
+      2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
+      https://ieeexplore.ieee.org/document/6557848
+    """
 
     # pylint: disable=unused-argument
-    def __init__(self, transform: str = "identity", wide: bool = False) -> None:
+    def __init__(
+        self,
+        transform: str = "identity",
+        wide: bool = False,
+        popsize: tp.Optional[int] = None,
+    ) -> None:
+        assert transform in ["arctan", "gaussian", "identity"]
         super().__init__(PSO, locals())
 
 
@@ -1531,7 +1560,8 @@ class _EMNA(base.Optimizer):
             num_workers: int = 1,
             isotropic: bool = True,
             naive: bool = True,
-            population_size_adaptation: bool = False
+            population_size_adaptation: bool = False,
+            initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.isotropic: bool = isotropic
@@ -1540,13 +1570,19 @@ class _EMNA(base.Optimizer):
         self.min_coef_parallel_context: int = 8
         # Sigma initialization
         self.sigma: tp.Union[float, np.ndarray]
+        if initial_popsize is None:
+            initial_popsize = self.dimension
         if self.isotropic:
             self.sigma = 1.0
         else:
             self.sigma = np.ones(self.dimension)
         # population size and parent size initializations
-        dim = self.dimension
-        self.popsize = _PopulationSizeController(llambda=4 * dim, mu=dim, dimension=dim, num_workers=num_workers)
+        self.popsize = _PopulationSizeController(
+            llambda=4 * initial_popsize,
+            mu=initial_popsize,
+            dimension=self.dimension,
+            num_workers=num_workers
+        )
         if not self.population_size_adaptation:
             self.popsize.mu = max(16, self.dimension)
             self.popsize.llambda = 4 * self.popsize.mu
@@ -1628,6 +1664,10 @@ class EMNA(base.ConfiguredOptimizer):
     naive: bool
         set to False for noisy problem, so that the best points will be an
         average of the final population.
+    population_size_adaptation: bool
+        population size automatically adapts to the landscape
+    initial_popsize: Optional[int]
+        initial (and minimal) population size (default: 4 x dimension)
     """
 
     # pylint: disable=unused-argument
@@ -1636,7 +1676,8 @@ class EMNA(base.ConfiguredOptimizer):
         *,
         isotropic: bool = True,
         naive: bool = True,
-        population_size_adaptation: bool = False
+        population_size_adaptation: bool = False,
+        initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(_EMNA, locals())
 

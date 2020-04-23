@@ -341,7 +341,8 @@ class Parameter:
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(self, Constant):  # nevermind constants (since they dont spawn children)
-            raise RuntimeError(f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead")
+            raise RuntimeError(f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
+                               "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)")
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params

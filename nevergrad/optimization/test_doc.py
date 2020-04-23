@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 import nevergrad as ng
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
+# pylint: disable=import-outside-toplevel
 
 
 def test_simplest_example() -> None:
