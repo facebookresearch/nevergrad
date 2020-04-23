@@ -484,7 +484,7 @@ class FightPlotter:
         plt.tight_layout()
 
     @staticmethod
-    def winrates_from_selection(df: tools.Selector, categories: tp.List[str], num_rows: int = 5) -> pd.DataFrame:
+    def winrates_from_selection(df: utils.Selector, categories: tp.List[str], num_rows: int = 5) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
 
