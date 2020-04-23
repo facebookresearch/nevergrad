@@ -776,7 +776,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """MLDA (machine learning and data analysis) testbed."""
+    """MLDA (machine learning and data analysis) testbed, restricted to the K-means part."""
     funcs: tp.List[ExperimentFunction] = [
         _mlda.Clustering.from_mlda(name, num, rescale) for name, num in [("Ruspini", 5), ("German towns", 10),
                                                                          ("Ruspini", 50), ("German towns", 100)] for rescale in [True, False]
