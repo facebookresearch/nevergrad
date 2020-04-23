@@ -113,7 +113,7 @@ class _RandomSearch(OneShotOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autolog", "autotune"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autotune"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
         self.stupid = stupid
@@ -139,12 +139,6 @@ class _RandomSearch(OneShotOptimizer):
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "autotune":
             scale = np.sqrt(np.log(self.budget) / self.dimension)
-        if isinstance(scale, str) and scale == "autolog":
-            # Some variants use a rescaling depending on the budget and the dimension (2nde version).
-            if self.dimension - 4 * np.log(self.budget) > 1.:
-                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
-            else:
-                scale = 1.
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self.cauchy
@@ -183,9 +177,8 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
-         - "auto": scales in function of dimension and budget (version 1)
-         - "autolog": scales in function of dimension and budget (version 2)
-         - "autotune": scales in function of dimension and budget (version 3)
+         - "auto": scales in function of dimension and budget (version 1: sigma = (1+log(budget)) / (4log(dimension)) )
+         - "autotune": scales in function of dimension and budget (version 2: sigma = sqrt(log(budget) / dimension) )
     recommendation_rule: str
         "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
         the default and implies selecting the pessimistic best.
@@ -282,11 +275,6 @@ class _SamplingSearch(OneShotOptimizer):
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if self.autorescale == "autotune":
             self.scale = np.sqrt(np.log(self.budget) / self.dimension)
-        if self.autorescale == "autolog":
-            if self.dimension - 4 * np.log(self.budget) > 1.:
-                scale = min(1, np.sqrt(4 * np.log(self.budget) / (self.dimension - 4 * np.log(self.budget))))
-            else:
-                scale = 1.
 
         def transf(x: np.ndarray) -> np.ndarray:
             return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
@@ -361,34 +349,18 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 
 # pylint: disable=line-too-long
-HOAvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", 
-    sampler="Hammersley", scrambled=True,
-    recommendation_rule="average_of_hull_best",
-    opposition_mode="opposite"
-).set_name("HOAvgMetaLogRecentering", register=True)
 MetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
 ).set_name("MetaRecentering", register=True)
-MetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True
-).set_name("MetaLogRecentering", register=True)
 MetaTuneRecentering = SamplingSearch(
     cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
 ).set_name("MetaTuneRecentering", register=True)
 HAvgMetaRecentering = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
 ).set_name("HAvgMetaRecentering", register=True)
-HAvgMetaLogRecentering = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HAvgMetaLogRecentering", register=True)
-
 AvgMetaRecenteringNoHull = SamplingSearch(
     cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best"
 ).set_name("AvgMetaRecenteringNoHull", register=True)
-AvgMetaLogRecenteringNoHull = SamplingSearch(
-    cauchy=False, autorescale="autolog", sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best"
-).set_name("AvgMetaLogRecenteringNoHull", register=True)
 
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
