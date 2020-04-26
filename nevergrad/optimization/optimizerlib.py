@@ -1796,3 +1796,42 @@ class Shiva2(NGO2):
                     self.optims = [CMA(self.parametrization, budget, num_workers)]
             else:
                 self.optims = [NGO2(self.parametrization, budget, num_workers, seed)]
+
+@registry.register
+class Shiva3(NGO2):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().init__(parametrization, budget=budget, num_workers=num_workers, seed=2)
+
+        
+@registry.register
+class Shiva4(NGO2):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().init__(parametrization, budget=budget, num_workers=num_workers, seed=3)
+          
+@registry.register
+class Shiva5(NGO2):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().init__(parametrization, budget=budget, num_workers=num_workers, seed=4)
+
+
+        
+@registry.register
+class Shiva6(NGO2):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().init__(parametrization, budget=budget, num_workers=num_workers, seed=5)
+        
+        
+@registry.register
+class Shiva7(NGO2):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().init__(parametrization, budget=budget, num_workers=num_workers, seed=6)
