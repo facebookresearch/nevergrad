@@ -57,8 +57,8 @@ def check_optimizer(
     num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
     num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
     optimum = [0.5, -0.8]
-    if optimizer_cls in (optlib.PBIL,):
-        optimum = [0, 1, 0, 1, 0, 1]
+    #if optimizer_cls in (optlib.PBIL,):
+    #    optimum = [0, 1, 0, 1, 0, 1]
     fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
         fitness = Fitness(optimum)
@@ -120,7 +120,7 @@ SLOW = [
     "MicroCMA",
     "ES",
 ]
-DISCRETE = ["PBIL", "cGA"]
+# DISCRETE = ["PBIL", "cGA"] presumably this is not necessary anymore...
 UNSEEDABLE: tp.List[str] = []
 
 
