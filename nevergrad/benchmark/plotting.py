@@ -182,6 +182,7 @@ def create_plots(
     # fight plot
     # choice of the combination variables to fix
     fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
+    TODO remove descriptors which have only one value for each budget ?
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
     num_rows = 6
 
