@@ -297,8 +297,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if not parallel and not small:
         optims += ["Cobyla"]
     optims += ["NGO", "Shiva"]
-
-    # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
+    if hd and big and not parallel:  # We want to compare the Shiva variants.
+        optims += [x for x, y in ng.optimizers.registry.items() if "hiva" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
@@ -338,6 +338,7 @@ def yadimbudgetbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     internal_generator = yabbob(seed, parallel=False, big=True, hd=True)
     for xp in internal_generator:
         yield xp
+    
     
 @registry.register
 def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
