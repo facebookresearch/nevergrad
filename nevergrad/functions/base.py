@@ -46,6 +46,7 @@ class ExperimentFunction:
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
+            TODO modify name using the instrumentation if any ?
             self._descriptors.update(name=name)
         if hasattr(self, "get_postponing_delay"):
             raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
