@@ -316,7 +316,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
-        for d in [2, 8, 32, 128, 512, 2048, 8192, 32768] if hd and big else ([100, 1000, 3000] if hd else [2, 10, 50])
+        for d in ([2, 8, 32, 128, 512, 2048, 8192, 32768] if (hd and big) else ([100, 1000, 3000] if hd else [2, 10, 50]))
     ]
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise and not hd):
