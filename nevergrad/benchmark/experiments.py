@@ -297,11 +297,18 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if not parallel and not small:
         optims += ["Cobyla"]
     optims += ["NGO", "Shiva"]
+
     # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    
+    # Special case: for this big xp we do not want too many optims or too many test functions.
+    if hd and big and not parallel:
+        optims = ["Shiva", "CMA", "ChainCMAPowell", "DE", "PSO", "OnePlusOne"]
+        names = ["cigar", "ellipsoid", "hm", "griewank", "sphere"]
+        
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
@@ -309,10 +316,10 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
-        for d in ([100, 1000, 3000] if hd else [2, 10, 50])
+        for d in [2, 8, 32, 128, 512, 2048, 8192, 32768] if hd and big else ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
     budgets = [50, 200, 800, 3200, 12800]
-    if (big and not noise):
+    if (big and not noise and not hd):
         budgets = [40000, 80000]
     elif (small and not noise):
         budgets = [10, 20, 40]
@@ -325,6 +332,13 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                     yield xp
 
 
+@registry.register
+def yadimbudgetbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Yabbob variant aimed at exploring the link between dimension and budget specifically."""
+    internal_generator = yabbob(seed, parallel=False, big=True, hd=True)
+    for xp in internal_generator:
+        yield xp
+    
 @registry.register
 def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
