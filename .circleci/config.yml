@@ -38,7 +38,8 @@ commands:
             python3 -m venv venv
             . venv/bin/activate
             pip install -e .[all]
-            pip install git+https://github.com/numpy/numpy-stubs@master
+            # master numpy-stubs adds a lot of messy warnings :s
+            pip install git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
 
 
 jobs:
