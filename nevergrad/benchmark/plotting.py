@@ -188,7 +188,7 @@ def create_plots(
     for d in all_descriptors:
         acceptable = False
         for b in df.budget.unique():
-            if len(loc[df[‘budget’] == b][d].unique()) > 0:
+            if len(loc[df['budget'] == b][d].unique()) > 0:
                 acceptable = True
                 break
         if acceptable:
