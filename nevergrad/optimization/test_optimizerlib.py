@@ -114,9 +114,6 @@ SLOW = [
     "ASCMA2PDEthird",
     "MultiScaleCMA",
     "PCEDA",
-    "MPCEDA",
-    "EDA",
-    "MEDA",
     "MicroCMA",
     "ES",
 ]
@@ -124,7 +121,7 @@ DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: tp.List[str] = []
 
 
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
@@ -160,7 +157,7 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
     keeper.save()
 
 
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
     with warnings.catch_warnings():
         # tests do not need to be efficient
@@ -175,7 +172,7 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     # set up environment
     optimizer_cls = registry[name]

@@ -340,6 +340,10 @@ class EDA(base.Optimizer):
 
     Population-size equal to lambda = 4 x dimension.
     Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+
+    Caution
+    -------
+    This optimizer is probably wrong.
     """
 
     _POPSIZE_ADAPTATION = False
@@ -361,8 +365,9 @@ class EDA(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
+        # TODO: is a sigma necessary here as well? given the covariance is estimated
         assert len(self.current_center) == len(self.covariance), [self.dimension, self.current_center, self.covariance]
-        data = mutated_sigma * self._rng.multivariate_normal(self.current_center, self.covariance)
+        data = self._rng.multivariate_normal(self.current_center, mutated_sigma * self.covariance)
         parent = self.parents[self.num_ask % len(self.parents)]
         candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
         if parent is self.parametrization:
@@ -371,18 +376,23 @@ class EDA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["loss"] = value
         self.children.append(candidate)
         if self._POPSIZE_ADAPTATION:
             self.popsize.add_value(value)
         if len(self.children) >= self.popsize.llambda:
-            self.children = sorted(self.children, key=lambda c: c._meta["loss"])
+            self.children = sorted(self.children, key=lambda c: c.loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
-            self.covariance *= 0.9 if self._COVARIANCE_MEMORY else 0
-            self.covariance += 0.1 * np.cov(np.array(population_data).T)
-            # Computing the new parent
             mu = self.popsize.mu
             arrays = population_data[:mu]
+            # covariance
+            # TODO: check actual covariance that should be used
+            centered_arrays = np.array([x - self.current_center for x in arrays])
+            cov = centered_arrays.T.dot(centered_arrays)
+            # cov = np.cov(np.array(population_data).T)
+            mem_factor = 0.9 if self._COVARIANCE_MEMORY else 0
+            self.covariance *= mem_factor
+            self.covariance += (1 - mem_factor) * cov
+            # Computing the new parent
             self.current_center = sum(arrays) / mu  # type: ignore
             self.sigma = np.exp(sum([np.log(c._meta["sigma"]) for c in self.children[:mu]]) / mu)
             self.parents = self.children[:mu]
