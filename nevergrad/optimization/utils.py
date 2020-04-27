@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import math
 import operator
 import warnings
 import typing as tp
@@ -10,7 +11,6 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common.tools import OrderedSet
 from nevergrad.common.typetools import ArrayLike
-from nevergrad.parametrization import parameter as p
 
 
 class MultiValue:
@@ -78,7 +78,7 @@ class MultiValue:
         self.square = (self.count * self.square + y * y) / float(self.count + 1)
         self.square = max(self.square, self.mean**2)
         self.count += 1
-        factor: float = np.sqrt(float(self.count) / float(self.count - 1.))
+        factor = math.sqrt(float(self.count) / float(self.count - 1.))
         self.variance = factor * (self.square - self.mean**2)
 
     def as_array(self, reference: p.Parameter) -> np.ndarray:
