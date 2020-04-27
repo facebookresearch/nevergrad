@@ -25,7 +25,7 @@ class Images(base.ExperimentFunction):
         self.domain_shape = (256, 256, 3)
         self.problem_type = problem_type
         self.index_pb = index_pb
-        assert problem_type == 0:
+        assert problem_type == 0
         assert index_pb == 0
         path = os.getcwd() + os.path.dirname(__file__) + "/headrgb_olivier.png"
         image = PIL.Image.open(path).resize((domain_shape[0],domain_shape[1]),PIL.Image.ANTIALIAS)
@@ -42,7 +42,7 @@ class Images(base.ExperimentFunction):
     def _loss(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
         assert x.shape == self.domain_shape
-        assert problem_type == 0:
+        assert problem_type == 0
         assert index_pb == 0
         value = np.subtract(x, self.data) 
         return value
