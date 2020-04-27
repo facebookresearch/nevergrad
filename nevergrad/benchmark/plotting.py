@@ -175,15 +175,25 @@ def create_plots(
     descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
-    descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
-    print(f"Descriptors: {descriptors}")
+    all_descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
+    print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
     # fight plot
     # choice of the combination variables to fix
-    fight_descriptors = descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
-    TODO remove descriptors which have only one value for each budget ?
+    fight_descriptors = all_descriptors + ["budget"]  # budget can be used as a descriptor for fight plots
     combinable = [x for x in fight_descriptors if len(df.unique(x)) > 1]  # should be all now
+    # We remove descriptors which have only one value for each budget.
+    descriptors = []
+    for d in all_descriptors:
+        acceptable = False
+        for b in df.budget.unique():
+            if len(loc[df[‘budget’] == b][d].unique()) > 0:
+                acceptable = True
+                break
+        if acceptable:
+            descriptors += [d]
+    
     num_rows = 6
 
     # For the competence map case we must consider pairs of attributes, hence maxcomb_size >= 2.
