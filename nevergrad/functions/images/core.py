@@ -14,7 +14,7 @@ from .. import base
 
 
 class Image(base.ExperimentFunction):
-    def __init__(self, problem_type="recovering", index_pb=0) -> None:
+    def __init__(self, problem_type: str = "recovering", index_pb: int = 0) -> None:
         """
         problem_type: the type of problem we are working on.
            recovering: we directly try to recover the target image.
