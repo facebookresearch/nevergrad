@@ -11,7 +11,7 @@ from . import core
 
 def test_images() -> None:
     func = core.Image()
-    x = 7 * np.random.normal(size=TODO)
+    x = 7 * np.fabs(np.random.normal(size=func.domain_shape))
     data = func.parametrization.spawn_child().set_standardized_data(x).args[0]
     value = func(data)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
