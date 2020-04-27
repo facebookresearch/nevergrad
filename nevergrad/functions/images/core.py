@@ -44,7 +44,7 @@ class Image(base.ExperimentFunction):
         array.set_mutation(sigma=35)
         array.set_bounds(lower=0, upper=255, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")
+        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(self._loss, array)
         self.register_initialization()
         self._descriptors.update()
