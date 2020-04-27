@@ -13,7 +13,7 @@ from nevergrad.common.typetools import ArrayLike
 from .. import base
 
 
-class Images(base.ExperimentFunction):
+class Image(base.ExperimentFunction):
     def __init__(self, problem_type="recovering", index_pb=0) -> None:
         """
         problem_type: the type of problem we are working on.

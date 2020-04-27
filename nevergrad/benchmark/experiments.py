@@ -16,6 +16,7 @@ from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.images import Image
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions import rl
