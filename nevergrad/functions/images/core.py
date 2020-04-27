@@ -6,8 +6,8 @@
 from math import sqrt, tan, pi
 import numpy as np
 import nevergrad as ng
-import PIL  # mypy: ignore
-import PIL.Image  # mypy: ignore
+import PIL
+import PIL.Image
 import os
 from nevergrad.common.typetools import ArrayLike
 from .. import base
