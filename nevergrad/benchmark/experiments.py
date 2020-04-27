@@ -307,7 +307,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     
     # Special case: for this big xp we do not want too many optims or too many test functions.
     if hd and big and not parallel:
-        optims = ["Shiva", "CMA", "ChainCMAPowell", "DE", "PSO", "OnePlusOne"]
+        optims = ["Shiva", "CMA", "chainCMAPowell", "DE", "PSO", "OnePlusOne"]
         names = ["cigar", "ellipsoid", "hm", "griewank", "sphere"]
         
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
