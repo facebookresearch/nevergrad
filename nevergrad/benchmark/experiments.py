@@ -846,7 +846,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """AR coating. Problems about optical properties of nanolayers."""
     seedg = create_seed_generator(seed)
-    algos = ["CMA", "Shiva", "DE", "PSO", TODOTODO]
+    algos = ["CMA", "Shiva", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in algos:
