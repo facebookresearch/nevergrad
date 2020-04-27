@@ -842,6 +842,20 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """AR coating. Problems about optical properties of nanolayers."""
+    seedg = create_seed_generator(seed)
+    algos = ["CMA", "Shiva", "DE", "PSO", TODOTODO]
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for num_workers in [1]:
+            for algo in algos:
+                for func in [Image()]:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
 def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # pylint: disable=too-many-locals
     seedg = create_seed_generator(seed)
