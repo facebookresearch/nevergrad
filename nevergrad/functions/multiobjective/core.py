@@ -3,15 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Tuple, Any, Callable, List, Dict, Optional
-import numpy as np
 import random
+import typing as tp
+import numpy as np
 from nevergrad.common.typetools import ArrayLike
 from .hypervolume import HypervolumeIndicator
 
-ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
+ArgsKwargs = tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]
 
 
+# pylint: disable=too-many-instance-attributes
 class MultiobjectiveFunction:
     """Given several functions, and threshold on their values (above which solutions are pointless),
     this object can be used as a single-objective function, the minimization of which
@@ -34,34 +35,34 @@ class MultiobjectiveFunction:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, multiobjective_function: Callable[..., ArrayLike], upper_bounds: Optional[ArrayLike] = None) -> None:
+    def __init__(self, multiobjective_function: tp.Callable[..., ArrayLike], upper_bounds: tp.Optional[ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
         self._auto_bound = 0
-        self._auto_upper_bounds = np.array([-float('inf')])  
+        self._auto_upper_bounds = np.array([-float('inf')])
         self._auto_lower_bounds = np.array([float('inf')])
         if upper_bounds is None:
             self._auto_bound = 15
         else:
             self._upper_bounds = upper_bounds
-            self._hypervolume: Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
-        self._points: List[Tuple[ArgsKwargs, np.ndarray]] = []
+            self._hypervolume: tp.Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
+        self._points: tp.List[tp.Tuple[ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
-    def compute_aggregate_loss(self, losses: ArrayLike, *args: Any, **kwargs: Any) -> float:
+    def compute_aggregate_loss(self, losses: ArrayLike, *args: tp.Any, **kwargs: tp.Any) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
         losses = np.array(losses, copy=False)
         if self._auto_bound > 0:
-            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)
-            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)            
+            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)  # type: ignore
+            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)  # type: ignore
             self._auto_bound -= 1
             if self._auto_bound == 0:
                 self._upper_bounds = self._auto_upper_bounds + 0. * (self._auto_upper_bounds - self._auto_lower_bounds)
-                self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore                
+                self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore
             self._points.append(((args, kwargs), np.array(losses)))
             return 0.
-        # We compute the hypervolume           
+        # We compute the hypervolume
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
         arr_losses = np.minimum(np.array(losses, copy=False), self._upper_bounds)
@@ -81,16 +82,16 @@ class MultiobjectiveFunction:
             assert distance_to_pareto >= 0
             return -new_volume + distance_to_pareto
 
-    def __call__(self, *args: Any, **kwargs: Any) -> float:
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         # This part is stationary. It can be distributed.
         losses = self.multiobjective_function(*args, **kwargs)
         # The following is not. It should be called locally.
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
-    def _filter_pareto_front(self):
+    def _filter_pareto_front(self) -> None:
         """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict).
         """
-        new_points: List[Tuple[ArgsKwargs, np.ndarray]] = []
+        new_points: tp.List[tp.Tuple[ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
             should_be_added = True
             for _, other_losses in self._points:
@@ -101,7 +102,7 @@ class MultiobjectiveFunction:
                 new_points.append((argskwargs, losses))
         self._points = new_points
 
-    def pareto_front(self, size: Optional[int] = None, subset: str = "random") -> List[ArgsKwargs]:
+    def pareto_front(self, size: tp.Optional[int] = None, subset: str = "random") -> tp.List[ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
 
         Parameters
@@ -121,9 +122,9 @@ class MultiobjectiveFunction:
             return [p[0] for p in self._points]
         if subset == "random":
             return random.sample([p[0] for p in self._points], size)
-        possibilities: List[Any] = []
-        scores : List[float] = []
-        for u in range(30):
+        possibilities: tp.List[tp.Any] = []
+        scores: tp.List[float] = []
+        for _ in range(30):
             possibilities += [random.sample(self._points, size)]
             if subset == "hypervolume":
                 scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])]
