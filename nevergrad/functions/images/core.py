@@ -33,7 +33,7 @@ class Image(base.ExperimentFunction):
         assert index_pb == 0  # For the moment only 1 target.
         path = os.path.dirname(__file__) + "/headrgb_olivier.png"
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
-        self.data = np.asarray(image)[:,:,:4]  # 4th Channel is pointless here, only 255.
+        self.data = np.asarray(image)[:,:,:3]  # 4th Channel is pointless here, only 255.
 
         # if problem_type == "adversarial": 
         #     assert index_pb <= 100  # If we have that many target images.
@@ -43,7 +43,7 @@ class Image(base.ExperimentFunction):
         array = ng.p.Array(shape=self.domain_shape, mutable_sigma=True,)
         array.set_mutation(sigma=35)
         array.set_bounds(lower=0, upper=255, method="clipping", full_range_sampling=True)
-        max_size= ng.p.Scalar(lower=1, upper=200).set_integer_casting()
+        max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")
         super().__init__(self._loss, array)
         self.register_initialization()
@@ -51,12 +51,14 @@ class Image(base.ExperimentFunction):
 
     def _loss(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
-        assert x.shape == self.domain_shape
+        x = x.reshape(self.domain_shape)
+        assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
+
 
         # Define the loss, in case of recovering: the goal is to find the target image.
-        assert problem_type == "recovering"
-        assert index_pb == 0
-        value = np.subtract(x, self.data) 
+        assert self.problem_type == "recovering"
+        assert self.index_pb == 0
+        value = np.sum(np.fabs(np.subtract(x, self.data)))
 
         # Here we should implement "adversarial" and others.
         return value

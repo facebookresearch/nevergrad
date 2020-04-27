@@ -12,9 +12,7 @@ from . import core
 def test_images() -> None:
     func = core.Image()
     x = 7 * np.fabs(np.random.normal(size=func.domain_shape))
-    data = func.parametrization.spawn_child().set_standardized_data(x).args[0]
-    value = func(data)  # should not touch boundaries, so value should be < np.inf
+    #data = func.parametrization.spawn_child().set_standardized_data(x.flatten()).value
+    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    print(value)
     assert value < np.inf
-    data = func.parametrization.spawn_child().set_standardized_data(np.arange(8)).args[0]
-    for f in [func, func.evaluation_function]:
-        np.testing.assert_almost_equal(f(data), 13.1007174)  # type: ignore
