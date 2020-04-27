@@ -10,7 +10,7 @@ from . import core
 
 
 def test_images() -> None:
-    func = core.Images()
+    func = core.Image()
     x = 7 * np.random.normal(size=TODO)
     data = func.parametrization.spawn_child().set_standardized_data(x).args[0]
     value = func(data)  # should not touch boundaries, so value should be < np.inf
