@@ -1,4 +1,4 @@
-mypy>=0.730
+mypy>=0.770
 pytest>=4.3.0
 pytest-cov>=2.6.1
 wheel>=0.33.6
