@@ -562,7 +562,7 @@ i.e size of the vector returned by get_standardized_data(reference=…)</p>
 
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.get_standardized_data">
-<code class="sig-name descname">get_standardized_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">reference</span><span class="p">:</span> <span class="n">P</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="headerlink" href="#nevergrad.p.Parameter.get_standardized_data" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_standardized_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">reference</span><span class="p">:</span> <span class="n">P</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="headerlink" href="#nevergrad.p.Parameter.get_standardized_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the standardized data representing the value of the instance as an array in the optimization space.
 In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
 The data only represent the value of this instance, not the parameters (eg.: mutable sigma), hence it does not
