@@ -12,7 +12,7 @@ import numpy as np
 from ..functions.mlda import datasets
 from ..functions import rl
 from ..common import testing
-from nevergrad.common.tools import Selector
+# from nevergrad.common.tools import Selector
 from .xpbase import Experiment
 from .utils import Selector
 from . import experiments
