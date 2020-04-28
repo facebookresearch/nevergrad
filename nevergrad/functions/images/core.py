@@ -4,9 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 from math import sqrt, tan, pi
+from pathlib import Path
+
 import numpy as np
 import nevergrad as ng
-import PIL
 import PIL.Image
 import os
 from nevergrad.common.typetools import ArrayLike
@@ -31,7 +32,8 @@ class Image(base.ExperimentFunction):
         # Storing data necessary for the problem at hand.
         assert problem_type == "recovering"  # For the moment we have only this one.
         assert index_pb == 0  # For the moment only 1 target.
-        path = os.path.dirname(__file__) + "/headrgb_olivier.png"
+        #path = os.path.dirname(__file__) + "/headrgb_olivier.png"
+        path = Path(__file__).with_name("headrgb_olivier.png")
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:,:,:3]  # 4th Channel is pointless here, only 255.
 
@@ -46,8 +48,8 @@ class Image(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(self._loss, array)
-        self.register_initialization()
-        self._descriptors.update()
+        self.register_initialization(problem_type=problem_type, index_pb=index_pb)
+        self._descriptors.update(problem_type=problem_type, index_pb=index_pb)
 
     def _loss(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
