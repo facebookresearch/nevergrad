@@ -24,6 +24,7 @@ _OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None]
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
+_PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
 
 
 def load(cls: tp.Type[X], filepath: tp.Union[str, Path]) -> X:
@@ -49,17 +50,17 @@ class TellNotAskedNotSupportedError(NotImplementedError):
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
-    - `ask()` which provides a candidate on which to evaluate the function to optimize.
-    - `tell(candidate, value)` which lets you provide the values associated to points.
-    - `provide_recommendation()` which provides the best final candidate.
+    - :code:`ask()` which provides a candidate on which to evaluate the function to optimize.
+    - :code:`tell(candidate, value)` which lets you provide the values associated to points.
+    - :code:`provide_recommendation()` which provides the best final candidate.
 
-    Typically, one would call `ask()` num_workers times, evaluate the
+    Typically, one would call :code:`ask()` num_workers times, evaluate the
     function on these num_workers points in parallel, update with the fitness value when the
     evaluations is finished, and iterate until the budget is over. At the very end,
     one would call provide_recommendation for the estimated optimum.
 
     This class is abstract, it provides internal equivalents for the 3 main functions,
-    among which at least `_internal_ask_candidate` has to be overridden.
+    among which at least :code:`_internal_ask_candidate` has to be overridden.
 
     Each optimizer instance should be used only once, with the initial provided budget
 
@@ -102,13 +103,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError("No variable to optimize in this parametrization.")
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: utils.Archive[utils.Value] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive: utils.Archive[utils.MultiValue] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
-            x: utils.Point(np.zeros(self.dimension, dtype=np.float), utils.Value(np.inf)) for x in ["optimistic", "pessimistic", "average"]
+            x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
+            for x in ["optimistic", "pessimistic", "average"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
-        self.pruning: Optional[Callable[[utils.Archive[utils.Value]], utils.Archive[utils.Value]]] = utils.Pruning.sensible_default(
+        self.pruning: tp.Optional[_PruningCallable] = utils.Pruning.sensible_default(
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
         # instance state
@@ -149,7 +151,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def num_tell_not_asked(self) -> int:
-        """int: Number of time the `tell` method was called on candidates that were not asked for by the optimizer
+        """int: Number of time the :code:`tell` method was called on candidates that were not asked for by the optimizer
         (or were suggested).
         """
         return self._num_tell_not_asked
@@ -178,7 +180,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Parameters
         ----------
         name: str
-            name of the method to register the callback for (either `ask` or `tell`)
+            name of the method to register the callback for (either :code:`ask` or :code:`tell`)
         callback: callable
             a callable taking the same parameters as the method it is registered upon (including self)
         """
@@ -204,10 +206,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Note
         ----
         - This relies on optmizers implementing a way to deal with unasked candidate.
-          Some optimizers may not support it and will raise a TellNotAskedNotSupportedError
-          at "tell" time.
+          Some optimizers may not support it and will raise a :code:`TellNotAskedNotSupportedError`
+          at :code:`tell` time.
         - LIFO is used so as to be able to suggest and ask straightaway, as an alternative to
-          calling optimizer.create_candidate.from_call.
+          creating a new candidate with :code:`optimizer.parametrization.spawn_child(new_value)`
         """
         if isinstance(self.parametrization, p.Instrumentation):
             new_value: tp.Any = (args, kwargs)
@@ -228,21 +230,31 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Note
         ----
-        The candidate should generally be one provided by `ask()`, but can be also
+        The candidate should generally be one provided by :code:`ask()`, but can be also
         a non-asked candidate. To create a p.Parameter instance from args and kwargs,
-        you can use `optimizer.create_candidate.from_call(*args, **kwargs)`.
+        you can use :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`:
+
+        - for an :code:`Array(shape(2,))`: :code:`optimizer.parametrization.spawn_child(new_value=[12, 12])`
+
+        - for an :code:`Instrumentation`: :code:`optimizer.parametrization.spawn_child(new_value=(args, kwargs))`
+
+        Alternatively, you can provide a suggestion with :code:`optimizer.suggest(*args, **kwargs)`, the next :code:`ask`
+        will use this suggestion.
         """
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
-                "'tell' must be provided with the candidate (use optimizer.create_candidate.from_call(*args, **kwargs)) "
-                "if you want to inoculate a point that as not been asked for"
+                "'tell' must be provided with the candidate.\n"
+                "Use optimizer.parametrization.spawn_child(new_value)) if you want to "
+                "create a candidate that as not been asked for, "
+                "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
+                "the next ask"
             )
+        candidate.loss = value
         candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, value)
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self._update_archive_and_bests(data, value)
+        self._update_archive_and_bests(candidate, value)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, value)
             self._asked.remove(candidate.uid)
@@ -251,27 +263,40 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    def _update_archive_and_bests(self, x: ArrayLike, value: float) -> None:
+    def _update_archive_and_bests(self, candidate: p.Parameter, value: float) -> None:
+        x = candidate.get_standardized_data(reference=self.parametrization)
         if not isinstance(value, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
         if np.isnan(value) or value == np.inf:
             warnings.warn(f"Updating fitness with {value} value")
+        mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
-            self.archive[x] = utils.Value(value)  # better not to stock the position as a Point (memory)
+            self.archive[x] = utils.MultiValue(candidate, value, reference=self.parametrization)
         else:
-            self.archive[x].add_evaluation(value)
+            mvalue = self.archive[x]
+            mvalue.add_evaluation(value)
+            # both parameters should be non-None
+            if mvalue.parameter.loss > candidate.loss:  # type: ignore
+                mvalue.parameter = candidate   # keep best candidate
         # update current best records
         # this may have to be improved if we want to keep more kinds of best values
+
         for name in ["optimistic", "pessimistic", "average"]:
-            if np.array_equal(x, self.current_bests[name].x):  # reboot
-                y: bytes = min(self.archive.bytesdict, key=lambda z, n=name: self.archive.bytesdict[z].get_estimation(n))  # type: ignore
+            if mvalue is self.current_bests[name]:  # reboot
+                best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
                 # rebuild best point may change, and which value did not track the updated value anyway
-                self.current_bests[name] = utils.Point(np.frombuffer(y), self.archive.bytesdict[y])
+                self.current_bests[name] = best
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
-                    self.current_bests[name] = utils.Point(x, self.archive[x])
-                if not (np.isnan(value) or value == np.inf):
-                    assert self.current_bests[name].x in self.archive, "Best value should exist in the archive"
+                    self.current_bests[name] = self.archive[x]
+                # deactivated checks
+                # if not (np.isnan(value) or value == np.inf):
+                #     if not self.current_bests[name].x in self.archive:
+                #         bval = self.current_bests[name].get_estimation(name)
+                #         avals = (min(v.get_estimation(name) for v in self.archive.values()),
+                #                  max(v.get_estimation(name) for v in self.archive.values()))
+                #         raise RuntimeError(f"Best value should exist in the archive at num_tell={self.num_tell})\n"
+                #                            f"Best value is {bval} and archive is within range {avals} for {name}")
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
@@ -282,8 +307,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         p.Parameter:
-            The candidate to try on the objective function. p.Parameter have field `args` and `kwargs` which can be directly used
-            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
+            The candidate to try on the objective function. :code:`p.Parameter` have field :code:`args` and :code:`kwargs`
+            which can be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
@@ -325,8 +350,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         p.Parameter
-            The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
-            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
+            The candidate with minimal value. p.Parameters have field :code:`args` and :code:`kwargs` which can be directly used
+            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.recommend()  # duplicate method
 
@@ -336,19 +361,19 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         p.Parameter
-            The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
-            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
+            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
+            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         return self.parametrization.spawn_child().set_standardized_data(self._internal_provide_recommendation(), deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        """Called whenever calling "tell" on a candidate that was not "asked".
+        """Called whenever calling :code:`tell` on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
         self._internal_tell_candidate(candidate, value)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        """Called whenever calling "tell" on a candidate that was "asked".
+        """Called whenever calling :code:`tell` on a candidate that was "asked".
         """
         data = candidate.get_standardized_data(reference=self.parametrization)
         self._internal_tell(data, value)
@@ -380,12 +405,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         objective_function: callable
             A callable to optimize (minimize)
         executor: Executor
-            An executor object, with method `submit(callable, *args, **kwargs)` and returning a Future-like object
-            with methods `done() -> bool` and `result() -> float`. The executor role is to dispatch the execution of
+            An executor object, with method :code:`submit(callable, *args, **kwargs)` and returning a Future-like object
+            with methods :code:`done() -> bool` and :code:`result() -> float`. The executor role is to dispatch the execution of
             the jobs locally/on a cluster/with multithreading depending on the implementation.
-            Eg: `concurrent.futures.ThreadPoolExecutor`
+            Eg: :code:`concurrent.futures.ThreadPoolExecutor`
         batch_mode: bool
-            when num_workers = n > 1, whether jobs are executed by batch (n function evaluations are launched,
+            when :code:`num_workers = n > 1`, whether jobs are executed by batch (:code:`n` function evaluations are launched,
             we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
             another one)
         verbosity: int
@@ -394,8 +419,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         p.Parameter
-            The candidate with minimal value. p.Parameters have field `args` and `kwargs` which can be directly used
-            on the function (`objective_function(*candidate.args, **candidate.kwargs)`).
+            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
+            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----
@@ -473,6 +498,7 @@ def addCompare(optimizer: Optimizer) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.
 
+        ref = self.parametrization
         # Evaluate the best fitness value among losers.
         best_fitness_value = 0.
         for candidate in losers:
@@ -484,14 +510,27 @@ def addCompare(optimizer: Optimizer) -> None:
         for i, candidate in enumerate(winners):
             self.tell(candidate, best_fitness_value - len(winners) + i)
             data = candidate.get_standardized_data(reference=self.parametrization)
-            self.archive[data] = utils.Value(best_fitness_value - len(winners) + i)
+            self.archive[data] = utils.MultiValue(candidate, best_fitness_value - len(winners) + i, reference=ref)
 
     setattr(optimizer.__class__, 'compare', compare)
 
 
 class ConfiguredOptimizer:
-    """This is a special case of an optimizer family for optimizers taking more than
-    3 init arguments
+    """Creates optimizer-like instances with configuration.
+
+    Parameters
+    ----------
+    OptimizerClass: type
+        class of the optimizer to configure
+    config: dict
+        dictionnary of all the configurations
+    as_config: bool
+        whether to provide all config as kwargs to the optimizer instantiation (default, see ConfiguredCMA for an example),
+        or through a config kwarg referencing self. (if True, see EvolutionStrategy for an example)
+
+    Note
+    ----
+    This provides a default repr which can be bypassed through set_name
     """
 
     # optimizer qualifiers
@@ -542,6 +581,8 @@ class ConfiguredOptimizer:
         return self.name
 
     def set_name(self, name: str, register: bool = False) -> "ConfiguredOptimizer":
+        """Set a new representation for the instance
+        """
         self.name = name
         if register:
             registry.register_name(name, self)
@@ -551,3 +592,9 @@ class ConfiguredOptimizer:
         """Loads a pickle and checks that it is an Optimizer.
         """
         return self._OptimizerClass.load(filepath)
+
+    def __eq__(self, other: tp.Any) -> tp.Any:
+        if self.__class__ == other.__class__:
+            if self._config == other._config:
+                return True
+        return False

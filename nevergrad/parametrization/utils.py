@@ -7,12 +7,10 @@ import os
 import sys
 import shutil
 import tempfile
-import warnings
 import subprocess
 import typing as tp
 from pathlib import Path
-import numpy as np
-from ..common.tools import different_from_defaults
+from nevergrad.common import tools as ngtools
 
 
 class Descriptors:
@@ -40,7 +38,7 @@ class Descriptors:
         return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(f"{x}={y}" for x, y in sorted(different_from_defaults(instance=self, check_mismatches=True).items()))
+        diff = ",".join(f"{x}={y}" for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items()))
         return f"{self.__class__.__name__}({diff})"
 
 
@@ -131,6 +129,7 @@ class CommandFunction:
         with subprocess.Popen(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               shell=False, cwd=self.cwd, env=self.env) as process:
             try:
+                assert process.stdout is not None
                 for line in iter(process.stdout.readline, b''):
                     if not line:
                         break
@@ -150,51 +149,3 @@ class CommandFunction:
                 subprocess_error = subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
                 raise FailedJobError(stderr.decode()) from subprocess_error
         return stdout
-
-
-def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.random.RandomState) -> tp.List[int]:
-    assert num_individuals > 1
-    indices = rng.permutation(num_individuals).tolist()
-    while len(indices) < num_sections:
-        new_indices = rng.permutation(num_individuals).tolist()
-        if new_indices[0] == indices[-1]:
-            new_indices[0], new_indices[-1] = new_indices[-1], new_indices[0]
-        indices.extend(new_indices)
-    indices = indices[:num_sections]
-    if 0 not in indices:
-        indices[rng.randint(num_sections)] = 0  # always involve first element
-    return indices  # type: ignore
-
-
-class Crossover:
-
-    def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
-        self.num_points = num_points
-        self.structured_dimensions = sorted(structured_dimensions)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.num_points}, {self.structured_dimensions})"
-
-    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
-        if len(arrays) > 30:
-            warnings.warn("Crossover can only handle up to 30 arrays")
-            arrays = arrays[:30]
-        if rng is None:
-            rng = np.random.RandomState()
-        shape = tuple(d for k, d in enumerate(arrays[0].shape) if k not in self.structured_dimensions)
-        choices = np.zeros(shape, dtype=int)
-        if not self.num_points:
-            choices = rng.randint(0, len(arrays), size=choices.shape)
-            if 0 not in choices:
-                choices.ravel()[rng.randint(choices.size)] = 0  # always involve first element
-        elif choices.ndim == 1:
-            bounds = sorted(rng.choice(shape[0] - 1, size=self.num_points, replace=False).tolist())  # 0 to n - 2
-            bounds = [0] + [1 + b for b in bounds] + [shape[0]]
-            indices = _make_crossover_sequence(len(bounds) - 1, len(arrays), rng)
-            for start, end, index in zip(bounds[:-1], bounds[1:], indices):
-                choices[start:end] = index
-        else:
-            raise NotImplementedError
-        for d in self.structured_dimensions:
-            choices = np.expand_dims(choices, d)
-        return np.choose(choices, arrays)  # type:ignore

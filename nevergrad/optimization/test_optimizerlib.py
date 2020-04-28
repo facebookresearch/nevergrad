@@ -5,6 +5,7 @@
 
 import time
 import random
+import platform
 import tempfile
 import warnings
 import typing as tp
@@ -22,6 +23,7 @@ from ..common.typetools import ArrayLike
 from ..common import testing
 from . import base
 from . import optimizerlib as optlib
+from . import experimentalvariants as xpvariants
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 
@@ -61,6 +63,7 @@ def check_optimizer(
     for k in range(1, num_attempts + 1):
         fitness = Fitness(optimum)
         optimizer = optimizer_cls(parametrization=len(optimum), budget=budget, num_workers=num_workers)
+        assert isinstance(optimizer.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -111,9 +114,6 @@ SLOW = [
     "ASCMA2PDEthird",
     "MultiScaleCMA",
     "PCEDA",
-    "MPCEDA",
-    "EDA",
-    "MEDA",
     "MicroCMA",
     "ES",
 ]
@@ -121,11 +121,12 @@ DISCRETE = ["PBIL", "cGA"]
 UNSEEDABLE: tp.List[str] = []
 
 
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
-        assert hasattr(optlib, name)  # make sure registration matches name in optlib
+        assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
+        assert optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls, "Similar configuration are not equal"
     verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
@@ -156,7 +157,7 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
     keeper.save()
 
 
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
     with warnings.catch_warnings():
         # tests do not need to be efficient
@@ -171,7 +172,7 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     # set up environment
     optimizer_cls = registry[name]
@@ -204,7 +205,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.args[0])
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
-    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) else 5
+    decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) or "BO" in name else 5
     np.testing.assert_array_almost_equal(
         candidate.args[0],
         recomkeeper.recommendations.loc[name, :][:dimension],
@@ -290,7 +291,7 @@ def test_tbpsa_recom_with_update() -> None:
     fitness = Fitness([0.5, -0.8, 0, 4])
     optim = optlib.TBPSA(parametrization=4, budget=budget, num_workers=1)
     optim.parametrization.random_state.seed(12)
-    optim.popsize.llambda = 3
+    optim.popsize.llambda = 3  # type: ignore
     candidate = optim.minimize(fitness)
     np.testing.assert_almost_equal(candidate.args[0], [0.037964, 0.0433031, -0.4688667, 0.3633273])
 
@@ -310,7 +311,7 @@ def test_optimization_doc_parametrization_example() -> None:
 
 
 def test_optimization_discrete_with_one_sample() -> None:
-    optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
+    optimizer = xpvariants.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
 
 
@@ -331,7 +332,7 @@ def test_bo_parametrization_and_parameters() -> None:
     # parametrization
     parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(base.InefficientSettingsWarning):
-        optlib.QRBO(parametrization, budget=10)
+        xpvariants.QRBO(parametrization, budget=10)
     with pytest.warns(None) as record:
         opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
     assert not record, record.list  # no warning
@@ -385,6 +386,8 @@ def test_constrained_optimization() -> None:
 def test_parametrization_offset(name: str) -> None:
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
+    if "Cobyla" in name and platform.system() == "Windows":
+        raise SkipTest("Cobyla is flaky on Windows for unknown reasons")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
     with warnings.catch_warnings():
         # tests do not need to be efficient
@@ -394,3 +397,11 @@ def test_parametrization_offset(name: str) -> None:
         candidate = optimizer.ask()
         assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
         optimizer.tell(candidate, 0)
+
+
+def test_optimizer_sequence() -> None:
+    budget = 24
+    parametrization = ng.p.Tuple(*(ng.p.Scalar(lower=-12, upper=12) for _ in range(2)))
+    optimizer = optlib.LHSSearch(parametrization, budget=24)
+    points = [np.array(optimizer.ask().value) for _ in range(budget)]
+    assert sum(any(abs(x) > 11 for x in p) for p in points) > 0

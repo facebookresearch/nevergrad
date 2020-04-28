@@ -21,9 +21,9 @@ def testcorefuncs_function(name: str, func: Callable[..., Any]) -> None:
 
 @testing.parametrized(expe1=([6, 4, 2, 1, 9], 4, 5, 3), expe2=([6, 6, 7, 1, 9], 4, 5, 3))  # jump was assumed correct (verify?)
 def test_base_functions(x: List[int], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
-    np.testing.assert_equal(corefuncs._onemax(x), onemax_expected, err_msg="Wrong output for onemax")
-    np.testing.assert_equal(corefuncs._leadingones(x), leadingones_expected, err_msg="Wrong output for leadingones")
-    np.testing.assert_equal(corefuncs._jump(x), jump_expected, err_msg="Wrong output for jump")
+    np.testing.assert_equal(corefuncs.onemax(x), onemax_expected, err_msg="Wrong output for onemax")
+    np.testing.assert_equal(corefuncs.leadingones(x), leadingones_expected, err_msg="Wrong output for leadingones")
+    np.testing.assert_equal(corefuncs.jump(x), jump_expected, err_msg="Wrong output for jump")
 
 
 def test_genzcornerpeak_inf() -> None:

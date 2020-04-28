@@ -9,9 +9,8 @@ import typing as tp
 import numpy as np
 from nevergrad.common import testing
 from . import optimizerlib
-from . import test_optimizerlib
+from . import experimentalvariants as xpvariants
 from . import base
-from .base import IntOrParameter
 from . import callbacks
 
 
@@ -80,9 +79,9 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
 
 
 def test_base_optimizer() -> None:
-    zeroptim = optimizerlib.Zero(parametrization=2, budget=4, num_workers=1)
+    zeroptim = xpvariants.Zero(parametrization=2, budget=4, num_workers=1)
     representation = repr(zeroptim)
-    expected = "parametrization=Array{(2,)}[recombination=average,sigma=1.0]"
+    expected = "parametrization=Array{(2,)}"
     assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().value, [0, 0])
     zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0., 0]), 0)
@@ -132,7 +131,7 @@ def test_compare() -> None:
 def test_naming() -> None:
     optf = optimizerlib.RandomSearchMaker(stupid=True)
     opt = optf(parametrization=2, budget=4, num_workers=1)
-    instru_str = "Array{(2,)}[recombination=average,sigma=1.0]"
+    instru_str = "Array{(2,)}"
     np.testing.assert_equal(repr(opt), f"Instance of RandomSearchMaker(stupid=True)(parametrization={instru_str}, budget=4, num_workers=1)")
     optf.set_name("BlubluOptimizer", register=True)
     opt = base.registry["BlubluOptimizer"](parametrization=2, budget=4, num_workers=1)

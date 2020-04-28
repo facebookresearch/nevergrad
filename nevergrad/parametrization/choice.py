@@ -25,6 +25,8 @@ class BaseChoice(core.Dict):
     def __init__(self, *, choices: tp.Iterable[tp.Any], **kwargs: tp.Any) -> None:
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)  # for iterables
+        if not lchoices:
+            raise ValueError("{self._class__.__name__} received an empty list of options.")
         super().__init__(choices=Tuple(*lchoices), **kwargs)
 
     def _compute_descriptors(self) -> utils.Descriptors:
@@ -134,6 +136,13 @@ class Choice(BaseChoice):
         """
         return self["weights"]  # type: ignore
 
+    @property
+    def probabilities(self) -> np.ndarray:
+        """The probabilities used to draw the value
+        """
+        exp = np.exp(self.weights.value)
+        return exp / np.sum(exp)  # type: ignore
+
     def _find_and_set_value(self, value: tp.Any) -> int:
         index = super()._find_and_set_value(value)
         self._index = index
@@ -153,13 +162,15 @@ class Choice(BaseChoice):
         self._draw(deterministic=deterministic)
 
     def mutate(self) -> None:
+        # force random_state sync
+        self.random_state   # pylint: disable=pointless-statement
         self.weights.mutate()
         self._draw(deterministic=self._deterministic)
         self.choices[self.index].mutate()
 
     def _internal_spawn_child(self: C) -> C:
-        child = self.__class__(choices=[], deterministic=self._deterministic)
-        child._content["choices"] = self.choices.spawn_child()
+        choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
+        child = self.__class__(choices=choices, deterministic=self._deterministic)
         child._content["weights"] = self.weights.spawn_child()
         return child
 
@@ -223,6 +234,8 @@ class TransitionChoice(BaseChoice):
         return self["position"]  # type: ignore
 
     def mutate(self) -> None:
+        # force random_state sync
+        self.random_state   # pylint: disable=pointless-statement
         transitions = core.as_parameter(self.transitions)
         transitions.mutate()
         probas = np.exp(transitions.value)
@@ -235,8 +248,8 @@ class TransitionChoice(BaseChoice):
         self.choices[self.index].mutate()
 
     def _internal_spawn_child(self: T) -> T:
-        child = self.__class__(choices=[])
-        child._content["choices"] = self.choices.spawn_child()
+        choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
+        child = self.__class__(choices=choices)
         child._content["position"] = self.position.spawn_child()
         child._content["transitions"] = self.transitions.spawn_child()
         return child

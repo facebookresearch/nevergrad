@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as tp
+from pathlib import Path
+import numpy as np
 from nevergrad.parametrization import parameter as p
 
 
@@ -32,10 +34,11 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
+        self._initialization_func: tp.Callable[..., EF] = self.__class__
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parametrization: p.Parameter
         self.parametrization = parametrization
@@ -64,8 +67,6 @@ class ExperimentFunction:
     def parametrization(self, parametrization: p.Parameter) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
-        # TODO change to parametrization
-        self._descriptors.update(parametrization=parametrization.name, dimension=parametrization.dimension)
 
     @property
     def function(self) -> tp.Callable[..., float]:
@@ -81,7 +82,9 @@ class ExperimentFunction:
         """Description of the function parameterization, as a dict. This base class implementation provides function_class,
             noise_level, transform and dimension
         """
-        return dict(self._descriptors)  # Avoid external modification
+        desc = dict(self._descriptors)  # Avoid external modification
+        desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
+        return desc
 
     def __repr__(self) -> str:
         """Shows the function name and its summary
@@ -98,7 +101,7 @@ class ExperimentFunction:
         """
         if other.__class__ != self.__class__:
             return False
-        return bool(self._descriptors == other._descriptors)
+        return bool(self._descriptors == other._descriptors) and self.parametrization.name == other.parametrization.name
 
     def copy(self: EF) -> EF:
         """Provides a new equivalent instance of the class, possibly with
@@ -111,14 +114,16 @@ class ExperimentFunction:
                                                   "(and make sure you don't use the same parametrization in the process), or "
                                                   "initialization parameters should be registered through 'register_initialization'")
             kwargs = {x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._initialization_kwargs.items()}
-            output = self.__class__(**kwargs)
+            output = self._initialization_func(**kwargs)
+            if output.parametrization.name != self.parametrization.name:
+                output.parametrization = self.parametrization.copy()
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")
         else:
             # back to standard ExperimentFunction
-            ouptut = self.__class__(self.function, self.parametrization.copy())
-            ouptut._descriptors = self.descriptors
+            output = self.__class__(self.function, self.parametrization.copy())
+            output._descriptors = self.descriptors
         output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
         return output
 
@@ -152,3 +157,41 @@ class ExperimentFunction:
             same as the actual function
         """
         return self.function(*args, **kwargs)
+
+
+def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:
+    """Handy function for storing best results for challenging functions (eg.: Photonics)
+    The best results are kept in a file that is automatically updated with new data.
+    This may require installing nevergrad in dev mode.
+
+    Parameters
+    ----------
+    identifier: str
+        the identifier of the problem
+    loss: float
+        the new loss, if better than the one in the file, the file will be updated
+    array: np.ndarray
+        the array corresponding to the loss
+    verbose: bool
+        whether to also print a message if the leaderboard was updated
+    """
+    # pylint: disable=import-outside-toplevel
+    import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
+    loss = np.round(loss, decimals=12)  # this is probably already too precise for the machine
+    filepath = Path(__file__).with_name("leaderboard.csv")
+    bests = pd.DataFrame(columns=["loss", "array"])
+    if filepath.exists():
+        bests = pd.read_csv(filepath, index_col=0)
+    if identifier not in bests.index:
+        bests.loc[identifier, :] = (float("inf"), "")
+    try:
+        if not bests.loc[identifier, "loss"] < loss:  # works for nan
+            bests.loc[identifier, "loss"] = loss
+            string = "[" + ",".join(str(x) for x in array.ravel()) + "]"
+            bests.loc[identifier, "array"] = string
+            bests = bests.loc[sorted(x for x in bests.index), :]
+            bests.to_csv(filepath)
+            if verbose:
+                print(f"New best value for {identifier}: {loss}\nwith: {string}")
+    except Exception:  # pylint: disable=broad-except
+        pass  # better avoir bugs for this

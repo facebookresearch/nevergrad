@@ -152,17 +152,18 @@ def check_parameter_freezable(param: par.Parameter) -> None:
 
 @pytest.mark.parametrize(  # type: ignore
     "param,name",
-    [(par.Array(shape=(2, 2)), "Array{(2,2)}[recombination=average,sigma=1.0]"),
+    [(par.Array(shape=(2, 2)), "Array{(2,2)}"),
      (par.Tuple(12), "Tuple(12)"),
      (par.Dict(constant=12), "Dict(constant=12)"),
-     (par.Scalar(), "Scalar[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]]"),
-     (par.Scalar().set_integer_casting(), "Scalar{int}[recombination=average,sigma=Log{exp=1.2}[recombination=average,sigma=1.0]]"),
+     (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
+     (par.Log(lower=3.2, upper=12.0, exponent=1.5), "Log{exp=1.5,Cl(3.2,12)}"),
+     (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=2.0}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
-      "Instrumentation(Tuple(Array{(2,)}[recombination=average,sigma=1.0]),Dict(string=blublu,truc=plop))"),
-     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0])"),
-     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)}[recombination=average,sigma=1.0])"),
-     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar[recombination=average,"
-                                     "sigma=Log{exp=1.2}[recombination=average,sigma=1.0]],transitions=[1. 1.])")
+      "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
+     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)})"),
+     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)})"),
+     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar["
+                                     "sigma=Log{exp=2.0}],transitions=[1. 1.])")
      ]
 )
 def test_parameter_names(param: par.Parameter, name: str) -> None:
@@ -233,7 +234,7 @@ def test_endogeneous_constraint() -> None:
     "name", ["clipping", "arctan", "tanh", "constraint"]
 )
 def test_constraints(name: str) -> None:
-    param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, a_min=-100, a_max=100)
+    param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, lower=-100, upper=100)
     param.set_standardized_data(param.get_standardized_data(reference=param))
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
@@ -251,16 +252,25 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 def test_log() -> None:
     with pytest.warns(UserWarning) as record:
-        log = par.Log(a_min=0.001, a_max=0.1, init=0.02, exponent=2.0)
+        log = par.Log(lower=0.001, upper=0.1, init=0.02, exponent=2.0)
         assert log.value == 0.02
         assert not record
-        par.Log(a_min=0.001, a_max=0.1, init=0.01, exponent=10.0)
+        par.Log(lower=0.001, upper=0.1, init=0.01, exponent=10.0)
         assert len(record) == 1
     # automatic
-    log = par.Log(a_min=0.001, a_max=0.1)
+    log = par.Log(lower=0.001, upper=0.1)
     assert log.value == 0.01
-    log.set_standardized_data([4.999])
-    np.testing.assert_almost_equal(log.value, 0.09995, decimal=5)
+    log.set_standardized_data([2.999])
+    np.testing.assert_almost_equal(log.value, 0.09992, decimal=5)
+
+
+def test_bounded_scalar() -> None:
+    scalar = par.Scalar(lower=0.0, upper=0.6)
+    np.testing.assert_almost_equal(scalar.sigma.value, 0.1)
+    np.testing.assert_almost_equal(scalar.value, 0.3)
+    # partial
+    with pytest.raises(ValueError):
+        scalar = par.Scalar(lower=1.0)
 
 
 def test_ordered_choice() -> None:

@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Union
+import typing as tp
 import numpy as np
 from scipy import stats
-from ..common.typetools import ArrayLike
+from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
+from nevergrad.common.typetools import ArrayLike
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -15,12 +16,62 @@ from . import utils
 # In some cases we will need the average of the k best.
 
 
-def avg_of_k_best(archive: utils.Archive[utils.Value]) -> ArrayLike:
-    # Operator inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud.
+def convex_limit(struct_points: np.ndarray) -> int:
+    """Given points in order from best to worst,
+    Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
+    points = []
+    d = len(struct_points[0])
+    if len(struct_points) < 2*d + 2:
+        return len(struct_points) // 2
+    for i in range(0, min(2*d + 2, len(struct_points)), 2):
+        points += [struct_points[i]]
+    hull = ConvexHull(points, incremental=True)
+    k = len(points)
+    for i in range(d+1, len(points)):
+        hull.add_points(points[i:(i+1)])
+        if i not in hull.vertices:
+            k = i - 1
+            break
+    return k
+
+
+def hull_center(points: np.ndarray, k: int) -> np.ndarray:
+    d = len(points[0])
+    hull = ConvexHull(points[:k])
+    maxi = np.asarray(hull.vertices[0])
+    mini = np.asarray(hull.vertices[0])
+    for v in hull.vertices:
+        maxi = np.maximum(np.asarray(v), maxi)
+        mini = np.minimum(np.asarray(v), mini)
+    return 0.5 * (maxi + mini)
+
+
+def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
+    """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
+
+    Parameters
+    ----------
+    archive: utils.Archive[utils.Value]
+        Provides a random recommendation instead of the best point so far (for baseline)
+    method: str
+        If dimfourth, we use the Fteytaud heuristic, i.e. k = min(len(archive) // 4, dimension)
+        If exp, we use the Lmeunier method, i.e. k=max(1, len(archiv) // (2**dimension))
+        If hull, we use the maximum k <= dimfourth-value, such that the function looks quasiconvex on the k best points.
+    """
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
-    k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
-    k = 1 if k < 1 else k
+    if method == "dimfourth":
+        k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
+    elif method == "exp":
+        k = max(1, int(len(archive) // (1.1 ** dimension)))
+    elif method == "hull":
+        k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
+        k = min(len(archive)// 4, min(k, int(len(archive) / (1.1 ** dimension))))
+        # We might investigate the possibility to return the middle of the convex hull instead of averaging:
+        # return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
+    else:
+        raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
+    k = 1 if k < 1 else int(k)
     # Wasted time.
     first_k_individuals = [k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
     assert len(first_k_individuals) == k
@@ -51,25 +102,25 @@ class _RandomSearch(OneShotOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         middle_point: bool = False,
         stupid: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        scale: Union[float, str] = 1.,
+        scale: tp.Union[float, str] = 1.,
         recommendation_rule: str = "pessimistic"
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
-        assert isinstance(scale, (int, float)) or scale in ["auto", "random"]
+        assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autotune"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
         self.stupid = stupid
         self.recommendation_rule = recommendation_rule
         self.cauchy = cauchy
         self.scale = scale
-        self._opposable_data: Optional[np.ndarray] = None
+        self._opposable_data: tp.Optional[np.ndarray] = None
 
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
@@ -81,11 +132,13 @@ class _RandomSearch(OneShotOptimizer):
             return data
         if self.middle_point and not self._num_ask:
             self._opposable_data = np.zeros(self.dimension)
-            return self._opposable_data  # type: ignore
+            return self._opposable_data
         scale = self.scale
         if isinstance(scale, str) and scale == "auto":
-            # Some variants use a rescaling depending on the budget and the dimension.
+            # Some variants use a rescaling depending on the budget and the dimension (1st version).
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+        if isinstance(scale, str) and scale == "autotune":
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0., 1.) - 2.) / np.sqrt(self.dimension)
         point = (self._rng.standard_cauchy(self.dimension) if self.cauchy
@@ -96,8 +149,13 @@ class _RandomSearch(OneShotOptimizer):
     def _internal_provide_recommendation(self) -> ArrayLike:
         if self.stupid:
             return self._internal_ask()
-        if self.recommendation_rule == "average_of_best":
-            return avg_of_k_best(self.archive)
+        elif self.archive:
+            if self.recommendation_rule == "average_of_best":
+                return avg_of_k_best(self.archive, "dimfourth")
+            if self.recommendation_rule == "average_of_exp_best":
+                return avg_of_k_best(self.archive, "exp")
+            if self.recommendation_rule == "average_of_hull_best":
+                return avg_of_k_best(self.archive, "hull")
         return super()._internal_provide_recommendation()
 
 
@@ -119,9 +177,11 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.
-         - "auto": scales in function of dimension and budget (see XXX)
+         - "auto": scales in function of dimension and budget (version 1: sigma = (1+log(budget)) / (4log(dimension)) )
+         - "autotune": scales in function of dimension and budget (version 2: sigma = sqrt(log(budget) / dimension) )
     recommendation_rule: str
-        "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
+        "average_of_best" or "pessimistic" or "average_of_exp_best"; "pessimistic" is
+        the default and implies selecting the pessimistic best.
     """
 
     one_shot = True
@@ -132,29 +192,18 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         *,
         middle_point: bool = False,
         stupid: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        scale: Union[float, str] = 1.,
+        scale: tp.Union[float, str] = 1.,
         recommendation_rule: str = "pessimistic"
     ) -> None:
         super().__init__(_RandomSearch, locals())
 
 
-Zero = RandomSearchMaker(scale=0.).set_name("Zero", register=True)
 RandomSearch = RandomSearchMaker().set_name("RandomSearch", register=True)
 QORandomSearch = RandomSearchMaker(opposition_mode="quasi").set_name("QORandomSearch", register=True)
 ORandomSearch = RandomSearchMaker(opposition_mode="opposite").set_name("ORandomSearch", register=True)
 RandomSearchPlusMiddlePoint = RandomSearchMaker(middle_point=True).set_name("RandomSearchPlusMiddlePoint", register=True)
-LargerScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
-    middle_point=True, scale=500.).set_name("LargerScaleRandomSearchPlusMiddlePoint", register=True)
-SmallScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
-    middle_point=True, scale=.01).set_name("SmallScaleRandomSearchPlusMiddlePoint", register=True)
-StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)
-CauchyRandomSearch = RandomSearchMaker(cauchy=True).set_name("CauchyRandomSearch", register=True)
-RandomScaleRandomSearch = RandomSearchMaker(
-    scale="random", middle_point=True).set_name("RandomScaleRandomSearch", register=True)
-RandomScaleRandomSearchPlusMiddlePoint = RandomSearchMaker(
-    scale="random", middle_point=True).set_name("RandomScaleRandomSearchPlusMiddlePoint", register=True)
 
 
 class _SamplingSearch(OneShotOptimizer):
@@ -162,22 +211,22 @@ class _SamplingSearch(OneShotOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         sampler: str = "Halton",
         scrambled: bool = False,
         middle_point: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        autorescale: bool = False,
+        autorescale: tp.Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._sampler_instance: Optional[sequences.Sampler] = None
-        self._rescaler: Optional[sequences.Rescaler] = None
-        self._opposable_data: Optional[np.ndarray] = None
+        self._sampler_instance: tp.Optional[sequences.Sampler] = None
+        self._rescaler: tp.Optional[sequences.Rescaler] = None
+        self._opposable_data: tp.Optional[np.ndarray] = None
         self._sampler = sampler
         self.opposition_mode = opposition_mode
         self.middle_point = middle_point
@@ -187,6 +236,8 @@ class _SamplingSearch(OneShotOptimizer):
         self.scale = scale
         self.rescaled = rescaled
         self.recommendation_rule = recommendation_rule
+        # rescale to the bounds if both are provided
+        self._scaler = utils.BoundScaler(self.parametrization)
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -195,6 +246,7 @@ class _SamplingSearch(OneShotOptimizer):
             samplers = {"Halton": sequences.HaltonSampler,
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
+                        "Random":sequences.RandomSampler,
                         }
             internal_budget = (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
             self._sampler_instance = samplers[self._sampler](
@@ -208,7 +260,7 @@ class _SamplingSearch(OneShotOptimizer):
     def _internal_ask(self) -> ArrayLike:
         # pylint: disable=not-callable
         if self.middle_point and not self._num_ask:
-            return np.zeros(self.dimension)  # type: ignore
+            return np.zeros(self.dimension)
         mode = self.opposition_mode
         if self._opposable_data is not None and mode is not None:
             # weird mypy error, revealed as array, but not accepting substraction
@@ -219,15 +271,20 @@ class _SamplingSearch(OneShotOptimizer):
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        if self.autorescale:
+        if self.autorescale is True or self.autorescale == "auto":
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
-        self._opposable_data = self.scale * (
-            stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(sample)
+        if self.autorescale == "autotune":
+            self.scale = np.sqrt(np.log(self.budget) / self.dimension)
+
+        def transf(x: np.ndarray) -> np.ndarray:
+            return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
+
+        self._opposable_data = self._scaler.transform(sample, transf)
         assert self._opposable_data is not None
         return self._opposable_data
 
     def _internal_provide_recommendation(self) -> ArrayLike:
-        if self.recommendation_rule == "average_of_best":
+        if self.archive and self.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
         return super()._internal_provide_recommendation()
 
@@ -251,8 +308,8 @@ class SamplingSearch(base.ConfiguredOptimizer):
         (instead of box).
     scale: float or "random"
         scalar for multiplying the suggested point values.
-    rescaled: bool
-        rescales the sampling pattern to reach the boundaries.
+    rescaled: bool or str
+        rescales the sampling pattern to reach the boundaries and/or applies automatic rescaling.
     recommendation_rule: str
         "average_of_best" or "pessimistic"; "pessimistic" is the default and implies selecting the pessimistic best.
 
@@ -281,9 +338,9 @@ class SamplingSearch(base.ConfiguredOptimizer):
         sampler: str = "Halton",
         scrambled: bool = False,
         middle_point: bool = False,
-        opposition_mode: Optional[str] = None,
+        opposition_mode: tp.Optional[str] = None,
         cauchy: bool = False,
-        autorescale: bool = False,
+        autorescale: tp.Union[bool, str] = False,
         scale: float = 1.,
         rescaled: bool = False,
         recommendation_rule: str = "pessimistic"
@@ -292,91 +349,36 @@ class SamplingSearch(base.ConfiguredOptimizer):
 
 
 # pylint: disable=line-too-long
+MetaRecentering = SamplingSearch(
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True
+).set_name("MetaRecentering", register=True)
+MetaTuneRecentering = SamplingSearch(
+    cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
+).set_name("MetaTuneRecentering", register=True)
+HAvgMetaRecentering = SamplingSearch(
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("HAvgMetaRecentering", register=True)
+AvgMetaRecenteringNoHull = SamplingSearch(
+    cauchy=False, autorescale=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_exp_best"
+).set_name("AvgMetaRecenteringNoHull", register=True)
+
 HaltonSearch = SamplingSearch().set_name("HaltonSearch", register=True)
 HaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True).set_name("HaltonSearchPlusMiddlePoint", register=True)
 LargeHaltonSearch = SamplingSearch(scale=100.).set_name("LargeHaltonSearch", register=True)
-LargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True).set_name("LargeScrHaltonSearch", register=True)
-LargeHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True).set_name("LargeHaltonSearchPlusMiddlePoint", register=True)
-SmallHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True).set_name("SmallHaltonSearchPlusMiddlePoint", register=True)
 ScrHaltonSearch = SamplingSearch(scrambled=True).set_name("ScrHaltonSearch", register=True)
 ScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True).set_name("ScrHaltonSearchPlusMiddlePoint", register=True)
-LargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, scrambled=True).set_name("LargeScrHaltonSearchPlusMiddlePoint", register=True)
-SmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, scrambled=True).set_name("SmallScrHaltonSearchPlusMiddlePoint", register=True)
 HammersleySearch = SamplingSearch(sampler="Hammersley").set_name("HammersleySearch", register=True)
 HammersleySearchPlusMiddlePoint = SamplingSearch(
     sampler="Hammersley", middle_point=True).set_name("HammersleySearchPlusMiddlePoint", register=True)
-LargeHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=100., sampler="Hammersley", middle_point=True).set_name("LargeHammersleySearchPlusMiddlePoint", register=True)
-SmallHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, sampler="Hammersley", middle_point=True).set_name("SmallHammersleySearchPlusMiddlePoint", register=True)
-LargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=100., sampler="Hammersley", middle_point=True).set_name("LargeScrHammersleySearchPlusMiddlePoint", register=True)
-SmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True).set_name("SmallScrHammersleySearchPlusMiddlePoint", register=True)
 ScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True).set_name("ScrHammersleySearchPlusMiddlePoint", register=True)
-LargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley").set_name("LargeHammersleySearch", register=True)
-LargeScrHammersleySearch = SamplingSearch(
-    scale=100., sampler="Hammersley", scrambled=True).set_name("LargeScrHammersleySearch", register=True)
 ScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True).set_name("ScrHammersleySearch", register=True)
 QOScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
                                        opposition_mode="quasi").set_name("QOScrHammersleySearch", register=True)
 OScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
                                       opposition_mode="opposite").set_name("OScrHammersleySearch", register=True)
-RescaleScrHammersleySearch = SamplingSearch(
-    sampler="Hammersley", scrambled=True, rescaled=True).set_name("RescaleScrHammersleySearch", register=True)
 CauchyScrHammersleySearch = SamplingSearch(
     cauchy=True, sampler="Hammersley", scrambled=True).set_name("CauchyScrHammersleySearch", register=True)
 LHSSearch = SamplingSearch(sampler="LHS").set_name("LHSSearch", register=True)
 CauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True).set_name("CauchyLHSSearch", register=True)
-
-
-AvgHaltonSearch = SamplingSearch(recommendation_rule="average_of_best").set_name("AvgHaltonSearch", register=True)
-AvgHaltonSearchPlusMiddlePoint = SamplingSearch(middle_point=True, recommendation_rule="average_of_best").set_name(
-    "AvgHaltonSearchPlusMiddlePoint", register=True)
-AvgLargeHaltonSearch = SamplingSearch(scale=100., recommendation_rule="average_of_best").set_name("AvgLargeHaltonSearch", register=True)
-AvgLargeScrHaltonSearch = SamplingSearch(scale=100., scrambled=True, recommendation_rule="average_of_best").set_name(
-    "AvgLargeScrHaltonSearch", register=True)
-AvgLargeHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, recommendation_rule="average_of_best").set_name("AvgLargeHaltonSearchPlusMiddlePoint", register=True)
-AvgSmallHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, recommendation_rule="average_of_best").set_name("AvgSmallHaltonSearchPlusMiddlePoint", register=True)
-AvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_best").set_name("AvgScrHaltonSearch", register=True)
-AvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    middle_point=True, scrambled=True, recommendation_rule="average_of_best").set_name("AvgScrHaltonSearchPlusMiddlePoint", register=True)
-AvgLargeScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=100., middle_point=True, scrambled=True, recommendation_rule="average_of_best").set_name("AvgLargeScrHaltonSearchPlusMiddlePoint", register=True)
-AvgSmallScrHaltonSearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, middle_point=True, scrambled=True, recommendation_rule="average_of_best").set_name("AvgSmallScrHaltonSearchPlusMiddlePoint", register=True)
-AvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="average_of_best").set_name(
-    "AvgHammersleySearch", register=True)
-AvgHammersleySearchPlusMiddlePoint = SamplingSearch(
-    sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").set_name("AvgHammersleySearchPlusMiddlePoint", register=True)
-AvgLargeHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").set_name("AvgLargeHammersleySearchPlusMiddlePoint", register=True)
-AvgSmallHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").set_name("AvgSmallHammersleySearchPlusMiddlePoint", register=True)
-AvgLargeScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=100., sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").set_name("AvgLargeScrHammersleySearchPlusMiddlePoint", register=True)
-AvgSmallScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, scale=.01, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").set_name("AvgSmallScrHammersleySearchPlusMiddlePoint", register=True)
-AvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
-    scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best").set_name("AvgScrHammersleySearchPlusMiddlePoint", register=True)
-AvgLargeHammersleySearch = SamplingSearch(scale=100., sampler="Hammersley",
-                                          recommendation_rule="average_of_best").set_name("AvgLargeHammersleySearch", register=True)
-AvgLargeScrHammersleySearch = SamplingSearch(
-    scale=100., sampler="Hammersley", scrambled=True, recommendation_rule="average_of_best").set_name("AvgLargeScrHammersleySearch", register=True)
-AvgScrHammersleySearch = SamplingSearch(sampler="Hammersley", scrambled=True,
-                                        recommendation_rule="average_of_best").set_name("AvgScrHammersleySearch", register=True)
-AvgRescaleScrHammersleySearch = SamplingSearch(
-    sampler="Hammersley", scrambled=True, rescaled=True, recommendation_rule="average_of_best").set_name("AvgRescaleScrHammersleySearch", register=True)
-AvgCauchyScrHammersleySearch = SamplingSearch(
-    cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_best").set_name("AvgCauchyScrHammersleySearch", register=True)
-AvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_best").set_name("AvgLHSSearch", register=True)
-AvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_best").set_name(
-    "AvgCauchyLHSSearch", register=True)
