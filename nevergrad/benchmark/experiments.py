@@ -108,10 +108,11 @@ def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
+                dfunc.add_descriptor(arity=arity)
                 for optim in optims:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
-                            yield Experiment(dfunc, optim, num_workers=nw, budget=budget, arity=arity, seed=next(seedg))
+                            yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 @registry.register
