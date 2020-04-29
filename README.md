@@ -25,36 +25,40 @@ def square(x):
 
 optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 recommendation = optimizer.minimize(square)
-print(recommendation)  # optimal args and kwargs
->>> Array{(2,)}[recombination=average,sigma=1.0]:[0.49971112 0.5002944 ]
+print(recommendation.value)  # optimal value
+>>> [0.49971112 0.5002944]
 ```
 
-A slightly more complicated example, with one variable in R2, one variable in Z, and one categorical variable with possible values a and b and c:
-```
+`nevergrad` can also support bounded continuous variables as well as discrete variables, and mixture of those.
+To do this, one can specify the input space:
+
+```python
 import nevergrad as ng
-from nevergrad.parametrization import parameter as par
 
-# Our objective function depends on:
-# - x (in R^2)
-# - y (in N)
-# - z (in {"a", "b", "c"})
-#
-# The optimum is x=(0.5, 0.5), y=3, z=a.
-def square(x, y, z):
-    return sum((x - .5)**2) + (y - 3)**2 + (0 if z == "a" else 1)
+def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
+    # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+    return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
 
-parametrization = par.Instrumentation(
-    x=par.Array(shape=(2,)),
-    y=par.Scalar(1).set_integer_casting(),  # Can be negative.
-    z=par.Choice(("a", "b", "c"))
-        )
+# Instrumentation class is used for functions with multiple inputs
+# (positional and/or keywords)
+parametrization = ng.p.Instrumentation(
+    # a log-distributed scalar between 0.001 and 1.0
+    learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+    # an integer from 1 to 12
+    batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+    # either "conv" or "fc"
+    architecture=ng.p.Choice(["conv", "fc"])
+)
 
-optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=1000)
-recommendation = optimizer.minimize(square)
+optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=100)
+recommendation = optimizer.minimize(fake_training)
 
-print(recommendation)
+# show the recommended keyword arguments of the function
+print(recommendation.kwargs)
+>>> {'learning_rate': 0.1998, 'batch_size': 4, 'architecture': 'fc'}
 ```
 
+Learn more on parametrization in the [**documentation**](https://facebookresearch.github.io/nevergrad/)!
 
 ![Example of optimization](docs/resources/TwoPointsDE.gif)
 
