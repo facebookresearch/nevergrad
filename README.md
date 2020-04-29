@@ -25,7 +25,7 @@ def square(x):
 
 optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
 recommendation = optimizer.minimize(square)
-print(recommendation.value)  # optimal value
+print(recommendation.value)  # recommended value
 >>> [0.49971112 0.5002944]
 ```
 
