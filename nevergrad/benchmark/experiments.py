@@ -16,6 +16,7 @@ from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.images import Image
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions import rl
@@ -838,6 +839,20 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_workers in [1, 10, 100]:
             for algo in algos:
                 for func in [ARCoating(10, 400), ARCoating(35, 700), ARCoating(70, 1000)]:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
+def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """AR coating. Problems about optical properties of nanolayers."""
+    seedg = create_seed_generator(seed)
+    algos = ["CMA", "Shiva", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for num_workers in [1]:
+            for algo in algos:
+                for func in [Image()]:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp

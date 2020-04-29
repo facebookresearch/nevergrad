@@ -7,4 +7,5 @@ torch>=1.2.0
 hiplot
 fcmaes>=0.9.5.6
 pandas>=0.23.4
+Pillow
 tqdm
