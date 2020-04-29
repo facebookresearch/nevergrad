@@ -42,9 +42,9 @@ class Image(base.ExperimentFunction):
         #     self.data = ..... (here we load the imagee correspnding to index_pb and problem_type; this is
         #         # the attacked image.)
 
-        array = ng.p.Array(shape=self.domain_shape, mutable_sigma=True,)
+        array = ng.p.Array(shape=self.domain_shape, init=128 * np.ones(self.domain_shape), mutable_sigma=True,)
         array.set_mutation(sigma=35)
-        array.set_bounds(lower=0, upper=255, method="clipping", full_range_sampling=True)
+        array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(self._loss, array)
