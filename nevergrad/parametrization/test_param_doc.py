@@ -34,7 +34,7 @@ def test_readme_parametrization() -> None:
     recommendation = optimizer.minimize(fake_training)
 
     print(recommendation.kwargs)  # shows the recommended keyword arguments of the function
-    # >>> {'learning_rate': 0.1998, 'batch_size': 4, 'architecture': 'fc'}
+    # >>> {'learning_rate': 0.1998, 'batch_size': 4, 'architecture': 'conv'}
     # DOC_README_1
 
 
