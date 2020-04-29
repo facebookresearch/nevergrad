@@ -55,7 +55,7 @@ recommendation = optimizer.minimize(fake_training)
 
 # show the recommended keyword arguments of the function
 print(recommendation.kwargs)
->>> {'learning_rate': 0.1998, 'batch_size': 4, 'architecture': 'fc'}
+>>> {'learning_rate': 0.1998, 'batch_size': 4, 'architecture': 'conv'}
 ```
 
 Learn more on parametrization in the [**documentation**](https://facebookresearch.github.io/nevergrad/)!
