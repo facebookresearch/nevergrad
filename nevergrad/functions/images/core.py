@@ -42,7 +42,7 @@ class Image(base.ExperimentFunction):
         #     self.data = ..... (here we load the imagee correspnding to index and problem_name; this is
         #         # the attacked image.)
 
-        array = ng.p.Array(shape=self.domain_shape, init=128 * np.ones(self.domain_shape), mutable_sigma=True,)
+        array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True,)
         array.set_mutation(sigma=35)
         array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
