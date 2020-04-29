@@ -29,6 +29,33 @@ print(recommendation)  # optimal args and kwargs
 >>> Array{(2,)}[recombination=average,sigma=1.0]:[0.49971112 0.5002944 ]
 ```
 
+A slightly more complicated example, with one variable in R2, one variable in Z, and one categorical variable with possible values a and b and c:
+```
+import nevergrad as ng
+from nevergrad.parametrization import parameter as par
+
+# Our objective function depends on:
+# - x (in R^2)
+# - y (in N)
+# - z (in {"a", "b", "c"})
+#
+# The optimum is x=(0.5, 0.5), y=3, z=a.
+def square(x, y, z):
+    return sum((x - .5)**2) + (y - 3)**2 + (0 if z == "a" else 1)
+
+parametrization = par.Instrumentation(
+    x=par.Array(shape=(2,)),
+    y=par.Scalar(1).set_integer_casting(),  # Can be negative.
+    z=par.Choice(("a", "b", "c"))
+        )
+
+optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=1000)
+recommendation = optimizer.minimize(square)
+
+print(recommendation)
+```
+
+
 ![Example of optimization](docs/resources/TwoPointsDE.gif)
 
 *Convergence of a population of points to the minima with two-points DE.*
