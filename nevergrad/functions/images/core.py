@@ -65,7 +65,3 @@ class Image(base.ExperimentFunction):
         # Here we should implement "adversarial" and others.
         return value
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
-        loss = self.function(x)
-        return loss
