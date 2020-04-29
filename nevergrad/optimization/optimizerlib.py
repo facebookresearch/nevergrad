@@ -1322,42 +1322,6 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 BO = ParametrizedBO().set_name("BO", register=True)
 
 
-@registry.register
-class PBIL(base.Optimizer):
-    """
-    Implementation of the discrete algorithm PBIL
-
-    https://www.ri.cmu.edu/pub_files/pub1/baluja_shumeet_1994_2/baluja_shumeet_1994_2.pdf
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-
-        self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
-        num_categories = 2
-        self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
-        self.alpha = 0.3
-        self.llambda = max(100, num_workers)  # size of the population
-        self.mu = self.llambda // 2  # number of selected candidates
-        self._population: List[Tuple[float, np.ndarray]] = []
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1 - self.p[0]).astype(float)
-        return self.parametrization.spawn_child().set_standardized_data(data)
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        self._population.append((value, data))
-        if len(self._population) >= self.llambda:
-            self._population.sort(key=lambda tup: tup[0])
-            mean_pop: np.ndarray = np.mean([x[1] for x in self._population[: self.mu]])
-            self.p[0] = (1 - self.alpha) * self.p[0] + self.alpha * mean_pop
-            self._population = []
-
-
 class _Chain(base.Optimizer):
 
     def __init__(
