@@ -188,12 +188,11 @@ def create_plots(
     for d in all_descriptors:
         acceptable = False
         for b in df.budget.unique():
-            if len(df.loc[df['budget'] == b][d].unique()) > 0:
+            if len(df.loc[df['budget'] == b][d].unique()) > 1:
                 acceptable = True
                 break
         if acceptable:
             descriptors += [d]
-    
     num_rows = 6
 
     # For the competence map case we must consider pairs of attributes, hence maxcomb_size >= 2.
