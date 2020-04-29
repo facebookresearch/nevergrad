@@ -14,5 +14,8 @@ def test_images() -> None:
     x = 7 * np.fabs(np.random.normal(size=func.domain_shape))
     #data = func.parametrization.spawn_child().set_standardized_data(x.flatten()).value
     value = func(x)  # should not touch boundaries, so value should be < np.inf
-    print(value)
     assert value < np.inf
+    other_func = func.copy()
+    value = func(x)
+    assert value < np.inf
+
