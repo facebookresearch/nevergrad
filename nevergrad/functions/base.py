@@ -87,7 +87,8 @@ class ExperimentFunction:
         return desc
 
     def add_descriptor(self, **kwargs) -> None:
-        self._descriptors = dict(self._descriptors.items() + kwargs.items())
+        for k, v in kwargs.items():
+            self._descriptors[k] = v
         
     def __repr__(self) -> str:
         """Shows the function name and its summary
