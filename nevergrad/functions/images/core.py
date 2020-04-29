@@ -15,31 +15,31 @@ from .. import base
 
 
 class Image(base.ExperimentFunction):
-    def __init__(self, problem_type: str = "recovering", index_pb: int = 0) -> None:
+    def __init__(self, problem_name: str = "recovering", index: int = 0) -> None:
         """
-        problem_type: the type of problem we are working on.
+        problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.
-        index_pb: the index of the problem, inside the problem type.
-           For example, if problem_type is "recovering" and index_pb == 0,
+        index: the index of the problem, inside the problem type.
+           For example, if problem_name is "recovering" and index == 0,
            we try to recover the face of O. Teytaud.
         """
 
         # Storing high level information.
         self.domain_shape = (256, 256, 3)
-        self.problem_type = problem_type
-        self.index_pb = index_pb
+        self.problem_name = problem_name
+        self.index = index
 
         # Storing data necessary for the problem at hand.
-        assert problem_type == "recovering"  # For the moment we have only this one.
-        assert index_pb == 0  # For the moment only 1 target.
+        assert problem_name == "recovering"  # For the moment we have only this one.
+        assert index == 0  # For the moment only 1 target.
         #path = os.path.dirname(__file__) + "/headrgb_olivier.png"
         path = Path(__file__).with_name("headrgb_olivier.png")
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:,:,:3]  # 4th Channel is pointless here, only 255.
 
-        # if problem_type == "adversarial": 
-        #     assert index_pb <= 100  # If we have that many target images.
-        #     self.data = ..... (here we load the imagee correspnding to index_pb and problem_type; this is
+        # if problem_name == "adversarial": 
+        #     assert index <= 100  # If we have that many target images.
+        #     self.data = ..... (here we load the imagee correspnding to index and problem_name; this is
         #         # the attacked image.)
 
         array = ng.p.Array(shape=self.domain_shape, mutable_sigma=True,)
@@ -48,8 +48,8 @@ class Image(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(self._loss, array)
-        self.register_initialization(problem_type=problem_type, index_pb=index_pb)
-        self._descriptors.update(problem_type=problem_type, index_pb=index_pb)
+        self.register_initialization(problem_name=problem_name, index=index)
+        self._descriptors.update(problem_name=problem_name, index=index)
 
     def _loss(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
@@ -58,8 +58,8 @@ class Image(base.ExperimentFunction):
 
 
         # Define the loss, in case of recovering: the goal is to find the target image.
-        assert self.problem_type == "recovering"
-        assert self.index_pb == 0
+        assert self.problem_name == "recovering"
+        assert self.index == 0
         value = np.sum(np.fabs(np.subtract(x, self.data)))
 
         # Here we should implement "adversarial" and others.
