@@ -177,11 +177,38 @@
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>  <span class="c1"># best value</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944 ]</span>
+<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944]</span>
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/TwoPointsDE.gif"><img alt="_images/TwoPointsDE.gif" src="_images/TwoPointsDE.gif" style="width: 400px;" /></a>
 <p><em>Convergence of a population of points to the minima with two-points DE.</em></p>
+<p><code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> can also support bounded continuous variables as well as discrete variables, and mixture of those.
+To do this, one can specify the input space:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+
+<span class="k">def</span> <span class="nf">fake_training</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">architecture</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="c1"># optimal for learning_rate=0.2, batch_size=4, architecture=&quot;conv&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">learning_rate</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">batch_size</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">architecture</span> <span class="o">==</span> <span class="s2">&quot;conv&quot;</span> <span class="k">else</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Instrumentation class is used for functions with multiple inputs</span>
+<span class="c1"># (positional and/or keywords)</span>
+<span class="n">parametrization</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Instrumentation</span><span class="p">(</span>
+    <span class="c1"># a log-distributed scalar between 0.001 and 1.0</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Log</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+    <span class="c1"># an integer from 1 to 12</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Scalar</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">set_integer_casting</span><span class="p">(),</span>
+    <span class="c1"># either &quot;conv&quot; or &quot;fc&quot;</span>
+    <span class="n">architecture</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;conv&quot;</span><span class="p">,</span> <span class="s2">&quot;fc&quot;</span><span class="p">])</span>
+<span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="n">parametrization</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">fake_training</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># shows the recommended keyword arguments of the function</span>
+<span class="c1"># &gt;&gt;&gt; {&#39;learning_rate&#39;: 0.1998, &#39;batch_size&#39;: 4, &#39;architecture&#39;: &#39;fc&#39;}</span>
+</pre></div>
+</div>
+<p>Learn more about parametrization in the <a class="reference internal" href="parametrization.html#parametrizing"><span class="std std-ref">Parametrization section</span></a>!</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents</span></p>
 <ul>

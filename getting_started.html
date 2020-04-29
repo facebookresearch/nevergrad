@@ -196,7 +196,7 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>  <span class="c1"># best value</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944 ]</span>
+<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944]</span>
 </pre></div>
 </div>
 <p><code class="code docutils literal notranslate"><span class="pre">parametrization=n</span></code> is a shortcut to state that the function has only one variable, of dimension <code class="code docutils literal notranslate"><span class="pre">n</span></code>,
