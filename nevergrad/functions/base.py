@@ -86,6 +86,9 @@ class ExperimentFunction:
         desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
         return desc
 
+    def add_descriptor(self, **kwargs) -> None:
+        self._descriptors = dict(self._descriptors.items() + kwargs.items())
+        
     def __repr__(self) -> str:
         """Shows the function name and its summary
         """
