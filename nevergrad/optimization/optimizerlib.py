@@ -1660,7 +1660,7 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
 @registry.register
-class Shiva(NGO):
+class Shiwa(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
