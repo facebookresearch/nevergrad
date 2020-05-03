@@ -319,6 +319,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         budgets = [40000, 80000]
     elif (small and not noise):
         budgets = [10, 20, 40]
+    if hd:
+        optims += ["SplitOptimizer9", "SplitOptimizer5", "SplitOptimizer13"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
