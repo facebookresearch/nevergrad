@@ -1692,9 +1692,11 @@ class Alacrite(NGO):
                 if self.dimension < 60:
                     self.optims = [NGO(self.parametrization, budget, num_workers)]
                 else:
-                    self.optims = [ConfSplitOptimizer(num_optims=self.dimension // 40)]
+                    specific_optimizer = ConfSplitOptimizer(num_optims=self.dimension // 40).set_name("specific")
+                    self.optims = [specific_optimizer(self.parametrization, budget, num_workers)]
             else:
                 if self.dimension > 60:
-                    self.optims = [ConfSplitOptimizer(num_optims=self.dimension // 40)]
+                    specific_optimizer = ConfSplitOptimizer(num_optims=self.dimension // 40).set_name("specific")
+                    self.optims = [specific_optimizer(self.parametrization, budget, num_workers)]
                 else:
                     self.optims = [NGO(self.parametrization, budget, num_workers)]
