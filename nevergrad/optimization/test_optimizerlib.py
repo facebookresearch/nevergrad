@@ -92,7 +92,6 @@ def check_optimizer(
         data = np.random.normal(0, 1, size=optimizer.dimension)
         candidate = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=False)
         optimizer.tell(candidate, 12.0)
-        assert optimizer.provide_recommendation() == candidate  # The optimizer should recommend its suggestion.
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
             raise AssertionError(
@@ -165,6 +164,8 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
         candidate = optimizer.ask()
         try:
             optimizer.tell(candidate, 12)
+            assert optimizer.provide_recommendation().args[0] == [12.0] * 4  # The optimizer should recommend its suggestion.
+
         except base.TellNotAskedNotSupportedError:
             pass
 
