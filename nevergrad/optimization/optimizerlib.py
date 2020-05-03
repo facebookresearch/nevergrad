@@ -1679,7 +1679,7 @@ class Shiwa(NGO):
 
 
 @registry.register
-class Spoiler(NGO):
+class Alacrite(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
@@ -1692,11 +1692,9 @@ class Spoiler(NGO):
                 if self.dimension < 60:
                     self.optims = [NGO(self.parametrization, budget, num_workers)]
                 else:
-                    self.optims = [ConfSplitOptimizer(self.parametrization, budget, num_workers,
-                                                      num_optims=self.dimension // 40)]
+                    self.optims = [ConfSplitOptimizer(num_optims=self.dimension // 40)]
             else:
                 if self.dimension > 60:
-                    self.optims = [ConfSplitOptimizer(self.parametrization, budget, num_workers,
-                                                      num_optims=self.dimension // 40)]
+                    self.optims = [ConfSplitOptimizer(num_optims=self.dimension // 40)]
                 else:
                     self.optims = [NGO(self.parametrization, budget, num_workers)]
