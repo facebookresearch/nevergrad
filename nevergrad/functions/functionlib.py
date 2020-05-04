@@ -73,7 +73,6 @@ def _decision_tree_parametrization(depth: int):
     for cv in range(10):
         X = []
         X_test = []
-        data_point = np.ndarray(1)
         for i in range(num_data):
             if i % 10 != cv:
                 X += [[float(i)]]
