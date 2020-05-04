@@ -65,7 +65,7 @@ class ArtificialVariable:
         return "Photonics"
 
 
-class ML_tuning(ExperimentFunction):
+class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     """
     def __init__(self, problem_type: str):
@@ -98,7 +98,7 @@ class ML_tuning(ExperimentFunction):
         self._func = decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-        super().__init__(self.noisy_function, parametrization)
+        super().__init__(self._func, parametrization)
         self.register_initialization(**self._parameters)
 
         
