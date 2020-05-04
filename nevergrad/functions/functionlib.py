@@ -81,7 +81,7 @@ def _decision_tree_parametrization(depth: int):
                 X_test += [float(i)]
         y = np.sin(X).ravel()
 
-        assert isinstance(depth, int)
+        assert isinstance(depth, int), f"depth has class {type(depth)}."
 
         # Fit regression model
         regr = DecisionTreeRegressor(max_depth=depth)
@@ -102,9 +102,8 @@ class MLTuning(ExperimentFunction):
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
 
         if problem_type == "1d_decision_tree_regression":
-            self._func = _decision_tree_parametrization
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-            super().__init__(self._func, parametrization)
+            super().__init__(_decision_tree_parametrization, parametrization)
             self.register_initialization(**self._parameters)
         else:
             assert False, f"Problem type {problem_type} undefined!"
