@@ -71,15 +71,15 @@ class ML_tuning(ExperimentFunction):
     def __init__(self, problem_type: str):
         self.name = problem_type
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
+        self.rng = np.random.RandomState(1)
 
         def decision_tree_parametrization(depth: int):
 
             # Create a random dataset
-            rng = np.random.RandomState(1)
-            X = np.sort(5 * rng.rand(80, 1), axis=0)
+            X = np.sort(5 * self.rng.rand(80, 1), axis=0)
             y = np.sin(X).ravel()
             # There is noise.
-            y[::5] += 3 * (0.5 - rng.rand(16))
+            y[::5] += 3 * (0.5 - self.rng.rand(16))
 
             assert isinstance(depth, int)
 
@@ -88,7 +88,7 @@ class ML_tuning(ExperimentFunction):
             regr.fit(X, y)
 
             # Predict
-            X_test = np.sort(5 * rng.rand(80, 1), axis=0)
+            X_test = np.sort(5 * self.rng.rand(80, 1), axis=0)
             pred_test = regr.predict(X_test)
             y_test = np.sin(X_test).ravel()
             # No noise for test!
@@ -96,9 +96,8 @@ class ML_tuning(ExperimentFunction):
         
         assert problem_type in ["1d_decision_tree_regression"]
         if problem_type == "1d_decision_tree_regression":
-            self.function = decision_tree_parametrization
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-        super().__init__(self.function, parametrization)
+        super().__init__(decision_tree_parametrization, parametrization)
 
 
 class ArtificialFunction(ExperimentFunction):
