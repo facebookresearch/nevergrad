@@ -85,11 +85,11 @@ def _decision_tree_parametrization(depth: int):
 
         # Fit regression model
         regr = DecisionTreeRegressor(max_depth=depth)
-        regr.fit(X, y)
+        regr.fit(np.asarray(X), np.asarray(y))
 
         # Predict
         pred_test = regr.predict(X_test)
-        y_test = np.sin(X_test).ravel()
+        y_test = np.sin(np.asarray(X_test)).ravel()
         result += np.sum((y_test - pred_test)**2)
     return result / num_data
 
