@@ -43,8 +43,9 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     functions = [
         MLTuning("1d_decision_tree_regression")
     ]
-    optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering"]
-    for budget in [50, 500, 5000, 50000]:
+    optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
+              "DoubleFastGADiscreteOnePlusOne"]
+    for budget in [50, 150, 500]:
         for num_workers in [1, 10, 50, 100]:
             for optim in optims:
                 for function in functions:
