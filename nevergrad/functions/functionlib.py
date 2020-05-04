@@ -64,6 +64,7 @@ class ArtificialVariable:
     def _short_repr(self) -> str:
         return "Photonics"
 
+    
 # Example of ML problem.
 def _decision_tree_parametrization(depth: int):
     # 10-folds cross-validation
@@ -100,14 +101,13 @@ class MLTuning(ExperimentFunction):
         self.name = problem_type
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
 
-
-        assert problem_type in ["1d_decision_tree_regression"]
-        self._func = _decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
+            self._func = _decision_tree_parametrization
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-        super().__init__(self._func, parametrization)
-        self.register_initialization(**self._parameters)
-
+            super().__init__(self._func, parametrization)
+            self.register_initialization(**self._parameters)
+        else:
+            assert False, f"Problem type {problem_type} undefined!"
         
 class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
