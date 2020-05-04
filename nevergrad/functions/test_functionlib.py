@@ -78,7 +78,7 @@ def test_test_function(x: Any, hashing: bool) -> None:
 
 def test_ml_tuning() -> None:
     func = functionlib.MLTuning("1d_decision_tree_regression")
-    x = np.array(3)
+    x: int = 3
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns the same float
     np.testing.assert_array_almost_equal(y1, y2)
