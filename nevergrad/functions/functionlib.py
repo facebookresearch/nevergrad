@@ -71,17 +71,17 @@ def _decision_tree_parametrization(depth: int):
     num_data: int = 80
     result: float = 0.
     for cv in range(10):
-        X = []
-        X_test = []
+        list_X = []
+        list_X_test = []
         for i in range(num_data):
             if i % 10 != cv:
-                X += [[float(i)]]
+                list_X += [[float(i)]]
             else:
-                X_test += [[float(i)]]
+                list_X_test += [[float(i)]]
 
         # Convert to numpy arrays.
-        X = np.array([np.array(xi) for xi in X])
-        X_test = np.array([np.array(xi) for xi in X_test])
+        X = np.array([np.array(xi) for xi in list_X])
+        X_test = np.array([np.array(xi) for xi in list_X_test])
         y = np.sin(X).ravel()
 
         assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
