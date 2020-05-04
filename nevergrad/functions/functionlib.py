@@ -81,7 +81,7 @@ def _decision_tree_parametrization(depth: int):
                 X_test += [float(i)]
         y = np.sin(X).ravel()
 
-        assert isinstance(depth, int), f"depth has class {type(depth)}."
+        assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
 
         # Fit regression model
         regr = DecisionTreeRegressor(max_depth=depth)
