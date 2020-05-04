@@ -77,13 +77,13 @@ def test_test_function(x: Any, hashing: bool) -> None:
     assert outputs[1] != outputs[2]
 
 def test_ml_tuning() -> None:
-    func = functionlib.ML_tuning("1d_decision_tree_regression")
+    func = functionlib.MLTuning("1d_decision_tree_regression")
     x = np.array([.3])
     y1 = func(x)  # returns a float
-    y2 = func(x)  # returns a different float since the function is noisy
-    np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
+    y2 = func(x)  # returns the same float
+    np.testing.assert_array_almost_equal, y1, y2)
     y3 = func.evaluation_function(x)   # returns a float
-    y4 = func.evaluation_function(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
+    y4 = func.evaluation_function(x)   # returns the same float
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
 
 
