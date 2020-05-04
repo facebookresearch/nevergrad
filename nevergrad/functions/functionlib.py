@@ -66,7 +66,7 @@ class ArtificialVariable:
 
     
 # Example of ML problem.
-def _decision_tree_parametrization(depth: np.ndarray):
+def _decision_tree_parametrization(depth: int):
     # 10-folds cross-validation
     num_data: int = 80
     result: float = 0.
