@@ -108,7 +108,8 @@ class MLTuning(ExperimentFunction):
             self.register_initialization(**self._parameters)
         else:
             assert False, f"Problem type {problem_type} undefined!"
-        
+
+
 class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
