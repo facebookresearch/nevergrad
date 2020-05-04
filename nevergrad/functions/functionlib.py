@@ -98,9 +98,10 @@ class ML_tuning(ExperimentFunction):
         self._func = decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-        super().__init__(self.evaluation_function, parametrization)
+        super().__init__(self.noisy_function, parametrization)
+        self.register_initialization(**self._parameters)
 
-
+        
 class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
