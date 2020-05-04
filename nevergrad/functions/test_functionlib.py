@@ -81,7 +81,7 @@ def test_ml_tuning() -> None:
     x = np.array([.3])
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns the same float
-    np.testing.assert_array_almost_equal, y1, y2)
+    np.testing.assert_array_almost_equal(y1, y2)
     y3 = func.evaluation_function(x)   # returns a float
     y4 = func.evaluation_function(x)   # returns the same float
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
