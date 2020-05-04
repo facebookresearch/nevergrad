@@ -71,29 +71,33 @@ class MLTuning(ExperimentFunction):
     def __init__(self, problem_type: str):
         self.name = problem_type
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
-        self.rng = np.random.RandomState(1)
 
         def decision_tree_parametrization(depth: int):
+            # 10-folds cross-validation
+            num_data: int = 80
+            result: float = 0.
+            for cv in range(10):
+                X = []
+                X_test = []
 
-            # Create a random dataset
-            X = np.sort(5 * self.rng.rand(80, 1), axis=0)
-            y = np.sin(X).ravel()
-            # There is noise.
-            y[::5] += 3 * (0.5 - self.rng.rand(16))
+                for i in range(num_data):
+                    if i % 10 != cv:
+                        X += [float(i)]
+                    else:
+                        X_test += [float(i)]
+                y = np.sin(X).ravel()
 
-            assert isinstance(depth, int)
+                assert isinstance(depth, int)
 
-            # Fit regression model
-            regr = DecisionTreeRegressor(max_depth=depth)
-            regr.fit(X, y)
+                # Fit regression model
+                regr = DecisionTreeRegressor(max_depth=depth)
+                regr.fit(X, y)
 
-            # Predict
-            X_test = np.sort(5 * self.rng.rand(80, 1), axis=0)
-            pred_test = regr.predict(X_test)
-            y_test = np.sin(X_test).ravel()
-            # No noise for test!
-            return np.sum((y_test - y)**2) / len(y_test)
-        
+                # Predict
+                pred_test = regr.predict(X_test)
+                y_test = np.sin(X_test).ravel()
+                result += np.sum((y_test - pred_test)**2)
+            return result / num_data
         assert problem_type in ["1d_decision_tree_regression"]
         self._func = decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
