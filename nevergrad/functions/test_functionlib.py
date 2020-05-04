@@ -76,6 +76,16 @@ def test_test_function(x: Any, hashing: bool) -> None:
     outputs.append(functionlib.ArtificialFunction(**config)(x))
     assert outputs[1] != outputs[2]
 
+def test_ml_tuning() -> None:
+    func = functionlib.ML_tuning("1d_decision_tree_regression")
+    x = np.array([.3])
+    y1 = func(x)  # returns a float
+    y2 = func(x)  # returns a different float since the function is noisy
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
+    y3 = func.evaluation_function(x)   # returns a float
+    y4 = func.evaluation_function(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
+    np.testing.assert_array_almost_equal(y3, y4)  # should be equal
+
 
 def test_oracle() -> None:
     func = functionlib.ArtificialFunction("sphere", 5, noise_level=.1)
@@ -85,7 +95,7 @@ def test_oracle() -> None:
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
     y3 = func.evaluation_function(x)   # returns a float
     y4 = func.evaluation_function(x)   # returns the same float (no noise for oracles + sphere function is deterministic)
-    np.testing.assert_array_almost_equal(y3, y4)  # should be different
+    np.testing.assert_array_almost_equal(y3, y4)  # should be equal
 
 
 def test_function_transform() -> None:
