@@ -68,7 +68,7 @@ class ArtificialVariable:
 class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     """
-    def __decision_tree_parametrization(self, depth: int):
+    def _decision_tree_parametrization(self, depth: int):
         # 10-folds cross-validation
         num_data: int = 80
         result: float = 0.
@@ -104,7 +104,7 @@ class MLTuning(ExperimentFunction):
         self._func = __decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-        super().__init__(self._func, parametrization)
+        super().__init__(lambda x: self._decision_tree_parametrization, parametrization)
         self.register_initialization(**self._parameters)
 
         
