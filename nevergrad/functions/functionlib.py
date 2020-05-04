@@ -64,6 +64,8 @@ class ArtificialVariable:
 
 
 class ML_tuning(ExperimentFunction):
+    """Class for generating ML hyperparameter tuning problems.
+    """
     def __init__(self, problem_type: str):
         self.name = problem_type
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
@@ -93,7 +95,7 @@ class ML_tuning(ExperimentFunction):
         assert problem_type in ["1d_decision_tree_regression"]
         if problem_type == "1d_decision_tree_regression":
             self.function = decision_tree_parametrization
-            parametrization = ng.p.Instrumentation(depth=ng.p.Scalar(lower=1, upper=1200).set_integer_casting())        
+            parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
         super().__init__(self.function, parametrization)
 
 
