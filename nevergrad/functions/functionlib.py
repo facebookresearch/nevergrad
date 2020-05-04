@@ -63,6 +63,40 @@ class ArtificialVariable:
         return "Photonics"
 
 
+class ML_tuning(ExperimentFunction):
+    def __init__(self, problem_type: str):
+        self.name = problem_type
+        self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
+
+        def decision_tree_parametrization(depth: int):
+
+            # Create a random dataset
+            rng = np.random.RandomState(1)
+            X = np.sort(5 * rng.rand(80, 1), axis=0)
+            y = np.sin(X).ravel()
+            # There is noise.
+            y[::5] += 3 * (0.5 - rng.rand(16))
+
+            assert isinstance(depth, int)
+
+            # Fit regression model
+            regr = DecisionTreeRegressor(max_depth=depth)
+            regr.fit(X, y)
+
+            # Predict
+            X_test = np.sort(5 * rng.rand(80, 1), axis=0)
+            pred_test = regr.predict(X_test)
+            y_test = np.sin(X_test).ravel()
+            # No noise for test!
+            return np.sum((y_test - y)**2) / len(y_test)
+        
+        assert problem_type in ["1d_decision_tree_regression"]
+        if problem_type == "1d_decision_tree_regression":
+            self.function = decision_tree_parametrization
+            parametrization = ng.p.Instrumentation(depth=ng.p.Scalar(lower=1, upper=1200).set_integer_casting())        
+        super().__init__(self.function, parametrization)
+
+
 class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.
