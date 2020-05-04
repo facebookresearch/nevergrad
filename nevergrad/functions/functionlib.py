@@ -95,9 +95,10 @@ class ML_tuning(ExperimentFunction):
             return np.sum((y_test - y)**2) / len(y_test)
         
         assert problem_type in ["1d_decision_tree_regression"]
+        self._func = decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-        super().__init__(decision_tree_parametrization, parametrization)
+        super().__init__(self.evaluation_function, parametrization)
 
 
 class ArtificialFunction(ExperimentFunction):
