@@ -46,9 +46,6 @@ FCMAs03 = ParametrizedCMA(fcmaes=True, scale=0.3).set_name("FCMAs03", register=T
 FCMAp13 = ParametrizedCMA(fcmaes=True, scale=0.1, popsize=13).set_name("FCMAp13", register=True)
 
 # OnePlusOne
-FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
-    "FastGADiscreteOnePlusOne", register=True
-)
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="doublefastga"
 ).set_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
