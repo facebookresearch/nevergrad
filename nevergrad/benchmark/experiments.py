@@ -101,11 +101,11 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
-              "CMandAS2"]
+              "CMandAS2", "PortfolioDiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200]:
-        for arity in [2, 7]:
+        for arity in [2, 3, 7, 30]:
             instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
