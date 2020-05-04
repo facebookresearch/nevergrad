@@ -5,5 +5,7 @@
 
 from .functionlib import ArtificialFunction as ArtificialFunction
 from .functionlib import FarOptimumFunction as FarOptimumFunction
+from .functionlib import MLTuning as MLTuning
+
 from .multiobjective import MultiobjectiveFunction as MultiobjectiveFunction
 from .base import ExperimentFunction as ExperimentFunction
