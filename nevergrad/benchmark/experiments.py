@@ -33,6 +33,25 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
+@registry.register
+def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    # Continuous case
+
+    # First, a few functions with constraints.
+    functions = [
+        MLTuning("1d_decision_tree_regression")
+    ]
+    optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "FastGA", "CMA", "MetaRecentering"]
+    for budget in [50, 500, 5000, 50000]:
+        for num_workers in [1, 10, 50, 100]:
+            for optim in optims:
+                xp = Experiment(function, optim, num_workers=nw,
+                                budget=budget, seed=next(seedg))
+                if not xp.is_incoherent:
+                     yield xp
+
+
 # pylint:disable=too-many-branches
 @registry.register
 def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
