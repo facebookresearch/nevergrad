@@ -68,7 +68,7 @@ class ArtificialVariable:
 class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     """
-    def __decision_tree_parametrization(depth: int):
+    def __decision_tree_parametrization(self, depth: int):
         # 10-folds cross-validation
         num_data: int = 80
         result: float = 0.
