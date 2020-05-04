@@ -68,38 +68,40 @@ class ArtificialVariable:
 class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     """
+    def __decision_tree_parametrization(depth: int):
+        # 10-folds cross-validation
+        num_data: int = 80
+        result: float = 0.
+        for cv in range(10):
+            X = []
+            X_test = []
+
+            for i in range(num_data):
+                if i % 10 != cv:
+                    X += [float(i)]
+                else:
+                    X_test += [float(i)]
+            y = np.sin(X).ravel()
+
+            assert isinstance(depth, int)
+
+            # Fit regression model
+            regr = DecisionTreeRegressor(max_depth=depth)
+            regr.fit(X, y)
+
+            # Predict
+            pred_test = regr.predict(X_test)
+            y_test = np.sin(X_test).ravel()
+            result += np.sum((y_test - pred_test)**2)
+        return result / num_data
+
     def __init__(self, problem_type: str):
         self.name = problem_type
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
 
-        def decision_tree_parametrization(depth: int):
-            # 10-folds cross-validation
-            num_data: int = 80
-            result: float = 0.
-            for cv in range(10):
-                X = []
-                X_test = []
 
-                for i in range(num_data):
-                    if i % 10 != cv:
-                        X += [float(i)]
-                    else:
-                        X_test += [float(i)]
-                y = np.sin(X).ravel()
-
-                assert isinstance(depth, int)
-
-                # Fit regression model
-                regr = DecisionTreeRegressor(max_depth=depth)
-                regr.fit(X, y)
-
-                # Predict
-                pred_test = regr.predict(X_test)
-                y_test = np.sin(X_test).ravel()
-                result += np.sum((y_test - pred_test)**2)
-            return result / num_data
         assert problem_type in ["1d_decision_tree_regression"]
-        self._func = decision_tree_parametrization
+        self._func = __decision_tree_parametrization
         if problem_type == "1d_decision_tree_regression":
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
         super().__init__(self._func, parametrization)
