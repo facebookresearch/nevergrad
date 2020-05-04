@@ -47,10 +47,11 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for budget in [50, 500, 5000, 50000]:
         for num_workers in [1, 10, 50, 100]:
             for optim in optims:
-                xp = Experiment(function, optim, num_workers=nw,
-                                budget=budget, seed=next(seedg))
-                if not xp.is_incoherent:
-                     yield xp
+                for function in functions:
+                    xp = Experiment(function, optim, num_workers=num_workers,
+                                    budget=budget, seed=next(seedg))
+                    if not xp.is_incoherent:
+                         yield xp
 
 
 # pylint:disable=too-many-branches
