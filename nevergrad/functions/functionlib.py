@@ -10,7 +10,7 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor  # type: ignore
 
 from .base import ExperimentFunction
 from .multiobjective import MultiobjectiveFunction
