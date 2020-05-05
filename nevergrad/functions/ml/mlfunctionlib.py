@@ -15,8 +15,8 @@ from nevergrad.common.typetools import ArrayLike
 from sklearn.tree import DecisionTreeRegressor  # type: ignore
 
 from ..base import ExperimentFunction
-from . import utils
-from . import corefuncs
+from .. import utils
+from .. import corefuncs
 
 
 
