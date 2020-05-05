@@ -60,7 +60,7 @@ class MLTuning(ExperimentFunction):
 
         if problem_type == "1d_decision_tree_regression":
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-            super().__init__(partial(_decision_tree_parametrization, noise_free=False), parametrization)
-            self.evaluation_function = partial(_decision_tree_parametrization, noise_free=True)
+            super().__init__(partial(self._decision_tree_parametrization, noise_free=False), parametrization)
+            self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True)
         else:
             assert False, f"Problem type {problem_type} undefined!"
