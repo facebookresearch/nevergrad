@@ -35,10 +35,13 @@ class MLTuning(ExperimentFunction):
             
             # Training set.
             X = X_all[np.arange(num_data) % 10 != cv]
+            X = X.reshape((len(X),1))
             y = np.sin(X).ravel()
             
             # Validation set or test set (noise_free is True for test set).
             X_test = X_all[np.arange(num_data) % 10 == cv]
+            X_test = X_test.reshape((len(X),1))
+
             if noise_free:
                 X_test = np.arange(0., 1., 1000000)
             y_test = np.sin(X_test).ravel()
