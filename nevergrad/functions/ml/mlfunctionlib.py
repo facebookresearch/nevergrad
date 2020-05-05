@@ -43,7 +43,7 @@ class MLTuning(ExperimentFunction):
             X_test = X_test.reshape(-1, 1)
 
             if noise_free:
-                X_test = np.arange(0., 1., 1000000)
+                X_test = np.arange(0., 1., 1000000).reshape(-1, 1)
             y_test = np.sin(X_test).ravel()
     
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
