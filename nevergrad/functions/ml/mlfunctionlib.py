@@ -35,16 +35,6 @@ class MLTuning(ExperimentFunction):
             X_test = X_all[np.arange(num_data) % 10 == cv]
             if noise_free:
                 X_test = np.arange(0., 1., 1000000)
-            for i in range(num_data):
-                if i % 10 != cv:
-                    list_X += [[float(i)]]
-                else:
-                    list_X_test += [[float(i)]]
-    
-            # Convert to numpy arrays.
-            X = np.array([np.array(xi) for xi in list_X])
-            X_test = np.array([np.array(xi) for xi in list_X_test])
-            y = np.sin(X).ravel()
     
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
