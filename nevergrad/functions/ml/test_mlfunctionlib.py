@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 from nevergrad.common import testing
 from nevergrad.parametrization import parameter as p
-from .. import functionlib
+from . import mlfunctionlib
 
 
 def test_ml_tuning() -> None:
-    func = functionlib.MLTuning("1d_decision_tree_regression")
+    func = mlfunctionlib.MLTuning("1d_decision_tree_regression")
     x: int = 3
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns the same float
