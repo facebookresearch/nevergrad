@@ -166,7 +166,7 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
             optimizer.tell(candidate, 12)
             # The optimizer should recommend its suggestion, except for a few optimization methods:
             if name not in ["SPSA", "TBPSA", "StupidRandom"]:
-                np.testing.assert_array_almost_equal(optimizer.provide_recommendation().args[0], [12.0] * 4)
+                np.testing.assert_array_almost_equal(optimizer.provide_recommendation().value, [12.0] * 4)
         except base.TellNotAskedNotSupportedError:
             pass
 
