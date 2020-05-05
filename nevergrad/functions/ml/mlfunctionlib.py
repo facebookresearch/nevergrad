@@ -40,7 +40,7 @@ class MLTuning(ExperimentFunction):
             
             # Validation set or test set (noise_free is True for test set).
             X_test = X_all[np.arange(num_data) % 10 == cv]
-            X_test = X_test.reshape((len(X),1))
+            X_test = X_test.reshape((len(X_test),1))
 
             if noise_free:
                 X_test = np.arange(0., 1., 1000000)
