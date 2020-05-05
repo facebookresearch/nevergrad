@@ -30,11 +30,18 @@ class MLTuning(ExperimentFunction):
         num_data: int = 80
         result: float = 0.
         for cv in range(10):
+            # All data.
             X_all = np.arange(0., 1., 1. / num_data)
+            
+            # Training set.
             X = X_all[np.arange(num_data) % 10 != cv]
+            y = np.sin(X).ravel()
+            
+            # Validation set or test set (noise_free is True for test set).
             X_test = X_all[np.arange(num_data) % 10 == cv]
             if noise_free:
                 X_test = np.arange(0., 1., 1000000)
+            y_test = np.sin(X_test).ravel()
     
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
@@ -44,7 +51,6 @@ class MLTuning(ExperimentFunction):
     
             # Predict
             pred_test = regr.predict(X_test)
-            y_test = np.sin(np.asarray(X_test)).ravel()
             result += np.sum((y_test - pred_test)**2)
         return result / num_data
 
