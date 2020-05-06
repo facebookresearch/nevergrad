@@ -25,7 +25,7 @@ class MLTuning(ExperimentFunction):
     """
 
     # Example of ML problem.
-    def _decision_tree_parametrization(self, depth: int, noise_free: bool):
+    def _decision_tree_parametrization(self, depth: int, criterion: str, noise_free: bool):
         # 10-folds cross-validation
         num_data: int = 80
         result: float = 0.
@@ -49,7 +49,7 @@ class MLTuning(ExperimentFunction):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
             # Fit regression model
-            regr = DecisionTreeRegressor(max_depth=depth)
+            regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion)
             regr.fit(np.asarray(X), np.asarray(y))
     
             # Predict
