@@ -2,7 +2,122 @@
 
 ## master
 
-N/A
+- `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
+- `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
+- Quasi-random samplers (`LHSSearch`, `HammersleySearch`, `HaltonSearch` etc...) now sample in the full range of bounded
+  variables when the `full_range_sampling` is `True` [598](https://github.com/facebookresearch/nevergrad/pull/598).
+  This required some ugly hacks, help is most welcome to find nices solutions.
+- `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
+- Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [599](https://github.com/facebookresearch/nevergrad/pull/599).
+- Moved the `Selector` dataframe overlay so that basic requirements do not include `pandas` (only necessary for benchmarks) [609](https://github.com/facebookresearch/nevergrad/pull/609)
+- Changed the version name pattern (removed the `v`) to unify with `pypi` versions. Expect more frequent intermediary versions to be pushed (deployment has now been made pseudo-automatic).
+
+
+## v0.4.0 (2019-03-09)
+
+### Breaking and important changes
+
+- Removed all deprecated code [#499](https://github.com/facebookresearch/nevergrad/pull/499). That includes:
+  - `instrumentation` as init parameter of an `Optimizer` (replaced by `parametrization`)
+  - `instrumentation` as attribute of an `Optimizer` (replaced by `parametrization`)
+  - `candidate_maker` (not needed anymore)
+  - `optimize` methods of `Optimizer` (renamed to `minimize`)
+  - all the `instrumentation` subpackage (replaced by `parametrization`) and its legacy methods (`set_cheap_constraint_checker` etc)
+- Removed `ParametrizedOptimizer` and `OptimizerFamily` in favor of `ConfiguredOptimizer` with simpler usage [#518](https://github.com/facebookresearch/nevergrad/pull/518) [#521](https://github.com/facebookresearch/nevergrad/pull/521).
+- Some variants of algorithms have been removed from the `ng.optimizers` namespace to simplify it. All such variants can be easily created
+  using the corresponding `ConfiguredOptimizer`. Also, adding `import nevergrad.optimization.experimentalvariants` will populate `ng.optimizers.registry`
+  with all variants, and they are all available for benchmarks [#528](https://github.com/facebookresearch/nevergrad/pull/528).
+- Renamed `a_min` and `a_max` in `Array`, `Scalar` and `Log` parameters for clarity.
+  Using old names will raise a deprecation warning for the time being.
+- `archive` is pruned much more often (eg.: for `num_workers=1`, usually pruned to 100 elements when reaching 1000),
+  so you should not rely on it for storing all results, use a callback instead [#571](https://github.com/facebookresearch/nevergrad/pull/571).
+  If this is a problem for you, let us know why and we'll find a solution!
+
+### Other changes
+
+- Propagate parametrization system features (generation tracking, ...) to `TBPSA`, `PSO` and `EDA` based algorithms.
+- Rewrote multiobjective core system [#484](https://github.com/facebookresearch/nevergrad/pull/484).
+- Activated Windows CI (still a bit flaky, with a few deactivated tests).
+- Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
+- Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
+- Scalar now takes optional `lower` and `upper` bounds at initialization, and `sigma` (and optionnally `init`)
+  if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
+
+
+## v0.3.2 (2019-02-05)
+
+
+### Breaking changes (possibly for next version)
+
+- Fist argument of optimizers is renamed to `parametrization` instead of `instrumentation` for consistency [#497](https://github.com/facebookresearch/nevergrad/pull/497). There is currently a deprecation warning, but this will be breaking in v0.4.0.
+- Old `instrumentation` classes now raise deprecation warnings, and will disappear in versions >0.3.2.
+  Hence, prefere using parameters from `ng.p` than `ng.var`, and avoid using `ng.Instrumentation` altogether if
+  you don't need it anymore (or import it through `ng.p.Instrumentation`).
+- `CandidateMaker` (`optimizer.create_candidate`) raises `DeprecationWarning`s since it new candidates/parameters
+  can be straightforwardly created (`parameter.spawn_child(new_value=new_value)`)
+- `Candidate` class is completely removed, and is completely replaced by `Parameter` [#459](https://github.com/facebookresearch/nevergrad/pull/459).
+  This should not break existing code since `Parameter` can be straightforwardly used as a `Candidate`.
+
+### Other changes
+
+- New parametrization is now as efficient as in v0.3.0 (see CHANGELOG for v0.3.1 for contect)
+- Optimizers can now hold any parametrization, not just `Instrumentation`. This for instance mean that when you
+  do `OptimizerClass(instrumentation=12, budget=100)`, the instrumentation (and therefore the candidates) will be of class
+  `ng.p.Array` (and not `ng.p.Instrumentation`), and their attribute `value` will be the corresponding `np.ndarray` value.
+  You can still use `args` and `kwargs` if you want, but it's no more needed!
+- Added *experimental* evolution-strategy-like algorithms using new parametrization [#471](https://github.com/facebookresearch/nevergrad/pull/471)
+  (the behavior and API of these optimizers will probably evolve in the near future).
+- `DE` algorithms comply with the new parametrization system and can be set to use parameter's recombination.
+- Fixed array as bounds in `Array` parameters
+
+## v0.3.1 (2019-01-23)
+
+**Note**: this is the first step to propagate the instrumentation/parametrization framework.
+ Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/).
+ If you are looking for stability, await for version 0.4.0, but the intermediary releases will help by providing
+ deprecation warnings.
+
+### Breaking changes
+
+- `FolderFunction` must now be accessed through `nevergrad.parametrization.FolderFunction`
+- Instrumentation names are changed (possibly breaking for benchmarks records)
+
+### Other changes
+
+- Old instrumentation classes now all inherits from the new parametrization classes [#391](https://github.com/facebookresearch/nevergrad/pull/391). Both systems coexists, but optimizers
+  use the old API at this point (it will use the new one in version 0.3.2).
+- Temporary performance loss is expected in orded to keep compatibility between `Variable` and `Parameter` frameworks.
+- `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
+ optimizer was created, using the previous initial sampling method [#467](https://github.com/facebookresearch/nevergrad/pull/467).
+
+## v0.3.0 (2019-01-08)
+
+**Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
+
+### Breaking changes
+
+- `Instrumentation` is now a `Variable` for simplicity and flexibility. The `Variable` API has therefore heavily changed,
+  and bigger changes are coming (`instrumentation` will become `parametrization` with a different API). This should only impact custom-made variables.
+- `InstrumentedFunction` has been aggressively deprecated to solve bugs and simplify code, in favor of using the `Instrumentation` directly at the optimizer initialization,
+  and of using `ExperimentFunction` to define functions to be used in benchmarks. Main differences are:
+  * `instrumentation` attribute is renamed to `parametrization` for forward compatibility.
+  *  `__init__` takes exactly two arguments (main function and parametrization/instrumentation) and
+  * calls to `__call__` is directly forwarded to the main function (instead of converting from data space),
+- `Candidates` have now a `uid` instead of a `uuid` for compatibility reasons.
+- Update archive `keys/items_as_array` methods to `keys/items_as_arrays` for consistency.
+
+### Other changes
+
+- Benchmark plots now show confidence area (using partially transparent lines).
+- `Chaining` optimizer family enables chaining of algorithms.
+- Cleaner installation.
+- New simplified `Log` variable for log-distributed scalars.
+- Cheap constraints can now be provided through the `Instrumentation`
+- Added preliminary multiobjective function support (may be buggy for the time being, and API will change)
+- New callback for dumping parameters and loss, and loading them back easily for display (display yet to come).
+- Added a new parametrization module which is expected to soon replace the instrumentation module.
+- Added new test cases: games, power system, etc (experimental)
+- Added new algorithms: quasi-opposite one shot optimizers
 
 ## v0.2.2
 

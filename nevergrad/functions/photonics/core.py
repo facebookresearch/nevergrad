@@ -19,57 +19,59 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
-import os
-import shutil
-from typing import List
-from pathlib import Path
 import numpy as np
-from ... import instrumentation as inst
+from nevergrad.parametrization import parameter as p
+from . import photonics
+from .. import base
 
 
-def _make_instrumentation(name: str, dimension: int, transform: str = "tanh") -> inst.Instrumentation:
-    """Creates appropriate instrumentation for a Photonics problem
+def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> p.Array:
+    """Creates appropriate parametrization for a Photonics problem
 
     Parameters
     name: str
         problem name, among bragg, chirped and morpho
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
-    transform: str
+    bounding_method: str
         transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
 
     Returns
     -------
     Instrumentation
-        the instrumentation for the problem
+        the parametrization for the problem
     """
-    assert not dimension % 4, f"points length should be a multiple of 4, got {dimension}"
-    n = dimension // 4
-    arrays: List[inst.var.Array] = []
     if name == "bragg":
-        # n multiple of 2, from 16 to 80
-        # domain (n=60): [2,3]^30 x [0,300]^30
-        arrays.extend([inst.var.Array(n).bounded(2, 3, transform=transform) for _ in range(2)])
-        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(2)])
+        shape = (2, dimension // 2)
+        bounds = [(2, 3), (30, 180)]
     elif name == "chirped":
-        # n multiple of 2, from 10 to 80
-        # domain (n=60): [0,300]^60
-        arrays = [inst.var.Array(n).bounded(0, 300, transform=transform) for _ in range(4)]
+        shape = (1, dimension)
+        bounds = [(30, 180)]
     elif name == "morpho":
-        # n multiple of 4, from 16 to 60
-        # domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-        arrays.extend([inst.var.Array(n).bounded(0, 300, transform=transform),
-                       inst.var.Array(n).bounded(0, 600, transform=transform),
-                       inst.var.Array(n).bounded(30, 600, transform=transform),
-                       inst.var.Array(n).bounded(0, 300, transform=transform)])
+        shape = (4, dimension // 4)
+        bounds = [(0, 300), (0, 600), (30, 600), (0, 300)]
     else:
         raise NotImplementedError(f"Transform for {name} is not implemented")
-    instrumentation = inst.Instrumentation(*arrays)
-    assert instrumentation.dimension == dimension
-    return instrumentation
+    divisor = max(2, len(bounds))
+    assert not dimension % divisor, f"points length should be a multiple of {divisor}, got {dimension}"
+    assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
+    b_array = np.array(bounds)
+    assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
+    init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
+    array = p.Array(init=init)
+    if bounding_method not in ("arctan", "tanh"):
+        # sigma must be adapted for clipping and constraint methods
+        sigma = p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore
+        array.set_mutation(sigma=sigma)
+    if rolling:
+        array.set_mutation(custom=p.Choice(["gaussian", "cauchy", p.mutation.Translation(axis=1)]))
+    array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
+    array.set_recombination(p.mutation.Crossover(axis=1)).set_name("")
+    assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
+    return array
 
 
-class Photonics(inst.InstrumentedFunction):
+class Photonics(base.ExperimentFunction):
     """Function calling photonics code
 
     Parameters
@@ -113,27 +115,29 @@ class Photonics(inst.InstrumentedFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, transform: str = "tanh") -> None:
-        if shutil.which("octave") is None:
-            raise RuntimeError("Photonics function requires Octave to be installed in order to run")
-        assert dimension in [8, 16, 40, 60 if name == "morpho" else 80]
+    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
-        path = Path(__file__).absolute().parent / 'src' / (name + '.m')
-        assert path.exists(), f"Path {path} does not exist (anymore?)"
-        self._func = inst.CommandFunction(["octave-cli", "--no-gui", "--no-history", "--norc", "--quiet", "--no-window-system", path.name],
-                                          cwd=path.parent, verbose=False,
-                                          env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"))
-        super().__init__(self._compute, *_make_instrumentation(name=name, dimension=dimension, transform=transform).args)
-        self._descriptors.update(name=name)
+        self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
+        param = _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
+        super().__init__(self._compute, param)
+        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
+        self._descriptors.update(name=name, bounding_method=bounding_method, rolling=rolling)
 
-    def _compute(self, *x: np.ndarray) -> float:
-        x_cat = np.concatenate(x)
-        assert x_cat.shape == (self.dimension,), f"Got length {x_cat.shape} but expected ({self.dimension},)"
-        output = self._func(*x_cat.tolist())
-        output_list = output.strip().splitlines()
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        # pylint: disable=not-callable
+        loss = self.function(x)
+        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        return loss
+
+    def _compute(self, x: np.ndarray) -> float:
+        x_cat = x.ravel()
+        assert x_cat.size == self.dimension
         try:
-            value = float(output_list[-1])
-        except Exception as e:  # pylint: disable=bare-except
-            raise RuntimeError(f'Could not parse output "{output}"') from e
-        return value
+            output = self._base_func(x_cat)
+        except Exception:  # pylint: disable=broad-except
+            output = float("inf")
+        if np.isnan(output):
+            output = float("inf")
+        return output

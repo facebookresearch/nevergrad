@@ -8,44 +8,17 @@ import time
 import random
 import warnings
 import traceback
-from typing import Dict, Union, Any, Optional, Iterator, Tuple, Type, Callable
-import torch
+from typing import Dict, Union, Any, Optional, Iterator, Type, Callable
 import numpy as np
+from nevergrad.parametrization import parameter as p
 from ..common import decorators
-from .. import instrumentation as instru
-from ..functions import utils as futils
-from ..optimization import base
+from ..functions.rl.agents import torch  # import includes pytorch fix
+from ..functions import base as fbase
+from ..optimization import base as obase
 from ..optimization.optimizerlib import registry as optimizer_registry  # import from optimizerlib so as to fill it
 from . import execution
 
 registry = decorators.Registry[Callable[..., Iterator['Experiment']]]()
-
-
-class CallCounter(execution.PostponedObject):
-    """Simple wrapper which counts the number
-    of calls to a function.
-
-    Parameter
-    ---------
-    func: Callable
-        the callable to wrap
-    """
-
-    def __init__(self, func: instru.InstrumentedFunction) -> None:
-        self.func = func
-        self.num_calls = 0
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        value = self.func.function(*args, **kwargs)  # compute *before* updating num calls
-        self.num_calls += 1
-        return value
-
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
-        """Propagate subfunction delay
-        """
-        if isinstance(self.func, execution.PostponedObject):
-            return self.func.get_postponing_delay(args, kwargs, value)
-        return 1.
 
 
 class OptimizerSettings:
@@ -57,7 +30,13 @@ class OptimizerSettings:
     Eventually, this class should be moved to be directly used for defining experiments.
     """
 
-    def __init__(self, optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1, batch_mode: bool = True) -> None:
+    def __init__(
+        self,
+        optimizer: Union[str, obase.ConfiguredOptimizer],
+        budget: int,
+        num_workers: int = 1,
+        batch_mode: bool = True
+    ) -> None:
         self._setting_names = [x for x in locals() if x != "self"]
         if isinstance(optimizer, str):
             assert optimizer in optimizer_registry, f"{optimizer} is not registered"
@@ -77,7 +56,7 @@ class OptimizerSettings:
     def __repr__(self) -> str:
         return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
 
-    def _get_factory(self) -> Union[Type[base.Optimizer], base.OptimizerFamily]:
+    def _get_factory(self) -> Union[Type[obase.Optimizer], obase.ConfiguredOptimizer]:
         return optimizer_registry[self.optimizer] if isinstance(self.optimizer, str) else self.optimizer
 
     @property
@@ -89,10 +68,10 @@ class OptimizerSettings:
         # flag no_parallelization when num_workers greater than 1
         return self._get_factory().no_parallelization and bool(self.num_workers > 1)
 
-    def instantiate(self, instrumentation: instru.Instrumentation) -> base.Optimizer:
+    def instantiate(self, parametrization: p.Parameter) -> obase.Optimizer:
         """Instantiate an optimizer, providing the optimization space dimension
         """
-        return self._get_factory()(instrumentation=instrumentation, budget=self.budget, num_workers=self.num_workers)
+        return self._get_factory()(parametrization=parametrization, budget=self.budget, num_workers=self.num_workers)
 
     def get_description(self) -> Dict[str, Any]:
         """Returns a dictionary describing the optimizer settings
@@ -103,7 +82,11 @@ class OptimizerSettings:
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
-            return all(getattr(self, attr) == getattr(other, attr) for attr in self._setting_names)
+            for attr in self._setting_names:
+                x, y = (getattr(settings, attr) for settings in [self, other])
+                if x != y:
+                    return False
+            return True
         return False
 
 
@@ -131,9 +114,9 @@ class Experiment:
 
     Parameters
     ----------
-    function: InstrumentedFunction
-        the function to run the experiment on. It must inherit from InstrumentedFunction to implement
-        descriptors for the function.
+    function: ExperimentFunction
+        the function to run the experiment on. It must inherit from ExperimentFunction to implement
+        necessary functionalities (parametrization, descriptors, evaluation_function, pseudotime etc)
 
     Note
     ----
@@ -143,19 +126,25 @@ class Experiment:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, function: instru.InstrumentedFunction,
-                 optimizer: Union[str, base.OptimizerFamily], budget: int, num_workers: int = 1,
-                 batch_mode: bool = True, seed: Optional[int] = None) -> None:
-        assert isinstance(function, instru.InstrumentedFunction), ("All experiment functions should derive from InstrumentedFunction")
+    def __init__(self, function: fbase.ExperimentFunction,
+                 optimizer: Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1,
+                 batch_mode: bool = True, seed: Optional[int] = None,
+                 ) -> None:
+        assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
+                                                                "derive from ng.functions.ExperimentFunction")
+        assert function.dimension, "Nothing to optimize"
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self.recommendation: Optional[base.Candidate] = None
-        self._optimizer: Optional[base.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
+        self.recommendation: Optional[p.Parameter] = None
+        self._optimizer: Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
+        # make sure the random_state of the base function is created, so that spawning copy does not
+        # trigger a seed for the base function, but only for the copied function
+        self.function.parametrization.random_state  # pylint: disable=pointless-statement
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function} with seed {self.seed}"
 
     @property
     def is_incoherent(self) -> bool:
@@ -180,6 +169,8 @@ class Experiment:
         """
         try:
             self._run_with_error()
+        except fbase.ExperimentFunctionCopyError as c_e:
+            raise c_e
         except Exception as e:  # pylint: disable=broad-except
             # print the case and the traceback
             self.result["error"] = e.__class__.__name__
@@ -188,7 +179,7 @@ class Experiment:
             print("\n", file=sys.stderr)
         return self.get_description()
 
-    def _log_results(self, t0: float, num_calls: int) -> None:
+    def _log_results(self, pfunc: fbase.ExperimentFunction, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error
         """
         self.result["elapsed_time"] = time.time() - t0
@@ -196,15 +187,12 @@ class Experiment:
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         reco = self.recommendation
-        if isinstance(self.function, futils.NoisyBenchmarkFunction):
-            self.result["loss"] = self.function.noisefree_function(*reco.args, **reco.kwargs)
-        else:
-            self.result["loss"] = self.function.function(*reco.args, **reco.kwargs)
+        self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)  # ExperimentFunction directly override this if need be
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
 
-    def _run_with_error(self, callbacks: Optional[Dict[str, base._OptimCallBack]] = None) -> None:
+    def _run_with_error(self, callbacks: Optional[Dict[str, obase._OptimCallBack]] = None) -> None:
         """Run an experiment with the provided artificial function and optimizer
 
         Parameter
@@ -213,34 +201,39 @@ class Experiment:
             a dictionary of callbacks to register on the optimizer with key "ask" and/or "tell" (see base Optimizer class).
             This is only for easier debugging.
         """
-        instrumentation = self.function.instrumentation.copy()  # make sure it is not shared
         if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
-            np.random.seed(self.seed)  # seeds both functions and instrumentation (for which random state init is lazy)
+            np.random.seed(self.seed)  # seeds both functions and parametrization (for which random state init is lazy)
             random.seed(self.seed)
             torch.manual_seed(self.seed)  # type: ignore
+        pfunc = self.function.copy()
+        # check constraints are propagated
+        assert len(pfunc.parametrization._constraint_checkers) == len(self.function.parametrization._constraint_checkers)
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
-            self._optimizer = self.optimsettings.instantiate(instrumentation=instrumentation)
+            self._optimizer = self.optimsettings.instantiate(parametrization=pfunc.parametrization)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
         t0 = time.time()
-        counter = CallCounter(self.function)  # probably useless now (= num_ask) but helps being 100% sure
-        counter.num_calls = self._optimizer.num_ask  # update in case we are resuming an optimization
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)  # benchmark do not need to be efficient
+            warnings.filterwarnings("ignore", category=obase.InefficientSettingsWarning)  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                self.recommendation = base.Optimizer.minimize(self._optimizer, counter, batch_mode=executor.batch_mode, executor=executor)
+                self.recommendation = obase.Optimizer.minimize(
+                    self._optimizer,
+                    pfunc,
+                    batch_mode=executor.batch_mode,
+                    executor=executor
+                )
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
-                self._log_results(t0, counter.num_calls)
+                self._log_results(pfunc, t0, self._optimizer.num_ask)
                 raise e
-        self._log_results(t0, counter.num_calls)
+        self._log_results(pfunc, t0, self._optimizer.num_ask)
 
     def get_description(self) -> Dict[str, Union[str, float, bool]]:
         """Return the description of the experiment, as a dict.
@@ -254,4 +247,5 @@ class Experiment:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Experiment):
             return False
-        return self.function == other.function and self.optimsettings == other.optimsettings
+        same_seed = other.seed is None if self.seed is None else other.seed == self.seed
+        return same_seed and self.function.equivalent_to(other.function) and self.optimsettings == other.optimsettings

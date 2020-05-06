@@ -4,8 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import nevergrad as ng
-from nevergrad import instrumentation as inst
-from nevergrad.functions import ArtificialFunction
+from nevergrad import functions as ngfuncs
 from nevergrad.benchmark import registry as xpregistry
 from nevergrad.benchmark import Experiment
 # this file implements:
@@ -15,12 +14,13 @@ from nevergrad.benchmark import Experiment
 # it can be used with the --imports parameters if nevergrad.benchmark commandline function
 
 
-class CustomFunction(inst.InstrumentedFunction):
+class CustomFunction(ngfuncs.ExperimentFunction):
     """Example of a new test function
     """
 
     def __init__(self, offset):
-        super().__init__(self.oracle_call, ng.var.Scalar())
+        super().__init__(self.oracle_call, ng.p.Scalar())
+        self.register_initialization(offset=offset)  # to create equivalent instances through "copy"
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
         # those will be recorded during benchmarks
@@ -40,7 +40,7 @@ class NewOptimizer(ng.optimizers.registry["NoisyBandit"]):
 
 @xpregistry.register  # register experiments in the experiment registry
 def additional_experiment():  # The signature can also include a seed argument if need be (see experiments.py)
-    funcs = [ArtificialFunction(name="sphere", block_dimension=10), CustomFunction(2)]
+    funcs = [ngfuncs.ArtificialFunction(name="sphere", block_dimension=10), CustomFunction(2)]
     for budget in [10, 100]:
         for optimizer in ["NewOptimizer", "RandomSearch"]:
             for func in funcs:  # 2 realizations of the same function

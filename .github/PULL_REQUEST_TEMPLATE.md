@@ -23,5 +23,7 @@
 <!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->
 
 - [ ] The documentation is up-to-date with the changes I made.
-- [ ] I have read the **CONTRIBUTING** document and completed the CLA (see **CONTRIBUTING**).
+- [ ] I have read the [**CONTRIBUTING**](https://facebookresearch.github.io/nevergrad/contributing.html) document and completed the CLA (see [**CLA**](https://facebookresearch.github.io/nevergrad/contributing.html#contributor-license-agreement-cla)).
 - [ ] All tests passed, and additional code has been covered with new tests.
+
+<!--- In any case, don't hesitate to join and ask questions if you need on Nevergrad users Facebook group https://www.facebook.com/groups/nevergradusers/ -->

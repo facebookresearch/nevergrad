@@ -2,63 +2,20 @@
 
 # Nevergrad - A gradient-free optimization platform
 
+![Nevergrad](docs/resources/Nevergrad-LogoMark.png)
+
+
 `nevergrad` is a Python 3.6+ library. It can be installed with:
 
 ```
 pip install nevergrad
 ```
 
-You can also install the master branch instead of the latest release with:
+More installation options and complete instructions are available in the "Getting started" section of the [**documentation**](https://facebookresearch.github.io/nevergrad/).
 
-```
-pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
-```
+You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/).
 
-Alternatively, you can clone the repository and run `pip install -e .` from inside the repository folder.
-
-By default, this only installs requirements for the optimization and instrumentation subpackages. If you are also interested in the benchmarking part,
-you should install with the `[benchmark]` flag (example: `pip install 'nevergrad[benchmark]'`), and if you also want the test tools, use
-the `[all]` flag (example: `pip install -e '.[all]'`)
-
-
-## Goals and structure
-
-The goals of this package are to provide:
-- **gradient/derivative-free optimization algorithms**, including algorithms able to handle noise.
-- **tools to instrument any code**, making it painless to optimize your parameters/hyperparameters, whether they are continuous, discrete or a mixture of continuous and discrete variables.
-- **functions** on which to test the optimization algorithms.
-- **benchmark routines** in order to compare algorithms easily.
-
-The structure of the package follows its goal, you will therefore find subpackages:
-- `optimization`: implementing optimization algorithms
-- `instrumentation`: tooling to convert code into a well-defined function to optimize.
-- `functions`: implementing both simple and complex benchmark functions
-- `benchmark`: for running experiments comparing the algorithms on benchmark functions
-- `common`: a set of tools used throughout the package
-
-![Example of optimization](TwoPointsDE.gif)
-
-*Convergence of a population of points to the minima with two-points DE.*
-
-
-## Documentation
-
-The following README is very general, here are links to find more details on:
-- [how to perform optimization](docs/optimization.md) using `nevergrad`, including using parallelization and a few recommendation on which algorithm should be used depending on the settings
-- [how to instrument](docs/instrumentation.md) functions with any kind of parameters in order to convert them into a function defined on a continuous vectorial space where optimization can be performed. It also provides a tool to instantiate a script or non-python code in order into a Python function and be able to tune some of its parameters.
-- [how to benchmark](docs/benchmarking.md) all optimizers on various test functions.
-- [benchmark results](docs/benchmarks.md) of some standard optimizers an simple test cases.
-- examples of [optimization for machine learning](docs/machinelearning.md).
-- how to [contribute](.github/CONTRIBUTING.md) through issues and pull requests and how to setup your dev environment.
-- guidelines of how to contribute by [adding a new algorithm](docs/adding_an_algorithm.md).
-
-
-## Basic optimization example
-
-**All optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.**
-
-
-Optimizing (minimizing!) a function using an optimizer (here `OnePlusOne`) can be easily run with:
+Minimizing a function using an optimizer (here `OnePlusOne`) is straightforward:
 
 ```python
 import nevergrad as ng
@@ -66,26 +23,52 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = ng.optimizers.OnePlusOne(instrumentation=2, budget=100)
-recommendation = optimizer.optimize(square)
-print(recommendation)  # optimal args and kwargs
->>> Candidate(args=(array([0.500, 0.499]),), kwargs={})
+optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
+recommendation = optimizer.minimize(square)
+print(recommendation.value)  # recommended value
+>>> [0.49971112 0.5002944]
 ```
 
-`recommendation` holds the optimal attributes `args` and `kwargs` found by the optimizer for the provided function.
-In this example, the optimal value will be found in `recommendation.args[0]` and will be a `np.ndarray` of size 2.
+`nevergrad` can also support bounded continuous variables as well as discrete variables, and mixture of those.
+To do this, one can specify the input space:
 
-`instrumentation=n` is a shortcut to state that the function has only one variable, of dimension `n`,
-See the [instrumentation tutorial](docs/instrumentation.md) for more complex instrumentations.
-
-
-You can print the full list of optimizers with:
 ```python
 import nevergrad as ng
-print(list(sorted(ng.optimizers.registry.keys())))
+
+def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
+    # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+    return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
+
+# Instrumentation class is used for functions with multiple inputs
+# (positional and/or keywords)
+parametrization = ng.p.Instrumentation(
+    # a log-distributed scalar between 0.001 and 1.0
+    learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+    # an integer from 1 to 12
+    batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+    # either "conv" or "fc"
+    architecture=ng.p.Choice(["conv", "fc"])
+)
+
+optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=100)
+recommendation = optimizer.minimize(fake_training)
+
+# show the recommended keyword arguments of the function
+print(recommendation.kwargs)
+>>> {'learning_rate': 0.1998, 'batch_size': 4, 'architecture': 'conv'}
 ```
 
-The [optimization documentation](docs/optimization.md) contains more information on how to use several workers, take full control of the optimization through the `ask` and `tell` interface and some pieces of advice on how to choose the proper optimizer for your problem.
+Learn more on parametrization in the [**documentation**](https://facebookresearch.github.io/nevergrad/)!
+
+![Example of optimization](docs/resources/TwoPointsDE.gif)
+
+*Convergence of a population of points to the minima with two-points DE.*
+
+
+## Documentation
+
+Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
+
 
 ## Citing
 
@@ -102,4 +85,4 @@ The [optimization documentation](docs/optimization.md) contains more information
 
 ## License
 
-`nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details.
+`nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details about it.

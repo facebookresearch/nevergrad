@@ -3,18 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Dict, Any, Tuple, List, Callable
+from typing import Any, List, Callable
 from math import exp, sqrt, tanh
 import numpy as np
-from .utils import PostponedObject
-from ..instrumentation import discretization
-from ..common.decorators import Registry
+from nevergrad.parametrization import discretization
+from nevergrad.common.decorators import Registry
 
 
 registry = Registry[Callable[[np.ndarray], float]]()
 
 
-def _onemax(x: List[int]) -> float:
+def onemax(x: List[int]) -> float:
     """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
     It is originally designed for lists of bits. It just counts the number of 1,
@@ -25,7 +24,7 @@ def _onemax(x: List[int]) -> float:
     return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
-def _leadingones(x: List[int]) -> float:
+def leadingones(x: List[int]) -> float:
     """leadingones is the second most classical discrete function, adapted for minimization.
 
     Returns len(x) - number of initial 1. I.e.
@@ -39,7 +38,7 @@ def _leadingones(x: List[int]) -> float:
     return 0
 
 
-def _jump(x: List[int]) -> float:  # TODO: docstring?
+def jump(x: List[int]) -> float:  # TODO: docstring?
     """There exists variants of jump functions; we are in minimization.
 
     The principle of a jump function is that local descent does not succeed.
@@ -47,7 +46,7 @@ def _jump(x: List[int]) -> float:  # TODO: docstring?
     """
     n = len(x)
     m = n // 4
-    o = n - _onemax(x)
+    o = n - onemax(x)
     if o == n or o <= n - m:
         return n - m - o
     return o  # Deceptive part.
@@ -61,12 +60,13 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
     return float(39.16599 * len(x) + 0.5 * val + noise * np.random.normal(size=val.shape))
 
 
-class DelayedSphere(PostponedObject):
+class DelayedSphere:
+
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
-        x = args[0]
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+        x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
 
@@ -121,6 +121,12 @@ def altcigar(x: np.ndarray) -> float:
 
 
 @registry.register
+def discus(x: np.ndarray) -> float:
+    """Only one variable is very penalized."""
+    return sphere(x[1:]) + 1000000.0 * float(x[0]) ** 2
+
+
+@registry.register
 def cigar(x: np.ndarray) -> float:
     """Classical example of ill conditioned function.
 
@@ -130,11 +136,44 @@ def cigar(x: np.ndarray) -> float:
 
 
 @registry.register
+def bentcigar(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function, but bent."""
+    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0. else x[i] for i in range(len(x))])
+    return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
+
+
+@registry.register
+def multipeak(x: np.ndarray) -> float:
+    """Inspired by M. Gallagher's Gaussian peaks function."""
+    v = 10000.
+    for a in range(101):
+        x_ = np.asarray([np.cos(a + np.sqrt(i)) for i in range(len(x))])
+        v = min(v, a / 101. + np.exp(sphere(x - x_)))
+    return v
+
+
+@registry.register
 def altellipsoid(y: np.ndarray) -> float:
     """Similar to Ellipsoid, but variables in inverse order.
 
     E.g. for pointing out algorithms not invariant to the order of variables."""
     return ellipsoid(y[::-1])
+
+
+def step(s: float) -> float:
+    return float(np.exp(int(np.log(s))))
+
+
+@registry.register
+def stepellipsoid(x: np.ndarray) -> float:
+    """Classical example of ill conditioned function.
+
+    But we add a 'step', i.e. we set the gradient to zero everywhere.
+    Compared to some existing testbeds, we decided to have infinitely many steps.
+    """
+    dim = x.size
+    weights = 10 ** np.linspace(0, 6, dim)
+    return float(step(weights.dot(x ** 2)))
 
 
 @registry.register
@@ -156,6 +195,26 @@ def rastrigin(x: np.ndarray) -> float:
 
 
 @registry.register
+def bucherastrigin(x: np.ndarray) -> float:
+    """Classical multimodal function. No box-constraint penalization here."""
+    s = np.asarray([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i - 1) / (2 * (len(x) - 1)))) for i in range(len(x))])
+    cosi = float(np.sum(np.cos(2 * np.pi * s)))
+    return float(10 * (len(x) - cosi) + sphere(s))
+
+
+@registry.register
+def doublelinearslope(x: np.ndarray) -> float:
+    """We decided to use two linear slopes rather than having a constraint artificially added for
+    not having the optimum at infinity."""
+    return float(np.abs(np.sum(x)))
+
+
+@registry.register
+def stepdoublelinearslope(x: np.ndarray) -> float:
+    return step(np.abs(np.sum(x)))
+
+
+@registry.register
 def hm(x: np.ndarray) -> float:
     """New multimodal function (proposed for Nevergrad)."""
     return float((x ** 2).dot(1.1 + np.cos(1.0 / x)))
@@ -168,12 +227,14 @@ def rosenbrock(x: np.ndarray) -> float:
     return float(100 * x_diff.dot(x_diff) + x_m_1.dot(x_m_1))
 
 
+@registry.register
 def ackley(x: np.ndarray) -> float:
     dim = x.size
     sum_cos = np.sum(np.cos(2 * np.pi * x))
     return -20.0 * exp(-0.2 * sqrt(sphere(x) / dim)) - exp(sum_cos / dim) + 20 + exp(1)
 
 
+@registry.register
 def schwefel_1_2(x: np.ndarray) -> float:
     cx = np.cumsum(x)
     return sphere(cx)
@@ -250,85 +311,68 @@ def lunacek(x: np.ndarray) -> float:
 # following functions using discretization should not be used with translation/rotation
 
 
-@registry.register_with_info(no_transfrom=True)
+
+@registry.register_with_info(no_transform=True)
 def hardonemax(y: np.ndarray) -> float:
     """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return _onemax(discretization.threshold_discretization(y))
+    return onemax(discretization.threshold_discretization(y))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def hardjump(y: np.ndarray) -> float:
     """Hardjump, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return _jump(discretization.threshold_discretization(y))
+    return jump(discretization.threshold_discretization(y))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def hardleadingones(y: np.ndarray) -> float:
     """Leading ones, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return _leadingones(discretization.threshold_discretization(y))
+    return leadingones(discretization.threshold_discretization(y))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def hardonemax5(y: np.ndarray) -> float:
     """Hardonemax, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return _onemax(discretization.threshold_discretization(y, 5))
+    return onemax(discretization.threshold_discretization(y, 5))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def hardjump5(y: np.ndarray) -> float:
     """Jump, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return _jump(discretization.threshold_discretization(y, 5))
+    return jump(discretization.threshold_discretization(y, 5))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def hardleadingones5(y: np.ndarray) -> float:
     """Leadingones, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return _leadingones(discretization.threshold_discretization(y, 5))
+    return leadingones(discretization.threshold_discretization(y, 5))
 
 
-@registry.register_with_info(no_transfrom=True)
-def onemax(y: np.ndarray) -> float:
-    """Softmax discretization of onemax (This multiplies the dimension by 2)."""
-    return _onemax(discretization.softmax_discretization(y))
-
-
-@registry.register_with_info(no_transfrom=True)
-def jump(y: np.ndarray) -> float:
-    """Softmax discretization of jump (This multiplies the dimension by 2)."""
-    return _jump(discretization.softmax_discretization(y))
-
-
-@registry.register_with_info(no_transfrom=True)
-def leadingones(y: np.ndarray) -> float:
-    """Softmax discretization of leadingones (This multiplies the dimension by 2)."""
-    return _leadingones(discretization.softmax_discretization(y))
-
-
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def onemax5(y: np.ndarray) -> float:
     """Softmax discretization of onemax with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return _onemax(discretization.softmax_discretization(y, 5))
+    return onemax(discretization.softmax_discretization(y, 5))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def jump5(y: np.ndarray) -> float:
     """Softmax discretization of jump with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return _jump(discretization.softmax_discretization(y, 5))
+    return jump(discretization.softmax_discretization(y, 5))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def leadingones5(y: np.ndarray) -> float:
     """Softmax discretization of leadingones with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return _leadingones(discretization.softmax_discretization(y, 5))
+    return leadingones(discretization.softmax_discretization(y, 5))
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def genzcornerpeak(y: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 
@@ -339,7 +383,7 @@ def genzcornerpeak(y: np.ndarray) -> float:
     return value ** (-len(y) - 1)
 
 
-@registry.register_with_info(no_transfrom=True)
+@registry.register_with_info(no_transform=True)
 def minusgenzcornerpeak(y: np.ndarray) -> float:
     """One of the Genz functions, originally used in integration,
 

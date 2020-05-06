@@ -10,8 +10,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 import matplotlib
-from ..common import tools
-from ..common import testing
+from nevergrad.common import testing
+from . import utils
 matplotlib.use('Agg')
 
 
@@ -32,7 +32,7 @@ def test_get_winners_df() -> None:
     # alg1 and alg2 are a tie (mean loss .3)
     data[tuple(zip(*[(1, 2), (2, 1)]))] = .5  # type: ignore
     expected = pd.DataFrame(index=all_optimizers, columns=all_optimizers, data=data)
-    assert winners.equals(expected), f"Expected:\n{expected}\nbut got:\n{winners}"
+    winners.assert_equivalent(expected)
 
 
 def test_make_sorted_winrates() -> None:
@@ -46,7 +46,7 @@ def test_make_sorted_winrates() -> None:
     expected_data = [[.5, 1, 1, -1.],
                      [0, .5, .75, -1],
                      [0, .25, .5, -1],
-                     [-1, -1, -1, -1]]
+                     [0, 0, 0, -1]]
     winrates = winrates.fillna(-1)
     salgos = [f"alg{k}" for k in [1, 3, 2, 0]]
     expected = pd.DataFrame(index=salgos, columns=salgos, data=expected_data)
@@ -62,7 +62,7 @@ def test_create_plots_from_csv_mocked() -> None:
 
 
 def test_fight_plotter() -> None:
-    df = tools.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(
+    df = utils.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(
         optimizer_name=["OnePlusOneOptimizer", "HaltonSearch", "Powell"])
     winrates = plotting.FightPlotter.winrates_from_selection(df, ["noise_level", "budget"])
     # check data
@@ -77,11 +77,11 @@ def test_fight_plotter() -> None:
 
 def test_xp_plotter() -> None:
     opt = "OnePlusOneOptimizer"
-    df = tools.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
+    df = utils.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
     data = plotting.XpPlotter.make_data(df)
     # check data
     testing.assert_set_equal(data.keys(), {opt})
-    testing.assert_set_equal(data[opt].keys(), {"budget", "loss", "loss_std"})
+    testing.assert_set_equal(data[opt].keys(), {"budget", "loss", "loss_std", "num_eval"})
     np.testing.assert_almost_equal(data[opt]["budget"], [200, 400, 800])
     np.testing.assert_almost_equal(data[opt]["loss"], [0.4811605, 0.3920045, 0.14778369])
     np.testing.assert_almost_equal(data[opt]["loss_std"], [0.83034832, 0.73255529, 0.18551625])
@@ -103,7 +103,7 @@ def test_remove_errors() -> None:
     np.testing.assert_array_equal(output.columns, expected.columns)
     np.testing.assert_array_equal(output.index, expected.index)
     np.testing.assert_array_equal(output, expected)
-    assert isinstance(output, plotting.tools.Selector)
+    assert isinstance(output, plotting.utils.Selector)
 
 
 def test_make_style_generator() -> None:
@@ -140,6 +140,17 @@ def test_split_long_title() -> None:
 def test_compute_best_placements(positions: List[float], expected: List[float]) -> None:
     new_positions = plotting.compute_best_placements(positions, min_diff=1.)
     np.testing.assert_array_equal(new_positions, expected)
+
+
+def test_merge_parametrization_and_optimizer() -> None:
+    df = pd.DataFrame(
+        columns=["optimizer_name", "parametrization", "val"],
+        data=[["o1", "p1", 1], ["o1", "p2", 2], ["o2", "p1", 3]]
+    )
+    out = plotting.merge_parametrization_and_optimizer(utils.Selector(df))
+    assert isinstance(out, utils.Selector)
+    assert out["optimizer_name"].tolist() == ["o1,p1", "o1,p2", "o2"]
+    assert out["val"].tolist() == [1, 2, 3]
 
 
 if __name__ == "__main__":

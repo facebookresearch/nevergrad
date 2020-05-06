@@ -9,14 +9,18 @@ import copy as _copy
 from typing import Dict, Any, Optional, Callable, Tuple
 import gym
 import numpy as np
-import torch
-import torch.nn.functional as F
-from torch import nn
-from torch.utils.data import WeightedRandomSampler
-from nevergrad import instrumentation as inst
-from nevergrad.functions import utils
+from nevergrad.common.tools import pytorch_import_fix
+from nevergrad.parametrization import parameter as p
+from ..base import ExperimentFunction
 from . import base
 from . import envs
+pytorch_import_fix()
+
+# pylint: disable=wrong-import-position,wrong-import-order
+import torch as torch  # noqa
+import torch.nn.functional as F  # noqa
+from torch import nn  # noqa
+from torch.utils.data import WeightedRandomSampler  # noqa
 
 
 class RandomAgent(base.Agent):
@@ -61,19 +65,24 @@ class TorchAgent(base.Agent):
     """Agents than plays through a torch neural network
     """
 
-    def __init__(self, module: nn.Module, deterministic: bool = True, instrumentation_std: float = 0.1) -> None:
+    def __init__(self, module: nn.Module,
+                 deterministic: bool = True,
+                 instrumentation_std: float = 0.1) -> None:
         super().__init__()
         self.deterministic = deterministic
         self.module = module
         kwargs = {
-            name: inst.var.Array(*value.shape).affined(a=instrumentation_std).bounded(-10, 10, transform="arctan")
+            name: p.Array(shape=value.shape).set_mutation(sigma=instrumentation_std).set_bounds(-10, 10, method="arctan")
             for name, value in module.state_dict().items()  # type: ignore
         }  # bounded to avoid overflows
-        self.instrumentation = inst.Instrumentation(**kwargs)
+        self.instrumentation = p.Instrumentation(**kwargs)
 
     @classmethod
     def from_module_maker(
-        cls, env: gym.Env, module_maker: Callable[[Tuple[int, ...], int], nn.Module], deterministic: bool = True
+        cls,
+        env: gym.Env,
+        module_maker: Callable[[Tuple[int, ...], int], nn.Module],
+        deterministic: bool = True
     ) -> "TorchAgent":
         assert isinstance(env.action_space, gym.spaces.Discrete)
         assert isinstance(env.observation_space, gym.spaces.Box)
@@ -93,10 +102,11 @@ class TorchAgent(base.Agent):
         return TorchAgent(_copy.deepcopy(self.module), self.deterministic)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
-        self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})  # type: ignore
+        # pylint: disable=not-callable
+        self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})
 
 
-class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction):
+class TorchAgentFunction(ExperimentFunction):
     """Instrumented function which plays the agent using an environment runner
     """
 
@@ -107,10 +117,11 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
     ) -> None:
         assert isinstance(env_runner.env, gym.Env)
         self.agent = agent.copy()
-        self.runner = env_runner
+        self.runner = env_runner.copy()
         self.reward_postprocessing = reward_postprocessing
-        super().__init__(self.compute, **self.agent.instrumentation.kwargs)
-        self._descriptors.update(num_repetitions=self.runner.num_repetitions, instrumentation="")
+        super().__init__(self.compute, self.agent.instrumentation.copy().set_name(""))
+        self.register_initialization(agent=agent, env_runner=env_runner, reward_postprocessing=reward_postprocessing)
+        self._descriptors.update(num_repetitions=self.runner.num_repetitions, archi=self.agent.module.__class__.__name__)
 
     def compute(self, **kwargs: np.ndarray) -> float:
         self.agent.load_state_dict(kwargs)
@@ -123,7 +134,7 @@ class TorchAgentFunction(inst.InstrumentedFunction, utils.NoisyBenchmarkFunction
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
-    def noisefree_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """

@@ -11,8 +11,9 @@
 from typing import Optional
 import numpy as np
 import scipy.spatial
-from ...common.typetools import ArrayLike
-from ... import instrumentation as inst
+from nevergrad.common.typetools import ArrayLike
+from nevergrad.parametrization import parameter as p
+from ..base import ExperimentFunction
 from . import datasets
 
 
@@ -26,7 +27,7 @@ def _kmeans_distance(points: np.ndarray, centers: np.ndarray) -> float:
     return float(np.sum(affect))
 
 
-class Clustering(inst.InstrumentedFunction):
+class Clustering(ExperimentFunction):
     """Cost function of a clustering problem.
 
     Parameters
@@ -43,7 +44,8 @@ class Clustering(inst.InstrumentedFunction):
         if rescale:
             self._points -= np.mean(self._points, axis=0, keepdims=True)
             self._points /= np.std(self._points, axis=0, keepdims=True)
-        super().__init__(self._compute_distance, inst.var.Array(num_clusters, points.shape[1]))
+        super().__init__(self._compute_distance, p.Array(shape=(num_clusters, points.shape[1])))
+        self.register_initialization(points=points, num_clusters=num_clusters, rescale=rescale)
         self._descriptors.update(num_clusters=num_clusters, rescale=rescale)
 
     @classmethod
@@ -66,6 +68,10 @@ class Clustering(inst.InstrumentedFunction):
         assert name in ["Ruspini", "German towns"]
         points = datasets.get_data(name)
         pb = cls(points=points, num_clusters=num_clusters, rescale=rescale)
+        assert pb._initialization_kwargs is not None
+        del pb._initialization_kwargs["points"]
+        pb._initialization_kwargs["name"] = name
+        pb._initialization_func = cls.from_mlda  # type: ignore
         pb._descriptors.update(name=name)
         return pb
 
@@ -76,7 +82,7 @@ class Clustering(inst.InstrumentedFunction):
         return _kmeans_distance(self._points, centers)
 
 
-class Perceptron(inst.InstrumentedFunction):
+class Perceptron(ExperimentFunction):
     """Perceptron function
 
     Parameters
@@ -92,7 +98,8 @@ class Perceptron(inst.InstrumentedFunction):
         assert y.ndim == 1
         self._x = x
         self._y = y
-        super().__init__(self._compute_loss, inst.var.Array(10))
+        super().__init__(self._compute_loss, p.Array(shape=(10,)))
+        self.register_initialization(x=x, y=y)
 
     @classmethod
     def from_mlda(cls, name: str) -> "Perceptron":
@@ -112,6 +119,8 @@ class Perceptron(inst.InstrumentedFunction):
         data = datasets.make_perceptron_data(name)
         pb = cls(data[:, 0], data[:, 1])
         pb._descriptors.update(name=name)
+        pb._initialization_kwargs = {"name": name}
+        pb._initialization_func = cls.from_mlda  # type: ignore
         return pb
 
     def apply(self, parameters: ArrayLike) -> np.ndarray:
@@ -141,7 +150,7 @@ class Perceptron(inst.InstrumentedFunction):
         return float(np.mean((gx - self._y)**2))
 
 
-class SammonMapping(inst.InstrumentedFunction):
+class SammonMapping(ExperimentFunction):
     """Sammon mapping function
     """
 
@@ -149,7 +158,8 @@ class SammonMapping(inst.InstrumentedFunction):
         self._proximity = proximity_array
         self._proximity_2 = self._proximity**2
         self._proximity_2[self._proximity_2 == 0] = 1  # avoid ZeroDivision (for diagonal terms, or identical points)
-        super().__init__(self._compute_distance, inst.var.Array(self._proximity.shape[0], 2))
+        super().__init__(self._compute_distance, p.Array(shape=(self._proximity.shape[0], 2)))
+        self.register_initialization(proximity_array=proximity_array)
 
     @classmethod
     def from_mlda(cls, name: str, rescale: bool = False) -> "SammonMapping":
@@ -182,6 +192,8 @@ class SammonMapping(inst.InstrumentedFunction):
             proximity = scipy.spatial.distance_matrix(raw_data, raw_data)  # for Virus, the proximity matrix must be computed
         pb = cls(proximity)
         pb._descriptors.update(name=name, rescale=rescale)
+        pb._initialization_kwargs = {"name": name, "rescale": rescale}
+        pb._initialization_func = cls.from_mlda  # type: ignore
         return pb
 
     @classmethod
@@ -194,6 +206,8 @@ class SammonMapping(inst.InstrumentedFunction):
         data[:, 1] = np.imag(idata)
         instance = cls(scipy.spatial.distance_matrix(data, data))
         instance._descriptors.update(name="circle", num_points=num_points)
+        instance._initialization_kwargs = {"num_points": num_points}
+        instance._initialization_func = cls.from_2d_circle  # type: ignore
         return instance
 
     def _compute_distance(self, x: np.ndarray) -> float:
@@ -204,7 +218,7 @@ class SammonMapping(inst.InstrumentedFunction):
         return float(np.sum(norm_prox.ravel()))
 
 
-class Landscape(inst.InstrumentedFunction):
+class Landscape(ExperimentFunction):
     """Planet Earth Landscape problem defined in
     Machine Learning and Data Analysis (MLDA) Problem Set v1.0, Gallagher et al., 2018, PPSN
     https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view
@@ -225,16 +239,16 @@ class Landscape(inst.InstrumentedFunction):
     """
 
     def __init__(self, transform: Optional[str] = None) -> None:
-        super().__init__(self._get_pixel_value, inst.var.Array(1).asscalar(), inst.var.Array(1).asscalar())
-        self.instrumentation = self.instrumentation.with_name("standard")  # force descriptor update
+        super().__init__(self._get_pixel_value, p.Instrumentation(p.Scalar(), p.Scalar()).set_name("standard"))
+        self.register_initialization(transform=transform)
         self._image = datasets.get_data("Landscape")
         if transform == "gaussian":
-            variables = list(inst.var.OrderedDiscrete(list(range(x))) for x in self._image.shape)
-            self.instrumentation = inst.Instrumentation(*variables).with_name("gaussian")
+            variables = list(p.TransitionChoice(list(range(x))) for x in self._image.shape)
+            self.parametrization = p.Instrumentation(*variables).set_name("gaussian")
         elif transform == "square":
             stds = (np.array(self._image.shape) - 1.) / 2.
-            variables2 = list(inst.var.Gaussian(s, s) for s in stds)
-            self.instrumentation = inst.Instrumentation(*variables2).with_name("square")  # maybe buggy, try again?
+            variables2 = list(p.Scalar(init=s).set_mutation(sigma=s) for s in stds)
+            self.parametrization = p.Instrumentation(*variables2).set_name("square")  # maybe buggy, try again?
         elif transform is not None:
             raise ValueError(f"Unknown transform {transform}")
         self._max = float(self._image.max())

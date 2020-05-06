@@ -3,20 +3,25 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from operator import add
-from typing import List, Tuple, Dict, Any, Optional, Callable
+from typing import List, Any, Optional, Callable
 import numpy as np
-from ..common import testing
-from ..functions import ArtificialFunction
+import nevergrad as ng
+from nevergrad.common import testing
+from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import ExperimentFunction
 from . import execution
 
 
-class Function(execution.PostponedObject):
+class Function(ExperimentFunction):
 
-    def __call__(self, x: int, y: int) -> float:
+    def __init__(self) -> None:
+        super().__init__(self._func, ng.p.Instrumentation())
+
+    def _func(self, x: int, y: int) -> float:
         return x + y
 
     # pylint: disable=unused-argument
-    def get_postponing_delay(self, args: Tuple[Any, ...], kwargs: Dict[str, Any], value: float) -> float:
+    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
         return 5 - value
 
 

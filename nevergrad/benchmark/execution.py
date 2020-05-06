@@ -5,7 +5,7 @@
 import heapq
 from collections import deque
 from typing import List, Callable, Any, NamedTuple, Tuple, Dict, Optional, Deque
-from ..functions import PostponedObject  # this object only serves to provide delays that the executor must use to order jobs
+from nevergrad.functions import ExperimentFunction
 
 
 class MockedTimedJob:
@@ -42,8 +42,8 @@ class MockedTimedJob:
             self._output = self._func(*self._args, **self._kwargs)
             # compute the delay and add to queue
             self._delay = 1.
-            if isinstance(self._func, PostponedObject):
-                self._delay = max(0, self._func.get_postponing_delay(self._args, self._kwargs, self._output))
+            if isinstance(self._func, ExperimentFunction):
+                self._delay = max(0, self._func.compute_pseudotime((self._args, self._kwargs), self._output))
 
     def result(self) -> Any:
         """Return the result if "done()" is true, and raises
