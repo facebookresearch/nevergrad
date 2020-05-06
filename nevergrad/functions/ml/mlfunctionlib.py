@@ -99,7 +99,7 @@ class MLTuning(ExperimentFunction):
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
                 criterion=p.Choice(["mse", "friedman_mse", "mae"]),
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
-                regressor="decision_tree",
+                regressor=p.Choice(["mlp", "decision_tree"]),
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
@@ -116,7 +116,7 @@ class MLTuning(ExperimentFunction):
                 regressor="decision_tree",
             )        
             super().__init__(partial(self._ml_parametrization, dimension=dimension, noise_free=False,        
-                                     alpha=1.0, learning_rate="no", 
+                                     alpha=1.0, learning_rate="no", regressor="decision_tree", 
                                      activation="no", solver="no"), parametrization)
             self.evaluation_function = partial(self._ml_parametrization, dimension=dimension, criterion="mse",  # type: ignore
                                                min_samples_split=0.00001,
@@ -127,6 +127,7 @@ class MLTuning(ExperimentFunction):
             parametrization = p.Instrumentation(
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),
+                regressor="mlp",
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )        
