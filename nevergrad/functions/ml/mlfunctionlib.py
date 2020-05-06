@@ -68,7 +68,7 @@ class MLTuning(ExperimentFunction):
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
             super().__init__(partial(self._decision_tree_parametrization,
                                      noise_free=False, criterion="mse",
-                                     min_samples_split=0.00001), dimension=1, parametrization)
+                                     min_samples_split=0.00001, dimension=1), parametrization)
             self.evaluation_function = partial(self._decision_tree_parametrization,  # type: ignore
                                                noise_free=True, criterion="mse", 
                                                dimension=1, min_samples_split=0.00001)
