@@ -13,7 +13,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from sklearn.tree import DecisionTreeRegressor  # type: ignore
-from sklearn.neural_networks import MLPRegressor  # type: ignore
+from sklearn.neural_network import MLPRegressor  # type: ignore
 
 from ..base import ExperimentFunction
 from .. import utils
