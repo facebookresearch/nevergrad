@@ -243,7 +243,12 @@ def test_constraints(name: str) -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,expected", [(par.Scalar(), False), (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)]
+    "param,expected", [
+        (par.Scalar(), False),
+        (par.Scalar(lower=-1000, upper=1000).set_mutation(sigma=1), True),
+        (par.Scalar(lower=-1000, upper=1000, init=0).set_mutation(sigma=1), False),
+        (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)
+    ]
 )
 def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
     assert not any(np.abs(param.spawn_child().value) > 100 for _ in range(10))
