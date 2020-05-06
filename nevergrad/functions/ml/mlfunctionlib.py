@@ -26,7 +26,7 @@ class MLTuning(ExperimentFunction):
     """
 
     # Example of ML problem.
-    def _decision_tree_parametrization(self, dimension: int, depth: int, criterion: str, 
+    def _decision_tree_parametrization(self, depth: int, dimension: int, criterion: str, 
                                        min_samples_split: float, regressor: str, noise_free: bool):
         # 10-folds cross-validation
         num_data: int = 80
