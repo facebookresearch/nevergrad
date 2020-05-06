@@ -47,7 +47,7 @@ class MLTuning(ExperimentFunction):
             X_test = X_test.reshape(-1, dimension)
 
             if noise_free:
-                X_test = np.arange(0., 1., 60000)
+                X_test = np.arange(0., 1., 1. / 60000)
                 random_state.shuffle(X_test)
                 X_test = X_test.reshape(-1, dimension)
             y_test = np.sum(np.sin(X_test), axis=1).ravel()
