@@ -95,20 +95,7 @@ class _OnePlusOne(base.Optimizer):
                                      mutator.get_roulette(self.archive, num=2))
             return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
-<<<<<<< HEAD
-        mutation = self._parameters.mutation
-        if mutation == "gaussian":  # standard case
-            # type: ignore
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.normal(0, 1, self.dimension)
-        elif mutation == "cauchy":
-            # type: ignore
-            return self.current_bests["pessimistic"].x + self._sigma * self._rng.standard_cauchy(self.dimension)
-        elif mutation == "crossover":
-            if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                return mutator.portfolio_discrete_mutation(self.current_bests["pessimistic"].x)
-            else:
-                return mutator.crossover(self.current_bests["pessimistic"].x, mutator.get_roulette(self.archive, num=2))
-=======
+
         mutation = self.mutation
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (self._rng.normal(0, 1, self.dimension) if mutation == "gaussian" else
@@ -116,7 +103,6 @@ class _OnePlusOne(base.Optimizer):
             out = pessimistic.set_standardized_data(self._sigma * step)
             out._meta["sigma"] = self._sigma
             return out
->>>>>>> 64d46ff9065a1d9ce3e41cb9a1a742bb5f6dc699
         else:
             pessimistic_data = pessimistic.get_standardized_data(reference=ref)
             if mutation == "crossover":
@@ -185,14 +171,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         super().__init__(_OnePlusOne, locals())
 
 
-<<<<<<< HEAD
-OnePlusOne = ParametrizedOnePlusOne().with_name("OnePlusOne", register=True)
-NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").with_name("NoisyOnePlusOne", register=True)
-OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="optimistic").with_name("OptimisticNoisyOnePlusOne", register=True)
-DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").with_name("DiscreteOnePlusOne", register=True)
-OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").with_name(
-=======
+
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
@@ -200,41 +179,13 @@ CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOne
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="discrete").set_name(
->>>>>>> 64d46ff9065a1d9ce3e41cb9a1a742bb5f6dc699
     "OptimisticDiscreteOnePlusOne", register=True
 )
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling=("random", 1.0), mutation="discrete").set_name(
     "NoisyDiscreteOnePlusOne", register=True
 )
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-<<<<<<< HEAD
-    mutation="doublefastga").with_name("DoubleFastGADiscreteOnePlusOne", register=True)
-FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="fastga").with_name("FastGADiscreteOnePlusOne", register=True)
-DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="doublefastga").with_name(
-    "DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="fastga").with_name(
-    "FastGAOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").with_name(
-    "FastGANoisyDiscreteOnePlusOne", register=True
-)
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    mutation="portfolio").with_name("PortfolioDiscreteOnePlusOne", register=True)
-PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="portfolio").with_name(
-    "PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True
-)
-PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="portfolio").with_name(
-    "PortfolioNoisyDiscreteOnePlusOne", register=True
-)
-CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").with_name("CauchyOnePlusOne", register=True)
-RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="discrete", noise_handling="optimistic"
-).with_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
-=======
     mutation="doublefastga").set_name("DoubleFastGADiscreteOnePlusOne", register=True)
->>>>>>> 64d46ff9065a1d9ce3e41cb9a1a742bb5f6dc699
 RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
@@ -527,20 +478,7 @@ class _TBPSA(base.Optimizer):
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
-<<<<<<< HEAD
-            self.current_center = sum(p.x for p in self._evaluated_population[: self.mu]) / self.mu  # type: ignore
-            self.sigma = np.exp(np.sum(np.log([p._parameters[0]
-                                               for p in self._evaluated_population[: self.mu]])) / self.mu)
-            self._evaluated_population = []
-        del self._unevaluated_population[x_bytes]
 
-    def _internal_tell_not_asked(self, candidate: base.Candidate, value: float) -> None:
-        x = candidate.data
-        sigma = np.linalg.norm(x - self.current_center) / np.sqrt(self.dimension)  # educated guess
-        part = base.utils.Individual(x)
-        part._parameters = np.array([sigma])
-        self._unevaluated_population[x.tobytes()] = part
-=======
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
@@ -551,7 +489,6 @@ class _TBPSA(base.Optimizer):
         data = candidate.get_standardized_data(reference=self.parametrization)
         sigma = np.linalg.norm(data - self.current_center) / np.sqrt(self.dimension)  # educated guess
         candidate._meta["sigma"] = sigma
->>>>>>> 64d46ff9065a1d9ce3e41cb9a1a742bb5f6dc699
         self._internal_tell_candidate(candidate, value)  # go through standard pipeline
 
 
@@ -1455,13 +1392,7 @@ class Chaining(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_Chain, locals())
 
-<<<<<<< HEAD
-    def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1-self.p[0]).astype(float)
-        return self.create_candidate.from_data(data)
-=======
->>>>>>> 64d46ff9065a1d9ce3e41cb9a1a742bb5f6dc699
+
 
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
@@ -1477,23 +1408,6 @@ class cGA(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
 
-<<<<<<< HEAD
-    def __init__(self, instrumentation: Union[int, Instrumentation], budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(instrumentation, budget=budget, num_workers=num_workers)
-        num_categories = 2
-        self.p: np.ndarray = np.ones((1, self.dimension)) / num_categories
-        self.llambda = 2 * (self.budget if self.budget is not None else max(num_workers, 40))
-        self._value_candidate: Optional[Tuple[float, np.ndarray]] = None
-
-    def _internal_ask_candidate(self) -> base.Candidate:
-        unif = self._rng.uniform(size=self.dimension)
-        data = (unif > 1-self.p[0]).astype(float)
-        return self.create_candidate.from_data(data)
-
-    def _internal_tell_candidate(self, candidate: base.Candidate, value: float) -> None:
-        if self._value_candidate is None:
-            self._value_candidate = (value, candidate.data)
-=======
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -1525,7 +1439,6 @@ class cGA(base.Optimizer):
         data = candidate.get_standardized_data(reference=self.parametrization)
         if self._previous_value_candidate is None:
             self._previous_value_candidate = (value, data)
->>>>>>> 64d46ff9065a1d9ce3e41cb9a1a742bb5f6dc699
         else:
             winner, loser = self._previous_value_candidate[1], data
             if self._previous_value_candidate[0] > value:
