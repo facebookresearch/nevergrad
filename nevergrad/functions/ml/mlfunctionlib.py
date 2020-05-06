@@ -25,7 +25,7 @@ class MLTuning(ExperimentFunction):
     """
 
     # Example of ML problem.
-    def _decision_tree_parametrization(self, depth: int, criterion: str, noise_free: bool):
+    def _decision_tree_parametrization(self, depth: int, criterion: str, min_samples_split: float, noise_free: bool):
         # 10-folds cross-validation
         num_data: int = 80
         result: float = 0.
@@ -49,7 +49,8 @@ class MLTuning(ExperimentFunction):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
             # Fit regression model
-            regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion)
+            regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
+                                         min_samples_split=min_samples_split)
             regr.fit(np.asarray(X), np.asarray(y))
     
             # Predict
@@ -63,13 +64,17 @@ class MLTuning(ExperimentFunction):
         if problem_type == "1d_decision_tree_regression":
             # Only the depth
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
-            super().__init__(partial(self._decision_tree_parametrization, noise_free=False, criterion="mse"), parametrization)
-            self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True, criterion="mse")  # type: ignore
+            super().__init__(partial(self._decision_tree_parametrization,
+                                     noise_free=False, criterion="mse",
+                                     min_samples_split=0.00001), parametrization)
+            self.evaluation_function = partial(self._decision_tree_parametrization,
+                                               noise_free=True, criterion="mse", min_samples_split=0.00001)  # type: ignore
         elif problem_type == "1d_decision_tree_regression_full":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
-                criterion=p.Choice(["mse", "friedman_mse", "mae"])
+                criterion=p.Choice(["mse", "friedman_mse", "mae"]),
+                min_samples_split=ng.p.Scalar(lower=0.0000001, upper=1)
             )        
             super().__init__(partial(self._decision_tree_parametrization, noise_free=False), parametrization)
             self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True)  # type: ignore
