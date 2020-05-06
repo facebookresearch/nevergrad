@@ -67,14 +67,14 @@ class MLTuning(ExperimentFunction):
             super().__init__(partial(self._decision_tree_parametrization,
                                      noise_free=False, criterion="mse",
                                      min_samples_split=0.00001), parametrization)
-            self.evaluation_function = partial(self._decision_tree_parametrization,
-                                               noise_free=True, criterion="mse", min_samples_split=0.00001)  # type: ignore
+            self.evaluation_function = partial(self._decision_tree_parametrization,  # type: ignore
+                                               noise_free=True, criterion="mse", min_samples_split=0.00001)
         elif problem_type == "1d_decision_tree_regression_full":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
                 criterion=p.Choice(["mse", "friedman_mse", "mae"]),
-                min_samples_split=ng.p.Scalar(lower=0.0000001, upper=1)
+                min_samples_split=p.Scalar(lower=0.0000001, upper=1)
             )        
             super().__init__(partial(self._decision_tree_parametrization, noise_free=False), parametrization)
             self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True)  # type: ignore
