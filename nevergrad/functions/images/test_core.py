@@ -38,8 +38,6 @@ class Classifier(nn.Module):
 def test_images_adversarial() -> None:
     image_size = 224
     classifier = Classifier()
-    classifier.cuda()
-    classifier.eval()
     classifier = torch.nn.DataParallel(classifier, device_ids=range(torch.cuda.device_count()))
     image_folder = datasets.ImageFolder("/datasets01_101/imagenet_full_size/061417/val",
                                         transforms.Compose([transforms.Resize(image_size),
@@ -52,7 +50,7 @@ def test_images_adversarial() -> None:
                                               pin_memory=True)
     image, label = next(iter(data_loader))
     print(image.shape, label.shape)
-    params_attack = {"epsilon": 0.05, "targeted": False, "label": 3}
+    params_attack = {"model":"epsilon": 0.05, "targeted": False, "label": 3}
     func = core.Image(problem_name='adversarial', params=params_attack)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf

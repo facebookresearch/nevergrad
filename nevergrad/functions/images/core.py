@@ -17,7 +17,7 @@ import torch
 
 
 class Image(base.ExperimentFunction):
-    def __init__(self, problem_name: str = "recovering", index: int = 0, params: dict = {}) -> None:
+    def __init__(self, problem_name: str = "recovering", index: int = 0) -> None:
         """
         problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.
@@ -45,43 +45,54 @@ class Image(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
 
-        if problem_name == "adversarial":
-            self.targeted = params["targeted"] if ("targeted" in params) else False
-            self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
-            self.image_size = params["image_size"]
-            self.domain_shape = (self.image_size, self.image_size, 3)
-            self.image = params["image"]
-            self.label = params["label"]
-            self.classifier = params["classifier"]
-            # TODO: changes params
-            array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True, )
-            array.set_mutation(sigma=35)
-            array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
-            max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1),
-                                                            max_size=max_size)).set_name("")  # type: ignore
-
         super().__init__(self._loss, array)
         self.register_initialization(problem_name=problem_name, index=index)
         self._descriptors.update(problem_name=problem_name, index=index)
 
     def _loss(self, x: np.ndarray) -> float:
-        if self.problem_name == "recovering":
-            x = np.array(x, copy=False).ravel()
-            x = x.reshape(self.domain_shape)
-            assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-            # Define the loss, in case of recovering: the goal is to find the target image.
-            assert self.index == 0
-            value = np.sum(np.fabs(np.subtract(x, self.data)))
-            
-        if self.problem_name == "adversarial":
-            x = torch.Tensor(x)
-            image_adv = self.image + x
-            image_adv = image_adv.view(1, image_adv.shape).cuda()
-            output_adv = self.classifier(image_adv)
-            if self.targeted:
-                value = nn.CrossEntropyLoss(output_adv, self.label)
-            else:
-                value = -nn.CrossEntropyLoss(output_adv, self.label)
-            value = value.item()
+        assert self.problem_name == "recovering":
+        x = np.array(x, copy=False).ravel()
+        x = x.reshape(self.domain_shape)
+        assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
+        # Define the loss, in case of recovering: the goal is to find the target image.
+        assert self.index == 0
+        value = np.sum(np.fabs(np.subtract(x, self.data)))
+        return value
+
+
+class ImageAdversarial(base.ExperimentFunction):
+    def __init__(self, params: dict = {}) -> None:
+        """
+        params : needs to be detailed
+        """
+        self.problem_name = "adversarial"
+        self.targeted = params["targeted"] if ("targeted" in params) else False
+        self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
+        self.image_size = params["image_size"]
+        self.domain_shape = (self.image_size, self.image_size, 3)
+        self.image = params["image"]
+        self.label = params["label"]
+        self.classifier = params["classifier"]
+        # TODO: changes params
+        array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True, )
+        array.set_mutation(sigma=35)
+        array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
+        max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
+        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1),
+                                                        max_size=max_size)).set_name("")  # type: ignore
+
+        super().__init__(self._loss, array)
+        self.register_initialization(problem_name=self.problem_name, index=index)
+        self._descriptors.update(problem_name=self.problem_name, index=index)
+
+    def _loss(self, x: np.ndarray) -> float:
+        x = torch.Tensor(x)
+        image_adv = self.image + x
+        image_adv = image_adv.view(1, image_adv.shape).cuda()
+        output_adv = self.classifier(image_adv)
+        if self.targeted:
+            value = nn.CrossEntropyLoss(output_adv, self.label)
+        else:
+            value = -nn.CrossEntropyLoss(output_adv, self.label)
+        value = value.item()
         return value
