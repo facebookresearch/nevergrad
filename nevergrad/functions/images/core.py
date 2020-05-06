@@ -39,11 +39,6 @@ class Image(base.ExperimentFunction):
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
 
-        # if problem_name == "adversarial":
-        #     assert index <= 100  # If we have that many target images.
-        #     self.data = ..... (here we load the imagee correspnding to index and problem_name; this is
-        #         # the attacked image.)
-
         array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True, )
         array.set_mutation(sigma=35)
         array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
@@ -75,10 +70,10 @@ class Image(base.ExperimentFunction):
             x = np.array(x, copy=False).ravel()
             x = x.reshape(self.domain_shape)
             assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-
             # Define the loss, in case of recovering: the goal is to find the target image.
             assert self.index == 0
             value = np.sum(np.fabs(np.subtract(x, self.data)))
+            
         if self.problem_name == "adversarial":
             x = torch.Tensor(x)
             image_adv = self.image + x
@@ -89,5 +84,4 @@ class Image(base.ExperimentFunction):
             else:
                 value = -nn.CrossEntropyLoss(output_adv, self.label)
             value = value.item()
-        # Here we should implement "adversarial" and others.
         return value
