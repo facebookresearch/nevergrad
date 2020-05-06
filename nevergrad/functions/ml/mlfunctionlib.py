@@ -76,25 +76,25 @@ class MLTuning(ExperimentFunction):
             result += np.sum((y_test - pred_test)**2)
         return result / num_data
 
-    def __init__(self, problem_type: str):
+    def __init__(self, regressor: str, dimension: int):
         self.problem_type = problem_type
 
-        if problem_type == "1d_decision_tree_regression":
+        if regressor == "decision_tree_depth_regression":
             # Only the depth
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
             super().__init__(partial(self._ml_parametrization,
                                      noise_free=False, criterion="mse",
-                                     min_samples_split=0.00001, dimension=1,
+                                     min_samples_split=0.00001, dimension=dimension,
                                      regressor="decision_tree",
                                      alpha=1.0, learning_rate="no", 
                                      activation="no", solver="no"), parametrization)
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
                                                noise_free=True, criterion="mse", 
-                                               dimension=1, min_samples_split=0.00001,
+                                               dimension=dimension, min_samples_split=0.00001,
                                                regressor="decision_tree",        
                                                alpha=1.0, learning_rate="no", 
                                                activation="no", solver="no")
-        elif problem_type == "1d_decision_tree_regression_full":
+        elif problem_type == "decision_tree_regression":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
@@ -102,56 +102,26 @@ class MLTuning(ExperimentFunction):
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
                 regressor="decision_tree",
             )        
-            super().__init__(partial(self._ml_parametrization, dimension=1, noise_free=False,        
+            super().__init__(partial(self._ml_parametrization, dimension=dimension, noise_free=False,        
                                      alpha=1.0, learning_rate="no", 
                                      activation="no", solver="no"), parametrization)
-            self.evaluation_function = partial(self._ml_parametrization, dimension=1, criterion="mse",  # type: ignore
+            self.evaluation_function = partial(self._ml_parametrization, dimension=dimension, criterion="mse",  # type: ignore
                                                min_samples_split=0.00001,
                                                regressor="decision_tree", noise_free=True,        
                                                alpha=1.0, learning_rate="no", 
                                                activation="no", solver="no")
-        elif problem_type == "2d_decision_tree_regression_full":
-            # Adding criterion{“mse”, “friedman_mse”, “mae”} and others.
-            parametrization = p.Instrumentation(
-                depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
-                criterion=p.Choice(["mse", "friedman_mse", "mae"]),
-                min_samples_split=p.Log(lower=0.0000001, upper=1)
-            )        
-            super().__init__(partial(self._ml_parametrization, dimension=2, noise_free=False,
-                                     regressor="decision_tree",        
-                                     alpha=1.0, learning_rate="no", 
-                                     activation="no", solver="no"), parametrization)
-            self.evaluation_function = partial(self._ml_parametrization, dimension=2,  # type: ignore
-                                               regressor="decision_tree", noise_free=True,        
-                                               alpha=1.0, learning_rate="no", 
-                                               activation="no", solver="no")
-        elif problem_type == "2d_nn":
+        elif problem_type == "nn":
             parametrization = p.Instrumentation(
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )        
-            super().__init__(partial(self._ml_parametrization, dimension=2, noise_free=False,
+            super().__init__(partial(self._ml_parametrization, dimension=dimension, noise_free=False,
                                      regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1), parametrization)
-            self.evaluation_function = partial(self._ml_parametrization, dimension=2,  # type: ignore
+            self.evaluation_function = partial(self._ml_parametrization, dimension=dimension,  # type: ignore
                                                regressor="mlp", noise_free=True, 
                                                depth=-3, criterion="no", min_samples_split=0.1)
-        elif problem_type == "3d_decision_tree_regression_full":
-            # Adding criterion{“mse”, “friedman_mse”, “mae”}
-            parametrization = p.Instrumentation(
-                depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
-                criterion=p.Choice(["mse", "friedman_mse", "mae"]),
-                min_samples_split=p.Log(lower=0.0000001, upper=1)
-            )        
-            super().__init__(partial(self._ml_parametrization, dimension=3, 
-                                     regressor="decision_tree", noise_free=False,        
-                                     alpha=1.0, learning_rate="no", 
-                                     activation="no", solver="no"), parametrization)
-            self.evaluation_function = partial(self._ml_parametrization, dimension=3,  # type: ignore
-                                               regressor="decision_tree", noise_free=True,        
-                                               alpha=1.0, learning_rate="no", 
-                                               activation="no", solver="no")
         else:
             assert False, f"Problem type {problem_type} undefined!"
         self.register_initialization(problem_type=problem_type)
