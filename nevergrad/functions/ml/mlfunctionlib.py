@@ -13,6 +13,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from sklearn.tree import DecisionTreeRegressor  # type: ignore
+from sklearn.neural_networks import MLPRegressor  # type: ignore
 
 from ..base import ExperimentFunction
 from .. import utils
@@ -25,7 +26,8 @@ class MLTuning(ExperimentFunction):
     """
 
     # Example of ML problem.
-    def _decision_tree_parametrization(self, dimension: int, depth: int, criterion: str, min_samples_split: float, noise_free: bool):
+    def _decision_tree_parametrization(self, dimension: int, depth: int, criterion: str, 
+                                       min_samples_split: float, regressor: str, noise_free: bool):
         # 10-folds cross-validation
         num_data: int = 80
         result: float = 0.
@@ -51,8 +53,12 @@ class MLTuning(ExperimentFunction):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
             # Fit regression model
-            regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
-                                         min_samples_split=min_samples_split)
+            if regressor == "decision_tree":
+                regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
+                                             min_samples_split=min_samples_split)
+            elif regressor == "mlp":
+                regr = MLPRegressor(max_depth=depth, criterion=criterion,
+                                             min_samples_split=min_samples_split)
             regr.fit(np.asarray(X), np.asarray(y))
     
             # Predict
