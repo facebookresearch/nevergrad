@@ -45,6 +45,7 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         MLTuning("decision_tree_depth_regression", 3),
         MLTuning("nn", 2),
         MLTuning("nn", 2),
+        MLTuning("nn", 3),
     ]
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
               "DoubleFastGADiscreteOnePlusOne"]
