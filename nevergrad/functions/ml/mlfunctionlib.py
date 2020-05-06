@@ -90,7 +90,7 @@ class MLTuning(ExperimentFunction):
             )        
             super().__init__(partial(self._decision_tree_parametrization, dimension=1, noise_free=False), parametrization)
             self.evaluation_function = partial(self._decision_tree_parametrization, dimension=1, criterion="mse",  # type: ignore
-                                               min_samples_split=0.00001, ,
+                                               min_samples_split=0.00001,
                                                regressor="decision_tree", noise_free=True)
         elif problem_type == "2d_decision_tree_regression_full":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
