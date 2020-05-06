@@ -444,6 +444,7 @@ class Scalar(Array):
     def __init__(
         self,
         init: tp.Optional[float] = None,
+        *,
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = True
