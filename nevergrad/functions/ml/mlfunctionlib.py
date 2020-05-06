@@ -29,7 +29,7 @@ class MLTuning(ExperimentFunction):
     def _decision_tree_parametrization(self, depth: int, dimension: int, criterion: str, 
                                        min_samples_split: float, regressor: str, noise_free: bool):
         # 10-folds cross-validation
-        num_data: int = 80
+        num_data: int = 120
         result: float = 0.
         for cv in range(10):
             # All data.
@@ -47,7 +47,7 @@ class MLTuning(ExperimentFunction):
             X_test = X_test.reshape(-1, dimension)
 
             if noise_free:
-                X_test = np.arange(0., 1., 1000000)
+                X_test = np.arange(0., 1., 60000)
                 random_state.shuffle(X_test)
                 X_test = X_test.reshape(-1, dimension)
             y_test = np.sum(np.sin(X_test), axis=1).ravel()
