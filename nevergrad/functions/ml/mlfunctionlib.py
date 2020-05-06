@@ -77,7 +77,7 @@ class MLTuning(ExperimentFunction):
         return result / num_data
 
     def __init__(self, regressor: str, dimension: int):
-        self.problem_type = problem_type
+        self.regressor = regressor
 
         if regressor == "decision_tree_depth_regression":
             # Only the depth
@@ -94,7 +94,20 @@ class MLTuning(ExperimentFunction):
                                                regressor="decision_tree",        
                                                alpha=1.0, learning_rate="no", 
                                                activation="no", solver="no")
-        elif problem_type == "decision_tree_regression":
+        elif regressor == "any":
+            parametrization = p.Instrumentation(
+                depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
+                criterion=p.Choice(["mse", "friedman_mse", "mae"]),
+                min_samples_split=p.Log(lower=0.0000001, upper=1),
+                regressor="decision_tree",
+                activation=p.Choice(["identity", "logistic", "tanh", "relu"]),
+                solver=p.Choice(["lbfgs", "sgd", "adam"]),
+                learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
+                alpha=p.Log(lower=0.0000001, upper=1.),
+            )        
+            super().__init__(partial(self._ml_parametrization, dimension=dimension, noise_free=False), parametrization)
+            self.evaluation_function = partial(self._ml_parametrization, dimension=dimension, noise_free=True)        
+        elif regressor == "decision_tree_regression":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
@@ -110,7 +123,7 @@ class MLTuning(ExperimentFunction):
                                                regressor="decision_tree", noise_free=True,        
                                                alpha=1.0, learning_rate="no", 
                                                activation="no", solver="no")
-        elif problem_type == "nn":
+        elif regressor == "nn":
             parametrization = p.Instrumentation(
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),
@@ -123,5 +136,5 @@ class MLTuning(ExperimentFunction):
                                                regressor="mlp", noise_free=True, 
                                                depth=-3, criterion="no", min_samples_split=0.1)
         else:
-            assert False, f"Problem type {problem_type} undefined!"
-        self.register_initialization(problem_type=problem_type)
+            assert False, f"Problem type {regressor} undefined!"
+        self.register_initialization(regressor=regressor, dimension=dimension)
