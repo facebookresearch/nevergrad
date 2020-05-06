@@ -20,4 +20,5 @@ def test_ml_tuning() -> None:
     y3 = func.evaluation_function(x)   # returns a float
     y4 = func.evaluation_function(x)   # returns the same float
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
-
+    func2 = mlfunctionlib.MLTuning("3d_decision_tree_regression_full")
+    func2(depth=3, criterion="mse", min_samples_split=0.001)
