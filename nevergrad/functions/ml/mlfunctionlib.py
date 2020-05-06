@@ -25,26 +25,29 @@ class MLTuning(ExperimentFunction):
     """
 
     # Example of ML problem.
-    def _decision_tree_parametrization(self, depth: int, criterion: str, min_samples_split: float, noise_free: bool):
+    def _decision_tree_parametrization(self, dimension: int, depth: int, criterion: str, min_samples_split: float, noise_free: bool):
         # 10-folds cross-validation
         num_data: int = 80
         result: float = 0.
         for cv in range(10):
             # All data.
             X_all = np.arange(0., 1., 1. / num_data)
+            random_state = np.random.RandomState(17)
+            random_state.shuffle(X_all)
             
             # Training set.
             X = X_all[np.arange(num_data) % 10 != cv]
-            X = X.reshape(-1, 1)
-            y = np.sin(X).ravel()
+            X_all.
+            X = X.reshape(-1, dimension)
+            y = np.sum(np.sin(X), axis=1).ravel()
             
             # Validation set or test set (noise_free is True for test set).
             X_test = X_all[np.arange(num_data) % 10 == cv]
-            X_test = X_test.reshape(-1, 1)
+            X_test = X_test.reshape(-1, dimension)
 
             if noise_free:
                 X_test = np.arange(0., 1., 1000000).reshape(-1, 1)
-            y_test = np.sin(X_test).ravel()
+            y_test = np.sum(np.sin(X_test), axis=1).ravel()
     
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
@@ -66,9 +69,10 @@ class MLTuning(ExperimentFunction):
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
             super().__init__(partial(self._decision_tree_parametrization,
                                      noise_free=False, criterion="mse",
-                                     min_samples_split=0.00001), parametrization)
+                                     min_samples_split=0.00001), dimension=1, parametrization)
             self.evaluation_function = partial(self._decision_tree_parametrization,  # type: ignore
-                                               noise_free=True, criterion="mse", min_samples_split=0.00001)
+                                               noise_free=True, criterion="mse", 
+                                               dimension=1, min_samples_split=0.00001)
         elif problem_type == "1d_decision_tree_regression_full":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
@@ -76,8 +80,8 @@ class MLTuning(ExperimentFunction):
                 criterion=p.Choice(["mse", "friedman_mse", "mae"]),
                 min_samples_split=p.Scalar(lower=0.0000001, upper=1)
             )        
-            super().__init__(partial(self._decision_tree_parametrization, noise_free=False), parametrization)
-            self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True)  # type: ignore
+            super().__init__(partial(self._decision_tree_parametrization, dimension=1, noise_free=False), parametrization)
+            self.evaluation_function = partial(self._decision_tree_parametrization, dimensio=1, noise_free=True)  # type: ignore
         else:
             assert False, f"Problem type {problem_type} undefined!"
         self.register_initialization(problem_type=problem_type)
