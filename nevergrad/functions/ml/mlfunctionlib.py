@@ -106,7 +106,7 @@ class MLTuning(ExperimentFunction):
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )        
             super().__init__(partial(self._ml_parametrization, dimension=dimension, noise_free=False), parametrization)
-            self.evaluation_function = partial(self._ml_parametrization, dimension=dimension, noise_free=True)        
+            self.evaluation_function = partial(self._ml_parametrization, dimension=dimension, noise_free=True)  # type: ignore
         elif regressor == "decision_tree_regression":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
