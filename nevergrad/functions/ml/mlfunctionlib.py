@@ -61,7 +61,16 @@ class MLTuning(ExperimentFunction):
         self.problem_type = problem_type
 
         if problem_type == "1d_decision_tree_regression":
+            # Only the depth
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
+            super().__init__(partial(self._decision_tree_parametrization, noise_free=False, criterion="mse"), parametrization)
+            self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True, criterion="mse")  # type: ignore
+        elif problem_type == "1d_decision_tree_regression_full":
+            # Adding criterion{“mse”, “friedman_mse”, “mae”}
+            parametrization = p.Instrumentation(
+                depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
+                criterion=p.Choice(["mse", "friedman_mse", "mae"])
+            )        
             super().__init__(partial(self._decision_tree_parametrization, noise_free=False), parametrization)
             self.evaluation_function = partial(self._decision_tree_parametrization, noise_free=True)  # type: ignore
         else:
