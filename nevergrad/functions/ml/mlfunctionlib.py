@@ -37,7 +37,6 @@ class MLTuning(ExperimentFunction):
             
             # Training set.
             X = X_all[np.arange(num_data) % 10 != cv]
-            X_all.
             X = X.reshape(-1, dimension)
             y = np.sum(np.sin(X), axis=1).ravel()
             
