@@ -68,8 +68,7 @@ class MLTuning(ExperimentFunction):
                 regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
                                              min_samples_split=min_samples_split)
             elif regressor == "mlp":
-                regr = MLPRegressor(max_depth=depth, criterion=criterion,
-                                    min_samples_split=min_samples_split)
+                regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver, learning_rate=learning_rate)
             regr.fit(np.asarray(X), np.asarray(y))
     
             # Predict
