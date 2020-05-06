@@ -68,9 +68,9 @@ class ImageAdversarial(base.ExperimentFunction):
         self.problem_name = "adversarial"
         self.targeted = params["targeted"] if ("targeted" in params) else False
         self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
-        self.image_size = params["image_size"]
-        self.domain_shape = (self.image_size, self.image_size, 3)
         self.image = params["image"]
+        self.image_size = self.image.shape(0)
+        self.domain_shape = (self.image_size, self.image_size, 3)
         self.label = params["label"]
         self.classifier = params["classifier"]
         # TODO: changes params
