@@ -40,11 +40,11 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Continuous case
 
     # First, a few functions with constraints.
-    functions = [
-        MLTuning("1d_decision_tree_regression"),
-        MLTuning("1d_decision_tree_regression_full"),
-        MLTuning("2d_decision_tree_regression_full"),
-        MLTuning("3d_decision_tree_regression_full"),
+    functions = [  # Tool and dimension.
+        MLTuning("decision_tree_regression", 3),
+        MLTuning("decision_tree_depth_regression", 3),
+        MLTuning("nn", 2),
+        MLTuning("nn", 2),
     ]
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
               "DoubleFastGADiscreteOnePlusOne"]
