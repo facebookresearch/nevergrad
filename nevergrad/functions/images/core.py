@@ -96,8 +96,8 @@ class ImageAdversarial(base.ExperimentFunction):
         self.label = params["label"] if ("label" in params) else 0
         self.classifier = params["classifier"] if ("classifier" in params) else Classifier()
         # TODO: changes params
-        array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True, )
-        array.set_mutation(sigma=35)
+        array = ng.p.Array(init=np.zeros(self.domain_shape), mutable_sigma=True, )
+        array.set_mutation(sigma=self.epsilon/10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1),
