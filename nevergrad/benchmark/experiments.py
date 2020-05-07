@@ -47,8 +47,8 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
                 assert dataset[:10] != "artificial" or dimension is not None
                 assert dataset[:10] == "artificial" or dimension is None
-                print(f"regressor={regressor}, data_dimension={dimension}, dataset={dataset}")
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset)
+                print(f"What: regressor={regressor}, data_dimension={dimension}, dataset={dataset}")
                 for budget in [50, 150, 500]:
                     for num_workers in [1, 10, 50, 100]:
                         for optim in optims:
