@@ -25,6 +25,44 @@ class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     """
 
+    def get_dataset(self, dimension):
+
+        num_data: int = 120  # Training set size.
+        self.num_data = num_data
+        # Training set.
+        X = np.arange(0., 1., 1. / (num_data * dimension))
+        X = X.reshape(-1, dimension)
+        random_state = np.random.RandomState(17)
+        random_state.shuffle(X)
+        y = np.sum(np.sin(X), axis=1).ravel()
+        self.X = X
+        self.y = y
+        self.X_train = []
+        self.X_valid = []
+        self.y_train = []
+        self.y_valid = []
+        for cv in range(10):
+
+            # Training set.
+            X_train = X[np.arange(num_data) % 10 != cv].copy()
+            y_train = np.sum(np.sin(X_train), axis=1).ravel()
+            self.X_train += [X_train]
+            self.y_train += [y_train]
+
+            # Validation set or test set (noise_free is True for test set).
+            X_valid = X[np.arange(num_data) % 10 == cv].copy()
+            X_valid = X_valid.reshape(-1, dimension)
+            y_valid = np.sum(np.sin(X_valid), axis=1).ravel()
+            self.X_valid += [X_valid]
+            self.y_valid += [y_valid]
+
+        X_test = np.arange(0., 1., 1. / 60000)
+        random_state.shuffle(X_test)
+        X_test = X_test.reshape(-1, dimension)
+        y_test = np.sum(np.sin(X_test), axis=1).ravel()
+        self.X_test = X_test
+        self.y_test = y_test
+
     # Example of ML problem.
     def _ml_parametrization(self,
                             depth: int,  # Parameters for regression trees.
@@ -36,47 +74,41 @@ class MLTuning(ExperimentFunction):
                             alpha: float,
                             learning_rate: str,
                             regressor: str,  # Choice of learner.
-                            noise_free: bool):
+                            noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
+                            ):
         # 10-folds cross-validation
-        num_data: int = 120
         result: float = 0.
+        # Fit regression model
+        if regressor == "decision_tree":
+            regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
+                                         min_samples_split=min_samples_split, random_state=0)
+        else:
+            assert regressor == "mlp", f"unknown regressor {regressor}."
+            regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
+                                learning_rate=learning_rate, random_state=0)
+        if noise_free:
+            X = self.X
+            y = self.y
+            X_test = self.X_test
+            y_test = self.y_test
+            regr.fit(np.asarray(self.X), np.asarray(self.y))
+            pred_test = regr.predict(self.X_test)
+            return np.sum((self.y_test - pred_test)**2)
         for cv in range(10):
-            # All data.
-            X_all = np.arange(0., 1., 1. / num_data)
-            random_state = np.random.RandomState(17)
-            random_state.shuffle(X_all)
-            
-            # Training set.
-            X = X_all[np.arange(num_data) % 10 != cv]
-            X = X.reshape(-1, dimension)
-            y = np.sum(np.sin(X), axis=1).ravel()
-            
-            # Validation set or test set (noise_free is True for test set).
-            X_test = X_all[np.arange(num_data) % 10 == cv]
-            X_test = X_test.reshape(-1, dimension)
 
-            if noise_free:
-                X_test = np.arange(0., 1., 1. / 60000)
-                random_state.shuffle(X_test)
-                X_test = X_test.reshape(-1, dimension)
-            y_test = np.sum(np.sin(X_test), axis=1).ravel()
-    
+            X = self.X_train[cv]
+            y = self.y_train[cv]
+            X_test = self.X_valid[cv]
+            y_test = self.y_valid[cv]
+
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
     
-            # Fit regression model
-            if regressor == "decision_tree":
-                regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
-                                             min_samples_split=min_samples_split, random_state=0)
-            else:
-                assert regressor == "mlp", f"unknown regressor {regressor}."
-                regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
-                                    learning_rate=learning_rate, random_state=0)
             regr.fit(np.asarray(X), np.asarray(y))
     
             # Predict
             pred_test = regr.predict(X_test)
             result += np.sum((y_test - pred_test)**2)
-        return result / num_data  # We return a 10-fold validation error.
+        return result / self.num_data  # We return a 10-fold validation error.
 
     def __init__(self, regressor: str, dimension: int):
         """We propose different possible regressors and different dimensionalities.
@@ -84,6 +116,7 @@ class MLTuning(ExperimentFunction):
         """
         self.regressor = regressor
         self.name = regressor + f"Dim{dimension}"
+        self.get_dataset(dimension)
 
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
