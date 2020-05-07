@@ -16,6 +16,26 @@ import torch.nn as nn
 import torch
 
 
+class Normalize(nn.Module):
+    def __init__(self, mean, std):
+        super(Normalize, self).__init__()
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
+
+    def forward(self, x):
+        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
+
+
+class Classifier(nn.Module):
+    def __init__(self):
+        super(Classifier, self).__init__()
+        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+        self.model = resnet50(pretrained=True)
+
+    def forward(self, x):
+        return self.model(self.norm(x))
+
 class Image(base.ExperimentFunction):
     def __init__(self, problem_name: str = "recovering", index: int = 0) -> None:
         """
@@ -66,13 +86,15 @@ class ImageAdversarial(base.ExperimentFunction):
         params : needs to be detailed
         """
         self.problem_name = "adversarial"
+        self.index = 0
+
         self.targeted = params["targeted"] if ("targeted" in params) else False
         self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
-        self.image = params["image"]
+        self.image = params["image"] if ("image" in params) else torch.rand((224,224,3))
         self.image_size = self.image.shape(0)
         self.domain_shape = (self.image_size, self.image_size, 3)
-        self.label = params["label"]
-        self.classifier = params["classifier"]
+        self.label = params["label"] if ("label" in params) else 0
+        self.classifier = params["classifier"] if ("classifier" in params) else Classifier()
         # TODO: changes params
         array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True, )
         array.set_mutation(sigma=35)
@@ -82,8 +104,8 @@ class ImageAdversarial(base.ExperimentFunction):
                                                         max_size=max_size)).set_name("")  # type: ignore
 
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=self.problem_name, index=index)
-        self._descriptors.update(problem_name=self.problem_name, index=index)
+        self.register_initialization(problem_name=self.problem_name, index=0)
+        self._descriptors.update(problem_name=self.problem_name, index=0)
 
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
