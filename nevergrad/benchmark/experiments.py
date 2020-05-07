@@ -47,9 +47,10 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for optim in optims:
                 for dimension in [1, 2, 3]:
                     for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
-                        xp = Experiment(MLTuning(regressor, dimension), optim, num_workers=num_workers,
+                        function = MLTuning(regressor, dimension)
+                        function.add_descriptors(regressor=regressor, dimension=dimension)
+                        xp = Experiment(function, optim, num_workers=num_workers,
                                         budget=budget, seed=next(seedg))
-                        xp.add_descriptors(regressor=regressor, dimension=dimension)
                         if not xp.is_incoherent:
                              yield xp
 
