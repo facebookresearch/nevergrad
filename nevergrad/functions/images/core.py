@@ -110,7 +110,7 @@ class ImageAdversarial(base.ExperimentFunction):
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
         image_adv = torch.clamp(self.image + x,0,1)
-        image_adv = image_adv.view(1, image_adv.shape).cuda()
+        image_adv = image_adv.view(1, self.image_size,self.image_size,3).cuda()
         output_adv = self.classifier(image_adv)
         if self.targeted:
             value = nn.CrossEntropyLoss(output_adv, self.label)
