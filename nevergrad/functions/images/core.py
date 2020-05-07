@@ -70,7 +70,7 @@ class Image(base.ExperimentFunction):
         self._descriptors.update(problem_name=problem_name, index=index)
 
     def _loss(self, x: np.ndarray) -> float:
-        assert self.problem_name == "recovering":
+        assert self.problem_name == "recovering"
         x = np.array(x, copy=False).ravel()
         x = x.reshape(self.domain_shape)
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
