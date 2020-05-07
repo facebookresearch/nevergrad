@@ -174,7 +174,7 @@ class MLTuning(ExperimentFunction):
         else:
             assert False, f"Problem type {regressor} undefined!"
         
-
+        assert data_dimension is not None or dataset[:10] != "artificial"
         self.get_dataset(data_dimension, dataset)
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
