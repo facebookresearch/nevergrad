@@ -206,6 +206,7 @@ class MLTuning(ExperimentFunction):
             self.y_test = data[1][1::2]
             return
 
+        assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
         num_data: int = 120  # Training set size.
         self.num_data = num_data
         
