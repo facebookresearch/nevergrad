@@ -109,7 +109,7 @@ class ImageAdversarial(base.ExperimentFunction):
 
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
-        image_adv = self.image + x
+        image_adv = torch.clamp(self.image + x,0,1)
         image_adv = image_adv.view(1, image_adv.shape).cuda()
         output_adv = self.classifier(image_adv)
         if self.targeted:
