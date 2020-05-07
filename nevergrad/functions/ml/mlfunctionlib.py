@@ -7,7 +7,7 @@
 #import itertools
 import typing as tp
 import numpy as np
-import sklearn.datasets
+import sklearn.datasets  # type:ignore
 
 from functools import partial
 
