@@ -102,9 +102,6 @@ class MLTuning(ExperimentFunction):
         self.y_train: tp.List[tp.Any] = []
         self.y_valid: tp.List[tp.Any] = []
 
-        # Filling datasets.
-        self.get_dataset(data_dimension, dataset_name)
-
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())  
@@ -177,6 +174,11 @@ class MLTuning(ExperimentFunction):
                                                depth=-3, criterion="no", min_samples_split=0.1)
         else:
             assert False, f"Problem type {regressor} undefined!"
+        
+        # Filling datasets.
+        self.rng = self.parametrization.random_state
+        self.get_dataset(data_dimension, dataset_name)
+
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
     def get_dataset(self, data_dimension, dataset_name):
@@ -188,7 +190,7 @@ class MLTuning(ExperimentFunction):
                     }[dataset_name](return_X_y=True)
 
             # Half the dataset for training.
-            np.random.shuffle(data[0].T)  # We randomly shuffle the columns.
+            self.rng.shuffle(data[0].T)  # We randomly shuffle the columns.
             self.X = data[0][::2]
             self.y = data[1][::2]
             num_train_data = len(self.X)
@@ -210,7 +212,7 @@ class MLTuning(ExperimentFunction):
         # Training set.
         X = np.arange(0., 1., 1. / (num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
-        np.random.shuffle(X)
+        self.rng.shuffle(X)
         y = np.sum(np.sin(X), axis=1).ravel()
         self.X = X  # Training set.
         self.y = y  # Labels of the training set.
@@ -233,7 +235,7 @@ class MLTuning(ExperimentFunction):
 
         # We also generate the test set.
         X_test = np.arange(0., 1., 1. / 60000)
-        np.random.shuffle(X_test)
+        self.rng.shuffle(X_test)
         X_test = X_test.reshape(-1, data_dimension)
         y_test = np.sum(np.sin(X_test), axis=1).ravel()
         self.X_test = X_test
