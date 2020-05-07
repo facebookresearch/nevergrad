@@ -83,8 +83,6 @@ class MLTuning(ExperimentFunction):
         In each case, Nevergrad will optimize the parameters of a scikit learning.
         """
         # Dimension does not make sense if we use a real world dataset.
-        assert data_dimension is None or dataset[:10] == "artificial"
-        assert data_dimension is not None or dataset[:10] != "artificial", f"Pb with {dataset} and {data_dimension}"
         self.regressor = regressor
         self.data_dimension = data_dimension
         self.dataset = dataset
@@ -176,7 +174,7 @@ class MLTuning(ExperimentFunction):
         else:
             assert False, f"Problem type {regressor} undefined!"
         
-        assert data_dimension is not None or dataset[:10] != "artificial"
+        #assert data_dimension is not None or dataset[:10] != "artificial"
         self.get_dataset(data_dimension, dataset)
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
