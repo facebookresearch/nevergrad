@@ -20,7 +20,7 @@ def test_ml_tuning() -> None:
     y3 = func.evaluation_function(x)   # returns a float
     y4 = func.evaluation_function(x)   # returns the same float
     np.testing.assert_almost_equal(y1, 0.00118061025851494)
-    np.testing.assert_almost_equal(y3, 55.048463485574544)
+    np.testing.assert_almost_equal(y3, 0.0009174743914262424)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
     func2 = mlfunctionlib.MLTuning("decision_tree", 2)
     np.testing.assert_almost_equal(func2(depth=3, criterion="mse", min_samples_split=0.001),
@@ -38,4 +38,11 @@ def test_ml_tuning() -> None:
         func4(activation="relu", solver="adam", alpha=0.01, learning_rate="constant",
               depth=3, criterion="mse", min_samples_split=0.001,
               regressor="decision_tree"), 0.00468323299294414)
+    func5 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset_name="boston")
+    np.testing.assert_almost_equal(func5(depth=5, criterion="mse", min_samples_split=0.001),
+                                   38.412063518518956)
+    func6 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset_name="diabetes")
+    np.testing.assert_almost_equal(func6(depth=5, criterion="mse", min_samples_split=0.001),
+                                   5531.067046098633)
+
 
