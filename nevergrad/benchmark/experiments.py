@@ -46,6 +46,7 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
                 assert dataset[:10] != "artificial" or dimension is not None
+                assert dataset[:10] == "artificial" or dimension is None
                 function = MLTuning(regressor, dimension, dataset)
                 for budget in [50, 150, 500]:
                     for num_workers in [1, 10, 50, 100]:

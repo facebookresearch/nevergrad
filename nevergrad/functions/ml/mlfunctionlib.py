@@ -105,6 +105,7 @@ class MLTuning(ExperimentFunction):
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())  
+            self.get_dataset(data_dimension, dataset)
             # We optimize only the depth, so we fix all other parameters than the depth, using "partial".
             super().__init__(partial(self._ml_parametrization,
                                      noise_free=False, criterion="mse",
@@ -131,6 +132,7 @@ class MLTuning(ExperimentFunction):
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),  # Learning rate schedule.
                 alpha=p.Log(lower=0.0000001, upper=1.),  # Complexity penalization.
             )        
+            self.get_dataset(data_dimension, dataset)
             # Only the dimension is fixed, so "partial" is just used for fixing the dimension.
             # noise_free is False (meaning that we consider the cross-validation loss) during the optimization.
             super().__init__(partial(self._ml_parametrization,
@@ -146,6 +148,7 @@ class MLTuning(ExperimentFunction):
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
                 regressor="decision_tree",
             )        
+            self.get_dataset(data_dimension, dataset)
             # We use "partial" for fixing the parameters of the neural network, given that we work on the decision tree only.
             super().__init__(partial(self._ml_parametrization, data_dimension=data_dimension, noise_free=False,        
                                      alpha=1.0, learning_rate="no", regressor="decision_tree", 
@@ -165,6 +168,7 @@ class MLTuning(ExperimentFunction):
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )        
+            self.get_dataset(data_dimension, dataset)
             # And, using partial, we get rid of the parameters of the decision tree (we work on the neural net, not
             # on the decision tree).
             super().__init__(partial(self._ml_parametrization, data_dimension=data_dimension, noise_free=False,
@@ -175,16 +179,15 @@ class MLTuning(ExperimentFunction):
         else:
             assert False, f"Problem type {regressor} undefined!"
         
-        # Filling datasets.
-        self.rng = self.parametrization.random_state
-        self.get_dataset(data_dimension, dataset)
 
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
     def get_dataset(self, data_dimension, dataset):
-
+        # Filling datasets.
+        self.rng = self.parametrization.random_state
         if dataset[:10] != "artificial":
             assert dataset in ["boston", "diabetes"]
+            assert data_dimension is None
             data = {"boston": sklearn.datasets.load_boston,
                     "diabetes": sklearn.datasets.load_diabetes,
                     }[dataset](return_X_y=True)
