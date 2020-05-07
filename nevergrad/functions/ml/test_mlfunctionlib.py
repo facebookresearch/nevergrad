@@ -70,3 +70,10 @@ def test_ml_tuning() -> None:
                                    0.0004757830416897488)
 
 
+    # Testing a decision tree on cosinus.
+    func.rng.seed(17)
+    func8 = mlfunctionlib.MLTuning("decision_tree", data_dimension=3, dataset="artificialsquare")
+    np.testing.assert_almost_equal(func8(depth=5, criterion="mse", min_samples_split=0.001),
+                                   0.0021310316668696214)
+
+
