@@ -29,18 +29,23 @@ class MLTuning(ExperimentFunction):
 
         num_data: int = 120  # Training set size.
         self.num_data = num_data
+        
         # Training set.
         X = np.arange(0., 1., 1. / (num_data * dimension))
         X = X.reshape(-1, dimension)
         random_state = np.random.RandomState(17)
         random_state.shuffle(X)
         y = np.sum(np.sin(X), axis=1).ravel()
-        self.X = X
-        self.y = y
-        self.X_train = []
-        self.X_valid = []
+        self.X = X  # Training set.
+        self.y = y  # Labels of the training set.
+
+        # Variables for storing the cross-validation splits.
+        self.X_train = []  # This will be the list of training subsets.
+        self.X_valid = []  # This will be the list of validation subsets.
         self.y_train = []
         self.y_valid = []
+
+        # We generate the cross-validation subsets.
         for cv in range(10):
 
             # Training set.
@@ -56,6 +61,7 @@ class MLTuning(ExperimentFunction):
             self.X_valid += [X_valid]
             self.y_valid += [y_valid]
 
+        # We also generate the test set.
         X_test = np.arange(0., 1., 1. / 60000)
         random_state.shuffle(X_test)
         X_test = X_test.reshape(-1, dimension)
@@ -86,7 +92,8 @@ class MLTuning(ExperimentFunction):
             assert regressor == "mlp", f"unknown regressor {regressor}."
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
-        if noise_free:
+
+        if noise_free:  # noise_free is True when we want the result on the test set.
             X = self.X
             y = self.y
             X_test = self.X_test
@@ -94,6 +101,8 @@ class MLTuning(ExperimentFunction):
             regr.fit(np.asarray(self.X), np.asarray(self.y))
             pred_test = regr.predict(self.X_test)
             return np.sum((self.y_test - pred_test)**2)
+
+        # We do a cross-validation.
         for cv in range(10):
 
             X = self.X_train[cv]
@@ -108,6 +117,7 @@ class MLTuning(ExperimentFunction):
             # Predict
             pred_test = regr.predict(X_test)
             result += np.sum((y_test - pred_test)**2)
+
         return result / self.num_data  # We return a 10-fold validation error.
 
     def __init__(self, regressor: str, dimension: int):
