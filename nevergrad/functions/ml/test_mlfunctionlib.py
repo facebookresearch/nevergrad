@@ -12,6 +12,8 @@ from . import mlfunctionlib
 
 
 def test_ml_tuning() -> None:
+    # Testing a decision tree with only depth as a parameter.
+    np.random.seed(17)
     func = mlfunctionlib.MLTuning("decision_tree_depth", 1)
     x: int = 3
     y1 = func(x)  # returns a float
@@ -22,13 +24,22 @@ def test_ml_tuning() -> None:
     np.testing.assert_almost_equal(y1, 0.00118061025851494)
     np.testing.assert_almost_equal(y3, 0.0009174743914262424)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
+
+    # Testing a decision tree.
+    np.random.seed(17)
     func2 = mlfunctionlib.MLTuning("decision_tree", 2)
     np.testing.assert_almost_equal(func2(depth=3, criterion="mse", min_samples_split=0.001),
                                    0.00468323299294414)
+
+    # Testing a multi-layer perceptron.
+    np.random.seed(17)
     func3 = mlfunctionlib.MLTuning("mlp", 2)
     np.testing.assert_almost_equal(
         func3(activation="relu", solver="adam", alpha=0.01, learning_rate="constant"),
         0.0038580300812402378)
+
+    # Testing a classifier choosing between a multi-layer perceptron and a decision tree.
+    np.random.seed(17)
     func4 = mlfunctionlib.MLTuning("any", 2)
     np.testing.assert_almost_equal(
         func4(activation="relu", solver="adam", alpha=0.01, learning_rate="constant",
@@ -38,9 +49,15 @@ def test_ml_tuning() -> None:
         func4(activation="relu", solver="adam", alpha=0.01, learning_rate="constant",
               depth=3, criterion="mse", min_samples_split=0.001,
               regressor="decision_tree"), 0.00468323299294414)
+
+    # Testing a decision tree on SKLearn's Boston.
+    np.random.seed(17)
     func5 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset_name="boston")
     np.testing.assert_almost_equal(func5(depth=5, criterion="mse", min_samples_split=0.001),
                                    38.412063518518956)
+
+    # Testing a decision tree on SKLearn's Diabetes.
+    np.random.seed(17)
     func6 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset_name="diabetes")
     np.testing.assert_almost_equal(func6(depth=5, criterion="mse", min_samples_split=0.001),
                                    5531.067046098633)

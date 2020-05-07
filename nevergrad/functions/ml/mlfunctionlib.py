@@ -207,8 +207,7 @@ class MLTuning(ExperimentFunction):
         # Training set.
         X = np.arange(0., 1., 1. / (num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
-        random_state = np.random.RandomState(17)
-        random_state.shuffle(X)
+        np.random.shuffle(X)
         y = np.sum(np.sin(X), axis=1).ravel()
         self.X = X  # Training set.
         self.y = y  # Labels of the training set.
@@ -231,7 +230,7 @@ class MLTuning(ExperimentFunction):
 
         # We also generate the test set.
         X_test = np.arange(0., 1., 1. / 60000)
-        random_state.shuffle(X_test)
+        np.random.shuffle(X_test)
         X_test = X_test.reshape(-1, data_dimension)
         y_test = np.sum(np.sin(X_test), axis=1).ravel()
         self.X_test = X_test
