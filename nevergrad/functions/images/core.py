@@ -91,7 +91,7 @@ class ImageAdversarial(base.ExperimentFunction):
         self.targeted = params["targeted"] if ("targeted" in params) else False
         self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
         self.image = params["image"] if ("image" in params) else torch.rand((224,224,3))
-        self.image_size = self.image.shape(0)
+        self.image_size = self.image.shape[0]
         self.domain_shape = (self.image_size, self.image_size, 3)
         self.label = params["label"] if ("label" in params) else 0
         self.classifier = params["classifier"] if ("classifier" in params) else Classifier()
