@@ -90,6 +90,7 @@ class MLTuning(ExperimentFunction):
         self._descriptors: tp.Dict[str, tp.Any] = {}
         self.add_descriptors(regressor=regressor, data_dimension=data_dimension)
         self.name = regressor + f"Dim{data_dimension}"
+        self.num_data: int = 0
 
         # Variables for storing the training set and the test set.
         self.X: tp.List[tp.Any] = []
