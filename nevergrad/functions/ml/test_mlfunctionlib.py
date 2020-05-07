@@ -14,7 +14,7 @@ from . import mlfunctionlib
 def test_ml_tuning() -> None:
     # Testing a decision tree with only depth as a parameter.
     np.random.seed(17)
-    func = mlfunctionlib.MLTuning("decision_tree_depth", 1)
+    func = mlfunctionlib.MLTuning(regressor="decision_tree_depth", data_dimension=1, dataset="artificial")
     x: int = 3
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns the same float
@@ -27,20 +27,20 @@ def test_ml_tuning() -> None:
 
     # Testing a decision tree.
     np.random.seed(17)
-    func2 = mlfunctionlib.MLTuning("decision_tree", 2)
+    func2 = mlfunctionlib.MLTuning(regressor="decision_tree", data_dimension=12, dataset="artificial")
     np.testing.assert_almost_equal(func2(depth=3, criterion="mse", min_samples_split=0.001),
-                                   0.004715789566064921)
+                                   0.16883367564891116)
 
     # Testing a multi-layer perceptron.
     func.rng.seed(17)
-    func3 = mlfunctionlib.MLTuning("mlp", 2)
+    func3 = mlfunctionlib.MLTuning(regressor="mlp", data_dimension=2, dataset="artificial")
     np.testing.assert_almost_equal(
         func3(activation="relu", solver="adam", alpha=0.01, learning_rate="constant"),
         0.003822067429702949)
 
     # Testing a classifier choosing between a multi-layer perceptron and a decision tree.
     func.rng.seed(17)
-    func4 = mlfunctionlib.MLTuning("any", 2)
+    func4 = mlfunctionlib.MLTuning(regressor="any", data_dimension=2, dataset="artificial")
     np.testing.assert_almost_equal(
         func4(activation="relu", solver="adam", alpha=0.01, learning_rate="constant",
               depth=3, criterion="mse", min_samples_split=0.001, regressor="mlp"),
@@ -52,28 +52,27 @@ def test_ml_tuning() -> None:
 
     # Testing a decision tree on SKLearn's Boston.
     func.rng.seed(17)
-    func5 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset="boston")
+    func5 = mlfunctionlib.MLTuning(regressor="decision_tree", data_dimension=None, dataset="boston")
     np.testing.assert_almost_equal(func5(depth=5, criterion="mse", min_samples_split=0.001),
                                    34.460213262464116)
 
     # Testing a decision tree on SKLearn's Diabetes.
     func.rng.seed(17)
-    func6 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset="diabetes")
+    func6 = mlfunctionlib.MLTuning(regressor="decision_tree", data_dimension=None, dataset="diabetes")
     np.testing.assert_almost_equal(func6(depth=5, criterion="mse", min_samples_split=0.001),
                                    5169.578358315828)
 
 
     # Testing a decision tree on cosinus.
     func.rng.seed(17)
-    func7 = mlfunctionlib.MLTuning("decision_tree", data_dimension=3, dataset="artificialcos")
+    func7 = mlfunctionlib.MLTuning(regressor="decision_tree", data_dimension=3, dataset="artificialcos")
     np.testing.assert_almost_equal(func7(depth=5, criterion="mse", min_samples_split=0.001),
                                    0.0004757830416897488)
 
 
     # Testing a decision tree on cosinus.
     func.rng.seed(17)
-    func8 = mlfunctionlib.MLTuning("decision_tree", data_dimension=3, dataset="artificialsquare")
+    func8 = mlfunctionlib.MLTuning(regressor="decision_tree", data_dimension=3, dataset="artificialsquare")
     np.testing.assert_almost_equal(func8(depth=5, criterion="mse", min_samples_split=0.001),
                                    0.0021310316668696214)
-
 
