@@ -248,10 +248,3 @@ class MLTuning(ExperimentFunction):
         y_test = np.sum(target_function(X_test), axis=1).ravel()
         self.X_test = X_test
         self.y_test = y_test
-
-    def copy(self):
-        output = self.__class__(regressor=self.regression, dataset=self.dataset, data_dimension=self.data_dimension)
-        output._descriptors = self.descriptors
-        output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
-        return output
-
