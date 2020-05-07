@@ -19,7 +19,7 @@ from ..base import ExperimentFunction
 from .. import utils
 from .. import corefuncs
 
-EF = tp.TypeVar("EF", bound="ExperimentFunction")
+# EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
 
 class MLTuning(ExperimentFunction):
@@ -121,8 +121,8 @@ class MLTuning(ExperimentFunction):
             super().__init__(partial(self._ml_parametrization,
                                      data_dimension=data_dimension, noise_free=False), parametrization)
             # For the evaluation we use the test set, which is big, so noise_free = True.
-            self.evaluation_function = partial(self._ml_parametrization, data_dimension=data_dimension,
-                                               noise_free=True)  # type: ignore
+            self.evaluation_function = partial(self._ml_parametrization, data_dimension=data_dimension,  # type: ignore
+                                               noise_free=True)  
         elif regressor == "decision_tree":
             # We specify below the list of hyperparameters for the decision trees.
             parametrization = p.Instrumentation(
@@ -162,7 +162,7 @@ class MLTuning(ExperimentFunction):
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
 
-    def copy(self: EF) -> EF:
+    def copy(self):
         """Provides a new equivalent instance of the class, possibly with
         different random initialization, to provide different equivalent test cases
         when using different seeds.
