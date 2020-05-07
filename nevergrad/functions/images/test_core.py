@@ -39,10 +39,10 @@ def test_images_adversarial() -> None:
     image_size = 224
     classifier = Classifier()
     classifier = torch.nn.DataParallel(classifier, device_ids=range(torch.cuda.device_count()))
-    image = torch.rand((image_size, image_size, 3))
+    image = torch.rand((3,image_size, image_size))
     params_attack = {"image": image, "classifier": classifier, "epsilon": 0.05, "targeted": False, "label": 3}
     func = core.ImageAdversarial(params=params_attack)
-    x  = np.zeros((image_size,image_size,3))
+    x  = np.zeros((3,image_size,image_size))
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
     other_func = func.copy()

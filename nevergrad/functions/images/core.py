@@ -90,9 +90,9 @@ class ImageAdversarial(base.ExperimentFunction):
 
         self.targeted = params["targeted"] if ("targeted" in params) else False
         self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
-        self.image = params["image"] if ("image" in params) else torch.rand((224,224,3))
-        self.image_size = self.image.shape[0]
-        self.domain_shape = (self.image_size, self.image_size, 3)
+        self.image = params["image"] if ("image" in params) else torch.rand((3,224,224))
+        #self.image_size = self.image.shape[0]
+        self.domain_shape = self.image.shape#(3,self.image_size, self.image_size)
         self.label = params["label"] if ("label" in params) else 0
         self.classifier = params["classifier"] if ("classifier" in params) else Classifier()
         # TODO: changes params
@@ -100,7 +100,7 @@ class ImageAdversarial(base.ExperimentFunction):
         array.set_mutation(sigma=self.epsilon/10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1),
+        array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2),
                                                         max_size=max_size)).set_name("")  # type: ignore
 
         super().__init__(self._loss, array)
