@@ -1661,7 +1661,7 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 @registry.register
 class Shiwa(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -1676,3 +1676,27 @@ class Shiwa(NGO):
                     self.optims = [CMA(self.parametrization, budget, num_workers)]
             else:
                 self.optims = [NGO(self.parametrization, budget, num_workers)]
+
+
+@registry.register
+class Alacrite(NGO):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            self.optims = [RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)]
+        else:
+            if not self.parametrization.descriptors.metrizable:
+                if self.dimension < 60:
+                    self.optims = [NGO(self.parametrization, budget, num_workers)]
+                else:
+                    specific_optimizer = ConfSplitOptimizer(num_optims=self.dimension // 40).set_name("specific")
+                    self.optims = [specific_optimizer(self.parametrization, budget, num_workers)]
+            else:
+                if self.dimension > 60:
+                    specific_optimizer = ConfSplitOptimizer(num_optims=self.dimension // 40).set_name("specific")
+                    self.optims = [specific_optimizer(self.parametrization, budget, num_workers)]
+                else:
+                    self.optims = [NGO(self.parametrization, budget, num_workers)]
