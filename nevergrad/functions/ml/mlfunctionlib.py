@@ -185,7 +185,9 @@ class MLTuning(ExperimentFunction):
             data = {"boston": sklearn.datasets.load_boston,
                     "diabetes": sklearn.datasets.load_diabetes,
                     }[dataset_name](return_X_y=True)
+
             # Half the dataset for training.
+            np.random.shuffle(data[0].T)  # We randomly shuffle the columns.
             self.X = data[0][::2]
             self.y = data[1][::2]
             num_train_data = len(self.X)
