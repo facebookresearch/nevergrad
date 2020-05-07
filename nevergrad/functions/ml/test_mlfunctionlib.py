@@ -24,7 +24,7 @@ def test_ml_tuning() -> None:
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
     func2 = mlfunctionlib.MLTuning("decision_tree_regression", 2)
     np.testing.assert_almost_equal(func2(depth=3, criterion="mse", min_samples_split=0.001),
-                                   0.011687671501421443, decimal=2)
+                                   0.011687671501421443)
     func3 = mlfunctionlib.MLTuning("mlp", 2)
     np.testing.assert_almost_equal(
         func3(activation="relu", solver="adam", alpha=0.01, learning_rate="constant"),
