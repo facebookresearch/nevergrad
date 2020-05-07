@@ -42,13 +42,12 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
               "DoubleFastGADiscreteOnePlusOne"]
-    for budget in [50, 150, 500]:
-        for num_workers in [1, 10, 50, 100]:
-            for optim in optims:
-                for dimension in [1, 2, 3]:
-                    for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
-                        function = MLTuning(regressor, dimension)
-                        function.add_descriptors(regressor=regressor, dimension=dimension)
+    for dimension in [1, 2, 3]:
+        for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
+            function = MLTuning(regressor, dimension)
+            for budget in [50, 150, 500]:
+                for num_workers in [1, 10, 50, 100]:
+                    for optim in optims:
                         xp = Experiment(function, optim, num_workers=num_workers,
                                         budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
