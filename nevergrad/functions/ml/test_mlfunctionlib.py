@@ -52,14 +52,21 @@ def test_ml_tuning() -> None:
 
     # Testing a decision tree on SKLearn's Boston.
     func.rng.seed(17)
-    func5 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset_name="boston")
+    func5 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset="boston")
     np.testing.assert_almost_equal(func5(depth=5, criterion="mse", min_samples_split=0.001),
                                    34.460213262464116)
 
     # Testing a decision tree on SKLearn's Diabetes.
     func.rng.seed(17)
-    func6 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset_name="diabetes")
+    func6 = mlfunctionlib.MLTuning("decision_tree", data_dimension=None, dataset="diabetes")
     np.testing.assert_almost_equal(func6(depth=5, criterion="mse", min_samples_split=0.001),
                                    5169.578358315828)
+
+
+    # Testing a decision tree on cosinus.
+    func.rng.seed(17)
+    func7 = mlfunctionlib.MLTuning("decision_tree", data_dimension=3, dataset="artificialcos")
+    np.testing.assert_almost_equal(func7(depth=5, criterion="mse", min_samples_split=0.001),
+                                   0.0004757830416897488)
 
 

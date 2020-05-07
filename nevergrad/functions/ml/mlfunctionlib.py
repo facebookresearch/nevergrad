@@ -79,12 +79,12 @@ class MLTuning(ExperimentFunction):
 
         return result / self.num_data  # We return a 10-fold validation error.
 
-    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset_name: str = "artificial"):
+    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset: str = "artificial"):
         """We propose different possible regressors and different dimensionalities.
         In each case, Nevergrad will optimize the parameters of a scikit learning.
         """
         # Dimension does not make sense if we use a real world dataset.
-        assert data_dimension is None or dataset_name == "artificial"
+        assert data_dimension is None or dataset[:10] == "artificial"
         self.regressor = regressor
         self.data_dimension = data_dimension
         self._descriptors: tp.Dict[str, tp.Any] = {}
@@ -177,17 +177,17 @@ class MLTuning(ExperimentFunction):
         
         # Filling datasets.
         self.rng = self.parametrization.random_state
-        self.get_dataset(data_dimension, dataset_name)
+        self.get_dataset(data_dimension, dataset)
 
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
-    def get_dataset(self, data_dimension, dataset_name):
+    def get_dataset(self, data_dimension, dataset):
 
-        if dataset_name != "artificial":
-            assert dataset_name in ["boston", "diabetes"]
+        if dataset[:10] != "artificial":
+            assert dataset in ["boston", "diabetes"]
             data = {"boston": sklearn.datasets.load_boston,
                     "diabetes": sklearn.datasets.load_diabetes,
-                    }[dataset_name](return_X_y=True)
+                    }[dataset](return_X_y=True)
 
             # Half the dataset for training.
             self.rng.shuffle(data[0].T)  # We randomly shuffle the columns.
@@ -196,7 +196,7 @@ class MLTuning(ExperimentFunction):
             num_train_data = len(self.X)
             self.num_data = num_train_data
             for cv in range(10):
-                train_range = np.arange(num_train_data) % 10 != cv 
+                train_range = np.arange(num_train_data) % 10 != cv
                 valid_range = np.arange(num_train_data) % 10 == cv
                 self.X_train += [self.X[train_range]]
                 self.y_train += [self.y[train_range]]
@@ -213,6 +213,12 @@ class MLTuning(ExperimentFunction):
         X = np.arange(0., 1., 1. / (num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
         self.rng.shuffle(X)
+
+        target_function = {
+                "artificial": np.sin,
+                "artificialcos": np.cos,
+                "artificialsquare": np.square,
+                }[dataset]
         y = np.sum(np.sin(X), axis=1).ravel()
         self.X = X  # Training set.
         self.y = y  # Labels of the training set.
@@ -222,14 +228,14 @@ class MLTuning(ExperimentFunction):
 
             # Training set.
             X_train = X[np.arange(num_data) % 10 != cv].copy()
-            y_train = np.sum(np.sin(X_train), axis=1).ravel()
+            y_train = np.sum(target_function(X_train), axis=1).ravel()
             self.X_train += [X_train]
             self.y_train += [y_train]
 
             # Validation set or test set (noise_free is True for test set).
             X_valid = X[np.arange(num_data) % 10 == cv].copy()
             X_valid = X_valid.reshape(-1, data_dimension)
-            y_valid = np.sum(np.sin(X_valid), axis=1).ravel()
+            y_valid = np.sum(target_function(X_valid), axis=1).ravel()
             self.X_valid += [X_valid]
             self.y_valid += [y_valid]
 
@@ -237,6 +243,6 @@ class MLTuning(ExperimentFunction):
         X_test = np.arange(0., 1., 1. / 60000)
         self.rng.shuffle(X_test)
         X_test = X_test.reshape(-1, data_dimension)
-        y_test = np.sum(np.sin(X_test), axis=1).ravel()
+        y_test = np.sum(target_function(X_test), axis=1).ravel()
         self.X_test = X_test
         self.y_test = y_test
