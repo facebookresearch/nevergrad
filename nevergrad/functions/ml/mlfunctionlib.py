@@ -85,7 +85,7 @@ class MLTuning(ExperimentFunction):
         """
         self.regressor = regressor
         self.data_dimension = data_dimension
-        self._descriptors: tp.Optional[utils.Descriptors] = None
+        self._descriptors: tp.Dict[str, tp.Any] = {}
         self.add_descriptors(regressor=regressor, data_dimension=data_dimension)
         self.name = regressor + f"Dim{data_dimension}"
 
