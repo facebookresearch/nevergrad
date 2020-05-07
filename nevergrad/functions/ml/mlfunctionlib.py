@@ -80,6 +80,7 @@ class MLTuning(ExperimentFunction):
 
     def __init__(self, regressor: str, dimension: int):
         self.regressor = regressor
+        self.name = regressor + f"Dim{dimension}"
 
         if regressor == "decision_tree_depth_regression":
             # Only the depth
