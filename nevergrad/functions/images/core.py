@@ -14,6 +14,7 @@ from nevergrad.common.typetools import ArrayLike
 from .. import base
 import torch.nn as nn
 import torch
+from torchvision.models import resnet50
 
 
 class Normalize(nn.Module):
@@ -35,6 +36,7 @@ class Classifier(nn.Module):
 
     def forward(self, x):
         return self.model(self.norm(x))
+
 
 class Image(base.ExperimentFunction):
     def __init__(self, problem_name: str = "recovering", index: int = 0) -> None:
@@ -85,36 +87,35 @@ class ImageAdversarial(base.ExperimentFunction):
         """
         params : needs to be detailed
         """
-        self.problem_name = "adversarial"
-        self.index = 0
-
         self.targeted = params["targeted"] if ("targeted" in params) else False
         self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
-        self.image = params["image"] if ("image" in params) else torch.rand((3,224,224))
-        #self.image_size = self.image.shape[0]
-        self.domain_shape = self.image.shape#(3,self.image_size, self.image_size)
-        self.label = params["label"] if ("label" in params) else 0
+        self.image = params["image"] if ("image" in params) else torch.rand((3, 224, 224))
+        self.image_size = self.image.shape[1]
+        self.domain_shape = self.image.shape  # (3,self.image_size, self.image_size)
+        self.label = torch.Tensor([params["label"]]) if ("label" in params) else torch.Tensor([0])
+        self.label = self.label.long()
         self.classifier = params["classifier"] if ("classifier" in params) else Classifier()
+        self.criterion = nn.CrossEntropyLoss()
         # TODO: changes params
         array = ng.p.Array(init=np.zeros(self.domain_shape), mutable_sigma=True, )
-        array.set_mutation(sigma=self.epsilon/10)
+        array.set_mutation(sigma=self.epsilon / 10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2),
                                                         max_size=max_size)).set_name("")  # type: ignore
 
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=self.problem_name, index=0)
-        self._descriptors.update(problem_name=self.problem_name, index=0)
+        self.register_initialization(params=params)
+        self._descriptors.update(params=params)
 
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
-        image_adv = torch.clamp(self.image + x,0,1)
-        image_adv = image_adv.view(1, self.image_size,self.image_size,3)
+        image_adv = torch.clamp(self.image + x, 0, 1)
+        image_adv = image_adv.view(1, 3, self.image_size, self.image_size)
         output_adv = self.classifier(image_adv)
         if self.targeted:
-            value = nn.CrossEntropyLoss(output_adv, self.label)
+            value = self.criterion(output_adv, self.label)
         else:
-            value = -nn.CrossEntropyLoss(output_adv, self.label)
+            value = -self.criterion(output_adv, self.label)
         value = value.item()
         return value
