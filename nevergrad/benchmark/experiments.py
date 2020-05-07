@@ -315,6 +315,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
             noise_level = 100
     else:
         noise_level = 0
+    optims = ["Alacrite", "Shiwa", "CMA", "OnePlusOne","TBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
         for rotation in [True, False]
