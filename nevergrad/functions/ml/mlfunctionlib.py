@@ -7,6 +7,8 @@
 #import itertools
 import typing as tp
 import numpy as np
+import sklearn.datasets
+
 from functools import partial
 
 from nevergrad.parametrization import parameter as p
@@ -76,10 +78,12 @@ class MLTuning(ExperimentFunction):
 
         return result / self.num_data  # We return a 10-fold validation error.
 
-    def __init__(self, regressor: str, dimension: int):
+    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset_name: str = "artificial"):
         """We propose different possible regressors and different dimensionalities.
         In each case, Nevergrad will optimize the parameters of a scikit learning.
         """
+        # Dimension does not make sense if we use a real world dataset.
+        assert data_dimension is None or dataset_name == "artificial"
         self.regressor = regressor
         self.name = regressor + f"Dim{dimension}"
 
@@ -94,7 +98,7 @@ class MLTuning(ExperimentFunction):
         self.y_valid: tp.List[tp.Any] = []
 
         # Filling datasets.
-        self.get_dataset(dimension)
+        self.get_dataset(data_dimension, dataset_name)
 
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
@@ -168,7 +172,27 @@ class MLTuning(ExperimentFunction):
             assert False, f"Problem type {regressor} undefined!"
         self.register_initialization(regressor=regressor, dimension=dimension)
 
-    def get_dataset(self, dimension):
+    def get_dataset(self, data_dimension, dataset_name):
+
+        if dataset_name != "artificial":
+            assert dataset_name in ["boston", "diabetes"]
+            data = {"boston": sklearn.datasets.load_boston,
+                    "diabetes": sklearn.datasets.load_diabetes,
+                    }[dataset_name](return_X_y=True)
+            # Half the dataset for training.
+            self.X = data[0][::2]
+            self.y = data[1][::2]
+            num_train_data = len(self.X)
+            for cv in range(10):
+                train_range = np.arange(num_train_data) % 20 != cv 
+                valid_range = np.arange(num_data) % 20 == cv
+                self.X_train += [self.X[train_range]]
+                self.y_train += [self.y[train_range]]
+                self.X_valid += [self.X[valid_range]]
+                self.y_valid += [self.y[valid_range]]
+            self.X_test = data[0][1::2]
+            self.y_test = data[1][1::2]
+            return
 
         num_data: int = 120  # Training set size.
         self.num_data = num_data
