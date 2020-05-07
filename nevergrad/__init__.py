@@ -12,4 +12,4 @@ from .parametrization import parameter as p
 __all__ = ["optimizers", "families", "callbacks", "p"]
 
 
-__version__ = "0.4.0.post3"
+__version__ = "0.4.1"

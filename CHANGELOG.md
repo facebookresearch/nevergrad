@@ -2,15 +2,19 @@
 
 ## master
 
+
+## 0.4.1 (2019-05-07)
+
 - `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
 - `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
 - Quasi-random samplers (`LHSSearch`, `HammersleySearch`, `HaltonSearch` etc...) now sample in the full range of bounded
-  variables when the `full_range_sampling` is `True` [598](https://github.com/facebookresearch/nevergrad/pull/598).
+  variables when the `full_range_sampling` is `True` [#598](https://github.com/facebookresearch/nevergrad/pull/598).
   This required some ugly hacks, help is most welcome to find nices solutions.
 - `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
-- Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [599](https://github.com/facebookresearch/nevergrad/pull/599).
-- Moved the `Selector` dataframe overlay so that basic requirements do not include `pandas` (only necessary for benchmarks) [609](https://github.com/facebookresearch/nevergrad/pull/609)
+- Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [#599](https://github.com/facebookresearch/nevergrad/pull/599).
+- Moved the `Selector` dataframe overlay so that basic requirements do not include `pandas` (only necessary for benchmarks) [#609](https://github.com/facebookresearch/nevergrad/pull/609)
 - Changed the version name pattern (removed the `v`) to unify with `pypi` versions. Expect more frequent intermediary versions to be pushed (deployment has now been made pseudo-automatic).
+- Started implementing more ML-oriented testbeds [#642](https://github.com/facebookresearch/nevergrad/pull/642)
 
 
 ## v0.4.0 (2019-03-09)
