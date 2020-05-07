@@ -19,6 +19,7 @@ from ..base import ExperimentFunction
 from .. import utils
 from .. import corefuncs
 
+EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
 
 class MLTuning(ExperimentFunction):
@@ -156,3 +157,15 @@ class MLTuning(ExperimentFunction):
         else:
             assert False, f"Problem type {regressor} undefined!"
         self.register_initialization(regressor=regressor, dimension=dimension)
+
+
+    def copy(self: EF) -> EF:
+        """Provides a new equivalent instance of the class, possibly with
+        different random initialization, to provide different equivalent test cases
+        when using different seeds.
+        """
+        assert self.__class__ == MLTuning
+        output = self.__class__(self.function, self.parametrization.copy())
+        output._descriptors = self.descriptors
+        output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+        return output
