@@ -308,8 +308,15 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
+    if noise:
+        if hd:
+            noise_level = 100000
+        else:
+            noise_level = 100
+    else:
+        noise_level = 0
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
@@ -321,6 +328,9 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         budgets = [10, 20, 40]
     if hd:
         optims += ["SplitOptimizer9", "SplitOptimizer5", "SplitOptimizer13"]
+    if hd and noise:
+        optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
+        optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -350,6 +360,14 @@ def yasmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yahdbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     internal_generator = yabbob(seed, hd=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    internal_generator = yabbob(seed, hd=True, noise=True)
     for xp in internal_generator:
         yield xp
 
