@@ -85,6 +85,7 @@ class MLTuning(ExperimentFunction):
         """
         self.regressor = regressor
         self.data_dimension = data_dimension
+        self.add_descriptors(regressor=regressor, data_dimension=data_dimension)
         self.name = regressor + f"Dim{data_dimension}"
 
         if regressor == "decision_tree_depth":
@@ -162,13 +163,13 @@ class MLTuning(ExperimentFunction):
         self.register_initialization(regressor=regressor, data_dimension=data_dimension)
 
 
-    def copy(self):
-        """Provides a new equivalent instance of the class, possibly with
-        different random initialization, to provide different equivalent test cases
-        when using different seeds.
-        """
-        assert self.__class__ == MLTuning
-        output = self.__class__(self.regressor, self.data_dimension)
-        output._descriptors = self.descriptors
-        output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
-        return output
+#     def copy(self):
+#         """Provides a new equivalent instance of the class, possibly with
+#         different random initialization, to provide different equivalent test cases
+#         when using different seeds.
+#         """
+#         assert self.__class__ == MLTuning
+#         output = self.__class__(self.regressor, self.data_dimension)
+#         output._descriptors = self.descriptors
+#         output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+#         return output
