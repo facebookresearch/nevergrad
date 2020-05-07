@@ -42,6 +42,7 @@ def test_images_adversarial() -> None:
     image = torch.rand((image_size, image_size, 3))
     params_attack = {"image": image, "classifier": classifier, "epsilon": 0.05, "targeted": False, "label": 3}
     func = core.ImageAdversarial(params=params_attack)
+    x  = np.zeros((image_size,image_size,3))
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
     other_func = func.copy()
