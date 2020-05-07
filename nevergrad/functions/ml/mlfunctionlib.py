@@ -98,7 +98,7 @@ class MLTuning(ExperimentFunction):
         self.y_valid: tp.List[tp.Any] = []
 
         # Filling datasets.
-        self.get_dataset(dimension)
+        self.get_dataset(data_dimension)
 
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
