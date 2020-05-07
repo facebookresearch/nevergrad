@@ -84,7 +84,7 @@ class MLTuning(ExperimentFunction):
         """
         # Dimension does not make sense if we use a real world dataset.
         assert data_dimension is None or dataset[:10] == "artificial"
-        assert data_dimension is not None or dataset[:10] != "artificial"
+        assert data_dimension is not None or dataset[:10] != "artificial", f"Pb with {dataset} and {data_dimension}"
         self.regressor = regressor
         self.data_dimension = data_dimension
         self._descriptors: tp.Dict[str, tp.Any] = {}
