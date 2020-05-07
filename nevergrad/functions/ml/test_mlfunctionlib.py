@@ -12,7 +12,7 @@ from . import mlfunctionlib
 
 
 def test_ml_tuning() -> None:
-    func = mlfunctionlib.MLTuning("decision_tree_depth_regression", 1)
+    func = mlfunctionlib.MLTuning("decision_tree_depth", 1)
     x: int = 3
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns the same float
@@ -22,7 +22,7 @@ def test_ml_tuning() -> None:
     np.testing.assert_almost_equal(y1, 0.00118061025851494)
     np.testing.assert_almost_equal(y3, 4.6543281260653915)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
-    func2 = mlfunctionlib.MLTuning("decision_tree_regression", 2)
+    func2 = mlfunctionlib.MLTuning("decision_tree", 2)
     np.testing.assert_almost_equal(func2(depth=3, criterion="mse", min_samples_split=0.001),
                                    0.011687671501421443)
     func3 = mlfunctionlib.MLTuning("mlp", 2)

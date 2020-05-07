@@ -82,7 +82,7 @@ class MLTuning(ExperimentFunction):
         self.regressor = regressor
         self.name = regressor + f"Dim{dimension}"
 
-        if regressor == "decision_tree_depth_regression":
+        if regressor == "decision_tree_depth":
             # Only the depth
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())        
             super().__init__(partial(self._ml_parametrization,
@@ -110,7 +110,7 @@ class MLTuning(ExperimentFunction):
             )        
             super().__init__(partial(self._ml_parametrization, dimension=dimension, noise_free=False), parametrization)
             self.evaluation_function = partial(self._ml_parametrization, dimension=dimension, noise_free=True)  # type: ignore
-        elif regressor == "decision_tree_regression":
+        elif regressor == "decision_tree":
             # Adding criterion{“mse”, “friedman_mse”, “mae”}
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
