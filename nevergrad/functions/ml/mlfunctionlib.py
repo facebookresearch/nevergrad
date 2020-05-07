@@ -36,14 +36,9 @@ class MLTuning(ExperimentFunction):
         random_state = np.random.RandomState(17)
         random_state.shuffle(X)
         y = np.sum(np.sin(X), axis=1).ravel()
-        self.X = X  # Training set.
-        self.y = y  # Labels of the training set.
+        self.X: tp.List[tp.Any] = X  # Training set.
+        self.y: tp.List[float] = y  # Labels of the training set.
 
-        # Variables for storing the cross-validation splits.
-        self.X_train = []  # This will be the list of training subsets.
-        self.X_valid = []  # This will be the list of validation subsets.
-        self.y_train = []
-        self.y_valid = []
 
         # We generate the cross-validation subsets.
         for cv in range(10):
@@ -126,6 +121,18 @@ class MLTuning(ExperimentFunction):
         """
         self.regressor = regressor
         self.name = regressor + f"Dim{dimension}"
+
+        # Variables for storing the training set and the test set.
+        self.X: tp.List[tp.Any] = []
+        self.y: tp.List[float] = []
+
+        # Variables for storing the cross-validation splits.
+        self.X_train: tp.List[tp.Any] = []  # This will be the list of training subsets.
+        self.X_valid: tp.List[tp.Any] = []  # This will be the list of validation subsets.
+        self.y_train: tp.List[float] = []
+        self.y_valid: tp.List[float] = []
+
+        # Filling datasets.
         self.get_dataset(dimension)
 
         if regressor == "decision_tree_depth":
