@@ -66,9 +66,11 @@ class MLTuning(ExperimentFunction):
             # Fit regression model
             if regressor == "decision_tree":
                 regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
-                                             min_samples_split=min_samples_split)
-            elif regressor == "mlp":
-                regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver, learning_rate=learning_rate)
+                                             min_samples_split=min_samples_split, random_state=0)
+            else:
+                assert regressor == "mlp", f"unknown regressor {regressor}."
+                regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
+                                    learning_rate=learning_rate, random_state=0)
             regr.fit(np.asarray(X), np.asarray(y))
     
             # Predict
@@ -123,7 +125,7 @@ class MLTuning(ExperimentFunction):
                                                regressor="decision_tree", noise_free=True,        
                                                alpha=1.0, learning_rate="no", 
                                                activation="no", solver="no")
-        elif regressor == "nn":
+        elif regressor == "mlp":
             parametrization = p.Instrumentation(
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),
