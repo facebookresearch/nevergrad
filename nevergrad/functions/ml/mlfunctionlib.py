@@ -78,7 +78,7 @@ class MLTuning(ExperimentFunction):
 
         return result / self.num_data  # We return a 10-fold validation error.
 
-    def __init__(self, regressor: str, dataset: str, data_dimension: tp.Optional[int] = None):
+    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset: tp.Optional[str] = "artificial"):
         """We propose different possible regressors and different dimensionalities.
         In each case, Nevergrad will optimize the parameters of a scikit learning.
         """
