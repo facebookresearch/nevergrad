@@ -668,7 +668,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust."""
-    funcs = [Rocket]
+    funcs = [Rocket()]
     seedg = create_seed_generator(seed)
     algos = ["NaiveTBPSA", "SQP", "Powell", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "RandomSearch", "HaltonSearch",
