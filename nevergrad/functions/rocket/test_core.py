@@ -11,6 +11,3 @@ def test_rocket() -> None:
     x = 0 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value == 0.
-    x = 7 * np.random.rand(func.dimension)
-    value = func(x)  # should not touch boundaries, so value should be < np.inf
-    assert value < np.inf
