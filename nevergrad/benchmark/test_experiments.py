@@ -57,7 +57,7 @@ def check_seedable(maker: tp.Any, short: bool=False) -> None:
     rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
     for seed in [random_seed, random_seed, random_seed + 1]:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
-        xps = list(itertools.islice(maker(seed), 0, 1 if short else 3))
+        xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
