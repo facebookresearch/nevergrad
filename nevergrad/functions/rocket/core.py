@@ -2,12 +2,9 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-#
-# Based on a discussion at Dagstuhl's seminar on Computational Intelligence in Games with:
-# - Dan Ashlock
-# - Chiara Sironi
-# - Guenter Rudolph
-# - Jialin Liu
+
+# Based on https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simulation2.py
+
 
 import numpy as np
 from nevergrad.parametrization import parameter as p
