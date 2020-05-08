@@ -13,8 +13,6 @@ https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simula
 
 # Approximate Rocket Simulation
 
-import pandas as pd
-import random as rnd
 import math
 import pyproj  # type: ignore
 #import time as t
