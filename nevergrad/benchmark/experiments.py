@@ -13,6 +13,7 @@ from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import MultiobjectiveFunction
+from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
@@ -31,6 +32,29 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
 # for black (since lists are way too long...):
 # fmt: off
+
+
+@registry.register
+def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    # Continuous case
+
+    # First, a few functions with constraints.
+    optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
+              "DoubleFastGADiscreteOnePlusOne"]
+    for dimension in [None, 1, 2, 3]:
+        for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
+            for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
+                assert dataset[:10] != "artificial" or dimension is not None
+                assert dataset[:10] == "artificial" or dimension is None
+                for budget in [50, 150, 500]:
+                    for num_workers in [1, 10, 50, 100]:
+                        for optim in optims:
+                            function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset)
+                            xp = Experiment(function, optim, num_workers=num_workers,
+                                            budget=budget, seed=next(seedg))
+                            if not xp.is_incoherent:
+                                 yield xp
 
 
 # pylint:disable=too-many-branches
