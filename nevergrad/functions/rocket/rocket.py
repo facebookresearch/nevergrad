@@ -21,6 +21,7 @@ import pyproj
 import time as t
 import numpy as np
 
+@no_type_check
 def rocket(thrust_bias: np.ndarray):
 
     assert len(thrust_bias) == 25, "Bad guide length."
