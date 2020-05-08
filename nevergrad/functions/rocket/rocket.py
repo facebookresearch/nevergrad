@@ -4,22 +4,17 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-Created on Fri May  8 09:54:31 2020
-
+Approximate Rocket Simulation
 Based on 
 https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simulation2.py
 """
 
 
-# Approximate Rocket Simulation
-
 import math
 import pyproj  # type: ignore
-#import time as t
 import numpy as np
 import typing as tp
 
-#  @tp.no_type_check
 def rocket(thrust_bias: np.ndarray):
 
     assert len(thrust_bias) == 25, "Bad guide length."
