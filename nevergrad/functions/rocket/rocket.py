@@ -216,7 +216,7 @@ def rocket(thrust_bias: np.ndarray):
     thrust_list = thrust_list * total_thrust / np.sum(np.multiply(thrust_list, thrust_time_list))
     
     for i in range(len(thrust)-1):
-        thrust[i] = thrust_list[i]
+        thrust[i][0] = thrust_list[i]
     # total_mass vs time curve
     # this is used to represent the mass loss while the rocket burns fuel
     mass_time = []
