@@ -42,16 +42,20 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
               "DoubleFastGADiscreteOnePlusOne"]
-    for dimension in [1, 2, 3]:
+    for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
-            function = MLTuning(regressor, dimension)
-            for budget in [50, 150, 500]:
-                for num_workers in [1, 10, 50, 100]:
-                    for optim in optims:
-                        xp = Experiment(function, optim, num_workers=num_workers,
-                                        budget=budget, seed=next(seedg))
-                        if not xp.is_incoherent:
-                             yield xp
+            for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
+                assert dataset[:10] != "artificial" or dimension is not None
+                assert dataset[:10] == "artificial" or dimension is None
+                print(f"What: regressor={regressor}, data_dimension={dimension}, dataset={dataset}")
+                for budget in [50, 150, 500]:
+                    for num_workers in [1, 10, 50, 100]:
+                        for optim in optims:
+                            function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset)
+                            xp = Experiment(function, optim, num_workers=num_workers,
+                                            budget=budget, seed=next(seedg))
+                            if not xp.is_incoherent:
+                                 yield xp
 
 
 # pylint:disable=too-many-branches
