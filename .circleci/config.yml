@@ -162,7 +162,7 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
-            pytest nevergrad --durations=20 --cov=nevergrad
+            pytest nevergrad --exitfirst --durations=20 --cov=nevergrad
 
   docs-deploy:
     docker:
@@ -222,7 +222,7 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v
+            pytest nevergrad -v --exitfirst 
 
 
   pypi-deploy:
