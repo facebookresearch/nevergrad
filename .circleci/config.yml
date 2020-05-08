@@ -222,7 +222,7 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v --exitfirst 
+            pytest nevergrad -v --exitfirst
 
 
   pypi-deploy:
