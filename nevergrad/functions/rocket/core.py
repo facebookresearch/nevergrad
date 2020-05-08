@@ -14,7 +14,7 @@ from .rocket import rocket as rocket
 class Rocket(ExperimentFunction):
 
     def __init__(self) -> None:
-        super().__init__(self._simulate_rocket, p.Array(shape=(25,)))
+        super().__init__(self._simulate_rocket, p.Array(shape=(24,)))
         self.register_initialization()
         self.order = np.arange(0, self.dimension)
         self.x = self.parametrization.random_state.normal(size=self.dimension)
