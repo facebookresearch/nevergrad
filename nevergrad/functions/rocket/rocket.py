@@ -17,9 +17,9 @@ import math
 import pyproj  # type: ignore
 #import time as t
 import numpy as np
-import typing
+import typing as tp
 
-@typing.no_type_check
+#  @tp.no_type_check
 def rocket(thrust_bias: np.ndarray):
 
     assert len(thrust_bias) == 25, "Bad guide length."
@@ -207,8 +207,8 @@ def rocket(thrust_bias: np.ndarray):
     #        new_row = [float(row[0]), float(row[1])]
     #        thrust.append(new_row)
     #Thrust,Time
-    thrust = [
-    [0,0],
+    thrust: tp.List[tp.List[float]]  = [
+    [0.0,0.0],
     [0.946,0.031],
     [4.826,0.092],
     [9.936,0.139],
@@ -232,23 +232,25 @@ def rocket(thrust_bias: np.ndarray):
     [4.448,1.821],
     [2.933,1.834],
     [1.325,1.847],
-    [0,1.86]]
+    [0.0,1.86]]
     
-            
-    thrust_list = [thrust[i][0] for i in range(0, len(thrust))]
-    thrust_time_list = [thrust[i][1] for i in range(0, len(thrust))]
+    #assert False, str(type(range(len(thrust))))
+    #assert False, str(type(i) for i in range(len(thrust)))        
+    thrust_list = np.asarray([thrust[int(i)][0] for i in range(len(thrust))])
+    total_thrust = np.sum(thrust_list)
+    thrust_time_list = np.asarray([thrust[i][1] for i in range(0, len(thrust))])
     
     # We moodify the thrust while preserving the sum.
-    sum_thrust = sum(thrust_list)
+    sum_thrust = np.sum(thrust_list)
     thrust_list = np.multiply(thrust_list, np.exp(thrust_bias))
-    thrust_list = thrust_list * sum_thrust / sum(thrust_list)
+    thrust_list = thrust_list * sum_thrust / np.sum(thrust_list)
     
     # total_mass vs time curve
     # this is used to represent the mass loss while the rocket burns fuel
     mass_time = []
-    total_thrust = 0
-    for row in thrust:
-        total_thrust += row[0]
+    #total_thrust = 0
+    #for row in thrust:
+    #    total_thrust += row[0]
     
     mass_loss = eng_mass_initial - eng_mass_final
     mass_reman = eng_mass_initial
@@ -267,7 +269,7 @@ def rocket(thrust_bias: np.ndarray):
     r_list = [(Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5]
     
     # Initializing variables
-    time = 0  # time in seconds
+    time = 0.  # time in seconds
     
     
     # while thrust is greater than zero
