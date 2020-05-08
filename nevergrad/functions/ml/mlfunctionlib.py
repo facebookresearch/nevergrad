@@ -178,7 +178,7 @@ class MLTuning(ExperimentFunction):
         
         assert data_dimension is not None or dataset[:10] != "artificial"
         self.get_dataset(data_dimension, dataset)
-        self.register_initialization(regressor=regressor, data_dimension=data_dimension)
+        self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset)
 
     def get_dataset(self, data_dimension, dataset):
         # Filling datasets.
