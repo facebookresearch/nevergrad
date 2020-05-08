@@ -17,7 +17,7 @@ import typing as tp
 
 def rocket(thrust_bias: np.ndarray):
 
-    assert len(thrust_bias) == 25, "Bad guide length."
+    assert len(thrust_bias) == 24, "Bad guide length."
     # Covert ang to rads
     def rad(ang):
         return (ang / 360) * 2 * (3.1415926)
@@ -36,15 +36,6 @@ def rocket(thrust_bias: np.ndarray):
             p = 2.488 * (((T + 273.1) / 216.6) ** -11.388).real
         d = p / (0.2869 * (T + 273.1))
         return d
-    
-    
-    # Function to calculate the maximum altitude the rocket reached
-    def max_alt(alt_list):
-        max = alt_list[0]
-        for i in alt_list:
-            if i > max:
-                max = i
-        return max
     
     def alt(Ex, Ey, Ez):
         ecef = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
@@ -140,12 +131,7 @@ def rocket(thrust_bias: np.ndarray):
     # #     longitude = rad(data[1])
     # #     altitude = data[2]
     
-    #with open('initial_position.csv', 'r') as f:
-    #    next(f)
-    #data = next(f).split(',')
-    #latitude = rad(float(data[1]))
-    #longitude = rad(float(data[2]))
-    #altitude = float(data[0])
+    # This is not the same as in the original code (just minor modifications).
     altitude = float(0)
     latitude = rad(float(28.5729))
     longitude = rad(float(80.659))
@@ -191,17 +177,7 @@ def rocket(thrust_bias: np.ndarray):
         r_list.append(round(r, 6))
     
     
-    # Thrust
-    # Creating an array of thrusts and times to be used in the while thrust is true loop
-    #thrust = []
-    
-    #with open(eng_file, 'r') as f:
-    #    next(f)
-    #    reader = csv.reader(f, 'excel')
-    #    for row in reader:
-    #        new_row = [float(row[0]), float(row[1])]
-    #        thrust.append(new_row)
-    #Thrust,Time
+    # Adapted from the orignal code (minor modifications).
     thrust: tp.List[tp.List[float]]  = [
     [0.0,0.0],
     [0.946,0.031],
@@ -228,18 +204,19 @@ def rocket(thrust_bias: np.ndarray):
     [2.933,1.834],
     [1.325,1.847],
     [0.0,1.86]]
+      
+    thrust_list = np.asarray([thrust[int(i)][0] for i in range(len(thrust)-1)])
+    thrust_time_list = np.asarray([thrust[i+1][1] - thrust[i][1] for i in range(0, len(thrust)-1)])
+    total_thrust = np.sum(np.multiply(thrust_list, thrust_time_list))
     
-    #assert False, str(type(range(len(thrust))))
-    #assert False, str(type(i) for i in range(len(thrust)))        
-    thrust_list = np.asarray([thrust[int(i)][0] for i in range(len(thrust))])
-    total_thrust = np.sum(thrust_list)
-    thrust_time_list = np.asarray([thrust[i][1] for i in range(0, len(thrust))])
-    
-    # We moodify the thrust while preserving the sum.
-    sum_thrust = np.sum(thrust_list)
+    # We moodify the thrust while preserving the sum (this is an adaptation to Nevergrad).
+    # 1: we modify.
     thrust_list = np.multiply(thrust_list, np.exp(thrust_bias))
-    thrust_list = thrust_list * sum_thrust / np.sum(thrust_list)
+    # 2: we normalize.
+    thrust_list = thrust_list * total_thrust / np.sum(np.multiply(thrust_list, thrust_time_list))
     
+    for i in range(len(thrust)-1):
+        thrust[i] = thrust_list[i]
     # total_mass vs time curve
     # this is used to represent the mass loss while the rocket burns fuel
     mass_time = []
@@ -250,7 +227,12 @@ def rocket(thrust_bias: np.ndarray):
     mass_loss = eng_mass_initial - eng_mass_final
     mass_reman = eng_mass_initial
     for row in thrust:
-        percentage = row[0] / total_thrust   # percentage of total thrust to find percentage of mass lost
+        # Equation below weird to me: this is not normalized by time ? the mass which is lost should be proportional
+        # to thrust x delta-time, right ?
+        #percentage = row[0] / total_thrust   # percentage of total thrust to find percentage of mass lost
+        percentage = row[0] / np.sum(thrust_list)   # percentage of total thrust to find percentage of mass lost
+        assert percentage >= 0.
+        assert percentage <= 1.
         mass_loss = mass_reman * percentage
         mass_reman -= mass_loss
         total_mass = roc_mass + mass_reman
