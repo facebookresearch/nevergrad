@@ -10,10 +10,11 @@ from . import core
 from torchvision.models import resnet50
 import torch.nn as nn
 import torch
-import torchvision.models
+from torchvision import models
 from torchvision.models.resnet import model_urls
 
 model_urls['resnet50'] = model_urls['resnet50'].replace('https://', 'http://')
+
 
 class Normalize(nn.Module):
     def __init__(self, mean, std):
@@ -30,7 +31,7 @@ class Classifier(nn.Module):
         super(Classifier, self).__init__()
         self.norm = Normalize(mean=[0.485, 0.456, 0.406],
                               std=[0.229, 0.224, 0.225])
-        self.model = torchvision.models.resnet50(pretrained=True)
+        self.model = models.resnet50(pretrained=True)
 
     def forward(self, x):
         return self.model(self.norm(x))
@@ -41,8 +42,11 @@ def test_images_adversarial() -> None:
     classifier = Classifier()
     # classifier = torch.nn.DataParallel(classifier, device_ids=range(torch.cuda.device_count()))
     image = torch.rand((3, image_size, image_size))
-    params_attack = {"image": image, "classifier": classifier, "epsilon": 0.05, "targeted": False, "label": 3}
-    func = core.ImageAdversarial(params=params_attack)
+    epsilon = 0.05
+    targeted = False
+    label = 3
+    func = core.ImageAdversarial(classifier=classifier, image=image, label=label,
+                                 targeted=targeted, epsilon=epsilon)
     x = np.zeros((3, image_size, image_size))
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf

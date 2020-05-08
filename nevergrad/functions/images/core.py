@@ -83,20 +83,22 @@ class Image(base.ExperimentFunction):
 
 
 class ImageAdversarial(base.ExperimentFunction):
-    def __init__(self, params: dict = {}) -> None:
+    def __init__(self, classifier: nn.Module = None, image: torch.Tensor = None, label: int = None,
+                 targeted: bool = False, epsilon: float = 0.05) -> None:
+        # TODO add crossover params in args + criterion
         """
         params : needs to be detailed
         """
-        self.targeted = params["targeted"] if ("targeted" in params) else False
-        self.epsilon = params["epsilon"] if ("epsilon" in params) else 0.05
-        self.image = params["image"] if ("image" in params) else torch.rand((3, 224, 224))
+        self.targeted = targeted
+        self.epsilon = epsilon
+        self.image = image if (image is not None) else torch.rand((3, 224, 224))
         self.image_size = self.image.shape[1]
         self.domain_shape = self.image.shape  # (3,self.image_size, self.image_size)
-        self.label = torch.Tensor([params["label"]]) if ("label" in params) else torch.Tensor([0])
+        self.label = torch.Tensor([label]) if (label is not None) else torch.Tensor([0])
         self.label = self.label.long()
-        self.classifier = params["classifier"] if ("classifier" in params) else Classifier()
+        self.classifier = classifier if (classifier is not None) else Classifier()
         self.criterion = nn.CrossEntropyLoss()
-        # TODO: changes params
+
         array = ng.p.Array(init=np.zeros(self.domain_shape), mutable_sigma=True, )
         array.set_mutation(sigma=self.epsilon / 10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
@@ -105,8 +107,10 @@ class ImageAdversarial(base.ExperimentFunction):
                                                         max_size=max_size)).set_name("")  # type: ignore
 
         super().__init__(self._loss, array)
-        self.register_initialization(params=params)
-        self._descriptors.update(params=params)
+        self.register_initialization(classifier=classifier, image=image, label=label,
+                                     targeted=targeted, epsilon=epsilon)
+        self._descriptors.update(classifier=classifier, image=image, label=label,
+                                 targeted=targeted, epsilon=epsilon)
 
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
