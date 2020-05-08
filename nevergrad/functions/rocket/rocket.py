@@ -16,7 +16,7 @@ https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simula
 import pandas as pd
 import random as rnd
 import math
-import pyproj
+import pyproj  # type: ignore
 #import time as t
 import numpy as np
 import typing
