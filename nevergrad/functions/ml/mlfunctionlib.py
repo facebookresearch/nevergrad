@@ -78,16 +78,27 @@ class MLTuning(ExperimentFunction):
 
         return result / self.num_data  # We return a 10-fold validation error.
 
-    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset: tp.Optional[str] = "artificial"):
+    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset: tp.Optional[str] = "artificial",
+                 overfitter: bool=False):
         """We propose different possible regressors and different dimensionalities.
         In each case, Nevergrad will optimize the parameters of a scikit learning.
+        Parameters:
+        - regressor: type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth", "any".
+        - data_dimension: dimension of the data we generate. None if not an artificial dataset.
+        - dataset: type of dataset; can be diabetes, boston, artificial, artificialcoos, artificialsquare.
+        - overfitter: True if we want the evaluation to be the same as during the optimization run. This means that instead
+        of train/valid/error, we have train/valid/valid. This is for research purpose, when we want to check if an algorithm
+        is particularly good or particularly bad because it fails to minimize the validation loss or because it overfits.
+        
+        "Any" means that the regressor has one more parameter which is a discrete choice among possibilities.
         """
         # Dimension does not make sense if we use a real world dataset.
         self.regressor = regressor
         self.data_dimension = data_dimension
         self.dataset = dataset
+        self.overfitter = overfitter
         self._descriptors: tp.Dict[str, tp.Any] = {}
-        self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset)
+        self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset, overfitter=overfitter)
         self.name = regressor + f"Dim{data_dimension}"
         self.num_data: int = 0
 
@@ -113,7 +124,7 @@ class MLTuning(ExperimentFunction):
                                      activation="no", solver="no"), parametrization)
             # For the evaluation, we remove the noise.
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               noise_free=True, criterion="mse", 
+                                               noise_free=not overfitter, criterion="mse", 
                                                min_samples_split=0.00001,
                                                regressor="decision_tree",        
                                                alpha=1.0, learning_rate="no", 
@@ -136,7 +147,7 @@ class MLTuning(ExperimentFunction):
                                      noise_free=False), parametrization)
             # For the evaluation we use the test set, which is big, so noise_free = True.
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               noise_free=True)  
+                                               noise_free=not overfitter)  
         elif regressor == "decision_tree":
             # We specify below the list of hyperparameters for the decision trees.
             parametrization = p.Instrumentation(
@@ -152,7 +163,7 @@ class MLTuning(ExperimentFunction):
             # For the test we just switch noise_free to True.
             self.evaluation_function = partial(self._ml_parametrization, criterion="mse",  # type: ignore
                                                min_samples_split=0.00001,
-                                               regressor="decision_tree", noise_free=True,        
+                                               regressor="decision_tree", noise_free=not overfitter,        
                                                alpha=1.0, learning_rate="no", 
                                                activation="no", solver="no")
         elif regressor == "mlp":
@@ -169,14 +180,15 @@ class MLTuning(ExperimentFunction):
             super().__init__(partial(self._ml_parametrization, noise_free=False,
                                      regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1), parametrization)
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               regressor="mlp", noise_free=True, 
+                                               regressor="mlp", noise_free=not overfitter, 
                                                depth=-3, criterion="no", min_samples_split=0.1)
         else:
             assert False, f"Problem type {regressor} undefined!"
         
         #assert data_dimension is not None or dataset[:10] != "artificial"
         self.get_dataset(data_dimension, dataset)
-        self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset)
+        self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
+                                     overfitter=overfitter)
 
     def get_dataset(self, data_dimension, dataset):
         # Filling datasets.

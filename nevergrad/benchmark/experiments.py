@@ -35,13 +35,13 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 
 @registry.register
-def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def mltuning(seed: tp.Optional[int] = None, overfitting: bool=False) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     # Continuous case
 
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
-              "DoubleFastGADiscreteOnePlusOne"]
+              "DoubleFastGADiscreteOnePlusOne", "PSO","BO"]
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
@@ -56,7 +56,14 @@ def mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             if not xp.is_incoherent:
                                  yield xp
 
+@registry.register
+def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    internal_generator = mltuning(seed, overfitting=True)
+    for xp in internal_generator:
+        yield xp
 
+        
 # pylint:disable=too-many-branches
 @registry.register
 def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
