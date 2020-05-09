@@ -284,7 +284,3 @@ def rocket(thrust_bias: np.ndarray):
 
     return 1.0 - max(Ez_list) / 3032708.353202  # Should be 0 for input (0.,....,0.)
 
-
-#print('max altitude:', -rocket(np.zeros(25)) / 3032708.353202)
-
-
