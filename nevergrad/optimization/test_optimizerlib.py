@@ -55,7 +55,7 @@ def check_optimizer(
 ) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
-    num_attempts = 1 if not verify_value else 2  # allow 2 attemps to get to the optimum (shit happens...)
+    num_attempts = 1 if not verify_value else 3  # allow 3 attemps to get to the optimum (shit happens...)
     optimum = [0.5, -0.8]
     fitness = Fitness(optimum)
     for k in range(1, num_attempts + 1):
@@ -124,7 +124,7 @@ def test_optimizers(name: str) -> None:
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
         assert optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls, "Similar configuration are not equal"
-    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete", "MutDE"])
+    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
