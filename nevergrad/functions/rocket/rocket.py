@@ -281,30 +281,8 @@ def rocket(thrust_bias: np.ndarray):
         #print(Evx, Evy, Evz, r, sep='\t')
         time += dt
         update(Ex, Ey, Ez, Evx, Evy, Evz, time, r)
-    
-    
-    
-    ## Print When Done
-    print("Simulations done")
-    
-    ## Make Excel Sheets
-    # sim_sheet = pd.DataFrame({'Time': time_list,
-    #                           'X-Position': Ex_list,
-    #                           'Y-Position': Ey_list,
-    #                           'Z-Position': Ez_list,
-    #                           'X-Velocity': Evx_list,
-    #                           'Y-Velocity': Evy_list,
-    #                           'Z-Velocity': Evz_list,
-    #                           'R': r_list})
-    
-    
-    # thrust_sheet = pd.DataFrame({'Time': thrust_time_list,
-    #                              'Thrust': thrust_list,
-    #                              'Mass': mass_list})
-    
-    # sim_sheet.to_excel('Sim_Data.xlsx', sheet_name='Simulation Data', index=False)
-    # thrust_sheet.to_excel('Thrust_Data.xlsx', sheet_name='Thrust Data', index=False)
-    return 1.0 - max(Ez_list) / 3032708.353202
+
+    return 1.0 - max(Ez_list) / 3032708.353202  # Should be 0 for input (0.,....,0.)
 
 
 #print('max altitude:', -rocket(np.zeros(25)) / 3032708.353202)
