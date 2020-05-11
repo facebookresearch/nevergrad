@@ -21,14 +21,14 @@ def convex_limit(struct_points: np.ndarray) -> int:
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
     points = []
     d = len(struct_points[0])
-    if len(struct_points) < 2*d + 2:
+    if len(struct_points) < 2 * d + 2:
         return len(struct_points) // 2
-    for i in range(0, min(2*d + 2, len(struct_points)), 2):
+    for i in range(0, min(2 * d + 2, len(struct_points)), 2):
         points += [struct_points[i]]
     hull = ConvexHull(points, incremental=True)
     k = len(points)
-    for i in range(d+1, len(points)):
-        hull.add_points(points[i:(i+1)])
+    for i in range(d + 1, len(points)):
+        hull.add_points(points[i:(i + 1)])
         if i not in hull.vertices:
             k = i - 1
             break
@@ -66,7 +66,7 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
         k = max(1, int(len(archive) // (1.1 ** dimension)))
     elif method == "hull":
         k = convex_limit(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0))
-        k = min(len(archive)// 4, min(k, int(len(archive) / (1.1 ** dimension))))
+        k = min(len(archive) // 4, min(k, int(len(archive) / (1.1 ** dimension))))
         # We might investigate the possibility to return the middle of the convex hull instead of averaging:
         # return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
     else:
@@ -146,7 +146,7 @@ class _RandomSearch(OneShotOptimizer):
         self._opposable_data = scale * point
         return self._opposable_data  # type: ignore
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
         if self.stupid:
             return self._internal_ask()
         elif self.archive:
@@ -156,7 +156,7 @@ class _RandomSearch(OneShotOptimizer):
                 return avg_of_k_best(self.archive, "exp")
             if self.recommendation_rule == "average_of_hull_best":
                 return avg_of_k_best(self.archive, "hull")
-        return super()._internal_provide_recommendation()
+        return None  # back to default
 
 
 class RandomSearchMaker(base.ConfiguredOptimizer):
@@ -246,7 +246,7 @@ class _SamplingSearch(OneShotOptimizer):
             samplers = {"Halton": sequences.HaltonSampler,
                         "Hammersley": sequences.HammersleySampler,
                         "LHS": sequences.LHSSampler,
-                        "Random":sequences.RandomSampler,
+                        "Random": sequences.RandomSampler,
                         }
             internal_budget = (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
             self._sampler_instance = samplers[self._sampler](
@@ -283,10 +283,10 @@ class _SamplingSearch(OneShotOptimizer):
         assert self._opposable_data is not None
         return self._opposable_data
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
         if self.archive and self.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
-        return super()._internal_provide_recommendation()
+        return None
 
 
 # pylint: disable=too-many-instance-attributes
