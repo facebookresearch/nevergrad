@@ -198,19 +198,22 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         # Reducing the precision could help in this regard.
         patched = partial(acq_max, n_warmup=10000, n_iter=2)
         with patch("bayes_opt.bayesian_optimization.acq_max", patched):
-            candidate = optim.minimize(fitness)
+            recom = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(candidate.args[0])
+        recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
     # BO slightly differs from a computer to another
     decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) or "BO" in name else 5
     np.testing.assert_array_almost_equal(
-        candidate.args[0],
+        recom.value,
         recomkeeper.recommendations.loc[name, :][:dimension],
         decimal=decimal,
         err_msg="Something has changed, if this is normal, delete the following "
         f"file and rerun to update the values:\n{recomkeeper.filepath}",
     )
+    # check that by default the recommendation has been evaluated
+    if isinstance(optimizer_cls, optlib.EvolutionStrategy):  # no noisy variants
+        assert recom.loss is not None
 
 
 @testing.parametrized(
