@@ -112,6 +112,7 @@ SLOW = [
     "ASCMA2PDEthird",
     "MultiScaleCMA",
     "PCEDA",
+    "EDA",
     "MicroCMA",
     "ES",
 ]
@@ -379,7 +380,7 @@ def test_constrained_optimization() -> None:
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
 
 
-@pytest.mark.parametrize("name", [name for name in registry])  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_parametrization_offset(name: str) -> None:
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
