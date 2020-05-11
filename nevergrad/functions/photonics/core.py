@@ -132,7 +132,7 @@ class Photonics(base.ExperimentFunction):
         return loss
 
     def _compute(self, x: np.ndarray) -> float:
-        x_cat = x.ravel()
+        x_cat = np.array(x, copy=False).ravel()
         assert x_cat.size == self.dimension
         try:
             output = self._base_func(x_cat)
