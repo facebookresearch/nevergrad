@@ -959,6 +959,21 @@ average of the final population.</p></li>
 <code class="sig-name descname">one_shot</code><em class="property"> = True</em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGO.one_shot" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt id="nevergrad.optimization.optimizerlib.NGO.recommend">
+<code class="sig-name descname">recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGO.recommend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The candidate with minimal value. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
