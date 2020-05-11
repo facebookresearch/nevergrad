@@ -361,6 +361,11 @@ def test_parametrization_optimizer_reproducibility() -> None:
     parametrization.random_state.seed(12)
     optimizer = optlib.RandomSearch(parametrization, budget=10)
     recom = optimizer.minimize(_square)
+    np.testing.assert_equal(recom.kwargs["y"], 4)
+    # resampling deterministically
+    # (this test has been reeeally useful so far, any change of the output must be investigated)
+    data = recom.get_standardized_data(reference=optimizer.parametrization)
+    recom = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
     np.testing.assert_equal(recom.kwargs["y"], 67)
 
 
