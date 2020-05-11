@@ -94,14 +94,15 @@ class _DE(base.Optimizer):
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[sequences.Sampler] = None
 
-    def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
+    def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
-            return self.current_bests[self._config.recommendation].x
+            return self.current_bests[self._config.recommendation].parameter
         med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
         good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
-            return self.current_bests["pessimistic"].x
-        return sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)  # type: ignore
+            return self.current_bests["pessimistic"].parameter
+        data: tp.Any = sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)
+        return self.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
