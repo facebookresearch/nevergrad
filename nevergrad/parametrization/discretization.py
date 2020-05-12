@@ -88,7 +88,7 @@ def softmax_discretization(x: ArrayLike, arity: int = 2, random: Union[bool, np.
         return output  # type: ignore
     if isinstance(random, bool):  # equivalent to "random is True"
         random = np.random  # default random number generator (creating a RandomState is slow)
-    return [random.choice(arity, p=softmax_probas(d)) for d in data]
+    return [int(random.choice(arity, p=softmax_probas(d))) for d in data]
 
 
 def softmax_probas(data: np.ndarray) -> np.ndarray:
@@ -105,9 +105,16 @@ def softmax_probas(data: np.ndarray) -> np.ndarray:
     return data / np.sum(data)  # type: ignore
 
 
-def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
-    # p is an arbitrary probability that the provided arg will be sampled with the returned point
+def weight_for_reset(arity: int) -> float:
+    """p is an arbitrary probability that the provided arg will be sampled with the returned point
+    """
     p = (1 / arity) * 1.5
+    w = float(np.log((p * (arity - 1)) / (1 - p)))
+    return w
+
+
+def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
+    coeff = weight_for_reset(arity)
     x: np.ndarray = np.zeros(arity)
-    x[index] = np.log((p * (arity - 1)) / (1 - p))
+    x[index] = coeff
     return x

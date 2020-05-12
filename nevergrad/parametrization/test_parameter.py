@@ -160,8 +160,8 @@ def check_parameter_freezable(param: par.Parameter) -> None:
      (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=2.0}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
-     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)})"),
-     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)})"),
+     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
+     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})"),
      (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar["
                                      "sigma=Log{exp=2.0}],transitions=[1. 1.])")
      ]
