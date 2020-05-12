@@ -308,6 +308,7 @@ def test_choice_repetitions() -> None:
     expected = np.zeros((2, 4))
     expected[[0, 1], [3, 1]] = 0.588
     np.testing.assert_almost_equal(choice.weights.value, expected, decimal=3)
+    choice.mutate()
 
 
 def test_descriptors() -> None:

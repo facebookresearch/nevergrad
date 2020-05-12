@@ -57,3 +57,11 @@ def test_inverse_threshold_discretization() -> None:
 def test_inverse_softmax_discretization() -> None:
     output = discretization.inverse_softmax_discretization(arity=5, index=2)
     np.testing.assert_array_almost_equal(output, [0, 0, 0.539, 0, 0], decimal=5)
+
+
+def test_encoder() -> None:
+    weights = np.array([[0, 0, 0], [0, 0, 100]])
+    rng = np.random.RandomState(12)
+    enc = discretization.Encoder(weights, rng=rng)
+    print(enc.encode())
+    raise Exception

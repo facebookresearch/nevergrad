@@ -118,3 +118,24 @@ def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
     x: np.ndarray = np.zeros(arity)
     x[index] = coeff
     return x
+
+
+class Encoder:
+
+    def __init__(self, weights: np.ndarray, rng: np.random.RandomState) -> None:
+        self.weights = np.array(weights, copy=False)
+        self._rng = rng
+
+    def probabilities(self) -> np.ndarray:
+        x = np.exp(self.weights)
+        x /= np.sum(x, axis=1, keepdims=True)  # TODO use softmax_probas
+        return x
+
+    def encode(self) -> np.ndarray:
+        axis = 1
+        print("p", self.probabilities())
+        cumprob = np.cumsum(self.probabilities(), axis=axis)
+        rand = self._rng.rand(cumprob.shape[0], 1)
+        print("cum", cumprob)
+        print("rand", rand)
+        return np.argmin(cumprob < rand, axis=axis)

@@ -193,7 +193,9 @@ class Choice(BaseChoice):
         self.random_state   # pylint: disable=pointless-statement
         self.weights.mutate()
         self._draw(deterministic=self._deterministic)
-        self.choices[self.index].mutate()
+        indices = set(self.indices)
+        for ind in indices:
+            self.choices[ind].mutate()
 
     def _internal_spawn_child(self: C) -> C:
         choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
