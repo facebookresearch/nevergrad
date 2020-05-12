@@ -11,7 +11,7 @@ https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simula
 
 
 import math
-import pyproj  # type: ignore
+import pyproj
 import numpy as np
 import typing as tp
 
