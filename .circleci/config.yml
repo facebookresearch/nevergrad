@@ -151,7 +151,7 @@ jobs:
           command: |
             . venv/bin/activate
             pylint --version
-            pylint nevergrad --disable=all --enable=unused-argument,unused-variable,undefined-loop-variable,redefined-builtin
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called
 
 
   pytests:
