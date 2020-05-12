@@ -96,6 +96,8 @@ class Choice(BaseChoice):
     ----------
     choices: list
         a list of possible values or Parameters for the variable.
+    repetitions: None or int
+        set to an integer n if you want n similar choices sampled independently (each with its own distribution)
     deterministic: bool
         whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
         continuity)
@@ -106,6 +108,17 @@ class Choice(BaseChoice):
       functions become stochastic, hence "adding noise"
     - the "mutate" method only mutates the weights and the chosen Parameter (if it is not constant),
       leaving others untouched
+
+    Example
+    -------
+
+    param = Choice(["a", "b", "c", "e"])
+    param.value
+    >> "c"
+
+    param = Choice(["a", "b", "c", "e"], repetitions=3)
+    param.value
+    >> ("b", "b", "c")
     """
 
     def __init__(

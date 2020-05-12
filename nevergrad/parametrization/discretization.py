@@ -121,6 +121,11 @@ def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
 
 
 class Encoder:
+    """Handles softmax weights which need to be turned into probabilities and sampled
+    This class is expected to evolve to be more usable and include more features (like
+    conversion from probabilities to weights?)
+    It will replace most of the code above if possible
+    """
 
     def __init__(self, weights: np.ndarray, rng: np.random.RandomState) -> None:
         self.weights = np.array(weights, copy=True, dtype=float)
