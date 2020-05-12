@@ -52,11 +52,14 @@ class BaseChoice(core.Dict):
 
     @property
     def value(self) -> tp.Any:
-        return core.as_parameter(self.choices[self.index]).value
+        return self._get_value()
 
     @value.setter
     def value(self, value: tp.Any) -> None:
         self._find_and_set_value(value)
+
+    def _get_value(self) -> tp.Any:
+        return core.as_parameter(self.choices[self.index]).value
 
     def _find_and_set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
         """Must be adapted to each class
@@ -108,11 +111,13 @@ class Choice(BaseChoice):
     def __init__(
             self,
             choices: tp.Iterable[tp.Any],
+            repetitions: tp.Optional[int] = None,
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
+        assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         lchoices = list(choices)
-        self._repetitions: tp.Optional[int] = None
+        self._repetitions: tp.Optional[int] = repetitions
         rep = 1 if self._repetitions is None else self._repetitions
         super().__init__(choices=lchoices, weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False))
         self._deterministic = deterministic
@@ -155,20 +160,21 @@ class Choice(BaseChoice):
         exp = np.exp(self.weights.value)
         return exp / np.sum(exp)  # type: ignore
 
+    def _get_value(self) -> tp.Any:
+        if self._repetitions is None:
+            return super()._get_value()
+        return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
+
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
         indices = super()._find_and_set_value([values] if self._repetitions is None else values)
         self._indices = indices
         # force new probabilities
-        # TODO update
         arity = self.weights.value.shape[1]
         coeff = discretization.weight_for_reset(arity)
         self.weights._value.fill(0.0)  # reset since there is no reference
         out = np.array(self.weights._value, copy=True)  # just a zero matrix
         out[np.arange(indices.size), indices] = coeff
-        print("out", coeff, out)
-        print("weights", self.weights.value)
-        self.weights.set_standardized_data(out, deterministic=True)
-        print("weights2", self.weights.value)
+        self.weights.set_standardized_data(out.ravel(), deterministic=True)
         return indices
 
     def _draw(self, deterministic: bool = True) -> None:
