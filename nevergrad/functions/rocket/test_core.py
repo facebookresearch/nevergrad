@@ -8,7 +8,6 @@ from . import core
 
 def test_rocket() -> None:
     func = core.Rocket()
-    # Too expensive!
-    # x = 0 * np.random.rand(func.dimension)
-    # value = func(x)  # should not touch boundaries, so value should be < np.inf
-    # assert value == 0.
+    x = 0 * np.random.rand(func.dimension)
+    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    np.testing.assert_almost_equal(value, 0.)

@@ -147,7 +147,7 @@ def rocket(thrust_bias: np.ndarray):
     Ex, Ey, Ez = pyproj.transform(lla, ecef, longitude, latitude, altitude, radians=True)
     Evx, Evy, Evz = 0, 0, 0
     r_initial = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
-    print(Ex, Ey, Ez, r_initial, sep="\t")
+    #print(Ex, Ey, Ez, r_initial, sep="\t")
     
     
     ## Rocket specs
@@ -164,21 +164,11 @@ def rocket(thrust_bias: np.ndarray):
     ## Position Velocity Attitude(Earth Centric x-forward y-right z-up)
     ## latitude and longitude position
     
-    
-    # function which adds data at each time step to lists to be exported
-    def update(Ex, Ey, Ez, Evx, Evy, Evz, time, r):
-        Ex_list.append(round(Ex, 6))
-        Ey_list.append(round(Ey, 6))
-        Ez_list.append(round(Ez, 6))
-        Evx_list.append(round(Evx, 6))
-        Evy_list.append(round(Evy, 6))
-        Evz_list.append(round(Evz, 6))
-        time_list.append(round(time, 6))
-        r_list.append(round(r, 6))
-    
-    
+    def round(x, y):
+        return x
+
     # Adapted from the orignal code (minor modifications).
-    thrust: tp.List[tp.List[float]]  = [
+    thrust = np.asarray([
     [0.0,0.0],
     [0.946,0.031],
     [4.826,0.092],
@@ -203,7 +193,7 @@ def rocket(thrust_bias: np.ndarray):
     [4.448,1.821],
     [2.933,1.834],
     [1.325,1.847],
-    [0.0,1.86]]
+    [0.0,1.86]])
       
     thrust_list = np.asarray([thrust[int(i)][0] for i in range(len(thrust)-1)])
     thrust_time_list = np.asarray([thrust[i+1][1] - thrust[i][1] for i in range(0, len(thrust)-1)])
@@ -240,10 +230,10 @@ def rocket(thrust_bias: np.ndarray):
     mass_list = [mass_time[i][0] for i in range(0, len(thrust))]
     
     # Lists used to store data and later import data to excel
-    Ex_list, Ey_list, Ez_list = [Ex], [Ey], [Ez]
-    Evx_list, Evy_list, Evz_list = [Evx], [Evy], [Evz]
-    time_list = [0]
-    r_list = [(Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5]
+    Ex_list, Ey_list, Ez_list = np.asarray([Ex]), np.asarray([Ey]), np.asarray([Ez])
+    Evx_list, Evy_list, Evz_list = np.asarray([Evx]), np.asarray([Evy]), np.asarray([Evz])
+    time_list = np.asarray([0])
+    r_list = np.asarray([(Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5])
     
     # Initializing variables
     time = 0.  # time in seconds
@@ -260,10 +250,17 @@ def rocket(thrust_bias: np.ndarray):
         Ez += (Evz * dt)
         dt = thrust[i + 1][1] - thrust[i][1]
         Evz += ((((thrust[i][0] * math.cos(theta)) + Efz) * dt) / mass_list[i])
-        Evx += ((((thrust[i][0] * math.sin(theta)*math.cos(phi)) + Efx) * dt) / mass_list[i])
+        Evx += (((thrust[i][0] * math.sin(theta)*math.cos(phi)) + Efx) * dt) / mass_list[i]
         Evy += ((((thrust[i][0] * math.sin(theta)*math.sin(phi)) + Efy) * dt) / mass_list[i])
         time += dt
-        update(Ex, Ey, Ez, Evx, Evy, Evz, time, r)
+        Ex_list = np.append(Ex_list, (round(Ex, 6)))
+        Ey_list = np.append(Ey_list, (round(Ey, 6)))
+        Ez_list = np.append(Ez_list, (round(Ez, 6)))
+        Evx_list = np.append(Evx_list, (round(Evx, 6)))
+        Evy_list = np.append(Evy_list, (round(Evy, 6)))
+        Evz_list = np.append(Evz_list, (round(Evz, 6)))
+        time_list = np.append(time_list, (round(time, 6)))
+        r_list = np.append(r_list, (round(r, 6)))
     
     # After thrust
     # This is when the engine is out of fuel and there is no longer a thrust force
@@ -280,7 +277,15 @@ def rocket(thrust_bias: np.ndarray):
         Evz += ((Efz * dt) / final_roc_mass)
         #print(Evx, Evy, Evz, r, sep='\t')
         time += dt
-        update(Ex, Ey, Ez, Evx, Evy, Evz, time, r)
+        #update(Ex, Ey, Ez, Evx, Evy, Evz, time, r)
+        Ex_list = np.append(Ex_list, (round(Ex, 6)))
+        Ey_list = np.append(Ey_list, (round(Ey, 6)))
+        Ez_list = np.append(Ez_list, (round(Ez, 6)))
+        Evx_list = np.append(Evx_list, (round(Evx, 6)))
+        Evy_list = np.append(Evy_list, (round(Evy, 6)))
+        Evz_list = np.append(Evz_list, (round(Evz, 6)))
+        time_list = np.append(time_list, (round(time, 6)))
+        r_list = np.append(r_list, (round(r, 6)))
 
     return 1.0 - max(Ez_list) / 3032708.353202  # Should be 0 for input (0.,....,0.)
 
