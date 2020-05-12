@@ -59,9 +59,30 @@ def test_inverse_softmax_discretization() -> None:
     np.testing.assert_array_almost_equal(output, [0, 0, 0.539, 0, 0], decimal=5)
 
 
-def test_encoder() -> None:
-    weights = np.array([[0, 0, 0], [0, 0, 100]])
+def test_encoder_probabilities() -> None:
+    weights = np.array(
+        [[0, 0, 0],
+         [0, 0, 100],
+         [np.nan, 0, 1],
+         [np.inf, np.inf, np.inf],
+         [np.inf, np.inf, 12],
+         [0, -np.inf, 0], ]
+    )
     rng = np.random.RandomState(12)
     enc = discretization.Encoder(weights, rng=rng)
-    print(enc.encode())
-    raise Exception
+    proba = enc.probabilities()
+    expected = [[0.333, 0.333, 0.333],
+                [0, 0, 1],
+                [0, 0.269, 0.731],
+                [0.333, 0.333, 0.333],
+                [0.5, 0.5, 0],
+                [0.5, 0, 0.5]]
+    np.testing.assert_array_almost_equal(proba, expected, decimal=3)
+
+
+def test_encoder() -> None:
+    weights = np.array([[0, 0, 0], [0, 0, 100]])
+    rng = np.random.RandomState(14)
+    enc = discretization.Encoder(weights, rng=rng)
+    np.testing.assert_equal(enc.encode(), [1, 2])
+    np.testing.assert_equal(enc.encode(), [2, 2])

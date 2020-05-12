@@ -123,16 +123,33 @@ def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
 class Encoder:
 
     def __init__(self, weights: np.ndarray, rng: np.random.RandomState) -> None:
-        self.weights = np.array(weights, copy=False)
+        self.weights = np.array(weights, copy=True, dtype=float)
+        self.weights[np.isnan(self.weights)] = -np.inf  # 0 proba for nan values
         self._rng = rng
 
     def probabilities(self) -> np.ndarray:
-        x = np.exp(self.weights)
-        x /= np.sum(x, axis=1, keepdims=True)  # TODO use softmax_probas
-        return x
-
-    def encode(self) -> np.ndarray:
         axis = 1
+        maxv = np.max(self.weights, axis=1, keepdims=True)
+        hasposinf = np.isposinf(maxv)
+        maxv[np.isinf(maxv)] = 0  # avoid indeterminations
+        exp = np.exp(self.weights - maxv)
+        # deal with infinite positives special case
+        # by ignoring (0 proba) non-infinte on same row
+        if np.any(hasposinf):
+            is_inf = np.isposinf(self.weights)
+            is_ignored = np.logical_and(np.logical_not(is_inf), hasposinf)
+            exp[is_inf] = 1
+            exp[is_ignored] = 0
+        # random choice if sums to 0
+        sums0 = np.sum(exp, axis=axis) == 0
+        exp[sums0, :] = 1
+        exp /= np.sum(exp, axis=axis, keepdims=True)  # normalize
+        return exp
+
+    def encode(self, deterministic: bool = False) -> np.ndarray:
+        axis = 1
+        if deterministic is True:
+            return np.argmax(self.weights, axis=1)
         print("p", self.probabilities())
         cumprob = np.cumsum(self.probabilities(), axis=axis)
         rand = self._rng.rand(cumprob.shape[0], 1)
