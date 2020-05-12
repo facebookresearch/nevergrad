@@ -2,6 +2,10 @@
 
 ## master
 
+- `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't
+  resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).
+  Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
+
 
 ## 0.4.1 (2019-05-07)
 
