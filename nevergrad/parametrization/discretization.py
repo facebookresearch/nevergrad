@@ -148,11 +148,8 @@ class Encoder:
 
     def encode(self, deterministic: bool = False) -> np.ndarray:
         axis = 1
-        if deterministic is True:
+        if deterministic:
             return np.argmax(self.weights, axis=1)
-        print("p", self.probabilities())
         cumprob = np.cumsum(self.probabilities(), axis=axis)
         rand = self._rng.rand(cumprob.shape[0], 1)
-        print("cum", cumprob)
-        print("rand", rand)
         return np.argmin(cumprob < rand, axis=axis)

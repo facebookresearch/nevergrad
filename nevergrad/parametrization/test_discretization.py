@@ -86,3 +86,6 @@ def test_encoder() -> None:
     enc = discretization.Encoder(weights, rng=rng)
     np.testing.assert_equal(enc.encode(), [1, 2])
     np.testing.assert_equal(enc.encode(), [2, 2])
+    #
+    for _ in range(10):
+        np.testing.assert_equal(enc.encode(True), [0, 2])

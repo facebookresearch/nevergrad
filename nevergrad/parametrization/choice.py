@@ -178,11 +178,8 @@ class Choice(BaseChoice):
         return indices
 
     def _draw(self, deterministic: bool = True) -> None:
-        weights = self.weights.value
-        random = False if deterministic or self._deterministic else self.random_state
-        arity = self.weights.value.shape[1]
-        inds = discretization.softmax_discretization(weights, arity, random=random)
-        self._indices = np.array(inds, dtype=int)
+        encoder = discretization.Encoder(self.weights.value, rng=self.random_state)
+        self._indices = encoder.encode(deterministic=deterministic or self._deterministic)
 
     def _internal_set_standardized_data(self: C, data: np.ndarray, reference: C, deterministic: bool = False) -> None:
         super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
