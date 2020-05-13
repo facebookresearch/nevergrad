@@ -196,7 +196,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Instrumentation</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices[, deterministic])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices[, repetitions, …])</p></td>
 <td><p>Unordered categorical parameter, randomly choosing one of the provided choice options as a value.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices[, …])</p></td>
@@ -431,7 +431,7 @@ multiparameter functions.</p>
 
 <dl class="py class">
 <dt id="nevergrad.p.Choice">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Choice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">deterministic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Choice" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Choice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">repetitions</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">deterministic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Choice" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.choice.BaseChoice</span></code></p>
 <p>Unordered categorical parameter, randomly choosing one of the provided choice options as a value.
 The choices can be Parameters, in which case there value will be returned instead.
@@ -441,6 +441,9 @@ updated during the optimization.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>choices</strong> (<em>list</em>) – a list of possible values or Parameters for the variable.</p></li>
+<li><p><strong>repetitions</strong> (<em>None</em><em> or </em><em>int</em>) – set to an integer <code class="code docutils literal notranslate"><span class="pre">n</span></code> if you want <code class="code docutils literal notranslate"><span class="pre">n</span></code> similar choices sampled independently (each with its own distribution)
+This is equivalent to <code class="code docutils literal notranslate"><span class="pre">Tuple(*[Choice(options)</span> <span class="pre">for</span> <span class="pre">_</span> <span class="pre">in</span> <span class="pre">range(n)])</span></code> but can be
+30x faster for large <code class="code docutils literal notranslate"><span class="pre">n</span></code>.</p></li>
 <li><p><strong>deterministic</strong> (<em>bool</em>) – whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
 continuity)</p></li>
 </ul>
@@ -455,9 +458,24 @@ functions become stochastic, hence “adding noise”</p></li>
 leaving others untouched</p></li>
 </ul>
 </div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="go">&quot;c&quot;</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">],</span> <span class="n">repetitions</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="go">(&quot;b&quot;, &quot;b&quot;, &quot;c&quot;)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt id="nevergrad.p.Choice.index">
 <em class="property">property </em><code class="sig-name descname">index</code><a class="headerlink" href="#nevergrad.p.Choice.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Index of the chosen option</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="nevergrad.p.Choice.indices">
+<em class="property">property </em><code class="sig-name descname">indices</code><a class="headerlink" href="#nevergrad.p.Choice.indices" title="Permalink to this definition">¶</a></dt>
 <dd><p>Index of the chosen option</p>
 </dd></dl>
 
