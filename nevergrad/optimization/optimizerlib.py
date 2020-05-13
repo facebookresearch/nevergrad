@@ -95,6 +95,7 @@ class _OnePlusOne(base.Optimizer):
                                      mutator.get_roulette(self.archive, num=2))
             return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
+
         mutation = self.mutation
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (self._rng.normal(0, 1, self.dimension) if mutation == "gaussian" else
@@ -168,6 +169,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         crossover: bool = False
     ) -> None:
         super().__init__(_OnePlusOne, locals())
+
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
@@ -477,6 +479,7 @@ class _TBPSA(base.Optimizer):
             # Sorting the population.
             self.children.sort(key=lambda c: c._meta["loss"])
             # Computing the new parent.
+
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
@@ -1380,6 +1383,7 @@ class Chaining(base.ConfiguredOptimizer):
         budgets: tp.Sequence[tp.Union[str, int]]
     ) -> None:
         super().__init__(_Chain, locals())
+
 
 
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
