@@ -5,20 +5,15 @@
 
 import typing as tp
 import numpy as np
-import nevergrad as ng
 from . import core
-from torchvision.models import resnet50
 import torch.nn as nn
 import torch
-from torchvision import models
-from torchvision.models.resnet import model_urls
 
 
 class Classifier(nn.Module):
     def __init__(self, image_size: int = 224):
         super().__init__()
-        self.model = nn.Linear(image_size * image_size * 3,
-                               10)  # models.resnet50(pretrained=True) #TODO modify as linear classifier
+        self.model = nn.Linear(image_size * image_size * 3, 10)
 
     def forward(self, x):
         return self.model(x.flatten(x.shape[0], -1))
