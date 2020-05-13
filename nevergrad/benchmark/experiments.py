@@ -41,11 +41,12 @@ def mltuning(seed: tp.Optional[int] = None, overfitting: bool=False) -> tp.Itera
 
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
-              "DoubleFastGADiscreteOnePlusOne", "PSO","BO"]
+              "DoubleFastGADiscreteOnePlusOne", "PSO","BO", "MetaTuneRecentering"]
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset)
+                #function._descriptors.update(regressor=regressor, data_dimension=dimension, dataset=dataset)
                 assert dataset[:10] != "artificial" or dimension is not None
                 assert dataset[:10] == "artificial" or dimension is None
                 for budget in [50, 150, 500]:
@@ -132,10 +133,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne"]
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
-    for nv in [10, 50, 200]:
+    for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
