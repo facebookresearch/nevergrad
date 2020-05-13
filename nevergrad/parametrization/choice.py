@@ -42,7 +42,15 @@ class BaseChoice(core.Dict):
 
     @property
     def index(self) -> int:
-        raise Exception
+        """Index of the chosen option, if unique
+        """
+        raise NotImplementedError
+
+    @property
+    def indices(self) -> np.ndarray:
+        """Indices of the chosen options
+        """
+        raise NotImplementedError  # TODO remove index?
 
     @property
     def choices(self) -> Tuple:
@@ -83,7 +91,12 @@ class BaseChoice(core.Dict):
         return indices
 
     def get_value_hash(self) -> tp.Hashable:
-        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
+        hashes: tp.List[tp.Hashable] = []
+        for ind in self.indices:
+            c = self.choices[int(ind)]
+            const = isinstance(c, core.Constant) or not isinstance(c, core.Parameter)
+            hashes.append(int(ind) if const else (int(ind), c.get_value_hash()))
+        return tuple(hashes) if len(hashes) > 1 else hashes[0]
 
 
 class Choice(BaseChoice):
@@ -209,7 +222,7 @@ class Choice(BaseChoice):
 
     def _internal_spawn_child(self: C) -> C:
         choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
-        child = self.__class__(choices=choices, deterministic=self._deterministic)
+        child = self.__class__(choices=choices, deterministic=self._deterministic, repetitions=self._repetitions)
         child._content["weights"] = self.weights.spawn_child()
         return child
 
@@ -250,6 +263,10 @@ class TransitionChoice(BaseChoice):
     @property
     def index(self) -> int:
         return discretization.threshold_discretization(np.array([self.position.value]), arity=len(self.choices))[0]
+
+    @property
+    def indices(self) -> np.ndarray:
+        return np.array([self.index], dtype=int)
 
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
         indices = super()._find_and_set_value([values])  # only one value for this class
