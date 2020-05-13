@@ -66,7 +66,7 @@ class BaseChoice(core.Dict):
         This handles a list of values, not just one
         """  # TODO this is currenlty very messy, may need some improvement
         self._check_frozen()
-        indices = -1 * np.ones(len(values), dtype=int)
+        indices: np.ndarray = -1 * np.ones(len(values), dtype=int)
         nums = sorted(int(k) for k in self.choices._content)
         # try to find where to put this
         for i, value in enumerate(values):
@@ -97,7 +97,9 @@ class Choice(BaseChoice):
     choices: list
         a list of possible values or Parameters for the variable.
     repetitions: None or int
-        set to an integer n if you want n similar choices sampled independently (each with its own distribution)
+        set to an integer :code:`n` if you want :code:`n` similar choices sampled independently (each with its own distribution)
+        This is equivalent to :code:`Tuple(*[Choice(options) for _ in range(n)])` but can be
+        30x faster for large :code:`n`.
     deterministic: bool
         whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
         continuity)
@@ -109,16 +111,14 @@ class Choice(BaseChoice):
     - the "mutate" method only mutates the weights and the chosen Parameter (if it is not constant),
       leaving others untouched
 
-    Example
-    -------
+    Examples
+    --------
 
-    param = Choice(["a", "b", "c", "e"])
-    param.value
-    >> "c"
+    >>> print(Choice(["a", "b", "c", "e"]).value)
+    "c"
 
-    param = Choice(["a", "b", "c", "e"], repetitions=3)
-    param.value
-    >> ("b", "b", "c")
+    >>> print(Choice(["a", "b", "c", "e"], repetitions=3).value)
+    ("b", "b", "c")
     """
 
     def __init__(
