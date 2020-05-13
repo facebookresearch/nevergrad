@@ -338,13 +338,13 @@ def hardonemax5(y: np.ndarray) -> float:
 @registry.register_with_info(no_transform=True)
 def hardjump5(y: np.ndarray) -> float:
     """Jump, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return jump(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
+    return jump(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
 def hardleadingones5(y: np.ndarray) -> float:
     """Leadingones, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return leadingones(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
+    return leadingones(discretization.threshold_discretization(y, 5))
 
 
 @registry.register_with_info(no_transform=True)
