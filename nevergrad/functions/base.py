@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import collections
 import typing as tp
 from pathlib import Path
 import numpy as np
@@ -86,9 +87,12 @@ class ExperimentFunction:
         desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
         return desc
 
-    def add_descriptors(self, **kwargs) -> None:
+    def add_descriptors(self, **kwargs: tp.Optional[tp.Hashable]) -> None:
+        non_hashable = {x: y for x, y in kwargs.items() if not isinstance(y, collections.abc.Hashable)}
+        if non_hashable:
+            raise TypeError(f"Following descriptors are not hasable: {non_hashable}")
         self._descriptors.update(kwargs)
-        
+
     def __repr__(self) -> str:
         """Shows the function name and its summary
         """

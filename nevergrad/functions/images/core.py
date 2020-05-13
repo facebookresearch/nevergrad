@@ -3,39 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from math import sqrt, tan, pi
 from pathlib import Path
 
 import numpy as np
-import nevergrad as ng
 import PIL.Image
-import os
-from nevergrad.common.typetools import ArrayLike
-from .. import base
 import torch.nn as nn
 import torch
 from torchvision.models import resnet50
 
-
-class Normalize(nn.Module):
-    def __init__(self, mean, std):
-        super().__init__()
-        self.mean = torch.Tensor(mean)
-        self.std = torch.Tensor(std)
-
-    def forward(self, x):
-        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
-
-
-class Classifier(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                              std=[0.229, 0.224, 0.225])
-        self.model = resnet50(pretrained=True)
-
-    def forward(self, x):
-        return self.model(self.norm(x))
+import nevergrad as ng
+from .. import base
 
 
 class Image(base.ExperimentFunction):
@@ -60,8 +37,8 @@ class Image(base.ExperimentFunction):
         path = Path(__file__).with_name("headrgb_olivier.png")
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
-
-        array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True, )
+        # parametrization
+        array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True)
         array.set_mutation(sigma=35)
         array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
@@ -78,48 +55,109 @@ class Image(base.ExperimentFunction):
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         # Define the loss, in case of recovering: the goal is to find the target image.
         assert self.index == 0
-        value = np.sum(np.fabs(np.subtract(x, self.data)))
+        value = float(np.sum(np.fabs(np.subtract(x, self.data))))
         return value
 
 
+# TO BE MOVED TO A SEPARATE FILE
+
+class Normalize(nn.Module):
+    def __init__(self, mean, std):
+        super().__init__()
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
+
+    def forward(self, x):
+        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
+
+
+class Resnet50(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+        self.model = resnet50(pretrained=True)
+
+    def forward(self, x):
+        return self.model(self.norm(x))
+
+
+class TestClassifier(nn.Module):
+    def __init__(self, image_size: int = 224):
+        super().__init__()
+        self.model = nn.Linear(image_size * image_size * 3, 10)
+
+    def forward(self, x):
+        return self.model(x.flatten(x.shape[0], -1))
+
+
+# pylint: disable=too-many-arguments
 class ImageAdversarial(base.ExperimentFunction):
-    def __init__(self, classifier: nn.Module = None, image: torch.Tensor = None, label: int = None,
-                 targeted: bool = False, epsilon: float = 0.05) -> None:
+
+    def __init__(
+        self,
+        classifier: nn.Module,
+        image: torch.Tensor,
+        label: int = 0,
+        targeted: bool = False,
+        epsilon: float = 0.05
+    ) -> None:
         # TODO add crossover params in args + criterion
         """
         params : needs to be detailed
         """
         self.targeted = targeted
         self.epsilon = epsilon
-        self.image = image if (image is not None) else torch.rand((3, 224, 224))
-        self.image_size = self.image.shape[1]
-        self.domain_shape = self.image.shape  # (3,self.image_size, self.image_size)
-        self.label = torch.Tensor([label]) if (label is not None) else torch.Tensor([0])
+        self.image = image  # if (image is not None) else torch.rand((3, 224, 224))
+        self.label = torch.Tensor([label])  # if (label is not None) else torch.Tensor([0])
         self.label = self.label.long()
-        self.classifier = classifier if (classifier is not None) else Classifier()
+        self.classifier = classifier  # if (classifier is not None) else Classifier()
         self.criterion = nn.CrossEntropyLoss()
 
-        array = ng.p.Array(init=np.zeros(self.domain_shape), mutable_sigma=True, )
+        array = ng.p.Array(init=np.zeros(self.image.shape), mutable_sigma=True, ).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-        array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2),
-                                                        max_size=max_size)).set_name("")  # type: ignore
+        array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size))  # type: ignore
 
         super().__init__(self._loss, array)
         self.register_initialization(classifier=classifier, image=image, label=label,
                                      targeted=targeted, epsilon=epsilon)
-        self._descriptors.update(classifier=classifier, image=image, label=label,
-                                 targeted=targeted, epsilon=epsilon)
+        # classifier and image cant be set as descriptors
+        self.add_descriptors(label=label, targeted=targeted, epsilon=epsilon)
+
+    @classmethod
+    def from_testbed(
+        cls,
+        name: str,
+        label: int = 0,
+        targeted: bool = False,
+        epsilon: float = 0.05
+    ) -> "ImageAdversarial":
+        if name == "test":
+            imsize = 224
+            classifier = TestClassifier(imsize)
+            image = torch.rand((3, imsize, imsize))
+        else:
+            raise ValueError(f'Testbed "{name}" is not implemented, check implementation in {__file__}')
+        func = cls(classifier=classifier, image=image, label=label, targeted=targeted, epsilon=epsilon)
+        # clean up and update decsriptors
+        assert func._initialization_kwargs is not None
+        for d in ["classifier", "image"]:
+            del func._initialization_kwargs[d]
+        func._initialization_kwargs["name"] = name
+        func._initialization_func = cls.from_testbed  # type: ignore
+        func._descriptors.update(name=name)
+        return func
 
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
+        imsize = self.image.shape[1]
         image_adv = torch.clamp(self.image + x, 0, 1)
-        image_adv = image_adv.view(1, 3, self.image_size, self.image_size)
+        image_adv = image_adv.view(1, 3, imsize, imsize)
         output_adv = self.classifier(image_adv)
         if self.targeted:
             value = self.criterion(output_adv, self.label)
         else:
             value = -self.criterion(output_adv, self.label)
-        value = value.item()
-        return value
+        return float(value.item())
