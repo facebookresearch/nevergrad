@@ -3,9 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 import numpy as np
-import nevergrad as ng
 from . import core
 
 
@@ -16,6 +14,5 @@ def test_images() -> None:
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
     other_func = func.copy()
-    value = func(x)
-    assert value < np.inf
-
+    value2 = other_func(x)
+    assert value == value2

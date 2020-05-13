@@ -259,11 +259,11 @@ def create_plots(
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
-        if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
-            print("\n# Competence map")
-            name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-            export_table(str(output_folder / name), xindices, yindices, best_algo)
-            print("Competence map data:", fixed, case, best_algo)
+            if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
+                print("\n# Competence map")
+                name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+                export_table(str(output_folder / name), xindices, yindices, best_algo)
+                print("Competence map data:", fixed, case, best_algo)
 
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.

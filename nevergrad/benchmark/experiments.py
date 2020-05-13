@@ -35,9 +35,9 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 
 @registry.register
-def mltuning(seed: tp.Optional[int] = None, overfitting: bool = False) -> tp.Iterator[Experiment]:
+def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
-    # Continuous case
+    # Continuous case, 
 
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
@@ -45,7 +45,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitting: bool = False) -> tp.Ite
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
-                function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset)
+                function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter)
                 for budget in [50, 150, 500]:
                     for num_workers in [1, 10, 50, 100]:
                         for optim in optims:
@@ -58,7 +58,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitting: bool = False) -> tp.Ite
 @registry.register
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
-    internal_generator = mltuning(seed, overfitting=True)
+    internal_generator = mltuning(seed, overfitter=True)
     for xp in internal_generator:
         yield xp
 
