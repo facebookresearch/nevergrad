@@ -49,8 +49,12 @@ class MLTuning(ExperimentFunction):
         regressor: str,  # Choice of learner.
         noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
     ) -> float:
+        # typing of X is inaccurate, it's a list, then an array...
+        # pylint: disable=len-as-condition
+        if not len(self.X):  # lazzy initialization
+            self.get_dataset(self.data_dimension, self.dataset)
         # 10-folds cross-validation
-        result: float = 0.
+        result = 0.0
         # Fit regression model
         if regressor == "decision_tree":
             regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
@@ -114,6 +118,8 @@ class MLTuning(ExperimentFunction):
         self.X_valid: tp.List[tp.Any] = []  # This will be the list of validation subsets.
         self.y_train: tp.List[tp.Any] = []
         self.y_valid: tp.List[tp.Any] = []
+        self.X_test: np.ndarray
+        self.y_test: np.ndarray
 
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
@@ -189,14 +195,14 @@ class MLTuning(ExperimentFunction):
             assert False, f"Problem type {regressor} undefined!"
 
         # assert data_dimension is not None or dataset[:10] != "artificial"
-        self.get_dataset(data_dimension, dataset)
+        # self.get_dataset(data_dimension, dataset)
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
 
     def get_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
         # Filling datasets.
-        self.rng = self.parametrization.random_state
-        if dataset[:10] != "artificial":
+        rng = self.parametrization.random_state
+        if not dataset.startswith("artificial"):
             assert dataset in ["boston", "diabetes"]
             assert data_dimension is None
             data = {"boston": sklearn.datasets.load_boston,
@@ -204,7 +210,7 @@ class MLTuning(ExperimentFunction):
                     }[dataset](return_X_y=True)
 
             # Half the dataset for training.
-            self.rng.shuffle(data[0].T)  # We randomly shuffle the columns.
+            rng.shuffle(data[0].T)  # We randomly shuffle the columns.
             self.X = data[0][::2]
             self.y = data[1][::2]
             num_train_data = len(self.X)
@@ -227,7 +233,7 @@ class MLTuning(ExperimentFunction):
         # Training set.
         X = np.arange(0., 1., 1. / (num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
-        self.rng.shuffle(X)
+        rng.shuffle(X)
 
         target_function = {
             "artificial": np.sin,
@@ -256,7 +262,7 @@ class MLTuning(ExperimentFunction):
 
         # We also generate the test set.
         X_test = np.arange(0., 1., 1. / 60000)
-        self.rng.shuffle(X_test)
+        rng.shuffle(X_test)
         X_test = X_test.reshape(-1, data_dimension)
         y_test = np.sum(target_function(X_test), axis=1).ravel()
         self.X_test = X_test
