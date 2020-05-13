@@ -49,9 +49,7 @@ class MLTuning(ExperimentFunction):
         regressor: str,  # Choice of learner.
         noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
     ) -> float:
-        # typing of X is inaccurate, it's a list, then an array...
-        # pylint: disable=len-as-condition
-        if not len(self.X):  # lazzy initialization
+        if not self.X.size:  # lazzy initialization
             self.get_dataset(self.data_dimension, self.dataset)
         # 10-folds cross-validation
         result = 0.0
@@ -110,8 +108,8 @@ class MLTuning(ExperimentFunction):
         assert bool("artificial" in dataset) == bool(data_dimension is not None)
 
         # Variables for storing the training set and the test set.
-        self.X: tp.List[tp.Any] = []
-        self.y: tp.List[tp.Any] = []
+        self.X: np.ndarray = np.array([])
+        self.y: np.ndarray
 
         # Variables for storing the cross-validation splits.
         self.X_train: tp.List[tp.Any] = []  # This will be the list of training subsets.
