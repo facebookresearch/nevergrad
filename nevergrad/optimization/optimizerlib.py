@@ -951,32 +951,6 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLi
 
 
 @registry.register
-class MetaModel(base.Optimizer):
-    """Adding a metamodel into CMA."""
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            CMA(self.parametrization, budget, num_workers),  # share parametrization and its rng
-        ]  # noqa: F405
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        if self._num_ask % self.num_workers == 0 and len(self.archive) >= (self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1:
-            candidate = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
-        else:
-            candidate = self.optims[0].ask()
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.optims[0].tell(candidate, value)
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
-
-
-@registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
@@ -1735,3 +1709,31 @@ class Shiwa(NGO):
                     self.optims = [CMA(self.parametrization, budget, num_workers)]
             else:
                 self.optims = [NGO(self.parametrization, budget, num_workers)]
+
+
+@registry.register
+class MetaModel(base.Optimizer):
+    """Adding a metamodel into CMA."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [
+            Shiwa(self.parametrization, budget, num_workers),  # share parametrization and its rng
+        ]  # noqa: F405
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        if self._num_ask % self.num_workers == 0 and len(self.archive) >= (self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1:
+            candidate = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
+        else:
+            candidate = self.optims[0].ask()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        self.optims[0].tell(candidate, value)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
