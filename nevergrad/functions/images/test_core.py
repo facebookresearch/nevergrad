@@ -13,35 +13,23 @@ import torch
 from torchvision import models
 from torchvision.models.resnet import model_urls
 
-model_urls['resnet50'] = model_urls['resnet50'].replace('https://', 'http://')
-
-
-class Normalize(nn.Module):
-    def __init__(self, mean, std):
-        super(Normalize, self).__init__()
-        self.mean = torch.Tensor(mean)
-        self.std = torch.Tensor(std)
-
-    def forward(self, x):
-        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
-
 
 class Classifier(nn.Module):
-    def __init__(self):
-        super(Classifier, self).__init__()
-        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                              std=[0.229, 0.224, 0.225])
-        self.model = models.resnet50(pretrained=True)
+    def __init__(self, image_size: int = 224):
+        super().__init__()
+        self.model = nn.Linear(image_size * image_size * 3,
+                               10)  # models.resnet50(pretrained=True) #TODO modify as linear classifier
 
     def forward(self, x):
-        return self.model(self.norm(x))
+        return self.model(x.flatten(x.shape[0], -1))
 
 
 def test_images_adversarial() -> None:
     image_size = 224
-    classifier = Classifier()
+    classifier = Classifier(image_size)
     # classifier = torch.nn.DataParallel(classifier, device_ids=range(torch.cuda.device_count()))
     image = torch.rand((3, image_size, image_size))
+
     epsilon = 0.05
     targeted = False
     label = 3

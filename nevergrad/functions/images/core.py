@@ -19,7 +19,7 @@ from torchvision.models import resnet50
 
 class Normalize(nn.Module):
     def __init__(self, mean, std):
-        super(Normalize, self).__init__()
+        super().__init__()
         self.mean = torch.Tensor(mean)
         self.std = torch.Tensor(std)
 
@@ -29,7 +29,7 @@ class Normalize(nn.Module):
 
 class Classifier(nn.Module):
     def __init__(self):
-        super(Classifier, self).__init__()
+        super().__init__()
         self.norm = Normalize(mean=[0.485, 0.456, 0.406],
                               std=[0.229, 0.224, 0.225])
         self.model = resnet50(pretrained=True)
