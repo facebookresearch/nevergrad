@@ -79,30 +79,36 @@ def softmax_discretization(x: ArrayLike, arity: int = 2, random: Union[bool, np.
     - in case of tie, the deterministic value is the first one (lowest) of the tie
     - nans and -infs are ignored, except if all are (then uniform random choice)
     """
-    data = np.array(x, copy=True, dtype=float).reshape((-1, arity))
-    if np.any(np.isnan(data)):
-        warnings.warn("Encountered NaN values for discretization")
-        data[np.isnan(data)] = -np.inf
-    if random is False:
-        output = np.argmax(data, axis=1).tolist()
-        return output  # type: ignore
     if isinstance(random, bool):  # equivalent to "random is True"
-        random = np.random  # default random number generator (creating a RandomState is slow)
-    return [int(random.choice(arity, p=softmax_probas(d))) for d in data]
+        rng = np.random  # default random number generator (creating a RandomState is slow)
+    else:
+        rng = random
+    data = np.array(x, copy=False, dtype=float).reshape((-1, arity))
+    encoder = Encoder(data, rng)
+    return [int(x) for x in encoder.encode(deterministic=random is False)]
+    # if np.any(np.isnan(data)):
+    #    warnings.warn("Encountered NaN values for discretization")
+    #    data[np.isnan(data)] = -np.inf
+    # if random is False:
+    #    output = np.argmax(data, axis=1).tolist()
+    #    return output  # type: ignore
+    # if isinstance(random, bool):  # equivalent to "random is True"
+    #    random = np.random  # default random number generator (creating a RandomState is slow)
+    # return [int(random.choice(arity, p=softmax_probas(d))) for d in data]
 
 
-def softmax_probas(data: np.ndarray) -> np.ndarray:
-    # TODO: test directly? (currently through softmax discretization)
-    # TODO: move nan case here?
-    maxv = np.max(data)
-    if np.abs(maxv) == np.inf or np.isnan(maxv):
-        maxv = 0
-    data = np.exp(data - maxv)
-    if any(x == np.inf for x in data):  # deal with infinite positives special case
-        data = np.array([int(x == np.inf) for x in data])
-    if not sum(data):
-        data = np.ones(len(data))
-    return data / np.sum(data)  # type: ignore
+# def softmax_probas(data: np.ndarray) -> np.ndarray:
+#     # TODO: test directly? (currently through softmax discretization)
+#     # TODO: move nan case here?
+#     maxv = np.max(data)
+#     if np.abs(maxv) == np.inf or np.isnan(maxv):
+#         maxv = 0
+#     data = np.exp(data - maxv)
+#     if any(x == np.inf for x in data):  # deal with infinite positives special case
+#         data = np.array([int(x == np.inf) for x in data])
+#     if not sum(data):
+#         data = np.ones(len(data))
+#     return data / np.sum(data)  # type: ignore
 
 
 def weight_for_reset(arity: int) -> float:
@@ -111,13 +117,6 @@ def weight_for_reset(arity: int) -> float:
     p = (1 / arity) * 1.5
     w = float(np.log((p * (arity - 1)) / (1 - p)))
     return w
-
-
-def inverse_softmax_discretization(index: int, arity: int) -> np.ndarray:
-    coeff = weight_for_reset(arity)
-    x: np.ndarray = np.zeros(arity)
-    x[index] = coeff
-    return x
 
 
 class Encoder:

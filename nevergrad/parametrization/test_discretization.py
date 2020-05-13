@@ -54,11 +54,6 @@ def test_inverse_threshold_discretization() -> None:
     np.testing.assert_array_equal(discretization.threshold_discretization(data, arity), indexes)
 
 
-def test_inverse_softmax_discretization() -> None:
-    output = discretization.inverse_softmax_discretization(arity=5, index=2)
-    np.testing.assert_array_almost_equal(output, [0, 0, 0.539, 0, 0], decimal=5)
-
-
 def test_encoder_probabilities() -> None:
     weights = np.array(
         [[0, 0, 0],
