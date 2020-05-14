@@ -909,6 +909,12 @@ class Portfolio(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
+class InfiniteMetaModelOptimum(ValueError):
+    """Sometimes the optimum of the metamodel is at infinity."""
+    def __init__(self, arg):
+        self.args = arg
+
+
 def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLike:
     """Approximate optimum learnt from the k best.
 
@@ -944,9 +950,9 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLi
     try:
         optimizer.minimize(lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x])))))
     except ValueError:
-        return middle
+        raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
-    minimum = optimizer.provide_recommendation()
+    minimum = optimizer.provide_recommendation().value
     return middle + normalization * minimum
 
 
@@ -1726,8 +1732,11 @@ class MetaModel(base.Optimizer):
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
                 len(self.archive) >= (self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1):
-            data = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
-            return self.parametrization.spawn_child().set_standardized_data(data)
+            try:
+                data = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
+                candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+                candidate = self.optims[0].ask()
         else:
             candidate = self.optims[0].ask()
         return candidate
