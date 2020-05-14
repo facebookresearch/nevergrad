@@ -414,3 +414,9 @@ def test_optimizer_sequence() -> None:
     optimizer = optlib.LHSSearch(parametrization, budget=24)
     points = [np.array(optimizer.ask().value) for _ in range(budget)]
     assert sum(any(abs(x) > 11 for x in p) for p in points) > 0
+
+
+def test_shiwa_dim1() -> None:
+    param = ng.p.Log(lower=1, upper=1000).set_integer_casting()
+    optimizer = optlib.Shiwa(param, budget=10)
+    optimizer.minimize(np.abs)
