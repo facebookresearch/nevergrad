@@ -129,7 +129,10 @@ def test_optimizers(name: str) -> None:
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
-        check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 2, verify_value=verify)
+        try:
+            check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 2, verify_value=verify)
+        except ValueError:
+            assert "BO" in name, "Value Error is acceptable only in BO."
 
 
 class RecommendationKeeper:
