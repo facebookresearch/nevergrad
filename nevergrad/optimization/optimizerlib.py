@@ -903,10 +903,23 @@ class Portfolio(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         optim_index: int = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, value)
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, value)
+            except TellNotAskedNotSupportedError:
+                pass
+        # Presumably better than self.optims[optim_index].tell(candidate, value)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        at_least_one_ok = False
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, value)
+                at_least_one_ok = True
+            except TellNotAskedNotSupportedError:
+                pass
+        if not at_least_one_ok:
+            raise TellNotAskedNotSupportedError
 
 
 @registry.register
