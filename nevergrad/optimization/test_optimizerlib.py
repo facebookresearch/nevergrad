@@ -132,7 +132,7 @@ def test_optimizers(name: str) -> None:
         try:
             check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 2, verify_value=verify)
         except ValueError:
-            assert "BO" in name, "Value Error is acceptable only in BO."
+            assert "BO" in name and platform.system() == "Windows", "Value Error is acceptable only in BO on Windows."
 
 
 class RecommendationKeeper:
