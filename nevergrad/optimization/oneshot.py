@@ -19,7 +19,7 @@ from . import utils
 def convex_limit(struct_points: np.ndarray) -> int:
     """Given points in order from best to worst,
     Returns the length of the maximum initial segment of points such that quasiconvexity is verified."""
-    points = []
+    points: tp.List[float] = []
     d = len(struct_points[0])
     if len(struct_points) < 2 * d + 2:
         return len(struct_points) // 2
@@ -36,7 +36,6 @@ def convex_limit(struct_points: np.ndarray) -> int:
 
 
 def hull_center(points: np.ndarray, k: int) -> np.ndarray:
-    d = len(points[0])
     hull = ConvexHull(points[:k])
     maxi = np.asarray(hull.vertices[0])
     mini = np.asarray(hull.vertices[0])
