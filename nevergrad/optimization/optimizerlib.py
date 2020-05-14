@@ -946,7 +946,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLi
     model.fit(X2, y)
     
     # Find the minimum of the quadratic model.
-    optimizer = OnePlusOne(parametrization=dimension, budget=5000)
+    optimizer = OnePlusOne(parametrization=dimension, budget=dimension*dimension+dimension+500)
     try:
         optimizer.minimize(lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x])))))
     except ValueError:
@@ -1725,7 +1725,7 @@ class MetaModel(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            Shiwa(self.parametrization, budget, num_workers),  # share parametrization and its rng
+            CMA(self.parametrization, budget, num_workers),  # share parametrization and its rng
         ]  # noqa: F405
 
     def _internal_ask_candidate(self) -> p.Parameter:
