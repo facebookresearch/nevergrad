@@ -1463,7 +1463,10 @@ class NGO(base.Optimizer):
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
             if self.dimension < 60:
-                self.optims = [DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)]
+                if self.dimension > 1:
+                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)]
+                else:
+                    self.optims = [PortfolioDiscreteOnePlusOne(self.parametrization, budget, num_workers)]
             else:
                 self.optims = [CMA(self.parametrization, budget, num_workers)]
         else:
