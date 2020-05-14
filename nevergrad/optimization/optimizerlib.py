@@ -318,7 +318,7 @@ class _PopulationSizeController:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-self.llambda:]
+            last_fifth = self._loss_record[-int(self.llambda):]  # casting to int to avoid pylint bug
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
