@@ -311,7 +311,6 @@ def lunacek(x: np.ndarray) -> float:
 # following functions using discretization should not be used with translation/rotation
 
 
-
 @registry.register_with_info(no_transform=True)
 def hardonemax(y: np.ndarray) -> float:
     """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
@@ -353,7 +352,7 @@ def onemax5(y: np.ndarray) -> float:
     """Softmax discretization of onemax with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return onemax(discretization.softmax_discretization(y, 5))
+    return onemax(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)
@@ -361,7 +360,7 @@ def jump5(y: np.ndarray) -> float:
     """Softmax discretization of jump with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return jump(discretization.softmax_discretization(y, 5))
+    return jump(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)
@@ -369,7 +368,7 @@ def leadingones5(y: np.ndarray) -> float:
     """Softmax discretization of leadingones with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return leadingones(discretization.softmax_discretization(y, 5))
+    return leadingones(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)

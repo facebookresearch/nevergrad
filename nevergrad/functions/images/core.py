@@ -3,14 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from math import sqrt, tan, pi
 from pathlib import Path
 
 import numpy as np
 import nevergrad as ng
 import PIL.Image
-import os
-from nevergrad.common.typetools import ArrayLike
 from .. import base
 
 
@@ -35,9 +32,9 @@ class Image(base.ExperimentFunction):
         #path = os.path.dirname(__file__) + "/headrgb_olivier.png"
         path = Path(__file__).with_name("headrgb_olivier.png")
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
-        self.data = np.asarray(image)[:,:,:3]  # 4th Channel is pointless here, only 255.
+        self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
 
-        # if problem_name == "adversarial": 
+        # if problem_name == "adversarial":
         #     assert index <= 100  # If we have that many target images.
         #     self.data = ..... (here we load the imagee correspnding to index and problem_name; this is
         #         # the attacked image.)
@@ -56,7 +53,6 @@ class Image(base.ExperimentFunction):
         x = x.reshape(self.domain_shape)
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
 
-
         # Define the loss, in case of recovering: the goal is to find the target image.
         assert self.problem_name == "recovering"
         assert self.index == 0
@@ -64,4 +60,3 @@ class Image(base.ExperimentFunction):
 
         # Here we should implement "adversarial" and others.
         return value
-

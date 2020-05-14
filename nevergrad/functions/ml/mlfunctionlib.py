@@ -3,43 +3,52 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-#import hashlib
-#import itertools
 import typing as tp
-import numpy as np
-import sklearn.datasets  # type:ignore
-
 from functools import partial
+import numpy as np
+import sklearn.datasets
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.neural_network import MLPRegressor
 
 from nevergrad.parametrization import parameter as p
-from nevergrad.common import tools
-from nevergrad.common.typetools import ArrayLike
-from sklearn.tree import DecisionTreeRegressor  # type: ignore
-from sklearn.neural_network import MLPRegressor  # type: ignore
-
 from ..base import ExperimentFunction
-from .. import utils
-from .. import corefuncs
-
-# EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
 
+# pylint: disable=too-many-instance-attributes,too-many-locals,too-many-arguments
 class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
+    We propose different possible regressors and different dimensionalities.
+    In each case, Nevergrad will optimize the parameters of a scikit learning.
+
+    Parameters
+    ----------
+    regressor: str
+        type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth", "any".
+        "any" means that the regressor has one more parameter which is a discrete choice among possibilities.
+    data_dimension: int
+        dimension of the data we generate. None if not an artificial dataset.
+    dataset: str
+        type of dataset; can be diabetes, boston, artificial, artificialcoos, artificialsquare.
+    overfitter: bool
+        if we want the evaluation to be the same as during the optimization run. This means that instead
+        of train/valid/error, we have train/valid/valid. This is for research purpose, when we want to check if an algorithm
+        is particularly good or particularly bad because it fails to minimize the validation loss or because it overfits.
+
     """
 
     # Example of ML problem.
-    def _ml_parametrization(self,
-                            depth: int,  # Parameters for regression trees.
-                            criterion: str, 
-                            min_samples_split: float,
-                            solver: str,  # Parameters for neural nets.
-                            activation: str,
-                            alpha: float,
-                            learning_rate: str,
-                            regressor: str,  # Choice of learner.
-                            noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
-                            ):
+    def _ml_parametrization(
+        self,
+        depth: int,  # Parameters for regression trees.
+        criterion: str,
+        min_samples_split: float,
+        solver: str,  # Parameters for neural nets.
+        activation: str,
+        alpha: float,
+        learning_rate: str,
+        regressor: str,  # Choice of learner.
+        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
+    ) -> float:
         # 10-folds cross-validation
         result: float = 0.
         # Fit regression model
@@ -58,7 +67,7 @@ class MLTuning(ExperimentFunction):
             y_test = self.y_test
             regr.fit(np.asarray(self.X), np.asarray(self.y))
             pred_test = regr.predict(self.X_test)
-            return np.sum((self.y_test - pred_test)**2) / len(self.y_test)
+            return float(np.sum((self.y_test - pred_test)**2) / len(self.y_test))
 
         # We do a cross-validation.
         for cv in range(10):
@@ -69,30 +78,22 @@ class MLTuning(ExperimentFunction):
             y_test = self.y_valid[cv]
 
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
-    
+
             regr.fit(np.asarray(X), np.asarray(y))
-    
+
             # Predict
             pred_test = regr.predict(X_test)
             result += np.sum((y_test - pred_test)**2)
 
         return result / self.num_data  # We return a 10-fold validation error.
 
-    def __init__(self, regressor: str, data_dimension: tp.Optional[int] = None, dataset: tp.Optional[str] = "artificial",
-                 overfitter: bool=False):
-        """We propose different possible regressors and different dimensionalities.
-        In each case, Nevergrad will optimize the parameters of a scikit learning.
-        Parameters:
-        - regressor: type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth", "any".
-        - data_dimension: dimension of the data we generate. None if not an artificial dataset.
-        - dataset: type of dataset; can be diabetes, boston, artificial, artificialcoos, artificialsquare.
-        - overfitter: True if we want the evaluation to be the same as during the optimization run. This means that instead
-        of train/valid/error, we have train/valid/valid. This is for research purpose, when we want to check if an algorithm
-        is particularly good or particularly bad because it fails to minimize the validation loss or because it overfits.
-        
-        "Any" means that the regressor has one more parameter which is a discrete choice among possibilities.
-        """
-        # Dimension does not make sense if we use a real world dataset.
+    def __init__(
+        self,
+        regressor: str,
+        data_dimension: tp.Optional[int] = None,
+        dataset: str = "artificial",
+        overfitter: bool = False
+    ) -> None:
         self.regressor = regressor
         self.data_dimension = data_dimension
         self.dataset = dataset
@@ -101,6 +102,8 @@ class MLTuning(ExperimentFunction):
         self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset, overfitter=overfitter)
         self.name = regressor + f"Dim{data_dimension}"
         self.num_data: int = 0
+        # Dimension does not make sense if we use a real world dataset.
+        assert bool("artificial" in dataset) == bool(data_dimension is not None)
 
         # Variables for storing the training set and the test set.
         self.X: tp.List[tp.Any] = []
@@ -114,20 +117,20 @@ class MLTuning(ExperimentFunction):
 
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
-            parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())  
+            parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())
             # We optimize only the depth, so we fix all other parameters than the depth, using "partial".
             super().__init__(partial(self._ml_parametrization,
                                      noise_free=False, criterion="mse",
                                      min_samples_split=0.00001,
                                      regressor="decision_tree",
-                                     alpha=1.0, learning_rate="no", 
+                                     alpha=1.0, learning_rate="no",
                                      activation="no", solver="no"), parametrization)
             # For the evaluation, we remove the noise.
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               noise_free=not overfitter, criterion="mse", 
+                                               noise_free=not overfitter, criterion="mse",
                                                min_samples_split=0.00001,
-                                               regressor="decision_tree",        
-                                               alpha=1.0, learning_rate="no", 
+                                               regressor="decision_tree",
+                                               alpha=1.0, learning_rate="no",
                                                activation="no", solver="no")
         elif regressor == "any":
             # First we define the list of parameters in the optimization
@@ -140,14 +143,14 @@ class MLTuning(ExperimentFunction):
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),  # Numerical optimizer.
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),  # Learning rate schedule.
                 alpha=p.Log(lower=0.0000001, upper=1.),  # Complexity penalization.
-            )        
+            )
             # Only the dimension is fixed, so "partial" is just used for fixing the dimension.
             # noise_free is False (meaning that we consider the cross-validation loss) during the optimization.
             super().__init__(partial(self._ml_parametrization,
                                      noise_free=False), parametrization)
             # For the evaluation we use the test set, which is big, so noise_free = True.
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               noise_free=not overfitter)  
+                                               noise_free=not overfitter)
         elif regressor == "decision_tree":
             # We specify below the list of hyperparameters for the decision trees.
             parametrization = p.Instrumentation(
@@ -155,16 +158,16 @@ class MLTuning(ExperimentFunction):
                 criterion=p.Choice(["mse", "friedman_mse", "mae"]),
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
                 regressor="decision_tree",
-            )        
+            )
             # We use "partial" for fixing the parameters of the neural network, given that we work on the decision tree only.
-            super().__init__(partial(self._ml_parametrization, noise_free=False,        
-                                     alpha=1.0, learning_rate="no", regressor="decision_tree", 
+            super().__init__(partial(self._ml_parametrization, noise_free=False,
+                                     alpha=1.0, learning_rate="no", regressor="decision_tree",
                                      activation="no", solver="no"), parametrization)
             # For the test we just switch noise_free to True.
             self.evaluation_function = partial(self._ml_parametrization, criterion="mse",  # type: ignore
                                                min_samples_split=0.00001,
-                                               regressor="decision_tree", noise_free=not overfitter,        
-                                               alpha=1.0, learning_rate="no", 
+                                               regressor="decision_tree", noise_free=not overfitter,
+                                               alpha=1.0, learning_rate="no",
                                                activation="no", solver="no")
         elif regressor == "mlp":
             # Let us define the parameters of the neural network.
@@ -174,23 +177,23 @@ class MLTuning(ExperimentFunction):
                 regressor="mlp",
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
                 alpha=p.Log(lower=0.0000001, upper=1.),
-            )        
+            )
             # And, using partial, we get rid of the parameters of the decision tree (we work on the neural net, not
             # on the decision tree).
             super().__init__(partial(self._ml_parametrization, noise_free=False,
                                      regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1), parametrization)
             self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               regressor="mlp", noise_free=not overfitter, 
+                                               regressor="mlp", noise_free=not overfitter,
                                                depth=-3, criterion="no", min_samples_split=0.1)
         else:
             assert False, f"Problem type {regressor} undefined!"
-        
-        #assert data_dimension is not None or dataset[:10] != "artificial"
+
+        # assert data_dimension is not None or dataset[:10] != "artificial"
         self.get_dataset(data_dimension, dataset)
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
 
-    def get_dataset(self, data_dimension, dataset):
+    def get_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
         # Filling datasets.
         self.rng = self.parametrization.random_state
         if dataset[:10] != "artificial":
@@ -220,17 +223,17 @@ class MLTuning(ExperimentFunction):
         assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
         num_data: int = 30  # Training set size.
         self.num_data = num_data
-        
+
         # Training set.
         X = np.arange(0., 1., 1. / (num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
         self.rng.shuffle(X)
 
         target_function = {
-                "artificial": np.sin,
-                "artificialcos": np.cos,
-                "artificialsquare": np.square,
-                }[dataset]
+            "artificial": np.sin,
+            "artificialcos": np.cos,
+            "artificialsquare": np.square,
+        }[dataset]
         y = np.sum(np.sin(X), axis=1).ravel()
         self.X = X  # Training set.
         self.y = y  # Labels of the training set.

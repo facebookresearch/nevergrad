@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import hashlib
 import os
 import re
+import hashlib
+import warnings
 import argparse
 import itertools
 from pathlib import Path
@@ -109,17 +110,23 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     if "error" not in df.columns:  # backward compatibility
         return df  # type: ignore
     # errors with no recommendation
-    errordf = df.select(error=lambda x: isinstance(x, str) and x, loss=np.isnan)
-    for row in errordf.itertuples():
-        print(f'Removing "{row.optimizer_name}" with dimension {row.dimension}: got error "{row.error}".')
-    # error with recoreded recommendation
+    nandf = df.select(loss=np.isnan)
+    for row in nandf.itertuples():
+        msg = f'Removing "{row.optimizer_name}" with dimension {row.dimension}: '
+        msg += f'got error "{row.error}"' if isinstance(row.error, str) else 'recommended a nan'
+        warnings.warn(msg)
+    # error with recorded recommendation
     handlederrordf = df.select(error=lambda x: isinstance(x, str) and x, loss=lambda x: not np.isnan(x))
     for row in handlederrordf.itertuples():
-        print(
+        warnings.warn(
             f'Keeping non-optimal recommendation of "{row.optimizer_name}" ' f'with dimension {row.dimension} which raised "{row.error}".'
         )
-    err_inds = set(errordf.index)
+    err_inds = set(nandf.index)
     output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
+    # cast nans in loss to infinity
+    df.loc[np.isnan(df.loss), "loss"] = float("inf")
+    print(df)
+    #
     assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
     output = utils.Selector(output.reset_index(drop=True))
     return output  # type: ignore
@@ -247,16 +254,16 @@ def create_plots(
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 80:
                 hashcode = hashlib.md5(bytes(name, 'utf8')).hexdigest()
-                name=re.sub(r'\([^()]*\)', '', name)
+                name = re.sub(r'\([^()]*\)', '', name)
                 mid = 40
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
-        if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
-            print("\n# Competence map")
-            name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-            export_table(str(output_folder / name), xindices, yindices, best_algo)
-            print("Competence map data:", fixed, case, best_algo)
+            if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
+                print("\n# Competence map")
+                name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
+                export_table(str(output_folder / name), xindices, yindices, best_algo)
+                print("Competence map data:", fixed, case, best_algo)
 
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.

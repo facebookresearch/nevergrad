@@ -32,7 +32,7 @@ from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 
-# # # # # optimizers # # # # #
+# # # # # optimizers # # # # #
 
 
 class _OnePlusOne(base.Optimizer):
@@ -189,7 +189,7 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
-# pylint: too-many-arguments, too-many-instance-attributes
+# pylint: too-many-arguments,too-many-instance-attributes
 class _CMA(base.Optimizer):
 
     def __init__(
@@ -452,11 +452,12 @@ class _TBPSA(base.Optimizer):
         self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
         self.children: List[p.Parameter] = []
 
-    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def recommend(self) -> p.Parameter:
         if self.naive:
-            return self.current_bests["optimistic"].x
+            return self.current_bests["optimistic"].parameter
         else:
-            return self.current_center
+            # This is NOT the naive version. We deal with noise.
+            return self.parametrization.spawn_child().set_standardized_data(self.current_center, deterministic=True)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
@@ -619,9 +620,6 @@ class PSO(base.Optimizer):
         new_part = particle.spawn_child().set_standardized_data(data, reference=self.parametrization)
         new_part.heritage["speed"] = speed
         return new_part
-
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self._best.get_standardized_data(reference=self.parametrization)
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         uid = candidate.heritage["lineage"]
@@ -852,9 +850,6 @@ class SplitOptimizer(base.Optimizer):
             local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
             opt.tell(local_candidate, value)
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["pessimistic"].x
-
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
@@ -909,9 +904,6 @@ class Portfolio(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         optim_index: int = candidate._meta["optim_index"]
         self.optims[optim_index].tell(candidate, value)
-
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["pessimistic"].x
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
@@ -1274,11 +1266,11 @@ class _BO(base.Optimizer):
         # so we should clean the "fake" function
         self._fake_function._registered.clear()
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
         if self.archive:
             return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
         else:
-            return super()._internal_provide_recommendation()
+            return None
 
 
 class ParametrizedBO(base.ConfiguredOptimizer):
@@ -1513,9 +1505,8 @@ class NGO(base.Optimizer):
         optim_index = candidate._meta["optim_index"]
         self.optims[optim_index].tell(candidate, value)
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        params = self.optims[0].provide_recommendation()
-        return params.get_standardized_data(reference=self.parametrization)
+    def recommend(self) -> p.Parameter:
+        return self.optims[0].recommend()
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
@@ -1570,11 +1561,12 @@ class _EMNA(base.Optimizer):
         self.parents: List[p.Parameter] = [self.parametrization]
         self.children: List[p.Parameter] = []
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def recommend(self) -> p.Parameter:
         if self.naive:
-            return self.current_bests["optimistic"].x
+            return self.current_bests["optimistic"].parameter
         else:
-            return self.current_center
+            # This is NOT the naive version. We deal with noise.
+            return self.parametrization.spawn_child().set_standardized_data(self.current_center, deterministic=True)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         sigma_tmp = self.sigma
