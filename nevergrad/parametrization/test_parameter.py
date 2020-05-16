@@ -232,7 +232,7 @@ def test_endogeneous_constraint() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name", ["clipping", "arctan", "tanh", "constraint"]
+    "name", ["clipping", "arctan", "tanh", "constraint", "bouncing"]
 )
 def test_constraints(name: str) -> None:
     param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, lower=-100, upper=100)
@@ -240,7 +240,9 @@ def test_constraints(name: str) -> None:
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
     if param.satisfies_constraints():
-        np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
+        # bouncing works differently from others
+        np.testing.assert_approx_equal(param.value, 100 if name != "bouncing" else -100,
+                                       significant=3, err_msg="Constraining did not work")
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -320,7 +322,7 @@ def test_descriptors() -> None:
     assert d3.deterministic is True
 
 
-@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint"])  # type: ignore
+@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
 @pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
 @pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
 def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float) -> None:
