@@ -346,7 +346,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell"]
     if not parallel and not small:
         optims += ["Cobyla"]
-    optims += ["NGO", "Shiwa", "MetaMoodel"]
+    optims += ["NGO", "Shiwa", "MetaModel"]
+    optims.reverse()
     # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
@@ -362,7 +363,6 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
             noise_level = 100
     else:
         noise_level = 0
-    optims = ["Alacrite", "Shiwa", "CMA", "OnePlusOne","TBPSA"]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
         for rotation in [True, False]
@@ -371,7 +371,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     ]
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise):
-        budgets = [40000, 80000]
+        budgets = [40000, 80000, 160000, 320000]
+        budgets.reverse()
     elif (small and not noise):
         budgets = [10, 20, 40]
     if hd:
@@ -379,6 +380,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd and noise:
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
+    optims = ["Shiwa", "MetaModel", "CMA", "DiagonalCMA", "NaiveTBPSA"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -465,6 +467,7 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NGO", "Shiwa", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla",
               "Powell", "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "MetaModel"]
+    optims.reverse()
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -483,6 +486,7 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel"]
+    optims.reverse()
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -760,6 +764,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiwa", "DiagonalCMA",
              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    algos = ["Shiwa"]
     for budget in [12800, 25600, 51200, 102400]:
         for num_workers in [1]:
             if num_workers < budget:
