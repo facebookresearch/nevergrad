@@ -179,7 +179,7 @@ def create_plots(
     output_folder = Path(output_folder)
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
-    descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # all other columns are descriptors
+    descriptors = sorted(set(df.columns) - (required | {"instru_str", "seed", "pseudotime"}))  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     all_descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
