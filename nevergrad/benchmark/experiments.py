@@ -128,7 +128,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
               "CMandAS2", "PortfolioDiscreteOnePlusOne"]
@@ -136,14 +136,19 @@ def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200]:
         for arity in [2, 3, 7, 30]:
-            instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-            for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                dfunc = ExperimentFunction(discrete_func, instrum)
-                dfunc.add_descriptors(arity=arity)
-                for optim in optims:
-                    for nw in [1, 10]:
-                        for budget in [500, 5000]:
-                            yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+            for instrum_str in ["Threshold", "Softmax"]:
+                if instrum_str == "Softmax":
+                    instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
+                else:
+                    instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
+                    for optim in optims:
+                        for nw in [1, 10]:
+                            for budget in [500, 5000]:
+                                yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 @registry.register
