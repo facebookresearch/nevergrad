@@ -67,8 +67,10 @@ def check_optimizer(
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
-            # now optimize :)
-            candidate = optimizer.minimize(fitness)
+            # skip BO error on windows (issue #506)
+            with testing.skip_error_on_systems(ValueError, ["Windows"] if "BO" in optimizer.name else []):
+                # now optimize :)
+                candidate = optimizer.minimize(fitness)
         if verify_value and "chain" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
@@ -165,6 +167,9 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
         candidate = optimizer.ask()
         try:
             optimizer.tell(candidate, 12)
+            # The optimizer should recommend its suggestion, except for a few optimization methods:
+            if name not in ["SPSA", "TBPSA", "StupidRandom"]:
+                np.testing.assert_array_almost_equal(optimizer.provide_recommendation().value, [12.0] * 4)
         except base.TellNotAskedNotSupportedError:
             pass
 
@@ -411,3 +416,9 @@ def test_optimizer_sequence() -> None:
     optimizer = optlib.LHSSearch(parametrization, budget=24)
     points = [np.array(optimizer.ask().value) for _ in range(budget)]
     assert sum(any(abs(x) > 11 for x in p) for p in points) > 0
+
+
+def test_shiwa_dim1() -> None:
+    param = ng.p.Log(lower=1, upper=1000).set_integer_casting()
+    optimizer = optlib.Shiwa(param, budget=10)
+    optimizer.minimize(np.abs)

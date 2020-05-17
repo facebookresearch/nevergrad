@@ -42,7 +42,15 @@ class BaseChoice(core.Dict):
 
     @property
     def index(self) -> int:
-        raise Exception
+        """Index of the chosen option, if unique
+        """
+        raise NotImplementedError
+
+    @property
+    def indices(self) -> np.ndarray:
+        """Indices of the chosen options
+        """
+        raise NotImplementedError  # TODO remove index?
 
     @property
     def choices(self) -> Tuple:
@@ -52,34 +60,45 @@ class BaseChoice(core.Dict):
 
     @property
     def value(self) -> tp.Any:
-        return core.as_parameter(self.choices[self.index]).value
+        return self._get_value()
 
     @value.setter
     def value(self, value: tp.Any) -> None:
         self._find_and_set_value(value)
 
-    def _find_and_set_value(self, value: tp.Any) -> int:
+    def _get_value(self) -> tp.Any:
+        return core.as_parameter(self.choices[self.index]).value
+
+    def _find_and_set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
+        """Must be adapted to each class
+        This handles a list of values, not just one
+        """  # TODO this is currenlty very messy, may need some improvement
         self._check_frozen()
-        index = -1
-        # try to find where to put this
+        indices: np.ndarray = -1 * np.ones(len(values), dtype=int)
         nums = sorted(int(k) for k in self.choices._content)
-        for k in nums:
-            choice = self.choices[k]
-            try:
-                choice.value = value
-                index = k
-                break
-            except Exception:  # pylint: disable=broad-except
-                pass
-        if index == -1:
-            raise ValueError(f"Could not figure out where to put value {value}")
-        return index
+        # try to find where to put this
+        for i, value in enumerate(values):
+            for k in nums:
+                choice = self.choices[k]
+                try:
+                    choice.value = value
+                    indices[i] = k
+                    break
+                except Exception:  # pylint: disable=broad-except
+                    pass
+            if indices[i] == -1:
+                raise ValueError(f"Could not figure out where to put value {value}")
+        return indices
 
     def get_value_hash(self) -> tp.Hashable:
-        return (self.index, core.as_parameter(self.choices[self.index]).get_value_hash())
+        hashes: tp.List[tp.Hashable] = []
+        for ind in self.indices:
+            c = self.choices[int(ind)]
+            const = isinstance(c, core.Constant) or not isinstance(c, core.Parameter)
+            hashes.append(int(ind) if const else (int(ind), c.get_value_hash()))
+        return tuple(hashes) if len(hashes) > 1 else hashes[0]
 
 
-# TODO ordered tag
 class Choice(BaseChoice):
     """Unordered categorical parameter, randomly choosing one of the provided choice options as a value.
     The choices can be Parameters, in which case there value will be returned instead.
@@ -90,6 +109,10 @@ class Choice(BaseChoice):
     ----------
     choices: list
         a list of possible values or Parameters for the variable.
+    repetitions: None or int
+        set to an integer :code:`n` if you want :code:`n` similar choices sampled independently (each with its own distribution)
+        This is equivalent to :code:`Tuple(*[Choice(options) for _ in range(n)])` but can be
+        30x faster for large :code:`n`.
     deterministic: bool
         whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
         continuity)
@@ -100,18 +123,31 @@ class Choice(BaseChoice):
       functions become stochastic, hence "adding noise"
     - the "mutate" method only mutates the weights and the chosen Parameter (if it is not constant),
       leaving others untouched
+
+    Examples
+    --------
+
+    >>> print(Choice(["a", "b", "c", "e"]).value)
+    "c"
+
+    >>> print(Choice(["a", "b", "c", "e"], repetitions=3).value)
+    ("b", "b", "c")
     """
 
     def __init__(
             self,
             choices: tp.Iterable[tp.Any],
+            repetitions: tp.Optional[int] = None,
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
+        assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         lchoices = list(choices)
-        super().__init__(choices=lchoices, weights=Array(shape=(len(lchoices),), mutable_sigma=False))
+        self._repetitions: tp.Optional[int] = repetitions
+        rep = 1 if self._repetitions is None else self._repetitions
+        super().__init__(choices=lchoices, weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False))
         self._deterministic = deterministic
-        self._index: tp.Optional[int] = None
+        self._indices: tp.Optional[np.ndarray] = None
 
     def _get_name(self) -> str:
         name = super()._get_name()
@@ -122,13 +158,20 @@ class Choice(BaseChoice):
         return name
 
     @property
+    def indices(self) -> np.ndarray:  # delayed choice
+        """Index of the chosen option
+        """
+        if self._indices is None:
+            self._draw(deterministic=self._deterministic)
+        assert self._indices is not None
+        return self._indices
+
+    @property
     def index(self) -> int:  # delayed choice
         """Index of the chosen option
         """
-        if self._index is None:
-            self._draw(deterministic=self._deterministic)
-        assert self._index is not None
-        return self._index
+        assert self.indices.size == 1
+        return int(self.indices[0])
 
     @property
     def weights(self) -> Array:
@@ -143,19 +186,26 @@ class Choice(BaseChoice):
         exp = np.exp(self.weights.value)
         return exp / np.sum(exp)  # type: ignore
 
-    def _find_and_set_value(self, value: tp.Any) -> int:
-        index = super()._find_and_set_value(value)
-        self._index = index
+    def _get_value(self) -> tp.Any:
+        if self._repetitions is None:
+            return super()._get_value()
+        return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
+
+    def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
+        indices = super()._find_and_set_value([values] if self._repetitions is None else values)
+        self._indices = indices
         # force new probabilities
-        out = discretization.inverse_softmax_discretization(self.index, len(self))
-        self.weights._value *= 0.  # reset since there is no reference
-        self.weights.set_standardized_data(out, deterministic=True)
-        return index
+        arity = self.weights.value.shape[1]
+        coeff = discretization.weight_for_reset(arity)
+        self.weights._value.fill(0.0)  # reset since there is no reference
+        out = np.array(self.weights._value, copy=True)  # just a zero matrix
+        out[np.arange(indices.size), indices] = coeff
+        self.weights.set_standardized_data(out.ravel(), deterministic=True)
+        return indices
 
     def _draw(self, deterministic: bool = True) -> None:
-        weights = self.weights.value
-        random = False if deterministic or self._deterministic else self.random_state
-        self._index = int(discretization.softmax_discretization(weights, weights.size, random=random)[0])
+        encoder = discretization.Encoder(self.weights.value, rng=self.random_state)
+        self._indices = encoder.encode(deterministic=deterministic or self._deterministic)
 
     def _internal_set_standardized_data(self: C, data: np.ndarray, reference: C, deterministic: bool = False) -> None:
         super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
@@ -166,11 +216,13 @@ class Choice(BaseChoice):
         self.random_state   # pylint: disable=pointless-statement
         self.weights.mutate()
         self._draw(deterministic=self._deterministic)
-        self.choices[self.index].mutate()
+        indices = set(self.indices)
+        for ind in indices:
+            self.choices[ind].mutate()
 
     def _internal_spawn_child(self: C) -> C:
         choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
-        child = self.__class__(choices=choices, deterministic=self._deterministic)
+        child = self.__class__(choices=choices, deterministic=self._deterministic, repetitions=self._repetitions)
         child._content["weights"] = self.weights.spawn_child()
         return child
 
@@ -212,10 +264,14 @@ class TransitionChoice(BaseChoice):
     def index(self) -> int:
         return discretization.threshold_discretization(np.array([self.position.value]), arity=len(self.choices))[0]
 
-    def _find_and_set_value(self, value: tp.Any) -> int:
-        index = super()._find_and_set_value(value)
-        self._set_index(index)
-        return index
+    @property
+    def indices(self) -> np.ndarray:
+        return np.array([self.index], dtype=int)
+
+    def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
+        indices = super()._find_and_set_value([values])  # only one value for this class
+        self._set_index(int(indices[0]))
+        return indices
 
     def _set_index(self, index: int) -> None:
         out = discretization.inverse_threshold_discretization([index], len(self.choices))
