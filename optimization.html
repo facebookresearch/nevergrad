@@ -195,7 +195,7 @@ Defining the following parametrization instead will optimize on both <code class
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instrum</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-<span class="c1"># &gt;&gt;&gt; ((array([0.52213095, 0.45030925]),), {&#39;y&#39;: -0.0003603100877068604})</span>
+<span class="c1"># &gt;&gt;&gt; ((array([0.52213095, 0.45030925]),), {&#39;y&#39;: -0.0003603100877068604})</span>
 </pre></div>
 </div>
 <p>We can work in the discrete case as well, e.g. with the one-max function applied on <code class="code docutils literal notranslate"><span class="pre">{0,1,2,3,4,5,6}^10</span></code>:</p>
