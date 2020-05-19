@@ -100,7 +100,7 @@ cd repos/nevergrad
 and launch for instance the parallel experiment:
 
 ```
-python -m nevergrad.benchmark parallel to run the parallel experiment
+python -m nevergrad.benchmark parallel
 ```
 
 ## To make a pull request
