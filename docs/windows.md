@@ -116,3 +116,20 @@ git checkout -b windowsDoc
 
 ![Creating a new branch](docs/resources/windows_screenshots/newBranch.png)
 
+Then, I add the new files:
+```
+git add .\docs\windows.md
+git add .\docs\resources\windows_screenshots\*
+```
+
+and I commit the modification
+```
+git commit -am "windows documentation"
+```
+
+![Commit](docs/resources/windows_screenshots/commit.png)
+
+and I push my commit
+```
+git push --set-upstream origin windowsDoc
+```
