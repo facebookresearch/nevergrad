@@ -34,20 +34,20 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
-@registry.register
-def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False) -> tp.Iterator[Experiment]:
+def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
+    """Machine learning hyperparameter tuning experiment."""
     seedg = create_seed_generator(seed)
     # Continuous case, 
 
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
-              "DoubleFastGADiscreteOnePlusOne", "PSO", "BO"]
+              "DoubleFastGADiscreteOnePlusOne", "PSO", "BO", "MetaTuneRecentering"]
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial", "artificialsquare"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter)
                 for budget in [50, 150, 500]:
-                    for num_workers in [1, 10, 50, 100]:
+                    for num_workers in [1] if seq else [1, 10, 50, 100]:  # Seq for sequential optimization experiments.
                         for optim in optims:
                             xp = Experiment(function, optim, num_workers=num_workers,
                                             budget=budget, seed=next(seedg))
@@ -55,10 +55,25 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False) -> tp.Iter
                                 yield xp
 
 
-@registry.register
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     internal_generator = mltuning(seed, overfitter=True)
+    for xp in internal_generator:
+        yield xp
+
+# We register only the sequuential counterparts for the moment.
+@registry.register
+def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequuential counterpart of mltuning."""
+    internal_generator = mltuning(seed, overfitter=True, seq=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def naiveseqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    internal_generator = mltuning(seed, overfitter=True, seq=True)
     for xp in internal_generator:
         yield xp
 
@@ -128,22 +143,27 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def wide_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne"]
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
-    for nv in [10, 50, 200]:
+    for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-            for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                dfunc = ExperimentFunction(discrete_func, instrum)
-                dfunc.add_descriptors(arity=arity)
-                for optim in optims:
-                    for nw in [1, 10]:
-                        for budget in [500, 5000]:
-                            yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+            for instrum_str in ["Threshold", "Softmax"]:
+                if instrum_str == "Softmax":
+                    instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
+                else:
+                    instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
+                    for optim in optims:
+                        for nw in [1, 10]:
+                            for budget in [500, 5000]:
+                                yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 @registry.register
@@ -324,14 +344,6 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
-              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
-    if not parallel:
-        optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell"]
-    if not parallel and not small:
-        optims += ["Cobyla"]
-    optims += ["NGO", "Shiwa"]
-    # optims += [x for x, y in ng.optimizers.registry.items() if "chain" in x]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin", "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
@@ -339,15 +351,31 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
+    if noise:
+        if hd:
+            noise_level = 100000
+        else:
+            noise_level = 100
+    else:
+        noise_level = 0
+    optims = ["Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne",
+              "CMandAS", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    if hd and noise:
+        optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
+        optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
+    RS = np.random.RandomState(next(seedg))
+    RS.shuffle(optims)
+    RS.shuffle(functions)
+    RS.shuffle(budgets)
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=100 if noise else 0) for name in names
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise):
-        budgets = [40000, 80000]
+        budgets = [40000, 80000, 160000, 320000]
     elif (small and not noise):
         budgets = [10, 20, 40]
     if hd:
@@ -359,6 +387,14 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                                 budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+                    
+@registry.register
+def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    internal_generator = yabbob(seed, hd=True, noise=True)
+    for xp in internal_generator:
+        yield xp
 
 
 @registry.register
@@ -694,27 +730,6 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimization of policies for games, namely direct policy search."""
-    funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
-    seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiwa", "DiagonalCMA",
-             "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-             "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    for budget in [1600, 3200, 6400, 12800, 25600, 51200]:
-        for num_workers in [1, 10, 100]:
-            if num_workers < budget:
-                for algo in algos:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
-
-
-@registry.register
 def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of policies for games, namely direct policy search."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
@@ -750,33 +765,13 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    for budget in [1600, 3200, 6400, 12800]:
+    RS = np.random.RandomState(next(seedg))
+    RS.shuffle(algos)
+    RS.shuffle(funcs)
+    budgets = [1600, 3200, 6400, 12800]
+    RS.shuffle(budgets)
+    for budget in budgets:
         for num_workers in [1, 10, 100]:
-            if num_workers < budget:
-                for algo in algos:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
-
-
-@registry.register
-def powersystemssplit(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Unit commitment problem, i.e. management of dams for hydroelectric planning.
-    Bigger budget than the powersystems problem."""
-    funcs: tp.List[ExperimentFunction] = []
-    for dams in [3, 5, 9, 13]:
-        for depth_width in [5]:
-            funcs += [PowerSystem(dams, depth=depth_width, width=depth_width)]
-    seedg = create_seed_generator(seed)
-    algos = ["NGO", "Shiwa", "DiagonalCMA",
-             "CMA", "Zero", "RandomSearch",
-             "DE", "PSO", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer", "SplitOptimizer3", "SplitOptimizer13"]
-    algos += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    for budget in [25600, 51200, 102400, 204800, 409600]:
-        for num_workers in [1]:
             if num_workers < budget:
                 for algo in algos:
                     for fu in funcs:
