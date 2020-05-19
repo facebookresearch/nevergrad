@@ -82,8 +82,9 @@ Installation in now over
 It is used edit/add/read python source code.
 
 
-To install it: In the anaconda environment select you nevergrad environment (in the "application on" menu). Then you can install by clicking on the install button under the spyder case.
-You can see other softs you are used to (jupyter, rstudio for instance). The anaconda navigator is the place you can install and launch all your softs.
+To install it: In the anaconda environment select you nevergrad environment (in the "application on" menu).
+Then you can install it by clicking on the install button under the spyder case.
+You can see other softs you are used to (jupyter, rstudio for instance).
 
 ![Spyder](resources/windows_screenshots/spyder.PNG)
 
