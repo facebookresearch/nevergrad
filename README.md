@@ -71,7 +71,7 @@ Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)
 
 ## Windows installation
 
-For windows installation, please refer to ![the windows documention](docs/windows.md)
+For windows installation, please refer to [the windows documention](docs/windows.md)
 
 ## Citing
 
