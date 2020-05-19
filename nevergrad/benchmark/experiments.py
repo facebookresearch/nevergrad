@@ -168,6 +168,30 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def instrum_noisydiscrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    # Discrete, unordered.
+    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+
+    seedg = create_seed_generator(seed)
+    for nv in [10, 50, 200, 1000, 5000]:
+        for arity in [2, 3, 7, 30]:
+            for instrum_str in ["Threshold", "Softmax"]:
+                if instrum_str == "Softmax":
+                    instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
+                else:
+                    instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                    dfunc = ArtificialFunction(discrete_func, instrum, noise_level=100)
+                    dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
+                    for optim in optims:
+                        for nw in [1, 10]:
+                            for budget in [500, 5000]:
+                                yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+
+
+@registry.register
 def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
     one has an infinite condition number, one has an infinitely long path towards the optimum.
@@ -385,7 +409,11 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd and noise:
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
-    optims = ["Shiwa", "MetaModel", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    optims = ["Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne", "CMandAS", "MetaModel", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    RS = np.random.RandomState(next(seedg))
+    RS.shuffle(optims)
+    RS.shuffle(functions)
+    RS.shuffle(budgets)
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -791,11 +819,17 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer",
-             "NGO", "Shiwa", "DiagonalCMA", "SplitOptimizer3", "SplitOptimizer13"]
+             "NGO", "Shiwa", "DiagonalCMA", "SplitOptimizer3", "SplitOptimizer13",
+             "SplitDiagOptimizer3", "SplitDiagOptimizer5", "SplitDiagOptimizer9", "SplitDiagOptimizer13"]
     algos += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    for budget in [1600, 3200, 6400, 12800]:
+    RS = np.random.RandomState(next(seedg))
+    RS.shuffle(algos)
+    RS.shuffle(funcs)
+    budgets = [6400, 12800, 25600]
+    RS.shuffle(budgets)
+    for budget in budgets:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
                 for algo in algos:

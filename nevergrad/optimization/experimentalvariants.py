@@ -16,7 +16,7 @@ from .optimizerlib import (
     ParametrizedBO,
     EMNA,
 )
-from .optimizerlib import CMA, Chaining, PSO, BO
+from .optimizerlib import CMA, Chaining, PSO, BO, DiagonalCMA
 
 # DE
 OnePointDE = DifferentialEvolution(crossover="onepoint").set_name(
@@ -287,6 +287,20 @@ SplitOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name(
 SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
     "SplitOptimizer13", register=True
 )
+# SplitOptimizer
+SplitDiagOptimizer3 = ConfSplitOptimizer(num_optims=3, multivariate_optimizer=DiagonalCMA).set_name(
+    "SplitDiagOptimizer3", register=True
+)
+SplitDiagOptimizer5 = ConfSplitOptimizer(num_optims=5, multivariate_optimizer=DiagonalCMA).set_name(
+    "SplitDiagOptimizer5", register=True
+)
+SplitDiagOptimizer9 = ConfSplitOptimizer(num_optims=9, multivariate_optimizer=DiagonalCMA).set_name(
+    "SplitDiagOptimizer9", register=True
+)
+SplitDiagOptimizer13 = ConfSplitOptimizer(num_optims=13, multivariate_optimizer=DiagonalCMA).set_name(
+    "SplitDiagOptimizer13", register=True
+)
+
 
 # ProgOptimizer
 ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
