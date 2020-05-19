@@ -63,7 +63,7 @@ git clone https://github.com/fteytaud/nevergrad.git
 
 
 
-Then, to install all the needed packages, follow these commands:
+Finally, to install all the needed packages, follow these commands:
 
 ```
 cd nevergrad/requirements/
