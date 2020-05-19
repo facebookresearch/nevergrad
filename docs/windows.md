@@ -108,19 +108,19 @@ python -m nevergrad.benchmark parallel
 Knowing how to add a pull request is very useful.
 For instance, I want to pull request this documentation.
 
-Click on the windows key on your keyboard and launch anaconda navigator, and select you nevergrad environment (in the "application on" menu).
+Click on the windows key on your keyboard and launch the anaconda navigator, and select you nevergrad environment (in the "application on" menu).
 
-Next, launch a powershell prompt and go in the nevergrad repository by typing 
+Next, launch a powershell prompt and go into the nevergrad repository with 
 ```
 cd repos/nevergrad
 ```
 
-I want to create a new branch *windowsDoc*:
+I want to create a new branch, called *windowsDoc*:
 ```
 git checkout -b windowsDoc
 ```
 
-[Creating a new branch](resources/windows_screenshots/newBranch.PNG)
+![Creating a new branch](resources/windows_screenshots/newBranch.PNG)
 
 Then, I add the new files:
 ```
@@ -133,9 +133,9 @@ and I commit the modification
 git commit -am "windows documentation"
 ```
 
-[Commit](resources/windows_screenshots/commit.PNG)
+![Commit](resources/windows_screenshots/commit.PNG)
 
-and I push my commit
+and, finally, I push my commit
 ```
 git push --set-upstream origin windowsDoc
 ```
