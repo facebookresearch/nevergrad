@@ -33,7 +33,8 @@ You can choose the name you want, and then click on "*create*".
 ![Creating environment](resources/windows_screenshots/create.PNG)
 
 Now go back to the main page of Anaconda navigator (by clicking on *Home* in the left menu). 
-You can see that you are now in the new new environment. No soft are installed, we will install "*Powershell Prompt*", by clicking on the install button under it.
+You can see that you are now in the new environment. No soft are installed yet.
+First, we will install "*Powershell Prompt*", by clicking on the install button under it.
 
 
 Once installed, this buttun becomes a "launch" button, then just launch it.
