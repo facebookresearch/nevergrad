@@ -11,7 +11,7 @@
 pip install nevergrad
 ```
 
-More installation options and complete instructions are available in the "Getting started" section of the [**documentation**](https://facebookresearch.github.io/nevergrad/).
+More installation options, including windows installation, and complete instructions are available in the "Getting started" section of the [**documentation**](https://facebookresearch.github.io/nevergrad/).
 
 You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/).
 
@@ -69,9 +69,6 @@ Learn more on parametrization in the [**documentation**](https://facebookresearc
 
 Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
 
-## Windows installation
-
-For windows installation, please refer to [the windows documention](docs/windows.md)
 
 ## Citing
 

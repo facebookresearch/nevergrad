@@ -14,7 +14,7 @@ For the installation all you have to do is to click on "*next*" and "*install*",
 
 Once this is installed, we have to launch it. Click on the windows key on your keyboard 
 
-![windows key](resources/windows_screenshots/CtrlWindowsAlt.jpg)
+![windows key](resources/windows_screenshots/CtrlWindowsAlt.jpg | width=100)
 
 and start to dial on "*anaconda*" until "*anaconda navigator*" appears. Click on it.
 
