@@ -38,7 +38,7 @@ class Mutator:
         """
         assert 0 <= max_ratio <= 1
         dimension = len(parent)
-        max_mutations = int(max_ratio * dimension)
+        max_mutations = max(2, int(max_ratio * dimension))
         p = 1. / np.arange(1, max_mutations)**1.5
         p /= np.sum(p)
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
@@ -68,7 +68,7 @@ class Mutator:
         mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
         return self.discrete_mutation(mix)
 
-    def get_roulette(self, archive: utils.Archive[utils.Value], num: Optional[int] = None) -> Any:
+    def get_roulette(self, archive: utils.Archive[utils.MultiValue], num: Optional[int] = None) -> Any:
         """Apply a roulette tournament selection.
         """
         if num is None:

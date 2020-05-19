@@ -82,7 +82,11 @@ class OptimizerSettings:
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
-            return all(getattr(self, attr) == getattr(other, attr) for attr in self._setting_names)
+            for attr in self._setting_names:
+                x, y = (getattr(settings, attr) for settings in [self, other])
+                if x != y:
+                    return False
+            return True
         return False
 
 
@@ -140,7 +144,7 @@ class Experiment:
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function} with seed {self.seed}"
 
     @property
     def is_incoherent(self) -> bool:

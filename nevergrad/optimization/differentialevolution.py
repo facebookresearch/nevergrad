@@ -82,7 +82,10 @@ class _DE(base.Optimizer):
         self._config = DifferentialEvolution() if config is None else config
         self.scale = float(1. / np.sqrt(self.dimension)) if isinstance(self._config.scale, str) else self._config.scale
         pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
-        self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
+        if isinstance(self._config.popsize, int):
+            self.llambda = self._config.popsize
+        else:
+            self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         # internals
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
@@ -91,14 +94,15 @@ class _DE(base.Optimizer):
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[sequences.Sampler] = None
 
-    def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
+    def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
-            return self.current_bests[self._config.recommendation].x
+            return self.current_bests[self._config.recommendation].parameter
         med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
         good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
         if not good_guys:
-            return self.current_bests["pessimistic"].x
-        return sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)  # type: ignore
+            return self.current_bests["pessimistic"].parameter
+        data: tp.Any = sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)
+        return self.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
@@ -144,11 +148,13 @@ class _DE(base.Optimizer):
         parent_value = self.population[uid]._meta.get("value", float("inf"))
         if value <= parent_value:
             self.population[uid] = candidate
+        elif self._config.propagate_heritage and value <= float("inf"):
+            self.population[uid].heritage.update(candidate.heritage)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         candidate._meta["value"] = value
         worst: tp.Optional[p.Parameter] = None
-        if not len(self.population) < self.llambda:
+        if len(self.population) >= self.llambda:
             worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
             if worst._meta.get("value", float("inf")) < value:
                 return  # no need to update
@@ -189,7 +195,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         differential weight #1
     F2: float
         differential weight #2
-    popsize: "standard", "dimension", "large"
+    popsize: int, "standard", "dimension", "large"
         size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
         and "large" max(num_workers, 30, 7 * dimension).
     """
@@ -203,17 +209,20 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         crossover: tp.Union[str, float] = .5,
         F1: float = .8,
         F2: float = .8,
-        popsize: str = "standard"
+        popsize: tp.Union[str, int] = "standard",
+        propagate_heritage: bool = False,  # experimental
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
-        assert popsize in ["large", "dimension", "standard"]
+        if not isinstance(popsize, int):
+            assert popsize in ["large", "dimension", "standard"]
         assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
         self.initialization = initialization
         self.scale = scale
         self.recommendation = recommendation
+        self.propagate_heritage = propagate_heritage
         self.F1 = F1
         self.F2 = F2
         self.crossover = crossover

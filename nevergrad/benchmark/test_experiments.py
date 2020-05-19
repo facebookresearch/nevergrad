@@ -5,25 +5,25 @@
 
 import inspect
 import itertools
-from typing import Callable, Iterator, Any
+import typing as tp
 import numpy as np
 from ..functions.mlda import datasets
 from ..functions import rl
 from ..common import testing
-from ..common.tools import Selector
 from .xpbase import Experiment
+from .utils import Selector
 from . import experiments
 
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
-def test_experiments_registry(name: str, maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
+def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld"}:
-        check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
+    if name not in {"mltuning", "realworld_oneshot", "mlda", "mldaas", "realworld"}:
+        check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
-def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
+def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     generators = [maker() for _ in range(2)]
     # check 1 sample
     sample = next(maker())
@@ -42,7 +42,7 @@ def check_maker(maker: Callable[[], Iterator[experiments.Experiment]]) -> None:
             )
 
 
-def check_seedable(maker: Any) -> None:
+def check_seedable(maker: tp.Any, short: bool=False) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
@@ -57,7 +57,7 @@ def check_seedable(maker: Any) -> None:
     rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
     for seed in [random_seed, random_seed, random_seed + 1]:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
-        xps = list(itertools.islice(maker(seed), 0, 3))
+        xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])

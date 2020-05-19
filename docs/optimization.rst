@@ -27,7 +27,8 @@ Defining the following parametrization instead will optimize on both :code:`x` (
     :start-after: DOC_BASE_1
     :end-before: DOC_BASE_2
 
-We can work in the discrete case as well, e.g. with the one-max function applied on {0,1,2,3,4,5,6}^10:
+We can work in the discrete case as well, e.g. with the one-max function applied on :code:`{0,1,2,3,4,5,6}^10`:
+
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
     :dedent: 4
@@ -95,6 +96,37 @@ All algorithms have strengths and weaknesses. Questionable rules of thumb could 
 - :code:`PSO` is excellent in terms of robustness, high :code:`num_workers` ok.
 - :code:`ScrHammersleySearchPlusMiddlePoint` is excellent for super parallel cases (fully one-shot, i.e. :code:`num_workers` = budget included) or for very multimodal cases (such as some of our MLDA problems); don't use softmax with this optimizer.
 - :code:`RandomSearch` is the classical random search baseline; don't use softmax with this optimizer.
+
+
+Telling non-asked points, or suggesting points
+----------------------------------------------
+There are two ways to inoculate information you already have about some points:
+
+- :code:`optimizer.sugggest(*args, **kwargs)`: after suggesting a point, the next :code:`ask` will be a point
+  with the provided :code:`value`.
+- :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`  which you can then use to
+  :code:`tell` the optimizer with the corresponding loss.
+
+**Examples:**
+
+- parametrized with an :code:`Array`:
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_INOCULATION_0
+    :end-before: DOC_INOCULATION_1
+
+- parametrized with an :code:`ng.p.Instrumentation`
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_INOCULATION_1
+    :end-before: DOC_INOCULATION_2
+
+
+**Note:** some optimizers do not support such inoculation. Those will raise a :code:`TellNotAskedNotSupportedError`.
 
 Adding callbacks
 ----------------

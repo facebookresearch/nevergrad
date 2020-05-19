@@ -38,7 +38,8 @@ commands:
             python3 -m venv venv
             . venv/bin/activate
             pip install -e .[all]
-            pip install git+https://github.com/numpy/numpy-stubs@master
+            # master numpy-stubs adds a lot of messy warnings :s
+            pip install git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
 
 
 jobs:
@@ -103,13 +104,21 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
+            rm -rf dist  # make sure it's clean
             python setup.py sdist bdist_wheel
+            mkdir nevergrad-build
+            mv dist nevergrad-build/
+            #
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             cd ..  # don't use nevergrad locally
-            pip install repo/dist/nevergrad-*any.whl
+            pip install repo/nevergrad-build/dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
+
+      - persist_to_workspace:
+          root: nevergrad-build
+          paths: dist
 
       - run:
           name: Build docs
@@ -123,25 +132,26 @@ jobs:
           root: docs/_build
           paths: html
 
-      # - store_artifacts:
-      #     path: docs/_build/html
-
-  mypy:
+  static:
     executor: ubuntu-python36
 
     steps:
 
       - ubuntu_restore_all
 
-
-      # Run all tests
-
       - run:
-          name: "[all] Run mypy"
+          name: "Run mypy"
           command: |
             . venv/bin/activate
             mypy --version
             mypy nevergrad
+
+      - run:
+          name: "Run basic pylint"
+          command: |
+            . venv/bin/activate
+            pylint --version
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called
 
 
   pytests:
@@ -156,7 +166,7 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
-            pytest nevergrad --durations=20 --cov=nevergrad
+            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
 
   docs-deploy:
     docker:
@@ -216,16 +226,56 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v
+            pytest nevergrad -v --exitfirst
+
+
+  pypi-deploy:
+    docker:
+      - image: python:3.6
+    steps:
+
+      - ubuntu_restore_all
+
+      - attach_workspace:
+          at: nevergrad-build
+
+      - run:
+          name: Create .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = jrapin" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+
+      - run:
+          name: Verify tag
+          command: |
+            python setup.py verify_circleci_version
+
+      - run:
+          name: upload to pypi
+          command: |
+            . venv/bin/activate
+            du -h nevergrad-build/dist/*
+            twine check nevergrad-build/dist/nevergrad-*
+            twine upload nevergrad-build/dist/nevergrad-* --verbose
 
 
 workflows:
   version: 2
   all_ci:
     jobs:
-      - install
-      - mypy
-      - pytests
+      - install:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - static:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - pytests:
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
       - windows-pytests
       - docs-deploy:
           requires:
@@ -233,3 +283,15 @@ workflows:
           filters:
             branches:
               only: master
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - pypi-deploy:
+          requires:
+            - install
+            - static
+            - pytests
+          filters:
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+            branches:
+              ignore: /.*/

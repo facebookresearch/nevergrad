@@ -6,12 +6,13 @@
 from . import plotting  # pylint: disable=wrong-import-position, wrong-import-order
 from unittest.mock import patch
 from pathlib import Path
-from typing import List
+import typing as tp
+import pytest
 import numpy as np
 import pandas as pd
 import matplotlib
-from ..common import tools
-from ..common import testing
+from nevergrad.common import testing
+from . import utils
 matplotlib.use('Agg')
 
 
@@ -62,7 +63,7 @@ def test_create_plots_from_csv_mocked() -> None:
 
 
 def test_fight_plotter() -> None:
-    df = tools.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(
+    df = utils.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(
         optimizer_name=["OnePlusOneOptimizer", "HaltonSearch", "Powell"])
     winrates = plotting.FightPlotter.winrates_from_selection(df, ["noise_level", "budget"])
     # check data
@@ -77,7 +78,7 @@ def test_fight_plotter() -> None:
 
 def test_xp_plotter() -> None:
     opt = "OnePlusOneOptimizer"
-    df = tools.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
+    df = utils.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
     data = plotting.XpPlotter.make_data(df)
     # check data
     testing.assert_set_equal(data.keys(), {opt})
@@ -98,12 +99,25 @@ def test_remove_errors() -> None:
             ["alg1", 0, 20, "SomeHandledError"],
             ["alg3", np.nan, 40, "BlubluError"]]
     df = pd.DataFrame(columns=["optimizer_name", "loss", "dimension", "error"], data=data)
-    output = plotting.remove_errors(df)
+    with pytest.warns(UserWarning) as w:
+        output = plotting.remove_errors(df)
+    assert len(w) == 3
     expected = pd.DataFrame(columns=["optimizer_name", "loss", "dimension"], data=[["alg0", 0, 10], ["alg1", 0, 20]])
     np.testing.assert_array_equal(output.columns, expected.columns)
     np.testing.assert_array_equal(output.index, expected.index)
     np.testing.assert_array_equal(output, expected)
-    assert isinstance(output, plotting.tools.Selector)
+    assert isinstance(output, plotting.utils.Selector)
+
+
+def test_remove_nan_value() -> None:
+    data = [["alg0", 0, 10, np.nan],
+            ["alg2", np.nan, 30, np.nan]]
+    df = pd.DataFrame(columns=["optimizer_name", "loss", "dimension", "error"], data=data)
+    with pytest.warns(UserWarning) as w:
+        output = plotting.remove_errors(df)
+    assert len(w) == 1
+    expected = pd.DataFrame(columns=["optimizer_name", "loss", "dimension"], data=[["alg0", 0, 10]])
+    np.testing.assert_array_equal(output, expected)
 
 
 def test_make_style_generator() -> None:
@@ -137,9 +151,20 @@ def test_split_long_title() -> None:
     nothing=([1, 2, 10.], [1, 2, 10.]),
     identic=([1, 1, 10., 10.], [.5, 1.5, 9.5, 10.5]),
 )
-def test_compute_best_placements(positions: List[float], expected: List[float]) -> None:
+def test_compute_best_placements(positions: tp.List[float], expected: tp.List[float]) -> None:
     new_positions = plotting.compute_best_placements(positions, min_diff=1.)
     np.testing.assert_array_equal(new_positions, expected)
+
+
+def test_merge_parametrization_and_optimizer() -> None:
+    df = pd.DataFrame(
+        columns=["optimizer_name", "parametrization", "val"],
+        data=[["o1", "p1", 1], ["o1", "p2", 2], ["o2", "p1", 3]]
+    )
+    out = plotting.merge_parametrization_and_optimizer(utils.Selector(df))
+    assert isinstance(out, utils.Selector)
+    assert out["optimizer_name"].tolist() == ["o1,p1", "o1,p2", "o2"]
+    assert out["val"].tolist() == [1, 2, 3]
 
 
 if __name__ == "__main__":

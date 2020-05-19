@@ -21,7 +21,6 @@
 
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.parametrization import utils as putils
 from . import photonics
 from .. import base
 
@@ -65,9 +64,9 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
         sigma = p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore
         array.set_mutation(sigma=sigma)
     if rolling:
-        array.set_mutation(custom=p.Choice(["gaussian", "cauchy", putils.Rolling(axis=1)]))
+        array.set_mutation(custom=p.Choice(["gaussian", "cauchy", p.mutation.Translation(axis=1)]))
     array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
-    array.set_recombination(putils.Crossover(axis=1)).set_name("")
+    array.set_recombination(p.mutation.Crossover(axis=1)).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 
@@ -133,7 +132,7 @@ class Photonics(base.ExperimentFunction):
         return loss
 
     def _compute(self, x: np.ndarray) -> float:
-        x_cat = x.ravel()
+        x_cat = np.array(x, copy=False).ravel()
         assert x_cat.size == self.dimension
         try:
             output = self._base_func(x_cat)

@@ -56,6 +56,7 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
                                    par.Tuple(par.Array(shape=(2, 3)), 12),
                                    par.Instrumentation(par.Array(shape=(2,)), nonhash=[1, 2], truc=par.Array(shape=(1, 3))),
                                    par.Choice([par.Array(shape=(2,)), "blublu"]),
+                                   par.Choice([1, 2], repetitions=2),
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
                                    ],
                          )
@@ -155,14 +156,15 @@ def check_parameter_freezable(param: par.Parameter) -> None:
     [(par.Array(shape=(2, 2)), "Array{(2,2)}"),
      (par.Tuple(12), "Tuple(12)"),
      (par.Dict(constant=12), "Dict(constant=12)"),
-     (par.Scalar(), "Scalar[sigma=Log{exp=1.2}]"),
-     (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=1.2}]"),
+     (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
+     (par.Log(lower=3.2, upper=12.0, exponent=1.5), "Log{exp=1.5,Cl(3.2,12)}"),
+     (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=2.0}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
-     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)})"),
-     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)})"),
+     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
+     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})"),
      (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar["
-                                     "sigma=Log{exp=1.2}],transitions=[1. 1.])")
+                                     "sigma=Log{exp=2.0}],transitions=[1. 1.])")
      ]
 )
 def test_parameter_names(param: par.Parameter, name: str) -> None:
@@ -242,7 +244,12 @@ def test_constraints(name: str) -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,expected", [(par.Scalar(), False), (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)]
+    "param,expected", [
+        (par.Scalar(), False),
+        (par.Scalar(lower=-1000, upper=1000).set_mutation(sigma=1), True),
+        (par.Scalar(lower=-1000, upper=1000, init=0).set_mutation(sigma=1), False),
+        (par.Scalar().set_bounds(-1000, 1000, full_range_sampling=True), True)
+    ]
 )
 def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
     assert not any(np.abs(param.spawn_child().value) > 100 for _ in range(10))
@@ -291,6 +298,18 @@ def test_ordered_choice_weird_values() -> None:
     assert choice.value is np.nan
     choice.value = np.inf
     assert choice.value == np.inf
+
+
+def test_choice_repetitions() -> None:
+    choice = par.Choice([0, 1, 2, 3], repetitions=2)
+    choice.random_state.seed(12)
+    assert len(choice) == 4
+    assert choice.value == (0, 2)
+    choice.value = (3, 1)
+    expected = np.zeros((2, 4))
+    expected[[0, 1], [3, 1]] = 0.588
+    np.testing.assert_almost_equal(choice.weights.value, expected, decimal=3)
+    choice.mutate()
 
 
 def test_descriptors() -> None:

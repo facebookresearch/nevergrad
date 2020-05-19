@@ -105,7 +105,7 @@ In this setting (rotated or not, ill-conditioned) we get excellent results with:
 
 Ill-conditioned function
 ------------------------
-SQP (which won `GECCO 2015 contest <https://www.artelys.com/news/solvers-news/knitro-bbcomp-winner/>`_ performs great in the quadratic case, consistently with theory and intuition:
+SQP (which won the BBComp GECCO 2015 contest) performs great in the quadratic case, consistently with theory and intuition:
 
 .. code-block:: bash
 
