@@ -114,7 +114,7 @@ I want to create a new branch *windowsDoc*:
 git checkout -b windowsDoc
 ```
 
-![Creating a new branch](resources/windows_screenshots/newBranch.PNG)
+[Creating a new branch](resources/windows_screenshots/newBranch.PNG)
 
 Then, I add the new files:
 ```
@@ -127,7 +127,7 @@ and I commit the modification
 git commit -am "windows documentation"
 ```
 
-![Commit](resources/windows_screenshots/commit.PNG)
+[Commit](resources/windows_screenshots/commit.PNG)
 
 and I push my commit
 ```
