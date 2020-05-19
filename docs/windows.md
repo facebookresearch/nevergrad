@@ -92,12 +92,12 @@ You can see other softs you are used to (jupyter, rstudio for instance).
 
 Click on the windows key on your keyboard and launch the anaconda navigator, and select you nevergrad environment (in the "application on" menu).
 
-Next, launch a powershell prompt and go in the nevergrad repository by dialing
+Next, launch a powershell prompt and go in the nevergrad repository with
 ```
 cd repos/nevergrad
 ```
 
-and launch 
+and launch for instance the parallel experiment:
 
 ```
 python -m nevergrad.benchmark parallel to run the parallel experiment
