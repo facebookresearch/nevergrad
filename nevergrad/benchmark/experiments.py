@@ -358,8 +358,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
             noise_level = 100
     else:
         noise_level = 0
-    optims: tp.List[str] = ["Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne",
-              "CMandAS", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    optims: tp.List[str] = ["Shiwa", "NGO", "CMA", "DiagonalCMA", "NaiveTBPSA"]
     if hd and noise:
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
@@ -697,9 +696,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE"]
+    algos = ["Shiwa", "CMA", "TwoPointsDE", "QrDE", "OnePlusOne", "DiagonalCMA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -717,9 +714,7 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     even if white-box methods are not included though they could do this more efficiently."""
     funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "SQP", "Powell", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE"]
+    algos = ["PSO", "OnePlusOne", "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -735,11 +730,10 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     """Optimization of policies for games, namely direct policy search."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
+    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO",
              "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiwa", "DiagonalCMA",
+             "CMA", "QrDE", "SplitOptimizer5", "NGO", "Shiwa", "DiagonalCMA",
              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     for budget in [12800, 25600, 51200, 102400]:
         for num_workers in [1]:
