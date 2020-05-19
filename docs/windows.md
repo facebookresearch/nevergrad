@@ -6,24 +6,24 @@ One simple way to work with/on nevergrad is to use anaconda.
 
 First, we have to install Anaconda for Windows.
 
-Please download from ![here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html)
+Please download from [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html)
 
-the version accordingly to your Windows, or for a windows 64 bits you can directly click ![here](https://repo.anaconda.com/archive/Anaconda3-2020.02-Windows-x86_64.exe)
+the version accordingly to your Windows, or for a windows 64 bits you can directly click [here](https://repo.anaconda.com/archive/Anaconda3-2020.02-Windows-x86_64.exe)
 
 Click on the downloaded file to install it. You can let all proposed options by default.
 For the installation all you have to do is to click on "*next*" and "*install*", and at the end "*finish*".
 
 Once this is installed, we have to launch it. Click on the windows key on your keyboard 
 
-![windows key](docs/resources/windows_screenshots/CtrlWindowsAlt.jpg)
+![windows key](resources/windows_screenshots/CtrlWindowsAlt.jpg)
 
 and start to dial on "*anaconda*" until "*anaconda navigator*" appears. Click on it.
 
-![Anaconda navigator](docs/resources/windows_screenshots/anacondanavigator.png)
+![Anaconda navigator](resources/windows_screenshots/anacondanavigator.png)
 
 Once the navigator is laucnhed, you should get this:
 
-![Anaconda navigator](docs/resources/windows_screenshots/navigator.png)
+![Anaconda navigator](resources/windows_screenshots/navigator.png)
 
 The navigator is the main menu. From here, you can install, launch different softs, create or launch different environment and so on.
 
@@ -31,7 +31,7 @@ We will create a fresh new environment for nevergrad. In the left menu, click on
 
 You can choose the name you want, and then click on "*create*". 
 
-![Creating environment](docs/resources/windows_screenshots/create.png)
+![Creating environment](resources/windows_screenshots/create.png)
 
 Now go back to the main page of Anaconda navigator (by clicking on *Home* in the left menu). 
 You can see that you are now in the new new environment. No soft are installed, we will install "*Powershell Prompt*", by clicking on the install button under it.
@@ -40,7 +40,7 @@ You can see that you are now in the new new environment. No soft are installed, 
 Once installed, this buttun becomes a "launch" buttun, then just launch it.
 You have now a terminal launched. 
 
-![Prompt](docs/resources/windows_screenshots/prompt.png)
+![Prompt](resources/windows_screenshots/prompt.png)
 
 
 Dial on 
@@ -80,7 +80,7 @@ Installation in now over
 To install it: In the anaconda environment select you nevergrad environment (in the "application on" menu). Then you can install by clicking on the install button under the spyder case.
 You can see other softs you are used to (jupyter, rstudio for instance). The anaconda navigator is the place you can install and launch all your softs.
 
-![Prompt](docs/resources/windows_screenshots/spyder.png)
+![Prompt](resources/windows_screenshots/spyder.png)
 
 ## To run an experiment
 
@@ -114,7 +114,7 @@ I want to create a new branch *windowsDoc*:
 git checkout -b windowsDoc
 ```
 
-![Creating a new branch](docs/resources/windows_screenshots/newBranch.png)
+![Creating a new branch](resources/windows_screenshots/newBranch.png)
 
 Then, I add the new files:
 ```
@@ -127,7 +127,7 @@ and I commit the modification
 git commit -am "windows documentation"
 ```
 
-![Commit](docs/resources/windows_screenshots/commit.png)
+![Commit](resources/windows_screenshots/commit.png)
 
 and I push my commit
 ```
