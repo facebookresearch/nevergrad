@@ -182,7 +182,7 @@ def create_plots(
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
     all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
-    to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
+    to_drop = [x for x in all_descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
