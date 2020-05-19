@@ -813,7 +813,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -941,7 +941,7 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
                                             upper_bounds=np.array((100, 100, 1000.)))]
     for mofunc in mofuncs:
         for optim in optims:
-            for budget in list(range(100, 2901, 400)):
+            for budget in list(range(2000, 4001, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
