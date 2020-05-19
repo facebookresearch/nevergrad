@@ -54,7 +54,7 @@ Then we will clone nevergrad:
 ```
 git clone https://github.com/facebookresearch/nevergrad.git
 ```
-If you have a fork, you can clone your fork instead (be carreful to not have 
+If you have a fork, you can clone your fork instead (be careful to not have 
 the same names).
 For instance, I have one, then I do
 ``` 
@@ -74,7 +74,7 @@ conda install pytorch
 cd ..
 ```
 
-Installation in now over
+Installation is now over
 
 ## Adding spyder
 
@@ -82,7 +82,7 @@ Installation in now over
 It is used edit/add/read python source code.
 
 
-To install it: In the anaconda environment select you nevergrad environment (in the "application on" menu).
+To install it: In the anaconda environment select your nevergrad environment (in the "application on" menu).
 Then you can install it by clicking on the install button under the spyder case.
 You can see other softs you are used to (jupyter, rstudio for instance).
 
