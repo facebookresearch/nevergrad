@@ -26,7 +26,7 @@ Once the navigator is laucnhed, you should get this:
 
 The navigator is the main menu. From here, you can install, launch different softs, create or launch different environment and so on.
 
-We will create a fresh new environment for nevergrad. In the left menu, click on "*environments*" and then on create at the bottom.
+We will create a fresh new environment for nevergrad. In the left menu, click on "*environments*" and then on the *create* button.
 
 You can choose the name you want, and then click on "*create*". 
 
@@ -36,7 +36,7 @@ Now go back to the main page of Anaconda navigator (by clicking on *Home* in the
 You can see that you are now in the new new environment. No soft are installed, we will install "*Powershell Prompt*", by clicking on the install button under it.
 
 
-Once installed, this buttun becomes a "launch" buttun, then just launch it.
+Once installed, this buttun becomes a "launch" button, then just launch it.
 You have now a terminal launched. 
 
 ![Prompt](resources/windows_screenshots/prompt.PNG)
