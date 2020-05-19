@@ -37,7 +37,7 @@ You can see that you are now in the new environment. No soft are installed yet.
 First, we will install "*Powershell Prompt*", by clicking on the install button under it.
 
 
-Once installed, this buttun becomes a "launch" button, then just launch it.
+Once installed, this button becomes a "launch" button, then just launch it.
 You have now a terminal launched. 
 
 ![Prompt](resources/windows_screenshots/prompt.PNG)
