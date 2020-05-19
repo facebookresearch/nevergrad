@@ -69,6 +69,9 @@ Learn more on parametrization in the [**documentation**](https://facebookresearc
 
 Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
 
+## Windows installation
+
+For windows installation, please refer to ![the windows documention](docs/windows.md)
 
 ## Citing
 
