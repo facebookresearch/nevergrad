@@ -49,16 +49,19 @@ mkdir repos
 cd repos
 ```
 
-This creates a repository names "*repos*" and goes into it.
+This creates a repository named "*repos*" and goes into it.
 Then we will clone nevergrad:
 ```
 git clone https://github.com/facebookresearch/nevergrad.git
 ```
-If you have a fork, you can clone your fork.
+If you have a fork, you can clone your fork instead (be carreful to not have 
+the same names).
 For instance, I have one, then I do
 ``` 
 git clone https://github.com/fteytaud/nevergrad.git 
 ```
+
+
 
 Then, to install all the needed packages, follow these commands:
 
