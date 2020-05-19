@@ -358,15 +358,12 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
             noise_level = 100
     else:
         noise_level = 0
-    optims = ["Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne",
+    optims: tp.List[str] = ["Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne",
               "CMandAS", "CMA", "DiagonalCMA", "NaiveTBPSA"]
     if hd and noise:
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
-    RS = np.random.RandomState(next(seedg))
-    RS.shuffle(optims)
-    RS.shuffle(functions)
-    RS.shuffle(budgets)
+
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
         for rotation in [True, False]
@@ -380,6 +377,10 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         budgets = [10, 20, 40]
     if hd:
         optims += ["SplitOptimizer9", "SplitOptimizer5", "SplitOptimizer13"]
+    RS = np.random.RandomState(next(seedg))
+    RS.shuffle(optims)
+    RS.shuffle(functions)
+    RS.shuffle(budgets)
     for optim in optims:
         for function in functions:
             for budget in budgets:
