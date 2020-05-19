@@ -78,7 +78,9 @@ Installation in now over
 
 ## Adding spyder
 
-**Spyder** is a python ide well integrated in the anaconda environment. If you no other ide, I suggest to install it in order to modify/add/read code from nevegrad.
+**Spyder** is a python ide well integrated in the anaconda environment.
+It is used edit/add/read python source code.
+
 
 To install it: In the anaconda environment select you nevergrad environment (in the "application on" menu). Then you can install by clicking on the install button under the spyder case.
 You can see other softs you are used to (jupyter, rstudio for instance). The anaconda navigator is the place you can install and launch all your softs.
