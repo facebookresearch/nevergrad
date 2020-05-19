@@ -139,3 +139,16 @@ and, finally, I push my commit
 ```
 git push --set-upstream origin windowsDoc
 ```
+
+This new modification is now pushed on my fork repository.
+I need to do a pull request on the main nevergrad repository.
+
+With github it is very simple. First we have to go on the nevergrad projects
+([https://github.com/facebookresearch/nevergrad](https://github.com/facebookresearch/nevergrad)).
+
+Here, the fresh push from my fork is automatically detected, and github proposed to 
+**compare and pull request**.
+
+Click on this button, check the modification and then you can create the PR by clicking on the *create pull request* button.
+
+The PR will be *reviewed*, possibly *discussed*, and if everything is correct *accepted*.
