@@ -7,7 +7,7 @@ One simple way to work with/on nevergrad is to use anaconda.
 First, we have to install Anaconda for Windows.
 
 Please download from [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html) the version accordingly to your Windows.
-For a windows 64 bits you can directly click [here](https://repo.anaconda.com/archive/Anaconda3-2020.02-Windows-x86_64.exe)
+For a windows 64 bits you can directly click [here](https://repo.anaconda.com/archive/Anaconda3-2020.02-Windows-x86_64.exe).
 
 Click on the downloaded file to install it. You can let all proposed options by default.
 For the installation all you have to do is to click on "*next*" and "*install*", and at the end "*finish*".
