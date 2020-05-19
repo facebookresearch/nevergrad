@@ -90,7 +90,7 @@ You can see other softs you are used to (jupyter, rstudio for instance).
 
 ## To run an experiment
 
-Click on the windows key on your keyboard and launch anaconda navigator, and select you nevergrad environment (in the "application on" menu).
+Click on the windows key on your keyboard and launch the anaconda navigator, and select you nevergrad environment (in the "application on" menu).
 
 Next, launch a powershell prompt and go in the nevergrad repository by dialing
 ```
