@@ -149,6 +149,8 @@ With github it is very simple. First we have to go on the nevergrad projects
 Here, the fresh push from my fork is automatically detected, and github proposed to 
 **compare and pull request**.
 
+![Pull request](resources/windows_screenshots/PR.PNG)
+
 Click on this button, check the modification and then you can create the PR by clicking on the *create pull request* button.
 
 The PR will be *reviewed*, possibly *discussed*, and if everything is correct *accepted*.
