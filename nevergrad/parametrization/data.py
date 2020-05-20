@@ -204,7 +204,7 @@ class Array(core.Parameter):
         self: A,
         lower: BoundValue = None,
         upper: BoundValue = None,
-        method: str = "clipping",
+        method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
         a_min: BoundValue = None,
         a_max: BoundValue = None,
@@ -220,10 +220,10 @@ class Array(core.Parameter):
         method: str
             One of the following choices:
 
+            - "bouncing": bounce on border (at most once). This is a variant of clipping,
+               avoiding bounds over-samping (default).
             - "clipping": clips the values inside the bounds. This is efficient but leads
               to over-sampling on the bounds.
-            - "bouncing": bounce on border (at most once). This is an experimental variant of clipping,
-               avoiding bounds over-samping.
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
               reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
               dimension.
