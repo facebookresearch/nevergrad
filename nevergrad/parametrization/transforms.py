@@ -185,20 +185,30 @@ class Clipping(BoundTransform):
     Parameters
     ----------
     a_min: float or None
+        lower bound
     a_max: float or None
+        upper bound
+    bounce: bool
+        bounce (once) on borders instead of just clipping
     """
 
     def __init__(
         self,
         a_min: BoundType = None,
-        a_max: BoundType = None
+        a_max: BoundType = None,
+        bounce: bool = False,
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
-        self.name = f"Cl({_f(a_min)},{_f(a_max)})"
+        self._bounce = bounce
+        b = ",b" if bounce else ""
+        self.name = f"Cl({_f(a_min)},{_f(a_max)}{b})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return np.clip(x, self.a_min, self.a_max)  # type: ignore
+        out = np.clip(x, self.a_min, self.a_max)
+        if self._bounce:
+            out = np.clip(2 * out - x, self.a_min, self.a_max)
+        return out  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
