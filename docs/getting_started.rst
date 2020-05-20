@@ -30,9 +30,9 @@ the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
 - under Windows, you may need to preinstall torch (for :code:`benchmark` or :code:`all` installations) using Pytorch `installation instructions <https://pytorch.org/get-started/locally/>`_.
 
 Installing on Windows
-----------
+---------------------
 
-For windows installation, please refer to `the windows documention <https://github.com/facebookresearch/nevergrad/blob/master/docs/windows.md>`
+For Windows installation, please refer to `the Windows documention <./windows.html>`_.
 
 Basic optimization example
 --------------------------
