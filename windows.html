@@ -1,0 +1,329 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation and configuration on Windows &mdash; nevergrad  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing to Nevergrad" href="contributing.html" />
+    <link rel="prev" title="Examples of benchmarks" href="benchmarks.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> nevergrad
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and configuration on Windows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation-of-anaconda-and-nevergrad">Installation of Anaconda and nevergrad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-spyder">Adding spyder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#to-run-an-experiment">To run an experiment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#to-make-a-pull-request">To make a pull request</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nevergrad</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation and configuration on Windows</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/windows.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="installation-and-configuration-on-windows">
+<h1>Installation and configuration on Windows<a class="headerlink" href="#installation-and-configuration-on-windows" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation-of-anaconda-and-nevergrad">
+<h2>Installation of Anaconda and nevergrad<a class="headerlink" href="#installation-of-anaconda-and-nevergrad" title="Permalink to this headline">¶</a></h2>
+<p>One simple way to work with/on nevergrad is to use anaconda.</p>
+<p>First, we have to install Anaconda for Windows.</p>
+<p>Please download from <a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html">here</a> the version accordingly to your Windows.
+For a windows 64 bits you can directly click <a class="reference external" href="https://repo.anaconda.com/archive/Anaconda3-2020.02-Windows-x86_64.exe">here</a>.</p>
+<p>Click on the downloaded file to install it. You can let all proposed options by default.
+For the installation all you have to do is to click on “<em>next</em>” and “<em>install</em>”, and at the end “<em>finish</em>”.</p>
+<p>Once this is installed, we have to launch it. Click on the windows key on your keyboard</p>
+<p><img alt="windows key" src="_images/CtrlWindowsAlt.jpg" /></p>
+<p>and start to dial on “<em>anaconda</em>” until “<em>anaconda navigator</em>” appears. Click on it.</p>
+<p><img alt="Anaconda navigator" src="_images/anacondanavigator.PNG" /></p>
+<p>Once the navigator is laucnhed, you should get this:</p>
+<p><img alt="Anaconda navigator" src="_images/navigator.PNG" /></p>
+<p>The navigator is the main menu. From here, you can install, launch different softs, create or launch different environment and so on.</p>
+<p>We will create a fresh new environment for nevergrad. In the left menu, click on “<em>environments</em>” and then on the <em>create</em> button.</p>
+<p>You can choose the name you want, and then click on “<em>create</em>”.</p>
+<p><img alt="Creating environment" src="_images/create.PNG" /></p>
+<p>Now go back to the main page of Anaconda navigator (by clicking on <em>Home</em> in the left menu).
+You can see that you are now in the new environment. No soft are installed yet.
+First, we will install “<em>Powershell Prompt</em>”, by clicking on the install button under it.</p>
+<p>Once installed, this button becomes a “launch” button, then just launch it.
+You have now a terminal launched.</p>
+<p><img alt="Prompt" src="_images/prompt.PNG" /></p>
+<p>Dial on</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="n">repos</span> 
+<span class="n">cd</span> <span class="n">repos</span>
+</pre></div>
+</div>
+<p>This creates a repository named “<em>repos</em>” and goes into it.
+Then we will clone nevergrad:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">facebookresearch</span><span class="o">/</span><span class="n">nevergrad</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>If you have a fork, you can clone your fork instead (be careful to not have
+the same names).
+For instance, I have one, then I do</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">fteytaud</span><span class="o">/</span><span class="n">nevergrad</span><span class="o">.</span><span class="n">git</span> 
+</pre></div>
+</div>
+<p>Finally, to install all the needed packages, follow these commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">nevergrad</span><span class="o">/</span><span class="n">requirements</span><span class="o">/</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">main</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">bench</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">dev</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="n">pytorch</span>
+<span class="n">cd</span> <span class="o">..</span>
+</pre></div>
+</div>
+<p>Installation is now over</p>
+</div>
+<div class="section" id="adding-spyder">
+<h2>Adding spyder<a class="headerlink" href="#adding-spyder" title="Permalink to this headline">¶</a></h2>
+<p><strong>Spyder</strong> is a python ide well integrated in the anaconda environment.
+It is used edit/add/read python source code.</p>
+<p>To install it: In the anaconda environment select your nevergrad environment (in the “application on” menu).
+Then you can install it by clicking on the install button under the spyder case.
+You can see other softs you are used to (jupyter, rstudio for instance).</p>
+<p><img alt="Spyder" src="_images/spyder.PNG" /></p>
+</div>
+<div class="section" id="to-run-an-experiment">
+<h2>To run an experiment<a class="headerlink" href="#to-run-an-experiment" title="Permalink to this headline">¶</a></h2>
+<p>Click on the windows key on your keyboard and launch the anaconda navigator, and select you nevergrad environment (in the “application on” menu).</p>
+<p>Next, launch a powershell prompt and go in the nevergrad repository with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">repos</span><span class="o">/</span><span class="n">nevergrad</span>
+</pre></div>
+</div>
+<p>and launch for instance the parallel experiment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">nevergrad</span><span class="o">.</span><span class="n">benchmark</span> <span class="n">parallel</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="to-make-a-pull-request">
+<h2>To make a pull request<a class="headerlink" href="#to-make-a-pull-request" title="Permalink to this headline">¶</a></h2>
+<p>Knowing how to add a pull request is very useful.
+For instance, I want to pull request this documentation.</p>
+<p>Click on the windows key on your keyboard and launch the anaconda navigator, and select you nevergrad environment (in the “application on” menu).</p>
+<p>Next, launch a powershell prompt and go into the nevergrad repository with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">repos</span><span class="o">/</span><span class="n">nevergrad</span>
+</pre></div>
+</div>
+<p>I want to create a new branch, called <em>windowsDoc</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">windowsDoc</span>
+</pre></div>
+</div>
+<p><img alt="Creating a new branch" src="_images/newBranch.PNG" /></p>
+<p>Then, I add the new files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">add</span> <span class="o">.</span>\<span class="n">docs</span>\<span class="n">windows</span><span class="o">.</span><span class="n">md</span>
+<span class="n">git</span> <span class="n">add</span> <span class="o">.</span>\<span class="n">docs</span>\<span class="n">resources</span>\<span class="n">windows_screenshots</span>\<span class="o">*</span>
+</pre></div>
+</div>
+<p>and I commit the modification</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">am</span> <span class="s2">&quot;windows documentation&quot;</span>
+</pre></div>
+</div>
+<p><img alt="Commit" src="_images/commit.PNG" /></p>
+<p>and, finally, I push my commit</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">push</span> <span class="o">--</span><span class="nb">set</span><span class="o">-</span><span class="n">upstream</span> <span class="n">origin</span> <span class="n">windowsDoc</span>
+</pre></div>
+</div>
+<p>This new modification is now pushed on my fork repository.
+I need to do a pull request on the main nevergrad repository.</p>
+<p>With github it is very simple. First we have to go on the nevergrad projects
+(<a class="reference external" href="https://github.com/facebookresearch/nevergrad">https://github.com/facebookresearch/nevergrad</a>).</p>
+<p>Here, the fresh push from my fork is automatically detected, and github proposed to
+<strong>compare and pull request</strong>.</p>
+<p><img alt="Pull request" src="_images/PR.PNG" /></p>
+<p>Click on this button, check the modification and then you can create the PR by clicking on the <em>create pull request</em> button.</p>
+<p>The PR will be <em>reviewed</em>, possibly <em>discussed</em>, and if everything is correct <em>accepted</em>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="contributing.html" class="btn btn-neutral float-right" title="Contributing to Nevergrad" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="benchmarks.html" class="btn btn-neutral float-left" title="Examples of benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Facebook AI Research
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -14,7 +14,7 @@ Quick start
 
     pip install nevergrad
 
-You can find other installation options in the :ref:`Getting started section <getting_started>`.
+You can find other installation options (including for Windows users) in the :ref:`Getting started section <getting_started>`.
 
 Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
 
@@ -56,6 +56,7 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    parametrization_ref.rst
    benchmarking.rst
    benchmarks.rst
+   windows.md
    contributing.rst
    opencompetition2020.md
 
