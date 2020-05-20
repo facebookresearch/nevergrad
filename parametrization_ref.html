@@ -236,6 +236,11 @@ set_bounds, set_mutation, set_integer_casting</p>
 <ul>
 <li><p>”clipping”: clips the values inside the bounds. This is efficient but leads
 to over-sampling on the bounds.</p></li>
+<li><dl class="simple">
+<dt>”bouncing”: bounce on border (at most once). This is an experimental variant of clipping,</dt><dd><p>avoiding bounds over-samping.</p>
+</dd>
+</dl>
+</li>
 <li><p>”constraint”: adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
 reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
 dimension.</p></li>
