@@ -1,4 +1,4 @@
-# Installation and configuration
+# Installation and configuration on Windows
 
 ## Installation of Anaconda and nevergrad
 
