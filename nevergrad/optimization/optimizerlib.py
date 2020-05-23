@@ -911,8 +911,6 @@ class Portfolio(base.Optimizer):
 
 class InfiniteMetaModelOptimum(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
-    def __init__(self, arg):
-        super().__init__(self, arg)
 
 
 def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLike:
