@@ -1725,7 +1725,7 @@ class MetaModel(base.Optimizer):
                        multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers),  # share parametrization and its rng
+        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
         
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
