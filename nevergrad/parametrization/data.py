@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 import warnings
 import typing as tp
 import numpy as np
@@ -221,6 +222,8 @@ class Array(core.Parameter):
 
             - "clipping": clips the values inside the bounds. This is efficient but leads
               to over-sampling on the bounds.
+            - "bouncing": bounce on border (at most once). This is an experimental variant of clipping,
+               avoiding bounds over-samping.
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
               reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
               dimension.
@@ -258,14 +261,16 @@ class Array(core.Parameter):
                 raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
         # update instance
         transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound)
+        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
         if method in transforms:
-            if self.exponent is not None and method != "clipping":
+            if self.exponent is not None and method not in ("clipping", "bouncing"):
                 raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
             self.bound_transform = transforms[method](*bounds)
         elif method == "constraint":
             self.register_cheap_constraint(checker)
         else:
-            raise ValueError(f"Unknown method {method}")
+            avail = ["constraint"] + list(transforms)
+            raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
         self.bounds = bounds  # type: ignore
         self.full_range_sampling = full_range_sampling
         # warn if sigma is too large for range
