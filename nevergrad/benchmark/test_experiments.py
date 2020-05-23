@@ -19,8 +19,8 @@ from . import experiments
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in {"mltuning", "realworld_oneshot", "mlda", "mldaas", "realworld"}:
-        check_seedable(maker, "mltuning" in name or "instru" in name or "power" in name)  # this is a basic test on first elements, do not fully rely on it
+    if name not in {"mltuning", "realworld_oneshot", "mlda", "mldaas", "realworld", "instrum_discrete"}:
+        check_seedable(maker, "mltuning" in name or "power" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
