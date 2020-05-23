@@ -318,7 +318,7 @@ class _PopulationSizeController:
         self._loss_record += [value]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-self.llambda:]
+            last_fifth = self._loss_record[-int(self.llambda):]  # casting to int to avoid pylint bug
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
@@ -1510,50 +1510,46 @@ class NGO(base.Optimizer):
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
             if self.dimension < 60:
-                self.optims = [DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)]
+                self.optim: base.Optimizer = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
             else:
-                self.optims = [CMA(self.parametrization, budget, num_workers)]
+                self.optim = CMA(self.parametrization, budget, num_workers)
         else:
             if self.has_noise and self.fully_continuous:
                 # This is the real of population control. FIXME: should we pair with a bandit ?
-                self.optims = [TBPSA(self.parametrization, budget, num_workers)]
+                self.optim = TBPSA(self.parametrization, budget, num_workers)
             else:
                 if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                    self.optims = [DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)]
+                    self.optim = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
                 else:
                     if num_workers > budget / 5:
                         if num_workers > budget / 2. or budget < self.dimension:
-                            self.optims = [MetaRecentering(self.parametrization, budget, num_workers)]  # noqa: F405
+                            self.optim = MetaRecentering(self.parametrization, budget, num_workers)  # noqa: F405
                         else:
-                            self.optims = [NaiveTBPSA(self.parametrization, budget, num_workers)]  # noqa: F405
+                            self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
                     else:
                         # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                         if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                            self.optims = [chainCMAPowell(self.parametrization, budget, num_workers)]  # noqa: F405
+                            self.optim = chainCMAPowell(self.parametrization, budget, num_workers)  # noqa: F405
                         else:
                             if num_workers == 1 and budget < self.dimension * 30:
                                 if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                    self.optims = [OnePlusOne(self.parametrization, budget, num_workers)]  # noqa: F405
+                                    self.optim = OnePlusOne(self.parametrization, budget, num_workers)  # noqa: F405
                                 else:
-                                    self.optims = [Cobyla(self.parametrization, budget, num_workers)]  # noqa: F405
+                                    self.optim = Cobyla(self.parametrization, budget, num_workers)  # noqa: F405
                             else:
                                 if self.dimension > 2000:  # DE is great in such a case (?).
-                                    self.optims = [DE(self.parametrization, budget, num_workers)]  # noqa: F405
+                                    self.optim = DE(self.parametrization, budget, num_workers)  # noqa: F405
                                 else:
-                                    self.optims = [CMA(self.parametrization, budget, num_workers)]  # noqa: F405
+                                    self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        optim_index = 0
-        candidate = self.optims[optim_index].ask()
-        candidate._meta["optim_index"] = optim_index
-        return candidate
+        return self.optim.ask()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        optim_index = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, value)
+        self.optim.tell(candidate, value)
 
     def recommend(self) -> p.Parameter:
-        return self.optims[0].recommend()
+        return self.optim.recommend()
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
@@ -1706,15 +1702,15 @@ class Shiwa(NGO):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            self.optims = [RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)]
+            self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         else:
             if not self.parametrization.descriptors.metrizable:
                 if self.dimension < 60:
-                    self.optims = [NGO(self.parametrization, budget, num_workers)]
+                    self.optim = NGO(self.parametrization, budget, num_workers)
                 else:
-                    self.optims = [CMA(self.parametrization, budget, num_workers)]
+                    self.optim = CMA(self.parametrization, budget, num_workers)
             else:
-                self.optims = [NGO(self.parametrization, budget, num_workers)]
+                self.optim = NGO(self.parametrization, budget, num_workers)
 
 
 @registry.register
@@ -1742,3 +1738,4 @@ class MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._optim.tell(candidate, value)
+

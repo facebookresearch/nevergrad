@@ -18,6 +18,7 @@ from . import transforms
     arctan=(transforms.ArctanBound(3, 4), "At(3,4)"),
     cumdensity=(transforms.CumulativeDensity(), "Cd()"),
     clipping=(transforms.Clipping(None, 1e12), "Cl(None,1000000000000)"),
+    bouncing=(transforms.Clipping(-12000, 12000, bounce=True), "Cl(-12000,12000,b)"),
     fourrier=(transforms.Fourrier(), "F(0)"),
 )
 def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
@@ -34,6 +35,7 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
     exponentiate=(transforms.Exponentiate(10, -1.), [0, 1, 2], [1, .1, .01]),
     tanh=(transforms.TanhBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     arctan=(transforms.ArctanBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
+    bouncing=(transforms.Clipping(0, 10, bounce=True), [-1, 22, 3], [1, 0, 3]),
     cumdensity=(transforms.CumulativeDensity(), [-10, 0, 10], [0, .5, 1]),
 )
 def test_vals(transform: transforms.Transform, x: List[float], expected: List[float]) -> None:
