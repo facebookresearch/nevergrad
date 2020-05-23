@@ -1721,13 +1721,12 @@ class Shiwa(NGO):
 class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1,
+                       multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [
-            CMA(self.parametrization, budget, num_workers),  # share parametrization and its rng
-        ]  # noqa: F405
-
+        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
+        
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
@@ -1736,15 +1735,10 @@ class MetaModel(base.Optimizer):
                 data = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
-                candidate = self.optims[0].ask()
+                candidate = self._optim.ask()
         else:
-            candidate = self.optims[0].ask()
+            candidate = self._optim.ask()
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.optims[0].tell(candidate, value)
-
-    #def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-    #    raise base.TellNotAskedNotSupportedError
-
-
+        self._optim.tell(candidate, value)
