@@ -153,7 +153,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Threshold", "Softmax"]:
                 if instrum_str == "Softmax":
-                    instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
+                    instrum = ng.p.Choice(range(arity), repetitions=nv)
+                    # Equivalent to, but much faster than, the following:
+                    # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
                 else:
                     instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
