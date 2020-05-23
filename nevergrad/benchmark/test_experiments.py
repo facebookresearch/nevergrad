@@ -20,7 +20,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
     if name not in {"mltuning", "realworld_oneshot", "mlda", "mldaas", "realworld"}:
-        check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
+        check_seedable(maker, "mltuning" in name or "instru" in name or "power" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
@@ -43,7 +43,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
 
 
 def check_seedable(maker: tp.Any, short: bool=False) -> None:
-    """Randomized check of seedability for 8 first elements
+    """Randomized check of seedability for the first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
     # we use "maker: Any" because signature for one or the other case (seedable or not) is way too complex, and won't help much here...
