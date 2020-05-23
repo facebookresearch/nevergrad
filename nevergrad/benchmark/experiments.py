@@ -380,10 +380,10 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         budgets = [10, 20, 40]
     if hd:
         optims += ["SplitOptimizer9", "SplitOptimizer5", "SplitOptimizer13"]
-    RS = np.random.RandomState(next(seedg))
-    RS.shuffle(optims)
-    RS.shuffle(functions)
-    RS.shuffle(budgets)
+    rs = np.random.RandomState(next(seedg))
+    rs.shuffle(optims)
+    rs.shuffle(functions)
+    rs.shuffle(budgets)
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -764,11 +764,11 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     algos += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
               "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    RS = np.random.RandomState(next(seedg))
-    RS.shuffle(algos)
-    RS.shuffle(funcs)
+    rs = np.random.RandomState(next(seedg))
+    rs.shuffle(algos)
+    rs.shuffle(funcs)
     budgets = [1600, 3200, 6400, 12800]
-    RS.shuffle(budgets)
+    rs.shuffle(budgets)
     for budget in budgets:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
