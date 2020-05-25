@@ -147,7 +147,7 @@ class SequentialExecutor:
 def _tobytes(x: ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
-    assert x.dtype == np.float
+    assert x.dtype == np.float, f"Incorrect type {x.dtype} is not float"
     return x.tobytes()
 
 
