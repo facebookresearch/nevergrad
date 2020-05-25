@@ -43,7 +43,7 @@ def test_base_example() -> None:
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
     recommendation = optimizer.minimize(square)
     print(recommendation.value)
-    # >>> ((array([0.52213095, 0.45030925]),), {'y': -0.0003603100877068604})
+    # >>> ((array([0.52213095, 0.45030925]),), {'y': -0.0003603100877068604})
     # DOC_BASE_2
     from concurrent import futures
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=10, num_workers=2)
