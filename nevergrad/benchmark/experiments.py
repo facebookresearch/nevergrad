@@ -362,7 +362,11 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
             noise_level = 100
     else:
         noise_level = 0
-    optims: tp.List[str] = ["Shiwa", "NGO", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    optims: tp.List[str] = ["Shiwa", "NGO", "CMA", "DiagonalCMA", "MetaModel", "chainCMAPowell"]
+    if noise:
+        optims += ["TBPSA", "SQP"]
+    if hd:
+        optims += ["OnePlusOne"]
     if hd and noise:
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
