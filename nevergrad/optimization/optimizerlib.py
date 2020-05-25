@@ -1738,3 +1738,4 @@ class MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._optim.tell(candidate, value)
+
