@@ -226,7 +226,7 @@ set_bounds, set_mutation, set_integer_casting</p>
 </div>
 <dl class="py method">
 <dt id="nevergrad.p.Array.set_bounds">
-<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'clipping'</span></em>, <em class="sig-param"><span class="n">full_range_sampling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_min</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_max</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'bouncing'</span></em>, <em class="sig-param"><span class="n">full_range_sampling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_min</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_max</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bounds all real values into [lower, upper] using a provided method</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -235,13 +235,13 @@ set_bounds, set_mutation, set_integer_casting</p>
 <li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value</p></li>
 <li><p><strong>method</strong> (<em>str</em>) – <p>One of the following choices:</p>
 <ul>
-<li><p>”clipping”: clips the values inside the bounds. This is efficient but leads
-to over-sampling on the bounds.</p></li>
 <li><dl class="simple">
-<dt>”bouncing”: bounce on border (at most once). This is an experimental variant of clipping,</dt><dd><p>avoiding bounds over-samping.</p>
+<dt>”bouncing”: bounce on border (at most once). This is a variant of clipping,</dt><dd><p>avoiding bounds over-samping (default).</p>
 </dd>
 </dl>
 </li>
+<li><p>”clipping”: clips the values inside the bounds. This is efficient but leads
+to over-sampling on the bounds.</p></li>
 <li><p>”constraint”: adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
 reaching beyond the bounds. This avoids oversampling the boundaries, but can be inefficient in large
 dimension.</p></li>
