@@ -31,7 +31,7 @@ class ArtificialVariable:
         self.block_dimension = block_dimension
         self.only_index_transform = only_index_transform
         self.hashing = hashing
-        self.dimension = self._dimension if not self.hashing else 1  # external dim?
+        self.dimension = self._dimension
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -49,9 +49,9 @@ class ArtificialVariable:
             self._initialize()
         if self.hashing:
             state = np.random.get_state()
-            y = data[0]  # should be a string... or something...
-            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))  # type: ignore
-            data = np.random.normal(0., 1., len(y))  # type: ignore
+            for i, y in enumerate(data):
+                np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))  # type: ignore
+                data[i] = np.random.normal(0., 1.)  # type: ignore
             np.random.set_state(state)
         data = np.array(data, copy=False)
         output = []
