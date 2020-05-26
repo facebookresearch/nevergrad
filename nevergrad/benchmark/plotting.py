@@ -172,6 +172,10 @@ def create_plots(
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     if "instrum_str" in set(df.columns):
         df.loc[:, "optimizer_name"] = df.loc[:, "optimizer_name"] + df.loc[:, "instrum_str"]
+        df = df.drop(columns="instrum_str")
+        df = df.drop(columns="dimension")
+    if "parametrization" in set(df.columns):
+        df = df.drop(columns="parametrization")
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
@@ -184,7 +188,7 @@ def create_plots(
     descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
-    all_descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
+    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # now those should be actual interesting descriptors
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
@@ -650,7 +654,7 @@ def main() -> None:
     parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
     args = parser.parse_args()
     exp_df = utils.Selector.read_csv(args.filepath)
-    if args.merge_parametrization:
+    if True: #args.merge_parametrization:
         exp_df = merge_parametrization_and_optimizer(exp_df)
     output_dir = args.output
     if output_dir is None:

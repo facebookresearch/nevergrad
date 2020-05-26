@@ -154,9 +154,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Threshold", "Softmax"]:
                 if instrum_str == "Softmax":
-                    instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
+                    instrum = ng.p.Choice(range(arity), repetitions=nv)  # type: ignore
                 else:
-                    instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+                    instrum = ng.p.Array(init=(arity // 2) * np.ones((nv,))).set_bounds(0, arity)
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                     dfunc = ExperimentFunction(discrete_func, instrum)
                     dfunc.add_descriptors(arity=arity)
@@ -409,7 +409,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd and noise:
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
-    optims = ["Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne", "CMandAS", "MetaModel", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    optims = ["chainCMAPowell", "Cobyla", "SQP", "TBPSA", "Shiwa", "NGO", "MiniDE", "OnePlusOne", "CMandAS", "MetaModel", "CMA", "DiagonalCMA", "NaiveTBPSA"]
+    optims = ["chainCMAPowell", "CMA", "MetaModel", "Shiwa", "CMandAS", "CMandAS2"]
     RS = np.random.RandomState(next(seedg))
     RS.shuffle(optims)
     RS.shuffle(functions)
@@ -732,9 +733,9 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
     seedg = create_seed_generator(seed)
-    algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE"]
+    algos = ["NaiveTBPSA", "PSO", "OnePlusOne",
+             "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero",
+             "MiniDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -797,7 +798,8 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO", "Shiwa", "DiagonalCMA",
              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    algos = ["Shiwa"]
+    algos = ["SplitDiagOptimizer3", "SplitDiagOptimizer5", "SplitDiagOptimizer9", "SplitDiagOptimizer13",
+             "SplitOptimizer3", "SplitOptimizer9", "SplitOptimizer13"]
     for budget in [12800, 25600, 51200, 102400]:
         for num_workers in [1]:
             if num_workers < budget:
@@ -827,7 +829,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     RS = np.random.RandomState(next(seedg))
     RS.shuffle(algos)
     RS.shuffle(funcs)
-    budgets = [6400, 12800, 25600]
+    budgets = [6400, 12800, 25600, 51200, 102400]
     RS.shuffle(budgets)
     for budget in budgets:
         for num_workers in [1, 10, 100]:
