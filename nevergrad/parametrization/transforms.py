@@ -242,31 +242,40 @@ class ArctanBound(BoundTransform):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return self._b + self._a * np.arctan(x)  # type: ignore
+        return self._b + self._a * np.arctan(x)
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
         if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
-        return np.tan((y - self._b) / self._a)  # type: ignore
+        return np.tan((y - self._b) / self._a)
 
 
-class CumulativeDensity(Transform):
+class CumulativeDensity(BoundTransform):
     """Bounds all real values into [0, 1] using a gaussian cumulative density function (cdf)
     Beware, cdf goes very fast to its limits.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = "Cd()"
+    def __init__(
+        self,
+        lower: float = 0.0,
+        upper: float = 1.0,
+    ) -> None:
+        assert all(isinstance(x, (int, float)) for x in (lower, upper))
+        super().__init__(a_min=lower, a_max=upper)
+        self._b = lower
+        self._a = upper - lower
+        self.name = f"Cd({_f(lower)},{_f(upper)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return stats.norm.cdf(x)  # type: ignore
+        return self._a * stats.norm.cdf(x) + self._b
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) > 1 or np.min(y) < 0:
-            raise ValueError("Only data between 0 and 1 can be transformed back (bounds lead to infinity).")
-        return stats.norm.ppf(y)  # type: ignore
+        if (y > self.a_max).any() or (y < self.a_min).any():
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back "
+                             "(bounds leads to infinity).")
+        y = (y - self._b) / self._a
+        return stats.norm.ppf(y)
 
 
 class Fourrier(Transform):
