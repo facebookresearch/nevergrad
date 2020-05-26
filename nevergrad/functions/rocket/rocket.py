@@ -13,7 +13,6 @@ https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simula
 import math
 import pyproj
 import numpy as np
-import typing as tp
 
 def rocket(thrust_bias: np.ndarray):
 
@@ -40,7 +39,7 @@ def rocket(thrust_bias: np.ndarray):
     def alt(Ex, Ey, Ez):
         ecef = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
         lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
-        lons, lats, alt = pyproj.transform(ecef, lla, Ex, Ey, Ez, radians=True)
+        _, _, alt = pyproj.transform(ecef, lla, Ex, Ey, Ez, radians=True)
         return alt
     
     def grav_force(Ex, Ey, Ez, m):
@@ -154,7 +153,7 @@ def rocket(thrust_bias: np.ndarray):
     roc_mass = 0.0472  # mass of rocket in kg (not including engine
     theta = 45  # Angle of launch from z
     phi = 45  # Angle of launch from x
-    eng_file = "C6.csv"  # engine file location
+    # Original code: eng_file = "C6.csv"  # engine file location
     eng_mass_initial = 0.024  # Loaded engine mass in kg
     eng_mass_final = 0.0132  # empty engine mass in kg
     total_mass = roc_mass + eng_mass_initial
@@ -163,9 +162,6 @@ def rocket(thrust_bias: np.ndarray):
     ## Earth rotation speed at inital position
     ## Position Velocity Attitude(Earth Centric x-forward y-right z-up)
     ## latitude and longitude position
-    
-    def round(x, y):
-        return x
 
     # Adapted from the orignal code (minor modifications).
     thrust = np.asarray([
@@ -288,4 +284,5 @@ def rocket(thrust_bias: np.ndarray):
         r_list = np.append(r_list, (round(r, 6)))
 
     return 1.0 - max(Ez_list) / 3032708.353202  # Should be 0 for input (0.,....,0.)
+
 
