@@ -909,6 +909,53 @@ class Portfolio(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
+class InfiniteMetaModelOptimum(ValueError):
+    """Sometimes the optimum of the metamodel is at infinity."""
+
+
+def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLike:
+    """Approximate optimum learnt from the k best.
+
+    Parameters
+    ----------
+    archive: utils.Archive[utils.Value]
+    """
+    items = list(archive.items_as_arrays())
+    dimension = len(items[0][0])
+
+    # Select the k best.
+    first_k_individuals = [x for x in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]]
+    assert len(first_k_individuals) == k
+
+    # Recenter the best.
+    middle = np.array(sum(p[0] for p in first_k_individuals) / k)
+    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0]-first_k_individuals[0][0])**2))
+    y= [archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals]
+    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals]) 
+
+    # We need SKLearn.
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
+    polynomial_features = PolynomialFeatures(degree=2)
+    X2 = polynomial_features.fit_transform(X)
+
+    # Fit a linear model.
+    model = LinearRegression()
+    model.fit(X2, y)
+    
+    # Find the minimum of the quadratic model.
+    optimizer = OnePlusOne(parametrization=dimension, budget=dimension*dimension+dimension+500)
+    try:
+        optimizer.minimize(lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x])))))
+    except ValueError:
+        raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
+
+    minimum = optimizer.provide_recommendation().value
+    if np.sum(minimum**2) > 1.:
+        raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
+    return middle + normalization * minimum
+
+
 @registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
@@ -1664,3 +1711,31 @@ class Shiwa(NGO):
                     self.optim = CMA(self.parametrization, budget, num_workers)
             else:
                 self.optim = NGO(self.parametrization, budget, num_workers)
+
+
+@registry.register
+class MetaModel(base.Optimizer):
+    """Adding a metamodel into CMA."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1,
+                       multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
+        
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
+                len(self.archive) >= (self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1):
+            try:
+                data = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
+                candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+                candidate = self._optim.ask()
+        else:
+            candidate = self._optim.ask()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        self._optim.tell(candidate, value)
+
