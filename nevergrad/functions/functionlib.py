@@ -49,7 +49,8 @@ class ArtificialVariable:
             self._initialize()
         if self.hashing:
             for i, y in enumerate(data):
-                rs = np.random.RandomState(int(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000))  # type: ignore
+                rs = np.random.RandomState(int(y*1000))  
+                # Was: int(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000))  # type: ignore
                 data[i] = rs.normal(0., 1.)  # type: ignore
         data = np.array(data, copy=False)
         output = []
