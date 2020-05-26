@@ -187,7 +187,7 @@ class Choice(BaseChoice):
         """The probabilities used to draw the value
         """
         exp = np.exp(self.weights.value)
-        return exp / np.sum(exp)  # type: ignore
+        return exp / np.sum(exp)
 
     def _get_value(self) -> tp.Any:
         if self._repetitions is None:
