@@ -315,6 +315,17 @@ def test_choice_repetitions() -> None:
     choice.mutate()
 
 
+def test_transition_choice_repetitions() -> None:
+    choice = par.TransitionChoice([0, 1, 2, 3], repetitions=2)
+    choice.random_state.seed(12)
+    assert len(choice) == 4
+    assert choice.value == (2, 2)
+    choice.value = (3, 1)
+    np.testing.assert_almost_equal(choice.position.value, [3.5, 1.5], decimal=3)
+    choice.mutate()
+    assert choice.value == (3, 0)
+
+
 def test_descriptors() -> None:
     d1 = utils.Descriptors()
     d2 = utils.Descriptors(continuous=False)
