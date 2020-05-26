@@ -164,7 +164,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
      (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
      (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})"),
-     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Array{Cd(0,2)}"
+     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)}"
                                      ",transitions=[1. 1.])")
      ]
 )
