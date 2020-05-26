@@ -50,7 +50,7 @@ class ArtificialVariable:
         if self.hashing:
             state = np.random.get_state()
             for i, y in enumerate(data):
-                np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))  # type: ignore
+                np.random.seed(int(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000))  # type: ignore
                 data[i] = np.random.normal(0., 1.)  # type: ignore
             np.random.set_state(state)
         data = np.array(data, copy=False)
