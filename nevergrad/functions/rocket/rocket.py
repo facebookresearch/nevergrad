@@ -105,7 +105,7 @@ def rocket(thrust_bias: np.ndarray):
     # Total 2nd stage 98 kg
     # 2nd Stage propellant 83 kg
     
-    ## GOAL FOR FINAL CODE
+    ## GOAL FOR FINAL CODE (this refers to the original code, this does not apply here at least in the foreseeable future)
     # Iterate through launch angels to minimize delta V in the y(rocket frame) direction, to 150km
     # after thrust, maximize delta v in the x(rocket frame) direction
     # Minimize time for initial trust burn as third priority
