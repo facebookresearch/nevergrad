@@ -260,11 +260,12 @@ class CumulativeDensity(BoundTransform):
         self,
         lower: float = 0.0,
         upper: float = 1.0,
+        eps: float = 1e-9
     ) -> None:
-        assert all(isinstance(x, (int, float)) for x in (lower, upper))
         super().__init__(a_min=lower, a_max=upper)
         self._b = lower
         self._a = upper - lower
+        self._eps = eps
         self.name = f"Cd({_f(lower)},{_f(upper)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -272,9 +273,8 @@ class CumulativeDensity(BoundTransform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if (y > self.a_max).any() or (y < self.a_min).any():
-            raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back "
-                             "(bounds leads to infinity).")
-        y = (y - self._b) / self._a
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.\nGot: {y}")
+        y = np.clip((y - self._b) / self._a, self._eps, 1 - self._eps)
         return stats.norm.ppf(y)
 
 

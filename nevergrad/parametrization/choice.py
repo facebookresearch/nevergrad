@@ -11,7 +11,6 @@ from . import utils
 from . import core
 from .container import Tuple
 from .data import Array
-from .data import Scalar
 # weird pylint issue on "Descriptors"
 # pylint: disable=no-value-for-parameter
 
@@ -22,7 +21,15 @@ T = tp.TypeVar("T", bound="TransitionChoice")
 
 class BaseChoice(core.Dict):
 
-    def __init__(self, *, choices: tp.Iterable[tp.Any], **kwargs: tp.Any) -> None:
+    def __init__(
+        self,
+        *,
+        choices: tp.Iterable[tp.Any],
+        repetitions: tp.Optional[int] = None,
+        **kwargs: tp.Any
+    ) -> None:
+        assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
+        self._repetitions = repetitions
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)  # for iterables
         if not lchoices:
@@ -41,10 +48,11 @@ class BaseChoice(core.Dict):
         return len(self.choices)
 
     @property
-    def index(self) -> int:
-        """Index of the chosen option, if unique
+    def index(self) -> int:  # delayed choice
+        """Index of the chosen option
         """
-        raise NotImplementedError
+        assert self.indices.size == 1
+        return int(self.indices[0])
 
     @property
     def indices(self) -> np.ndarray:
@@ -67,12 +75,15 @@ class BaseChoice(core.Dict):
         self._find_and_set_value(value)
 
     def _get_value(self) -> tp.Any:
-        return core.as_parameter(self.choices[self.index]).value
+        if self._repetitions is None:
+            return core.as_parameter(self.choices[self.index]).value
+        return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
 
     def _find_and_set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
         """Must be adapted to each class
         This handles a list of values, not just one
         """  # TODO this is currenlty very messy, may need some improvement
+        values = [values] if self._repetitions is None else values
         self._check_frozen()
         indices: np.ndarray = -1 * np.ones(len(values), dtype=int)
         nums = sorted(int(k) for k in self.choices._content)
@@ -141,11 +152,10 @@ class Choice(BaseChoice):
             deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
-        assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         lchoices = list(choices)
-        self._repetitions: tp.Optional[int] = repetitions
-        rep = 1 if self._repetitions is None else self._repetitions
-        super().__init__(choices=lchoices, weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False))
+        rep = 1 if repetitions is None else repetitions
+        super().__init__(choices=lchoices, repetitions=repetitions,
+                         weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False))
         self._deterministic = deterministic
         self._indices: tp.Optional[np.ndarray] = None
 
@@ -167,13 +177,6 @@ class Choice(BaseChoice):
         return self._indices
 
     @property
-    def index(self) -> int:  # delayed choice
-        """Index of the chosen option
-        """
-        assert self.indices.size == 1
-        return int(self.indices[0])
-
-    @property
     def weights(self) -> Array:
         """The weights used to draw the value
         """
@@ -192,7 +195,7 @@ class Choice(BaseChoice):
         return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
 
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
-        indices = super()._find_and_set_value([values] if self._repetitions is None else values)
+        indices = super()._find_and_set_value(values)
         self._indices = indices
         # force new probabilities
         arity = self.weights.value.shape[1]
@@ -254,28 +257,32 @@ class TransitionChoice(BaseChoice):
             self,
             choices: tp.Iterable[tp.Any],
             transitions: tp.Union[ArrayLike, Array] = (1.0, 1.0),
+            repetitions: tp.Optional[int] = None,
     ) -> None:
+        choices = list(choices)
+        position = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
+        position.set_bounds(0, len(choices), method="gaussian")
         super().__init__(choices=choices,
-                         position=Scalar(),
+                         repetitions=repetitions,
+                         position=position,
                          transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
         assert self.transitions.value.ndim == 1
 
     @property
-    def index(self) -> int:
-        return discretization.threshold_discretization(np.array([self.position.value]), arity=len(self.choices))[0]
-
-    @property
     def indices(self) -> np.ndarray:
-        return np.array([self.index], dtype=int)
+        return np.minimum(len(self) - 1e-9, self.position.value).astype(int)
 
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
-        indices = super()._find_and_set_value([values])  # only one value for this class
-        self._set_index(int(indices[0]))
+        indices = super()._find_and_set_value(values)  # only one value for this class
+        self._set_index(indices)
         return indices
 
     def _set_index(self, index: int) -> None:
-        out = discretization.inverse_threshold_discretization([index], len(self.choices))
-        self.position.value = out[0]
+        if isinstance(index, int):
+            indices = np.array([index])
+        else:
+            indices = index
+        self.position.value = indices + 0.5
 
     @property
     def transitions(self) -> Array:
@@ -284,7 +291,7 @@ class TransitionChoice(BaseChoice):
         return self["transitions"]  # type: ignore
 
     @property
-    def position(self) -> Scalar:
+    def position(self) -> Array:
         """The continuous version of the index (used when working with standardized space)
         """
         return self["position"]  # type: ignore
@@ -294,18 +301,22 @@ class TransitionChoice(BaseChoice):
         self.random_state   # pylint: disable=pointless-statement
         transitions = core.as_parameter(self.transitions)
         transitions.mutate()
-        probas = np.exp(transitions.value)
-        probas /= np.sum(probas)  # TODO decide if softmax is the best way to go...
-        move = self.random_state.choice(list(range(probas.size)), p=probas)
-        sign = 1 if self.random_state.randint(2) else -1
-        new_index = max(0, min(len(self.choices), self.index + sign * move))
-        self._set_index(new_index)
+        rep = 1 if self._repetitions is None else self._repetitions
+        #
+        enc = discretization.Encoder(np.ones((rep, 1)) * np.log(self.transitions.value),
+                                     self.random_state)
+        moves = enc.encode()
+        signs = self.random_state.choice([-1, 1], size=rep)
+        new_index = np.clip(self.indices + signs * moves, 0, len(self) - 1)
+        self._set_index(new_index.ravel())
         # mutate corresponding parameter
-        self.choices[self.index].mutate()
+        indices = set(self.indices)
+        for ind in indices:
+            self.choices[ind].mutate()
 
     def _internal_spawn_child(self: T) -> T:
         choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
-        child = self.__class__(choices=choices)
+        child = self.__class__(choices=choices, repetitions=self._repetitions)
         child._content["position"] = self.position.spawn_child()
         child._content["transitions"] = self.transitions.spawn_child()
         return child

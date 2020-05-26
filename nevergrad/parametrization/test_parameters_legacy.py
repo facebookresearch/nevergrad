@@ -51,7 +51,7 @@ def test_instrumentation() -> None:
     # check naming
     instru_str = ("Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
                   "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
-                  "position=Scalar[sigma=Log{exp=2.0}],transitions=[1. 1.]),"
+                  "position=Array{Cd(0,4)},transitions=[1. 1.]),"
                   "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4)})))")
     testing.printed_assert_equal(instru.name, instru_str)
     testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
