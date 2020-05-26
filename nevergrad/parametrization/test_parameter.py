@@ -321,7 +321,7 @@ def test_transition_choice_repetitions() -> None:
     assert len(choice) == 4
     assert choice.value == (2, 2)
     choice.value = (3, 1)
-    np.testing.assert_almost_equal(choice.position.value, [3.5, 1.5], decimal=3)
+    np.testing.assert_almost_equal(choice.positions.value, [3.5, 1.5], decimal=3)
     choice.mutate()
     assert choice.value == (3, 0)
 

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import typing as tp
 import numpy as np
 from nevergrad.common.typetools import ArrayLike
@@ -255,17 +256,17 @@ class TransitionChoice(BaseChoice):
             repetitions: tp.Optional[int] = None,
     ) -> None:
         choices = list(choices)
-        position = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
-        position.set_bounds(0, len(choices), method="gaussian")
+        positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
+        positions.set_bounds(0, len(choices), method="gaussian")
         super().__init__(choices=choices,
                          repetitions=repetitions,
-                         position=position,
+                         positions=positions,
                          transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
         assert self.transitions.value.ndim == 1
 
     @property
     def indices(self) -> np.ndarray:
-        return np.minimum(len(self) - 1e-9, self.position.value).astype(int)
+        return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)
 
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
         indices = super()._find_and_set_value(values)  # only one value for this class
@@ -273,7 +274,7 @@ class TransitionChoice(BaseChoice):
         return indices
 
     def _set_index(self, indices: np.ndarray) -> None:
-        self.position.value = indices + 0.5
+        self.positions.value = indices + 0.5
 
     @property
     def transitions(self) -> Array:
@@ -285,7 +286,14 @@ class TransitionChoice(BaseChoice):
     def position(self) -> Array:
         """The continuous version of the index (used when working with standardized space)
         """
-        return self["position"]  # type: ignore
+        warnings.warn("position is replaced by positions in order to allow for repetitions", DeprecationWarning)
+        return self.positions
+
+    @property
+    def positions(self) -> Array:
+        """The continuous version of the index (used when working with standardized space)
+        """
+        return self["positions"]  # type: ignore
 
     def mutate(self) -> None:
         # force random_state sync
@@ -308,6 +316,6 @@ class TransitionChoice(BaseChoice):
     def _internal_spawn_child(self: T) -> T:
         choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
         child = self.__class__(choices=choices, repetitions=self._repetitions)
-        child._content["position"] = self.position.spawn_child()
+        child._content["positions"] = self.positions.spawn_child()
         child._content["transitions"] = self.transitions.spawn_child()
         return child
