@@ -189,11 +189,6 @@ class Choice(BaseChoice):
         exp = np.exp(self.weights.value)
         return exp / np.sum(exp)
 
-    def _get_value(self) -> tp.Any:
-        if self._repetitions is None:
-            return super()._get_value()
-        return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
-
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
         indices = super()._find_and_set_value(values)
         self._indices = indices
