@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import hashlib
 import itertools
 import typing as tp
 import numpy as np
@@ -49,7 +48,7 @@ class ArtificialVariable:
             self._initialize()
         if self.hashing:
             for i, y in enumerate(data):
-                rs = np.random.RandomState(int(y*1000))  
+                rs = np.random.RandomState(int(y*1000) % 100000)  
                 # Was: int(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000))  # type: ignore
                 data[i] = rs.normal(0., 1.)  # type: ignore
         data = np.array(data, copy=False)
