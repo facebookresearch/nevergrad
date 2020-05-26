@@ -277,11 +277,7 @@ class TransitionChoice(BaseChoice):
         self._set_index(indices)
         return indices
 
-    def _set_index(self, index: int) -> None:
-        if isinstance(index, int):
-            indices = np.array([index])
-        else:
-            indices = index
+    def _set_index(self, indices: np.ndarray) -> None:
         self.position.value = indices + 0.5
 
     @property
