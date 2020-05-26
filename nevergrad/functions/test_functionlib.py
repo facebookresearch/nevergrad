@@ -41,7 +41,7 @@ def test_artitificial_function_repr() -> None:
     cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
     cigar_rot=({"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 5239413.576),
     no_transform=({"name": "leadingones5", "block_dimension": 50, "useless_variables": 10}, 9.0),
-    hashed=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True}, 12.44),
+    hashed=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True}, 6.175),
     noisy_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": .2}, 9.576),
     noisy_very_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6,
                         "num_blocks": 2, "noise_dissymmetry": True, "noise_level": .2}, 7.615),
