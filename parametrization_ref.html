@@ -474,12 +474,6 @@ leaving others untouched</p></li>
 </pre></div>
 </div>
 <dl class="py method">
-<dt id="nevergrad.p.Choice.index">
-<em class="property">property </em><code class="sig-name descname">index</code><a class="headerlink" href="#nevergrad.p.Choice.index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Index of the chosen option</p>
-</dd></dl>
-
-<dl class="py method">
 <dt id="nevergrad.p.Choice.indices">
 <em class="property">property </em><code class="sig-name descname">indices</code><a class="headerlink" href="#nevergrad.p.Choice.indices" title="Permalink to this definition">¶</a></dt>
 <dd><p>Index of the chosen option</p>
@@ -501,7 +495,7 @@ leaving others untouched</p></li>
 
 <dl class="py class">
 <dt id="nevergrad.p.TransitionChoice">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">TransitionChoice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">transitions</span><span class="p">:</span> <span class="n">Union[Tuple[float, …], List[float], numpy.ndarray, nevergrad.parametrization.data.Array]</span> <span class="o">=</span> <span class="default_value">1.0, 1.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.TransitionChoice" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">TransitionChoice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">transitions</span><span class="p">:</span> <span class="n">Union[Tuple[float, …], List[float], numpy.ndarray, nevergrad.parametrization.data.Array]</span> <span class="o">=</span> <span class="default_value">1.0, 1.0</span></em>, <em class="sig-param"><span class="n">repetitions</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.TransitionChoice" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.choice.BaseChoice</span></code></p>
 <p>Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
 The choices can be Parameters, in which case there value will be returned instead.
@@ -527,12 +521,6 @@ on this scalar yields a uniform choice of index. This may come to evolve for sim
 </ul>
 </div>
 <dl class="py method">
-<dt id="nevergrad.p.TransitionChoice.index">
-<em class="property">property </em><code class="sig-name descname">index</code><a class="headerlink" href="#nevergrad.p.TransitionChoice.index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Index of the chosen option, if unique</p>
-</dd></dl>
-
-<dl class="py method">
 <dt id="nevergrad.p.TransitionChoice.indices">
 <em class="property">property </em><code class="sig-name descname">indices</code><a class="headerlink" href="#nevergrad.p.TransitionChoice.indices" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indices of the chosen options</p>
@@ -541,6 +529,12 @@ on this scalar yields a uniform choice of index. This may come to evolve for sim
 <dl class="py method">
 <dt id="nevergrad.p.TransitionChoice.position">
 <em class="property">property </em><code class="sig-name descname">position</code><a class="headerlink" href="#nevergrad.p.TransitionChoice.position" title="Permalink to this definition">¶</a></dt>
+<dd><p>The continuous version of the index (used when working with standardized space)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="nevergrad.p.TransitionChoice.positions">
+<em class="property">property </em><code class="sig-name descname">positions</code><a class="headerlink" href="#nevergrad.p.TransitionChoice.positions" title="Permalink to this definition">¶</a></dt>
 <dd><p>The continuous version of the index (used when working with standardized space)</p>
 </dd></dl>
 
