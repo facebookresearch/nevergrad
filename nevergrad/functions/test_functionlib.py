@@ -53,8 +53,6 @@ def test_testcase_function_value(config: Dict[str, Any], expected: float) -> Non
     np.random.seed(2)  # initialization is delayed
     x = np.random.normal(0, 1, func.dimension)
     x *= -1 if config.get("noise_dissymmetry", False) else 1  # change sign to activate noise dissymetry
-    if config.get("hashing", False):
-        x = [str(x)]
     np.random.seed(12)  # function randomness comes at first call
     value = func(x)
     np.testing.assert_almost_equal(value, expected, decimal=3)
