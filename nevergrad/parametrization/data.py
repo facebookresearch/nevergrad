@@ -260,7 +260,8 @@ class Array(core.Parameter):
             if (bounds[0] >= bounds[1]).any():  # type: ignore
                 raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
         # update instance
-        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound)
+        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound,
+                          gaussian=trans.CumulativeDensity)
         transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
         if method in transforms:
             if self.exponent is not None and method not in ("clipping", "bouncing"):
