@@ -5,6 +5,10 @@
 - `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't
   resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).
   Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
+- `Choice` now takes a new `repetitions` parameters for sampling several times,
+  it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be around 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670).
+- Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684)
+  and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
 
 
 ## 0.4.1 (2019-05-07)

@@ -56,6 +56,7 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
                                    par.Tuple(par.Array(shape=(2, 3)), 12),
                                    par.Instrumentation(par.Array(shape=(2,)), nonhash=[1, 2], truc=par.Array(shape=(1, 3))),
                                    par.Choice([par.Array(shape=(2,)), "blublu"]),
+                                   par.Choice([1, 2], repetitions=2),
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
                                    ],
                          )
@@ -160,8 +161,8 @@ def check_parameter_freezable(param: par.Parameter) -> None:
      (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=2.0}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
-     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(2,)})"),
-     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(2,)})"),
+     (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
+     (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})"),
      (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar["
                                      "sigma=Log{exp=2.0}],transitions=[1. 1.])")
      ]
@@ -231,7 +232,7 @@ def test_endogeneous_constraint() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name", ["clipping", "arctan", "tanh", "constraint"]
+    "name", ["clipping", "arctan", "tanh", "constraint", "bouncing"]
 )
 def test_constraints(name: str) -> None:
     param = par.Scalar(12.0).set_mutation(sigma=2).set_bounds(method=name, lower=-100, upper=100)
@@ -239,7 +240,9 @@ def test_constraints(name: str) -> None:
     np.testing.assert_approx_equal(param.value, 12, err_msg="Back and forth did not work")
     param.set_standardized_data(np.array([100000.0]))
     if param.satisfies_constraints():
-        np.testing.assert_approx_equal(param.value, 100, significant=3, err_msg="Constraining did not work")
+        # bouncing works differently from others
+        np.testing.assert_approx_equal(param.value, 100 if name != "bouncing" else -100,
+                                       significant=3, err_msg="Constraining did not work")
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -299,6 +302,18 @@ def test_ordered_choice_weird_values() -> None:
     assert choice.value == np.inf
 
 
+def test_choice_repetitions() -> None:
+    choice = par.Choice([0, 1, 2, 3], repetitions=2)
+    choice.random_state.seed(12)
+    assert len(choice) == 4
+    assert choice.value == (0, 2)
+    choice.value = (3, 1)
+    expected = np.zeros((2, 4))
+    expected[[0, 1], [3, 1]] = 0.588
+    np.testing.assert_almost_equal(choice.weights.value, expected, decimal=3)
+    choice.mutate()
+
+
 def test_descriptors() -> None:
     d1 = utils.Descriptors()
     d2 = utils.Descriptors(continuous=False)
@@ -307,7 +322,7 @@ def test_descriptors() -> None:
     assert d3.deterministic is True
 
 
-@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint"])  # type: ignore
+@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
 @pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
 @pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
 def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float) -> None:
