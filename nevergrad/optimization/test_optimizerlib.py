@@ -68,9 +68,10 @@ def check_optimizer(
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # skip BO error on windows (issue #506)
-            with testing.skip_error_on_systems(ValueError, ["Windows"] if "BO" in optimizer.name else []):
-                # now optimize :)
-                candidate = optimizer.minimize(fitness)
+            if "BO" in optimizer.name:
+                raise SkipTest("BO is currently not well supported")
+            # now optimize :)
+            candidate = optimizer.minimize(fitness)
         if verify_value and "chain" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
