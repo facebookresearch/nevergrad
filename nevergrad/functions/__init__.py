@@ -5,5 +5,6 @@
 
 from .functionlib import ArtificialFunction as ArtificialFunction
 from .functionlib import FarOptimumFunction as FarOptimumFunction
+from .rocket import rocket as rocket
 from .multiobjective import MultiobjectiveFunction as MultiobjectiveFunction
 from .base import ExperimentFunction as ExperimentFunction
