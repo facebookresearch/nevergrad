@@ -52,7 +52,7 @@ Submission deadline: April 17, 2020
 Make sure to select the Open Optimization Competition 2020 as track when you submit your paper. 
 
 ## Dates
-**Submission deadline is Sept. 1, 2020, AoE**
+**Submission deadline is Sept. 30, 2020, AoE**
 All pull requests active between December 1st 2019 and Sept 30, 2020 are eligible.
 
 ## Awards:
