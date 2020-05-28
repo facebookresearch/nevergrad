@@ -52,8 +52,8 @@ Submission deadline: April 17, 2020
 Make sure to select the Open Optimization Competition 2020 as track when you submit your paper. 
 
 ## Dates
-**Submission deadline is June 1, 2020, AoE**
-All pull requests active between December 1st 2019 and June 1st, 2020 are eligible.
+**Submission deadline is Sept. 1, 2020, AoE**
+All pull requests active between December 1st 2019 and Sept 30, 2020 are eligible.
 
 ## Awards:
 Up to 12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
