@@ -5,6 +5,9 @@
 
 from .functionlib import ArtificialFunction as ArtificialFunction
 from .functionlib import FarOptimumFunction as FarOptimumFunction
-from .rocket import rocket as rocket
 from .multiobjective import MultiobjectiveFunction as MultiobjectiveFunction
 from .base import ExperimentFunction as ExperimentFunction
+
+# BEWARE: do not add imports here that rely on non-standard packages
+# this is to make the subpackage importable even without installing all
+# benchmark requirements
