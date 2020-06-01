@@ -308,6 +308,37 @@ def lunacek(x: np.ndarray) -> float:
     return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
 
 
+
+# Lotka-Volterra equations.
+# This computes the total fishing, given the fishing effort every day.
+# The problem makes sense for abritrary number of days, so that this works for
+# any length of the input. 365 means one year.
+
+@registry.register_with_info(no_transform=True)
+def compute_total_fishing(list_number_fishermen: np.ndarray) -> float:
+    number_dogfishes = 0.2
+    number_haddocks = 0.8
+    total_fishing = 0.
+
+    for number_fishermen in list(list_number_fishermen):
+        number_fishermen = max(0, number_fishermen)
+        # Number of haddocks eaten_haddocks today.
+        number_eaten_haddocks = number_dogfishes * number_haddocks * 4/30
+        # Haddock growth.
+        number_haddocks += number_haddocks * 2/30
+        number_haddocks -= number_eaten_haddocks
+        # Natural growth of dogfishes.
+        number_dogfishes -= (1/30) * number_dogfishes
+        number_dogfishes += (5/2) * number_eaten_haddocks
+        # Number of captured dogfishes.
+        capture = min((1/10) * number_fishermen, number_dogfishes)
+        number_dogfishes-=capture
+        assert number_dogfishes >= 0.
+        total_fishing += capture
+        number_dogfishes = min(1., number_dogfishes)
+        number_haddocks = min(1., number_haddocks)
+    return -total_fishing
+
 # following functions using discretization should not be used with translation/rotation
 
 
