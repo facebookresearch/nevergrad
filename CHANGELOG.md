@@ -11,7 +11,7 @@
   and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
 
 
-## 0.4.1 (2019-05-07)
+## 0.4.1 (2020-05-07)
 
 - `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
 - `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
@@ -23,7 +23,7 @@
 - Started implementing more ML-oriented testbeds [#642](https://github.com/facebookresearch/nevergrad/pull/642)
 
 
-## v0.4.0 (2019-03-09)
+## v0.4.0 (2020-03-09)
 
 ### Breaking and important changes
 
@@ -54,7 +54,7 @@
   if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
 
 
-## v0.3.2 (2019-02-05)
+## v0.3.2 (2020-02-05)
 
 
 ### Breaking changes (possibly for next version)
@@ -80,7 +80,7 @@
 - `DE` algorithms comply with the new parametrization system and can be set to use parameter's recombination.
 - Fixed array as bounds in `Array` parameters
 
-## v0.3.1 (2019-01-23)
+## v0.3.1 (2020-01-23)
 
 **Note**: this is the first step to propagate the instrumentation/parametrization framework.
  Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/).
@@ -100,7 +100,7 @@
 - `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
  optimizer was created, using the previous initial sampling method [#467](https://github.com/facebookresearch/nevergrad/pull/467).
 
-## v0.3.0 (2019-01-08)
+## v0.3.0 (2020-01-08)
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
 
