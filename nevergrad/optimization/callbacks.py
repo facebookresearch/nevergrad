@@ -229,5 +229,7 @@ class ProgressBar:
         self._current += 1
 
     def __getstate__(self) -> tp.Dict[str, tp.Any]:
+        """Used for pickling (tqdm is not picklable)
+        """
         self._progress_bar = None
         return self.__dict__
