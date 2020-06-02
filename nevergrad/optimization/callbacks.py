@@ -170,7 +170,12 @@ class ParametersLogger:
           - github repo: https://github.com/facebookresearch/hiplot
           - documentation: https://facebookresearch.github.io/hiplot/
         """
-        import hiplot as hip
+        # pylint: disable=import-outside-toplevel
+        try:
+            import hiplot as hip
+        except ImportError as e:
+            raise ImportError(f"{self.__class__.__name__} requires hiplot which is not installed by default "
+                              "(pip install hiplot)") from e
         exp = hip.Experiment()
         for xp in self.load_flattened(max_list_elements=max_list_elements):
             dp = hip.Datapoint(
@@ -206,9 +211,23 @@ class ProgressBar:
     """
 
     def __init__(self) -> None:
-        from tqdm import tqdm  # Inline import to avoid additional dependency
-        self.progress_bar = tqdm()
+        self._progress_bar: tp.Any = None
+        self._current = 0
 
     def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
-        self.progress_bar.total = optimizer.budget
-        self.progress_bar.update(1)
+        if self._progress_bar is None:
+            # pylint: disable=import-outside-toplevel
+            try:
+                from tqdm import tqdm  # Inline import to avoid additional dependency
+            except ImportError as e:
+                raise ImportError(f"{self.__class__.__name__} requires tqdm which is not installed by default "
+                                  "(pip install tqdm)") from e
+            self._progress_bar = tqdm()
+            self._progress_bar.total = optimizer.budget
+            self._progress_bar.update(self._current)
+        self._progress_bar.update(1)
+        self._current += 1
+
+    def __getstate__(self) -> tp.Dict[str, tp.Any]:
+        self._progress_bar = None
+        return self.__dict__

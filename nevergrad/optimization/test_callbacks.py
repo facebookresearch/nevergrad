@@ -53,4 +53,11 @@ def test_progressbar_dump(tmp_path: Path) -> None:
     filepath = tmp_path / "pickle.pkl"
     optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=32)
     optimizer.register_callback("tell", ng.callbacks.ProgressBar())
+    for _ in range(8):
+        cand = optimizer.ask()
+        optimizer.tell(cand, 0)
     optimizer.dump(filepath)
+    optimizer = optimizerlib.OnePlusOne.load(filepath)
+    for _ in range(12):
+        cand = optimizer.ask()
+        optimizer.tell(cand, 0)
