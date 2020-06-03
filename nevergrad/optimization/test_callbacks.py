@@ -57,6 +57,10 @@ def test_progressbar_dump(tmp_path: Path) -> None:
         cand = optimizer.ask()
         optimizer.tell(cand, 0)
     optimizer.dump(filepath)
+    # should keep working after dump
+    cand = optimizer.ask()
+    optimizer.tell(cand, 0)
+    # and be reloadable
     optimizer = optimizerlib.OnePlusOne.load(filepath)
     for _ in range(12):
         cand = optimizer.ask()
