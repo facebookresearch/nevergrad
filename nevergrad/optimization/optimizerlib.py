@@ -109,6 +109,11 @@ class _OnePlusOne(base.Optimizer):
                     data = mutator.portfolio_discrete_mutation(pessimistic_data)
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            elif mutation == "discreteBSO":
+                intensity = self.dimension - self._num_ask * self.dimension / self.budget
+                if intensity < 1:
+                    intensity = 1
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
             else:
                 func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
@@ -143,7 +148,9 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"gaussian"`: standard mutation by adding a Gaussian random variable (with progressive
           widening) to the best pessimistic point
         - `"cauchy"`: same as Gaussian but with a Cauchy distribution.
-        - `"discrete"`: TODO
+        - `"discrete"`: when a variable is mutated (which happens with probability 1/d in dimension d), it's just
+             randomly drawn.
+        - `"discreteBSO"`: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.
         - `"fastga"`: FastGA mutations from the current best
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
@@ -168,11 +175,14 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         crossover: bool = False
     ) -> None:
         super().__init__(_OnePlusOne, locals())
+        if mutation == "discreteBSO":
+            assert self.budget is not None, "DiscreteBSO needs to know the budget!"
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteOnePlusOne", register=True)
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
