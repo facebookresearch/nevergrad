@@ -110,7 +110,7 @@ class _OnePlusOne(base.Optimizer):
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
             elif mutation == "discreteBSO":
-                intensity = self.dimension - self._num_ask * self.dimension / self.budget
+                intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
