@@ -169,12 +169,14 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(
         self,
+        budget: Optional[int] = None,        
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False
     ) -> None:
         super().__init__(_OnePlusOne, locals())
+        self.budget = budget
         if mutation == "discreteBSO":
             assert self.budget is not None, "DiscreteBSO needs to know the budget!"
 
