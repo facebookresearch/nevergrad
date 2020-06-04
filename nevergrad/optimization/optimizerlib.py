@@ -180,7 +180,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
-DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteOnePlusOne", register=True)
+DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
