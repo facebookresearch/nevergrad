@@ -175,8 +175,6 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         crossover: bool = False
     ) -> None:
         super().__init__(_OnePlusOne, locals())
-        if mutation == "discreteBSO":
-            assert self.budget is not None, "DiscreteBSO needs to know the budget!"
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
