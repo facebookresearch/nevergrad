@@ -577,7 +577,12 @@ performs quite well in such a context - this is naturally close to 1+lambda.</p>
 <li><p><cite>”gaussian”</cite>: standard mutation by adding a Gaussian random variable (with progressive
 widening) to the best pessimistic point</p></li>
 <li><p><cite>”cauchy”</cite>: same as Gaussian but with a Cauchy distribution.</p></li>
-<li><p><cite>”discrete”</cite>: TODO</p></li>
+<li><dl class="simple">
+<dt><cite>”discrete”</cite>: when a variable is mutated (which happens with probability 1/d in dimension d), it’s just</dt><dd><p>randomly drawn.</p>
+</dd>
+</dl>
+</li>
+<li><p><cite>”discreteBSO”</cite>: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.</p></li>
 <li><p><cite>”fastga”</cite>: FastGA mutations from the current best</p></li>
 <li><p><cite>”doublefastga”</cite>: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)</p></li>
 <li><p><cite>”portfolio”</cite>: Random number of mutated bits (called niform mixing in
@@ -1084,7 +1089,12 @@ performs quite well in such a context - this is naturally close to 1+lambda.</p>
 <li><p><cite>”gaussian”</cite>: standard mutation by adding a Gaussian random variable (with progressive
 widening) to the best pessimistic point</p></li>
 <li><p><cite>”cauchy”</cite>: same as Gaussian but with a Cauchy distribution.</p></li>
-<li><p><cite>”discrete”</cite>: TODO</p></li>
+<li><dl class="simple">
+<dt><cite>”discrete”</cite>: when a variable is mutated (which happens with probability 1/d in dimension d), it’s just</dt><dd><p>randomly drawn.</p>
+</dd>
+</dl>
+</li>
+<li><p><cite>”discreteBSO”</cite>: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.</p></li>
 <li><p><cite>”fastga”</cite>: FastGA mutations from the current best</p></li>
 <li><p><cite>”doublefastga”</cite>: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)</p></li>
 <li><p><cite>”portfolio”</cite>: Random number of mutated bits (called niform mixing in
