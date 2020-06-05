@@ -64,7 +64,7 @@ class _OnePlusOne(base.Optimizer):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio"], f"Unkwnown mutation: '{mutation}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio", "discreteBSO"], f"Unkwnown mutation: '{mutation}'"
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -109,6 +109,12 @@ class _OnePlusOne(base.Optimizer):
                     data = mutator.portfolio_discrete_mutation(pessimistic_data)
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            elif mutation == "discreteBSO":
+                assert self.budget is not None, "DiscreteBSO needs a budget."
+                intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
+                if intensity < 1:
+                    intensity = 1
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
             else:
                 func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
@@ -143,7 +149,9 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"gaussian"`: standard mutation by adding a Gaussian random variable (with progressive
           widening) to the best pessimistic point
         - `"cauchy"`: same as Gaussian but with a Cauchy distribution.
-        - `"discrete"`: TODO
+        - `"discrete"`: when a variable is mutated (which happens with probability 1/d in dimension d), it's just
+             randomly drawn.
+        - `"discreteBSO"`: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.
         - `"fastga"`: FastGA mutations from the current best
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
@@ -173,6 +181,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
