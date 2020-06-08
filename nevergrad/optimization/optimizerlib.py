@@ -1796,7 +1796,7 @@ class Ctulo(NGO):
                 else:
                     self.optim = CMA(self.parametrization, budget, num_workers)
             else:
-                self.optim = C0ctulo(self.parametrization, budget, num_workers)
+                self.optim = C0Ctulo(self.parametrization, budget, num_workers)
         optim = self.optim if not isinstance(self.optim, c0Ctulo) else self.optim.optim
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
 
