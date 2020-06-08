@@ -430,6 +430,7 @@ def test_shiwa_dim1() -> None:
     recom = optimizer.minimize(np.abs)
     assert recom.value < init
 
+    
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [("Shiwa", 1, 10, 1, "Cobyla"),
