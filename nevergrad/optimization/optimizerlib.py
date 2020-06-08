@@ -2,6 +2,8 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+import os
+import logging
 import typing as tp  # from now on, favor using tp.Dict etc instead of Dict
 from typing import Optional, List, Dict, Tuple, Callable, Any
 from collections import deque
@@ -31,6 +33,9 @@ from .es import *  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
+# run with LOGLEVEL=DEBUG for more debug information
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+logger = logging.getLogger(__name__)
 
 # # # # # optimizers # # # # #
 
@@ -929,9 +934,9 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLi
 
     # Recenter the best.
     middle = np.array(sum(p[0] for p in first_k_individuals) / k)
-    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0]-first_k_individuals[0][0])**2))
-    y= [archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals]
-    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals]) 
+    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0] - first_k_individuals[0][0])**2))
+    y = [archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals]
+    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
 
     # We need SKLearn.
     from sklearn.linear_model import LinearRegression
@@ -942,9 +947,9 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLi
     # Fit a linear model.
     model = LinearRegression()
     model.fit(X2, y)
-    
+
     # Find the minimum of the quadratic model.
-    optimizer = OnePlusOne(parametrization=dimension, budget=dimension*dimension+dimension+500)
+    optimizer = OnePlusOne(parametrization=dimension, budget=dimension * dimension + dimension + 500)
     try:
         optimizer.minimize(lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x])))))
     except ValueError:
@@ -1541,6 +1546,7 @@ class NGO(base.Optimizer):
                                     self.optim = DE(self.parametrization, budget, num_workers)  # noqa: F405
                                 else:
                                     self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
     def _internal_ask_candidate(self) -> p.Parameter:
         return self.optim.ask()
@@ -1711,6 +1717,8 @@ class Shiwa(NGO):
                     self.optim = CMA(self.parametrization, budget, num_workers)
             else:
                 self.optim = NGO(self.parametrization, budget, num_workers)
+        optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
 
 
 @registry.register
@@ -1718,17 +1726,17 @@ class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1,
-                       multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
+                 multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
-        
+
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1):
+                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
             try:
-                data = learn_on_k_best(self.archive, int((self.dimension*(self.dimension-1))/2 + 2*self.dimension + 1))
+                data = learn_on_k_best(self.archive, int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1738,4 +1746,3 @@ class MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         self._optim.tell(candidate, value)
-
