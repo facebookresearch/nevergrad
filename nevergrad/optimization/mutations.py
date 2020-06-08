@@ -52,6 +52,8 @@ class Mutator:
         dimension = len(parent)
         if u is None:
             u = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
+        if dimension == 1:  # corner case.
+            return self.random_state.normal(0., 1., size=1)  # type: ignore
         boolean_vector = [True for _ in parent]
         while all(boolean_vector) and dimension != 1:
             boolean_vector = [self.random_state.rand() > (float(u) / dimension) for _ in parent]

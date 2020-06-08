@@ -425,9 +425,10 @@ def test_optimizer_sequence() -> None:
 
 def test_shiwa_dim1() -> None:
     param = ng.p.Log(lower=1, upper=1000).set_integer_casting()
-    optimizer = optlib.Shiwa(param, budget=10)
-    optimizer.minimize(np.abs)
-
+    init = param.value
+    optimizer = optlib.Shiwa(param, budget=40)
+    recom = optimizer.minimize(np.abs)
+    assert recom.value < init
 
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
