@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import re
 import time
 import random
+import logging
 import platform
 import tempfile
 import warnings
@@ -427,3 +429,21 @@ def test_shiwa_dim1() -> None:
     optimizer = optlib.Shiwa(param, budget=40)
     recom = optimizer.minimize(np.abs)
     assert recom.value < init
+
+    
+@pytest.mark.parametrize(  # type: ignore
+    "name,param,budget,num_workers,expected",
+    [("Shiwa", 1, 10, 1, "Cobyla"),
+     ("Shiwa", 1, 10, 2, "CMA"),
+     ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
+     ("NGO", 1, 10, 1, "Cobyla"),
+     ("NGO", 1, 10, 2, "CMA"),
+     ]  # pylint: disable=too-many-arguments
+)
+def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any) -> None:
+    with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
+        optlib.registry[name](param, budget=budget, num_workers=num_workers)
+        pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
+        match = re.match(pattern, caplog.text, re.MULTILINE)
+        assert match is not None, f"Did not detect selection in logs: {caplog.text}"
+        assert match.group("name") == expected
