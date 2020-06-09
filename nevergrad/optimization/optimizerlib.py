@@ -1774,8 +1774,6 @@ class Ctulo(base.Optimizer):
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif arity > 0:
-            print('parametrization ', parametrization, ' has type ', type(parametrization), isinstance(parametrization, p.TransitionChoice),
-                isinstance(parametrization,p.BaseChoice), arity)
             self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(self.parametrization, budget, num_workers)
         else:
             # pylint: disable=too-many-nested-blocks
@@ -1811,7 +1809,6 @@ class Ctulo(base.Optimizer):
                                     else:
                                         self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
-        print(self.name, ' selected ', self.optim.name, ' for ', parametrization)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         return self.optim.ask()
