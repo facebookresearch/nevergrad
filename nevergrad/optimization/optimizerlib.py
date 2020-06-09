@@ -1466,7 +1466,7 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            arity = len(parametrization.choices) if isinstance(parametrization, BaseChoice) else 500
+            arity = len(parametrization.choices) if isinstance(parametrization, p.BaseChoice) else 500
         self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
@@ -1729,57 +1729,6 @@ class Shiwa(NGO):
         optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
 
-@registry.register
-class C0Ctulo(NGO):
-    """Nevergrad optimizer by competence map in the continuous case."""
-    one_shot = True
-
-    # pylint: disable=too-many-branches
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        descr = self.parametrization.descriptors
-        self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        self.fully_continuous = descr.continuous
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
-        # pylint: disable=too-many-nested-blocks
-        if self.has_noise and self.has_discrete_not_softmax:
-            # noise and discrete: let us merge evolution and bandits.
-            if self.dimension < 60:
-                self.optim: base.Optimizer = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
-            else:
-                self.optim = CMA(self.parametrization, budget, num_workers)
-        else:
-            if self.has_noise and self.fully_continuous:
-                # This is the real of population control. FIXME: should we pair with a bandit ?
-                self.optim = TBPSA(self.parametrization, budget, num_workers)
-            else:
-                if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                    self.optim = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
-                else:
-                    if num_workers > budget / 5:
-                        if num_workers > budget / 2. or budget < self.dimension:
-                            self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
-                        else:
-                            self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
-                    else:
-                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                        if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                            self.optim = chainCMAPowell(self.parametrization, budget, num_workers)  # noqa: F405
-                        else:
-                            if num_workers == 1 and budget < self.dimension * 30:
-                                if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                    self.optim = OnePlusOne(self.parametrization, budget, num_workers)  # noqa: F405
-                                else:
-                                    self.optim = Cobyla(self.parametrization, budget, num_workers)  # noqa: F405
-                            else:
-                                if self.dimension > 2000:  # DE is great in such a case (?).
-                                    self.optim = DE(self.parametrization, budget, num_workers)  # noqa: F405
-                                else:
-                                    self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
-
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
 @registry.register
 class Ctulo(NGO):
@@ -1791,7 +1740,7 @@ class Ctulo(NGO):
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif not self.parametrization.descriptors.metrizable:
-            arity: int = len(parametrization.choices) if isinstance(parametrization, BaseChoice) else 500
+            arity: int = len(parametrization.choices) if isinstance(parametrization, p.BaseChoice) else 500
             if arity < 5:
                 self.optim: base.Optimizer = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers)
             else:
@@ -1816,7 +1765,7 @@ class Ctulo(NGO):
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                self.optim = TuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
+                                self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
                             else:
                                 self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
                         else:
