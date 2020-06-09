@@ -1770,7 +1770,7 @@ class Ctulo(base.Optimizer):
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
-        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -int("inf") for param in all_params.values())
+        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif arity > 0:
