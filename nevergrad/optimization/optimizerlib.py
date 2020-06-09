@@ -1760,7 +1760,7 @@ class C0Ctulo(NGO):
                 else:
                     if num_workers > budget / 5:
                         if num_workers > budget / 2. or budget < self.dimension:
-                            self.optim = TuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
+                            self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
                         else:
                             self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
                     else:
