@@ -1466,7 +1466,7 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            arity = self.dimension // self._repetitions if hasattr(parametrization, "_repetitions") else 500
+            arity = self.dimension // parametrization._repetitions if hasattr(parametrization, "_repetitions") else 500
         self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
@@ -1791,7 +1791,7 @@ class Ctulo(NGO):
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif not self.parametrization.descriptors.metrizable:
-            arity: int = self.dimension // self._repetitions if hasattr(parametrization, "_repetitions") else 500
+            arity: int = self.dimension // parametrization._repetitions if hasattr(parametrization, "_repetitions") else 500
             if arity < 5:
                 self.optim: base.Optimizer = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers)
             else:
