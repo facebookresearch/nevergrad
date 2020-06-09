@@ -1466,7 +1466,7 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            arity = len(parametrization.possibilities) if hasattr(parametrization, "possibilities") else 2  # type: ignore
+            arity = self.dimension // self._repetitions if hasattr(parametrization, "_repetitions") else 500
         self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
@@ -1790,8 +1790,12 @@ class Ctulo(NGO):
         assert budget is not None
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
-        elif not self.parametrization.descriptors.metrizable and self.dimension >= 60:
-                self.optim = CMA(self.parametrization, budget, num_workers)  # CMA in the discrete setting... not sure at all this is good!
+        elif not self.parametrization.descriptors.metrizable:
+            arity: int = self.dimension // self._repetitions if hasattr(parametrization, "_repetitions") else 500
+            if arity < 5:
+                self.optim: base.Optimizer = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers)
+            else:
+                self.optim: base.Optimizer = CMandAS2(self.parametrization, budget, num_workers)
         else:
             descr = self.parametrization.descriptors
             self.has_noise = not (descr.deterministic and descr.deterministic_function)
@@ -1801,10 +1805,7 @@ class Ctulo(NGO):
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
                 # noise and discrete: let us merge evolution and bandits.
-                if self.dimension < 60:
-                    self.optim: base.Optimizer = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
-                else:
-                    self.optim = CMA(self.parametrization, budget, num_workers)
+                self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
             else:
                 if self.has_noise and self.fully_continuous:
                     # This is the real of population control. FIXME: should we pair with a bandit ?
