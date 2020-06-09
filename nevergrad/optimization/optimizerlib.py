@@ -1738,13 +1738,11 @@ class Ctulo(NGO):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
+            self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif not self.parametrization.descriptors.metrizable:
             arity: int = len(parametrization.choices) if isinstance(parametrization, p.BaseChoice) else 500
-            if arity < 5:
-                self.optim: base.Optimizer = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers)
-            else:
-                self.optim: base.Optimizer = CMandAS2(self.parametrization, budget, num_workers)
+            self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if
+                arity < 5 else CMandAS2(self.parametrization, budget, num_workers)
         else:
             descr = self.parametrization.descriptors
             self.has_noise = not (descr.deterministic and descr.deterministic_function)
