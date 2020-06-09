@@ -1466,7 +1466,8 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            arity = len(parametrization.choices) if isinstance(parametrization, p.BaseChoice) else 500
+            all_params = paramhelpers.flatten_parameter(self.parametrization)
+            arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
         self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
         # self.p[i][j] is the probability that the ith variable has value 0<=j< arity.
@@ -1731,24 +1732,52 @@ class Shiwa(NGO):
 
 
 @registry.register
-class Ctulo(NGO):
+class MetaModel(base.Optimizer):
+    """Adding a metamodel into CMA."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1,
+                 multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
+                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
+            try:
+                data = learn_on_k_best(self.archive, int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
+                candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+                candidate = self._optim.ask()
+        else:
+            candidate = self._optim.ask()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+        self._optim.tell(candidate, value)
+
+
+@registry.register
+class Ctulo(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
+        descr = self.parametrization.descriptors
+        self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        self.fully_continuous = descr.continuous
+        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
+        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -float("inf") for param in all_params.values())
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
-        elif not self.parametrization.descriptors.metrizable:
-            arity: int = len(parametrization.choices) if isinstance(parametrization, p.BaseChoice) else 500
-            self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if
-                arity < 5 else CMandAS2(self.parametrization, budget, num_workers)
+        elif arity > 0:
+            print('parametrization ', parametrization, ' has type ', type(parametrization), isinstance(parametrization, p.TransitionChoice),
+                isinstance(parametrization,p.BaseChoice), arity)
+            self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(self.parametrization, budget, num_workers)
         else:
-            descr = self.parametrization.descriptors
-            self.has_noise = not (descr.deterministic and descr.deterministic_function)
-            self.fully_continuous = descr.continuous
-            all_params = paramhelpers.flatten_parameter(self.parametrization)
-            self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
                 # noise and discrete: let us merge evolution and bandits.
@@ -1782,30 +1811,18 @@ class Ctulo(NGO):
                                     else:
                                         self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
-
-
-@registry.register
-class MetaModel(base.Optimizer):
-    """Adding a metamodel into CMA."""
-
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1,
-                 multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
+        print(self.name, ' selected ', self.optim.name, ' for ', parametrization)
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
-            try:
-                data = learn_on_k_best(self.archive, int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
-                candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
-                candidate = self._optim.ask()
-        else:
-            candidate = self._optim.ask()
-        return candidate
+        return self.optim.ask()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self._optim.tell(candidate, value)
+        self.optim.tell(candidate, value)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+        raise base.TellNotAskedNotSupportedError
+
+
