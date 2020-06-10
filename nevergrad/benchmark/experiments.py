@@ -120,7 +120,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 dfunc._descriptors.update(arity=arity)

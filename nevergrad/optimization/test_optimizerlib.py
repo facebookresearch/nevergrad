@@ -436,6 +436,11 @@ def test_shiwa_dim1() -> None:
     [("Shiwa", 1, 10, 1, "Cobyla"),
      ("Shiwa", 1, 10, 2, "CMA"),
      ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
+     ("NGO10", 1, 10, 1, "Cobyla"),
+     ("NGO10", 1, 10, 2, "CMA"),
+     ("NGO10", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
+     ("NGO10", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteBSOOnePlusOne"),
+     ("NGO10", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
      ("NGO", 1, 10, 1, "Cobyla"),
      ("NGO", 1, 10, 2, "CMA"),
      ]  # pylint: disable=too-many-arguments
@@ -447,3 +452,5 @@ def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int
         match = re.match(pattern, caplog.text, re.MULTILINE)
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         assert match.group("name") == expected
+
+
