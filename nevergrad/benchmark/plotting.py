@@ -170,6 +170,11 @@ def create_plots(
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    # If we have a descriptor "instrum_str",
+    # we assume that it describes the instrumentation as a string, 
+    # that we should include the various instrumentations as distinct curves in the same plot.
+    # So we concat it at the end of the optimizer name, and we remove "parametrization"
+    # from the descriptor.
     if "instrum_str" in set(df.columns):
         df.loc[:, "optimizer_name"] = df.loc[:, "optimizer_name"] + df.loc[:, "instrum_str"]
         df = df.drop(columns="instrum_str")
