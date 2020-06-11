@@ -47,10 +47,12 @@ class ArtificialVariable:
         if not self._transforms:
             self._initialize()
         if self.hashing:
+            state = np.random.get_state()
             for i, y in enumerate(data):
                 rs = np.random.RandomState(int(y*1000) % 100000)  
                 # Was: int(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000))  # type: ignore
                 data[i] = rs.normal(0., 1.)  # type: ignore
+            np.random.set_state(state)
         data = np.array(data, copy=False)
         output = []
         for transform in self._transforms:
