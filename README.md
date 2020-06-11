@@ -8,7 +8,7 @@
 `nevergrad` is a Python 3.6+ library. It can be installed with:
 
 ```
-pip install nevergradf
+pip install nevergrad
 ```
 
 More installation options, including windows installation, and complete instructions are available in the "Getting started" section of the [**documentation**](https://facebookresearch.github.io/nevergrad/).
