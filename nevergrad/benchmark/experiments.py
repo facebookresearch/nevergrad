@@ -995,7 +995,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
                                          offsprings=10 if pop == 5 else 60)
            for only in [True, False] for recomb in [0, 1] for pop in popsizes]
-    optimizers = ["CMA", "TwoPointsDE"] + es  # type: ignore
+    optimizers = ["CMA", "TwoPointsDE", "Shiwa"] + es  # type: ignore
     for func in FarOptimumFunction.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
@@ -1028,7 +1028,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=40).set_name("Pairwise-ES"),
         ng.families.DifferentialEvolution(crossover="parametrization").set_name("Param-DE")
     ]
-    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA"]
+    algos: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "Shiwa"]
     algos += [ng.optimizers.ConfiguredPSO().set_name("PSO"), ng.optimizers.ParametrizedOnePlusOne().set_name("1+1")]
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("layer")
