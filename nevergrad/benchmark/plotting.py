@@ -179,8 +179,8 @@ def create_plots(
         df.loc[:, "optimizer_name"] = df.loc[:, "optimizer_name"] + df.loc[:, "instrum_str"]
         df = df.drop(columns="instrum_str")
         df = df.drop(columns="dimension")
-    if "parametrization" in set(df.columns):
-        df = df.drop(columns="parametrization")
+        if "parametrization" in set(df.columns):
+            df = df.drop(columns="parametrization")
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
