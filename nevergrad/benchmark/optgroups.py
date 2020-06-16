@@ -22,6 +22,7 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
     ----------
     *names: str
         names of the groups to use. See nevergrad/benchmarks/optimizer_groups.txt
+        (generated/updated when running pytest)
         for the list of groups and what they contain
     seed: optional int
         a seed to shuffle the list of optimizers
