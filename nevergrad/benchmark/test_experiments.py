@@ -9,9 +9,10 @@ import typing as tp
 from pathlib import Path
 import pytest
 import numpy as np
-from ..functions.mlda import datasets
-from ..functions import rl
-from ..common import testing
+from nevergrad.optimization import registry as optregistry
+from nevergrad.functions.mlda import datasets
+from nevergrad.functions import rl
+from nevergrad.common import testing
 # from nevergrad.common.tools import Selector
 from .xpbase import Experiment
 from .utils import Selector
@@ -42,7 +43,11 @@ def recorder() -> tp.Generator[tp.Dict[str, tp.List[optgroups.Optim]], None, Non
 @pytest.mark.parametrize("name", optgroups.registry)  # type: ignore
 def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Optim]]) -> None:
     maker = optgroups.registry[name]
-    recorder[name] = list(maker())
+    opts = list(maker())
+    for opt in opts:
+        if isinstance(opt, str):
+            assert opt in optregistry, f"{opt} is not registered."
+    recorder[name] = opts
 
 
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:

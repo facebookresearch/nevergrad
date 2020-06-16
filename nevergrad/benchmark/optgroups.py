@@ -39,7 +39,7 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 
 @registry.register
 def large() -> tp.List[Optim]:
-    return ["NGO", "Shiva", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE",
+    return ["NGO", "Shiwa", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE",
             "OnePlusOne", "SQP", "Cobyla", "Powell",
             "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
             "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
@@ -53,7 +53,7 @@ def cma() -> tp.List[Optim]:
 
 @registry.register
 def competence_map() -> tp.List[Optim]:
-    return ["NGO", "Shiva"]
+    return ["NGO", "Shiwa"]
 
 
 @registry.register
