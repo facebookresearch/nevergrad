@@ -20,7 +20,7 @@ def test_simplest_example() -> None:
     optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
     recommendation = optimizer.minimize(square)  # best value
     print(recommendation.value)
-    # >>> [0.49971112 0.5002944 ]
+    # >>> [0.49971112 0.5002944]
     # DOC_SIMPLEST_1
     np.testing.assert_array_almost_equal(recommendation.value, [0.5, 0.5], decimal=1)
 
@@ -43,7 +43,7 @@ def test_base_example() -> None:
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
     recommendation = optimizer.minimize(square)
     print(recommendation.value)
-    # >>> [0.490, 0.546]
+    # >>> ((array([0.52213095, 0.45030925]),), {'y': -0.0003603100877068604})
     # DOC_BASE_2
     from concurrent import futures
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=10, num_workers=2)
@@ -86,6 +86,8 @@ def test_base_example() -> None:
     recommendation = optimizer.provide_recommendation()
     print(recommendation.value)
     # >>> ((1, 1, 0, 1, 1, 4, 1, 1, 1, 1), {})
+    print(recommendation.args)
+    # >>> (1, 1, 0, 1, 1, 4, 1, 1, 1, 1)
     # DOC_BASE_5
 
 

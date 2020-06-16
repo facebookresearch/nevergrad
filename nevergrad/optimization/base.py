@@ -326,12 +326,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            else:
-                if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
-                    self._internal_tell_candidate(candidate, float("Inf"))
-                self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-                if k == MAX_TENTATIVES - 1:
-                    warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+            if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
+                self._internal_tell_candidate(candidate, float("Inf"))
+            self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
+            if k == MAX_TENTATIVES - 1:
+                warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
@@ -364,7 +363,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
-        return self.parametrization.spawn_child().set_standardized_data(self._internal_provide_recommendation(), deterministic=True)
+        recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
+        if recom_data is None:
+            return self.current_bests["pessimistic"].parameter
+        return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".
@@ -388,8 +390,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_ask(self) -> ArrayLike:
         raise RuntimeError("Not implemented, should not be called.")
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
-        return self.current_bests["pessimistic"].x
+    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
+        """Override to provide a recommendation in standardized space
+        """
+        return None
 
     def minimize(
         self,
@@ -447,7 +451,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             func = func.multiobjective_function  # type: ignore
         #
         while remaining_budget or self._running_jobs or self._finished_jobs:
-            # # # # # Update optimizer with finished jobs # # # # #
+            # # # # # Update optimizer with finished jobs # # # # #
             # this is the first thing to do when resuming an existing optimization run
             # process finished
             if self._finished_jobs:

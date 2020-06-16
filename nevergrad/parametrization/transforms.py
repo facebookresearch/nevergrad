@@ -185,20 +185,30 @@ class Clipping(BoundTransform):
     Parameters
     ----------
     a_min: float or None
+        lower bound
     a_max: float or None
+        upper bound
+    bounce: bool
+        bounce (once) on borders instead of just clipping
     """
 
     def __init__(
         self,
         a_min: BoundType = None,
-        a_max: BoundType = None
+        a_max: BoundType = None,
+        bounce: bool = False,
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
-        self.name = f"Cl({_f(a_min)},{_f(a_max)})"
+        self._bounce = bounce
+        b = ",b" if bounce else ""
+        self.name = f"Cl({_f(a_min)},{_f(a_max)}{b})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return np.clip(x, self.a_min, self.a_max)  # type: ignore
+        out = np.clip(x, self.a_min, self.a_max)
+        if self._bounce:
+            out = np.clip(2 * out - x, self.a_min, self.a_max)
+        return out  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
@@ -232,31 +242,40 @@ class ArctanBound(BoundTransform):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return self._b + self._a * np.arctan(x)  # type: ignore
+        return self._b + self._a * np.arctan(x)
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
         if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
-        return np.tan((y - self._b) / self._a)  # type: ignore
+        return np.tan((y - self._b) / self._a)
 
 
-class CumulativeDensity(Transform):
+class CumulativeDensity(BoundTransform):
     """Bounds all real values into [0, 1] using a gaussian cumulative density function (cdf)
     Beware, cdf goes very fast to its limits.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = "Cd()"
+    def __init__(
+        self,
+        lower: float = 0.0,
+        upper: float = 1.0,
+        eps: float = 1e-9
+    ) -> None:
+        super().__init__(a_min=lower, a_max=upper)
+        self._b = lower
+        self._a = upper - lower
+        self._eps = eps
+        self.name = f"Cd({_f(lower)},{_f(upper)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return stats.norm.cdf(x)  # type: ignore
+        return self._a * stats.norm.cdf(x) + self._b
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) > 1 or np.min(y) < 0:
-            raise ValueError("Only data between 0 and 1 can be transformed back (bounds lead to infinity).")
-        return stats.norm.ppf(y)  # type: ignore
+        if (y > self.a_max).any() or (y < self.a_min).any():
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.\nGot: {y}")
+        y = np.clip((y - self._b) / self._a, self._eps, 1 - self._eps)
+        return stats.norm.ppf(y)
 
 
 class Fourrier(Transform):

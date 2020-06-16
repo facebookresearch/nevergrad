@@ -14,7 +14,7 @@ def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> tp.Tuple[tp.Tuple[tp.Any, ..
     return args, kwargs
 
 
-def test_experimented_function() -> None:
+def test_experiment_function() -> None:
     ifunc = base.ExperimentFunction(_arg_return, p.Instrumentation(  # type: ignore
         p.Choice([1, 12]),
         "constant",
@@ -31,10 +31,10 @@ def test_experimented_function() -> None:
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
     instru_str = ("Instrumentation(Tuple(Choice(choices=Tuple(1,12),"
-                  "weights=Array{(2,)}),constant,"
+                  "weights=Array{(1,2)}),constant,"
                   "Array{(2,2)}),"
                   "Dict(constkwarg=blublu,plop=Choice(choices=Tuple(3,4),"
-                  "weights=Array{(2,)})))")
+                  "weights=Array{(1,2)})))")
     testing.printed_assert_equal(
         ifunc.descriptors,
         {

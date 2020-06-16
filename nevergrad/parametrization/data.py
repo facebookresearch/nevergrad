@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 import warnings
 import typing as tp
 import numpy as np
@@ -203,7 +204,7 @@ class Array(core.Parameter):
         self: A,
         lower: BoundValue = None,
         upper: BoundValue = None,
-        method: str = "clipping",
+        method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
         a_min: BoundValue = None,
         a_max: BoundValue = None,
@@ -219,6 +220,8 @@ class Array(core.Parameter):
         method: str
             One of the following choices:
 
+            - "bouncing": bounce on border (at most once). This is a variant of clipping,
+               avoiding bounds over-samping (default).
             - "clipping": clips the values inside the bounds. This is efficient but leads
               to over-sampling on the bounds.
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
@@ -257,15 +260,18 @@ class Array(core.Parameter):
             if (bounds[0] >= bounds[1]).any():  # type: ignore
                 raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
         # update instance
-        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound)
+        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound,
+                          gaussian=trans.CumulativeDensity)
+        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
         if method in transforms:
-            if self.exponent is not None and method != "clipping":
+            if self.exponent is not None and method not in ("clipping", "bouncing"):
                 raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
             self.bound_transform = transforms[method](*bounds)
         elif method == "constraint":
             self.register_cheap_constraint(checker)
         else:
-            raise ValueError(f"Unknown method {method}")
+            avail = ["constraint"] + list(transforms)
+            raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
         self.bounds = bounds  # type: ignore
         self.full_range_sampling = full_range_sampling
         # warn if sigma is too large for range
@@ -444,11 +450,13 @@ class Scalar(Array):
     def __init__(
         self,
         init: tp.Optional[float] = None,
+        *,
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = True
     ) -> None:
         bounded = all(a is not None for a in (lower, upper))
+        no_init = init is None
         if bounded:
             if init is None:
                 init = (lower + upper) / 2.0  # type: ignore
@@ -458,7 +466,7 @@ class Scalar(Array):
         if bounded:
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded)
+            self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
 
     @property  # type: ignore
     def value(self) -> float:  # type: ignore
@@ -526,6 +534,7 @@ class Log(Scalar):
         a_max: tp.Optional[float] = None,
     ) -> None:
         lower, upper = _a_min_max_deprecation(**locals())
+        no_init = init is None
         bounded = all(a is not None for a in (lower, upper))
         if bounded:
             if init is None:
@@ -539,4 +548,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded)
+            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded and no_init)

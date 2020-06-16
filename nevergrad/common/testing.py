@@ -126,6 +126,7 @@ class parametrized:
 def skip_error_on_systems(error_type: tp.Type[Exception], systems: tp.Iterable[str]) -> tp.Iterator[None]:
     """Context manager for skipping a test upon a specific error on specific systems
     This is mostly used to skip some tests for features which are incompatible with Windows
+    Eg. of systems (mind the capitalized first letter): Darwin, Windows
     """
     try:
         yield
@@ -133,5 +134,6 @@ def skip_error_on_systems(error_type: tp.Type[Exception], systems: tp.Iterable[s
         system = platform.system()
         if system in systems:
             raise unittest.SkipTest
-        print(f'This is system "{system}" (should it be skipped for the test?)')
+        if systems:  # only print if the context is actually active for some system
+            print(f'This is system "{system}" (should it be skipped for the test?)')
         raise e

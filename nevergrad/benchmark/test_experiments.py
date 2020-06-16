@@ -23,8 +23,9 @@ from . import optgroups
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld"}:
-        check_seedable(maker)  # this is a basic test on first elements, do not fully rely on it
+    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket",
+                    "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning"}:
+        check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
 @pytest.fixture(scope="module")  # type: ignore
@@ -38,7 +39,7 @@ def recorder() -> tp.Generator[tp.Dict[str, tp.List[optgroups.Optim]], None, Non
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("name", [name for name in optgroups.registry])  # type: ignore
+@pytest.mark.parametrize("name", optgroups.registry)  # type: ignore
 def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Optim]]) -> None:
     maker = optgroups.registry[name]
     recorder[name] = list(maker())
@@ -63,7 +64,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
             )
 
 
-def check_seedable(maker: tp.Any) -> None:
+def check_seedable(maker: tp.Any, short: bool = False) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
@@ -78,7 +79,7 @@ def check_seedable(maker: tp.Any) -> None:
     rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
     for seed in [random_seed, random_seed, random_seed + 1]:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
-        xps = list(itertools.islice(maker(seed), 0, 3))
+        xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
         simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])

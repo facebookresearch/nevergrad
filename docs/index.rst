@@ -14,7 +14,7 @@ Quick start
 
     pip install nevergrad
 
-You can find other installation options in the :ref:`Getting started section <getting_started>`.
+You can find other installation options (including for Windows users) in the :ref:`Getting started section <getting_started>`.
 
 Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
 
@@ -32,6 +32,17 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
 
 *Convergence of a population of points to the minima with two-points DE.*
 
+:code:`nevergrad` can also support bounded continuous variables as well as discrete variables, and mixture of those.
+To do this, one can specify the input space:
+
+.. literalinclude:: ../nevergrad/parametrization/test_param_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_README_0
+    :end-before: DOC_README_1
+
+Learn more about parametrization in the :ref:`Parametrization section <parametrizing>`!
+
 
 .. toctree::
    :maxdepth: 3
@@ -45,6 +56,7 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
    parametrization_ref.rst
    benchmarking.rst
    benchmarks.rst
+   windows.md
    contributing.rst
    opencompetition2020.md
 

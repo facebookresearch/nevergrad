@@ -5,6 +5,7 @@
 """Groups of optimizers for use in benchmarks
 """
 import typing as tp
+import numpy as np
 import nevergrad as ng
 from nevergrad.common.decorators import Registry
 from nevergrad.optimization import base as obase
@@ -13,12 +14,25 @@ Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry = Registry[tp.Callable[[], tp.Iterable[Optim]]]()
 
 
-def get_optimizers(*names: str) -> tp.List[Optim]:
+def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]:
+    """Returns an deterministically ordered list of optimizers, belonging to the
+    provided groups. If a seed is provided, it is used to shuffle the list.
+
+    Parameters
+    ----------
+    *names: str
+        names of the groups to use. See nevergrad/benchmarks/optimizer_groups.txt
+        for the list of groups and what they contain
+    seed: optional int
+        a seed to shuffle the list of optimizers
+    """
     optims: tp.List[Optim] = []
     for name in names:
         for optim in registry[name]():
             if optim not in optims:  # avoid duplicates
                 optims.append(optim)
+    if seed is not None:
+        np.random.RandomState(seed).shuffle(optims)
     return optims
 
 
@@ -28,7 +42,7 @@ def large() -> tp.List[Optim]:
             "OnePlusOne", "SQP", "Cobyla", "Powell",
             "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
             "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-            "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
+            "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel"]
 
 
 @registry.register

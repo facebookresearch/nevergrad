@@ -3,14 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Callable, Any, List, Optional
+import typing as tp
 import numpy as np
-from ..common import testing
+from nevergrad.common import testing
 from . import corefuncs
 
 
 @testing.parametrized(**{name: (name, func) for name, func in corefuncs.registry.items()})
-def testcorefuncs_function(name: str, func: Callable[..., Any]) -> None:
+def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
     x = np.random.normal(0, 1, 100)
     outputs = []
     for _ in range(2):
@@ -20,7 +20,7 @@ def testcorefuncs_function(name: str, func: Callable[..., Any]) -> None:
 
 
 @testing.parametrized(expe1=([6, 4, 2, 1, 9], 4, 5, 3), expe2=([6, 6, 7, 1, 9], 4, 5, 3))  # jump was assumed correct (verify?)
-def test_base_functions(x: List[int], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
+def test_base_functions(x: tp.List[int], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
     np.testing.assert_equal(corefuncs.onemax(x), onemax_expected, err_msg="Wrong output for onemax")
     np.testing.assert_equal(corefuncs.leadingones(x), leadingones_expected, err_msg="Wrong output for leadingones")
     np.testing.assert_equal(corefuncs.jump(x), jump_expected, err_msg="Wrong output for jump")
@@ -54,10 +54,15 @@ def test_genzcornerpeak_inf() -> None:
     genzgaussianpeakintegral=(corefuncs.genzgaussianpeakintegral, 0.10427, None),
     minusgenzgaussianpeakintegral=(corefuncs.minusgenzgaussianpeakintegral, -0.10427, None),
     linear=(corefuncs.linear, 0.57969, None),
+    onemax5=(corefuncs.onemax5, 8, np.arange(50)),
+    jump5=(corefuncs.jump5, 6, np.arange(50)),
+    leadingones5=(corefuncs.leadingones5, 10, np.arange(50)),
 )
-def test_core_function_values(func: Callable[[np.ndarray], float], expected: float, data: Optional[List[float]]) -> None:
+def test_core_function_values(func: tp.Callable[[np.ndarray], float], expected: float, data: tp.Optional[tp.List[float]]) -> None:
     if data is None:
         data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
+    if func.__name__ in ["onemax5", "jump5", "leadingones5"]:
+        np.random.seed(12)
     value = func(np.array(data))
     np.testing.assert_almost_equal(value, expected, decimal=5)
 

@@ -50,7 +50,7 @@ class ARCoating(base.ExperimentFunction):
     University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
     """
 
-    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "clipping") -> None:
+    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "bouncing") -> None:
         # Wave length range
         self.lambdas = np.arange(400, 900, 5)  # lambda values from min to max, in nm
         # AR parameters
