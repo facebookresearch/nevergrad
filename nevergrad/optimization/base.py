@@ -9,25 +9,25 @@ from pathlib import Path
 from numbers import Real
 from collections import deque
 import typing as tp  # favor using tp.Dict instead of Dict etc
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set, TypeVar
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
-from ..common.typetools import ArrayLike as ArrayLike  # allows reexport
-from ..common.typetools import JobLike, ExecutorLike
-from ..common.decorators import Registry
+from nevergrad.common.typetools import ArrayLike as ArrayLike  # allows reexport
+from nevergrad.common.typetools import JobLike, ExecutorLike
+from nevergrad.common.decorators import Registry
 from . import utils
 
 
-registry = Registry[Union["ConfiguredOptimizer", Type["Optimizer"]]]()
-_OptimCallBack = Union[Callable[["Optimizer", "p.Parameter", float], None], Callable[["Optimizer"], None]]
-X = TypeVar("X", bound="Optimizer")
-Y = TypeVar("Y")
+registry = Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]]()
+_OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None], tp.Callable[["Optimizer"], None]]
+X = tp.TypeVar("X", bound="Optimizer")
+Y = tp.TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
 _PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
 
 
-def load(cls: Type[X], filepath: Union[str, Path]) -> X:
+def load(cls: tp.Type[X], filepath: tp.Union[str, Path]) -> X:
     """Loads a pickle file and checks that it contains an optimizer.
     The optimizer class is not always fully reliable though (e.g.: optimizer families) so the user is responsible for it.
     """

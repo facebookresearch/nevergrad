@@ -26,11 +26,13 @@ from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
+from .optgroups import get_optimizers
 
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
+# pylint: disable=too-many-lines
 # for black (since lists are way too long...):
 # fmt: off
 
@@ -38,7 +40,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment."""
     seedg = create_seed_generator(seed)
-    # Continuous case, 
+    # Continuous case,
 
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
@@ -396,7 +398,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                 if not xp.is_incoherent:
                     yield xp
 
-                    
+
 @registry.register
 def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
@@ -488,16 +490,13 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Testing optimizers on ill-conditionned parallel optimization.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "Shiwa", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
-              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
-              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
-    for optim in optims:
-        for function in functions:
-            for budget in [100, 1000, 10000]:
+    for function in functions:
+        for budget in [100, 1000, 10000]:
+            optims = get_optimizers("large", seed=next(seedg))
+            for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -512,18 +511,15 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
     """Many optimizers on ill cond problems with constraints.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGO", "Shiwa", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne", "SQP", "Cobyla", "Powell",
-              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
-              "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-              "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
     for func in functions:
         func.parametrization.register_cheap_constraint(_positive_sum)
-    for optim in optims:
-        for function in functions:
-            for budget in [400, 4000, 40000]:
+    for function in functions:
+        for budget in [400, 4000, 40000]:
+            optims = get_optimizers("large", seed=next(seedg))
+            for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -638,7 +634,7 @@ def hdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:
-        for optim in sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x):
+        for optim in get_optimizers("all_bo"):
             for rotation in [False]:
                 for d in [20]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:
@@ -654,7 +650,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Some optimizers on a noisy optimization problem. This benchmark is based on the noise benchmark.
     """
     seedg = create_seed_generator(seed)
-    optims = sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
+    optims = get_optimizers("spsa")
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
