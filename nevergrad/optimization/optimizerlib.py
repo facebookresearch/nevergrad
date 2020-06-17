@@ -1856,6 +1856,10 @@ class NGOpt(base.Optimizer):
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
                                 self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
+                            elif self.dimension < 5 and budget < 100:
+                                self.optim = DiagonalCMA(self.parametrization, budget, num_workers)  # noqa: F405
+                            elif self.dimension < 5 and budget < 500:
+                                self.optim = MetaModel(self.parametrization, budget, num_workers)  # noqa: F405                                
                             else:
                                 self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
                         else:
@@ -1877,7 +1881,12 @@ class NGOpt(base.Optimizer):
                                         if self.dimension < 10 and budget < 500:
                                             self.optim = MetaModel(self.parametrization, budget, num_workers)  # noqa: F405
                                         else:
-                                            self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
+                                            if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
+                                                self.optim = DiagonalCMA(self.parametrization, budget, num_workers)  # noqa: F405
+                                            elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
+                                                self.optim = MetaModel(self.parametrization, budget, num_workers)  # noqa: F405
+                                            else:
+                                                self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
     def _internal_ask_candidate(self) -> p.Parameter:
