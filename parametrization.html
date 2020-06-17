@@ -268,13 +268,13 @@ This serves to parametrize functions taking multiple arguments, since you can th
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*[, init, shape, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*, init, …], …)</p></td>
 <td><p>Array parameter with customizable mutation and recombination.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>([init, lower, upper, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>(init, *, lower, upper, …)</p></td>
 <td><p>Parameter representing a scalar.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, lower, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*, init, exponent, lower, …)</p></td>
 <td><p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Dict</span></code></a>(**parameters)</p></td>
@@ -286,10 +286,10 @@ This serves to parametrize functions taking multiple arguments, since you can th
 <tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Instrumentation</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices[, repetitions, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices, repetitions, …)</p></td>
 <td><p>Unordered categorical parameter, randomly choosing one of the provided choice options as a value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices[, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices, …)</p></td>
 <td><p>Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.</p></td>
 </tr>
 </tbody>

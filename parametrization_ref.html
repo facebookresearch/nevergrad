@@ -179,13 +179,13 @@ The parametrization subpackage will help you do thanks to:</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*[, init, shape, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Array</span></code></a>(*, init, …], …)</p></td>
 <td><p>Array parameter with customizable mutation and recombination.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>([init, lower, upper, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Scalar" title="nevergrad.p.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Scalar</span></code></a>(init, *, lower, upper, …)</p></td>
 <td><p>Parameter representing a scalar.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*[, init, exponent, lower, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Log" title="nevergrad.p.Log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Log</span></code></a>(*, init, exponent, lower, …)</p></td>
 <td><p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Dict</span></code></a>(**parameters)</p></td>
@@ -197,17 +197,17 @@ The parametrization subpackage will help you do thanks to:</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Instrumentation</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices[, repetitions, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nevergrad.p.Choice" title="nevergrad.p.Choice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.Choice</span></code></a>(choices, repetitions, …)</p></td>
 <td><p>Unordered categorical parameter, randomly choosing one of the provided choice options as a value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices[, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#nevergrad.p.TransitionChoice" title="nevergrad.p.TransitionChoice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nevergrad.p.TransitionChoice</span></code></a>(choices, …)</p></td>
 <td><p>Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.</p></td>
 </tr>
 </tbody>
 </table>
 <span class="target" id="module-nevergrad.p"></span><dl class="py class">
 <dt id="nevergrad.p.Array">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Union[Tuple[float, …], List[float], numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="p">:</span> <span class="n">Optional[Tuple[int, …]]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional[Union[Tuple[float, …], List[float], numpy.ndarray]]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="p">:</span> <span class="n">Optional[Tuple[int, …]]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
 <p>Array parameter with customizable mutation and recombination.</p>
 <dl class="field-list simple">
@@ -226,7 +226,7 @@ set_bounds, set_mutation, set_integer_casting</p>
 </div>
 <dl class="py method">
 <dt id="nevergrad.p.Array.set_bounds">
-<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'bouncing'</span></em>, <em class="sig-param"><span class="n">full_range_sampling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_min</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_max</span><span class="p">:</span> <span class="n">Union[float, int, numpy.ndarray, None]</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>float<span class="p">, </span>int<span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>float<span class="p">, </span>int<span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'bouncing'</span></em>, <em class="sig-param"><span class="n">full_range_sampling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_min</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>float<span class="p">, </span>int<span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_max</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>float<span class="p">, </span>int<span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_bounds" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bounds all real values into [lower, upper] using a provided method</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -288,7 +288,7 @@ a sigma lower than 1. In those cases, you should rather use a TransitionChoice i
 
 <dl class="py method">
 <dt id="nevergrad.p.Array.set_mutation">
-<code class="sig-name descname">set_mutation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sigma</span><span class="p">:</span> <span class="n">Union[float, nevergrad.parametrization.core.Parameter, None]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">exponent</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">custom</span><span class="p">:</span> <span class="n">Union[str, nevergrad.parametrization.core.Parameter, None]</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_mutation" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_mutation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sigma</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>float<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">exponent</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">custom</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; A<a class="headerlink" href="#nevergrad.p.Array.set_mutation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output will be cast to integer(s) through deterministic rounding.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -318,121 +318,6 @@ or a Parameter which value is either of those</p></li>
 <dd><p>Value for the standard deviation used to mutate the parameter</p>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="py class">
-<dt id="nevergrad.p.Scalar">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Scalar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Scalar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Array</span></code></p>
-<p>Parameter representing a scalar.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>optional float</em>) – initial value of the scalar (defaults to 0.0 if both bounds are not provided)</p></li>
-<li><p><strong>lower</strong> (<em>optional float</em>) – minimum value if any</p></li>
-<li><p><strong>upper</strong> (<em>optional float</em>) – maximum value if any</p></li>
-<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<ul class="simple">
-<li><p>by default, this is an unbounded scalar with Gaussian mutations.</p></li>
-<li><p>if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
-Also, if init is not provided, it will be set to the middle value.</p></li>
-<li><p>More specific behaviors can be obtained throught the following methods:
-<code class="code docutils literal notranslate"><span class="pre">set_bounds</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_mutation</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_integer_casting</span></code></p></li>
-</ul>
-</dd></dl>
-
-<dl class="py class">
-<dt id="nevergrad.p.Log">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Log</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">exponent</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">a_min</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_max</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Log" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Scalar</span></code></p>
-<p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>float</em><em> or </em><em>None</em>) – initial value of the variable. If not provided, it is set to the middle of lower and upper in log space</p></li>
-<li><p><strong>exponent</strong> (<em>float</em><em> or </em><em>None</em>) – exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
-By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
-at 3 sigma in the transformed space.</p></li>
-<li><p><strong>lower</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value if any (&gt; 0)</p></li>
-<li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value if any</p></li>
-<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This class is only a wrapper over <code class="code docutils literal notranslate"><span class="pre">Scalar</span></code>.</p>
-</div>
-</dd></dl>
-
-<dl class="py class">
-<dt id="nevergrad.p.Dict">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
-<p>Dictionary-valued parameter. This Parameter can contain other Parameters,
-its value is a dict, with keys the ones provided as input, and corresponding values are
-either directly the provided values if they are not Parameter instances, or the value of those
-Parameters. It also implements a getter to access the Parameters directly if need be.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the dict</p>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is the base structure for all container Parameters, and it is
-used to hold the internal/model parameters for all Parameter classes.</p>
-</div>
-</dd></dl>
-
-<dl class="py class">
-<dt id="nevergrad.p.Tuple">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Tuple</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Tuple" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Dict</span></code></p>
-<p>Tuple-valued parameter. This Parameter can contain other Parameters,
-its value is tuple which values are either directly the provided values
-if they are not Parameter instances, or the value of those Parameters.
-It also implements a getter to access the Parameters directly if need be.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the tuple</p>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is the base structure for all container Parameters, and it is
-used to hold the subparameters for all Parameter classes.</p>
-</div>
-</dd></dl>
-
-<dl class="py class">
-<dt id="nevergrad.p.Instrumentation">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Instrumentation</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Instrumentation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.container.Tuple</span></code></p>
-<p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.
-The parameter provided as input are used to provide values for
-an <cite>arg</cite> tuple and a <cite>kwargs</cite> dict.
-<cite>value</cite> attribue returns <cite>(args, kwargs)</cite>, but each can be independantly
-accessed through the <cite>args</cite> and <cite>kwargs</cite> properties.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>*args</strong> – values or Parameters to be used to fill the tuple of args</p></li>
-<li><p><strong>*kwargs</strong> – values or Parameters to be used to fill the dict of kwargs</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When used in conjonction with the “minimize” method of an optimizer,
-functions call use <cite>func(*param.args, **param.kwargs)</cite> instead of
-<cite>func(param.value)</cite>. This is for simplifying the parametrization of
-multiparameter functions.</p>
-</div>
 </dd></dl>
 
 <dl class="py class">
@@ -494,6 +379,101 @@ leaving others untouched</p></li>
 </dd></dl>
 
 <dl class="py class">
+<dt id="nevergrad.p.Dict">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
+<p>Dictionary-valued parameter. This Parameter can contain other Parameters,
+its value is a dict, with keys the ones provided as input, and corresponding values are
+either directly the provided values if they are not Parameter instances, or the value of those
+Parameters. It also implements a getter to access the Parameters directly if need be.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the dict</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the base structure for all container Parameters, and it is
+used to hold the internal/model parameters for all Parameter classes.</p>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt id="nevergrad.p.Instrumentation">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Instrumentation</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Instrumentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.container.Tuple</span></code></p>
+<p>Container of parameters available through <cite>args</cite> and <cite>kwargs</cite> attributes.
+The parameter provided as input are used to provide values for
+an <cite>arg</cite> tuple and a <cite>kwargs</cite> dict.
+<cite>value</cite> attribue returns <cite>(args, kwargs)</cite>, but each can be independantly
+accessed through the <cite>args</cite> and <cite>kwargs</cite> properties.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – values or Parameters to be used to fill the tuple of args</p></li>
+<li><p><strong>*kwargs</strong> – values or Parameters to be used to fill the dict of kwargs</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When used in conjonction with the “minimize” method of an optimizer,
+functions call use <cite>func(*param.args, **param.kwargs)</cite> instead of
+<cite>func(param.value)</cite>. This is for simplifying the parametrization of
+multiparameter functions.</p>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt id="nevergrad.p.Log">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Log</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">exponent</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">a_min</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">a_max</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Scalar</span></code></p>
+<p>Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init</strong> (<em>float</em><em> or </em><em>None</em>) – initial value of the variable. If not provided, it is set to the middle of lower and upper in log space</p></li>
+<li><p><strong>exponent</strong> (<em>float</em><em> or </em><em>None</em>) – exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
+By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
+at 3 sigma in the transformed space.</p></li>
+<li><p><strong>lower</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value if any (&gt; 0)</p></li>
+<li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value if any</p></li>
+<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This class is only a wrapper over <code class="code docutils literal notranslate"><span class="pre">Scalar</span></code>.</p>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt id="nevergrad.p.Scalar">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Scalar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">lower</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upper</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Scalar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Array</span></code></p>
+<p>Parameter representing a scalar.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init</strong> (<em>optional float</em>) – initial value of the scalar (defaults to 0.0 if both bounds are not provided)</p></li>
+<li><p><strong>lower</strong> (<em>optional float</em>) – minimum value if any</p></li>
+<li><p><strong>upper</strong> (<em>optional float</em>) – maximum value if any</p></li>
+<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>by default, this is an unbounded scalar with Gaussian mutations.</p></li>
+<li><p>if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
+Also, if init is not provided, it will be set to the middle value.</p></li>
+<li><p>More specific behaviors can be obtained throught the following methods:
+<code class="code docutils literal notranslate"><span class="pre">set_bounds</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_mutation</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_integer_casting</span></code></p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
 <dt id="nevergrad.p.TransitionChoice">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">TransitionChoice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">transitions</span><span class="p">:</span> <span class="n">Union[Tuple[float, …], List[float], numpy.ndarray, nevergrad.parametrization.data.Array]</span> <span class="o">=</span> <span class="default_value">1.0, 1.0</span></em>, <em class="sig-param"><span class="n">repetitions</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.TransitionChoice" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.choice.BaseChoice</span></code></p>
@@ -546,12 +526,32 @@ on this scalar yields a uniform choice of index. This may come to evolve for sim
 
 </dd></dl>
 
+<dl class="py class">
+<dt id="nevergrad.p.Tuple">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Tuple</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Dict</span></code></p>
+<p>Tuple-valued parameter. This Parameter can contain other Parameters,
+its value is tuple which values are either directly the provided values
+if they are not Parameter instances, or the value of those Parameters.
+It also implements a getter to access the Parameters directly if need be.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the tuple</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the base structure for all container Parameters, and it is
+used to hold the subparameters for all Parameter classes.</p>
+</div>
+</dd></dl>
+
 </div>
 <div class="section" id="parameter-api">
 <h2>Parameter API<a class="headerlink" href="#parameter-api" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="nevergrad.p.Parameter">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">p.</code><code class="sig-name descname">Parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract class providing the core functionality of a parameter, aka
 value, internal/model parameters, mutation, recombination
 and additional features such as shared random state,
