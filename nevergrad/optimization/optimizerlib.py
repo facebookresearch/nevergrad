@@ -69,7 +69,8 @@ class _OnePlusOne(base.Optimizer):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "portfolio", "discreteBSO"], f"Unkwnown mutation: '{mutation}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga",
+                            "portfolio", "discreteBSO"], f"Unkwnown mutation: '{mutation}'"
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -137,15 +138,17 @@ class _OnePlusOne(base.Optimizer):
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
     """Simple but sometimes powerfull class of optimization algorithm.
-    We use asynchronous updates, so that the 1+1 can actually be parallel and even
-    performs quite well in such a context - this is naturally close to 1+lambda.
+    This use asynchronous updates, so that (1+1) can actually be parallel and even
+    performs quite well in such a context - this is naturally close to (1+lambda).
+
 
     Parameters
     ----------
     noise_handling: str or Tuple[str, float]
         Method for handling the noise. The name can be:
 
-        - `"random"`: a random point is reevaluated regularly
+        - `"random"`: a random point is reevaluated regularly, this uses the one-fifth adaptation rule,
+          going back to Schumer and Steiglitz (1968). It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
         - `"optimistic"`: the best optimistic point is reevaluated regularly, optimism in front of uncertainty
         - a coefficient can to tune the regularity of these reevaluations (default .05)
     mutation: str
@@ -155,7 +158,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
           widening) to the best pessimistic point
         - `"cauchy"`: same as Gaussian but with a Cauchy distribution.
         - `"discrete"`: when a variable is mutated (which happens with probability 1/d in dimension d), it's just
-             randomly drawn.
+             randomly drawn. This means that on average, only one variable is mutated.
         - `"discreteBSO"`: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.
         - `"fastga"`: FastGA mutations from the current best
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
@@ -167,9 +170,11 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
     Notes
     -----
-    For the noisy case, we use the one-fifth adaptation rule,
-    going back to Schumer and Steiglitz (1968).
-    It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
+    After many papers advocared the mutation rate 1/d in the discrete (1+1) for the discrete case,
+    `it was proposed <https://arxiv.org/abs/1606.05551>`_ to use of a randomly
+    drawn mutation rate. `Fast genetic algorithms <https://arxiv.org/abs/1703.03334>`_ are based on a similar idea
+    These two simple methods perform quite well on a wide range of problems.
+
     """
 
     # pylint: disable=unused-argument
@@ -278,7 +283,10 @@ class _CMA(base.Optimizer):
 
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
-    """CMA-ES optimizer, wrapping external implementation: https://github.com/CMA-ES/pycma
+    """CMA-ES optimizer,
+    This evolution strategy uses a Gaussian sampling, iteratively modified
+    for searching in the best directions.
+    This optimizer wraps an external implementation: https://github.com/CMA-ES/pycma
 
     Parameters
     ----------
@@ -505,8 +513,9 @@ class _TBPSA(base.Optimizer):
 
 
 class ParametrizedTBPSA(base.ConfiguredOptimizer):
-    """Test-based population-size adaptation.
-    This algorithm is robust, and perfoms well for noisy problems and in large dimension
+    """`Test-based population-size adaptation <https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf>`_
+    This method, based on adapting the population size, performs the best in
+    many noisy optimization problems, even in large dimension
 
     Parameters
     ----------
@@ -670,7 +679,10 @@ class PSO(base.Optimizer):
 
 
 class ConfiguredPSO(base.ConfiguredOptimizer):
-    """Partially following SPSO2011. However, no randomization of the population order.
+    """`Particle Swarm Optimization <https://en.wikipedia.org/wiki/Particle_swarm_optimization>`_
+    is based on a set of particles with their inertia.
+    Wikipedia provides a beautiful illustration ;) (see link)
+
 
     Parameters
     ----------
@@ -684,6 +696,7 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
     Note
     ----
     - Using non-default "transform" and "wide" parameters can lead to extreme values
+    - Implementation partially following SPSO2011. However, no randomization of the population order.
     - Reference:
       M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
       Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
@@ -1335,7 +1348,9 @@ class _BO(base.Optimizer):
 
 
 class ParametrizedBO(base.ConfiguredOptimizer):
-    """Bayesian optimization
+    """Bayesian optimization.
+    Hyperparameter tuning method, based on statistical modeling of the objective function.
+    This class is a wrapper over the `bayes_opt <https://github.com/fmfn/BayesianOptimization>`_ package.
 
     Parameters
     ----------
@@ -1449,10 +1464,8 @@ chainCMAPowell.no_parallelization = True
 
 @registry.register
 class cGA(base.Optimizer):
-    """
-    Implementation of the discrete cGA algorithm
-
-    https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf
+    """`Compact Genetic Algorithm <https://ieeexplore.ieee.org/document/797971>`_.
+    A discrete optimization algorithm, introduced in and often used as a first baseline.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -1774,7 +1787,8 @@ class NGO10(base.Optimizer):
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif arity > 0:
-            self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(self.parametrization, budget, num_workers)
+            self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(
+                self.parametrization, budget, num_workers)
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
@@ -1821,5 +1835,3 @@ class NGO10(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
-
-

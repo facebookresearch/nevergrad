@@ -169,11 +169,18 @@ class _DE(base.Optimizer):
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class DifferentialEvolution(base.ConfiguredOptimizer):
-    """Differential evolution algorithms.
+    """ Differential evolution is typically used for continuous optimization.
+    It uses differences between points in the population for doing mutations in fruitful directions;
+    it is therefore a kind of covariance adaptation without any explicit covariance,
+    making it super fast in high dimension. This class implements several variants of differential
+    evolution, some of them adapted to genetic mutations as in
+    `Holland’s work <https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)#Two-point_and_k-point_crossover>`_),
+    (this combination is termed :code:`TwoPointsDE` in Nevergrad, corresponding to :code:`crossover="twopoints"`),
+    or to the noisy setting (coined :code:`NoisyDE`, corresponding to :code:`recommendation="noisy"`).
+    In that last case, the optimizer returns the mean of the individuals with fitness better than median,
+    which might be stupid sometimes though.
 
-    Default pop size is 30
-    We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
-    Default settings are CR =.5, F1=.8, F2=.8, curr-to-best.
+    Default settings are CR =.5, F1=.8, F2=.8, curr-to-best, pop size is 30
     Initial population: pure random.
 
     Parameters
