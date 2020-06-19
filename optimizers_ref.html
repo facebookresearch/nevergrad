@@ -574,10 +574,17 @@ Each algorithm is fed with what happened before it.</p>
 <dl class="py class">
 <dt id="nevergrad.families.DifferentialEvolution">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'optimistic'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">F1</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">F2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'standard'</span></em>, <em class="sig-param"><span class="n">propagate_heritage</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
-<dd><p>Differential evolution algorithms.</p>
-<p>Default pop size is 30
-We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
-Default settings are CR =.5, F1=.8, F2=.8, curr-to-best.
+<dd><p>Differential evolution is typically used for continuous optimization.
+It uses differences between points in the population for doing mutations in fruitful directions;
+it is therefore a kind of covariance adaptation without any explicit covariance,
+making it super fast in high dimension. This class implements several variants of differential
+evolution, some of them adapted to genetic mutations as in
+<a class="reference external" href="https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)#Two-point_and_k-point_crossover">Holland’s work</a>),
+(this combination is termed <code class="code docutils literal notranslate"><span class="pre">TwoPointsDE</span></code> in Nevergrad, corresponding to <code class="code docutils literal notranslate"><span class="pre">crossover=&quot;twopoints&quot;</span></code>),
+or to the noisy setting (coined <code class="code docutils literal notranslate"><span class="pre">NoisyDE</span></code>, corresponding to <code class="code docutils literal notranslate"><span class="pre">recommendation=&quot;noisy&quot;</span></code>).
+In that last case, the optimizer returns the mean of the individuals with fitness better than median,
+which might be stupid sometimes though.</p>
+<p>Default settings are CR =.5, F1=.8, F2=.8, curr-to-best, pop size is 30
 Initial population: pure random.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -631,7 +638,9 @@ The API is going to evolve</p>
 <dl class="py class">
 <dt id="nevergrad.families.ParametrizedBO">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedBO</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">init_budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">middle_point</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">utility_kind</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'ucb'</span></em>, <em class="sig-param"><span class="n">utility_kappa</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">2.576</span></em>, <em class="sig-param"><span class="n">utility_xi</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gp_parameters</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedBO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bayesian optimization</p>
+<dd><p>Bayesian optimization.
+Hyperparameter tuning method, based on statistical modeling of the objective function.
+This class is a wrapper over the <a class="reference external" href="https://github.com/fmfn/BayesianOptimization">bayes_opt</a> package.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -651,14 +660,15 @@ The API is going to evolve</p>
 <dt id="nevergrad.families.ParametrizedOnePlusOne">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">noise_handling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>Tuple<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple but sometimes powerfull class of optimization algorithm.
-We use asynchronous updates, so that the 1+1 can actually be parallel and even
-performs quite well in such a context - this is naturally close to 1+lambda.</p>
+This use asynchronous updates, so that (1+1) can actually be parallel and even
+performs quite well in such a context - this is naturally close to (1+lambda).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>noise_handling</strong> (<em>str</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><em>Tuple</em></a><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em>) – <p>Method for handling the noise. The name can be:</p>
 <ul>
-<li><p><cite>”random”</cite>: a random point is reevaluated regularly</p></li>
+<li><p><cite>”random”</cite>: a random point is reevaluated regularly, this uses the one-fifth adaptation rule,
+going back to Schumer and Steiglitz (1968). It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p></li>
 <li><p><cite>”optimistic”</cite>: the best optimistic point is reevaluated regularly, optimism in front of uncertainty</p></li>
 <li><p>a coefficient can to tune the regularity of these reevaluations (default .05)</p></li>
 </ul>
@@ -669,7 +679,7 @@ performs quite well in such a context - this is naturally close to 1+lambda.</p>
 widening) to the best pessimistic point</p></li>
 <li><p><cite>”cauchy”</cite>: same as Gaussian but with a Cauchy distribution.</p></li>
 <li><dl class="simple">
-<dt><cite>”discrete”</cite>: when a variable is mutated (which happens with probability 1/d in dimension d), it’s just</dt><dd><p>randomly drawn.</p>
+<dt><cite>”discrete”</cite>: when a variable is mutated (which happens with probability 1/d in dimension d), it’s just</dt><dd><p>randomly drawn. This means that on average, only one variable is mutated.</p>
 </dd>
 </dl>
 </li>
@@ -685,16 +695,18 @@ Dang &amp; Lehre “Self-adaptation of Mutation Rates in Non-elitist Population�
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>For the noisy case, we use the one-fifth adaptation rule,
-going back to Schumer and Steiglitz (1968).
-It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
+<p>After many papers advocared the mutation rate 1/d in the discrete (1+1) for the discrete case,
+<a class="reference external" href="https://arxiv.org/abs/1606.05551">it was proposed</a> to use of a randomly
+drawn mutation rate. <a class="reference external" href="https://arxiv.org/abs/1703.03334">Fast genetic algorithms</a> are based on a similar idea
+These two simple methods perform quite well on a wide range of problems.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt id="nevergrad.families.ParametrizedTBPSA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">initial_popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation.
-This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
+<dd><p><a class="reference external" href="https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf">Test-based population-size adaptation</a>
+This method, based on adapting the population size, performs the best in
+many noisy optimization problems, even in large dimension</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -788,16 +800,25 @@ This can be great in terms of discrepancy when the budget is not very high.</p><
 <dl class="py class">
 <dt id="nevergrad.families.ScipyOptimizer">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ScipyOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'Nelder-Mead'</span></em>, <em class="sig-param"><span class="n">random_restart</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ScipyOptimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Scripy optimizers in a ask and tell format</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>method</strong> (<em>str</em>) – Name of the method to use, among Nelder-Mead, COBYLA, SLSQP and Powell</p></li>
-<li><p><strong>random_restart</strong> (<em>bool</em>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
-spent yet (otherwise, restarts from best point)</p></li>
+<dd><p>Wrapper over Scipy optimizer implementations, in standard ask and tell format.
+Sequential Quadratic Programming. Inside Nevergrad, this code is in <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py">https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py</a>; this is actually an import from scipy-optimize. It is very powerful e.g. in continuous noisy optimization. It is based on approximating the objective function by quadratic models.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>method: str</dt><dd><p>Name of the method to use among:</p>
+<ul class="simple">
+<li><p>Nelder-Mead</p></li>
+<li><p>COBYLA</p></li>
+<li><p>SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
+approximating the objective function by quadratic models.</p></li>
+<li><p>Powell</p></li>
 </ul>
 </dd>
+<dt>random_restart: bool</dt><dd><p>whether to restart at a random point if the optimizer converged but the budget is not entirely
+spent yet (otherwise, restarts from best point)</p>
+</dd>
 </dl>
+<p>These optimizers do not support asking several candidates in a row</p>
+</div></blockquote>
 </dd></dl>
 
 </div>
@@ -884,7 +905,9 @@ Each algorithm is fed with what happened before it.</p>
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ConfiguredPSO">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfiguredPSO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">transform</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'identity'</span></em>, <em class="sig-param"><span class="n">wide</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Partially following SPSO2011. However, no randomization of the population order.</p>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Particle_swarm_optimization">Particle Swarm Optimization</a>
+is based on a set of particles with their inertia.
+Wikipedia provides a beautiful illustration ;) (see link)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -898,6 +921,7 @@ Each algorithm is fed with what happened before it.</p>
 <p class="admonition-title">Note</p>
 <ul class="simple">
 <li><p>Using non-default “transform” and “wide” parameters can lead to extreme values</p></li>
+<li><p>Implementation partially following SPSO2011. However, no randomization of the population order.</p></li>
 <li><p>Reference:
 M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
 Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
@@ -1049,7 +1073,9 @@ Infinite arms: we add one arm when <cite>20 * #ask &gt;= #arms ** 3</cite>.</p>
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedBO">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedBO</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">init_budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">middle_point</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">utility_kind</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'ucb'</span></em>, <em class="sig-param"><span class="n">utility_kappa</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">2.576</span></em>, <em class="sig-param"><span class="n">utility_xi</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">gp_parameters</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedBO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bayesian optimization</p>
+<dd><p>Bayesian optimization.
+Hyperparameter tuning method, based on statistical modeling of the objective function.
+This class is a wrapper over the <a class="reference external" href="https://github.com/fmfn/BayesianOptimization">bayes_opt</a> package.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1073,7 +1099,10 @@ Infinite arms: we add one arm when <cite>20 * #ask &gt;= #arms ** 3</cite>.</p>
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedCMA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">diagonal</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fcmaes</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedCMA" title="Permalink to this definition">¶</a></dt>
-<dd><p>CMA-ES optimizer, wrapping external implementation: <a class="reference external" href="https://github.com/CMA-ES/pycma">https://github.com/CMA-ES/pycma</a></p>
+<dd><p>CMA-ES optimizer,
+This evolution strategy uses a Gaussian sampling, iteratively modified
+for searching in the best directions.
+This optimizer wraps an external implementation: <a class="reference external" href="https://github.com/CMA-ES/pycma">https://github.com/CMA-ES/pycma</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1093,14 +1122,15 @@ if objective function evaluation is fast.</p></li>
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">noise_handling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>Tuple<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple but sometimes powerfull class of optimization algorithm.
-We use asynchronous updates, so that the 1+1 can actually be parallel and even
-performs quite well in such a context - this is naturally close to 1+lambda.</p>
+This use asynchronous updates, so that (1+1) can actually be parallel and even
+performs quite well in such a context - this is naturally close to (1+lambda).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>noise_handling</strong> (<em>str</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><em>Tuple</em></a><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em>) – <p>Method for handling the noise. The name can be:</p>
 <ul>
-<li><p><cite>”random”</cite>: a random point is reevaluated regularly</p></li>
+<li><p><cite>”random”</cite>: a random point is reevaluated regularly, this uses the one-fifth adaptation rule,
+going back to Schumer and Steiglitz (1968). It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p></li>
 <li><p><cite>”optimistic”</cite>: the best optimistic point is reevaluated regularly, optimism in front of uncertainty</p></li>
 <li><p>a coefficient can to tune the regularity of these reevaluations (default .05)</p></li>
 </ul>
@@ -1111,7 +1141,7 @@ performs quite well in such a context - this is naturally close to 1+lambda.</p>
 widening) to the best pessimistic point</p></li>
 <li><p><cite>”cauchy”</cite>: same as Gaussian but with a Cauchy distribution.</p></li>
 <li><dl class="simple">
-<dt><cite>”discrete”</cite>: when a variable is mutated (which happens with probability 1/d in dimension d), it’s just</dt><dd><p>randomly drawn.</p>
+<dt><cite>”discrete”</cite>: when a variable is mutated (which happens with probability 1/d in dimension d), it’s just</dt><dd><p>randomly drawn. This means that on average, only one variable is mutated.</p>
 </dd>
 </dl>
 </li>
@@ -1127,16 +1157,18 @@ Dang &amp; Lehre “Self-adaptation of Mutation Rates in Non-elitist Population�
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>For the noisy case, we use the one-fifth adaptation rule,
-going back to Schumer and Steiglitz (1968).
-It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p>
+<p>After many papers advocared the mutation rate 1/d in the discrete (1+1) for the discrete case,
+<a class="reference external" href="https://arxiv.org/abs/1606.05551">it was proposed</a> to use of a randomly
+drawn mutation rate. <a class="reference external" href="https://arxiv.org/abs/1703.03334">Fast genetic algorithms</a> are based on a similar idea
+These two simple methods perform quite well on a wide range of problems.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ParametrizedTBPSA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ParametrizedTBPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">naive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">initial_popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedTBPSA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test-based population-size adaptation.
-This algorithm is robust, and perfoms well for noisy problems and in large dimension</p>
+<dd><p><a class="reference external" href="https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf">Test-based population-size adaptation</a>
+This method, based on adapting the population size, performs the best in
+many noisy optimization problems, even in large dimension</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1223,8 +1255,8 @@ For example, a categorical variable with 5 possible values becomes 5 continuous 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.cGA">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">cGA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">arity</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.cGA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Implementation of the discrete cGA algorithm</p>
-<p><a class="reference external" href="https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf">https://pdfs.semanticscholar.org/4b0b/5733894ffc0b2968ddaab15d61751b87847a.pdf</a></p>
+<dd><p><a class="reference external" href="https://ieeexplore.ieee.org/document/797971">Compact Genetic Algorithm</a>.
+A discrete optimization algorithm, introduced in and often used as a first baseline.</p>
 </dd></dl>
 
 <dl class="py function">
