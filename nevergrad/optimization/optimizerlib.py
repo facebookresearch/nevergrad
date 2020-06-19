@@ -1774,9 +1774,9 @@ class NGO10(base.Optimizer):
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif not descr.not_manyobjective:
-            self.optim: base.Optimizer = DiagonalCMA(self.parametrization, budget, num_workers)
+            self.optim = DiagonalCMA(self.parametrization, budget, num_workers)
         elif not descr.not_multiobjective:
-            self.optim: base.Optimizer = LhsDE(self.parametrization, budget, num_workers)
+            self.optim = LhsDE(self.parametrization, budget, num_workers)
         elif arity > 0:
             self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(self.parametrization, budget, num_workers)
         else:
