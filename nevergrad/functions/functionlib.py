@@ -66,7 +66,7 @@ class ArtificialVariable:
 class PBT_no_overfitting(ExperimentFunction):
     """Population-Based Training, also known as Lamarckism or Meta-Optimization."""
 
-    def __init__(self, names: tp.List[str], dimensions: tp.List[int], num_workers: int)
+    def __init__(self, names: tp.List[str], dimensions: tp.List[int], num_workers: int):
         for name in names:
             if name not in corefuncs.registry:
                 available = ", ".join(self.list_sorted_function_names())
