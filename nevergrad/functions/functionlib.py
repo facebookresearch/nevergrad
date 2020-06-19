@@ -69,7 +69,7 @@ class PBT_no_overfitting(ExperimentFunction):
     def __init__(self, names: tp.List[str], dimensions: tp.List[int], num_workers: int):
         for name in names:
             if name not in corefuncs.registry:
-                available = ", ".join(self.list_sorted_function_names())
+                available = ", ".join(sorted(corefuncs.registry))
                 raise ValueError(f'Unknown core function "{name}" in PBT. Available names are:\n-----\n{available}')
         self._funcs = [corefuncs.registry[name] for name in names]
         self._optima = [np.random.normal(size=d) for d in dimensions]
