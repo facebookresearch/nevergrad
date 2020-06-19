@@ -23,6 +23,8 @@ class Descriptors:
         self,
         deterministic: bool = True,
         deterministic_function: bool = True,
+        not_multiobjective: bool = True,
+        not_manyobjective: bool = True,
         continuous: bool = True,
         metrizable: bool = True,
         ordered: bool = True,
@@ -32,6 +34,8 @@ class Descriptors:
         self.continuous = continuous
         self.metrizable = metrizable
         self.ordered = ordered
+        self.not_multiobjective = not_multiobjective
+        self.not_manyobjective = not_manyobjective
 
     def __and__(self, other: "Descriptors") -> "Descriptors":
         values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
