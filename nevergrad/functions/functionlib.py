@@ -63,6 +63,75 @@ class ArtificialVariable:
         return "Photonics"
 
 
+class PBT_no_overfitting(ExperimentFunction):
+    """Population-Based Training, also known as Lamarckism or Meta-Optimization."""
+
+    def __init__(self, names: tp.List[str], dimensions: tp.List[int], num_workers: int)
+        for name in names:
+            if name not in corefuncs.registry:
+                available = ", ".join(self.list_sorted_function_names())
+                raise ValueError(f'Unknown core function "{name}" in PBT. Available names are:\n-----\n{available}')
+        self._funcs = [corefuncs.registry[name] for name in names]
+        self._optima = [np.random.normal(size=d) for d in dimensions]
+        assert len(names) == len(dimensions)
+        self._dimension = len(name)
+        self._dimensions = dimensions
+        self._total_dimension = sum(dimensions)
+        parametrization = p.Array(shape=(self._dimension)).set_name("")
+
+        # Population of checkpoints (that are optimized by the underlying optimization method)
+        # and parameters (that we do optimize).
+        self._population_checkpoints: tp.List[np.ndarray] = [np.zeros(self._total_dimension)] * num_workers
+        self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._dimension)] * num_workers
+        self._population_fitness: tp.List[float] = [float("inf")] * num_workers
+        super().__init__(self._func, parametrization)
+
+    # The 3 methods below are function-specific.
+    def value(self, x):
+        return sum(f(xi - o) for f, xi, o in zip(self._funcs, x, self._optima))
+
+
+    def evolve(self, x: np.ndarray, p: np.ndarray):
+        assert len(p) == self._dimension
+        def gradient(self, f, x):
+            epsilon = 1e-15
+            # We compute a gradient by finite differences.
+            g = np.zeros(len(x))
+            for i in range(len(x)):
+                e = np.zeros(len(x))
+                e[i] = epsilon
+                g[i] = (f(x + e) - f(x)) / e
+            return g 
+
+        for j in range(self._dimension):
+            x[j] -= np.exp(p[j]) * (gradient(self._funcs[j], x[j] - self._optima[j]) + np.random.normal(self._dimensions[j]))
+
+
+    def __func__(self, x: np.ndarray):
+        assert len(x) == self._dimension
+
+        # First, let us find the checkpoint that we want to use.
+        if np.random.uniform() > 0.666:
+            distances = self._population_fitness
+        else:
+            if np.random.uniform() > 0.5:
+                distances = [np.linalg.norm(i - x, 0) for i in self._population]
+            else:
+                distances = [np.linalg.norm(i - x, 1) for i in self._population]
+        _, source_idx = min((val, idx) for (idx, val) in enumerate(distances))
+        
+        # Let us copy the checkpoint to a target.
+        idx = np.random.choice(range(len(self._population_fitness)))
+        if idx != source_idx:
+            self._population_fitness[idx] = self._population_fitness[source_idx].copy()
+
+        # Here the case-specific learning and evaluation.
+        self.evolve(self._population_checkpoints[idx], self.population_parameters[idx])
+        self._population_fitness[idx] = self.value(self._population_checkpoints[idx])
+
+        return self._population_fitness[idx]
+            
+
 class ArtificialFunction(ExperimentFunction):
     """Artificial function object. This allows the creation of functions with different
     dimension and structure to be used for benchmarking in many different settings.

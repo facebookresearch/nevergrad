@@ -36,6 +36,15 @@ def test_artitificial_function_repr() -> None:
     assert "sphere" in output, f"Unexpected representation: {output}"
 
 
+def test_ptb_no_overfitting() -> None:
+    func = functionlib.PBT_no_overfitting(["sphere", "cigar"], [3, 7], 12)
+    func = func.copy()
+    # We do a grardient descent
+    value = [func(np.zeros(2)) for _ in range(500)]
+    assert value[-1] < value[len(value) // 2]
+    assert value[0] > value[len(value) // 2]
+
+
 @testing.parametrized(
     sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
     cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
