@@ -140,13 +140,13 @@ class PBT_no_overfitting(ExperimentFunction):
         # Let us copy the checkpoint to a target.
         idx = np.random.choice(range(len(self._population_fitness)))
         if idx != source_idx:
-            self._population_checkpoint[idx] = self._population_checkpoint[source_idx].copy()
-            self._population_fitness[idx] = self._population_fitness[source_idx].copy()
+            self._population_checkpoints[idx] = self._population_checkpoints[source_idx].copy()
+            self._population_fitness[idx] = self._population_fitness[source_idx]
+        self._population_parameters[idx] = x
 
         # Here the case-specific learning and evaluation.
         self.evolve(self._population_checkpoints[idx], self.population_parameters[idx])
         self._population_fitness[idx] = self.value(self._population_checkpoints[idx])
-        self._population_parameters[idx] = x
 
         return self._population_fitness[idx]
             
