@@ -74,7 +74,7 @@ class PBT_no_overfitting(ExperimentFunction):
         self._funcs = [corefuncs.registry[name] for name in names]
         self._optima = [np.random.normal(size=d) for d in dimensions]
         assert len(names) == len(dimensions)
-        self._dimension = len(name)
+        self._dimension = len(names)
         self._dimensions = dimensions
         self._total_dimension = sum(dimensions)
         parametrization = p.Array(shape=(self._dimension,)).set_name("")
