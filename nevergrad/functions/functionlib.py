@@ -145,7 +145,7 @@ class PBT_no_overfitting(ExperimentFunction):
         self._population_parameters[idx] = x
 
         # Here the case-specific learning and evaluation.
-        self.evolve(self._population_checkpoints[idx], self.population_parameters[idx])
+        self.evolve(self._population_checkpoints[idx], self._population_parameters[idx])
         self._population_fitness[idx] = self.value(self._population_checkpoints[idx])
 
         return self._population_fitness[idx]
