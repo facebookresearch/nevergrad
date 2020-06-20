@@ -84,8 +84,8 @@ class PBT_no_overfitting(ExperimentFunction):
         self._population_checkpoints: tp.List[np.ndarray] = [np.zeros(self._total_dimension)] * num_workers
         self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._dimension)] * num_workers
         self._population_fitness: tp.List[float] = [float("inf")] * num_workers
-        super().__init__(self.__func__, parametrization)
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
+        super().__init__(self.__func__, parametrization)
         self.register_initialization(**self._parameters)
 
     # The 3 methods below are function-specific.
