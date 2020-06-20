@@ -77,23 +77,32 @@ class PBT_no_overfitting(ExperimentFunction):
         self._dimension = len(name)
         self._dimensions = dimensions
         self._total_dimension = sum(dimensions)
-        parametrization = p.Array(shape=(self._dimension)).set_name("")
+        parametrization = p.Array(shape=(self._dimension,)).set_name("")
 
         # Population of checkpoints (that are optimized by the underlying optimization method)
         # and parameters (that we do optimize).
         self._population_checkpoints: tp.List[np.ndarray] = [np.zeros(self._total_dimension)] * num_workers
         self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._dimension)] * num_workers
         self._population_fitness: tp.List[float] = [float("inf")] * num_workers
-        super().__init__(self._func, parametrization)
+        super().__init__(self.__func__, parametrization)
 
     # The 3 methods below are function-specific.
+    def unflatten(self, x):
+        y = []
+        current_idx = 0
+        for i in range(self._dimension):
+            y += x[current_idx:(current_idx + self._dimensions[i])]
+            current_idx += self._dimensions[i]
+        assert current_idx == len(x) == self._total_dimension
+
     def value(self, x):
-        return sum(f(xi - o) for f, xi, o in zip(self._funcs, x, self._optima))
+        y = self.unflatten(x)
+        return sum(f(xi - o) for f, xi, o in zip(self._funcs, y, self._optima))
 
 
     def evolve(self, x: np.ndarray, p: np.ndarray):
         assert len(p) == self._dimension
-        def gradient(self, f, x):
+        def gradient(f, x):
             epsilon = 1e-15
             # We compute a gradient by finite differences.
             g = np.zeros(len(x))
@@ -102,9 +111,17 @@ class PBT_no_overfitting(ExperimentFunction):
                 e[i] = epsilon
                 g[i] = (f(x + e) - f(x)) / e
             return g 
+        y = self.unflatten(x)
+        assert len(y) == self._dimension
 
         for j in range(self._dimension):
-            x[j] -= np.exp(p[j]) * (gradient(self._funcs[j], x[j] - self._optima[j]) + np.random.normal(self._dimensions[j]))
+            assert len(y[j]) == self._dimensions[j]
+            y[j] -= np.exp(p[j]) * (gradient(self._funcs[j], y[j] - self._optima[j]) + np.random.normal(self._dimensions[j]))
+        z = self.flatten(y)
+        for j in range(self._dimension):
+            x[current_idx:(current_idx) + self._dimensions[idx]] = y[j]
+            current_idx += self._dimensions[idx]
+        assert current_idx == self._total_dimension
 
 
     def __func__(self, x: np.ndarray):
@@ -115,19 +132,21 @@ class PBT_no_overfitting(ExperimentFunction):
             distances = self._population_fitness
         else:
             if np.random.uniform() > 0.5:
-                distances = [np.linalg.norm(i - x, 0) for i in self._population]
+                distances = [np.linalg.norm(i - x, 0) for i in self._population_parameters]
             else:
-                distances = [np.linalg.norm(i - x, 1) for i in self._population]
+                distances = [np.linalg.norm(i - x, 1) for i in self._population_parameters]
         _, source_idx = min((val, idx) for (idx, val) in enumerate(distances))
         
         # Let us copy the checkpoint to a target.
         idx = np.random.choice(range(len(self._population_fitness)))
         if idx != source_idx:
+            self._population_checkpoint[idx] = self._population_checkpoint[source_idx].copy()
             self._population_fitness[idx] = self._population_fitness[source_idx].copy()
 
         # Here the case-specific learning and evaluation.
         self.evolve(self._population_checkpoints[idx], self.population_parameters[idx])
         self._population_fitness[idx] = self.value(self._population_checkpoints[idx])
+        self._population_parameters[idx] = x
 
         return self._population_fitness[idx]
             
