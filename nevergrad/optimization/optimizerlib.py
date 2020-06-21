@@ -1775,7 +1775,7 @@ class NGO10(base.Optimizer):
             self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
         elif not descr.not_manyobjective:
             self.optim = DiagonalCMA(self.parametrization, budget, num_workers)
-        elif not descr.not_multiobjective:
+        elif not descr.monoobjective:
             self.optim = LhsDE(self.parametrization, budget, num_workers)
         elif arity > 0:
             self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(self.parametrization, budget, num_workers)
