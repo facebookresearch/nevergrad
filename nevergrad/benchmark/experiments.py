@@ -929,9 +929,12 @@ class PackedFunctions(ExperimentFunction):
 
     def __init__(self, functions: tp.List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
         self._functions = functions
+        assert len(functions) > 0
         self._upper_bounds = upper_bounds
         self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
         super().__init__(self.multiobjective, self._functions[0].parametrization)
+        self._parametrization.descriptors.not_manyobjective = len(functions) < 4
+        self._parametrization.descriptors.monoobjective = len(functions) == 1
         # TODO add descriptors?
 
     def _mo(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
