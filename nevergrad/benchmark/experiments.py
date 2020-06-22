@@ -340,6 +340,28 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
 
 
 @registry.register
+def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
+    deceptivemultimodal."""
+    seedg = create_seed_generator(seed)
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
+    # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+    optims = ["RPowell", "Shiwa", "MultiCMA", "CMA", "PSO", "RandomSearch", "BPRotationInvariantDE", "CMandAS2", "TripleCMA"]
+    # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    functions = [
+        ArtificialFunction(name, block_dimension=bd)
+        for name in names
+        for bd in [20, 100]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [3000, 10000]:
+                for nw in [1]:
+                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+
+@registry.register
 def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel counterpart of the multimodal experiment."""
     internal_generator = multimodal(seed, para=True)
