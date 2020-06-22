@@ -47,7 +47,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             method=self.method,
             random_restart=self.random_restart)
         subinstance.archive = self.archive
-        subinstance.current_bests= self.current_bests
+        subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
