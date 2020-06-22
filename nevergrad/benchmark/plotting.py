@@ -275,9 +275,8 @@ def create_plots(
         cases = [()]
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df)
-    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis,
-                          normalized_loss=True)
+    data = XpPlotter.make_data(df, normalized_loss=True)
+    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
     xpplotter.save(out_filepath)
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
@@ -320,46 +319,44 @@ class XpPlotter:
 
     def __init__(
         self, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], title: str, 
-        name_style: tp.Optional[tp.Dict[str, tp.Any]] = None, xaxis: str = "budget",
-        normalized_loss: bool = False,
+        name_style: tp.Optional[tp.Dict[str, tp.Any]] = None, xaxis: str = "budget"
     ) -> None:
-        loss = "normalized_loss" if normalized_loss else "loss"
         if name_style is None:
             name_style = NameStyle()
-        upperbound = max(np.max(vals[loss]) for vals in optim_vals.values() if np.max(vals[loss]) < np.inf)
+        upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf)
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
-                upperbound = min(upperbound, np.max(vals[loss]))
+                upperbound = min(upperbound, np.max(vals["loss"]))
         # plot from best to worst
         lowerbound = np.inf
-        sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x][loss][-1], reverse=True)
+        sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
-        logplot = not any(x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov[loss])  # if x < np.inf)
+        logplot = not any(x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"])  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
             for ov in optim_vals.values():
-                if ov[loss].size:
-                    ov[loss] = np.maximum(1e-30, ov[loss])
+                if ov["loss"].size:
+                    ov["loss"] = np.maximum(1e-30, ov["loss"])
         # other setups
         self._ax.autoscale(enable=False)
         self._ax.set_xscale("log")
         self._ax.set_xlabel(xaxis)
-        self._ax.set_ylabel(loss)
+        self._ax.set_ylabel("loss")
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
         for optim_name in sorted_optimizers:
             vals = optim_vals[optim_name]
-            lowerbound = min(lowerbound, np.min(vals[loss]))
-            line = plt.plot(vals[xaxis], vals[loss], name_style[optim_name], label=optim_name)
+            lowerbound = min(lowerbound, np.min(vals["loss"]))
+            line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
-            for conf in self._get_confidence_arrays(vals, log=logplot, normalized_loss=normalized_loss):
+            for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=.1)
-            text = "{} ({:.3g})".format(optim_name, vals[loss][-1])
+            text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
             if vals[xaxis].size:
-                legend_infos.append(LegendInfo(vals[xaxis][-1], vals[loss][-1], line, text))
+                legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
             upperbound_up = upperbound
             if not (np.isnan(lowerbound) or np.isinf(lowerbound)):
@@ -377,10 +374,9 @@ class XpPlotter:
         # self._fig.tight_layout()
 
     @staticmethod
-    def _get_confidence_arrays(vals: tp.Dict[str, np.ndarray], log: bool = False,
-                               normalized_loss: bool = False) -> tp.Tuple[np.ndarray, np.ndarray]:
-        loss = vals["normalized_loss" if normalized_loss else "loss"]
-        conf = vals["normalized_loss_std" if normalized_loss else "loss_std"] / np.sqrt(vals["num_eval"] - 1)
+    def _get_confidence_arrays(vals: tp.Dict[str, np.ndarray], log: bool = False) -> tp.Tuple[np.ndarray, np.ndarray]:
+        loss = vals["loss"]
+        conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
         if not log:
             return loss - conf, loss + conf
         lloss = np.log10(loss)
@@ -416,7 +412,7 @@ class XpPlotter:
             ax.add_artist(self._overlays[-1])
 
     @staticmethod
-    def make_data(df: pd.DataFrame) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
+    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
         """Process raw xp data and process it to extract relevant information for xp plots:
         regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
         which is filtered out for one set of input parameters)
@@ -438,13 +434,15 @@ class XpPlotter:
         for optim in df.unique("optimizer_name"):
             optim_vals[optim] = {}
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
-            optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
-            optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
-            optim_vals[optim]["normalized_loss"] = (np.array(means.loc[optim, "loss"]) -
-                                                    np.array(groupeddf_alloptims.mean().loc["loss"])
-                                                   )/ np.array(groupeddf_alloptims.std().loc["loss"])
-            optim_vals[optim]["normalized_loss_std"] = (np.array(stds.loc[optim, "loss"]) / 
-                                                        np.array(groupeddf_alloptims.std().loc["loss"]))
+            if normalized_loss:
+                optim_vals[optim]["loss"] = (np.array(means.loc[optim, "loss"]) -
+                                                        np.array(groupeddf_alloptims.mean().loc["loss"])
+                                                       )/ np.array(groupeddf_alloptims.std().loc["loss"])
+                optim_vals[optim]["loss_std"] = (np.array(stds.loc[optim, "loss"]) / 
+                                                            np.array(groupeddf_alloptims.std().loc["loss"]))
+            else:
+                optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
+                optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
