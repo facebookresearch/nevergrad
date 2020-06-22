@@ -318,8 +318,7 @@ class XpPlotter:
     """
 
     def __init__(
-        self, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], title: str, 
-        name_style: tp.Optional[tp.Dict[str, tp.Any]] = None, xaxis: str = "budget"
+        self, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], title: str, name_style: tp.Optional[tp.Dict[str, tp.Any]] = None, xaxis: str = "budget"
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
