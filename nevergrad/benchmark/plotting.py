@@ -275,9 +275,8 @@ def create_plots(
         cases = [()]
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df)
-    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis,
-                          normalized_loss=normalized_loss)
+    data = XpPlotter.make_data(df, normalized_loss=True)
+    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
     xpplotter.save(out_filepath)
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
