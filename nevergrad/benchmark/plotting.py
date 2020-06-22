@@ -377,7 +377,7 @@ class XpPlotter:
         # self._fig.tight_layout()
 
     @staticmethod
-    def _get_confidence_arrays(vals: tp.Dict[str, np.ndarray], log: bool = False
+    def _get_confidence_arrays(vals: tp.Dict[str, np.ndarray], log: bool = False,
                                normalized_loss: bool = False) -> tp.Tuple[np.ndarray, np.ndarray]:
         loss = vals["normalized_loss" if normalized_loss else "loss"]
         conf = vals["normalized_loss_std" if normalized_loss else "loss_std"] / np.sqrt(vals["num_eval"] - 1)
