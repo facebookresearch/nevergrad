@@ -443,8 +443,8 @@ class XpPlotter:
             optim_vals[optim]["normalized_loss"] = (np.array(means.loc[optim, "loss"]) -
                                                     np.array(groupddf_alloptims.mean().loc["loss"])
                                                    )/ np.array(groupddf_alloptims.std().loc["loss"])
-            optim_vals[optim]["normalized_loss_std"] = np.array(stds.loc[optim, "loss"])
-                                                       )/ np.array(groupddf_alloptims.std().loc["loss"])
+            optim_vals[optim]["normalized_loss_std"] = (np.array(stds.loc[optim, "loss"]) / 
+                                                        np.array(groupddf_alloptims.std().loc["loss"]))
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
