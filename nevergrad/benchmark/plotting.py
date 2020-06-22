@@ -277,7 +277,7 @@ def create_plots(
     out_filepath = output_folder / "xpresults_all.png"
     data = XpPlotter.make_data(df)
     xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis,
-                          normalized_data=normalized_data)
+                          normalized_loss=normalized_loss)
     xpplotter.save(out_filepath)
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
@@ -441,10 +441,10 @@ class XpPlotter:
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
             optim_vals[optim]["normalized_loss"] = (np.array(means.loc[optim, "loss"]) -
-                                                    np.array(groupddf_alloptims.mean().loc["loss"])
-                                                   )/ np.array(groupddf_alloptims.std().loc["loss"])
+                                                    np.array(groupeddf_alloptims.mean().loc["loss"])
+                                                   )/ np.array(groupeddf_alloptims.std().loc["loss"])
             optim_vals[optim]["normalized_loss_std"] = (np.array(stds.loc[optim, "loss"]) / 
-                                                        np.array(groupddf_alloptims.std().loc["loss"]))
+                                                        np.array(groupeddf_alloptims.std().loc["loss"]))
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
