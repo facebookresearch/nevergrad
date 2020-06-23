@@ -1260,8 +1260,7 @@ class ManySmallCMA(CM):
                 for i in range(int(np.sqrt(budget)))]
         self.budget_before_choosing = budget // 3
 
-                                                                                                     
-                                                                                                      
+                                                                                                                                                                                                           
 @registry.register
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
