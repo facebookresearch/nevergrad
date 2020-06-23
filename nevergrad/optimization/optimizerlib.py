@@ -249,7 +249,7 @@ class _CMA(base.Optimizer):
         if self._es is None:
             if not self._fcmaes:
                 inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-                self._es = cma.CMAEvolutionStrategy(x0=np.random.normal(size=self.dimension) if self._random_init else np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
                 try:
                     from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
