@@ -146,7 +146,7 @@ class _OnePlusOne(base.Optimizer):
                     index = np.random.choice(range(len(self._doerr_mutation_rates)))
                     self._doerr_index = index
                 else:
-                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards                                                   
+                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))                                                   
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
