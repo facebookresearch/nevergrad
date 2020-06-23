@@ -1205,6 +1205,21 @@ class MultiCMA(CM):
 
 
 @registry.register
+class MultiDiscrete(CM):
+    """Combining 3 Discrete(1+1). Exactly identical. Active selection at 1/10 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [
+            DiscreteOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),  # share parametrization and its rng
+            DiscreteBSOOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),
+            DoubleFastGADiscreteOnePlusOne(self.parametrization, budget=(budget // 4) - 2 * (budget // 12), num_workers=num_workers),
+        ]
+        self.budget_before_choosing = budget // 4
+
+
+@registry.register
 class TripleCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
