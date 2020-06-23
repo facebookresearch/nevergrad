@@ -228,12 +228,14 @@ class _CMA(base.Optimizer):
             popsize: Optional[int] = None,
             diagonal: bool = False,
             fcmaes: bool = False,
+            random_init: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
         self._popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
         self._diagonal = diagonal
         self._fcmaes = fcmaes
+        self._random_init = random_init
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -247,7 +249,7 @@ class _CMA(base.Optimizer):
         if self._es is None:
             if not self._fcmaes:
                 inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-                self._es = cma.CMAEvolutionStrategy(x0=np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
                 try:
                     from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
@@ -319,7 +321,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         popsize: Optional[int] = None,
         diagonal: bool = False,
-        fcmaes: bool = False
+        fcmaes: bool = False,
+        random_init: bool = False,
     ) -> None:
         super().__init__(_CMA, locals())
         if fcmaes:
@@ -1227,13 +1230,37 @@ class TripleCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
+            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
         ]
         self.budget_before_choosing = budget // 3
 
 
+@registry.register
+class ManyCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget)))]
+        
+        self.budget_before_choosing = budget // 3
+
+
+@registry.register
+class ManySmallCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [ParametrizedCMA(scale=1e-6, random_init=i > 0)(self.parametrization, budget=None, num_workers=num_workers)
+                for i in range(int(np.sqrt(budget)))]
+        self.budget_before_choosing = budget // 3
+
+                                                                                                                                                                                                           
 @registry.register
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
@@ -1242,8 +1269,8 @@ class MultiScaleCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
             CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-            ParametrizedCMA(scale=1e-3)(self.parametrization, budget=None, num_workers=num_workers),
-            ParametrizedCMA(scale=1e-6)(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(scale=1e-3, random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
+            ParametrizedCMA(scale=1e-6, random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
         ]
         assert budget is not None
         self.budget_before_choosing = budget // 3
