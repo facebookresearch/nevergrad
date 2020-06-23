@@ -118,7 +118,7 @@ class _OnePlusOne(base.Optimizer):
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
             elif mutation == "adaptive":
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, self._adaptive_mr * self.dimension)
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, max(1, int(self._adaptive_mr * self.dimension)))
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
                 intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
@@ -140,7 +140,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
         if self.mutation == "adaptive":
             factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
-            self._adaptive_mr = min(1., factor * self._mutation_rate)
+            self._adaptive_mr = min(1., factor * self._adaptive_mr)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
