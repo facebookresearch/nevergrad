@@ -146,7 +146,7 @@ class _OnePlusOne(base.Optimizer):
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
-                if np.random.uniform() < self._doerr_epsilon:
+                if _rng.uniform() < self._doerr_epsilon:
                     index = self._rng.choice(range(len(self._doerr_mutation_rates)))
                     self._doerr_index = index
                 else:
