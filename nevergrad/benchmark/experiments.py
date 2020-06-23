@@ -175,6 +175,28 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                 yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
+
+@registry.register
+def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    # Discrete, unordered.
+    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne",
+              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+
+    seedg = create_seed_generator(seed)
+    for nv in [10, 50, 200, 1000, 5000]:
+        for arity in [2, 3, 7, 30]:
+            for instrum_str in ["Unordered"]:
+                assert instrum_str == "Unordered"
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
+                    for optim in optims:
+                        for budget in [50, 500, 5000, 50000]:
+                            yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
+
+                            
 @registry.register
 def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
