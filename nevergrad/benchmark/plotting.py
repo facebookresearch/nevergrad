@@ -433,18 +433,22 @@ class XpPlotter:
         for optim in df.unique("optimizer_name"):
             optim_vals[optim] = {}
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
-            if normalized_loss:
-                optim_vals[optim]["loss"] = (np.array(means.loc[optim, "loss"]) -
-                                                        np.array(groupeddf_alloptims.mean().loc["loss"])
-                                                       )/ np.array(groupeddf_alloptims.std().loc["loss"])
-                optim_vals[optim]["loss_std"] = (np.array(stds.loc[optim, "loss"]) / 
-                                                            np.array(groupeddf_alloptims.std().loc["loss"]))
-            else:
-                optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
-                optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
+            optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
+
+        if normalized_loss:
+            old_optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
+            optims = df.unique("optimizer_name")
+            for optim in optims:
+                old_optim_vals[optim] = {}
+                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].deepcopy()
+            for optim in optims:
+                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - min(optim_vals[opt]["loss"] for loss in optims)) / max(
+                        optim_vals[opt]["loss"] for loss in optims)
+
         return optim_vals
 
     def save(self, output_filepath: PathLike) -> None:

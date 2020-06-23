@@ -79,6 +79,7 @@ def test_fight_plotter() -> None:
 def test_xp_plotter() -> None:
     opt = "OnePlusOneOptimizer"
     df = utils.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
+    unused_data = plotting.XpPlotter.make_data(df, normalized_loss=True)
     data = plotting.XpPlotter.make_data(df)
     # check data
     testing.assert_set_equal(data.keys(), {opt})
