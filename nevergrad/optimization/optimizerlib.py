@@ -91,7 +91,7 @@ class _OnePlusOne(base.Optimizer):
                 self._doerr_mutation_rates += [i]
                 self._doerr_mutation_rewards += [0.]
                 self._doerr_counters += [0.]
-                i + j
+                i += j
                 j += 2
             
 
