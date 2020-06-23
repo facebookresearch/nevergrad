@@ -77,8 +77,8 @@ class _OnePlusOne(base.Optimizer):
         if mutation == "doerr":
             assert num_workers == 1, "Doerr mutation is implemented only in the sequential case." 
             self._doerr_mutation_rates = [1, 2]
-            self._doerr_mutation_rewards = [0, 0]
-            self._doerr_counters = [0, 0]
+            self._doerr_mutation_rewards = [0., 0.]
+            self._doerr_counters = [0., 0.]
             self._doerr_epsilon = 0.25  #self.dimension ** (-0.01)
             self._doerr_gamma = 1 - 2 / self.dimension 
             self._doerr_current_best = float("inf")
@@ -88,7 +88,7 @@ class _OnePlusOne(base.Optimizer):
             while i < self.dimension:
                 self._doerr_mutation_rates += [i]
                 self._doerr_mutation_rewards += [0.]
-                self._doerr_counters += [0]
+                self._doerr_counters += [0.]
                 i + j
                 j += 2
             
@@ -163,7 +163,7 @@ class _OnePlusOne(base.Optimizer):
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
         if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
-            improvement = max(0, self._doerr_current_best - value)
+            improvement = max(0., self._doerr_current_best - value)
             # Decay.          
             index = self._doerr_index                                                       
             counter = self._doerr_counters[index]                                                   
