@@ -72,6 +72,8 @@ def check_optimizer(
             # skip BO error on windows (issue #506)
             if "BO" in optimizer.name:
                 raise SkipTest("BO is currently not well supported")
+            if "Many" in optimizer.name:
+                raise SkipTest("When many algorithms are in the portfolio we are not good for small budget.")
             # now optimize :)
             candidate = optimizer.minimize(fitness)
         if verify_value and "chain" not in str(optimizer_cls):

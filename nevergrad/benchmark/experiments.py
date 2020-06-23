@@ -148,8 +148,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete"]
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
@@ -175,6 +175,28 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                 yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
+
+@registry.register
+def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    # Discrete, unordered.
+    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne",
+              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+
+    seedg = create_seed_generator(seed)
+    for nv in [10, 50, 200, 1000, 5000]:
+        for arity in [2, 3, 7, 30]:
+            for instrum_str in ["Unordered"]:
+                assert instrum_str == "Unordered"
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
+                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
+                    for optim in optims:
+                        for budget in [50, 500, 5000, 50000]:
+                            yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
+
+                            
 @registry.register
 def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
@@ -337,6 +359,29 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
             for budget in [3000, 10000, 30000, 100000]:
                 for nw in [1000] if para else [1]:
                     yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
+    deceptivemultimodal."""
+    seedg = create_seed_generator(seed)
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
+    # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+    optims = ["RPowell", "Shiwa", "MultiCMA", "CMA", "PSO", "RandomSearch", "BPRotationInvariantDE", "CMandAS2", "TripleCMA",
+              "ManyCMA", "ManySmallCMA"]
+    # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    functions = [
+        ArtificialFunction(name, block_dimension=bd)
+        for name in names
+        for bd in [20, 100]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [3000, 10000]:
+                for nw in [1]:
+                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
 
 
 @registry.register
@@ -929,9 +974,12 @@ class PackedFunctions(ExperimentFunction):
 
     def __init__(self, functions: tp.List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
         self._functions = functions
+        assert len(functions) > 0
         self._upper_bounds = upper_bounds
         self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
         super().__init__(self.multiobjective, self._functions[0].parametrization)
+        self._parametrization.descriptors.not_manyobjective = len(functions) < 4
+        self._parametrization.descriptors.monoobjective = len(functions) == 1
         # TODO add descriptors?
 
     def _mo(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
