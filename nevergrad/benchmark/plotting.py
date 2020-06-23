@@ -443,7 +443,7 @@ class XpPlotter:
             optims = df.unique("optimizer_name")
             for optim in optims:
                 old_optim_vals[optim] = {}
-                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].deepcopy()
+                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].copy()
             for optim in optims:
                 optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims])) / np.maximum.reduce(
                         [optim_vals[opt]["loss"] for opt in optims])
