@@ -1204,9 +1204,9 @@ class MultiDiscrete(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            DiscreteOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-            DiscreteBSOOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),
-            DoubleFastGADiscreteOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),
+            DiscreteOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),  # share parametrization and its rng
+            DiscreteBSOOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),
+            DoubleFastGADiscreteOnePlusOne(self.parametrization, budget=(budget // 4) - 2 * (budget // 12), num_workers=num_workers),
         ]
         self.budget_before_choosing = budget // 4
 
