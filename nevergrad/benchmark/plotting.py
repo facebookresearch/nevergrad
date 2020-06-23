@@ -278,6 +278,7 @@ def create_plots(
     data = XpPlotter.make_data(df, normalized_loss=True)
     xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
     xpplotter.save(out_filepath)
+    # Now one xp plot per case.
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
@@ -420,8 +421,11 @@ class XpPlotter:
         ----------
         df: pd.DataFrame
             run data
-        xaxis: str
-            name of the x-axis among "budget" and  "pseudotime"
+        normalized_loss: bool
+            whether we should normalize each data (for each budget and run) between 0 and 1. Convenient when we consider
+            averages over several distinct functions that can have very different ranges - then we return data which are rescaled to [0,1].
+            Warning: then even if algorithms converge (i.e. tend to minimize), the value can increase, because the normalization
+            is done separately for each budget.
         """
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
