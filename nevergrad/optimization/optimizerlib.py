@@ -70,10 +70,28 @@ class _OnePlusOne(base.Optimizer):
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga",
-                            "portfolio", "discreteBSO"], f"Unkwnown mutation: '{mutation}'"
+                            "portfolio", "discreteBSO", "doerr"], f"Unkwnown mutation: '{mutation}'"
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
+        if mutation == "doerr":
+            assert num_workers == 1, "Doerr mutation is implemented only in the sequential case." 
+            self._doerr_mutation_rates = [1, 2]
+            self._doerr_mutation_rewards = [0, 0]
+            self._doerr_counters = [0, 0]
+            self._doerr_epsilon = 0.25  #self.dimension ** (-0.01)
+            self._doerr_gamma = 1 - 2 / self.dimension 
+            self._doerr_current_best = float("inf")
+            i = 3
+            j = 2
+            self._doerr_index: int = -1  # Nothing has been mutated for now.
+            while i < self.dimension:
+                self._doerr_mutation_rates += [i]
+                self._doerr_mutation_rewards += [0.]
+                self._doerr_counters += [0]
+                i + j
+                j += 2
+            
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
@@ -121,6 +139,17 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+            elif mutation == "doerr":
+                # Selection, either random, or greedy, or a mutation rate.
+                assert self._doerr_index == -1, "We should have used this index in tell."
+                if np.random.uniform() < self._doerr_epsilon:
+                    index = np.random.choice(range(len(self._doerr_mutation_rates)))
+                    self._doerr_index = index
+                else:
+                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards                                                   
+                    self._doerr_index = -1
+                intensity = self._doerr_mutation_rates[index]
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
             else:
                 func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
@@ -133,6 +162,18 @@ class _OnePlusOne(base.Optimizer):
 
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
+        if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
+            improvement = max(0, self._doerr_current_best - value)
+            # Decay.          
+            index = self._doerr_index                                                       
+            counter = self._doerr_counters[index]                                                   
+            self._doerr_mutation_rewards[index] = (self._doerr_gamma * counter * self._doerr_mutation_rewards[index]
+                                                   + improvement) / (self._doerr_gamma * counter + 1)
+            self._doerr_counters = [self._doerr_gamma * x for x in self._doerr_counters]
+            self._doerr_counters[index] += 1                                                       
+            self._doerr_index = -1                                                       
+        if self.mutation == "doerr":
+            self._doerr_current_best = min(self._doerr_current_best, value)                                                       
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
 
 
