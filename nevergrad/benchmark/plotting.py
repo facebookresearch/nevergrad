@@ -425,7 +425,6 @@ class XpPlotter:
         """
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
-        groupeddf_alloptims = df.groupby(["budget"])
         means = groupeddf.mean()
         stds = groupeddf.std()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
