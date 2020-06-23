@@ -241,7 +241,7 @@ NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("Nois
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
-DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name("DiscreteDoerrOnePlusOne", register=True)                                                                    
+DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name("DiscreteDoerrOnePlusOne", register=True).no_parallelization = True                                                                    
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
