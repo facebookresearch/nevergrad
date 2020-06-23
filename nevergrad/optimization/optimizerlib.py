@@ -1230,7 +1230,7 @@ class ManySmallCMA(CM):
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [ParametrizedCMA(scale=1e-6)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget))]
+        self.optims = [ParametrizedCMA(scale=1e-6)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget)))]
         self.budget_before_choosing = budget // 3
 
                                                                                                      
