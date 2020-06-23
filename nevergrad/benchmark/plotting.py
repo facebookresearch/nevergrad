@@ -445,8 +445,8 @@ class XpPlotter:
                 old_optim_vals[optim] = {}
                 old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].deepcopy()
             for optim in optims:
-                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - min(optim_vals[opt]["loss"] for opt in optims)) / max(
-                        optim_vals[opt]["loss"] for opt in optims)
+                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims])) / np.maximum.reduce(
+                        [optim_vals[opt]["loss"] for opt in optims])
 
         return optim_vals
 
