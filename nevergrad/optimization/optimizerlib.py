@@ -1206,9 +1206,9 @@ class MultiDiscrete(CM):
         self.optims = [
             DiscreteOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
             DiscreteBSOOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),
-            PortfolioDiscreteOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),
+            DoubleFastGADiscreteOnePlusOne(self.parametrization, budget=None, num_workers=num_workers),
         ]
-        self.budget_before_choosing = budget // 10
+        self.budget_before_choosing = budget // 4
 
 
 
