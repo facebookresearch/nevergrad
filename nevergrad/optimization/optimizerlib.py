@@ -139,7 +139,7 @@ class _OnePlusOne(base.Optimizer):
         # only used for cauchy and gaussian
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
         if self.mutation == "adaptive":
-            factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.8
+            factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._mutation_rate = min(1., factor * self._mutation_rate)
 
 
