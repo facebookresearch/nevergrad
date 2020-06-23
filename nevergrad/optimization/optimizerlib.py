@@ -1219,7 +1219,6 @@ class MultiDiscrete(CM):
         self.budget_before_choosing = budget // 4
 
 
-
 @registry.register
 class TripleCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
