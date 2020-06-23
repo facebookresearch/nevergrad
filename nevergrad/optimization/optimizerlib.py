@@ -69,8 +69,10 @@ class _OnePlusOne(base.Optimizer):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga",
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive",
                             "portfolio", "discreteBSO"], f"Unkwnown mutation: '{mutation}'"
+        if mutation == "adaptive":
+            self._adaptive_mr = 0.5
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -115,6 +117,8 @@ class _OnePlusOne(base.Optimizer):
                     data = mutator.portfolio_discrete_mutation(pessimistic_data)
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            elif mutation == "adaptive":
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, max(1, int(self._adaptive_mr * self.dimension)))
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
                 intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
@@ -134,6 +138,9 @@ class _OnePlusOne(base.Optimizer):
     def _internal_tell(self, x: ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
+        if self.mutation == "adaptive":
+            factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            self._adaptive_mr = min(1., factor * self._adaptive_mr)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
@@ -191,6 +198,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
@@ -1197,6 +1205,21 @@ class MultiCMA(CM):
             CMA(self.parametrization, budget=None, num_workers=num_workers),
         ]
         self.budget_before_choosing = budget // 10
+
+
+@registry.register
+class MultiDiscrete(CM):
+    """Combining 3 Discrete(1+1). Exactly identical. Active selection at 1/10 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [
+            DiscreteOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),  # share parametrization and its rng
+            DiscreteBSOOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),
+            DoubleFastGADiscreteOnePlusOne(self.parametrization, budget=(budget // 4) - 2 * (budget // 12), num_workers=num_workers),
+        ]
+        self.budget_before_choosing = budget // 4
 
 
 @registry.register

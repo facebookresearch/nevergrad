@@ -148,8 +148,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete"]
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
