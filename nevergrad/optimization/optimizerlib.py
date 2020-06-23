@@ -1212,6 +1212,30 @@ class TripleCMA(CM):
 
 
 @registry.register
+class ManyCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [CMA(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget))]
+        
+        self.budget_before_choosing = budget // 3
+
+
+@registry.register
+class ManySmallCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [ParametrizedCMA(scale=1e-6)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget))]
+        self.budget_before_choosing = budget // 3
+
+                                                                                                     
+                                                                                                      
+@registry.register
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
 
