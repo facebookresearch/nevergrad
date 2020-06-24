@@ -36,7 +36,7 @@ class MCTS:
         self.Cp                      =  5
         assert (lb is None) == (ub is None), "One-sided bounds are not yet supported."
         self.lb                      =  lb if lb is not None else -(np.pi/2)*np.ones(dims)
-        self.ub                      =  ub if ub is not None else (np.pi/2)*np.ones(dim)
+        self.ub                      =  ub if ub is not None else (np.pi/2)*np.ones(dims)
         self.ninits                  =  ninits
         self.func                    =  func if ub is not None and lb is not None else lambda x: func(np.tanh(x))
         self.curt_best_value         =  float("-inf")
