@@ -10,8 +10,4 @@ recommonmark>=0.5.0
 twine>=3.1.1  # for upload to pypi
 autodocsumm>=0.1.11
 pandas>=0.23.4
-torch
-gpytorch
-pygame
-gym
 # need to install manually numpy-stubs@git+https://github.com/numpy/numpy-stubs@master
