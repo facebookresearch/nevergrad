@@ -279,7 +279,7 @@ class TargetFunction:
             raise ValueError("Too many calls to the objective function!")
         return result
 
-def minimize(func, dims, budget, lb=None, ub=None):
+def lamcts_minimize(func, dims, budget, lb=None, ub=None):
     # Here func takes a ndarray in R^dims and outputs a float.
     f = TargetFunction(dims = dims, func, lb=lb, ub=ub, budget=budget)
     # f = Ackley(dims = 20)
