@@ -1292,6 +1292,18 @@ class ManyCMA(CM):
 
 
 @registry.register
+class PolyCMA(CM):
+    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(20)]
+        
+        self.budget_before_choosing = budget // 3
+
+
+@registry.register
 class ManySmallCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
