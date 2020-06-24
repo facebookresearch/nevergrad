@@ -757,7 +757,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def oneshotunscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshotunscaledrealworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This experiment contains:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
@@ -810,7 +810,7 @@ def oneshotunscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]
                             
 
 @registry.register
-def oneshotscaledrealworld(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshotscaledrealworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This experiment contains:
     # - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
     # - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
