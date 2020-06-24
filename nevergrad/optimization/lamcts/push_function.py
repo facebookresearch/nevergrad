@@ -1,3 +1,7 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# verify
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 from .push_utils import b2WorldInterface, make_base, create_body, end_effector, run_simulation
 
 import numpy as np
