@@ -764,7 +764,7 @@ def oneshotunscaledrealworld(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
     # - The 007 game: 1 function, noisy.
     
     # MLDA stuff, except the Perceptron.
-    funcs: tp.List[tp.Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+    funcs: tp.List[tp.Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num*num_f, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for
         rescale in [True, False] for num_f in [1, 2, 4]
     ]
@@ -818,7 +818,7 @@ def oneshotscaledrealworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
     # Restricted to scaled stuff.
     
     # MLDA stuff, except the Perceptron.
-    funcs: tp.List[tp.Union[InstrumentedFunction, rl.agents.TorchAgentFunction]] = [
+    funcs: tp.List[tp.Union[ExperimentFunction, rl.agents.TorchAgentFunction]] = [
         _mlda.Clustering.from_mlda(name, num*num_f, rescale) for name, num in [("Ruspini", 5), ("German towns", 10)] for
         rescale in [True] for num_f in [1, 2, 4]
     ]
