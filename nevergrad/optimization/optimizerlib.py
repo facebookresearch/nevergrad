@@ -32,7 +32,7 @@ from .differentialevolution import *  # noqa: F403
 from .es import *  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
-from . import lamcts  # type: ignore
+#from .lamcts import LamctsOptimizer  # noqa: F403
 
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -1932,3 +1932,6 @@ class NGO10(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
+
+
+Lamcts = LamctsOptimizer(random_restart=True).set_name("Lamcts", register=True)
