@@ -1,9 +1,9 @@
-from Classifier import Classifier
+from .Classifier import Classifier
 import json
 import numpy as np
 import math
 import operator
-from Net_Trainer import Net_Trainer
+from .Net_Trainer import Net_Trainer
 
 class Node:
     obj_counter   = 0

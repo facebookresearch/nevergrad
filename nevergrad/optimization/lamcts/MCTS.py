@@ -12,8 +12,8 @@ import pickle
 import os
 import random
 from datetime import datetime
-from Node import Node
-from Net_Trainer import Net_Trainer
+from .Node import Node
+from .Net_Trainer import Net_Trainer
 from utils import latin_hypercube, from_unit_cube
 from functions import *
 from torch.quasirandom import SobolEngine
@@ -281,7 +281,7 @@ class TargetFunction:
 
 def lamcts_minimize(func, dims, budget, lb=None, ub=None):
     # Here func takes a ndarray in R^dims and outputs a float.
-    f = TargetFunction(dims = dims, func, lb=lb, ub=ub, budget=budget)
+    f = TargetFunction(dims = dims, func=func, lb=lb, ub=ub, budget=budget)
     # f = Ackley(dims = 20)
     # f = Rastrigin(dims = 10)
     # f = Rosenrock(dims = 20)

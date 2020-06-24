@@ -15,7 +15,7 @@ from sklearn.gaussian_process.kernels import ConstantKernel, Matern
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from turbo_1.turbo_1 import Turbo1
+from .turbo_1.turbo_1 import Turbo1
 
 
 # the input will be samples!
