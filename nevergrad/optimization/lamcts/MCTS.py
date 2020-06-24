@@ -254,19 +254,46 @@ class MCTS:
                 break
             print("======>curt_best:", self.curt_best_value, self.curt_best_sample )
 
-f = Square(dims = 2)
-# f = Ackley(dims = 20)
-# f = Rastrigin(dims = 10)
-# f = Rosenrock(dims = 20)
-# f = Schwefel(dims = 7)
-# f = Zakharov()
-# f = PushReward()
-# f = Lunarlanding()
-# f = Ant()
-# f = HalfCheetah()
-# f = Walker2d()
-# f = Swimmer()
-# f = Hopper()
-agent = MCTS(lb = f.lb, ub = f.ub, dims = f.dims, ninits = 40, func = f )
-agent.search()
 
+
+class TargetFunction:
+    def __init__(self, dims, func, lb, ub, budget):
+        self.dims    = dims
+        self.lb      = lb  #-5.12 * np.ones(dims)
+        self.ub      = ub  # 5.12 * np.ones(dims)
+        self.counter = 0
+        self.iteration = budget
+#        self.tracker = ng_tracker('target')
+        self.func = func
+
+    def __call__(self, x):
+        self.counter += 1
+        assert len(x) == self.dims
+        assert x.ndim == 1
+        # #assert np.all(x <= self.ub) and np.all(x >= self.lb)
+
+        tmp = 0;
+        result = self.func(x)  #10 * np.sum(x * x)
+        self.tracker.track( result )
+        if self.counter > self.iteration:
+            raise ValueError("Too many calls to the objective function!")
+        return result
+
+def minimize(func, dims, budget, lb=None, ub=None):
+    # Here func takes a ndarray in R^dims and outputs a float.
+    f = TargetFunction(dims = dims, func, lb=lb, ub=ub, budget=budget)
+    # f = Ackley(dims = 20)
+    # f = Rastrigin(dims = 10)
+    # f = Rosenrock(dims = 20)
+    # f = Schwefel(dims = 7)
+    # f = Zakharov()
+    # f = PushReward()
+    # f = Lunarlanding()
+    # f = Ant()
+    # f = HalfCheetah()
+    # f = Walker2d()
+    # f = Swimmer()
+    # f = Hopper()
+    agent = MCTS(lb = f.lb, ub = f.ub, dims = f.dims, ninits = 40, func = f )
+    agent.search()
+    
