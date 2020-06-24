@@ -4,4 +4,5 @@
 # LICENSE file in the root directory of this source tree.
 
 from . import MCTS
+from . import turbo_1
 from .MCTS import lamcts_minimize
