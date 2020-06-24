@@ -12,5 +12,6 @@ autodocsumm>=0.1.11
 pandas>=0.23.4
 torch
 gpytorch
-pygames
+pygame
+gym
 # need to install manually numpy-stubs@git+https://github.com/numpy/numpy-stubs@master
