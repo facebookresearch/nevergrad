@@ -273,7 +273,7 @@ class TargetFunction:
 
         tmp = 0;
         result = self.func(x)  #10 * np.sum(x * x)
-        self.tracker.track( result )
+        #self.tracker.track( result )
         if self.counter > self.iteration:
             raise ValueError("Too many calls to the objective function!")
         return result
