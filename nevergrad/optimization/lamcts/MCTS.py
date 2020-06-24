@@ -30,7 +30,7 @@ class MCTS:
         self.samples                 =  []
         self.nodes                   =  []
         self.Cp                      =  5
-        assert (lb is None) == (ub is None), "We will deal with one-sided bounds later."
+        assert (lb is None) == (ub is None), "One-sided bounds are not yet supported."
         self.lb                      =  lb if lb is not None else -(np.pi/2)*np.ones(dims)
         self.ub                      =  ub if ub is not None else (np.pi/2)*np.ones(dim)
         self.ninits                  =  ninits
