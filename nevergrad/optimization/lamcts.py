@@ -9,7 +9,7 @@ from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 from . import recaster
-from lamcts.MCTS import lamcts_minimize
+from .lamcts.MCTS import lamcts_minimize
 
 
 class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -61,7 +61,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             res = lamcts_minimize(
-                objective_function,
+                func=objective_function,
                 dims=self.parametrization.dimension,
                 budget=self.budget,
 #                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
