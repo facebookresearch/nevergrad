@@ -32,7 +32,7 @@ from .differentialevolution import *  # noqa: F403
 from .es import *  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
-from . import lamcts
+from . import lamcts  # type: ignore
 
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
