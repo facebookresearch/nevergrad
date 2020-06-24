@@ -30,10 +30,16 @@ class MCTS:
         self.samples                 =  []
         self.nodes                   =  []
         self.Cp                      =  5
-        self.lb                      =  lb
-        self.ub                      =  ub
+        assert (lb is None) == (ub is None), "We will deal with one-sided bounds later."
+        self.lb                      =  lb if lb is not None else -(np.pi/2)*np.ones(dims)
+        self.ub                      =  ub if ub is not None else (np.pi/2)*np.ones(dim)
         self.ninits                  =  ninits
-        self.func                    =  func
+        def nevergrad_func(x):
+            y = np.tan(x)
+            return func(y)
+            
+            
+        self.func                    =  func if ub is not None and lb is not None else nevergrad_func
         self.curt_best_value         =  float("-inf")
         self.curt_best_sample        =  None
         self.best_value_trace        =  []
