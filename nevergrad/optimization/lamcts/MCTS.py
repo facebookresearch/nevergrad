@@ -38,12 +38,7 @@ class MCTS:
         self.lb                      =  lb if lb is not None else -(np.pi/2)*np.ones(dims)
         self.ub                      =  ub if ub is not None else (np.pi/2)*np.ones(dim)
         self.ninits                  =  ninits
-        def nevergrad_func(x):
-            y = np.tan(x)
-            return func(y)
-            
-            
-        self.func                    =  func if ub is not None and lb is not None else nevergrad_func
+        self.func                    =  func if ub is not None and lb is not None else lambda x: func(np.tanh(x))
         self.curt_best_value         =  float("-inf")
         self.curt_best_sample        =  None
         self.best_value_trace        =  []
