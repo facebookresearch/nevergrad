@@ -6,4 +6,3 @@ torch
 gpytorch
 pygame
 gym
-bumpy>=0.4.3
