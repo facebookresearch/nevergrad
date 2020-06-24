@@ -14,8 +14,8 @@ import random
 from datetime import datetime
 from .Node import Node
 from .Net_Trainer import Net_Trainer
-from utils import latin_hypercube, from_unit_cube
-from functions import *
+from .utils import latin_hypercube, from_unit_cube
+from .functions import *
 from torch.quasirandom import SobolEngine
 import torch
 #from functions.rover_function import rover_nag

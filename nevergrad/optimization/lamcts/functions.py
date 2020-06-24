@@ -2,7 +2,7 @@ import numpy as np
 import gym
 import json
 import os
-from push_function import PushReward
+from .push_function import PushReward
 #from .rover_function import rover_nag
 
 

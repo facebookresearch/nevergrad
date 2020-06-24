@@ -1,4 +1,4 @@
-from push_utils import b2WorldInterface, make_base, create_body, end_effector, run_simulation
+from .push_utils import b2WorldInterface, make_base, create_body, end_effector, run_simulation
 
 import numpy as np
 
