@@ -86,7 +86,7 @@ class PBT_no_overfitting(ExperimentFunction):
         self._population_fitness: tp.List[float] = [float("inf")] * num_workers
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         super().__init__(self.__func__, parametrization)
-        self.register_initialization(**self._parameters)
+        self.register_initialization(names=names, dimensions=dimensions, num_workers=num_workers)
 
     # The 3 methods below are function-specific.
     def unflatten(self, x):
@@ -365,4 +365,3 @@ class FarOptimumFunction(ExperimentFunction):
         select = itertools.product(*(options[k] for k in keys))  # type: ignore
         cases = (dict(zip(keys, s)) for s in select)
         return (cls(**c) for c in cases)
-
