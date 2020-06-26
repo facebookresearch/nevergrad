@@ -146,6 +146,21 @@ def merge_parametrization_and_optimizer(df: utils.Selector) -> utils.Selector:
     return df.drop(columns=pkey)  # type: ignore
 
 
+def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Selector:
+    df = utils.Selector(df.copy())
+    cases = df.unique(descriptors)
+    if not cases:
+        cases = [()]
+    # Average normalized plot with everything.
+    for case in cases:
+        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+        losses = subdf.loc[:, "loss"]
+        m = min(losses)
+        M = max(losses)
+        df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
+    return df  # type: ignore
+
+
 # pylint: disable=too-many-statements,too-many-branches
 def create_plots(
     df: pd.DataFrame,
@@ -450,7 +465,7 @@ class XpPlotter:
                 old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].copy()
             for optim in optims:
                 optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.min(np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims]))) / np.max(np.maximum.reduce(
-                        [optim_vals[opt]["loss"] for opt in optims]))
+                    [optim_vals[opt]["loss"] for opt in optims]))
 
         return optim_vals
 
