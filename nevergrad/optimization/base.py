@@ -9,7 +9,7 @@ from pathlib import Path
 from numbers import Real
 from collections import deque
 import typing as tp  # favor using tp.Dict instead of Dict etc
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union, Deque, Type, Set
+from typing import Optional, Tuple, Callable, Any, Dict, List, Union
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
@@ -114,15 +114,15 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
         # instance state
-        self._asked: Set[str] = set()
-        self._suggestions: Deque[p.Parameter] = deque()
+        self._asked: tp.Set[str] = set()
+        self._suggestions: tp.Deque[p.Parameter] = deque()
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
         self._callbacks: Dict[str, List[Any]] = {}
         # to make optimize function stoppable halway through
         self._running_jobs: List[Tuple[p.Parameter, JobLike[float]]] = []
-        self._finished_jobs: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
+        self._finished_jobs: tp.Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -164,7 +164,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             pickle.dump(self, f)
 
     @classmethod
-    def load(cls: Type[X], filepath: Union[str, Path]) -> X:
+    def load(cls: tp.Type[X], filepath: Union[str, Path]) -> X:
         """Loads a pickle and checks that the class is correct.
         """
         return load(cls, filepath)
@@ -439,7 +439,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
         tmp_runnings: List[Tuple[p.Parameter, JobLike[float]]] = []
-        tmp_finished: Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
+        tmp_finished: tp.Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask

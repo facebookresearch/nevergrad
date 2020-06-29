@@ -8,6 +8,7 @@ from pathlib import Path
 import typing as tp
 import numpy as np
 from nevergrad.common import testing
+import nevergrad as ng
 from . import optimizerlib
 from . import experimentalvariants as xpvariants
 from . import base
@@ -112,6 +113,23 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer.dump(filepath)
     optimizer2 = optimizerlib.OnePlusOne.load(filepath)
     np.testing.assert_almost_equal(optimizer2.provide_recommendation().value[0], 1, decimal=2)
+
+
+def abcsum(a, b, c):
+    return a + b + c
+
+
+def test_optimize_and_dump_prune(tmp_path: Path) -> None:
+    params = {
+        "a": ng.p.Scalar(lower=0, upper=1, init=0).set_mutation(sigma=0.2),
+        "b": ng.p.TransitionChoice([1, 2, 3]),
+        "c": ng.p.TransitionChoice([x for x in range(200)])
+    }
+    optimizer = ng.optimizers.registry["TBPSA"](parametrization=ng.p.Instrumentation(**params))
+    args = [optimizer.ask() for x in range(1100)]
+    for arg in args:
+        optimizer.tell(arg, abcsum(**arg.kwargs))
+    optimizer.dump(tmp_path / "test_dump_optimizer.pkl")
 
 
 def test_compare() -> None:
