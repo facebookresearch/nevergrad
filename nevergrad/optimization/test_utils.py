@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
-from pathlib import Path
 import pytest
 import numpy as np
 import nevergrad as ng
@@ -86,7 +85,7 @@ def test_archive_errors() -> None:
     np.testing.assert_raises(RuntimeError, archive.items)
 
 
-def test_pruning(tmp_path: Path) -> None:
+def test_pruning() -> None:
     param = ng.p.Scalar(init=12.0)
     archive: utils.Archive[utils.MultiValue] = utils.Archive()
     for k in range(3):
