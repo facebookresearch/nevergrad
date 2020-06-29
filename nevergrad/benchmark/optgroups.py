@@ -11,7 +11,7 @@ from nevergrad.common.decorators import Registry
 from nevergrad.optimization import base as obase
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
-registry = Registry[tp.Callable[[], tp.Iterable[Optim]]]()
+registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
 
 
 def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]:
