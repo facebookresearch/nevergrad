@@ -134,6 +134,8 @@ def test_uid_queue() -> None:
     uidq.discard("a")
     for uid in ["c", "c"]:
         assert uidq.ask() == uid
+    # pickling
+    pickle.dumps(uidq)
     # clearing
     uidq.clear()
     with pytest.raises(RuntimeError):
