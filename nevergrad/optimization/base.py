@@ -9,7 +9,7 @@ from pathlib import Path
 from numbers import Real
 from collections import deque
 import typing as tp  # favor using tp.Dict instead of Dict etc
-from typing import Optional, Tuple, Callable, Any, Dict, List, Union
+from typing import Optional, Tuple, Any, Dict, List
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
@@ -156,7 +156,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         return self._num_tell_not_asked
 
-    def dump(self, filepath: Union[str, Path]) -> None:
+    def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file.
         """
         filepath = Path(filepath)
@@ -164,7 +164,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             pickle.dump(self, f)
 
     @classmethod
-    def load(cls: tp.Type[X], filepath: Union[str, Path]) -> X:
+    def load(cls: tp.Type[X], filepath: tp.Union[str, Path]) -> X:
         """Loads a pickle and checks that the class is correct.
         """
         return load(cls, filepath)
@@ -397,7 +397,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def minimize(
         self,
-        objective_function: Callable[..., float],
+        objective_function: tp.Callable[..., float],
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
@@ -592,7 +592,7 @@ class ConfiguredOptimizer:
             registry.register_name(name, self)
         return self
 
-    def load(self, filepath: Union[str, Path]) -> "Optimizer":
+    def load(self, filepath: tp.Union[str, Path]) -> "Optimizer":
         """Loads a pickle and checks that it is an Optimizer.
         """
         return self._OptimizerClass.load(filepath)
