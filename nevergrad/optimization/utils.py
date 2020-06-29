@@ -256,7 +256,7 @@ class Pruning:
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
-        new_archive = Archive[MultiValue]()
+        new_archive: Archive[MultiValue] = Archive()
         new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
         return new_archive
 

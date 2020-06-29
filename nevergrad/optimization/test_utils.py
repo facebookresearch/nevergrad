@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pickle
 import pytest
 import numpy as np
 import nevergrad as ng
@@ -86,7 +87,7 @@ def test_archive_errors() -> None:
 
 def test_pruning() -> None:
     param = ng.p.Scalar(init=12.0)
-    archive = utils.Archive[utils.MultiValue]()
+    archive: utils.Archive[utils.MultiValue] = utils.Archive()
     for k in range(3):
         value = utils.MultiValue(param, float(k), reference=param)
         archive[(float(k),)] = value
@@ -98,9 +99,10 @@ def test_pruning() -> None:
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
     archive = pruning(archive)
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
+    pickle.dumps(archive)  # should be picklable
     # should not change anything this time
-    archive = pruning(archive)
-    testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
+    archive2 = pruning(archive)
+    testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
 @pytest.mark.parametrize("nw,dimension,expected_min,expected_max", [  # type: ignore
