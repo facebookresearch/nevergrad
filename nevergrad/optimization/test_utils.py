@@ -100,6 +100,7 @@ def test_pruning(tmp_path: Path) -> None:
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
     archive = pruning(archive)
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
+    pickle.dumps(archive)  # should be picklable
     # should not change anything this time
     archive2 = pruning(archive)
     testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")

@@ -250,14 +250,12 @@ class Pruning:
 
     def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
-            print("returning")
             return archive
         quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
-        print("creating")
         new_archive = Archive[MultiValue]()
         new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
         return new_archive
