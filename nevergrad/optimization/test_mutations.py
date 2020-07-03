@@ -49,7 +49,7 @@ def test_run_with_array(name: str) -> None:
 def test_get_roulette(num: int, expected: str) -> None:
     param = ng.p.Scalar(init=12.0)
     rng = np.random.RandomState(24)
-    archive = utils.Archive[utils.MultiValue]()
+    archive: utils.Archive[utils.MultiValue] = utils.Archive()
     for k in range(4):
         archive[np.array([k + .5])] = utils.MultiValue(param, k, reference=param)
     output = Mutator(rng).get_roulette(archive, num)

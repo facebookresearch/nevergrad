@@ -19,7 +19,7 @@ from nevergrad.common.decorators import Registry
 from . import utils
 
 
-registry = Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]]()
+registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
 _OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None], tp.Callable[["Optimizer"], None]]
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
