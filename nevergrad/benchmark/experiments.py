@@ -279,7 +279,7 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar).
+    """One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar).
     0 or 5 dummy variables per real variable.
     Base dimension 3 or 25.
     budget 30, 100 or 3000."""
