@@ -166,8 +166,7 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
-            pytest nevergrad/parametrization -v --exitfirst --durations=20 --cov=nevergrad
-            # pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
 
   docs-deploy:
     docker:
