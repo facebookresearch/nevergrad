@@ -36,7 +36,8 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # for black (since lists are way too long...):
 # fmt: off
 
-default_optims = ["NGO10", "CMA", "Shiwa"]  #["Shiwa", "CMA", "NGO", "DE", "NGO10", "PortfolioDiscreteOnePlusOne", "MetaTuneRecentering", "NaiveTBPSA", "TBPSA"]
+default_optims = None  # ["NGO10", "CMA", "Shiwa"]
+
 
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment."""
