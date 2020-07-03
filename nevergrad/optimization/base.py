@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
+import time
 import warnings
 from pathlib import Path
 from numbers import Real
@@ -401,6 +402,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: Optional[ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        max_time: int = -1,
     ) -> p.Parameter:
         """Optimization (minimization) procedure
 
@@ -431,6 +433,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         for evaluation purpose and with the current implementation, it is better to use batch_mode=True
         """
         # pylint: disable=too-many-branches
+        start_time = time.time()
         if self.budget is None:
             raise ValueError("Budget must be specified")
         if executor is None:
@@ -461,6 +464,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     sleeper.stop_timer()
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
+
+                    if max_time >= 0:
+                        elapsed_time = time.time() - start_time 
+                        current_time_per_eval = elapsed_time / self.num_ask
+                        if elapsed_time + remaining_budget * current_time_per_eval > max_time:
+                            raise ValueError(f"This budget is too high for optimizer {type(self)}")
+
                     result = job.result()
                     if multiobjective:  # hack
                         result = objective_function.compute_aggregate_loss(job.result(), *x.args, **x.kwargs)  # type: ignore
