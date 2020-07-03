@@ -69,11 +69,10 @@ def test_folder_instantiator(clean_copy: bool) -> None:
     ifolder = instantiate.FolderInstantiator(path, clean_copy=clean_copy)
     testing.printed_assert_equal(ifolder.placeholders, _EXPECTED)
     np.testing.assert_equal(len(ifolder.file_functions), 1)
-    if os.environ.get("CIRCLECI", False):
-        raise SkipTest("Failing in CircleCI")  # TODO investigate why
-    with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
-        with (tmp / "script.py").open("r") as f:
-            lines = f.readlines()
+    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+        with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
+            with (tmp / "script.py").open("r") as f:
+                lines = f.readlines()
     np.testing.assert_equal(lines[10], "value2 = 110.0\n")
 
 
@@ -117,8 +116,9 @@ def test_file_text_function() -> None:
 def test_folder_function() -> None:
     folder = Path(__file__).parent / "examples"
     func = instantiate.FolderFunction(str(folder), [sys.executable, "examples/script.py"], clean_copy=True)
-    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
-        output = func(value1=98, value2=12, string="plop")
+    if os.environ.get("CIRCLECI", False):
+        raise SkipTest("Failing in CircleCI")  # TODO investigate why
+    output = func(value1=98, value2=12, string="plop")
     np.testing.assert_equal(output, 24)
     output = func(value1=98, value2=12, string="blublu")
     np.testing.assert_equal(output, 12)
