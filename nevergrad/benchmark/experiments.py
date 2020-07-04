@@ -161,7 +161,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "DiscreteBSOOnePlusOne"]
 
     if default_optims is not None:
-        optims += default_optims
+        optims = default_optims
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
@@ -289,7 +289,7 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     "LHS" not in x and "alton" not in x
                     and ("ando" not in x or "QO" in x))  # QORandomSearch is the only valid variant of RandomSearch.
     if default_optims is not None:
-        optims += default_optims
+        optims = default_optims
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -311,7 +311,7 @@ def doe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
     if default_optims is not None:
-        optims += default_optims
+        optims = default_optims
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -334,7 +334,7 @@ def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot and "hiva" not in str(y) and "NGO" not in str(
         y) and ("ando" in x or "HCH" in x or "LHS" in x or "eta" in x) and "mmers" not in x and "alto" not in x)
     if default_optims is not None:
-        optims += default_optims
+        optims = default_optims
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -349,7 +349,7 @@ def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    "Five-shots optimization of 3 classical objective functions (sphere, rastrigin, cigar).
+    """Five-shots optimization of 3 classical objective functions (sphere, rastrigin, cigar).
     Base dimension 3 or 25. 0 or 5 dummy variable per real variable. Budget 30, 100 or 3000."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
@@ -415,7 +415,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "ManyCMA", "ManySmallCMA", "NaiveTBPSA"]
     optims = ["NaiveTBPSA"]
     if default_optims is not None:
-        optims += default_optims
+        optims = default_optims
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd)
@@ -463,8 +463,6 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     else:
         noise_level = 0
     optims: tp.List[str] = ["Shiwa", "NGO", "CMA", "DiagonalCMA", "MetaModel", "chainCMAPowell"]
-    if default_optims is not None:
-        optims += default_optims
     if noise:
         optims += ["TBPSA", "SQP"]
     if hd:
@@ -473,6 +471,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
         optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
 
+    if default_optims is not None:
+        optims = default_optims
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
         for rotation in [True, False]
