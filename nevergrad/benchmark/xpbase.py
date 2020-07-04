@@ -228,7 +228,7 @@ class Experiment:
                     pfunc,
                     batch_mode=executor.batch_mode,
                     executor=executor,
-                    max_time=259200,
+                    max_time=129600,  # Let us assume that 36 hours is our maximum.
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
