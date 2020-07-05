@@ -580,14 +580,12 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel"]
-    if default_optims is not None:
-        optims = default_optims
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
     for function in functions:
         for budget in [100, 1000, 10000]:
-            optims = get_optimizers("large", seed=next(seedg))
+            optims = get_optimizers("large", seed=next(seedg)) if default_optims is None else default_optims
             for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=50, seed=next(seedg))
 
@@ -608,8 +606,6 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
               "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
               "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA"]
-    if default_optims is not None:
-        optims = default_optims
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation in [True, False]
     ]
@@ -617,7 +613,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         func.parametrization.register_cheap_constraint(_positive_sum)
     for function in functions:
         for budget in [400, 4000, 40000]:
-            optims = get_optimizers("large", seed=next(seedg))
+            optims = get_optimizers("large", seed=next(seedg)) if default_optims is None else default_optims
             for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -782,9 +778,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = sorted(
             x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
-    optims = get_optimizers("spsa")
-    if default_optims is not None:
-        optims = default_optims
+    optims = get_optimizers("spsa") if default_optims is None else default_optims
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
