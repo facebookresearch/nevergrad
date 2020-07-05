@@ -300,7 +300,7 @@ We do not average evaluations over multiple episodes - the algorithm is in charg
 Examples from our external users
 --------------------------------
 
-Nevergrad is integrated in `Ray/Tune<https://docs.ray.io/en/master/_modules/ray/tune/suggest/nevergrad.html>`_, Berkeley AI Research library for parameter tuning .
+Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/master/_modules/ray/tune/suggest/nevergrad.html>`_, Berkeley AI Research library for parameter tuning .
 
 Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/next/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
