@@ -123,7 +123,6 @@ def test_folder_function() -> None:
 
 # pylint: disable=reimported,redefined-outer-name,import-outside-toplevel
 def test_folder_function_doc() -> None:
-    # with testing.skip_error_on_systems(OSError, systems=("Windows",)):
     # DOC_INSTANTIATE_0
     import sys
     from pathlib import Path
