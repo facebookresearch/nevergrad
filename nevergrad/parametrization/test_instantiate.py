@@ -3,12 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import sys
 import tempfile
 import typing as tp
 from pathlib import Path
-from unittest import SkipTest
 import numpy as np
 from nevergrad.common import testing
 from . import instantiate
@@ -116,8 +114,6 @@ def test_file_text_function() -> None:
 def test_folder_function() -> None:
     folder = Path(__file__).parent / "examples"
     func = instantiate.FolderFunction(str(folder), [sys.executable, "examples/script.py"], clean_copy=True)
-    #if os.environ.get("CIRCLECI", False):
-    #    raise SkipTest("Failing in CircleCI")  # TODO investigate why
     with testing.skip_error_on_systems(OSError, systems=("Windows",)):
         output = func(value1=98, value2=12, string="plop")
     np.testing.assert_equal(output, 24)
@@ -127,25 +123,23 @@ def test_folder_function() -> None:
 
 # pylint: disable=reimported,redefined-outer-name,import-outside-toplevel
 def test_folder_function_doc() -> None:
-    #if os.environ.get("CIRCLECI", False):
-    #    raise SkipTest("Failing in CircleCI")  # TODO investigate why
-    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
-        # DOC_INSTANTIATE_0
-        import sys
-        from pathlib import Path
-        import nevergrad as ng
-        from nevergrad.parametrization import FolderFunction
+    # with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+    # DOC_INSTANTIATE_0
+    import sys
+    from pathlib import Path
+    import nevergrad as ng
+    from nevergrad.parametrization import FolderFunction
 
-        # nevergrad/parametrization/examples contains a script
-        example_folder = Path(ng.__file__).parent / "parametrization" / "examples"
-        python = sys.executable
-        command = [python, "examples/script.py"]  # command to run from right outside the provided folder
-        # create a function from the folder
-        func = FolderFunction(example_folder, command, clean_copy=True)
+    # nevergrad/parametrization/examples contains a script
+    example_folder = Path(ng.__file__).parent / "parametrization" / "examples"
+    python = sys.executable
+    command = [python, "examples/script.py"]  # command to run from right outside the provided folder
+    # create a function from the folder
+    func = FolderFunction(example_folder, command, clean_copy=True)
 
-        # print the number of variables of the function:
-        print(func.placeholders)
-        # prints: [Placeholder('value1', 'this is a comment'), Placeholder('value2', None), Placeholder('string', None)]
-        # and run it (the script prints 12 at the end)
-        assert func(value1=2, value2=3, string="blublu") == 12.0
-        # DOC_INSTANTIATE_1
+    # print the number of variables of the function:
+    print(func.placeholders)
+    # prints: [Placeholder('value1', 'this is a comment'), Placeholder('value2', None), Placeholder('string', None)]
+    # and run it (the script prints 12 at the end)
+    assert func(value1=2, value2=3, string="blublu") == 12.0
+    # DOC_INSTANTIATE_1
