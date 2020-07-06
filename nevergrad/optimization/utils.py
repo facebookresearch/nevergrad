@@ -290,7 +290,7 @@ class UidQueue:
     """
 
     def __init__(self) -> None:
-        self.told = tp.Deque[str]()
+        self.told = tp.Deque[str]()  # this seems to be picklable (this syntax does not always work)
         self.asked: OrderedSet[str] = OrderedSet()
 
     def clear(self) -> None:

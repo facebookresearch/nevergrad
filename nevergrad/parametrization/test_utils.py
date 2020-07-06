@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# import os
 import sys
 import time
 import contextlib
 import typing as tp
+# from unittest import SkipTest
 from pathlib import Path
 from nevergrad.common import testing
 from . import parameter as p
@@ -26,6 +28,8 @@ def test_command_function() -> None:
     command = f"{sys.executable} -m nevergrad.parametrization.test_utils".split()
     word = "testblublu12"
     output = utils.CommandFunction(command)(word)
+    # if os.environ.get("CIRCLECI", False):
+    #     raise SkipTest("Failing in CircleCI")  # TODO investigate why
     assert output is not None
     assert word in output, f'Missing word "{word}" in output:\n{output}'
     try:

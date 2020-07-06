@@ -60,7 +60,7 @@ def test_get_nash() -> None:
 
 def test_archive() -> None:
     data = [1, 4.5, 12, 0]
-    archive = utils.Archive[int]()
+    archive: utils.Archive[int] = utils.Archive()
     archive[np.array(data)] = 12
     np.testing.assert_equal(archive[np.array(data)], 12)
     np.testing.assert_equal(archive.get(data), 12)
@@ -77,7 +77,7 @@ def test_archive() -> None:
 
 
 def test_archive_errors() -> None:
-    archive = utils.Archive[float]()
+    archive: utils.Archive[float] = utils.Archive()
     archive[[12, 0.]] = 12.
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
     np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
@@ -134,6 +134,9 @@ def test_uid_queue() -> None:
     uidq.discard("a")
     for uid in ["c", "c"]:
         assert uidq.ask() == uid
+    # pickling
+    string = pickle.dumps(uidq)
+    pickle.loads(string)
     # clearing
     uidq.clear()
     with pytest.raises(RuntimeError):
