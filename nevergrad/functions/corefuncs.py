@@ -10,7 +10,7 @@ from nevergrad.parametrization import discretization
 from nevergrad.common.decorators import Registry
 
 
-registry = Registry[Callable[[np.ndarray], float]]()
+registry: Registry[Callable[[np.ndarray], float]] = Registry()
 
 
 def onemax(x: List[int]) -> float:

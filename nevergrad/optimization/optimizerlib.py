@@ -77,12 +77,12 @@ class _OnePlusOne(base.Optimizer):
         self.mutation = mutation
         self.crossover = crossover
         if mutation == "doerr":
-            assert num_workers == 1, "Doerr mutation is implemented only in the sequential case." 
+            assert num_workers == 1, "Doerr mutation is implemented only in the sequential case."
             self._doerr_mutation_rates = [1, 2]
             self._doerr_mutation_rewards = [0., 0.]
             self._doerr_counters = [0., 0.]
-            self._doerr_epsilon = 0.25  #self.dimension ** (-0.01)
-            self._doerr_gamma = 1 - 2 / self.dimension 
+            self._doerr_epsilon = 0.25  # self.dimension ** (-0.01)
+            self._doerr_gamma = 1 - 2 / self.dimension
             self._doerr_current_best = float("inf")
             i = 3
             j = 2
@@ -93,7 +93,6 @@ class _OnePlusOne(base.Optimizer):
                 self._doerr_counters += [0.]
                 i += j
                 j += 2
-            
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
@@ -150,7 +149,7 @@ class _OnePlusOne(base.Optimizer):
                     index = self._rng.choice(range(len(self._doerr_mutation_rates)))
                     self._doerr_index = index
                 else:
-                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))                                                   
+                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
@@ -168,16 +167,16 @@ class _OnePlusOne(base.Optimizer):
         # only used for cauchy and gaussian
         if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
             improvement = max(0., self._doerr_current_best - value)
-            # Decay.          
-            index = self._doerr_index                                                       
-            counter = self._doerr_counters[index]                                                   
+            # Decay.
+            index = self._doerr_index
+            counter = self._doerr_counters[index]
             self._doerr_mutation_rewards[index] = (self._doerr_gamma * counter * self._doerr_mutation_rewards[index]
                                                    + improvement) / (self._doerr_gamma * counter + 1)
             self._doerr_counters = [self._doerr_gamma * x for x in self._doerr_counters]
-            self._doerr_counters[index] += 1                                                       
-            self._doerr_index = -1                                                       
+            self._doerr_counters[index] += 1
+            self._doerr_index = -1
         if self.mutation == "doerr":
-            self._doerr_current_best = min(self._doerr_current_best, value)                                                       
+            self._doerr_current_best = min(self._doerr_current_best, value)
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
         if self.mutation == "adaptive":
             factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
@@ -241,7 +240,8 @@ NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("Nois
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
-DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name("DiscreteDoerrOnePlusOne", register=True).no_parallelization = True                                                                    
+DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
+    "DiscreteDoerrOnePlusOne", register=True).no_parallelization = True
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
@@ -291,7 +291,8 @@ class _CMA(base.Optimizer):
         if self._es is None:
             if not self._fcmaes:
                 inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(
+                    self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
                 try:
                     from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
@@ -1060,7 +1061,7 @@ class ParaPortfolio(Portfolio):
             CMA(self.parametrization, num_workers=nw1),  # share parametrization and its rng
             TwoPointsDE(self.parametrization, num_workers=nw2),  # noqa: F405
             PSO(self.parametrization, num_workers=nw3),
-            SQP(self.parametrization, 1),  # noqa: F405
+            SQP(self.parametrization, num_workers=1),  # noqa: F405
             ScrHammersleySearch(self.parametrization, budget=(budget // len(self.which_optim)) * nw4),  # noqa: F405
         ]
 
@@ -1086,7 +1087,7 @@ class SQPCMA(ParaPortfolio):
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
         self.optims = [CMA(self.parametrization, num_workers=nw)]  # share parametrization and its rng
         for i in range(num_workers - nw):
-            self.optims += [SQP(self.parametrization, 1)]  # noqa: F405
+            self.optims += [SQP(self.parametrization, num_workers=1)]  # noqa: F405
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
 
@@ -1272,7 +1273,8 @@ class TripleCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
+            ParametrizedCMA(random_init=True)(self.parametrization, budget=None,
+                                              num_workers=num_workers),  # share parametrization and its rng
             ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
             ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
         ]
@@ -1286,8 +1288,9 @@ class ManyCMA(CM):
     def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget)))]
-        
+        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
+                       for _ in range(int(np.sqrt(budget)))]
+
         self.budget_before_choosing = budget // 3
 
 
@@ -1311,10 +1314,10 @@ class ManySmallCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [ParametrizedCMA(scale=1e-6, random_init=i > 0)(self.parametrization, budget=None, num_workers=num_workers)
-                for i in range(int(np.sqrt(budget)))]
+                       for i in range(int(np.sqrt(budget)))]
         self.budget_before_choosing = budget // 3
 
-                                                                                                                                                                                                           
+
 @registry.register
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
