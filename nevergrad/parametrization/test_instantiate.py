@@ -3,12 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import sys
 import tempfile
 import typing as tp
 from pathlib import Path
-from unittest import SkipTest
 import numpy as np
 from nevergrad.common import testing
 from . import instantiate
@@ -116,9 +114,8 @@ def test_file_text_function() -> None:
 def test_folder_function() -> None:
     folder = Path(__file__).parent / "examples"
     func = instantiate.FolderFunction(str(folder), [sys.executable, "examples/script.py"], clean_copy=True)
-    if os.environ.get("CIRCLECI", False):
-        raise SkipTest("Failing in CircleCI")  # TODO investigate why
-    output = func(value1=98, value2=12, string="plop")
+    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+        output = func(value1=98, value2=12, string="plop")
     np.testing.assert_equal(output, 24)
     output = func(value1=98, value2=12, string="blublu")
     np.testing.assert_equal(output, 12)
@@ -126,8 +123,6 @@ def test_folder_function() -> None:
 
 # pylint: disable=reimported,redefined-outer-name,import-outside-toplevel
 def test_folder_function_doc() -> None:
-    if os.environ.get("CIRCLECI", False):
-        raise SkipTest("Failing in CircleCI")  # TODO investigate why
     # DOC_INSTANTIATE_0
     import sys
     from pathlib import Path
