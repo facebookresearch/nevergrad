@@ -168,6 +168,7 @@ jobs:
             . venv/bin/activate
             pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
 
+
   docs-deploy:
     docker:
       - image: node:8.10.0
