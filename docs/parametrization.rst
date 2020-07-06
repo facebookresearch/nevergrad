@@ -159,7 +159,7 @@ We provide tooling for this situation but this is hacky, so if you can avoid it,
 
 .. literalinclude:: ../nevergrad/parametrization/test_instantiate.py
     :language: python
-    :dedent: 4
+    :dedent: 8
     :start-after: DOC_INSTANTIATE_0
     :end-before: DOC_INSTANTIATE_1
 
