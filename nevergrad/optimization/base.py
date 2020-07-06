@@ -20,7 +20,7 @@ from nevergrad.common.decorators import Registry
 from . import utils
 
 
-registry = Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]]()
+registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
 _OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None], tp.Callable[["Optimizer"], None]]
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
@@ -485,7 +485,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                         print("Current pessimistic best is: {}".format(self.current_bests["pessimistic"]))
             elif not first_iteration:
                 sleeper.sleep()
-            # # # # # Start new jobs # # # # #
+            # # # # # Start new jobs # # # # #
             if not batch_mode or not self._running_jobs:
                 new_sugg = max(0, min(remaining_budget, self.num_workers - len(self._running_jobs)))
                 if verbosity and new_sugg:
