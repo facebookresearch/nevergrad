@@ -465,11 +465,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
 
-                    if max_time >= 0 and elapsed_time > 600:
+                    if max_time >= 0:
                         elapsed_time: int = int(time.time() - start_time)
-                        current_time_per_eval = elapsed_time / self.num_ask
-                        if elapsed_time + remaining_budget * current_time_per_eval > max_time:
-                            raise ValueError(f"This budget is too high for optimizer {type(self)}.")
+                        if elapsed_time > 600:
+                            current_time_per_eval = elapsed_time / self.num_ask
+                            if elapsed_time + remaining_budget * current_time_per_eval > max_time:
+                                raise ValueError(f"This budget is too high for optimizer {type(self)}.")
 
                     result = job.result()
                     if multiobjective:  # hack
