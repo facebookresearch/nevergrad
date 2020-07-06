@@ -44,7 +44,7 @@ commands:
 
 jobs:
   install:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
       - checkout
@@ -133,7 +133,7 @@ jobs:
           paths: html
 
   static:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
 
@@ -155,7 +155,7 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
 
