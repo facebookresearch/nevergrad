@@ -554,7 +554,7 @@ used to hold the subparameters for all Parameter classes.</p>
 <h2>Parameter API<a class="headerlink" href="#parameter-api" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="nevergrad.p.Parameter">
-<em class="property">class </em><code class="sig-prename descclassname">p.</code><code class="sig-name descname">Parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract class providing the core functionality of a parameter, aka
 value, internal/model parameters, mutation, recombination
 and additional features such as shared random state,
@@ -626,7 +626,7 @@ by the same reference in the exact same state (no mutation)</p></li>
 
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.get_value_hash">
-<code class="sig-name descname">get_value_hash</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; collections.abc.Hashable<a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_value_hash</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Hashable<a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hashable object representing the current value of the instance</p>
 </dd></dl>
 
@@ -680,7 +680,7 @@ other instances.</p>
 
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.register_cheap_constraint">
-<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span>Any<span class="p">, </span>bool<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>bool<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a new constraint on the parameter values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
