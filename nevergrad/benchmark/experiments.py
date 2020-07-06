@@ -582,7 +582,9 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for budget in [100, 1000, 10000]:
             optims = get_optimizers("large", seed=next(seedg))
             for optim in optims:
-                yield Experiment(function, optim, budget=budget, num_workers=50, seed=next(seedg))
+                xp = Experiment(function, optim, budget=budget, num_workers=50, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
 
 
 def _positive_sum(data: np.ndarray) -> bool:
