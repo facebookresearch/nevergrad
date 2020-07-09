@@ -412,7 +412,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["RPowell", "Shiwa", "MultiCMA", "CMA", "PSO", "RandomSearch", "BPRotationInvariantDE", "CMandAS2", "TripleCMA",
-              "ManyCMA", "ManySmallCMA", "NaiveTBPSA"]
+              "ManyCMA", "ManySmallCMA", "PolyCMA", "NaiveTBPSA"]
     optims = ["NaiveTBPSA"]
     if default_optims is not None:
         optims = default_optims

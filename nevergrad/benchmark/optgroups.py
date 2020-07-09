@@ -43,7 +43,7 @@ def large() -> tp.List[Optim]:
             "OnePlusOne", "SQP", "Cobyla", "Powell",
             "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
             "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
-            "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel"]
+            "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel", "PolyCMA", "ManyCMA"]
 
 
 @registry.register
