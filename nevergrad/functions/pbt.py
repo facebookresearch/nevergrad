@@ -13,7 +13,7 @@ from . import corefuncs
 class PBT(ExperimentFunction):
     """Population-Based Training, also known as Lamarckism or Meta-Optimization."""
 
-    def __init__(self, names: tp.List[str] = ["sphere", "cigar", "ellipsoid"]], dimensions: tp.List[int] = [7, 7, 7], num_workers: int = 10):
+    def __init__(self, names: tp.List[str] = ["sphere", "cigar", "ellipsoid"], dimensions: tp.List[int] = [7, 7, 7], num_workers: int = 10):
         for name in names:
             if name not in corefuncs.registry:
                 available = ", ".join(sorted(corefuncs.registry))
