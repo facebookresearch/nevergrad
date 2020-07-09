@@ -3,16 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import hashlib
-import itertools
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.common import tools
-from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
-from .multiobjective import MultiobjectiveFunction
-from . import utils
 from . import corefuncs
 
 
