@@ -371,7 +371,10 @@ when using different seeds.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.alldes">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">alldes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.alldes" title="Permalink to this definition">¶</a></dt>
-<dd><p>All Bayesian optimization methods on various functions.</p>
+<dd><p>All DE methods on various functions.
+Dimension 5, 20, 100.
+Sphere, Cigar, Hm, Ellipsoid.
+Budget 10, 100, 1000, 10000, 100000.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -383,7 +386,8 @@ when using different seeds.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.bragg_structure">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">bragg_structure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.bragg_structure" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Too small for being interesting: Bragg mirror.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.constrained_illconditioned_parallel">
@@ -402,13 +406,17 @@ Looks somehow fractal.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.doe">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">doe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.doe" title="Permalink to this definition">¶</a></dt>
-<dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified.</p>
+<dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified.
+Base dimension 2000 or 20000. No rotation, no dummy variable.
+Budget 30, 100, 3000, 10000, 30000, 100000.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.double_o_seven">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">double_o_seven</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.double_o_seven" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Optimization of policies for the 007 game.
+Sequential or 10-parallel or 100-parallel. Various numbers of averagings: 1, 10 or 100.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.far_optimum_es">
@@ -418,38 +426,47 @@ Looks somehow fractal.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.fiveshots">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">fiveshots</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.fiveshots" title="Permalink to this definition">¶</a></dt>
-<dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)</p>
+<dd><p>Five-shots optimization of 3 classical objective functions (sphere, rastrigin, cigar).
+Base dimension 3 or 25. 0 or 5 dummy variable per real variable. Budget 30, 100 or 3000.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.harderparallel">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">harderparallel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.harderparallel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parallel optimization on 3 classical objective functions.</p>
+<dd><p>Parallel optimization on 4 classical objective functions. More distinct settings than &lt;&lt; parallel &gt;&gt;.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.hdbo4d">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">hdbo4d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.hdbo4d" title="Permalink to this definition">¶</a></dt>
-<dd><p>All Bayesian optimization methods on various functions.</p>
+<dd><p>All Bayesian optimization methods on various functions.
+Budget 25, 31, 37, 43, 50, 60.
+Dimension 20.
+Sphere, Cigar, Hm, Ellipsoid.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.hdmultimodal">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">hdmultimodal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.hdmultimodal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
-deceptivemultimodal.</p>
+deceptivemultimodal. Similar to multimodal, but dimension 20 or 100. Budget 20 or 100, sequential.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.illcondi">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">illcondi</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.illcondi" title="Permalink to this definition">¶</a></dt>
-<dd><p>Testing optimizers on ill cond problems.</p>
+<dd><p>Testing optimizers on ill cond problems.
+Cigar, Ellipsoid.
+Both rotated and unrotated.
+Budget 100, 1000, 10000.
+Dimension 50.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.illcondipara">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">illcondipara</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.illcondipara" title="Permalink to this definition">¶</a></dt>
-<dd><p>Testing optimizers on ill-conditionned parallel optimization.</p>
+<dd><p>Testing optimizers on ill-conditionned parallel optimization.
+50 workers in parallel.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -461,12 +478,18 @@ deceptivemultimodal.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.instrum_discrete">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">instrum_discrete</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.instrum_discrete" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Comparison of optimization algorithms equipped with distinct instrumentations.
+Onemax, Leadingones, Jump function.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.manyobjective_example">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">manyobjective_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.manyobjective_example" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Optimization of 6 objective functions in Cigar, Rastrigin, Rosenbrock, Sphere, Ellipsoid, Cigar, Hm.
+Dimension 6 and 7.
+Sequential or 100-parallel.
+Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.mlda">
@@ -483,20 +506,27 @@ deceptivemultimodal.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.mltuning">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">mltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overfitter</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">seq</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.mltuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Machine learning hyperparameter tuning experiment.</p>
+<dd><p>Machine learning hyperparameter tuning experiment. Based on scikit models.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.multimodal">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">multimodal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">para</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.multimodal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Experiment on multimodal functions, namely hm, rastrigin, griewank, rosenbrock, ackley, lunacek,
-deceptivemultimodal.</p>
+deceptivemultimodal.
+0 or 5 dummy variable per real variable.
+Base dimension 3 or 25.
+Budget in 3000, 10000, 30000, 100000.
+Sequential.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.multiobjective_example">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">multiobjective_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.multiobjective_example" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
+Dimension 6 and 7.
+Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.naivemltuning">
@@ -514,49 +544,68 @@ deceptivemultimodal.</p>
 <dt id="nevergrad.benchmark.experiments.newdoe">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">newdoe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.newdoe" title="Permalink to this definition">¶</a></dt>
 <dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified.
-Tested on more dimensionalities than doe.</p>
+Tested on more dimensionalities than doe, namely 20, 200, 2000, 20000. No dummy variables.
+Budgets 30, 100, 3000, 10000, 30000, 100000, 300000.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.noisy">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">noisy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.noisy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Noisy optimization methods on a few noisy problems.</p>
+<dd><p>Noisy optimization methods on a few noisy problems.
+Sphere, Rosenbrock, Cigar, Hm (= highly multimodal).
+Noise level 10.
+Noise dyssymmetry or not.
+Dimension 2, 20, 200, 2000.
+Budget 25000, 50000, 100000.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.oneshot">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">oneshot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.oneshot" title="Permalink to this definition">¶</a></dt>
-<dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar)</p>
+<dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar).
+0 or 5 dummy variables per real variable.
+Base dimension 3 or 25.
+budget 30, 100 or 3000.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.paraalldes">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">paraalldes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.paraalldes" title="Permalink to this definition">¶</a></dt>
-<dd><p>All Bayesian optimization methods on various functions. Parallel version.</p>
+<dd><p>All DE methods on various functions. Parallel version.
+Dimension 5, 20, 100, 500, 2500.
+Sphere, Cigar, Hm, Ellipsoid.
+No rotation.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.parahdbo4d">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">parahdbo4d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.parahdbo4d" title="Permalink to this definition">¶</a></dt>
-<dd><p>All Bayesian optimization methods on various functions. Parallel version.</p>
+<dd><p>All Bayesian optimization methods on various functions. Parallel version
+Dimension 20 and 2000.
+Budget 25, 31, 37, 43, 50, 60.
+Sphere, Cigar, Hm, Ellipsoid.
+No rotation.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.parallel">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">parallel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.parallel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parallel optimization on 3 classical objective functions.</p>
+<dd><p>Parallel optimization on 3 classical objective functions: sphere, rastrigin, cigar.
+The number of workers is 20 % of the budget.
+Testing both no useless variables and 5/6 of useless variables.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.paramultimodal">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">paramultimodal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.paramultimodal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parallel counterpart of the multimodal experiment.</p>
+<dd><p>Parallel counterpart of the multimodal experiment: 1000 workers.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.photonics">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">photonics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.photonics" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.powersystems">
@@ -567,25 +616,39 @@ Tested on more dimensionalities than doe.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.ranknoisy">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">ranknoisy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.ranknoisy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Noisy optimization methods on a few noisy problems.</p>
+<dd><p>Noisy optimization methods on a few noisy problems.
+Cigar, Altcigar, Ellipsoid, Altellipsoid.
+Dimension 200, 2000, 20000.
+Budget 25000, 50000, 100000.
+No rotation.
+Noise level 10.
+With or without noise dissymmetry.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.realworld">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">realworld</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.realworld" title="Permalink to this definition">¶</a></dt>
-<dd><p>Realworld optimization. This experiment contains:
-- a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
-- ARCoating <a class="reference external" href="https://arxiv.org/abs/1904.02907">https://arxiv.org/abs/1904.02907</a>: 1 function.
-- The 007 game: 1 function, noisy.
-- PowerSystem: a power system simulation problem.
-- STSP: a simple TSP problem.
-MLDA stuff, except the Perceptron.</p>
+<dd><dl>
+<dt>Realworld optimization. This experiment contains:</dt><dd><ul class="simple">
+<li><p>a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.</p></li>
+<li><p>ARCoating <a class="reference external" href="https://arxiv.org/abs/1904.02907">https://arxiv.org/abs/1904.02907</a>: 1 function.</p></li>
+<li><p>The 007 game: 1 function, noisy.</p></li>
+<li><p>PowerSystem: a power system simulation problem.</p></li>
+<li><p>STSP: a simple TSP problem.</p></li>
+</ul>
+<p>MLDA stuff, except the Perceptron.</p>
+</dd>
+</dl>
+<p>Budget 25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800.
+Sequential or 10-parallel or 100-parallel.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.rocket">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">rocket</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.rocket" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.</p>
+<dd><p>Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
+Budget 25, 50, …, 1600.
+Sequential or 30 workers.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -597,33 +660,44 @@ MLDA stuff, except the Perceptron.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.sequential_fastgames">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">sequential_fastgames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.sequential_fastgames" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optimization of policies for games, namely direct policy search.</p>
+<dd><p>Optimization of policies for games, i.e. direct policy search.
+Budget 12800, 25600, 51200, 102400.
+Games: War, Batawaf, Flip, GuessWho,  BigGuessWho.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.sequential_instrum_discrete">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">sequential_instrum_discrete</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.sequential_instrum_discrete" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sequential counterpart of instrum_discrete.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.simpletsp">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">simpletsp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.simpletsp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
 specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
-even if white-box methods are not included though they could do this more efficiently.</p>
+even if white-box methods are not included though they could do this more efficiently.
+10, 100, 1000, 10000 cities.
+Budgets doubling from 25, 50, 100, 200, … up  to 25600</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.spsa_benchmark">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">spsa_benchmark</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.spsa_benchmark" title="Permalink to this definition">¶</a></dt>
-<dd><p>Some optimizers on a noisy optimization problem. This benchmark is based on the noise benchmark.</p>
+<dd><p>Some optimizers on a noisy optimization problem. This benchmark is based on the noisy benchmark.
+Budget 500, 1000, 2000, 4000, … doubling… 128000.
+Rotation or not.
+Sphere, Sphere4, Cigar.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.yabbob">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">yabbob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parallel</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">big</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">small</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">noise</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">hd</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.yabbob" title="Permalink to this definition">¶</a></dt>
 <dd><p>Yet Another Black-Box Optimization Benchmark.
-Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.</p>
+Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
+Dimension 2, 10 and 50.
+Budget 50, 200, 800, 3200, 12800.
+Both rotated or not rotated.</p>
 </dd></dl>
 
 <dl class="py function">
