@@ -37,7 +37,7 @@ def test_artitificial_function_repr() -> None:
 
 
 def test_ptb_no_overfitting() -> None:
-    func = functionlib.PBT_no_overfitting(["sphere", "cigar"], [3, 7], 12)
+    func = functionlib.PBT(["sphere", "cigar"], [3, 7], 12)
     func = func.copy()
     # We do a grardient descent
     value = [func(np.zeros(2)) for _ in range(500)]

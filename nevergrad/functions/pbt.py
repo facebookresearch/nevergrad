@@ -16,7 +16,7 @@ from . import utils
 from . import corefuncs
 
 
-class NoOverfittingPBT(ExperimentFunction):
+class PBT(ExperimentFunction):
     """Population-Based Training, also known as Lamarckism or Meta-Optimization."""
 
     def __init__(self, names: tp.List[str], dimensions: tp.List[int], num_workers: int):

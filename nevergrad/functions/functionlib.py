@@ -12,7 +12,7 @@ from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
 from .multiobjective import MultiobjectiveFunction
-from .pbt import NoOverfittingPBT
+from .pbt import PBT
 from . import utils
 from . import corefuncs
 
