@@ -12,6 +12,7 @@ import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions import PBT
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
