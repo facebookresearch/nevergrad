@@ -46,6 +46,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             num_workers=self.num_workers,
             method=self.method,
             random_restart=self.random_restart)
+        subinstance.archive = self.archive
+        subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
@@ -73,15 +75,26 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
 
 class ScipyOptimizer(base.ConfiguredOptimizer):
-    """Scripy optimizers in a ask and tell format
+    """Wrapper over Scipy optimizer implementations, in standard ask and tell format.
+Sequential Quadratic Programming. Inside Nevergrad, this code is in https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py; this is actually an import from scipy-optimize. It is very powerful e.g. in continuous noisy optimization. It is based on approximating the objective function by quadratic models.
 
     Parameters
     ----------
     method: str
-        Name of the method to use, among Nelder-Mead, COBYLA, SLSQP and Powell
+        Name of the method to use among:
+
+        - Nelder-Mead
+        - COBYLA
+        - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
+          approximating the objective function by quadratic models.
+        - Powell
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
+
+    Note
+    ----
+    These optimizers do not support asking several candidates in a row
     """
 
     recast = True

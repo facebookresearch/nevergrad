@@ -3,7 +3,7 @@
 Running algorithm benchmarks
 ============================
 
-The benchmark tools aim at providing derivative-free optimization esearchers with a way to evaluate optimizers on a large range of settings. They provide ways to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.
+The benchmark tools aim at providing derivative-free optimization researchers with a way to evaluate optimizers on a large range of settings. They provide ways to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.
 
 By default, :code:`nevergrad` does not come with all the requirements for the benchmarks to run. Make sure you have installed/updated it with either the :code:`benchmark` or the :code:`all` flag (example: :code:`pip install 'nevergrad[benchmark]'`) or you will miss some packages.
 
