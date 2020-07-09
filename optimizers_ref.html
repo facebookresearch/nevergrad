@@ -1210,6 +1210,12 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 </dd></dl>
 
 <dl class="py class">
+<dt id="nevergrad.optimization.optimizerlib.PolyCMA">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">PolyCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.PolyCMA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combining 20 CMAs. Exactly identical. Active selection at 1/3 of the budget.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.Portfolio">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">Portfolio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passive portfolio of CMA, 2-pt DE and Scr-Hammersley.</p>
