@@ -12,6 +12,7 @@ import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions import PBT
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
@@ -1113,6 +1114,17 @@ def manyobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
             for budget in list(range(100, 5901, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def pbt(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    # prepare list of parameters to sweep for independent variables
+    seedg = create_seed_generator(seed)
+    optimizers = ["CMA", "TwoPointsDE", "Shiwa", "OnePlusOne", "DE" ,"PSO", "NaiveTBPSA", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "PortfolioNoisyDiscreteOnePlusOne"]  # type: ignore
+    for func in PBT.itercases():
+        for optim in optimizers:
+            for budget in [100, 400, 1000, 4000, 10000]:
+                yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
 
 @registry.register
