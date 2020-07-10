@@ -40,9 +40,10 @@ class PBT(ExperimentFunction):
         y = []
         current_idx = 0
         for i in range(self._dimension):
-            y += x[current_idx:(current_idx + self._dimensions[i])]
+            y += [x[current_idx:(current_idx + self._dimensions[i])]]
             current_idx += self._dimensions[i]
         assert current_idx == len(x) == self._total_dimension
+        return y
 
     def value(self, x):
         y = self.unflatten(x)
