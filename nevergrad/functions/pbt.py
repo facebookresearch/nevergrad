@@ -49,17 +49,20 @@ class PBT(ExperimentFunction):
         y = self.unflatten(x)
         return sum(f(xi - o) for f, xi, o in zip(self._funcs, y, self._optima))
 
-
     def evolve(self, x: np.ndarray, p: np.ndarray):
         assert len(p) == self._dimension
         def gradient(f, x):
             epsilon = 1e-15
             # We compute a gradient by finite differences.
             g = np.zeros(len(x))
+            value_minus = f(x)
+            assert type(value_minus) == type(1.5), str(type(value_minus))
             for i in range(len(x)):
                 e = np.zeros(len(x))
                 e[i] = epsilon
-                g[i] = (f(x + e) - f(x)) / e
+                value_plus = f(x+e)
+                assert type(value_plus) == type(1.5), str(type(value_plus))
+                g[i] = (value_plus - value_minus) / e
             return g 
         y = self.unflatten(x)
         assert len(y) == self._dimension
