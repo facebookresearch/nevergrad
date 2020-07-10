@@ -13,7 +13,7 @@ from . import corefuncs
 class PBT(ExperimentFunction):
     """Population-Based Training, also known as Lamarckism or Meta-Optimization."""
 
-    def __init__(self, names: tp.List[str] = ["sphere", "cigar", "ellipsoid"], dimensions: tp.List[int] = [7, 7, 7], num_workers: int = 10):
+    def __init__(self, names: tp.Tuple[str, ...] = ("sphere", "cigar", "ellipsoid"), dimensions: tp.Tuple[int, ...] = (7, 7, 7), num_workers: int = 10):
         for name in names:
             if name not in corefuncs.registry:
                 available = ", ".join(sorted(corefuncs.registry))
@@ -21,17 +21,16 @@ class PBT(ExperimentFunction):
         self._funcs = [corefuncs.registry[name] for name in names]
         self._optima = [np.random.normal(size=d) for d in dimensions]
         assert len(names) == len(dimensions)
-        self._dimension = len(names)
+        self._hyperparameter_dimension = len(names)
         self._dimensions = dimensions
         self._total_dimension = sum(dimensions)
-        parametrization = p.Array(shape=(self._dimension,)).set_name("")
+        parametrization = p.Array(shape=(self._hyperparameter_dimension,)).set_name("")
 
         # Population of checkpoints (that are optimized by the underlying optimization method)
         # and parameters (that we do optimize).
         self._population_checkpoints: tp.List[np.ndarray] = [np.zeros(self._total_dimension)] * num_workers
-        self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._dimension)] * num_workers
+        self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._hyperparameter_dimension)] * num_workers
         self._population_fitness: tp.List[float] = [float("inf")] * num_workers
-        self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         super().__init__(self.__func__, parametrization)
         self.register_initialization(names=names, dimensions=dimensions, num_workers=num_workers)
 
@@ -39,7 +38,7 @@ class PBT(ExperimentFunction):
     def unflatten(self, x):
         y = []
         current_idx = 0
-        for i in range(self._dimension):
+        for i in range(self._hyperparameter_dimension):
             y += [x[current_idx:(current_idx + self._dimensions[i])]]
             current_idx += self._dimensions[i]
         assert current_idx == len(x) == self._total_dimension
@@ -50,7 +49,7 @@ class PBT(ExperimentFunction):
         return sum(f(xi - o) for f, xi, o in zip(self._funcs, y, self._optima))
 
     def evolve(self, x: np.ndarray, p: np.ndarray):
-        assert len(p) == self._dimension
+        assert len(p) == self._hyperparameter_dimension
 
         # We define a gradient operator.
         def gradient(f, x):
@@ -67,23 +66,23 @@ class PBT(ExperimentFunction):
                 g[i] = (value_plus - value_minus) / epsilon
             return g 
         y = self.unflatten(x)
-        assert len(y) == self._dimension
+        assert len(y) == self._hyperparameter_dimension
 
-        # There are self._dimension learning rates.
+        # There are self._hyperparameter_dimension learning rates.
         # Each of them is responsible of one gradient descent.
-        for j in range(self._dimension):
+        for j in range(self._hyperparameter_dimension):
             assert len(y[j]) == self._dimensions[j]
             assert type(self._funcs[j](y[j])) == type(1.), str(type(self._funcs[j](y[j])))
             y[j] -= np.exp(p[j]) * (gradient(self._funcs[j], y[j] - self._optima[j]) + np.random.normal(self._dimensions[j]))
         current_idx = 0
-        for j in range(self._dimension):
+        for j in range(self._hyperparameter_dimension):
             x[current_idx:(current_idx) + self._dimensions[j]] = y[j]
             current_idx += self._dimensions[j]
         assert current_idx == self._total_dimension
 
 
     def __func__(self, x: np.ndarray):
-        assert len(x) == self._dimension
+        assert len(x) == self._hyperparameter_dimension
 
         # First, let us find the checkpoint that we want to use.
         if np.random.uniform() > 0.666:
