@@ -62,7 +62,7 @@ class PBT(ExperimentFunction):
                 e[i] = epsilon
                 value_plus = f(x+e)
                 assert type(value_plus) == type(1.5), str(type(value_plus))
-                g[i] = (value_plus - value_minus) / e
+                g[i] = (value_plus - value_minus) / epsilon
             return g 
         y = self.unflatten(x)
         assert len(y) == self._dimension
