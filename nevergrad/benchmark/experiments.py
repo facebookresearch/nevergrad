@@ -1038,3 +1038,29 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for f in [func, func_nostruct, func_mix]:
             for algo in recombinable:
                 yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
+
+# TODO : complete here for adversarial attacks.
+# @registry.register
+# def AdversarialAttack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+#
+#     class Normalize(nn.Module):
+#         def __init__(self, mean, std):
+#             super().__init__()
+#             self.mean = torch.Tensor(mean)
+#             self.std = torch.Tensor(std)
+#
+#         def forward(self, x):
+#             return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
+#
+#
+#     class Resnet50(nn.Module):
+#         def __init__(self):
+#             super().__init__()
+#             self.norm = Normalize(mean=[0.485, 0.456, 0.406],
+#                                   std=[0.229, 0.224, 0.225])
+#             self.model = resnet50(pretrained=True)
+#
+#         def forward(self, x):
+#             return self.model(self.norm(x))
+#    TODO: Add image loader
+

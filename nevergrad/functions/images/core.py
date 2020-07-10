@@ -9,7 +9,6 @@ import numpy as np
 import PIL.Image
 import torch.nn as nn
 import torch
-from torchvision.models import resnet50
 
 import nevergrad as ng
 from .. import base
@@ -59,29 +58,6 @@ class Image(base.ExperimentFunction):
         return value
 
 
-# TO BE MOVED TO A SEPARATE FILE
-
-class Normalize(nn.Module):
-    def __init__(self, mean, std):
-        super().__init__()
-        self.mean = torch.Tensor(mean)
-        self.std = torch.Tensor(std)
-
-    def forward(self, x):
-        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
-
-
-class Resnet50(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                              std=[0.229, 0.224, 0.225])
-        self.model = resnet50(pretrained=True)
-
-    def forward(self, x):
-        return self.model(self.norm(x))
-
-
 class TestClassifier(nn.Module):
     def __init__(self, image_size: int = 224):
         super().__init__()
@@ -94,14 +70,8 @@ class TestClassifier(nn.Module):
 # pylint: disable=too-many-arguments
 class ImageAdversarial(base.ExperimentFunction):
 
-    def __init__(
-        self,
-        classifier: nn.Module,
-        image: torch.Tensor,
-        label: int = 0,
-        targeted: bool = False,
-        epsilon: float = 0.05
-    ) -> None:
+    def __init__(self, classifier: nn.Module, image: torch.Tensor, label: int = 0, targeted: bool = False,
+                 epsilon: float = 0.05) -> None:
         # TODO add crossover params in args + criterion
         """
         params : needs to be detailed
@@ -113,6 +83,7 @@ class ImageAdversarial(base.ExperimentFunction):
         self.label = self.label.long()
         self.classifier = classifier  # if (classifier is not None) else Classifier()
         self.criterion = nn.CrossEntropyLoss()
+        self.imsize = self.image.shape[1]
 
         array = ng.p.Array(init=np.zeros(self.image.shape), mutable_sigma=True, ).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
@@ -128,11 +99,11 @@ class ImageAdversarial(base.ExperimentFunction):
 
     @classmethod
     def from_testbed(
-        cls,
-        name: str,
-        label: int = 0,
-        targeted: bool = False,
-        epsilon: float = 0.05
+            cls,
+            name: str,
+            label: int = 0,
+            targeted: bool = False,
+            epsilon: float = 0.05
     ) -> "ImageAdversarial":
         if name == "test":
             imsize = 224
@@ -152,9 +123,8 @@ class ImageAdversarial(base.ExperimentFunction):
 
     def _loss(self, x: np.ndarray) -> float:
         x = torch.Tensor(x)
-        imsize = self.image.shape[1]
         image_adv = torch.clamp(self.image + x, 0, 1)
-        image_adv = image_adv.view(1, 3, imsize, imsize)
+        image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
         output_adv = self.classifier(image_adv)
         if self.targeted:
             value = self.criterion(output_adv, self.label)
