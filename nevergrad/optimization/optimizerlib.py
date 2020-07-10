@@ -1322,12 +1322,19 @@ class MultiScaleCMA(CM):
 
 
 class _FakeFunction:
-    """Simple function that returns the value which was registerd just before.
+    """Simple function that returns the value which was registered just before.
     This is a hack for BO.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, num_digits: int) -> None:
+        self.num_digits = num_digits
         self._registered: List[Tuple[np.ndarray, float]] = []
+
+    def key(self, num: int) -> str:
+        """Key corresponding to the array sample
+        (uses zero-filling to keep order)
+        """
+        return "x" + str(num).zfill(self.num_digits)
 
     def register(self, x: np.ndarray, value: float) -> None:
         if self._registered:
@@ -1337,10 +1344,9 @@ class _FakeFunction:
     def __call__(self, **kwargs: float) -> float:
         if not self._registered:
             raise RuntimeError("Call must be registered first")
-        x = [kwargs[f"x{i}"] for i in range(len(kwargs))]
+        x = [kwargs[self.key(i)] for i in range(len(kwargs))]
         xr, value = self._registered[0]
-        if not np.array_equal(x, xr):
-            raise ValueError("Call does not match registered")
+        np.testing.assert_array_almost_equal(x, xr, err_msg="Call does not match registered")
         self._registered.clear()
         return value
 
@@ -1364,7 +1370,7 @@ class _BO(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._transform = transforms.ArctanBound(0, 1)
         self._bo: Optional[BayesianOptimization] = None
-        self._fake_function = _FakeFunction()
+        self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
         # configuration
         assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f"Unknown init {initialization}"
         self.initialization = initialization
@@ -1389,7 +1395,7 @@ class _BO(base.Optimizer):
     @property
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
-            bounds = {f"x{i}": (0.0, 1.0) for i in range(self.dimension)}
+            bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
@@ -1416,7 +1422,7 @@ class _BO(base.Optimizer):
             x_probe = next(self.bo._queue)
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
-            x_probe = [x_probe[f"x{i}"] for i in range(len(x_probe))]
+            x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
         data = self._transform.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
