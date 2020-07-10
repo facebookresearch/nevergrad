@@ -1120,7 +1120,8 @@ def manyobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def pbt(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optimizers = ["CMA", "TwoPointsDE", "Shiwa", "OnePlusOne", "DE" ,"PSO", "NaiveTBPSA"]  # type: ignore
+    optimizers = ["CMA", "TwoPointsDE", "Shiwa", "OnePlusOne", "DE" ,"PSO", "NaiveTBPSA",
+                  "RecombiningOptimisticNoisyDiscreteOnePlusOne", "PortfolioNoisyDiscreteOnePlusOne"]:  # type: ignore
     for func in PBT.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
