@@ -38,7 +38,7 @@ class Mutator:
         """
         assert 0 <= max_ratio <= 1
         dimension = len(parent)
-        max_mutations = int(max_ratio * dimension)
+        max_mutations = max(2, int(max_ratio * dimension))
         p = 1. / np.arange(1, max_mutations)**1.5
         p /= np.sum(p)
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
@@ -52,6 +52,8 @@ class Mutator:
         dimension = len(parent)
         if u is None:
             u = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
+        if dimension == 1:  # corner case.
+            return self.random_state.normal(0., 1., size=1)  # type: ignore
         boolean_vector = [True for _ in parent]
         while all(boolean_vector) and dimension != 1:
             boolean_vector = [self.random_state.rand() > (float(u) / dimension) for _ in parent]

@@ -147,7 +147,7 @@ class SequentialExecutor:
 def _tobytes(x: ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
-    assert x.dtype == np.float
+    assert x.dtype == np.float, f"Incorrect type {x.dtype} is not float"
     return x.tobytes()
 
 
@@ -256,7 +256,7 @@ class Pruning:
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
-        new_archive = Archive[MultiValue]()
+        new_archive: Archive[MultiValue] = Archive()
         new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
         return new_archive
 
@@ -290,7 +290,7 @@ class UidQueue:
     """
 
     def __init__(self) -> None:
-        self.told = tp.Deque[str]()
+        self.told = tp.Deque[str]()  # this seems to be picklable (this syntax does not always work)
         self.asked: OrderedSet[str] = OrderedSet()
 
     def clear(self) -> None:

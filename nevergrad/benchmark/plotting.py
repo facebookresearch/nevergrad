@@ -146,6 +146,21 @@ def merge_parametrization_and_optimizer(df: utils.Selector) -> utils.Selector:
     return df.drop(columns=pkey)  # type: ignore
 
 
+def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Selector:
+    df = utils.Selector(df.copy())
+    cases = df.unique(descriptors)
+    if not cases:
+        cases = [()]
+    # Average normalized plot with everything.
+    for case in cases:
+        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+        losses = subdf.loc[:, "loss"]
+        m = min(losses)
+        M = max(losses)
+        df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
+    return df  # type: ignore
+
+
 # pylint: disable=too-many-statements,too-many-branches
 def create_plots(
     df: pd.DataFrame,
@@ -273,6 +288,12 @@ def create_plots(
     cases = df.unique(descriptors)
     if not cases:
         cases = [()]
+    # Average normalized plot with everything.
+    out_filepath = output_folder / "xpresults_all.png"
+    data = XpPlotter.make_data(df, normalized_loss=True)
+    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
+    xpplotter.save(out_filepath)
+    # Now one xp plot per case.
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
@@ -406,7 +427,7 @@ class XpPlotter:
             ax.add_artist(self._overlays[-1])
 
     @staticmethod
-    def make_data(df: pd.DataFrame) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
+    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
         """Process raw xp data and process it to extract relevant information for xp plots:
         regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
         which is filtered out for one set of input parameters)
@@ -415,8 +436,11 @@ class XpPlotter:
         ----------
         df: pd.DataFrame
             run data
-        xaxis: str
-            name of the x-axis among "budget" and  "pseudotime"
+        normalized_loss: bool
+            whether we should normalize each data (for each budget and run) between 0 and 1. Convenient when we consider
+            averages over several distinct functions that can have very different ranges - then we return data which are rescaled to [0,1].
+            Warning: then even if algorithms converge (i.e. tend to minimize), the value can increase, because the normalization
+            is done separately for each budget.
         """
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
@@ -432,6 +456,17 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
+
+        if normalized_loss:
+            old_optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
+            optims = df.unique("optimizer_name")
+            for optim in optims:
+                old_optim_vals[optim] = {}
+                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].copy()
+            for optim in optims:
+                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.min(np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims]))) / np.max(np.maximum.reduce(
+                    [optim_vals[opt]["loss"] for opt in optims]))
+
         return optim_vals
 
     def save(self, output_filepath: PathLike) -> None:

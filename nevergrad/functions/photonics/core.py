@@ -25,7 +25,7 @@ from . import photonics
 from .. import base
 
 
-def _make_parametrization(name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> p.Array:
+def _make_parametrization(name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False) -> p.Array:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
@@ -34,7 +34,7 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "cli
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
     bounding_method: str
-        transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
+        transform type for the bounding ("arctan", "tanh", "bouncing" or "clipping"see `Array.bounded`)
 
     Returns
     -------
@@ -81,7 +81,7 @@ class Photonics(base.ExperimentFunction):
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
     transform: str
-        transform type for the bounding ("arctan", "tanh" or "clipping", see `Array.bounded`)
+        transform type for the bounding ("arctan", "tanh", "bouncing" or "clipping", see `Array.bounded`)
 
     Returns
     -------
