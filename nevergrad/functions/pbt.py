@@ -66,6 +66,7 @@ class PBT(ExperimentFunction):
 
         for j in range(self._dimension):
             assert len(y[j]) == self._dimensions[j]
+            assert type(self._funcs[j](y[j])) == "float"
             y[j] -= np.exp(p[j]) * (gradient(self._funcs[j], y[j] - self._optima[j]) + np.random.normal(self._dimensions[j]))
         current_idx = 0
         for j in range(self._dimension):
