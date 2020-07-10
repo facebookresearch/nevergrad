@@ -39,8 +39,9 @@ def test_artitificial_function_repr() -> None:
 def test_ptb_no_overfitting() -> None:
     func = functionlib.PBT(["sphere", "cigar"], [3, 7], 12)
     func = func.copy()
-    # We do a grardient descent
-    value = [func(- 3. * np.ones(2)) for _ in range(500)]
+    # We do a gradient descent.
+    value = [func(- 15. * np.ones(2)) for _ in range(1500)]
+    # We check that the values are becoming better and better.
     assert value[-1] < value[len(value) // 2]
     assert value[0] > value[len(value) // 2]
 

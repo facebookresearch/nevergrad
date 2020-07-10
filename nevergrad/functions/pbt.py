@@ -51,6 +51,8 @@ class PBT(ExperimentFunction):
 
     def evolve(self, x: np.ndarray, p: np.ndarray):
         assert len(p) == self._dimension
+
+        # We define a gradient operator.
         def gradient(f, x):
             epsilon = 1e-15
             # We compute a gradient by finite differences.
@@ -67,6 +69,8 @@ class PBT(ExperimentFunction):
         y = self.unflatten(x)
         assert len(y) == self._dimension
 
+        # There are self._dimension learning rates.
+        # Each of them is responsible of one gradient descent.
         for j in range(self._dimension):
             assert len(y[j]) == self._dimensions[j]
             assert type(self._funcs[j](y[j])) == type(1.), str(type(self._funcs[j](y[j])))
