@@ -31,7 +31,7 @@ class PBT(ExperimentFunction):
         self._population_checkpoints: tp.List[np.ndarray] = [np.zeros(self._total_dimension)] * num_workers
         self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._hyperparameter_dimension)] * num_workers
         self._population_fitness: tp.List[float] = [float("inf")] * num_workers
-        super().__init__(self.__func__, parametrization)
+        super().__init__(self._func, parametrization)
         self.register_initialization(names=names, dimensions=dimensions, num_workers=num_workers)
 
     # The 3 methods below are function-specific.
@@ -81,7 +81,7 @@ class PBT(ExperimentFunction):
         assert current_idx == self._total_dimension
 
 
-    def __func__(self, x: np.ndarray):
+    def _func(self, x: np.ndarray):
         assert len(x) == self._hyperparameter_dimension
 
         # First, let us find the checkpoint that we want to use.
