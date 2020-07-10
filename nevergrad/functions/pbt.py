@@ -106,3 +106,15 @@ class PBT(ExperimentFunction):
         self._population_fitness[idx] = self.value(self._population_checkpoints[idx])
 
         return self._population_fitness[idx]
+
+    @classmethod
+    def itercases(cls) -> tp.Iterator["PBT"]:
+        options = dict(
+                       names=[["Sphere", "Cigar", "Ellipsoid", "Cigar"], ["Hm", "Rastrigin", "Sphere", "Cigar"]],
+                       dimensions=[[2, 2, 2, 2], [5, 5, 5, 5], [77, 77, 77, 77]]
+                       )
+        keys = sorted(options)
+        select = itertools.product(*(options[k] for k in keys))  # type: ignore
+        cases = (dict(zip(keys, s)) for s in select)
+        return (cls(**c) for c in cases)
+
