@@ -117,3 +117,4 @@ class PBT(ExperimentFunction):
         select = itertools.product(*(options[k] for k in keys))  # type: ignore
         cases = (dict(zip(keys, s)) for s in select)
         return (cls(**c) for c in cases)
+
