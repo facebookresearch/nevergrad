@@ -162,6 +162,21 @@ class ExperimentFunction:
         return self.function(*args, **kwargs)
 
 
+# Returns the current best.
+def get_best_from_leaderboard(identifier: str) -> tp.Any
+    # pylint: disable=import-outside-toplevel
+    import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
+    filepath = Path(__file__).with_name("leaderboard.csv")
+    bests = pd.DataFrame(columns=["loss", "array"])
+    if filepath.exists():
+        bests = pd.read_csv(filepath, index_col=0)
+    if identifier in bests.index:
+        candidate_array_as_string = bests.loc[identifier, "array"][1:-1]
+        return np.array([float(x) for x in candidate_array_as_string.split(',')])
+    else:
+        return None
+
+    
 def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:
     """Handy function for storing best results for challenging functions (eg.: Photonics)
     The best results are kept in a file that is automatically updated with new data.
