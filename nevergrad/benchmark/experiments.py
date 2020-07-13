@@ -157,6 +157,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Comparison of optimization algorithms equipped with distinct instrumentations.
     Onemax, Leadingones, Jump function."""
     # Discrete, unordered.
+
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete",
               "DiscreteBSOOnePlusOne"]

@@ -185,6 +185,17 @@ def create_plots(
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    # If we have a descriptor "instrum_str",
+    # we assume that it describes the instrumentation as a string, 
+    # that we should include the various instrumentations as distinct curves in the same plot.
+    # So we concat it at the end of the optimizer name, and we remove "parametrization"
+    # from the descriptor.
+    if "instrum_str" in set(df.columns):
+        df.loc[:, "optimizer_name"] = df.loc[:, "optimizer_name"] + df.loc[:, "instrum_str"]
+        df = df.drop(columns="instrum_str")
+        df = df.drop(columns="dimension")
+        if "parametrization" in set(df.columns):
+            df = df.drop(columns="parametrization")
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
@@ -194,10 +205,10 @@ def create_plots(
     output_folder = Path(output_folder)
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
-    descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # all other columns are descriptors
+    descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
-    all_descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
+    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # now those should be actual interesting descriptors
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
