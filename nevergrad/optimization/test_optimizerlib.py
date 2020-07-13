@@ -432,7 +432,7 @@ def test_shiwa_dim1() -> None:
     recom = optimizer.minimize(np.abs)
     assert recom.value < init
 
-    
+
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [("Shiwa", 1, 10, 1, "Cobyla"),
@@ -456,3 +456,10 @@ def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int
         assert match.group("name") == expected
 
 
+def test_bo_ordering() -> None:
+    optim = ng.optimizers.ParametrizedBO(initialization='Hammersley')(
+        parametrization=ng.p.Choice(range(12)),
+        budget=10
+    )
+    cand = optim.ask()
+    optim.tell(cand, 12)
