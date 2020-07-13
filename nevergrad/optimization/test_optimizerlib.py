@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import re
 import time
 import random
+import logging
 import platform
 import tempfile
 import warnings
@@ -70,6 +72,8 @@ def check_optimizer(
             # skip BO error on windows (issue #506)
             if "BO" in optimizer.name:
                 raise SkipTest("BO is currently not well supported")
+            if "Many" in optimizer.name:
+                raise SkipTest("When many algorithms are in the portfolio we are not good for small budget.")
             # now optimize :)
             candidate = optimizer.minimize(fitness)
         if verify_value and "chain" not in str(optimizer_cls):
@@ -423,5 +427,39 @@ def test_optimizer_sequence() -> None:
 
 def test_shiwa_dim1() -> None:
     param = ng.p.Log(lower=1, upper=1000).set_integer_casting()
-    optimizer = optlib.Shiwa(param, budget=10)
-    optimizer.minimize(np.abs)
+    init = param.value
+    optimizer = optlib.Shiwa(param, budget=40)
+    recom = optimizer.minimize(np.abs)
+    assert recom.value < init
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "name,param,budget,num_workers,expected",
+    [("Shiwa", 1, 10, 1, "Cobyla"),
+     ("Shiwa", 1, 10, 2, "CMA"),
+     ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
+     ("NGO10", 1, 10, 1, "Cobyla"),
+     ("NGO10", 1, 10, 2, "CMA"),
+     ("NGO10", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
+     ("NGO10", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteBSOOnePlusOne"),
+     ("NGO10", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
+     ("NGO", 1, 10, 1, "Cobyla"),
+     ("NGO", 1, 10, 2, "CMA"),
+     ]  # pylint: disable=too-many-arguments
+)
+def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any) -> None:
+    with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
+        optlib.registry[name](param, budget=budget, num_workers=num_workers)
+        pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
+        match = re.match(pattern, caplog.text, re.MULTILINE)
+        assert match is not None, f"Did not detect selection in logs: {caplog.text}"
+        assert match.group("name") == expected
+
+
+def test_bo_ordering() -> None:
+    optim = ng.optimizers.ParametrizedBO(initialization='Hammersley')(
+        parametrization=ng.p.Choice(range(12)),
+        budget=10
+    )
+    cand = optim.ask()
+    optim.tell(cand, 12)

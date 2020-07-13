@@ -5,4 +5,4 @@
 
 from .base import Optimizer  # abstract class, for type checking
 from . import optimizerlib
-from .optimizerlib import registry
+from .optimizerlib import registry as registry

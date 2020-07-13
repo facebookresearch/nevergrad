@@ -295,3 +295,15 @@ We do not average evaluations over multiple episodes - the algorithm is in charg
         recommendation = optim.recommend()
         print("* ", tool, " provides a vector of parameters with test error ",
               simulate_and_return_test_error_with_rl(*recommendation.args, noisy=False))
+
+
+Examples from our external users
+--------------------------------
+
+Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/master/_modules/ray/tune/suggest/nevergrad.html>`_, Berkeley AI Research library for parameter tuning .
+
+Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/next/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
+
+Nevergrad is interfaced in `IOH Profiler <http://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
+
+

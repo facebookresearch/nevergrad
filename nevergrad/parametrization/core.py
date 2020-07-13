@@ -402,7 +402,13 @@ class Constant(Parameter):
 
     @value.setter
     def value(self, value: tp.Any) -> None:
-        if not (value == self._value or value is self._value):
+        different = False
+        if isinstance(value, np.ndarray):
+            if not np.equal(value, self._value).all():
+                different = True
+        elif not (value == self._value or value is self._value):
+            different = True
+        if different:
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
     def get_standardized_data(self: P, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument

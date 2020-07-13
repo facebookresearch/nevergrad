@@ -6,22 +6,48 @@
 import inspect
 import itertools
 import typing as tp
+from pathlib import Path
+import pytest
 import numpy as np
-from ..functions.mlda import datasets
-from ..functions import rl
-from ..common import testing
+from nevergrad.optimization import registry as optregistry
+from nevergrad.functions.mlda import datasets
+from nevergrad.functions import rl
+from nevergrad.common import testing
+# from nevergrad.common.tools import Selector
 from .xpbase import Experiment
 from .utils import Selector
 from . import experiments
+from . import optgroups
 
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket",
+    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket", "mldakmeans",
                     "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning"}:
         check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
+
+
+@pytest.fixture(scope="module")  # type: ignore
+def recorder() -> tp.Generator[tp.Dict[str, tp.List[optgroups.Optim]], None, None]:
+    record: tp.Dict[str, tp.List[optgroups.Optim]] = {}
+    yield record
+    groups = sorted(record.items())
+    string = "\n\n".join(f"{x} = {repr(y)}" for x, y in groups)
+    filepath = Path(__file__).with_name("optimizer_groups.txt")
+    filepath.write_text(string)
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.parametrize("name", optgroups.registry)  # type: ignore
+def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Optim]]) -> None:
+    maker = optgroups.registry[name]
+    opts = list(maker())
+    for opt in opts:
+        if isinstance(opt, str):
+            assert opt in optregistry, f"{opt} is not registered."
+    recorder[name] = opts
 
 
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:

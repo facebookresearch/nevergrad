@@ -53,6 +53,7 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
                                    par.Scalar(),
                                    par.Scalar(1.0).set_mutation(exponent=2.),
                                    par.Dict(blublu=par.Array(shape=(2, 3)), truc=12),
+                                   par.Dict(scalar=par.Scalar(), const_array=np.array([12.0, 12.0]), const_list=[3, 3]),
                                    par.Tuple(par.Array(shape=(2, 3)), 12),
                                    par.Instrumentation(par.Array(shape=(2,)), nonhash=[1, 2], truc=par.Array(shape=(1, 3))),
                                    par.Choice([par.Array(shape=(2,)), "blublu"]),
