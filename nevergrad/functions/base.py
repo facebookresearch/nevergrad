@@ -163,7 +163,7 @@ class ExperimentFunction:
 
 
 # Returns the current best.
-def get_best_from_leaderboard(identifier: str) -> tp.Any
+def get_best_from_leaderboard(identifier: str) -> tp.Any:
     # pylint: disable=import-outside-toplevel
     import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
     filepath = Path(__file__).with_name("leaderboard.csv")
