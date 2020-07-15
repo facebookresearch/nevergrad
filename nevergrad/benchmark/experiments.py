@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import typing as tp
 import itertools
 import numpy as np
@@ -1245,16 +1246,20 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
 
     image_size = 224
     data_folder = "/datasets01_101/imagenet_full_size/061417/val"
-    data_loader = torch.utils.data.DataLoader(
-        torchvision.datasets.ImageFolder(data_folder,
-                                         transforms.Compose([
-                                             transforms.Resize(image_size),
-                                             transforms.CenterCrop(image_size),
-                                             transforms.ToTensor()])),
-        batch_size=1,
-        shuffle=True,
-        num_workers=8,
-        pin_memory=True)
+    if not os.path.exists(data_folder):
+        print("this path does not exist")
+        return
+    else:
+        data_loader = torch.utils.data.DataLoader(
+            torchvision.datasets.ImageFolder(data_folder,
+                                             transforms.Compose([
+                                                 transforms.Resize(image_size),
+                                                 transforms.CenterCrop(image_size),
+                                                 transforms.ToTensor()])),
+            batch_size=1,
+            shuffle=True,
+            num_workers=8,
+            pin_memory=True)
 
     classifier = Resnet50()
 
