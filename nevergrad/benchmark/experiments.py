@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
+from torchvision.models import resnet50
 import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
@@ -1221,9 +1222,8 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
 
 
-# TODO : complete here for adversarial attacks.
 @registry.register
-def AdversarialAttack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     class Normalize(nn.Module):
         def __init__(self, mean, std):
             super().__init__()
@@ -1258,4 +1258,18 @@ def AdversarialAttack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     classifier = Resnet50()
 
-    # TODO: Add experiment here
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    for i, (data, target) in enumerate(data_loader):
+        if i > 1000:
+            continue
+        _, pred = torch.max(classifier(data), axis=1)
+        if pred == target:
+            func = ImageAdversarial(classifier, image=data[0], label=int(target), targeted=False,
+                                    epsilon=0.05)
+            for budget in [1000, 10000, 100000]:
+                for num_workers in [1]:
+                    for algo in optims:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
