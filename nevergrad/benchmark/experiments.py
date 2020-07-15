@@ -1262,7 +1262,6 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
             pin_memory=True)
 
     classifier = Resnet50()
-
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     for i, (data, target) in enumerate(data_loader):
