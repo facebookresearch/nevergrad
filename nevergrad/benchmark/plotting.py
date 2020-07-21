@@ -453,6 +453,9 @@ class XpPlotter:
             Warning: then even if algorithms converge (i.e. tend to minimize), the value can increase, because the normalization
             is done separately for each budget.
         """
+        if normalized_loss:
+            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "seed"})
+            df = normalized_losses(df, descriptors=descriptors)
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
@@ -467,16 +470,6 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
-
-        if normalized_loss:
-            old_optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
-            optims = df.unique("optimizer_name")
-            for optim in optims:
-                old_optim_vals[optim] = {}
-                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].copy()
-            for optim in optims:
-                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.min(np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims]))) / np.max(np.maximum.reduce(
-                    [optim_vals[opt]["loss"] for opt in optims]))
 
         return optim_vals
 
