@@ -548,4 +548,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded and no_init)
+            self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
