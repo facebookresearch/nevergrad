@@ -277,7 +277,7 @@ class Parameter:
         - constraints should be fast to compute.
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
-            warnings.warn("Lambda as constraint is not adviced because it may not be picklable.")
+            warnings.warn("Lambda as constraint is not advised because it may not be picklable.")
         self._constraint_checkers.append(func)
 
     # %% random state
