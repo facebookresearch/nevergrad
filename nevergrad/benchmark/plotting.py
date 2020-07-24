@@ -471,16 +471,6 @@ class XpPlotter:
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
 
-#        if normalized_loss:
-#            old_optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
-#            optims = df.unique("optimizer_name")
-#            for optim in optims:
-#                old_optim_vals[optim] = {}
-#                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].copy()
-#            for optim in optims:
-#                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.min(np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims]))) / np.max(np.maximum.reduce(
-#                    [optim_vals[opt]["loss"] for opt in optims]))
-
         return optim_vals
 
     def save(self, output_filepath: PathLike) -> None:
