@@ -1694,7 +1694,7 @@ class NGO(base.Optimizer):
         return self.optim.recommend()
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        self.optim.tell(candidate, value)
 
 
 class _EMNA(base.Optimizer):
@@ -1920,7 +1920,10 @@ class NGOpt(base.Optimizer):
                             elif self.dimension < 5 and budget < 100:
                                 optimClass = DiagonalCMA  # type: ignore
                             elif self.dimension < 5 and budget < 500:
-                                optimClass = MetaModel  # type: ignore              
+                                chaining = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)
+                                self.optim = chaining(self.parametrization, budget, num_workers)  # type: ignore
+                                logger.debug("NGOpt selected ParaChaining optimizer.")
+                                return
                             else:
                                 optimClass = NaiveTBPSA  # type: ignore
                         else:
