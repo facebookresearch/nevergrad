@@ -1968,56 +1968,56 @@ class NGOpt(base.Optimizer):
         self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
         arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
         elif arity > 0:
-            optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
+            optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
                 # noise and discrete: let us merge evolution and bandits.
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
             else:
                 if self.has_noise and self.fully_continuous:
                     # This is the real of population control. FIXME: should we pair with a bandit ?
-                    optimClass = TBPSA
+                    optimClass = TBPSA  # type: ignore
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                        optimClass = DoubleFastGADiscreteOnePlusOne
+                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                optimClasss = MetaTuneRecentering
+                                optimClasss = MetaTuneRecentering  # type: ignore
                             elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA
+                                optimClass = DiagonalCMA  # type: ignore
                             elif self.dimension < 5 and budget < 500:
-                                optimClass = MetaModel                                
+                                optimClass = MetaModel  # type: ignore              
                             else:
-                                optimClass = NaiveTBPSA
+                                optimClass = NaiveTBPSA  # type: ignore
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = chainCMAPowell
+                                optimClass = chainCMAPowell  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne
+                                        optimClass = OnePlusOne  # type: ignore
                                     elif self.dimension < 5:
-                                        optimClass = MetaModel
+                                        optimClass = MetaModel  # type: ignore
                                     else:
-                                        optimClass = Cobyla
+                                        optimClass = Cobyla  # type: ignore
                                 else:
                                     if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE
+                                        optimClass = DE  # type: ignore
                                     else:
                                         if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel
+                                            optimClass = MetaModel  # type: ignore
                                         else:
                                             if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
-                                                optimClass = DiagonalCMA
+                                                optimClass = DiagonalCMA # type: ignore
                                             elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
-                                                optimClass = MetaModel
+                                                optimClass = MetaModel # type: ignore
                                             else:
-                                                optimClass = CMA
+                                                optimClass = CMA # type: ignore
         self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
