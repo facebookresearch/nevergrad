@@ -1947,7 +1947,7 @@ class NGOpt(base.Optimizer):
         self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
         arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            optimClasss = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+            optimClasss: base.ConfiguredOptimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif arity > 0:
             optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
         else:
