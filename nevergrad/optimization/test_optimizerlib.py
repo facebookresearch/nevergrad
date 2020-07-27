@@ -439,7 +439,7 @@ def test_shiwa_dim1() -> None:
      ("Shiwa", 1, 10, 2, "CMA"),
      ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
      ("NGOpt", 1, 10, 1, "MetaModel"),
-     ("NGOpt", 1, 10, 2, "CMA"),
+     ("NGOpt", 1, 10, 2, "MetaModel"),
      ("NGOpt", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
      ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteBSOOnePlusOne"),
      ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
