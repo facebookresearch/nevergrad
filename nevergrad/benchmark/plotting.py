@@ -10,14 +10,13 @@ import warnings
 import argparse
 import itertools
 from pathlib import Path
-import typing as tp
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from nevergrad.common.typetools import PathLike
+import nevergrad.common.typing as tp
 from . import utils
 from .exporttable import export_table
 
@@ -164,7 +163,7 @@ def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Sele
 # pylint: disable=too-many-statements,too-many-branches
 def create_plots(
     df: pd.DataFrame,
-    output_folder: PathLike,
+    output_folder: tp.PathLike,
     max_combsize: int = 1,
     xpaxis: str = "budget",
     competencemaps: bool = False
@@ -186,7 +185,7 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     # If we have a descriptor "instrum_str",
-    # we assume that it describes the instrumentation as a string, 
+    # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
     # So we concat it at the end of the optimizer name, and we remove "parametrization"
     # from the descriptor.
@@ -208,7 +207,8 @@ def create_plots(
     descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
-    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # now those should be actual interesting descriptors
+    # now those should be actual interesting descriptors
+    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
@@ -345,7 +345,10 @@ class XpPlotter:
     """
 
     def __init__(
-        self, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], title: str, name_style: tp.Optional[tp.Dict[str, tp.Any]] = None, xaxis: str = "budget"
+        self,
+        optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]],
+        title: str, name_style: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        xaxis: str = "budget"
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
@@ -454,7 +457,8 @@ class XpPlotter:
             is done separately for each budget.
         """
         if normalized_loss:
-            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "seed"})
+            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time",
+                                                    "elapsed_budget", "loss", "optimizer_name", "seed"})
             df = normalized_losses(df, descriptors=descriptors)
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
@@ -470,10 +474,9 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
-
         return optim_vals
 
-    def save(self, output_filepath: PathLike) -> None:
+    def save(self, output_filepath: tp.PathLike) -> None:
         """Saves the xp plot
 
         Parameters
@@ -665,8 +668,7 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
                 new_groups = []
                 ready = False
                 break
-            else:
-                new_groups.append(groups[k])
+            new_groups.append(groups[k])
     new_positions = np.array(positions, copy=True)
     for group in groups:
         new_positions[group.indices] = group.get_positions()

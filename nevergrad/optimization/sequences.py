@@ -5,15 +5,14 @@
 
 """Samplers in [0,1]^d.
 """
-from typing import Optional, List, Iterator, Iterable, Type
 
 import numpy as np
 from numpy.random import RandomState
-from ..common.decorators import Registry
-from ..common.typetools import ArrayLike
+import nevergrad.common.typing as tp
+from nevergrad.common.decorators import Registry
 
 
-samplers: Registry[Type['Sampler']] = Registry()
+samplers: Registry[tp.Type['Sampler']] = Registry()
 
 
 def _get_first_primes(num: int) -> np.ndarray:
@@ -37,7 +36,7 @@ def _get_first_primes(num: int) -> np.ndarray:
 
 class Sampler:
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, random_state: Optional[RandomState] = None) -> None:
+    def __init__(self, dimension: int, budget: tp.Optional[int] = None, random_state: tp.Optional[RandomState] = None) -> None:
         if random_state is None:
             random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
         self.random_state = random_state
@@ -45,17 +44,17 @@ class Sampler:
         self.budget = budget
         self.index = 0
 
-    def _internal_sampler(self) -> ArrayLike:
+    def _internal_sampler(self) -> tp.ArrayLike:
         raise NotImplementedError("Missing sampling function! which is quite necessary for a sampler.")
 
-    def __call__(self) -> ArrayLike:
+    def __call__(self) -> tp.ArrayLike:
         # TODO deprecate this method
         assert self.budget is None or self.index < self.budget, "Over the budget (reinitialize if you want to start over)"
         sample = self._internal_sampler()
         self.index += 1
         return sample
 
-    def __iter__(self) -> Iterator[ArrayLike]:  # unused, but could be useful
+    def __iter__(self) -> tp.Iterator[tp.ArrayLike]:  # unused, but could be useful
         assert self.index == 0, "Reinitialize before iterating again"  # backward compatibility
         assert self.budget is not None, "Iterable does not work if budget is not specified"  # TODO make it work
         return (self() for _ in range(self.budget))
@@ -84,7 +83,7 @@ class Sampler:
 @samplers.register
 class LHSSampler(Sampler):
 
-    def __init__(self, dimension: int, budget: int, scrambling: bool = False, random_state: Optional[RandomState] = None) -> None:
+    def __init__(self, dimension: int, budget: int, scrambling: bool = False, random_state: tp.Optional[RandomState] = None) -> None:
         if scrambling:
             raise ValueError("LHSSampler does not support scrambling")
         super().__init__(dimension, budget, random_state=random_state)
@@ -98,7 +97,7 @@ class LHSSampler(Sampler):
         super().reinitialize()
         self.randg = np.random.RandomState(self.seed)
 
-    def _internal_sampler(self) -> ArrayLike:
+    def _internal_sampler(self) -> tp.ArrayLike:
         x = self.permutations[:, self.index].tolist()
         assert self.budget is not None
         return (x + self.randg.uniform(size=self.dimension)) / float(self.budget)  # type: ignore
@@ -107,12 +106,12 @@ class LHSSampler(Sampler):
 @samplers.register
 class RandomSampler(Sampler):
 
-    def __init__(self, dimension: int, budget: int, scrambling: bool = False, random_state: Optional[RandomState] = None) -> None:
+    def __init__(self, dimension: int, budget: int, scrambling: bool = False, random_state: tp.Optional[RandomState] = None) -> None:
         if scrambling:
             raise ValueError("RandomSampler does not support scrambling")
         super().__init__(dimension, budget, random_state=random_state)
 
-    def _internal_sampler(self) -> ArrayLike:
+    def _internal_sampler(self) -> tp.ArrayLike:
         return self.random_state.uniform(0, 1, self.dimension)  # type: ignore
 
 
@@ -121,7 +120,7 @@ class HaltonPermutationGenerator:
     (at the cost of being slightly slower)
     """  # the bottleneck here is vdc anyway
 
-    def __init__(self, dimension: int, scrambling: bool = False, random_state: Optional[RandomState] = None) -> None:
+    def __init__(self, dimension: int, scrambling: bool = False, random_state: tp.Optional[RandomState] = None) -> None:
         if random_state is None:
             random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
         self.dimension = dimension
@@ -130,7 +129,7 @@ class HaltonPermutationGenerator:
         self.seed = random_state.randint(2**32, dtype=np.uint32)
         self.fulllist = np.arange(self.primes[-1]) if self.primes else []
 
-    def get_permutations_generator(self) -> Iterator[ArrayLike]:
+    def get_permutations_generator(self) -> tp.Iterator[tp.ArrayLike]:
         if self.scrambling:
             randgen = np.random.RandomState(seed=self.seed)
             return (np.concatenate(([0], randgen.choice(self.fulllist[1: p], p - 1, replace=False)), axis=0) for p in self.primes)
@@ -141,12 +140,12 @@ class HaltonPermutationGenerator:
 @samplers.register
 class HaltonSampler(Sampler):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, scrambling: bool = False,
-                 random_state: Optional[RandomState] = None) -> None:
+    def __init__(self, dimension: int, budget: tp.Optional[int] = None, scrambling: bool = False,
+                 random_state: tp.Optional[RandomState] = None) -> None:
         super().__init__(dimension, budget, random_state=random_state)
         self.permgen = HaltonPermutationGenerator(dimension, scrambling, random_state=random_state)
 
-    def vdc(self, n: int, permut: List[int]) -> float:  # TODO speed up?
+    def vdc(self, n: int, permut: tp.List[int]) -> float:  # TODO speed up?
         base = len(permut)  # should be a prime number
         vdc, denom = 0., 1
         n += 1
@@ -157,7 +156,7 @@ class HaltonSampler(Sampler):
             vdc += float(remainder) / float(denom)
         return vdc
 
-    def _internal_sampler(self) -> ArrayLike:
+    def _internal_sampler(self) -> tp.ArrayLike:
         # len(sigma) describes all n=dimension first prime numbers
         sample = [self.vdc(self.index, sigma) for sigma in self.permgen.get_permutations_generator()]  # type: ignore
         return sample
@@ -166,19 +165,19 @@ class HaltonSampler(Sampler):
 @samplers.register
 class HammersleySampler(HaltonSampler):
 
-    def __init__(self, dimension: int, budget: Optional[int] = None, scrambling: bool = False,
-                 random_state: Optional[RandomState] = None) -> None:
+    def __init__(self, dimension: int, budget: tp.Optional[int] = None, scrambling: bool = False,
+                 random_state: tp.Optional[RandomState] = None) -> None:
         assert budget is not None
         super().__init__(dimension - 1, budget, scrambling, random_state=random_state)
 
-    def _internal_sampler(self) -> ArrayLike:
+    def _internal_sampler(self) -> tp.ArrayLike:
         assert self.budget is not None
         return np.concatenate(([(self.index + .5) / float(self.budget)], super()._internal_sampler()))  # type: ignore
 
 
 class Rescaler:
 
-    def __init__(self, points: Iterable[ArrayLike]) -> None:
+    def __init__(self, points: tp.Iterable[tp.ArrayLike]) -> None:
         iterp = iter(points)
         self.sample_mins = np.array(next(iterp), copy=False)
         self.sample_maxs = self.sample_mins
@@ -188,7 +187,7 @@ class Rescaler:
         self.epsilon = min([x for x in self.sample_mins] + [1 - s for s in self.sample_maxs] + [1e-15])
         assert self.epsilon > 0., f'Non-positive epsilon={self.epsilon} from mins {self.sample_mins} and maxs {self.sample_maxs}'
 
-    def apply(self, point: ArrayLike) -> np.ndarray:
+    def apply(self, point: tp.ArrayLike) -> np.ndarray:
         point = np.array(point, copy=False)
         factor = (1 - 2 * self.epsilon) / (self.sample_maxs - self.sample_mins)
         return self.epsilon + factor * (point - self.sample_mins)  # type: ignore

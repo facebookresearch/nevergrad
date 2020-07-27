@@ -10,7 +10,6 @@ import logging
 import platform
 import tempfile
 import warnings
-import typing as tp
 from pathlib import Path
 from functools import partial
 from unittest import SkipTest
@@ -21,8 +20,8 @@ import pandas as pd
 from scipy import stats
 from bayes_opt.util import acq_max
 import nevergrad as ng
-from ..common.typetools import ArrayLike
-from ..common import testing
+import nevergrad.common.typing as tp
+from nevergrad.common import testing
 from . import base
 from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants
@@ -34,11 +33,11 @@ class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4
     """
 
-    def __init__(self, x0: ArrayLike) -> None:
+    def __init__(self, x0: tp.ArrayLike) -> None:
         self.x0 = np.array(x0, copy=True)
         self.call_times: tp.List[float] = []
 
-    def __call__(self, x: ArrayLike) -> float:
+    def __call__(self, x: tp.ArrayLike) -> float:
         assert len(self.x0) == len(x)
         self.call_times.append(time.time())
         return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))

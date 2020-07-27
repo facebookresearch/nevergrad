@@ -8,12 +8,12 @@
 
 from math import sqrt, tan, pi
 import numpy as np
+import nevergrad.common.typing as tp
 import nevergrad as ng
-from nevergrad.common.typetools import ArrayLike
 from .. import base
 
 
-def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
+def impedance_pix(x: tp.ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
     """Normalized impedance Z/Z0
     ep0, epf:  epsilons in et out
     lam: lambda in nanometers

@@ -5,9 +5,8 @@
 
 import functools
 import warnings
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import core
 from . import utils
 from . import transforms as trans
@@ -90,7 +89,7 @@ class Mutation(core.Parameter):
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
@@ -118,7 +117,7 @@ class Array(core.Parameter):
     def __init__(
             self,
             *,
-            init: tp.Optional[ArrayLike] = None,
+            init: tp.Optional[tp.ArrayLike] = None,
             shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
@@ -170,7 +169,7 @@ class Array(core.Parameter):
         return self._value
 
     @value.setter
-    def value(self, value: ArrayLike) -> None:
+    def value(self, value: tp.ArrayLike) -> None:
         self._check_frozen()
         self._ref_data = None
         if not isinstance(value, (np.ndarray, tuple, list)):
