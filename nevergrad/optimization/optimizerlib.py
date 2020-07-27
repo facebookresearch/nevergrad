@@ -1971,7 +1971,7 @@ class NGOpt(base.Optimizer):
                             elif self.dimension < 5 and budget < 500:
                                 optimClass = MetaModel                                
                             else:
-                                optimClass NaiveTBPSA
+                                optimClass = NaiveTBPSA
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
