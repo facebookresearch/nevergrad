@@ -9,6 +9,7 @@
   it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be up to 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670) [#696](https://github.com/facebookresearch/nevergrad/pull/696).
 - Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684)
   and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
+- `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774)
 
 
 ## 0.4.1 (2020-05-07)
