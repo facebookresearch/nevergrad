@@ -1511,6 +1511,8 @@ class _Chain(base.Optimizer):
         optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [LHSSearch, DE],
         budgets: tp.Sequence[tp.Union[str, int]] = (10,),
     ) -> None:
+        if budget:
+            budget = max(budget, 2)
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # delayed initialization
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
