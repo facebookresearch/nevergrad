@@ -1996,7 +1996,7 @@ class NGOpt(base.Optimizer):
                                             elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
                                                 optimClass = MetaModel
                                             else:
-                                                self.optim = CMA
+                                                optimClass = CMA
         self.optim: base.Optimizer = optimClass(self.parametrization, budget, num_workers)  # noqa: F405                                      
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
