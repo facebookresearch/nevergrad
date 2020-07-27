@@ -237,7 +237,7 @@ which can be directly used on the function (<code class="code docutils literal n
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.minimize">
-<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable[[…], float]</span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typetools.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable[[…], float]</span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typing.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimization (minimization) procedure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -804,24 +804,28 @@ This can be great in terms of discrepancy when the budget is not very high.</p><
 <dt id="nevergrad.families.ScipyOptimizer">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ScipyOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">method</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'Nelder-Mead'</span></em>, <em class="sig-param"><span class="n">random_restart</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ScipyOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper over Scipy optimizer implementations, in standard ask and tell format.
-Sequential Quadratic Programming. Inside Nevergrad, this code is in <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py">https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py</a>; this is actually an import from scipy-optimize. It is very powerful e.g. in continuous noisy optimization. It is based on approximating the objective function by quadratic models.</p>
-<blockquote>
-<div><dl class="simple">
-<dt>method: str</dt><dd><p>Name of the method to use among:</p>
-<ul class="simple">
+This is actually an import from scipy-optimize, including Sequential Quadratic Programming,</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str</em>) – <p>Name of the method to use among:</p>
+<ul>
 <li><p>Nelder-Mead</p></li>
 <li><p>COBYLA</p></li>
 <li><p>SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
 approximating the objective function by quadratic models.</p></li>
 <li><p>Powell</p></li>
 </ul>
-</dd>
-<dt>random_restart: bool</dt><dd><p>whether to restart at a random point if the optimizer converged but the budget is not entirely
-spent yet (otherwise, restarts from best point)</p>
+</p></li>
+<li><p><strong>random_restart</strong> (<em>bool</em>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
+spent yet (otherwise, restarts from best point)</p></li>
+</ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>These optimizers do not support asking several candidates in a row</p>
-</div></blockquote>
+</div>
 </dd></dl>
 
 </div>
