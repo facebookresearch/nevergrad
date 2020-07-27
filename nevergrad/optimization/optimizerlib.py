@@ -1926,7 +1926,8 @@ class NGOpt(base.Optimizer):
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                self.optim = Chaining([Shiwa, chainCMAPowell], [6000]).set_name("chaining", register=True)
+                                chaining = Chaining([Shiwa, chainCMAPowell], [6000]).set_name("chaining", register=True)
+                                self.optim = chaining(self.parametrization, budget, num_workers)  # type: ignore
                                 logger.debug("NGOpt selected Chaining optimizer.")
                                 return
                             else:
