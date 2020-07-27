@@ -839,7 +839,6 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
-@registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
