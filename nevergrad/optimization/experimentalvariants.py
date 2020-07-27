@@ -275,43 +275,43 @@ chainCMAwithMetaRecentering = Chaining(
 ).set_name("chainCMAwithMetaRecentering", register=True)
 
 # SplitOptimizer
-SplitOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name(
+SplitCMAOptimizer3 = ConfSplitOptimizer(num_optims=3).set_name(
     "SplitOptimizer3", register=True
 )
-SplitOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name(
+SplitCMAOptimizer5 = ConfSplitOptimizer(num_optims=5).set_name(
     "SplitOptimizer5", register=True
 )
-SplitOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name(
+SplitCMAOptimizer9 = ConfSplitOptimizer(num_optims=9).set_name(
     "SplitOptimizer9", register=True
 )
-SplitOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
+SplitCMAOptimizer13 = ConfSplitOptimizer(num_optims=13).set_name(
     "SplitOptimizer13", register=True
 )
 
 # ProgOptimizer
-ProgOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
+ProgONOPOOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer3", register=True
 )
-ProgOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
+ProgONOPOOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer5", register=True
 )
-ProgOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
+ProgONOPOOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer9", register=True
 )
-ProgOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
+ProgONOPOOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgOptimizer13", register=True
 )
 # ProgOptimizer
-ProgDOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+ProgODOPOOptimizer3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgDOptimizer3", register=True
 )
-ProgDOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+ProgODOPOOptimizer5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgDOptimizer5", register=True
 )
-ProgDOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+ProgODOPOOptimizer9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgDOptimizer9", register=True
 )
-ProgDOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+ProgODOPOOptimizer13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgDOptimizer13", register=True
 )
 
