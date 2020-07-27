@@ -215,7 +215,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             new_value = args[0]
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
-    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def tell(self, candidate: p.Parameter, loss: tp.Union[float, tp.ArrayLike]) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -238,6 +238,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Alternatively, you can provide a suggestion with :code:`optimizer.suggest(*args, **kwargs)`, the next :code:`ask`
         will use this suggestion.
         """
+        # Check loss type
+        if isinstance(loss, (Real, float)):
+            # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
+            loss = float(loss)
+        elif isinstance(loss, (tuple, list)):
+            loss = np.array(loss, dtype=float)
+        elif not isinstance(loss, np.ndarray):
+            raise TypeError(
+                f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
+            )
+        # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
                 "'tell' must be provided with the candidate.\n"
@@ -246,6 +257,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
                 "the next ask"
             )
+        # checks are done, start processing
         candidate.loss = loss
         candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...

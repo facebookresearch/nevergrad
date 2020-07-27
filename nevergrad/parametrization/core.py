@@ -31,7 +31,7 @@ class Parameter:
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
-        self.loss: tp.Optional[float] = None  # associated loss
+        self.loss: tp.Optional[tp.Union[float, np.ndarray]] = None  # associated loss
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
