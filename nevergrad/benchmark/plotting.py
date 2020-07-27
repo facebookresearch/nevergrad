@@ -457,7 +457,8 @@ class XpPlotter:
             is done separately for each budget.
         """
         if normalized_loss:
-            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "seed"})
+            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time",
+                                                    "elapsed_budget", "loss", "optimizer_name", "seed"})
             df = normalized_losses(df, descriptors=descriptors)
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
@@ -473,6 +474,7 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
+        return optim_vals
 
     def save(self, output_filepath: tp.PathLike) -> None:
         """Saves the xp plot
@@ -666,8 +668,7 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
                 new_groups = []
                 ready = False
                 break
-            else:
-                new_groups.append(groups[k])
+            new_groups.append(groups[k])
     new_positions = np.array(positions, copy=True)
     for group in groups:
         new_positions[group.indices] = group.get_positions()
