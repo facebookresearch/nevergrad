@@ -470,8 +470,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd:
         optims += ["OnePlusOne"]
     if hd and noise:
-        optims += ["ProgDOptimizer9", "ProgDOptimizer5", "ProgDOptimizer13"]
-        optims += ["ProgOptimizer9", "ProgOptimizer5", "ProgOptimizer13"]
+        optims += ["ProgODOPO9", "ProgODOPO5", "ProgODOPO13"]
+        optims += ["ProgODOPO9", "ProgODOPO5", "ProgODOPO13"]
 
     if default_optims is not None:
         optims = default_optims
@@ -487,7 +487,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     elif (small and not noise):
         budgets = [10, 20, 40]
     if hd:
-        optims += ["SplitOptimizer9", "SplitOptimizer5", "SplitOptimizer13"]
+        optims += ["SplitCMA9", "SplitCMA5", "SplitCMA13"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -623,8 +623,8 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     With or without noise dissymmetry.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
+              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
@@ -657,8 +657,8 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 25000, 50000, 100000.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
+    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
+              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
@@ -889,9 +889,9 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO",
-             "ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-             "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-             "CMA", "QrDE", "SplitOptimizer5", "NGO", "Shiwa", "DiagonalCMA",
+             "ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
+             "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
+             "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
@@ -914,13 +914,13 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "SplitOptimizer9", "SplitOptimizer",
-             "NGO", "Shiwa", "DiagonalCMA", "SplitOptimizer3", "SplitOptimizer13"]
+             "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
+             "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA"]
     if default_optims is not None:
         optims = default_optims
-    optims += ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-              "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
+               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
+               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     budgets = [1600, 3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -969,9 +969,9 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                                                          ("Ruspini", 50), ("German towns", 100)] for rescale in [True, False]
     ]
     seedg = create_seed_generator(seed)
-    optims = ["ProgOptimizer3", "ProgOptimizer5", "ProgOptimizer9", "ProgOptimizer13",
-             "ProgDOptimizer3", "ProgDOptimizer5", "ProgDOptimizer9", "ProgDOptimizer13",
-             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
+    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
+              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
+              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
     if default_optims is not None:
         optims = default_optims
     for budget in [1000, 10000]:
@@ -1154,7 +1154,7 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                         offsprings=pop * 5)
           for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
     optims = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA",
-             "SplitOptimizer5", "Shiwa", "NGO", "MultiCMA", "CMandAS2", "SplitOptimizer13"] + es  # type: ignore
+             "SplitCMA5", "Shiwa", "NGO", "MultiCMA", "CMandAS2", "SplitCMA13"] + es  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for method in ["clipping", "tanh"]:  # , "arctan"]:
