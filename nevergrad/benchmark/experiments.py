@@ -915,7 +915,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
-             "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA"]
+             "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13"]
     if default_optims is not None:
         optims = default_optims
     optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
