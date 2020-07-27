@@ -697,7 +697,6 @@ class PSO(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         uid = candidate.heritage["lineage"]
-        assert isinstance(loss, float)
         if uid not in self.population:
             self._internal_tell_not_asked(candidate, loss)
             return
