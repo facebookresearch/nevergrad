@@ -12,9 +12,9 @@ orbs:
 
 # the set up in which the ubuntu jobs will run:
 executors:
-  ubuntu-python36:
+  ubuntu-python37:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.7
     working_directory: ~/repo
 
 
@@ -28,9 +28,9 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v4-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -44,7 +44,7 @@ commands:
 
 jobs:
   install:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
       - checkout
@@ -53,7 +53,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v4-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -75,7 +75,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -90,7 +90,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -133,7 +133,7 @@ jobs:
           paths: html
 
   static:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
 
@@ -155,7 +155,7 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
 
@@ -167,6 +167,7 @@ jobs:
           command: |
             . venv/bin/activate
             pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+
 
   docs-deploy:
     docker:
@@ -205,7 +206,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v3-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v4-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -220,7 +221,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v3-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v4-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: pytest

@@ -146,6 +146,21 @@ def merge_parametrization_and_optimizer(df: utils.Selector) -> utils.Selector:
     return df.drop(columns=pkey)  # type: ignore
 
 
+def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Selector:
+    df = utils.Selector(df.copy())
+    cases = df.unique(descriptors)
+    if not cases:
+        cases = [()]
+    # Average normalized plot with everything.
+    for case in cases:
+        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
+        losses = subdf.loc[:, "loss"]
+        m = min(losses)
+        M = max(losses)
+        df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
+    return df  # type: ignore
+
+
 # pylint: disable=too-many-statements,too-many-branches
 def create_plots(
     df: pd.DataFrame,
@@ -170,6 +185,17 @@ def create_plots(
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    # If we have a descriptor "instrum_str",
+    # we assume that it describes the instrumentation as a string, 
+    # that we should include the various instrumentations as distinct curves in the same plot.
+    # So we concat it at the end of the optimizer name, and we remove "parametrization"
+    # from the descriptor.
+    if "instrum_str" in set(df.columns):
+        df.loc[:, "optimizer_name"] = df.loc[:, "optimizer_name"] + df.loc[:, "instrum_str"]
+        df = df.drop(columns="instrum_str")
+        df = df.drop(columns="dimension")
+        if "parametrization" in set(df.columns):
+            df = df.drop(columns="parametrization")
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
@@ -179,10 +205,10 @@ def create_plots(
     output_folder = Path(output_folder)
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
-    descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # all other columns are descriptors
+    descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
-    all_descriptors = sorted(set(df.columns) - (required | {"seed", "pseudotime"}))  # now those should be actual interesting descriptors
+    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # now those should be actual interesting descriptors
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
@@ -252,10 +278,10 @@ def create_plots(
                     f.write("ranking:\n")
                     for i, algo in enumerate(data_df.columns[:8]):
                         f.write(f"  algo {i}: {algo}\n")
-            if len(name) > 80:
+            if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, 'utf8')).hexdigest()
                 name = re.sub(r'\([^()]*\)', '', name)
-                mid = 40
+                mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
 
@@ -282,9 +308,9 @@ def create_plots(
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        if len(description) > 80:
+        if len(description) > 280:
             hash_ = hashlib.md5(bytes(description, 'utf8')).hexdigest()
-            description = description[:40] + hash_ + description[-40:]
+            description = description[:140] + hash_ + description[-140:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
         xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
@@ -427,6 +453,9 @@ class XpPlotter:
             Warning: then even if algorithms converge (i.e. tend to minimize), the value can increase, because the normalization
             is done separately for each budget.
         """
+        if normalized_loss:
+            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "seed"})
+            df = normalized_losses(df, descriptors=descriptors)
         df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
@@ -441,16 +470,6 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
-
-        if normalized_loss:
-            old_optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
-            optims = df.unique("optimizer_name")
-            for optim in optims:
-                old_optim_vals[optim] = {}
-                old_optim_vals[optim]["loss"] = optim_vals[optim]["loss"].copy()
-            for optim in optims:
-                optim_vals[optim]["loss"] = (optim_vals[optim]["loss"] - np.minimum.reduce([optim_vals[opt]["loss"] for opt in optims])) / np.maximum.reduce(
-                        [optim_vals[opt]["loss"] for opt in optims])
 
         return optim_vals
 

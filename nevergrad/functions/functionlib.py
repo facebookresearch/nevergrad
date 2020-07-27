@@ -12,6 +12,7 @@ from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
 from .multiobjective import MultiobjectiveFunction
+from .pbt import PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
 
@@ -275,4 +276,3 @@ class FarOptimumFunction(ExperimentFunction):
         select = itertools.product(*(options[k] for k in keys))  # type: ignore
         cases = (dict(zip(keys, s)) for s in select)
         return (cls(**c) for c in cases)
-

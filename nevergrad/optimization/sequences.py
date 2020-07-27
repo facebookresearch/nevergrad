@@ -13,7 +13,7 @@ from ..common.decorators import Registry
 from ..common.typetools import ArrayLike
 
 
-samplers = Registry[Type['Sampler']]()
+samplers: Registry[Type['Sampler']] = Registry()
 
 
 def _get_first_primes(num: int) -> np.ndarray:
@@ -70,12 +70,12 @@ class Sampler:
         assert sampler.budget is not None
         sample = [sampler() for _ in range(sampler.budget)]
         for i in range(sampler.dimension):
-            for j in range(i+1, sampler.dimension):
+            for j in range(i + 1, sampler.dimension):
                 print("plotting coordinates " + str(i) + "," + str(j))
                 tab = [["." for _ in range(80)] for _ in range(20)]
                 for s in sample:
-                    x = int(s[i]*20)
-                    y = int(s[j]*80)
+                    x = int(s[i] * 20)
+                    y = int(s[j] * 80)
                     tab[x][y] = "*"
                 for t in tab:
                     print("".join(t))
@@ -169,7 +169,7 @@ class HammersleySampler(HaltonSampler):
     def __init__(self, dimension: int, budget: Optional[int] = None, scrambling: bool = False,
                  random_state: Optional[RandomState] = None) -> None:
         assert budget is not None
-        super().__init__(dimension-1, budget, scrambling, random_state=random_state)
+        super().__init__(dimension - 1, budget, scrambling, random_state=random_state)
 
     def _internal_sampler(self) -> ArrayLike:
         assert self.budget is not None

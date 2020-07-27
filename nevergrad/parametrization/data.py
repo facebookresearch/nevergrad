@@ -363,7 +363,7 @@ class Array(core.Parameter):
         Note
         ----
         Using integer casting makes the parameter discrete which can make the optimization more
-        difficult. It is especially ill-adviced to use this with a range smaller than 10, or
+        difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
         self.integer = True
@@ -548,4 +548,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded and no_init)
+            self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
