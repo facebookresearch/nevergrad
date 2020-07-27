@@ -7,6 +7,7 @@ from .optimization import optimizerlib as optimizers  # busy namespace, likely t
 from .optimization import families as families
 from .optimization import callbacks as callbacks
 from .parametrization import parameter as p
+from .common import typing as typing
 
 
 __all__ = ["optimizers", "families", "callbacks", "p"]

@@ -8,13 +8,10 @@ import warnings
 from pathlib import Path
 from numbers import Real
 from collections import deque
-import typing as tp  # favor using tp.Dict instead of Dict etc
-from typing import Optional, Tuple, Any, Dict, List
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
-from nevergrad.common.typetools import ArrayLike as ArrayLike  # allows reexport
-from nevergrad.common.typetools import JobLike, ExecutorLike
 from nevergrad.common.decorators import Registry
 from . import utils
 
@@ -82,7 +79,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
@@ -119,10 +116,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._num_ask = 0
         self._num_tell = 0
         self._num_tell_not_asked = 0
-        self._callbacks: Dict[str, List[Any]] = {}
+        self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: List[Tuple[p.Parameter, JobLike[float]]] = []
-        self._finished_jobs: tp.Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
+        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
+        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -192,7 +189,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         self._callbacks = {}
 
-    def suggest(self, *args: Any, **kwargs: Any) -> None:
+    def suggest(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         """Suggests a new point to ask.
         It will be asked at the next call (last in first out).
 
@@ -384,13 +381,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return self.parametrization.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
         pass
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask(self) -> tp.ArrayLike:
         raise RuntimeError("Not implemented, should not be called.")
 
-    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Override to provide a recommendation in standardized space
         """
         return None
@@ -398,7 +395,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def minimize(
         self,
         objective_function: tp.Callable[..., float],
-        executor: Optional[ExecutorLike] = None,
+        executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
     ) -> p.Parameter:
@@ -438,8 +435,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: List[Tuple[p.Parameter, JobLike[float]]] = []
-        tmp_finished: tp.Deque[Tuple[p.Parameter, JobLike[float]]] = deque()
+        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
+        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
@@ -498,7 +495,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
 
-    def compare(self: Optimizer, winners: List[p.Parameter], losers: List[p.Parameter]) -> None:
+    def compare(self: Optimizer, winners: tp.List[p.Parameter], losers: tp.List[p.Parameter]) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.
 
@@ -561,7 +558,7 @@ class ConfiguredOptimizer:
         return dict(self._config)
 
     def __call__(
-        self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
         """Creates an optimizer from the parametrization
 

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any
+import typing as tp
 from pathlib import Path
 import numpy as np
 import nevergrad as ng
@@ -12,7 +12,7 @@ from . import callbacks
 
 
 # pylint: disable=unused-argument
-def _func(x: Any, y: Any, blublu: str, array: Any) -> float:
+def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any) -> float:
     return 12
 
 

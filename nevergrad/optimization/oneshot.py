@@ -3,11 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 import numpy as np
 from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -42,10 +41,10 @@ def hull_center(points: np.ndarray, k: int) -> np.ndarray:
     for v in hull.vertices:
         maxi = np.maximum(np.asarray(v), maxi)
         mini = np.minimum(np.asarray(v), mini)
-    return 0.5 * (maxi + mini)
+    return 0.5 * (maxi + mini)  # type: ignore
 
 
-def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> ArrayLike:
+def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfourth") -> np.ndarray:
     """Operators inspired by the work of Yann Chevaleyre, Laurent Meunier, Clement Royer, Olivier Teytaud, Fabien Teytaud.
 
     Parameters
@@ -121,7 +120,7 @@ class _RandomSearch(OneShotOptimizer):
         self.scale = scale
         self._opposable_data: tp.Optional[np.ndarray] = None
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask(self) -> tp.ArrayLike:
         # pylint: disable=not-callable
         mode = self.opposition_mode
         if self._opposable_data is not None and mode is not None:
@@ -145,7 +144,7 @@ class _RandomSearch(OneShotOptimizer):
         self._opposable_data = scale * point
         return self._opposable_data  # type: ignore
 
-    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         if self.stupid:
             return self._internal_ask()
         elif self.archive:
@@ -256,7 +255,7 @@ class _SamplingSearch(OneShotOptimizer):
                 self._sampler_instance.reinitialize()  # sampler was consumed by the scaler
         return self._sampler_instance
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask(self) -> tp.ArrayLike:
         # pylint: disable=not-callable
         if self.middle_point and not self._num_ask:
             return np.zeros(self.dimension)
@@ -282,7 +281,7 @@ class _SamplingSearch(OneShotOptimizer):
         assert self._opposable_data is not None
         return self._opposable_data
 
-    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         if self.archive and self.recommendation_rule == "average_of_best":
             return avg_of_k_best(self.archive)
         return None

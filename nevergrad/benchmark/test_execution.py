@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from operator import add
-from typing import List, Any, Optional, Callable
+import typing as tp
 import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
@@ -21,7 +21,7 @@ class Function(ExperimentFunction):
         return x + y
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
         return 5 - value
 
 
@@ -29,12 +29,12 @@ class Function(ExperimentFunction):
     simple=(add, list(range(10))),
     delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
 )
-def test_mocked_steady_executor(func: Callable[..., Any], expected: List[int]) -> None:
+def test_mocked_steady_executor(func: tp.Callable[..., tp.Any], expected: tp.List[int]) -> None:
     executor = execution.MockedTimedExecutor(batch_mode=False)
-    jobs: List[execution.MockedTimedJob] = []
+    jobs: tp.List[execution.MockedTimedJob] = []
     for k in range(10):
         jobs.append(executor.submit(func, k, 0))
-    results: List[float] = []
+    results: tp.List[float] = []
     while jobs:
         finished = [j for j in jobs if j.done()]
         np.testing.assert_equal(len(finished), 1)
@@ -59,8 +59,8 @@ def test_mocked_steady_executor_time() -> None:
     jobs.append(executor.submit(func, 3, 0))
     np.testing.assert_equal(sum(j.done() for j in jobs), 2)
     np.testing.assert_array_equal([j.release_time for j in executor._steady_priority_queue], [4, 5, 5])
-    new_finished: Optional[List[execution.MockedTimedJob]] = None
-    order: List[int] = []
+    new_finished: tp.Optional[tp.List[execution.MockedTimedJob]] = None
+    order: tp.List[int] = []
     # pylint: disable=unsubscriptable-object
     while new_finished is None or new_finished:
         if new_finished is not None:
