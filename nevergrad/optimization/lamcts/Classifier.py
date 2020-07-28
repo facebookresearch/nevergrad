@@ -2,25 +2,20 @@
 # verify
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import torch
-import json
-import numpy as np
-
-from sklearn.cluster import KMeans
-from scipy.stats import norm
 import copy as cp
-from sklearn.svm import SVC
-
-from torch.quasirandom import SobolEngine
-from mpl_toolkits.mplot3d import axes3d, Axes3D
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import ConstantKernel, Matern
 
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
 from matplotlib import cm
+from scipy.stats import norm
+from sklearn.cluster import KMeans
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import ConstantKernel, Matern
+from sklearn.svm import SVC
+from torch.quasirandom import SobolEngine
 
 from .turbo_1.turbo_1 import Turbo1
-
 
 
 # the input will be samples!
