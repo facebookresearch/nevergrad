@@ -1511,8 +1511,6 @@ class _Chain(base.Optimizer):
         optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [LHSSearch, DE],
         budgets: tp.Sequence[tp.Union[str, int]] = (10,),
     ) -> None:
-        if budget:
-            budget = max(budget, 2)
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # delayed initialization
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
@@ -1521,7 +1519,7 @@ class _Chain(base.Optimizer):
                      "half": self.budget // 2 if self.budget else self.num_workers,
                      "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
         self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
-        last_budget = None if self.budget is None else self.budget - sum(self.budgets)
+        last_budget = None if self.budget is None else max(0, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
