@@ -58,7 +58,7 @@ class Pyomo(base.ExperimentFunction):
             self._model_instance = model.create_instance()
             raise NotImplementedError("AbstractModel is not supported yet.")
 
-        instru_params: tp.Dict[Any, Any] = {}
+        instru_params: tp.Dict[tp.Any, tp.Any] = {}
         self.all_vars = []
         self.all_params = []
         self.all_constraints = []
