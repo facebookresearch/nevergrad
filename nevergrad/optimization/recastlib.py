@@ -134,7 +134,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         *,
         method: str = "Nelder-Mead",
         random_restart: bool = False,
-        device: str='cuda',
+        device: str = 'cpu',
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
@@ -222,6 +222,7 @@ Sequential Quadratic Programming. Inside Nevergrad, this code is in https://gith
     def __init__(
         self,
         *,
-        random_restart: bool = False
+        random_restart: bool = False,
+        device: str = 'cpu'
     ) -> None:
         super().__init__(_LamctsMinimizeBase, locals())

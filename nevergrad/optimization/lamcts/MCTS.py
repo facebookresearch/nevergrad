@@ -29,7 +29,7 @@ import torch
 class MCTS:
     #############################################
 
-    def __init__(self, lb, ub, dims, ninits, func, device='cuda'):
+    def __init__(self, lb, ub, dims, ninits, func, device):
         self.dims                    =  dims
         self.samples                 =  []
         self.nodes                   =  []
@@ -294,6 +294,6 @@ def lamcts_minimize(func, dims, budget, lb=None, ub=None, device='cuda'):
     # f = Walker2d()
     # f = Swimmer()
     # f = Hopper()
-    agent = MCTS(lb = f.lb, ub = f.ub, dims = f.dims, ninits = 40, func = f, device=device )
+    agent = MCTS(lb = f.lb, ub = f.ub, dims = f.dims, ninits = 40, func = f, device=device)
     agent.search()
     

@@ -346,7 +346,7 @@ class Classifier():
     ###########################
     # version 1: select a partition, perform one-time turbo search
         
-    def propose_samples_turbo(self, num_samples, path, func, lb, ub, device='cuda'):
+    def propose_samples_turbo(self, num_samples, path, func, lb, ub, device):
         #throw a uniform sampling in the selected partition
         X_init = self.propose_rand_samples_sobol(30, path, lb, ub)
         #get samples around the selected partition

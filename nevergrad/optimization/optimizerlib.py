@@ -1934,4 +1934,4 @@ class NGO10(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-Lamcts = LamctsOptimizer(random_restart=True).set_name("Lamcts", register=True)
+Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)
