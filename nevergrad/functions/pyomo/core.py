@@ -3,16 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import typing as tp
-from functools import partial
-import types
 import numpy as np
 from nevergrad.parametrization import parameter as p
 import pyomo.environ as pyo  # type: ignore
-from pyomo.core.expr import current as pyo_expr  # type: ignore
-#from . import photonics
 from .. import base
 
-def _make_pyomo_range_set_to_parametrization(pyo_model : pyo.Model, model_component : pyo.RangeSet, params : dict):
+def _make_pyomo_range_set_to_parametrization(unused_pyo_model : pyo.Model, model_component : pyo.RangeSet, params : dict):
     # https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Sets.html
     # Refer to the implementation in pyomo/core/base/set.py
     if not((model_component.dimen == 1) and (len(model_component.ranges()) == 1)):
@@ -21,7 +17,7 @@ def _make_pyomo_range_set_to_parametrization(pyo_model : pyo.Model, model_compon
         params[model_component.name + '[' + str(i) + ']'] = p.Scalar(lower=r[0], upper=r[1])
     return params
 
-def _make_pyomo_variable_to_parametrization(pyo_model : pyo.Model, model_component : pyo.Var, params : dict):
+def _make_pyomo_variable_to_parametrization(unused_pyo_model : pyo.Model, model_component : pyo.Var, params : dict):
     # https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Sets.html
     # Refer to the implementation in pyomo/core/base/var.py
     if not model_component._data:
