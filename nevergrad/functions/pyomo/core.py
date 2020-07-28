@@ -7,8 +7,8 @@ from functools import partial
 import types
 import numpy as np
 from nevergrad.parametrization import parameter as p
-import pyomo.environ as pyo
-from pyomo.core.expr import current as pyo_expr
+import pyomo.environ as pyo  # type: ignore
+from pyomo.core.expr import current as pyo_expr  # type: ignore
 #from . import photonics
 from .. import base
 
@@ -58,7 +58,7 @@ class Pyomo(base.ExperimentFunction):
             self._model_instance = model.create_instance()
             raise NotImplementedError("AbstractModel is not supported yet.")
 
-        instru_params = {}
+        instru_params: tp.Dict[Any, Any] = {}
         self.all_vars = []
         self.all_params = []
         self.all_constraints = []
@@ -91,7 +91,7 @@ class Pyomo(base.ExperimentFunction):
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         # pylint: disable=not-callable
         loss = self.function(x)
-        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)  # type: ignore
         return loss
 
     def _pyomo_obj_function_wrapper(self, **k_model_variables) -> float: # type: ignore

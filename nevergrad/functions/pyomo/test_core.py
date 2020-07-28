@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 from __future__ import division
 import numpy as np
-import pyomo.environ as pyo
+import pyomo.environ as pyo  # type: ignore
 import nevergrad as ng
 from . import core
 
