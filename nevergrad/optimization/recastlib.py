@@ -133,7 +133,8 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         num_workers: int = 1,
         *,
         method: str = "Nelder-Mead",
-        random_restart: bool = False
+        random_restart: bool = False,
+        device: str='cuda',
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
@@ -142,6 +143,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        self.device = device
 
 #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
@@ -176,6 +178,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
                 func=objective_function,
                 dims=self.parametrization.dimension,
                 budget=self.budget,
+                device=self.device,
 #                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
 #                method=self.method,
 #                options=options,

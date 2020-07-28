@@ -29,7 +29,7 @@ import torch
 class MCTS:
     #############################################
 
-    def __init__(self, lb, ub, dims, ninits, func):
+    def __init__(self, lb, ub, dims, ninits, func, device='cuda'):
         self.dims                    =  dims
         self.samples                 =  []
         self.nodes                   =  []
@@ -39,6 +39,7 @@ class MCTS:
         self.ub                      =  ub if ub is not None else (np.pi/2)*np.ones(dims)
         self.ninits                  =  ninits
         self.func                    =  func if ub is not None and lb is not None else lambda x: func(np.tanh(x))
+        self.device = device
         self.curt_best_value         =  float("-inf")
         self.curt_best_sample        =  None
         self.best_value_trace        =  []
@@ -237,14 +238,14 @@ class MCTS:
             curt_node       = curt_node.parent
 
     def search(self):
-        for i in range(0, 1000):
+        for _ in range(0, 1000):
             self.dynamic_treeify()
             leaf, path = self.select()
             print("selected leaf:", leaf.get_name() )
             print(path)
-            for i in range(0, 1):
+            for _ in range(0, 1):
                 # samples = leaf.propose_samples_bo( 1, path, self.lb, self.ub, self.samples )
-                samples, values = leaf.propose_samples_turbo( 10000, path, self.func )
+                samples, values = leaf.propose_samples_turbo(10000, path, self.func, self.lb, self.ub, device=self.device)
                 for idx in range(0, len(samples)):
                     # value = self.collect_samples( samples[idx])
                     value = self.collect_samples( samples[idx], values[idx] )
@@ -278,7 +279,7 @@ class TargetFunction:
             raise ValueError("Too many calls to the objective function!")
         return result
 
-def lamcts_minimize(func, dims, budget, lb=None, ub=None):
+def lamcts_minimize(func, dims, budget, lb=None, ub=None, device='cuda'):
     # Here func takes a ndarray in R^dims and outputs a float.
     f = TargetFunction(dims = dims, func=func, lb=lb, ub=ub, budget=budget)
     # f = Ackley(dims = 20)
@@ -293,6 +294,6 @@ def lamcts_minimize(func, dims, budget, lb=None, ub=None):
     # f = Walker2d()
     # f = Swimmer()
     # f = Hopper()
-    agent = MCTS(lb = f.lb, ub = f.ub, dims = f.dims, ninits = 40, func = f )
+    agent = MCTS(lb = f.lb, ub = f.ub, dims = f.dims, ninits = 40, func = f, device=device )
     agent.search()
     
