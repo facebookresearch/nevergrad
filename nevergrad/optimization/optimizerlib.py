@@ -1519,7 +1519,7 @@ class _Chain(base.Optimizer):
                      "half": self.budget // 2 if self.budget else self.num_workers,
                      "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
         self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
-        last_budget = None if self.budget is None else max(1, self.budget - sum(self.budgets))
+        last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
