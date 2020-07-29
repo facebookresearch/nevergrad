@@ -1913,23 +1913,13 @@ class NGOpt(base.Optimizer):
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                optimClass = MetaTuneRecentering  # type: ignore
-                            elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA  # type: ignore
-                            elif self.dimension < 5 and budget < 500:
-                                chaining = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)
-                                self.optim = chaining(self.parametrization, budget, num_workers)  # type: ignore
-                                logger.debug("NGOpt selected ParaChaining optimizer.")
-                                return
+                                self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
                             else:
-                                optimClass = NaiveTBPSA  # type: ignore
+                                self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                chaining = Chaining([Shiwa, chainCMAPowell], [6000]).set_name("chaining", register=True)
-                                self.optim = chaining(self.parametrization, budget, num_workers)  # type: ignore
-                                logger.debug("NGOpt selected Chaining optimizer.")
-                                return
+                                self.optim = chainCMAPowell(self.parametrization, budget, num_workers)  # noqa: F405
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
