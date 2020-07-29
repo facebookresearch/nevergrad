@@ -1913,13 +1913,13 @@ class NGOpt(base.Optimizer):
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = MetaTuneRecentering  # type: ignore
                             else:
-                                self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = NaiveTBPSA  # type: ignore
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                self.optim = chainCMAPowell(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = chainCMAPowell  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
