@@ -1517,6 +1517,7 @@ class _Chain(base.Optimizer):
         self.optimizers: tp.List[base.Optimizer] = []
         converter = {"num_workers": self.num_workers, "dimension": self.dimension,
                      "half": self.budget // 2 if self.budget else self.num_workers,
+                     "third": self.budget // 3 if self.budget else self.num_workers,
                      "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
         self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
@@ -1570,6 +1571,12 @@ class Chaining(base.ConfiguredOptimizer):
 
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
+chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name("chainDiagonalCMAPowell", register=True)
+chainDiagonalCMAPowell.no_parallelization = True
+chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name("chainNaiveTBPSAPowell", register=True)
+chainNaiveTBPSAPowell.no_parallelization = True
+chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name("chainNaiveTBPSACMAPowell", register=True)
+chainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
@@ -1917,13 +1924,13 @@ class NGOpt(base.Optimizer):
                             elif self.dimension < 5 and budget < 100:
                                 optimClass = DiagonalCMA  # type: ignore
                             elif self.dimension < 5 and budget < 500:
-                                optimClass = MetaModel  # type: ignore
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)  # type: ignore
                             else:
                                 optimClass = NaiveTBPSA  # type: ignore
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = chainCMAPowell  # type: ignore
+                                optimClass = chainNaiveTBPSACMAPowell  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
