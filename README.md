@@ -86,4 +86,4 @@ Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)
 ## License
 
 `nevergrad` is released under the MIT license. See [LICENSE](LICENSE) for additional details about it.
-See also our [Terms of Use](https://opensource.facebook.com/legal/terms) and [Privacy Policy](https://opensource.facebook.com/legal/privacy)
+See also our [Terms of Use](https://opensource.facebook.com/legal/terms) and [Privacy Policy](https://opensource.facebook.com/legal/privacy).
