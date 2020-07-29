@@ -1914,6 +1914,10 @@ class NGOpt(base.Optimizer):
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
                                 optimClass = MetaTuneRecentering  # type: ignore
+                            elif self.dimension < 5 and budget < 100:
+                                optimClass = DiagonalCMA  # type: ignore
+                            elif self.dimension < 5 and budget < 500:
+                                optimClass = MetaModel  # type: ignore
                             else:
                                 optimClass = NaiveTBPSA  # type: ignore
                         else:
