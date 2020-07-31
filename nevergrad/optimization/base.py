@@ -14,6 +14,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
 from nevergrad.common.decorators import Registry
 from . import utils
+from .multiobjective import HypervolumePareto
 
 
 registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
@@ -110,6 +111,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.pruning: tp.Optional[_PruningCallable] = utils.Pruning.sensible_default(
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
+        # multiobjective
+        self._hypervolume_pareto: tp.Optional[HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
         self._suggestions: tp.Deque[p.Parameter] = deque()
@@ -135,6 +138,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return self.parametrization.dimension
 
     @property
+    def num_objectives(self) -> int:
+        if not self._num_tell and self._hypervolume_pareto is None:
+            raise RuntimeError('Unknown number of objectives, provide a "tell" first.')
+        return 1 if self._hypervolume_pareto is None else self._hypervolume_pareto.num_objectives
+
+    @property
     def num_ask(self) -> int:
         """int: Number of time the `ask` method was called.
         """
@@ -152,6 +161,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         (or were suggested).
         """
         return self._num_tell_not_asked
+
+    def pareto_front(self, size: tp.Optional[int] = None, subset: str = "random") -> tp.List[p.Parameter]:
+        if self._hypervolume_pareto is None:
+            raise RuntimeError("No pareto front with a single objective")
+        return self._hypervolume_pareto.pareto_front(size=size, subset=subset)
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file.
@@ -265,7 +279,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self, candidate, loss)
         # prepross multiobjective loss
         if not isinstance(loss, float):
-            loss = self._preprocess_multiobjective(candidate, loss)
+            loss = self._preprocess_multiobjective(candidate)
         assert isinstance(loss, float)
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
@@ -278,9 +292,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._num_tell += 1
 
     # pylint: disable=unused-argument
-    def _preprocess_multiobjective(self, candidate: p.Parameter, loss: tp.Union[np.ndarray, float]) -> tp.Loss:
-        assert isinstance(loss, float)
-        return loss
+    def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.Loss:
+        if self._hypervolume_pareto is None:
+            self._hypervolume_pareto = HypervolumePareto()
+        return self._hypervolume_pareto.add(candidate)
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)

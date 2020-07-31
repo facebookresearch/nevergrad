@@ -33,12 +33,16 @@ class HypervolumePareto:
 
     def __init__(self, upper_bounds: tp.Optional[tp.ArrayLike] = None, auto_bound: int = 15) -> None:
         self._auto_bound = 0
-        self._upper_bounds = np.array([-float('inf')]) if upper_bounds is None else upper_bounds
+        self._upper_bounds = np.array([-float('inf')]) if upper_bounds is None else np.array(upper_bounds, copy=False)
         if upper_bounds is None:
             self._auto_bound = auto_bound
         self._pareto: tp.List[ng.p.Parameter] = []
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
+
+    @property
+    def num_objectives(self) -> int:
+        return self._upper_bounds.size
 
     def add(self, parameter: ng.p.Parameter) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
@@ -107,27 +111,30 @@ class HypervolumePareto:
             the list of elements of the pareto front
         """
         self._filter_pareto_front()
-        if size is None or size >= len(self._points):  # No limit: we return the full set.
+        num_tentatives = 30
+        if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
             return random.sample(self._pareto, size)
-        possibilities: tp.List[tp.Any] = []
+        tentatives = [random.sample(self._pareto, size) for _ in range(num_tentatives)]
+        if self._hypervolume is None:
+            raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
+        hypervolume = self._hypervolume
         scores: tp.List[float] = []
-        for _ in range(30):
-            possibilities += [random.sample(self._points, size)]
+        for tentative in tentatives:
             if subset == "hypervolume":
-                scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])]
+                scores += [-hypervolume.compute([p.loss for p in tentative])]  # type: ignore
             else:
                 score: float = 0.
-                for v, vloss in self._points:
+                for v in self._pareto:
                     best_score = float("inf")
-                    for p, ploss in possibilities[-1]:
+                    for p in tentative:
                         if subset == "loss-covering":
-                            best_score = min(best_score, np.linalg.norm(ploss - vloss))
+                            best_score = min(best_score, np.linalg.norm(p.loss - v.loss))  # type: ignore
                         elif subset == "domain-covering":
-                            best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
+                            best_score = min(best_score, np.linalg.norm(p.get_standardized_data(reference=v)))  # TODO verify
                         else:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2
                 scores += [score]
-        return [p[0] for p in possibilities[scores.index(min(scores))]]
+        return tentatives[scores.index(min(scores))]
