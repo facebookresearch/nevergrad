@@ -242,8 +242,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if isinstance(loss, (Real, float)):
             # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             loss = float(loss)
-        elif isinstance(loss, (tuple, list)):
-            loss = np.array(loss, dtype=float)
+        elif isinstance(loss, (tuple, list, np.ndarray)):
+            loss = np.array(loss, copy=False, dtype=float) if len(loss) != 1 else loss[0]
         elif not isinstance(loss, np.ndarray):
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
@@ -263,7 +263,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, loss)
-        self._update_archive_and_bests(candidate, loss)
+        # prepross multiobjective loss
+        if not isinstance(loss, float):
+            loss = self._preprocess_multiobjective(candidate, loss)
+        assert isinstance(loss, float)
+        if isinstance(loss, float):
+            self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
@@ -271,6 +276,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._internal_tell_not_asked(candidate, loss)
             self._num_tell_not_asked += 1
         self._num_tell += 1
+
+    # pylint: disable=unused-argument
+    def _preprocess_multiobjective(self, candidate: p.Parameter, loss: tp.Union[np.ndarray, float]) -> tp.Loss:
+        assert isinstance(loss, float)
+        return loss
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
