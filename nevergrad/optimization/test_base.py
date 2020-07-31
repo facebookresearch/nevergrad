@@ -35,7 +35,8 @@ class LoggingOptimizer(base.Optimizer):
         self.logs.append(f"s{self._num_ask}")  # s for suggest
         return np.array((float(self._num_ask),))
 
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
+    # pylint: disable=unused-argument
+    def _internal_tell(self, x: tp.ArrayLike, loss: float) -> None:
         self.logs.append(f"u{int(x[0])}")  # u for update
 
 
@@ -73,7 +74,7 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
     optim = LoggingOptimizer(num_workers=1)
     x = optim.ask()
     if error:
-        np.testing.assert_raises(TypeError, optim.tell, x, value)
+        np.testing.assert_raises(AssertionError if isinstance(value, list) else TypeError, optim.tell, x, value)
     else:
         optim.tell(x, value)
 
