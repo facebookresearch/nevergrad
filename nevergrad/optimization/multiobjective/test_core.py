@@ -21,7 +21,7 @@ def test_hypervolume_pareto_function() -> None:
     values = []
     for tup in tuples:
         param = ng.p.Tuple(*(ng.p.Scalar(x) for x in tup))
-        param.loss = np.array(tup)
+        param._losses = np.array(tup)
         values.append(hvol.add(param))
     expected = [10, 10, -400, -2500.0, -2500.0, -2470.0, -3300.0, -4100.0]
     assert values == expected, f"Expected {expected} but got {values}"
