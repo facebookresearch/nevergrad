@@ -32,7 +32,6 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
 
-#    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
@@ -138,20 +137,19 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
-        self.initial_guess: tp.Optional[base.ArrayLike] = None
+        self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         self.device = device
 
-#    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
 
-    def get_optimization_function(self) -> tp.Callable[[tp.Callable[[base.ArrayLike], float]], base.ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(
@@ -164,7 +162,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
-    def _optimization_function(self, objective_function: tp.Callable[[base.ArrayLike], float]) -> base.ArrayLike:
+    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
