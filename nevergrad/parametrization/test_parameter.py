@@ -198,6 +198,18 @@ def test_instrumentation() -> None:
         inst = par.Instrumentation(scal, blublu=scal)
 
 
+def test_splitter() -> None:
+    inst = par.Instrumentation(par.Array(shape=(2,)), par.Array(shape=(3,)))
+    ranges = inst.get_ranges()
+    assert len(ranges) == 2
+    assert len(ranges[0]) == 2
+    assert len(ranges[1]) == 2
+    assert ranges[0][0] == 0
+    assert ranges[1][0] == 2
+    assert ranges[0][1] == 2
+    assert ranges[1][1] == 5 
+
+    
 def test_scalar_and_mutable_sigma() -> None:
     param = par.Scalar(init=1.0, mutable_sigma=True).set_mutation(exponent=2.0, sigma=5)
     assert param.value == 1
