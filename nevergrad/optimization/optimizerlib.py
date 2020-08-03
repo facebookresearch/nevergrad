@@ -879,7 +879,7 @@ class SplitOptimizer(base.Optimizer):
         else:  # The user did not specify the number of vars per split.
             if num_optims is None:  # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
                 try:  # Try to guess from the parametrization.
-                    param_val = [x[1] for x in sorted(parametrization.items(), key=lambda x: int(x[0]))]
+                    param_val = [x[1] for x in sorted(parametrization.value.items(), key=lambda x: int(x[0]))]
                     num_vars = []
                     for param_v in param_val:
                         num_vars += [param_v.dimension if isinstance(param_v, p.Parameter) else 1]
