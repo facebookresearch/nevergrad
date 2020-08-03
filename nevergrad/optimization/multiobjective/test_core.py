@@ -44,8 +44,8 @@ def test_doc_multiobjective() -> None:
     print("Example: ", multiobjective(np.array([1.0, 2.0, 0])))
     # >>> Example: [5.0, 2.0]
 
-    # optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
-    optimizer = ng.optimizers.OnePlusOne(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
+    optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
+    # optimizer = ng.optimizers.OnePlusOne(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
 
     # it's not strictly necessary but highly advised to provide an upper bound reference for the losses
     # (if not provided, such upper bound is automatically computed with the first few "tell")
@@ -57,8 +57,8 @@ def test_doc_multiobjective() -> None:
 
     # The function embeds its Pareto-front:
     print("Pareto front:")
-    for param in sorted(optimizer.pareto_front(), key=lambda p: p.loss[0]):  # type: ignore
-        print(f"{param} with loss {param.loss}")
+    for param in sorted(optimizer.pareto_front(), key=lambda p: p.losses[0]):  # type: ignore
+        print(f"{param} with losses {param.losses}")
 
     # >>> Array{(3,)}:[0. 0. 0.] with loss [0. 3.]
     #     Array{(3,)}:[0.39480968 0.98105712 0.55785803] with loss [1.42955333 0.56210368]
@@ -74,3 +74,4 @@ def test_doc_multiobjective() -> None:
     assert len(optimizer.pareto_front(2, "domain-covering")) == 2
     assert len(optimizer.pareto_front(2, "hypervolume")) == 2
     assert len(optimizer.pareto_front(2, "random")) == 2
+    raise Exception

@@ -31,7 +31,8 @@ class Parameter:
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
-        self.loss: tp.Optional[tp.Union[float, np.ndarray]] = None  # associated loss
+        self.loss: tp.Optional[float] = None  # associated loss
+        self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -42,6 +43,22 @@ class Parameter:
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
+
+    @property
+    def losses(self) -> np.ndarray:
+        """Pssibly multiobjective losses which were told
+        to the optimizer along this parameter.
+        In case of mono-objective loss, losses is the array containing this loss as sole element
+
+        Note
+        ----
+        This API is highly experimental
+        """
+        if self._losses is not None:
+            return self._losses
+        if self.loss is not None:
+            return np.array([self.loss], dtype=float)
+        raise RuntimeError("No loss was provided")
 
     @property
     def value(self) -> tp.Any:

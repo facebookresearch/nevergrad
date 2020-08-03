@@ -273,7 +273,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "the next ask"
             )
         # checks are done, start processing
-        candidate.loss = loss
         candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
@@ -289,8 +288,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 return
             candidate = candidate.value
         # preprocess multiobjective loss
+        if isinstance(loss, np.ndarray):
+            candidate._losses = loss
         if not isinstance(loss, float):
             loss = self._preprocess_multiobjective(candidate)
+        candidate.loss = loss
         assert isinstance(loss, float)
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)

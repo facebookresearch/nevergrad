@@ -50,9 +50,9 @@ class HypervolumePareto:
         """
         if not isinstance(parameter, ng.p.Parameter):
             raise TypeError(f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}.")
-        losses = parameter.loss
+        losses = parameter.losses
         if not isinstance(losses, np.ndarray):
-            raise TypeError(f"Parameter should have multivalue as loss, but parameter.loss={losses} ({type(losses)}).")
+            raise TypeError(f"Parameter should have multivalue as losses, but parameter.losses={losses} ({type(losses)}).")
         if self._auto_bound > 0:
             self._auto_bound -= 1
             if (self._upper_bounds > -float("inf")).all() and (losses > self._upper_bounds).all():
@@ -66,7 +66,7 @@ class HypervolumePareto:
         if (losses - self._upper_bounds > 0).any():
             return float(np.max(losses - self._upper_bounds))
         # We compute the hypervolume
-        new_volume = self._hypervolume.compute([p.loss for p in self._pareto] + [losses])  # type: ignore
+        new_volume = self._hypervolume.compute([p.losses for p in self._pareto] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
@@ -78,7 +78,7 @@ class HypervolumePareto:
             self._filter_pareto_front()
             distance_to_pareto = float("Inf")
             for param in self._pareto:
-                stored_losses = param.loss
+                stored_losses = param.losses
                 # TODO the following is probably not good at all:
                 # -> +inf if no point is strictly better (but lower if it is)
                 if (stored_losses <= losses).all():
@@ -93,7 +93,7 @@ class HypervolumePareto:
         for param in self._pareto:
             should_be_added = True
             for other in self._pareto:
-                if (other.loss <= param.loss).all() and (other.loss < param.loss).any():  # type: ignore
+                if (other.losses <= param.losses).all() and (other.losses < param.losses).any():
                     should_be_added = False
                     break
             if should_be_added:
@@ -128,14 +128,14 @@ class HypervolumePareto:
         scores: tp.List[float] = []
         for tentative in tentatives:
             if subset == "hypervolume":
-                scores += [-hypervolume.compute([p.loss for p in tentative])]  # type: ignore
+                scores += [-hypervolume.compute([p.losses for p in tentative])]
             else:
                 score: float = 0.
                 for v in self._pareto:
                     best_score = float("inf")
                     for p in tentative:
                         if subset == "loss-covering":
-                            best_score = min(best_score, np.linalg.norm(p.loss - v.loss))  # type: ignore
+                            best_score = min(best_score, np.linalg.norm(p.losses - v.losses))
                         elif subset == "domain-covering":
                             best_score = min(best_score, np.linalg.norm(p.get_standardized_data(reference=v)))  # TODO verify
                         else:
