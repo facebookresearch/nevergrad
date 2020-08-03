@@ -423,6 +423,86 @@ class Array(core.Parameter):
             raise ValueError(f'Unknown recombination "{recomb}"')
 
 
+# pylint: disable=too-many-arguments, too-many-instance-attributes
+class Torus(Array):
+    """Array parameter with customizable mutation and recombination.
+
+    Parameters
+    ----------
+    init: np.ndarray, or None
+        initial value of the array (defaults to 0, with a provided shape)
+    shape: tuple of ints, or None
+        shape of the array, to be provided iff init is not provided
+    mutable_sigma: bool
+        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
+
+    Note
+    ----
+    More specific behaviors can be obtained throught the following methods:
+    set_bounds, set_mutation, set_integer_casting
+    """
+
+    def single_to_angle(x):
+        x = x[0] * np.ndarray([1, 0]) + x[1] * np.ndarray([0, 1]) + x[2] * np.ndarray([-1, 0]) + x[3] * np.ndarray([0, -1])
+        return np.angle(x[0]+x[1]*1j)
+
+    def single_from_angle(a):
+        """The reverse of single to angle."""
+        x = np.cos(a)
+        y = np.sin(a)
+        r = np.zeros(4)
+        r[0] = max(x, 0)
+        r[2] = max(-x, 0)
+        r[1] = max(y, 0)
+        r[3] = max(-y, 0)
+        u = single_to_angle(r)
+        assert np.abs(u-a) < 1e-5
+        return r
+    
+
+    def to_angle(x):  
+        """x has shape (4, a, b, c), we return something of shape (a, b, c) using single_to_angle for converting an array of shape (4,) to a float."""
+        assert x.shape[0] == 4
+        out = x[0].copy()
+        for cell, x0, x1, x2, x3 in np.nditer([out, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):
+            cell[...] = single_to_angle(x0, x1, x2, x3)
+        return cell
+
+    def from_angle(y):
+        """Opposite of to_angle."""
+        x = np.tile(y, (4,)+tuple([1] * len(y.shape))).shape
+        for cell, x0, x1, x2, x3 in np.nditer([y, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):
+            r = single_from_angle(cell)
+            x0 = r[0]
+            x1 = r[1]
+            x2 = r[2]
+            x3 = r[3]
+        return x
+
+    @property
+    def value(self) -> np.ndarray:
+        if self.integer:
+            return np.round(self._value)  # type: ignore
+        return to_angle(self._value)
+
+    @value.setter
+    def value(self, value: tp.ArrayLike) -> None:
+        self._check_frozen()
+        self._ref_data = None
+        if not isinstance(value, (np.ndarray, tuple, list)):
+            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
+        value = np.asarray(value)
+        assert isinstance(value, np.ndarray)
+        if self._value.shape != value.shape:
+            raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
+        if not BoundChecker(*self.bounds)(self.value):
+            raise ValueError("New value does not comply with bounds")
+        if self.exponent is not None and np.min(value.ravel()) <= 0:
+            raise ValueError("Logirithmic values cannot be negative")
+        self._value = from_angle(value)
+
+
+
 class Scalar(Array):
     """Parameter representing a scalar.
 
