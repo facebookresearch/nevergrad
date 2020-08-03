@@ -129,7 +129,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
         method: str = "Nelder-Mead",
@@ -138,7 +138,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
-        self.initial_guess: Optional[base.ArrayLike] = None
+        self.initial_guess: tp.Optional[base.ArrayLike] = None
         # configuration
         assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
