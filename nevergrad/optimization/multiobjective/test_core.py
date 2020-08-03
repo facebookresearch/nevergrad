@@ -60,9 +60,9 @@ def test_doc_multiobjective() -> None:
     for param in sorted(optimizer.pareto_front(), key=lambda p: p.loss[0]):  # type: ignore
         print(f"{param} with loss {param.loss}")
 
-    # >>>[Array{(3,)}:[0. 0. 0.],
-    #     Array{(3,)}:[ 0.74004948 -0.04942859  1.14188393],
-    #     Array{(3,)}:[0.32063353 0.11387351 1.14188393]]
+    # >>> Array{(3,)}:[0. 0. 0.] with loss [0. 3.]
+    #     Array{(3,)}:[0.39480968 0.98105712 0.55785803] with loss [1.42955333 0.56210368]
+    #     Array{(3,)}:[1.09901515 0.97673712 0.97153943] with loss [3.10573857 0.01115516]
 
     # It can also provide a subset:
     print("Random subset:", optimizer.pareto_front(2, subset="random"))
@@ -74,4 +74,3 @@ def test_doc_multiobjective() -> None:
     assert len(optimizer.pareto_front(2, "domain-covering")) == 2
     assert len(optimizer.pareto_front(2, "hypervolume")) == 2
     assert len(optimizer.pareto_front(2, "random")) == 2
-    raise Exception
