@@ -42,7 +42,7 @@ def test_doc_multiobjective() -> None:
     # upper_bounds=[2.5, 2.5])
 
     print("Example: ", multiobjective(np.array([1.0, 2.0, 0])))
-    # >> Example: [5.0, 2.0]
+    # >>> Example: [5.0, 2.0]
 
     # # We can also run without upper_bounds: they are then computed automatically using "_auto_bound".
     # optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
@@ -50,15 +50,19 @@ def test_doc_multiobjective() -> None:
     optimizer.minimize(multiobjective, verbosity=2)
 
     # The function embeds its Pareto-front:
-    print("My Pareto front:", optimizer.pareto_front())
+    print("Pareto front:", optimizer.pareto_front())
+    # >>>[Array{(3,)}:[0. 0. 0.],
+    #     Array{(3,)}:[ 0.74004948 -0.04942859  1.14188393],
+    #     Array{(3,)}:[0.32063353 0.11387351 1.14188393]]
 
     # It can also provide a subset:
-    print("My Pareto front:", optimizer.pareto_front(2, subset="random"))
-    print("My Pareto front:", optimizer.pareto_front(2, subset="loss-covering"))
-    print("My Pareto front:", optimizer.pareto_front(2, subset="domain-covering"))
+    print("Random subset:", optimizer.pareto_front(2, subset="random"))
+    print("Loss-covering subset:", optimizer.pareto_front(2, subset="loss-covering"))
+    print("Domain-covering subset:", optimizer.pareto_front(2, subset="domain-covering"))
     # DOC_MULTIOBJ_OPT_1
     assert len(optimizer.pareto_front()) > 1
     assert len(optimizer.pareto_front(2, "loss-covering")) == 2
     assert len(optimizer.pareto_front(2, "domain-covering")) == 2
     assert len(optimizer.pareto_front(2, "hypervolume")) == 2
     assert len(optimizer.pareto_front(2, "random")) == 2
+    raise Exception
