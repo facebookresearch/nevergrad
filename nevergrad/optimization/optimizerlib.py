@@ -881,8 +881,8 @@ class SplitOptimizer(base.Optimizer):
                 try:  # Try to guess from the parametrization.
                     param_val = [x[1] for x in sorted(parametrization._content.items(), key=lambda x: int(x[0]))]
                     num_vars = []
-                    for p in param_val:
-                        num_vars += [p.dimension if isinstance(p, core.Parameter) else 1 for p in param_val]
+                    for param_v in param_val:
+                        num_vars += [param_v.dimension if isinstance(param_v, core.Parameter) else 1]
                     num_optims = len(num_vars)
                 except:  # Desperate situation: just split in 2.
                     num_optims = 2
