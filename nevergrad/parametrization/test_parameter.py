@@ -204,10 +204,8 @@ def test_splitter() -> None:
     assert len(ranges) == 2
     assert len(ranges[0]) == 2
     assert len(ranges[1]) == 2
-    assert ranges[0][0] == 0
-    assert ranges[1][0] == 2
-    assert ranges[0][1] == 2
-    assert ranges[1][1] == 5 
+    assert ranges[0][0] == 0 and ranges[0][1] == 2 and ranges[1][0] == 2 and ranges[1][1] == 5, f"We get{str(ranges)} instead of [[0,2],[2,5]]." 
+
 
     
 def test_scalar_and_mutable_sigma() -> None:
