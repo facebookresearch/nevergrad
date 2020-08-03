@@ -74,4 +74,3 @@ def test_doc_multiobjective() -> None:
     assert len(optimizer.pareto_front(2, "domain-covering")) == 2
     assert len(optimizer.pareto_front(2, "hypervolume")) == 2
     assert len(optimizer.pareto_front(2, "random")) == 2
-    raise Exception
