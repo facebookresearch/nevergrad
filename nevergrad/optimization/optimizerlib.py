@@ -878,13 +878,13 @@ class SplitOptimizer(base.Optimizer):
             assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
         else:  # The user did not specify the number of vars per split.
             if num_optims is None:  # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
-                try:  # Try to guess from the parametrization.
+                if isinstance(parametrization, p.Parameter):
                     param_val = [x[1] for x in sorted(parametrization.value.items(), key=lambda x: int(x[0]))]
                     num_vars = []
                     for param_v in param_val:
                         num_vars += [param_v.dimension if isinstance(param_v, p.Parameter) else 1]
                     num_optims = len(num_vars)
-                except:  # Desperate situation: just split in 2.
+                else:  # Desperate situation: just split in 2.
                     num_optims = 2
             # if num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
