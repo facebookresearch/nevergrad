@@ -110,7 +110,7 @@ class PowerSystem(ExperimentFunction):
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
         # dimension = int(sum([a.dimension for a in dam_agents]))
-        super().__init__(self._simulate_power_system, p.Tuple(p.Array(shape=(a.dimension,)) for a in dam_agents)
+        super().__init__(self._simulate_power_system, p.Tuple(p.Array(shape=(a.dimension,)) for a in dam_agents))
         self.register_initialization(**params)
         self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
