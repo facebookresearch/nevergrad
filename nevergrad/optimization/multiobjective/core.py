@@ -48,20 +48,25 @@ class HypervolumePareto:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
-        assert isinstance(parameter, np.ndarray)
+        if not isinstance(parameter, ng.p.Parameter):
+            raise TypeError(f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}.")
         losses = parameter.loss
+        if not isinstance(losses, np.ndarray):
+            raise TypeError(f"Parameter should have multivalue as loss, but parameter.loss={losses} ({type(losses)}).")
         if self._auto_bound > 0:
-            self._upper_bounds = np.maximum(self._upper_bounds, losses)
             self._auto_bound -= 1
+            if (self._upper_bounds > -float("inf")).all() and (losses > self._upper_bounds).all():
+                return float('inf')  # Avoid uniformly worst points
+            self._upper_bounds = np.maximum(self._upper_bounds, losses)
             self._pareto.append(parameter)
             return 0.
         if self._hypervolume is None:
             self._hypervolume = HypervolumeIndicator(self._upper_bounds)
         # get rid of points over the upper bounds
         if (losses - self._upper_bounds > 0).any():
-            return np.max(losses - self._upper_bounds)
+            return float(np.max(losses - self._upper_bounds))
         # We compute the hypervolume
-        new_volume = self._hypervolume.compute([p.loss for p in self._parameters] + [losses])
+        new_volume = self._hypervolume.compute([p.loss for p in self._pareto] + [losses])  # type: ignore
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
@@ -72,7 +77,7 @@ class HypervolumePareto:
             # First we prune.
             self._filter_pareto_front()
             distance_to_pareto = float("Inf")
-            for param in self._points:
+            for param in self._pareto:
                 stored_losses = param.loss
                 # TODO the following is probably not good at all:
                 # -> +inf if no point is strictly better (but lower if it is)
