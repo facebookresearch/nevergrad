@@ -50,6 +50,17 @@ class Tuple(Dict):
             raise ValueError(f"{cls} value must be a tuple of size {len(self)}, got: {value}.\nCurrent value: {self.value}")
         for k, val in enumerate(value):
             core.as_parameter(self[k]).value = val
+    
+    def get_ranges(self):
+        # Returns the ranges occupied by the different parts of the instrumentation.
+        # We do not recurse into sub-parameters.
+        i = 0
+        param_val = [x[1] for x in sorted(self._content.items(), key=lambda x: int(x[0]))]
+        ranges = []
+        for p in param_val:
+            l = len(p.value if isinstance(p, core.Parameter) else p)
+            ranges = ranges + [[i, i+l]]
+            i += l
 
 
 class Instrumentation(Tuple):
