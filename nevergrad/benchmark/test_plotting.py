@@ -168,6 +168,20 @@ def test_merge_parametrization_and_optimizer() -> None:
     assert out["val"].tolist() == [1, 2, 3]
 
 
+def test_normalized_losses() -> None:
+    data = [
+        ["alg0", 0, "sphere", 3],
+        ["alg0", -2, "sphere", 3],
+        ["alg2", 2, "sphere", 3],
+        ["alg3", 12, "sphere", 12],
+        ["alg2", 5, "sphere", 12],
+        ["alg4", 24, "ellipsoid", 3],
+    ]
+    df = pd.DataFrame(columns=["optimizer_name", "loss", "func", "dimension"], data=data)
+    ndf = plotting.normalized_losses(df, ["func", "dimension"])
+    np.testing.assert_array_equal(ndf.loss, [0.5, 0, 1, 1, 0, 1])
+
+
 if __name__ == "__main__":
     # simple example which can be run with:
     # python -m nevergrad.benchmark.test_plotting

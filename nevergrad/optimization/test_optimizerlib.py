@@ -10,7 +10,6 @@ import logging
 import platform
 import tempfile
 import warnings
-import typing as tp
 from pathlib import Path
 from functools import partial
 from unittest import SkipTest
@@ -21,8 +20,8 @@ import pandas as pd
 from scipy import stats
 from bayes_opt.util import acq_max
 import nevergrad as ng
-from ..common.typetools import ArrayLike
-from ..common import testing
+import nevergrad.common.typing as tp
+from nevergrad.common import testing
 from . import base
 from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants
@@ -34,11 +33,11 @@ class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4
     """
 
-    def __init__(self, x0: ArrayLike) -> None:
+    def __init__(self, x0: tp.ArrayLike) -> None:
         self.x0 = np.array(x0, copy=True)
         self.call_times: tp.List[float] = []
 
-    def __call__(self, x: ArrayLike) -> float:
+    def __call__(self, x: tp.ArrayLike) -> float:
         assert len(self.x0) == len(x)
         self.call_times.append(time.time())
         return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))
@@ -432,17 +431,17 @@ def test_shiwa_dim1() -> None:
     recom = optimizer.minimize(np.abs)
     assert recom.value < init
 
-    
+
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [("Shiwa", 1, 10, 1, "Cobyla"),
      ("Shiwa", 1, 10, 2, "CMA"),
      ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
-     ("NGO10", 1, 10, 1, "Cobyla"),
-     ("NGO10", 1, 10, 2, "CMA"),
-     ("NGO10", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
-     ("NGO10", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteBSOOnePlusOne"),
-     ("NGO10", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
+     ("NGOpt", 1, 10, 1, "MetaModel"),
+     ("NGOpt", 1, 10, 2, "MetaModel"),
+     ("NGOpt", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
+     ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteBSOOnePlusOne"),
+     ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
      ("NGO", 1, 10, 1, "Cobyla"),
      ("NGO", 1, 10, 2, "CMA"),
      ]  # pylint: disable=too-many-arguments
@@ -456,3 +455,10 @@ def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int
         assert match.group("name") == expected
 
 
+def test_bo_ordering() -> None:
+    optim = ng.optimizers.ParametrizedBO(initialization='Hammersley')(
+        parametrization=ng.p.Choice(range(12)),
+        budget=10
+    )
+    cand = optim.ask()
+    optim.tell(cand, 12)

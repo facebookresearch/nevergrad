@@ -4,10 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import collections
-import typing as tp
 import numpy as np
 import pandas as pd
-from nevergrad.common.typetools import PathLike
+import nevergrad.common.typing as tp
 from nevergrad.common import testing
 
 
@@ -81,7 +80,7 @@ class Selector(pd.DataFrame):  # type: ignore
             raise NotImplementedError("Only strings, lists and tuples are allowed")
 
     @classmethod
-    def read_csv(cls, path: PathLike) -> "Selector":
+    def read_csv(cls, path: tp.PathLike) -> "Selector":
         return cls(pd.read_csv(str(path)))
 
     def assert_equivalent(self, other: pd.DataFrame, err_msg: str = "") -> None:

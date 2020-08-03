@@ -109,7 +109,8 @@ def test_scalar() -> None:
     assert new_token.get_standardized_data(reference=token).tolist() == [1.]
 
 
-@pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.1), (-10, 0.001), (20, 0.1)])  # type: ignore
+# bouncing with large values clips to the other side
+@pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.001), (-30, 0.002), (20, 0.001)])  # type: ignore
 def test_log(value: float, expected: float) -> None:
     var = p.Log(lower=0.001, upper=0.1)
     out = var.spawn_child().set_standardized_data(np.array([value]))
@@ -124,7 +125,8 @@ def test_log_int() -> None:
 
 
 # note: 0.9/0.9482=0.9482/0.999
-@pytest.mark.parametrize("value,expected", [(0, 0.9482), (-11, 0.9), (10, 0.999)])  # type: ignore
+# with very large values, bouncing clips to the other side
+@pytest.mark.parametrize("value,expected", [(0, 0.9482), (-11, 0.999), (10, 0.9)])  # type: ignore
 def test_log_9(value: float, expected: float) -> None:
     var = p.Log(lower=0.9, upper=0.999)
     out = var.spawn_child().set_standardized_data(np.array([value]))

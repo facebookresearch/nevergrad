@@ -4,19 +4,17 @@
 # LICENSE file in the root directory of this source tree.
 import os
 import logging
-import typing as tp  # from now on, favor using tp.Dict etc instead of Dict
-from typing import Optional, List, Dict, Tuple, Callable, Any
 from collections import deque
 import warnings
 import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
-from nevergrad.common.typetools import ArrayLike
 from . import base
 from . import mutations
 from .base import registry as registry
@@ -28,8 +26,8 @@ from . import sequences
 
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments
-from .differentialevolution import *  # noqa: F403
-from .es import *  # noqa: F403
+from .differentialevolution import *  # type: ignore  # noqa: F403
+from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 #from .lamcts import LamctsOptimizer  # noqa: F403
@@ -53,7 +51,7 @@ class _OnePlusOne(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
@@ -78,12 +76,12 @@ class _OnePlusOne(base.Optimizer):
         self.mutation = mutation
         self.crossover = crossover
         if mutation == "doerr":
-            assert num_workers == 1, "Doerr mutation is implemented only in the sequential case." 
+            assert num_workers == 1, "Doerr mutation is implemented only in the sequential case."
             self._doerr_mutation_rates = [1, 2]
             self._doerr_mutation_rewards = [0., 0.]
             self._doerr_counters = [0., 0.]
-            self._doerr_epsilon = 0.25  #self.dimension ** (-0.01)
-            self._doerr_gamma = 1 - 2 / self.dimension 
+            self._doerr_epsilon = 0.25  # self.dimension ** (-0.01)
+            self._doerr_gamma = 1 - 2 / self.dimension
             self._doerr_current_best = float("inf")
             i = 3
             j = 2
@@ -94,7 +92,6 @@ class _OnePlusOne(base.Optimizer):
                 self._doerr_counters += [0.]
                 i += j
                 j += 2
-            
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
@@ -151,12 +148,12 @@ class _OnePlusOne(base.Optimizer):
                     index = self._rng.choice(range(len(self._doerr_mutation_rates)))
                     self._doerr_index = index
                 else:
-                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))                                                   
+                    index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
             else:
-                func: Callable[[ArrayLike], ArrayLike] = {  # type: ignore
+                func: tp.Callable[[tp.ArrayLike], tp.ArrayLike] = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
@@ -165,20 +162,20 @@ class _OnePlusOne(base.Optimizer):
                 data = func(pessimistic_data)
             return pessimistic.set_standardized_data(data, reference=ref)
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
         # only used for cauchy and gaussian
         if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
             improvement = max(0., self._doerr_current_best - value)
-            # Decay.          
-            index = self._doerr_index                                                       
-            counter = self._doerr_counters[index]                                                   
+            # Decay.
+            index = self._doerr_index
+            counter = self._doerr_counters[index]
             self._doerr_mutation_rewards[index] = (self._doerr_gamma * counter * self._doerr_mutation_rewards[index]
                                                    + improvement) / (self._doerr_gamma * counter + 1)
             self._doerr_counters = [self._doerr_gamma * x for x in self._doerr_counters]
-            self._doerr_counters[index] += 1                                                       
-            self._doerr_index = -1                                                       
+            self._doerr_counters[index] += 1
+            self._doerr_index = -1
         if self.mutation == "doerr":
-            self._doerr_current_best = min(self._doerr_current_best, value)                                                       
+            self._doerr_current_best = min(self._doerr_current_best, value)
         self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
         if self.mutation == "adaptive":
             factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
@@ -242,7 +239,8 @@ NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("Nois
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
-DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name("DiscreteDoerrOnePlusOne", register=True).no_parallelization = True                                                                    
+DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
+    "DiscreteDoerrOnePlusOne", register=True).no_parallelization = True
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic").set_name("OptimisticNoisyOnePlusOne", register=True)
@@ -265,10 +263,10 @@ class _CMA(base.Optimizer):
     def __init__(
             self,
             parametrization: IntOrParameter,
-            budget: Optional[int] = None,
+            budget: tp.Optional[int] = None,
             num_workers: int = 1,
             scale: float = 1.0,
-            popsize: Optional[int] = None,
+            popsize: tp.Optional[int] = None,
             diagonal: bool = False,
             fcmaes: bool = False,
             random_init: bool = False,
@@ -292,7 +290,8 @@ class _CMA(base.Optimizer):
         if self._es is None:
             if not self._fcmaes:
                 inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
-                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(
+                    self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
                 try:
                     from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
@@ -362,7 +361,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self,
         *,
         scale: float = 1.0,
-        popsize: Optional[int] = None,
+        popsize: tp.Optional[int] = None,
         diagonal: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
@@ -425,7 +424,7 @@ class EDA(base.Optimizer):
     _POPSIZE_ADAPTATION = False
     _COVARIANCE_MEMORY = False
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
         self.covariance = np.identity(self.dimension)
@@ -434,9 +433,9 @@ class EDA(base.Optimizer):
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # Population
         self.children: tp.List[p.Parameter] = []
-        self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
+        self.parents: tp.List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
 
-    def _internal_provide_recommendation(self) -> ArrayLike:  # This is NOT the naive version. We deal with noise.
+    def _internal_provide_recommendation(self) -> tp.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -507,7 +506,7 @@ class _TBPSA(base.Optimizer):
 
     def __init__(self,
                  parametrization: IntOrParameter,
-                 budget: Optional[int] = None,
+                 budget: tp.Optional[int] = None,
                  num_workers: int = 1,
                  naive: bool = True,
                  initial_popsize: tp.Optional[int] = None,
@@ -525,8 +524,8 @@ class _TBPSA(base.Optimizer):
         )
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
-        self.parents: List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
-        self.children: List[p.Parameter] = []
+        self.parents: tp.List[p.Parameter] = [self.parametrization]  # for transfering heritage (checkpoints in PBT)
+        self.children: tp.List[p.Parameter] = []
 
     def recommend(self) -> p.Parameter:
         if self.naive:
@@ -610,7 +609,7 @@ class NoisyBandit(base.Optimizer):
     Infinite arms: we add one arm when `20 * #ask >= #arms ** 3`.
     """
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask(self) -> tp.ArrayLike:
         if 20 * self._num_ask >= len(self.archive) ** 3:
             return self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
@@ -627,7 +626,7 @@ class PSO(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         transform: str = "arctan",
         wide: bool = False,  # legacy, to be removed if not needed anymore
@@ -788,13 +787,13 @@ class SPSA(base.Optimizer):
     """
     no_parallelization = True
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.init = True
         self.idx = 0
         self.delta = float("nan")
-        self.ym: Optional[np.ndarray] = None
-        self.yp: Optional[np.ndarray] = None
+        self.ym: tp.Optional[np.ndarray] = None
+        self.yp: tp.Optional[np.ndarray] = None
         self.t: np.ndarray = np.zeros(self.dimension)
         self.avg: np.ndarray = np.zeros(self.dimension)
         # Set A, a, c according to the practical implementation
@@ -818,7 +817,7 @@ class SPSA(base.Optimizer):
         "a_k is the learning rate."
         return self.a / (k // 2 + 1 + self.A) ** 0.602
 
-    def _internal_ask(self) -> ArrayLike:
+    def _internal_ask(self) -> tp.ArrayLike:
         k = self.idx
         if k % 2 == 0:
             if not self.init:
@@ -829,17 +828,16 @@ class SPSA(base.Optimizer):
             return self.t - self._ck(k) * self.delta  # type:ignore
         return self.t + self._ck(k) * self.delta  # type: ignore
 
-    def _internal_tell(self, x: ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
         setattr(self, ("ym" if self.idx % 2 == 0 else "yp"), np.array(value, copy=True))
         self.idx += 1
         if self.init and self.yp is not None and self.ym is not None:
             self.init = False
 
-    def _internal_provide_recommendation(self) -> ArrayLike:
+    def _internal_provide_recommendation(self) -> tp.ArrayLike:
         return self.avg
 
 
-@registry.register
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
@@ -864,10 +862,10 @@ class SplitOptimizer(base.Optimizer):
     def __init__(
             self,
             parametrization: IntOrParameter,
-            budget: Optional[int] = None,
+            budget: tp.Optional[int] = None,
             num_workers: int = 1,
             num_optims: tp.Optional[int] = None,
-            num_vars: Optional[List[int]] = None,
+            num_vars: tp.Optional[tp.List[int]] = None,
             multivariate_optimizer: base.ConfiguredOptimizer = CMA,
             monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
             progressive: bool = False,
@@ -887,9 +885,9 @@ class SplitOptimizer(base.Optimizer):
             num_optims = self.dimension
         self.num_optims = num_optims
         self.progressive = progressive
-        self.optims: List[Any] = []
-        self.num_vars: List[Any] = num_vars if num_vars else []
-        self.parametrizations: List[Any] = []
+        self.optims: tp.List[tp.Any] = []
+        self.num_vars: tp.List[tp.Any] = num_vars if num_vars else []
+        self.parametrizations: tp.List[tp.Any] = []
         for i in range(self.num_optims):
             if not self.num_vars or len(self.num_vars) < i + 1:
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
@@ -908,7 +906,7 @@ class SplitOptimizer(base.Optimizer):
             self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        data: List[Any] = []
+        data: tp.List[tp.Any] = []
         for i in range(self.num_optims):
             if self.progressive:
                 assert self.budget is not None
@@ -965,7 +963,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
@@ -994,7 +992,7 @@ class InfiniteMetaModelOptimum(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
 
-def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLike:
+def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
     Parameters
@@ -1041,11 +1039,11 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> ArrayLi
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
 
-        def intshare(n: int, m: int) -> Tuple[int, ...]:
+        def intshare(n: int, m: int) -> tp.Tuple[int, ...]:
             x = [n // m] * m
             i = 0
             while sum(x) < n:
@@ -1057,11 +1055,11 @@ class ParaPortfolio(Portfolio):
         self.which_optim = [0] * nw1 + [1] * nw2 + [2] * nw3 + [3] + [4] * nw4
         assert len(self.which_optim) == num_workers
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
-        self.optims: List[base.Optimizer] = [
+        self.optims: tp.List[base.Optimizer] = [
             CMA(self.parametrization, num_workers=nw1),  # share parametrization and its rng
             TwoPointsDE(self.parametrization, num_workers=nw2),  # noqa: F405
             PSO(self.parametrization, num_workers=nw3),
-            SQP(self.parametrization, 1),  # noqa: F405
+            SQP(self.parametrization, num_workers=1),  # noqa: F405
             ScrHammersleySearch(self.parametrization, budget=(budget // len(self.which_optim)) * nw4),  # noqa: F405
         ]
 
@@ -1076,7 +1074,7 @@ class ParaPortfolio(Portfolio):
 class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         nw = num_workers // 2
@@ -1087,7 +1085,7 @@ class SQPCMA(ParaPortfolio):
         # b1, b2, b3, b4, b5 = intshare(budget, 5)
         self.optims = [CMA(self.parametrization, num_workers=nw)]  # share parametrization and its rng
         for i in range(num_workers - nw):
-            self.optims += [SQP(self.parametrization, 1)]  # noqa: F405
+            self.optims += [SQP(self.parametrization, num_workers=1)]  # noqa: F405
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
 
@@ -1096,7 +1094,7 @@ class SQPCMA(ParaPortfolio):
 class ASCMADEthird(Portfolio):
     """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
@@ -1130,7 +1128,7 @@ class ASCMADEthird(Portfolio):
 class ASCMADEQRthird(ASCMADEthird):
     """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
             CMA(self.parametrization, budget=None, num_workers=num_workers),
@@ -1143,7 +1141,7 @@ class ASCMADEQRthird(ASCMADEthird):
 class ASCMA2PDEthird(ASCMADEQRthird):
     """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
             CMA(self.parametrization, budget=None, num_workers=num_workers),
@@ -1155,7 +1153,7 @@ class ASCMA2PDEthird(ASCMADEQRthird):
 class CMandAS2(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
         assert budget is not None
@@ -1175,7 +1173,7 @@ class CMandAS2(ASCMADEthird):
 class CMandAS3(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
         assert budget is not None
@@ -1202,7 +1200,7 @@ class CMandAS3(ASCMADEthird):
 class CMandAS(CMandAS2):
     """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
         assert budget is not None
@@ -1223,7 +1221,7 @@ class CMandAS(CMandAS2):
 class CM(CMandAS2):
     """Competence map, simplest."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         # share parametrization and its random number generator between all underlying optimizers
@@ -1239,7 +1237,7 @@ class CM(CMandAS2):
 class MultiCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/10 of the budget."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
@@ -1254,7 +1252,7 @@ class MultiCMA(CM):
 class MultiDiscrete(CM):
     """Combining 3 Discrete(1+1). Exactly identical. Active selection at 1/10 of the budget."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
@@ -1269,11 +1267,12 @@ class MultiDiscrete(CM):
 class TripleCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
+            ParametrizedCMA(random_init=True)(self.parametrization, budget=None,
+                                              num_workers=num_workers),  # share parametrization and its rng
             ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
             ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers),
         ]
@@ -1284,11 +1283,24 @@ class TripleCMA(CM):
 class ManyCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(int(np.sqrt(budget)))]
-        
+        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
+                       for _ in range(int(np.sqrt(budget)))]
+
+        self.budget_before_choosing = budget // 3
+
+
+@registry.register
+class PolyCMA(CM):
+    """Combining 20 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(20)]
+
         self.budget_before_choosing = budget // 3
 
 
@@ -1296,19 +1308,19 @@ class ManyCMA(CM):
 class ManySmallCMA(CM):
     """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [ParametrizedCMA(scale=1e-6, random_init=i > 0)(self.parametrization, budget=None, num_workers=num_workers)
-                for i in range(int(np.sqrt(budget)))]
+                       for i in range(int(np.sqrt(budget)))]
         self.budget_before_choosing = budget // 3
 
-                                                                                                                                                                                                           
+
 @registry.register
 class MultiScaleCMA(CM):
     """Combining 3 CMAs with different init scale. Active selection at 1/3 of the budget."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [
             CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
@@ -1320,12 +1332,19 @@ class MultiScaleCMA(CM):
 
 
 class _FakeFunction:
-    """Simple function that returns the value which was registerd just before.
+    """Simple function that returns the value which was registered just before.
     This is a hack for BO.
     """
 
-    def __init__(self) -> None:
-        self._registered: List[Tuple[np.ndarray, float]] = []
+    def __init__(self, num_digits: int) -> None:
+        self.num_digits = num_digits
+        self._registered: tp.List[tp.Tuple[np.ndarray, float]] = []
+
+    def key(self, num: int) -> str:
+        """Key corresponding to the array sample
+        (uses zero-filling to keep order)
+        """
+        return "x" + str(num).zfill(self.num_digits)
 
     def register(self, x: np.ndarray, value: float) -> None:
         if self._registered:
@@ -1335,10 +1354,9 @@ class _FakeFunction:
     def __call__(self, **kwargs: float) -> float:
         if not self._registered:
             raise RuntimeError("Call must be registered first")
-        x = [kwargs[f"x{i}"] for i in range(len(kwargs))]
+        x = [kwargs[self.key(i)] for i in range(len(kwargs))]
         xr, value = self._registered[0]
-        if not np.array_equal(x, xr):
-            raise ValueError("Call does not match registered")
+        np.testing.assert_array_almost_equal(x, xr, err_msg="Call does not match registered")
         self._registered.clear()
         return value
 
@@ -1348,21 +1366,21 @@ class _BO(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        initialization: Optional[str] = None,
-        init_budget: Optional[int] = None,
+        initialization: tp.Optional[str] = None,
+        init_budget: tp.Optional[int] = None,
         middle_point: bool = False,
         utility_kind: str = "ucb",  # bayes_opt default
         utility_kappa: float = 2.576,
         utility_xi: float = 0.0,
-        gp_parameters: Optional[Dict[str, Any]] = None,
+        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._transform = transforms.ArctanBound(0, 1)
-        self._bo: Optional[BayesianOptimization] = None
-        self._fake_function = _FakeFunction()
+        self._bo: tp.Optional[BayesianOptimization] = None
+        self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
         # configuration
         assert initialization is None or initialization in ["random", "Hammersley", "LHS"], f"Unknown init {initialization}"
         self.initialization = initialization
@@ -1387,7 +1405,7 @@ class _BO(base.Optimizer):
     @property
     def bo(self) -> BayesianOptimization:
         if self._bo is None:
-            bounds = {f"x{i}": (0.0, 1.0) for i in range(self.dimension)}
+            bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
@@ -1414,7 +1432,7 @@ class _BO(base.Optimizer):
             x_probe = next(self.bo._queue)
         except StopIteration:
             x_probe = self.bo.suggest(util)  # this is time consuming
-            x_probe = [x_probe[f"x{i}"] for i in range(len(x_probe))]
+            x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
         data = self._transform.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
@@ -1433,7 +1451,7 @@ class _BO(base.Optimizer):
         # so we should clean the "fake" function
         self._fake_function._registered.clear()
 
-    def _internal_provide_recommendation(self) -> tp.Optional[ArrayLike]:
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         if self.archive:
             return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
         else:
@@ -1469,13 +1487,13 @@ class ParametrizedBO(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        initialization: Optional[str] = None,
-        init_budget: Optional[int] = None,
+        initialization: tp.Optional[str] = None,
+        init_budget: tp.Optional[int] = None,
         middle_point: bool = False,
         utility_kind: str = "ucb",  # bayes_opt default
         utility_kappa: float = 2.576,
         utility_xi: float = 0.0,
-        gp_parameters: Optional[Dict[str, Any]] = None,
+        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_BO, locals())
 
@@ -1488,7 +1506,7 @@ class _Chain(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
         optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [LHSSearch, DE],
@@ -1502,7 +1520,7 @@ class _Chain(base.Optimizer):
                      "half": self.budget // 2 if self.budget else self.num_workers,
                      "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
         self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
-        last_budget = None if self.budget is None else self.budget - sum(self.budgets)
+        last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
@@ -1566,9 +1584,9 @@ class cGA(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        arity: Optional[int] = None
+        arity: tp.Optional[int] = None
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
@@ -1583,11 +1601,11 @@ class cGA(base.Optimizer):
         self.llambda = max(num_workers, 40)  # FIXME: no good heuristic ?
         # CGA generates a candidate, then a second candidate;
         # then updates depending on the comparison with the first one. We therefore have to store the previous candidate.
-        self._previous_value_candidate: Optional[Tuple[float, np.ndarray]] = None
+        self._previous_value_candidate: tp.Optional[tp.Tuple[float, np.ndarray]] = None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Multinomial.
-        values: List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
+        values: tp.List[int] = [sum(self._rng.uniform() > cum_proba) for cum_proba in np.cumsum(self.p, axis=1)]
         data = discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.parametrization.spawn_child().set_standardized_data(data)
 
@@ -1619,7 +1637,7 @@ class NGO(base.Optimizer):
     one_shot = True
 
     # pylint: disable=too-many-branches
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         descr = self.parametrization.descriptors
@@ -1674,7 +1692,7 @@ class NGO(base.Optimizer):
         return self.optim.recommend()
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        self.optim.tell(candidate, value)
 
 
 class _EMNA(base.Optimizer):
@@ -1686,7 +1704,7 @@ class _EMNA(base.Optimizer):
     def __init__(
             self,
             parametrization: IntOrParameter,
-            budget: Optional[int] = None,
+            budget: tp.Optional[int] = None,
             num_workers: int = 1,
             isotropic: bool = True,
             naive: bool = True,
@@ -1723,8 +1741,8 @@ class _EMNA(base.Optimizer):
                 warnings.warn("Budget may be too small in front of the dimension for EMNA", base.InefficientSettingsWarning)
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
-        self.parents: List[p.Parameter] = [self.parametrization]
-        self.children: List[p.Parameter] = []
+        self.parents: tp.List[p.Parameter] = [self.parametrization]
+        self.children: tp.List[p.Parameter] = []
 
     def recommend(self) -> p.Parameter:
         if self.naive:
@@ -1820,7 +1838,7 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 class Shiwa(NGO):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
@@ -1841,7 +1859,7 @@ class Shiwa(NGO):
 class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1,
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
                  multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -1865,10 +1883,10 @@ class MetaModel(base.Optimizer):
 
 
 @registry.register
-class NGO10(base.Optimizer):
+class NGOpt(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         descr = self.parametrization.descriptors
@@ -1878,47 +1896,57 @@ class NGO10(base.Optimizer):
         self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
         arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            self.optim: base.Optimizer = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
-        elif not descr.not_manyobjective:
-            self.optim = DiagonalCMA(self.parametrization, budget, num_workers)
-        elif not descr.monoobjective:
-            self.optim = LhsDE(self.parametrization, budget, num_workers)
+            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
         elif arity > 0:
-            self.optim = DiscreteBSOOnePlusOne(self.parametrization, budget, num_workers) if arity > 5 else CMandAS2(
-                self.parametrization, budget, num_workers)
+            optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
                 # noise and discrete: let us merge evolution and bandits.
-                self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
             else:
                 if self.has_noise and self.fully_continuous:
                     # This is the real of population control. FIXME: should we pair with a bandit ?
-                    self.optim = TBPSA(self.parametrization, budget, num_workers)
+                    optimClass = TBPSA  # type: ignore
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                        self.optim = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
+                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                self.optim = MetaTuneRecentering(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = MetaTuneRecentering  # type: ignore
+                            elif self.dimension < 5 and budget < 100:
+                                optimClass = DiagonalCMA  # type: ignore
+                            elif self.dimension < 5 and budget < 500:
+                                optimClass = MetaModel  # type: ignore
                             else:
-                                self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = NaiveTBPSA  # type: ignore
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                self.optim = chainCMAPowell(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = chainCMAPowell  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                        self.optim = OnePlusOne(self.parametrization, budget, num_workers)  # noqa: F405
+                                        optimClass = OnePlusOne  # type: ignore
+                                    elif self.dimension < 5:
+                                        optimClass = MetaModel  # type: ignore
                                     else:
-                                        self.optim = Cobyla(self.parametrization, budget, num_workers)  # noqa: F405
+                                        optimClass = Cobyla  # type: ignore
                                 else:
                                     if self.dimension > 2000:  # DE is great in such a case (?).
-                                        self.optim = DE(self.parametrization, budget, num_workers)  # noqa: F405
+                                        optimClass = DE  # type: ignore
                                     else:
-                                        self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
+                                        if self.dimension < 10 and budget < 500:
+                                            optimClass = MetaModel  # type: ignore
+                                        else:
+                                            if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
+                                                optimClass = DiagonalCMA # type: ignore
+                                            elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
+                                                optimClass = MetaModel # type: ignore
+                                            else:
+                                                optimClass = CMA # type: ignore
+        self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1931,7 +1959,7 @@ class NGO10(base.Optimizer):
         return self.optim.recommend()
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+        self.optim.tell(candidate, value)
 
 
 Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)

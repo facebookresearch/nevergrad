@@ -5,13 +5,13 @@
 
 import hashlib
 import itertools
-import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from .base import ExperimentFunction
 from .multiobjective import MultiobjectiveFunction
+from .pbt import PBT as PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
 
@@ -44,7 +44,7 @@ class ArtificialVariable:
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
             self._transforms.append(utils.Transform(transform_inds, translation_factor=self.translation_factor, rotation=self.rotation))
 
-    def process(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+    def process(self, data: tp.ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
         if not self._transforms:
             self._initialize()
         if self.hashing:
@@ -170,7 +170,7 @@ class ArtificialFunction(ExperimentFunction):
         """
         return sorted(corefuncs.registry)
 
-    def _transform(self, x: ArrayLike) -> np.ndarray:
+    def _transform(self, x: tp.ArrayLike) -> np.ndarray:
         data = self.transform_var.process(x)
         return np.array(data)
 
@@ -191,7 +191,7 @@ class ArtificialFunction(ExperimentFunction):
         data = self._transform(args[0])
         return self.function_from_transform(data)
 
-    def noisy_function(self, x: ArrayLike) -> float:
+    def noisy_function(self, x: tp.ArrayLike) -> float:
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
@@ -275,4 +275,3 @@ class FarOptimumFunction(ExperimentFunction):
         select = itertools.product(*(options[k] for k in keys))  # type: ignore
         cases = (dict(zip(keys, s)) for s in select)
         return (cls(**c) for c in cases)
-

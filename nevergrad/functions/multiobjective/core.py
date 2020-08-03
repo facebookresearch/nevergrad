@@ -4,12 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from .hypervolume import HypervolumeIndicator
-
-ArgsKwargs = tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]
 
 
 # pylint: disable=too-many-instance-attributes
@@ -35,7 +32,7 @@ class MultiobjectiveFunction:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, multiobjective_function: tp.Callable[..., ArrayLike], upper_bounds: tp.Optional[ArrayLike] = None) -> None:
+    def __init__(self, multiobjective_function: tp.Callable[..., tp.ArrayLike], upper_bounds: tp.Optional[tp.ArrayLike] = None) -> None:
         self.multiobjective_function = multiobjective_function
         self._auto_bound = 0
         self._auto_upper_bounds = np.array([-float('inf')])
@@ -45,10 +42,10 @@ class MultiobjectiveFunction:
         else:
             self._upper_bounds = upper_bounds
             self._hypervolume: tp.Any = HypervolumeIndicator(self._upper_bounds)  # type: ignore
-        self._points: tp.List[tp.Tuple[ArgsKwargs, np.ndarray]] = []
+        self._points: tp.List[tp.Tuple[tp.ArgsKwargs, np.ndarray]] = []
         self._best_volume = -float("Inf")
 
-    def compute_aggregate_loss(self, losses: ArrayLike, *args: tp.Any, **kwargs: tp.Any) -> float:
+    def compute_aggregate_loss(self, losses: tp.ArrayLike, *args: tp.Any, **kwargs: tp.Any) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
@@ -91,7 +88,7 @@ class MultiobjectiveFunction:
     def _filter_pareto_front(self) -> None:
         """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict).
         """
-        new_points: tp.List[tp.Tuple[ArgsKwargs, np.ndarray]] = []
+        new_points: tp.List[tp.Tuple[tp.ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
             should_be_added = True
             for _, other_losses in self._points:
@@ -102,7 +99,7 @@ class MultiobjectiveFunction:
                 new_points.append((argskwargs, losses))
         self._points = new_points
 
-    def pareto_front(self, size: tp.Optional[int] = None, subset: str = "random") -> tp.List[ArgsKwargs]:
+    def pareto_front(self, size: tp.Optional[int] = None, subset: str = "random") -> tp.List[tp.ArgsKwargs]:
         """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
 
         Parameters

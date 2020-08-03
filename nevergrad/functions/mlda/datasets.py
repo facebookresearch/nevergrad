@@ -5,7 +5,7 @@
 
 import warnings
 import contextlib
-from typing import Union, Iterator, Any
+import typing as tp
 from pathlib import Path
 from unittest.mock import patch
 import requests
@@ -52,7 +52,7 @@ def get_dataset_filepath(name: str) -> Path:
     return path
 
 
-def get_data(name: str) -> Union[np.ndarray, pd.DataFrame]:
+def get_data(name: str) -> tp.Union[np.ndarray, pd.DataFrame]:
     path = get_dataset_filepath(name)
     if name in ["German towns", "Ruspini", "Virus"]:
         return np.loadtxt(path)
@@ -64,7 +64,7 @@ def get_data(name: str) -> Union[np.ndarray, pd.DataFrame]:
         raise NameError(f'Unknown parsing for name "{name}"')
 
 
-def _make_fake_get_data(name: str) -> Union[np.ndarray, pd.DataFrame]:
+def _make_fake_get_data(name: str) -> tp.Union[np.ndarray, pd.DataFrame]:
     # Landscape is actually supposed to be exactly 10 times bigger (2160, 4320)
     sizes = {"Ruspini": (75, 2), "Virus": (38, 18), "Employees": (80, 81), "Landscape": (216, 432), "German towns": (89, 3)}
     data = np.zeros(sizes[name])
@@ -72,7 +72,7 @@ def _make_fake_get_data(name: str) -> Union[np.ndarray, pd.DataFrame]:
 
 
 @contextlib.contextmanager
-def mocked_data() -> Iterator[Any]:
+def mocked_data() -> tp.Iterator[tp.Any]:
     """Mocks all data that should be downloaded, in order to simplify testing
     """
     with patch("nevergrad.functions.mlda.datasets.get_data", new=_make_fake_get_data) as mocked:
