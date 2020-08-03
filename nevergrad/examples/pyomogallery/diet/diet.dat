@@ -1,0 +1,33 @@
+param:  F:                          c     V  :=
+  "Cheeseburger"                 1.84   4.0  
+  "Ham Sandwich"                 2.19   7.5  
+  "Hamburger"                    1.84   3.5  
+  "Fish Sandwich"                1.44   5.0  
+  "Chicken Sandwich"             2.29   7.3  
+  "Fries"                         .77   2.6  
+  "Sausage Biscuit"              1.29   4.1  
+  "Lowfat Milk"                   .60   8.0 
+  "Orange Juice"                  .72  12.0 ;
+
+param Vmax := 75.0;
+
+param:  N:       Nmin   Nmax :=
+        Cal      2000      .
+        Carbo     350    375
+        Protein    55      .
+        VitA      100      .
+        VitC      100      .
+        Calc      100      .
+        Iron      100      . ;
+
+param a:
+                               Cal  Carbo Protein   VitA   VitC  Calc  Iron :=
+  "Cheeseburger"               510     34     28     15      6    30    20
+  "Ham Sandwich"               370     35     24     15     10    20    20
+  "Hamburger"                  500     42     25      6      2    25    20
+  "Fish Sandwich"              370     38     14      2      0    15    10
+  "Chicken Sandwich"           400     42     31      8     15    15     8
+  "Fries"                      220     26      3      0     15     0     2
+  "Sausage Biscuit"            345     27     15      4      0    20    15
+  "Lowfat Milk"                110     12      9     10      4    30     0
+  "Orange Juice"                80     20      1      2    120     2     2 ;
