@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Type, List
+import typing as tp
 import numpy as np
 from ..common import testing
 from . import sequences
@@ -25,7 +25,7 @@ def test_get_first_primes() -> None:
 
 
 @testing.parametrized(**{name: (name, sampler,) for name, sampler in samplers.items()})
-def test_samplers(name: str, sampler_cls: Type[sequences.Sampler]) -> None:
+def test_samplers(name: str, sampler_cls: tp.Type[sequences.Sampler]) -> None:
     sampler = sampler_cls(144, 4)
     np.testing.assert_equal(sampler.index, 0)
     output = sampler()
@@ -45,7 +45,7 @@ def test_sampler_draw() -> None:
     lhs=("LHSSampler", [0.931, 0.422, 0.391], [0.428, 0.625, 0.797]),
     halton=("HaltonSampler", [0.5, 0.333, 0.2], [0.25, 0.667, 0.4]),
 )
-def test_sampler_values(name: str, seq1: List[float], seq2: List[float]) -> None:
+def test_sampler_values(name: str, seq1: tp.List[float], seq2: tp.List[float]) -> None:
     budget = 4
     np.random.seed(12)
     sampler = samplers[name](3, budget)

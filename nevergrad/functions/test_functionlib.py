@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict
+import typing as tp
 import numpy as np
 import pytest
 from nevergrad.common import testing
@@ -17,7 +17,7 @@ DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensi
 
 
 def test_testcase_function_errors() -> None:
-    config: Dict[str, Any] = {"name": "blublu", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}
+    config: tp.Dict[str, tp.Any] = {"name": "blublu", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}
     np.testing.assert_raises(ValueError, functionlib.ArtificialFunction, **config)  # blublu does not exist
     config.update(name="sphere")
     functionlib.ArtificialFunction(**config)  # should wor
@@ -30,10 +30,20 @@ def test_testcase_function_errors() -> None:
 
 
 def test_artitificial_function_repr() -> None:
-    config: Dict[str, Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}
+    config: tp.Dict[str, tp.Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}
     func = functionlib.ArtificialFunction(**config)
     output = repr(func)
     assert "sphere" in output, f"Unexpected representation: {output}"
+
+
+def test_ptb_no_overfitting() -> None:
+    func = functionlib.PBT(("sphere", "cigar"), (3, 7), 12)
+    func = func.copy()
+    # We do a gradient descent.
+    value = [func(- 15. * np.ones(2)) for _ in range(1500)]
+    # We check that the values are becoming better and better.
+    assert value[-1] < value[len(value) // 2]
+    assert value[0] > value[len(value) // 2]
 
 
 @testing.parametrized(
@@ -46,7 +56,7 @@ def test_artitificial_function_repr() -> None:
     noisy_very_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6,
                         "num_blocks": 2, "noise_dissymmetry": True, "noise_level": .2}, 7.615),
 )
-def test_testcase_function_value(config: Dict[str, Any], expected: float) -> None:
+def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) -> None:
     # make sure no change is made to the computation
     func = functionlib.ArtificialFunction(**config)
     func = func.copy()
@@ -64,8 +74,8 @@ def test_testcase_function_value(config: Dict[str, Any], expected: float) -> Non
     random=(np.random.normal(0, 1, 12), False),
     hashed=(["abcdefghijkl"], True),
 )
-def test_test_function(x: Any, hashing: bool) -> None:
-    config: Dict[str, Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": hashing}
+def test_test_function(x: tp.Any, hashing: bool) -> None:
+    config: tp.Dict[str, tp.Any] = {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": hashing}
     outputs = []
     for _ in range(2):
         np.random.seed(12)
@@ -92,7 +102,7 @@ def test_function_transform() -> None:
     func = functionlib.ArtificialFunction("sphere", 2, num_blocks=1, noise_level=.1)
     output = func._transform(np.array([0., 0]))
     np.testing.assert_equal(output.shape, (1, 2))
-    np.testing.assert_equal(len([x for x in output]), 1)
+    np.testing.assert_equal(len(output), 1)
 
 
 def test_artificial_function_summary() -> None:

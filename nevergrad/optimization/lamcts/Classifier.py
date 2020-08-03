@@ -1,21 +1,21 @@
-import torch
-import json
-import numpy as np
-
-from sklearn.cluster import KMeans
-from scipy.stats import norm
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# verify
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 import copy as cp
-from sklearn.svm import SVC
-
-from torch.quasirandom import SobolEngine
-from mpl_toolkits.mplot3d import axes3d, Axes3D
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import ConstantKernel, Matern
 
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
 from matplotlib import cm
+from scipy.stats import norm
+from sklearn.cluster import KMeans
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import ConstantKernel, Matern
+from sklearn.svm import SVC
+from torch.quasirandom import SobolEngine
 
-from turbo_1.turbo_1 import Turbo1
+from .turbo_1.turbo_1 import Turbo1
 
 
 # the input will be samples!
@@ -346,15 +346,15 @@ class Classifier():
     ###########################
     # version 1: select a partition, perform one-time turbo search
         
-    def propose_samples_turbo(self, num_samples, path, func):
+    def propose_samples_turbo(self, num_samples, path, func, lb, ub, device):
         #throw a uniform sampling in the selected partition
-        X_init = self.propose_rand_samples_sobol(30, path, func.lb, func.ub) 
+        X_init = self.propose_rand_samples_sobol(30, path, lb, ub)
         #get samples around the selected partition
         print("sampled ", len(X_init), " for the initialization")
         turbo1 = Turbo1(
             f  = func,              # Handle to objective function
-            lb = func.lb,           # Numpy array specifying lower bounds
-            ub = func.ub,           # Numpy array specifying upper bounds
+            lb = lb,           # Numpy array specifying lower bounds
+            ub = ub,           # Numpy array specifying upper bounds
             n_init = 30,            # Number of initial bounds from an Latin hypercube design
             max_evals  = num_samples, # Maximum number of evaluations
             batch_size = 1,         # How large batch size TuRBO uses
@@ -363,7 +363,7 @@ class Classifier():
             max_cholesky_size=2000, # When we switch from Cholesky to Lanczos
             n_training_steps=50,    # Number of steps of ADAM to learn the hypers
             min_cuda= 40,          #  Run on the CPU for small datasets
-            device="cuda",           # "cpu" or "cuda"
+            device=device,           # "cpu" or "cuda"
             dtype="float64",        # float64 or float32
             boundary=path,
             X_init = X_init

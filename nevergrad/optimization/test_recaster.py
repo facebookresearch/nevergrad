@@ -4,10 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
-import typing as tp
 import numpy as np
 import nevergrad as ng
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from nevergrad.common import testing
 from . import recaster
 from . import optimizerlib
@@ -51,17 +50,17 @@ def test_automatic_thread_deletion() -> None:
     assert thread.is_alive()
 
 
-def fake_cost_function(x: ArrayLike) -> float:
+def fake_cost_function(x: tp.ArrayLike) -> float:
     return float(np.sum(np.array(x) ** 2))
 
 
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
 
-    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
         # create a new instance to avoid deadlock
         return self.__class__(self.parametrization, self.budget, self.num_workers)._optim_function
 
-    def _optim_function(self, func: tp.Callable[..., tp.Any]) -> ArrayLike:
+    def _optim_function(self, func: tp.Callable[..., tp.Any]) -> tp.ArrayLike:
         suboptim = optimizerlib.OnePlusOne(parametrization=2, budget=self.budget)
         recom = suboptim.minimize(func)
         return recom.get_standardized_data(reference=self.parametrization)

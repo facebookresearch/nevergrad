@@ -5,8 +5,8 @@
 
 import sys
 import contextlib
+import typing as tp
 from unittest.mock import patch
-from typing import Optional, List, Any
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
@@ -76,7 +76,7 @@ def test_is_incoherent(optimizer: str, num_workers: int, expected: bool) -> None
     seed_with_rand=(12, 12, [363, 803, 222, 277]),
     different_seed=(24, 0, [914, 555, 376, 855]),
 )
-def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optional[int]]) -> None:
+def test_seed_generator(seed: tp.Optional[int], randsize: int, expected: tp.List[tp.Optional[int]]) -> None:
     output = []
     generator = xpbase.create_seed_generator(seed)
     for _ in range(4):
@@ -97,7 +97,7 @@ class Function(ExperimentFunction):
         return float(x[0])
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
         return 5 - value
 
 
@@ -105,7 +105,7 @@ class Function(ExperimentFunction):
     w3_batch=(True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
     w3_steady=(False, ['s0', 's1', 's2', 'u2', 's3', 'u1', 's4', 'u0', 'u3', 'u4']),  # u0 and u1 are delayed
 )
-def test_batch_mode_parameter(batch_mode: bool, expected: List[str]) -> None:
+def test_batch_mode_parameter(batch_mode: bool, expected: tp.List[str]) -> None:
     func = Function(dimension=1)
     optim = test_base.LoggingOptimizer(3)
     with patch.object(xpbase.OptimizerSettings, "instantiate", return_value=optim):

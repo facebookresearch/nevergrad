@@ -1,9 +1,14 @@
-from Classifier import Classifier
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# verify
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+from .Classifier import Classifier
 import json
 import numpy as np
 import math
 import operator
-from Net_Trainer import Net_Trainer
+from .Net_Trainer import Net_Trainer
 
 class Node:
     obj_counter   = 0
@@ -109,8 +114,8 @@ class Node:
         proposed_X = self.classifier.propose_samples_bo(num_samples, path, lb, ub, samples)
         return proposed_X
         
-    def propose_samples_turbo(self, num_samples, path, func):
-        proposed_X, fX = self.classifier.propose_samples_turbo(num_samples, path, func)
+    def propose_samples_turbo(self, num_samples, path, func, lb, ub, device):
+        proposed_X, fX = self.classifier.propose_samples_turbo(num_samples, path, func, lb, ub, device)
         return proposed_X, fX
 
     def propose_samples_rand(self, num_samples):

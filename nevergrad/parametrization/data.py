@@ -5,9 +5,8 @@
 
 import functools
 import warnings
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import core
 from . import utils
 from . import transforms as trans
@@ -90,7 +89,7 @@ class Mutation(core.Parameter):
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
@@ -118,7 +117,7 @@ class Array(core.Parameter):
     def __init__(
             self,
             *,
-            init: tp.Optional[ArrayLike] = None,
+            init: tp.Optional[tp.ArrayLike] = None,
             shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
@@ -170,7 +169,7 @@ class Array(core.Parameter):
         return self._value
 
     @value.setter
-    def value(self, value: ArrayLike) -> None:
+    def value(self, value: tp.ArrayLike) -> None:
         self._check_frozen()
         self._ref_data = None
         if not isinstance(value, (np.ndarray, tuple, list)):
@@ -363,7 +362,7 @@ class Array(core.Parameter):
         Note
         ----
         Using integer casting makes the parameter discrete which can make the optimization more
-        difficult. It is especially ill-adviced to use this with a range smaller than 10, or
+        difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
         self.integer = True
@@ -548,4 +547,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded and no_init)
+            self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)

@@ -5,8 +5,8 @@
 
 import warnings
 from pathlib import Path
-import typing as tp
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.common import testing
 from . import optimizerlib
 from . import experimentalvariants as xpvariants
@@ -19,7 +19,7 @@ class CounterFunction:
     def __init__(self) -> None:
         self.count = 0
 
-    def __call__(self, value: base.ArrayLike) -> float:
+    def __call__(self, value: tp.ArrayLike) -> float:
         assert len(value) == 1
         self.count += 1
         return float(value[0] - 1)**2
@@ -31,11 +31,11 @@ class LoggingOptimizer(base.Optimizer):
         super().__init__(parametrization=1, budget=5, num_workers=num_workers)
         self.logs: tp.List[str] = []
 
-    def _internal_ask(self) -> base.ArrayLike:
+    def _internal_ask(self) -> tp.ArrayLike:
         self.logs.append(f"s{self._num_ask}")  # s for suggest
         return np.array((float(self._num_ask),))
 
-    def _internal_tell(self, x: base.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
         self.logs.append(f"u{int(x[0])}")  # u for update
 
 

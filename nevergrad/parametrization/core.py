@@ -8,9 +8,8 @@ import warnings
 import operator
 import functools
 from collections import OrderedDict
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import utils
 # pylint: disable=no-value-for-parameter
 
@@ -150,7 +149,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -277,7 +276,7 @@ class Parameter:
         - constraints should be fast to compute.
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
-            warnings.warn("Lambda as constraint is not adviced because it may not be picklable.")
+            warnings.warn("Lambda as constraint is not advised because it may not be picklable.")
         self._constraint_checkers.append(func)
 
     # %% random state
@@ -415,7 +414,7 @@ class Constant(Parameter):
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
