@@ -151,7 +151,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
 
-    def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[[base.ArrayLike], float]], base.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(
@@ -164,7 +164,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
-    def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
+    def _optimization_function(self, objective_function: tp.Callable[[base.ArrayLike], float]) -> base.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
