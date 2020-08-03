@@ -425,7 +425,7 @@ class Array(core.Parameter):
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class Torus(Array):
-    """Array parameter with customizable mutation and recombination.
+    """Array parameter with customizable mutation and recombination. Represents an angle, between 0 and 6.2832.
 
     Parameters
     ----------
@@ -438,15 +438,29 @@ class Torus(Array):
 
     Note
     ----
-    More specific behaviors can be obtained throught the following methods:
-    set_bounds, set_mutation, set_integer_casting
+    set_bounds and set_integer_casting do not work, as they become pointless here.
     """
+    # pylint: disable=unused-argument
+    def set_bounds(
+        self: A,
+        lower: BoundValue = None,
+        upper: BoundValue = None,
+        method: str = "bouncing",
+        full_range_sampling: tp.Optional[bool] = None,
+        a_min: BoundValue = None,
+        a_max: BoundValue = None,
+    ) -> A:
+        assert False, "set_bounds is pointless for torus: we are working on angles, which are naturally bounded."
 
-    def single_to_angle(x):
+    # pylint: disable=unused-argument
+    def set_integer_casting(self: A) -> A:
+        assert False, "set_integer_casting is pointless for torus: we are working on angles, which are naturally continuous."
+
+    def single_to_angle(x: np.ndarray) -> float:
         x = x[0] * np.ndarray([1, 0]) + x[1] * np.ndarray([0, 1]) + x[2] * np.ndarray([-1, 0]) + x[3] * np.ndarray([0, -1])
         return np.angle(x[0]+x[1]*1j)
 
-    def single_from_angle(a):
+    def single_from_angle(a: float) -> np.ndarray:
         """The reverse of single to angle."""
         x = np.cos(a)
         y = np.sin(a)
@@ -460,7 +474,7 @@ class Torus(Array):
         return r
     
 
-    def to_angle(x):  
+    def to_angle(x: np.ndarray) -> np.ndarray:  
         """x has shape (4, a, b, c), we return something of shape (a, b, c) using single_to_angle for converting an array of shape (4,) to a float."""
         assert x.shape[0] == 4
         out = x[0].copy()
@@ -468,7 +482,7 @@ class Torus(Array):
             cell[...] = single_to_angle(x0, x1, x2, x3)
         return cell
 
-    def from_angle(y):
+    def from_angle(y: np.ndarray) -> np.ndarray:
         """Opposite of to_angle."""
         x = np.tile(y, (4,)+tuple([1] * len(y.shape))).shape
         for cell, x0, x1, x2, x3 in np.nditer([y, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):

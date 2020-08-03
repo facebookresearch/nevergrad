@@ -247,6 +247,11 @@ def test_constraints(name: str) -> None:
                                        significant=3, err_msg="Constraining did not work")
 
 
+def test_torus() -> None:
+    param = par.Torus(init=2 * np.ones((2, 3))).set_mutation(sigma=1.)
+    param.set_standardized_data(param.get_standardized_data(reference=param))
+
+
 @pytest.mark.parametrize(  # type: ignore
     "param,expected", [
         (par.Scalar(), False),
