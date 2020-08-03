@@ -382,7 +382,7 @@ class Constant(Parameter):
 
     def __init__(self, value: tp.Any) -> None:
         super().__init__()
-        if isinstance(value, Parameter):
+        if isinstance(value, Parameter) and not isinstance(self, MultiobjectiveReference):
             raise TypeError("Only non-parameters can be wrapped in a Constant")
         self._value = value
 
@@ -440,6 +440,15 @@ def as_parameter(param: tp.Any) -> Parameter:
         return param
     else:
         return Constant(param)
+
+
+class MultiobjectiveReference(Constant):
+
+    def __init__(self, parameter: tp.Optional[Parameter] = None) -> None:
+        if parameter is not None and not isinstance(parameter, Parameter):
+            raise TypeError("MultiobjectiveReference should either take no argument or a parameter which will "
+                            f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})")
+        super().__init__(parameter)
 
 
 class Dict(Parameter):

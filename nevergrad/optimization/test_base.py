@@ -66,7 +66,7 @@ def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expec
     int64_val=(np.int64(3), False),
     float64_val=(np.float64(3), False),
     float32_val=(np.float32(3), False),
-    list_val=([3, 5], True),
+    list_val=([3, 5], False),
     complex_val=(1j, True),
     object_val=(object(), True),
 )
@@ -74,7 +74,7 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
     optim = LoggingOptimizer(num_workers=1)
     x = optim.ask()
     if error:
-        np.testing.assert_raises(AssertionError if isinstance(value, list) else TypeError, optim.tell, x, value)
+        np.testing.assert_raises(TypeError, optim.tell, x, value)
     else:
         optim.tell(x, value)
 

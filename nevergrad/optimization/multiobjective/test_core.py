@@ -44,13 +44,22 @@ def test_doc_multiobjective() -> None:
     print("Example: ", multiobjective(np.array([1.0, 2.0, 0])))
     # >>> Example: [5.0, 2.0]
 
-    # # We can also run without upper_bounds: they are then computed automatically using "_auto_bound".
     # optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
     optimizer = ng.optimizers.OnePlusOne(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
+
+    # it's not strictly necessary but highly advised to provide an upper bound reference for the losses
+    # (if not provided, such upper bound is automatically computed with the first few "tell")
+    optimizer.tell(ng.p.MultiobjectiveReference(), [5, 5])
+    # note that you can provide a Parameter to MultiobjectiveReference, which will be passed to the
+    # optimizer
+
     optimizer.minimize(multiobjective, verbosity=2)
 
     # The function embeds its Pareto-front:
-    print("Pareto front:", optimizer.pareto_front())
+    print("Pareto front:")
+    for param in sorted(optimizer.pareto_front(), key=lambda p: p.loss[0]):  # type: ignore
+        print(f"{param} with loss {param.loss}")
+
     # >>>[Array{(3,)}:[0. 0. 0.],
     #     Array{(3,)}:[ 0.74004948 -0.04942859  1.14188393],
     #     Array{(3,)}:[0.32063353 0.11387351 1.14188393]]

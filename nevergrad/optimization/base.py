@@ -229,6 +229,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             new_value = args[0]
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
+    # pylint: disable=too-many-branches
     def tell(self, candidate: p.Parameter, loss: tp.Union[float, tp.ArrayLike]) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
@@ -277,7 +278,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, loss)
-        # prepross multiobjective loss
+        # add reference if provided
+        if isinstance(candidate, p.MultiobjectiveReference):
+            if self._hypervolume_pareto is not None:
+                raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
+            if not isinstance(loss, np.ndarray):
+                raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
+            self._hypervolume_pareto = HypervolumePareto(upper_bounds=loss)
+            if candidate.value is None:
+                return
+            candidate = candidate.value
+        # preprocess multiobjective loss
         if not isinstance(loss, float):
             loss = self._preprocess_multiobjective(candidate)
         assert isinstance(loss, float)
