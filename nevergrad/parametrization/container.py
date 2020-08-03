@@ -51,7 +51,7 @@ class Tuple(Dict):
         for k, val in enumerate(value):
             core.as_parameter(self[k]).value = val
     
-    def get_ranges(self):
+    def get_ranges(self) -> tp.List[tp.Any]:
         # Returns the ranges occupied by the different parts of the instrumentation.
         # We do not recurse into sub-parameters.
         i = 0
@@ -61,6 +61,7 @@ class Tuple(Dict):
             l = len(p.value if isinstance(p, core.Parameter) else p)
             ranges = ranges + [[i, i+l]]
             i += l
+        return ranges
 
 
 class Instrumentation(Tuple):
