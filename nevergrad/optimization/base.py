@@ -280,11 +280,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             loss = float(loss)
         elif isinstance(loss, (tuple, list, np.ndarray)):
-            loss = np.array(loss, copy=False, dtype=float) if len(loss) != 1 else loss[0]
+            loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
         elif not isinstance(loss, np.ndarray):
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
+        # check loss length
+        if self.num_tell:
+            expected = self.num_objectives
+            actual = 1 if isinstance(loss, float) else loss.size
+            if actual != expected:
+                raise ValueError(f"Expected {expected} loss(es) (like previous ones) but received {actual}.")
         # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
