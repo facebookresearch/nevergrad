@@ -161,10 +161,10 @@ class _OnePlusOne(base.Optimizer):
                 data = func(pessimistic_data)
             return pessimistic.set_standardized_data(data, reference=ref)
 
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, loss: tp.Loss) -> None:
         # only used for cauchy and gaussian
         if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
-            improvement = max(0., self._doerr_current_best - value)
+            improvement = max(0., self._doerr_current_best - loss)
             # Decay.
             index = self._doerr_index
             counter = self._doerr_counters[index]
@@ -174,10 +174,10 @@ class _OnePlusOne(base.Optimizer):
             self._doerr_counters[index] += 1
             self._doerr_index = -1
         if self.mutation == "doerr":
-            self._doerr_current_best = min(self._doerr_current_best, value)
-        self._sigma *= 2.0 if value <= self.current_bests["pessimistic"].mean else 0.84
+            self._doerr_current_best = min(self._doerr_current_best, loss)
+        self._sigma *= 2.0 if loss <= self.current_bests["pessimistic"].mean else 0.84
         if self.mutation == "adaptive":
-            factor = 1.2 if value <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            factor = 1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1., factor * self._adaptive_mr)
 
 
@@ -309,7 +309,7 @@ class _CMA(base.Optimizer):
         candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
             listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
@@ -388,8 +388,8 @@ class _PopulationSizeController:
         self.num_workers = num_workers
         self._loss_record: tp.List[float] = []
 
-    def add_value(self, value: float) -> None:
-        self._loss_record += [value]
+    def add_value(self, loss: tp.Loss) -> None:
+        self._loss_record += [loss]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
             last_fifth = self._loss_record[-int(self.llambda):]  # casting to int to avoid pylint bug
@@ -449,10 +449,10 @@ class EDA(base.Optimizer):
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         self.children.append(candidate)
         if self._POPSIZE_ADAPTATION:
-            self.popsize.add_value(value)
+            self.popsize.add_value(loss)
         if len(self.children) >= self.popsize.llambda:
             self.children = sorted(self.children, key=lambda c: c.loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
@@ -472,7 +472,7 @@ class EDA(base.Optimizer):
             self.parents = self.children[:mu]
             self.children = []
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -543,13 +543,12 @@ class _TBPSA(base.Optimizer):
         candidate._meta["sigma"] = mutated_sigma
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["loss"] = value
-        self.popsize.add_value(value)
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        self.popsize.add_value(loss)
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c._meta["loss"])
+            self.children.sort(key=lambda c: c.loss)
             # Computing the new parent.
             self.parents = self.children[: self.popsize.mu]
             self.children = []
@@ -557,11 +556,11 @@ class _TBPSA(base.Optimizer):
                                       for c in self.parents) / self.popsize.mu
             self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents])) / self.popsize.mu)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
         sigma = np.linalg.norm(data - self.current_center) / np.sqrt(self.dimension)  # educated guess
         candidate._meta["sigma"] = sigma
-        self._internal_tell_candidate(candidate, value)  # go through standard pipeline
+        self._internal_tell_candidate(candidate, loss)  # go through standard pipeline
 
 
 class ParametrizedTBPSA(base.ConfiguredOptimizer):
@@ -696,26 +695,25 @@ class PSO(base.Optimizer):
         new_part.heritage["speed"] = speed
         return new_part
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         uid = candidate.heritage["lineage"]
         if uid not in self.population:
-            self._internal_tell_not_asked(candidate, value)
+            self._internal_tell_not_asked(candidate, loss)
             return
-        candidate._meta["loss"] = value
         self._uid_queue.tell(uid)
         self.population[uid] = candidate
-        if value < self._best._meta.get("loss", float("inf")):
+        if self._best.loss is None or loss < self._best.loss:
             self._best = candidate
-        if value <= candidate.heritage.get("best_parent", candidate)._meta["loss"]:
+        if loss <= candidate.heritage.get("best_parent", candidate).loss:
             candidate.heritage["best_parent"] = candidate
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         # nearly same as DE
-        candidate._meta["loss"] = value
+        candidate._meta["value"] = loss
         worst: tp.Optional[p.Parameter] = None
         if not len(self.population) < self.llambda:
             worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
-            if worst._meta.get("value", float("inf")) < value:
+            if worst._meta.get("value", float("inf")) < loss:
                 return  # no need to update
             else:
                 uid = worst.heritage["lineage"]
@@ -726,7 +724,7 @@ class PSO(base.Optimizer):
             candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
         self.population[candidate.uid] = candidate
         self._uid_queue.tell(candidate.uid)
-        if value < self._best._meta.get("loss", float("inf")):
+        if loss < self._best._meta.get("loss", float("inf")):
             self._best = candidate
 
 
@@ -827,8 +825,8 @@ class SPSA(base.Optimizer):
             return self.t - self._ck(k) * self.delta  # type:ignore
         return self.t + self._ck(k) * self.delta  # type: ignore
 
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
-        setattr(self, ("ym" if self.idx % 2 == 0 else "yp"), np.array(value, copy=True))
+    def _internal_tell(self, x: tp.ArrayLike, loss: tp.Loss) -> None:
+        setattr(self, ("ym" if self.idx % 2 == 0 else "yp"), np.array(loss, copy=True))
         self.idx += 1
         if self.init and self.yp is not None and self.ym is not None:
             self.init = False
@@ -917,7 +915,7 @@ class SplitOptimizer(base.Optimizer):
         assert len(data) == self.dimension
         return self.parametrization.spawn_child().set_standardized_data(data)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
         n = 0
         for i in range(self.num_optims):
@@ -926,9 +924,9 @@ class SplitOptimizer(base.Optimizer):
             n += self.num_vars[i]
             assert len(local_data) == self.num_vars[i]
             local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
-            opt.tell(local_candidate, value)
+            opt.tell(local_candidate, loss)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -979,11 +977,11 @@ class Portfolio(base.Optimizer):
         candidate._meta["optim_index"] = optim_index
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         optim_index: int = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, value)
+        self.optims[optim_index].tell(candidate, loss)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -1109,13 +1107,13 @@ class ASCMADEthird(Portfolio):
             optim_index = self._num_ask % len(self.optims)
         else:
             if self.best_optim is None:
-                best_value = float("inf")
+                best_loss = float("inf")
                 optim_index = -1
                 for i, optim in enumerate(self.optims):
                     val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
-                    if not val > best_value:
+                    if not val > best_loss:
                         optim_index = i
-                        best_value = val
+                        best_loss = val
                 self.best_optim = optim_index
             optim_index = self.best_optim
         candidate = self.optims[optim_index].ask()
@@ -1331,7 +1329,7 @@ class MultiScaleCMA(CM):
 
 
 class _FakeFunction:
-    """Simple function that returns the value which was registered just before.
+    """Simple function that returns the loss which was registered just before.
     This is a hack for BO.
     """
 
@@ -1345,19 +1343,19 @@ class _FakeFunction:
         """
         return "x" + str(num).zfill(self.num_digits)
 
-    def register(self, x: np.ndarray, value: float) -> None:
+    def register(self, x: np.ndarray, loss: tp.Loss) -> None:
         if self._registered:
             raise RuntimeError("Only one call can be registered at a time")
-        self._registered.append((x, value))
+        self._registered.append((x, loss))
 
     def __call__(self, **kwargs: float) -> float:
         if not self._registered:
             raise RuntimeError("Call must be registered first")
         x = [kwargs[self.key(i)] for i in range(len(kwargs))]
-        xr, value = self._registered[0]
+        xr, loss = self._registered[0]
         np.testing.assert_array_almost_equal(x, xr, err_msg="Call does not match registered")
         self._registered.clear()
-        return value
+        return loss
 
 
 class _BO(base.Optimizer):
@@ -1437,13 +1435,13 @@ class _BO(base.Optimizer):
         candidate._meta["x_probe"] = x_probe
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         if "x_probe" in candidate._meta:
             y = candidate._meta["x_probe"]
         else:
             data = candidate.get_standardized_data(reference=self.parametrization)
             y = self._transform.forward(data)  # tell not asked
-        self._fake_function.register(y, -value)  # minimizing
+        self._fake_function.register(y, -loss)  # minimizing
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
         # but since it keeps a cache of the values, the registered value is not used
@@ -1536,13 +1534,13 @@ class _Chain(base.Optimizer):
         # if we are over budget, then use the last one...
         return opt.ask()
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         # Let us inform all concerned algorithms
         sum_budget = 0.0
         for opt in self.optimizers:
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_tell < sum_budget:
-                opt.tell(candidate, value)
+                opt.tell(candidate, loss)
 
 
 class Chaining(base.ConfiguredOptimizer):
@@ -1608,13 +1606,13 @@ class cGA(base.Optimizer):
         data = discretization.noisy_inverse_threshold_discretization(values, arity=self._arity, gen=self._rng)
         return self.parametrization.spawn_child().set_standardized_data(data)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         data = candidate.get_standardized_data(reference=self.parametrization)
         if self._previous_value_candidate is None:
-            self._previous_value_candidate = (value, data)
+            self._previous_value_candidate = (loss, data)
         else:
             winner, loser = self._previous_value_candidate[1], data
-            if self._previous_value_candidate[0] > value:
+            if self._previous_value_candidate[0] > loss:
                 winner, loser = loser, winner
             winner_data = discretization.threshold_discretization(np.asarray(winner.data), arity=self._arity)
             loser_data = discretization.threshold_discretization(np.asarray(loser.data), arity=self._arity)
@@ -1684,14 +1682,14 @@ class NGO(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         return self.optim.ask()
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.optim.tell(candidate, value)
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        self.optim.tell(candidate, loss)
 
     def recommend(self) -> p.Parameter:
         return self.optim.recommend()
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        self.optim.tell(candidate, value)
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        self.optim.tell(candidate, loss)
 
 
 class _EMNA(base.Optimizer):
@@ -1762,10 +1760,10 @@ class _EMNA(base.Optimizer):
         candidate._meta["sigma"] = sigma_tmp
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["loss"] = value
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        candidate._meta["loss"] = loss
         if self.population_size_adaptation:
-            self.popsize.add_value(value)
+            self.popsize.add_value(loss)
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
@@ -1794,7 +1792,7 @@ class _EMNA(base.Optimizer):
                 imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         raise base.TellNotAskedNotSupportedError
 
 
@@ -1877,8 +1875,8 @@ class MetaModel(base.Optimizer):
             candidate = self._optim.ask()
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self._optim.tell(candidate, value)
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        self._optim.tell(candidate, loss)
 
 
 @registry.register
@@ -1940,23 +1938,22 @@ class NGOpt(base.Optimizer):
                                             optimClass = MetaModel  # type: ignore
                                         else:
                                             if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
-                                                optimClass = DiagonalCMA # type: ignore
+                                                optimClass = DiagonalCMA  # type: ignore
                                             elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
-                                                optimClass = MetaModel # type: ignore
+                                                optimClass = MetaModel  # type: ignore
                                             else:
-                                                optimClass = CMA # type: ignore
+                                                optimClass = CMA  # type: ignore
         self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
     def _internal_ask_candidate(self) -> p.Parameter:
         return self.optim.ask()
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        self.optim.tell(candidate, value)
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        self.optim.tell(candidate, loss)
 
     def recommend(self) -> p.Parameter:
         return self.optim.recommend()
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        self.optim.tell(candidate, value)
-
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        self.optim.tell(candidate, loss)

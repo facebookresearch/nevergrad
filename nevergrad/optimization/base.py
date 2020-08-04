@@ -24,7 +24,7 @@ IntOrParameter = tp.Union[int, p.Parameter]
 _PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
 
 
-def load(cls: tp.Type[X], filepath: tp.Union[str, Path]) -> X:
+def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
     """Loads a pickle file and checks that it contains an optimizer.
     The optimizer class is not always fully reliable though (e.g.: optimizer families) so the user is responsible for it.
     """
@@ -48,7 +48,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
     - :code:`ask()` which provides a candidate on which to evaluate the function to optimize.
-    - :code:`tell(candidate, value)` which lets you provide the values associated to points.
+    - :code:`tell(candidate, loss)` which lets you provide the loss associated to points.
     - :code:`provide_recommendation()` which provides the best final candidate.
 
     Typically, one would call :code:`ask()` num_workers times, evaluate the
@@ -215,15 +215,15 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             new_value = args[0]
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
-    def tell(self, candidate: p.Parameter, value: float) -> None:
+    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
         ----------
         x: np.ndarray
             point where the function was evaluated
-        value: float
-            value of the function
+        loss: float/list/np.ndarray
+            loss of the function (or multi-objective function
 
         Note
         ----
@@ -246,37 +246,37 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
                 "the next ask"
             )
-        candidate.loss = value
+        candidate.loss = loss
         candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
-            callback(self, candidate, value)
-        self._update_archive_and_bests(candidate, value)
+            callback(self, candidate, loss)
+        self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
-            self._internal_tell_candidate(candidate, value)
+            self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
         else:
-            self._internal_tell_not_asked(candidate, value)
+            self._internal_tell_not_asked(candidate, loss)
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    def _update_archive_and_bests(self, candidate: p.Parameter, value: float) -> None:
+    def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
-        if not isinstance(value, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
-            raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
-        if np.isnan(value) or value == np.inf:
-            warnings.warn(f"Updating fitness with {value} value")
+        if not isinstance(loss, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
+            raise TypeError(f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.')
+        if np.isnan(loss) or loss == np.inf:
+            warnings.warn(f"Updating fitness with {loss} value")
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
-            self.archive[x] = utils.MultiValue(candidate, value, reference=self.parametrization)
+            self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
         else:
             mvalue = self.archive[x]
-            mvalue.add_evaluation(value)
+            mvalue.add_evaluation(loss)
             # both parameters should be non-None
             if mvalue.parameter.loss > candidate.loss:  # type: ignore
                 mvalue.parameter = candidate   # keep best candidate
         # update current best records
-        # this may have to be improved if we want to keep more kinds of best values
+        # this may have to be improved if we want to keep more kinds of best losss
 
         for name in ["optimistic", "pessimistic", "average"]:
             if mvalue is self.current_bests[name]:  # reboot
@@ -287,7 +287,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = self.archive[x]
                 # deactivated checks
-                # if not (np.isnan(value) or value == np.inf):
+                # if not (np.isnan(loss) or loss == np.inf):
                 #     if not self.current_bests[name].x in self.archive:
                 #         bval = self.current_bests[name].get_estimation(name)
                 #         avals = (min(v.get_estimation(name) for v in self.archive.values()),
@@ -357,7 +357,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
+            The candidate with minimal loss. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
@@ -365,23 +365,23 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             return self.current_bests["pessimistic"].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
-        self._internal_tell_candidate(candidate, value)
+        self._internal_tell_candidate(candidate, loss)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was "asked".
         """
         data = candidate.get_standardized_data(reference=self.parametrization)
-        self._internal_tell(data, value)
+        self._internal_tell(data, loss)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         return self.parametrization.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, loss: tp.Loss) -> None:
         pass
 
     def _internal_ask(self) -> tp.ArrayLike:
