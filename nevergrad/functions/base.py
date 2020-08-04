@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
+import numbers
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -161,7 +162,7 @@ class ExperimentFunction:
             same as the actual function
         """
         output = self.function(*args, **kwargs)
-        assert isinstance(output, float), "evaluation_function cannot be called on multiobjective experiments"
+        assert isinstance(output, numbers.Number), "evaluation_function can only be called on monoobjective experiments."
         return output
 
 

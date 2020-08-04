@@ -22,7 +22,7 @@ class Function(ExperimentFunction):
 
     # pylint: disable=unused-argument
     def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:
-        assert isinstance(loss, float)
+        assert isinstance(loss, (int, float))
         return 5 - loss
 
 
