@@ -195,7 +195,7 @@ class ArtificialFunction(ExperimentFunction):
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
         args, kwargs = input_parameter
@@ -205,7 +205,7 @@ class ArtificialFunction(ExperimentFunction):
             data = self._transform(args[0])
             total = 0.
             for block in data:
-                total += self._func.compute_pseudotime(((block,), {}), value)  # type: ignore
+                total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore
             return total
         return 1.
 

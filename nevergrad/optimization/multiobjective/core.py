@@ -127,7 +127,7 @@ class HypervolumePareto:
         Returns
         --------
         list
-            the list of elements of the pareto front
+            the list of Parameter of the pareto front
         """
         self._filter_pareto_front()
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.

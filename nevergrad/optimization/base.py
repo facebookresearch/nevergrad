@@ -121,8 +121,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._num_tell_not_asked = 0
         self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
-        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
+        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = []
+        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -466,7 +466,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def minimize(
         self,
-        objective_function: tp.Callable[..., float],
+        objective_function: tp.Callable[..., tp.TmpLoss],
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
@@ -507,8 +507,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
-        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
+        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = []
+        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask

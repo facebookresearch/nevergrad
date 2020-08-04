@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from operator import add
-import typing as tp
 import numpy as np
 import nevergrad as ng
+import nevergrad.common.typing as tp
 from nevergrad.common import testing
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import ExperimentFunction
@@ -21,8 +21,9 @@ class Function(ExperimentFunction):
         return x + y
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
-        return 5 - value
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:
+        assert isinstance(loss, float)
+        return 5 - loss
 
 
 @testing.parametrized(

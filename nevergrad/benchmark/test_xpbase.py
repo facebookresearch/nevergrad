@@ -5,9 +5,9 @@
 
 import sys
 import contextlib
-import typing as tp
 from unittest.mock import patch
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from nevergrad.optimization import test_base
@@ -97,8 +97,9 @@ class Function(ExperimentFunction):
         return float(x[0])
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
-        return 5 - value
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:
+        assert isinstance(loss, float)
+        return 5 - loss
 
 
 @testing.parametrized(

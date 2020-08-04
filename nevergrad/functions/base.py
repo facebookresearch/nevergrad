@@ -3,11 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 from pathlib import Path
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
@@ -34,7 +33,7 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self: EF, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., tp.TmpLoss], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
@@ -70,10 +69,10 @@ class ExperimentFunction:
         self._parametrization.freeze()
 
     @property
-    def function(self) -> tp.Callable[..., float]:
+    def function(self) -> tp.Callable[..., tp.TmpLoss]:
         return self._function
 
-    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.TmpLoss:
         """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
         """
         return self._function(*args, **kwargs)
@@ -132,7 +131,7 @@ class ExperimentFunction:
         output.multiobjective_upper_bounds = self.multiobjective_upper_bounds
         return output
 
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:  # pylint: disable=unused-argument
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
         By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
         function and the pseudo time can be a function of the function inputs and output.
@@ -161,7 +160,9 @@ class ExperimentFunction:
         *args, **kwargs
             same as the actual function
         """
-        return self.function(*args, **kwargs)
+        output = self.function(*args, **kwargs)
+        assert isinstance(output, float), "evaluation_function cannot be called on multiobjective experiments"
+        return output
 
 
 def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:
@@ -200,3 +201,28 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
                 print(f"New best value for {identifier}: {loss}\nwith: {string}")
     except Exception:  # pylint: disable=broad-except
         pass  # better avoir bugs for this
+
+
+class PackedExperiment(ExperimentFunction):
+    """Pack several mono-objective experiments into a multiobjective experiment
+
+    Parameters
+    ----------
+    experiments: iterable of ExperimentFunction
+    """
+
+    def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike) -> None:
+        self._experiments = list(experiments)
+        assert len(self._experiments) > 0
+        assert all(xp.multiobjective_upper_bounds is None for xp in self._experiments), "Packing multiobjective xps is not supported."
+        self.multiobjective_upper_bounds = np.array(upper_bounds)
+        super().__init__(self._multi_func, self._experiments[0].parametrization)
+        # TODO add descriptors?
+
+    def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
+        outputs = [f(*args, **kwargs) for f in self._experiments]
+        return np.array(outputs)
+
+    def copy(self) -> "PackedExperiment":
+        assert self.multiobjective_upper_bounds is not None
+        return PackedExperiment([f.copy() for f in self._experiments], self.multiobjective_upper_bounds)
