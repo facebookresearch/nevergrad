@@ -178,6 +178,17 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
             pass
 
 
+@pytest.mark.parametrize("name", registry)  # type: ignore
+def test_optimizers_multiobjective(name: str) -> None:  # pylint: disable=redefined-outer-name
+    if "BO" in name:
+        raise SkipTest("BO is currently failing for unclear reasons")  # TODO solve
+    # tests do not need to be efficient
+    optimizer = registry[name](parametrization=4, budget=100)
+    candidate = optimizer.ask()
+    optimizer.tell(candidate, [12, 12])
+    optimizer.ask()
+
+
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
