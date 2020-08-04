@@ -252,7 +252,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
     # pylint: disable=too-many-branches
-    def tell(self, candidate: p.Parameter, loss: tp.Union[float, tp.ArrayLike]) -> None:
+    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -326,7 +326,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    # pylint: disable=unused-argument
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
             self._hypervolume_pareto = HypervolumePareto()
