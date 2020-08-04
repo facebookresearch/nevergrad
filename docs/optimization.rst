@@ -225,6 +225,15 @@ Let us minimize :code:`f1` and :code:`f2` (two objective functions) assuming tha
     :end-before: DOC_MULTIOBJ_1
 
 
+We are currently working on an **experimental version** allowing users to directly :code:`tell` the results as an array or list of floats. Use it at your own risk ;) and provide feedbacks if you have any. Also, be aware that several parts of this API may come to change (Eg: for now there are both :code:`parameter.losses` and :code:`parameter.loss` which are close but different, and may need merging in some way). See how to use it below:
+
+.. literalinclude:: ../nevergrad/optimization/multiobjective/test_core.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_MULTIOBJ_OPT_0
+    :end-before: DOC_MULTIOBJ_OPT_1
+
+
 Reproducibility
 ---------------
 
