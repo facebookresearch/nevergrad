@@ -2,7 +2,7 @@
 
 ## master
 
-- `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774)
+- `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
 
 ## 0.4.2 (2020-08-04)
 
