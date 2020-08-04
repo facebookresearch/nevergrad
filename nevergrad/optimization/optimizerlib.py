@@ -697,7 +697,6 @@ class PSO(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         uid = candidate.heritage["lineage"]
-        assert isinstance(loss, float)
         if uid not in self.population:
             self._internal_tell_not_asked(candidate, loss)
             return
@@ -1518,7 +1517,7 @@ class _Chain(base.Optimizer):
                      "half": self.budget // 2 if self.budget else self.num_workers,
                      "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
         self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
-        last_budget = None if self.budget is None else self.budget - sum(self.budgets)
+        last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
@@ -1916,19 +1915,13 @@ class NGOpt(base.Optimizer):
                             elif self.dimension < 5 and budget < 100:
                                 optimClass = DiagonalCMA  # type: ignore
                             elif self.dimension < 5 and budget < 500:
-                                chaining = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)
-                                self.optim = chaining(self.parametrization, budget, num_workers)  # type: ignore
-                                logger.debug("NGOpt selected ParaChaining optimizer.")
-                                return
+                                optimClass = MetaModel  # type: ignore
                             else:
                                 optimClass = NaiveTBPSA  # type: ignore
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                chaining = Chaining([Shiwa, chainCMAPowell], [6000]).set_name("chaining", register=True)
-                                self.optim = chaining(self.parametrization, budget, num_workers)  # type: ignore
-                                logger.debug("NGOpt selected Chaining optimizer.")
-                                return
+                                optimClass = chainCMAPowell  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
