@@ -8,7 +8,7 @@
 - `Choice` and `TransitionChoice` can now take a `repetitions` parameters for sampling several times, it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be up to 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670) [#696](https://github.com/facebookresearch/nevergrad/pull/696).
 - Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684) and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
 
-This version should be robust. Following versions may become more unstable as we will add more native multiobjective optimization as an *experimental* feature.
+This version should be robust. Following versions may become more unstable as we will add more native multiobjective optimization as an *experimental* feature. We also are in the process of simplifying the naming pattern for the "NGO/Shiwa" type optimizers which may cause some changes in the future.
 
 ## 0.4.1 (2020-05-07)
 
