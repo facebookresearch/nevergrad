@@ -14,6 +14,7 @@ from nevergrad.common import testing
 from nevergrad.optimization import test_base
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import ExperimentFunction
+from nevergrad.functions.base import PackedExperiment
 from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
@@ -31,6 +32,14 @@ def test_run_artificial_function() -> None:
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
+
+
+def test_run_packed_artificial_function() -> None:
+    func = PackedExperiment([ArtificialFunction(name="sphere", block_dimension=2) for _ in range(2)],
+                            [100, 100])
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
+    summary = xp.run()
+    np.testing.assert_almost_equal(summary["loss"], -9961.7, decimal=1)  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:

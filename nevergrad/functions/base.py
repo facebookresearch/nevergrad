@@ -214,10 +214,10 @@ class PackedExperiment(ExperimentFunction):
 
     def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike) -> None:
         self._experiments = list(experiments)
-        assert len(self._experiments) > 0
+        assert self._experiments
         assert all(xp.multiobjective_upper_bounds is None for xp in self._experiments), "Packing multiobjective xps is not supported."
-        self.multiobjective_upper_bounds = np.array(upper_bounds)
         super().__init__(self._multi_func, self._experiments[0].parametrization)
+        self.multiobjective_upper_bounds = np.array(upper_bounds)
         # TODO add descriptors?
 
     def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:

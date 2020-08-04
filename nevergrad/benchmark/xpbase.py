@@ -202,7 +202,7 @@ class Experiment:
             self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)
         else:
             # in multiobjective case, use best hypervolume so far
-            self.result["loss"] = self._optimizer._hypervolume_pareto._best_volume
+            self.result["loss"] = -self._optimizer._hypervolume_pareto._best_volume
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}")
