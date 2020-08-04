@@ -35,7 +35,8 @@ class LoggingOptimizer(base.Optimizer):
         self.logs.append(f"s{self._num_ask}")  # s for suggest
         return np.array((float(self._num_ask),))
 
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
+    # pylint: disable=unused-argument
+    def _internal_tell(self, x: tp.ArrayLike, loss: float) -> None:
         self.logs.append(f"u{int(x[0])}")  # u for update
 
 
