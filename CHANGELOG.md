@@ -2,6 +2,7 @@
 
 ## master
 
+- as an **experimental** feature, `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
 - `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
 
 ## 0.4.2 (2020-08-04)
