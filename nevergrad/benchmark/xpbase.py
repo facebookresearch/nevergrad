@@ -6,6 +6,7 @@
 import sys
 import time
 import random
+import numbers
 import warnings
 import traceback
 import typing as tp
@@ -20,6 +21,13 @@ from . import execution
 
 
 registry: decorators.Registry[tp.Callable[..., tp.Iterator['Experiment']]] = decorators.Registry()
+
+
+# pylint: disable=unused-argument
+def _assert_monoobjective_callback(optimizer: obase.Optimizer, candidate: p.Parameter, loss: float) -> None:
+    if optimizer.num_tell <= 1 and not isinstance(loss, numbers.Number):
+        raise TypeError(f"Cannot process loss {loss} of type {type(loss)}.\n"
+                        "For multiobjective functions, did you forget to specify 'func.multiobjective_upper_bounds'?")
 
 
 class OptimizerSettings:
@@ -213,6 +221,10 @@ class Experiment:
         # optimizer instantiation can be slow and is done only here to make xp iterators very fast
         if self._optimizer is None:
             self._optimizer = self.optimsettings.instantiate(parametrization=pfunc.parametrization)
+            if pfunc.multiobjective_upper_bounds is not None:
+                self._optimizer.tell(p.MultiobjectiveReference(), pfunc.multiobjective_upper_bounds)
+            else:
+                self._optimizer.register_callback("tell", _assert_monoobjective_callback)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)

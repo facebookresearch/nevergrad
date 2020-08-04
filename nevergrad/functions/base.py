@@ -42,6 +42,7 @@ class ExperimentFunction:
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parametrization: p.Parameter
         self.parametrization = parametrization
+        self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
@@ -86,9 +87,9 @@ class ExperimentFunction:
         desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
         return desc
 
-    def add_descriptors(self, **kwargs) -> None:
+    def add_descriptors(self, **kwargs: tp.Hashable) -> None:
         self._descriptors.update(kwargs)
-        
+
     def __repr__(self) -> str:
         """Shows the function name and its summary
         """
@@ -128,6 +129,7 @@ class ExperimentFunction:
             output = self.__class__(self.function, self.parametrization.copy())
             output._descriptors = self.descriptors
         output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+        output.multiobjective_upper_bounds = self.multiobjective_upper_bounds
         return output
 
     def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
