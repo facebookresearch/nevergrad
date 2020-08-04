@@ -10,6 +10,9 @@ import nevergrad.common.typing as tp
 from .hypervolume import HypervolumeIndicator
 
 
+AUTO_BOUND = 15
+
+
 # pylint: disable=too-many-instance-attributes
 class HypervolumePareto:
     """Given several functions, and threshold on their values (above which solutions are pointless),
@@ -20,6 +23,9 @@ class HypervolumePareto:
     -----------
     upper_bounds: Tuple of float or np.ndarray
         upper_bounds[i] is a threshold above which x is pointless if function(x)[i] > upper_bounds[i].
+    auto_bound: int
+        if no upper bounds are provided, number of initial points used to estimate the upper bounds. Their
+        loss will be 0 (except if they are uniformly worse than the previous points).
 
     Notes
     -----
@@ -31,7 +37,7 @@ class HypervolumePareto:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, upper_bounds: tp.Optional[tp.ArrayLike] = None, auto_bound: int = 15) -> None:
+    def __init__(self, upper_bounds: tp.Optional[tp.ArrayLike] = None, auto_bound: int = AUTO_BOUND) -> None:
         self._auto_bound = 0
         self._upper_bounds = np.array([-float('inf')]) if upper_bounds is None else np.array(upper_bounds, copy=False)
         if upper_bounds is None:
@@ -100,8 +106,14 @@ class HypervolumePareto:
                 new_pareto.append(param)
         self._pareto = new_pareto
 
-    def pareto_front(self, size: tp.Optional[int] = None, subset: str = "random") -> tp.List[ng.p.Parameter]:
-        """Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)
+    def pareto_front(
+        self,
+        size: tp.Optional[int] = None,
+        subset: str = "random",
+        subset_tentatives: int = 12
+    ) -> tp.List[ng.p.Parameter]:
+        """Pareto front, as a list of Parameter. The losses can be accessed through
+        parameter.losses
 
         Parameters
         ------------
@@ -109,6 +121,8 @@ class HypervolumePareto:
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
             method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
+        subset_tentatives: int
+            number of random tentatives for finding a better subset
 
         Returns
         --------
@@ -116,12 +130,11 @@ class HypervolumePareto:
             the list of elements of the pareto front
         """
         self._filter_pareto_front()
-        num_tentatives = 30
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
             return random.sample(self._pareto, size)
-        tentatives = [random.sample(self._pareto, size) for _ in range(num_tentatives)]
+        tentatives = [random.sample(self._pareto, size) for _ in range(subset_tentatives)]
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume

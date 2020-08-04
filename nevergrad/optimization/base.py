@@ -162,10 +162,32 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         return self._num_tell_not_asked
 
-    def pareto_front(self, size: tp.Optional[int] = None, subset: str = "random") -> tp.List[p.Parameter]:
+    def pareto_front(
+        self,
+        size: tp.Optional[int] = None,
+        subset: str = "random",
+        subset_tentatives: int = 12
+    ) -> tp.List[p.Parameter]:
+        """Pareto front, as a list of Parameter. The losses can be accessed through
+        parameter.losses
+
+        Parameters
+        ------------
+        size:  int (optional)
+            if provided, selects a subset of the full pareto front with the given maximum size
+        subset: str
+            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
+        subset_tentatives: int
+            number of random tentatives for finding a better subset
+
+        Returns
+        --------
+        list
+            the list of Parameter of the pareto front
+        """
         if self._hypervolume_pareto is None:
             raise RuntimeError("No pareto front with a single objective")
-        return self._hypervolume_pareto.pareto_front(size=size, subset=subset)
+        return self._hypervolume_pareto.pareto_front(size=size, subset=subset, subset_tentatives=subset_tentatives)
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file.
