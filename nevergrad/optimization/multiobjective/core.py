@@ -5,8 +5,8 @@
 
 import random
 import numpy as np
-import nevergrad as ng
 import nevergrad.common.typing as tp
+from nevergrad.parametrization import parameter as p
 from .hypervolume import HypervolumeIndicator
 
 
@@ -42,7 +42,7 @@ class HypervolumePareto:
         self._upper_bounds = np.array([-float('inf')]) if upper_bounds is None else np.array(upper_bounds, copy=False)
         if upper_bounds is None:
             self._auto_bound = auto_bound
-        self._pareto: tp.List[ng.p.Parameter] = []
+        self._pareto: tp.List[p.Parameter] = []
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
 
@@ -50,11 +50,11 @@ class HypervolumePareto:
     def num_objectives(self) -> int:
         return self._upper_bounds.size
 
-    def add(self, parameter: ng.p.Parameter) -> float:
+    def add(self, parameter: p.Parameter) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
-        if not isinstance(parameter, ng.p.Parameter):
+        if not isinstance(parameter, p.Parameter):
             raise TypeError(f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}.")
         losses = parameter.losses
         if not isinstance(losses, np.ndarray):
@@ -72,7 +72,7 @@ class HypervolumePareto:
         if (losses - self._upper_bounds > 0).any():
             return float(np.max(losses - self._upper_bounds))
         # We compute the hypervolume
-        new_volume = self._hypervolume.compute([p.losses for p in self._pareto] + [losses])
+        new_volume = self._hypervolume.compute([pa.losses for pa in self._pareto] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
@@ -95,7 +95,7 @@ class HypervolumePareto:
     def _filter_pareto_front(self) -> None:
         """Filters the Pareto front
         """
-        new_pareto: tp.List[ng.p.Parameter] = []
+        new_pareto: tp.List[p.Parameter] = []
         for param in self._pareto:
             should_be_added = True
             for other in self._pareto:
@@ -111,7 +111,7 @@ class HypervolumePareto:
         size: tp.Optional[int] = None,
         subset: str = "random",
         subset_tentatives: int = 12
-    ) -> tp.List[ng.p.Parameter]:
+    ) -> tp.List[p.Parameter]:
         """Pareto front, as a list of Parameter. The losses can be accessed through
         parameter.losses
 
@@ -141,16 +141,16 @@ class HypervolumePareto:
         scores: tp.List[float] = []
         for tentative in tentatives:
             if subset == "hypervolume":
-                scores += [-hypervolume.compute([p.losses for p in tentative])]
+                scores += [-hypervolume.compute([pa.losses for pa in tentative])]
             else:
                 score: float = 0.
                 for v in self._pareto:
                     best_score = float("inf")
-                    for p in tentative:
+                    for pa in tentative:
                         if subset == "loss-covering":
-                            best_score = min(best_score, np.linalg.norm(p.losses - v.losses))
+                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
                         elif subset == "domain-covering":
-                            best_score = min(best_score, np.linalg.norm(p.get_standardized_data(reference=v)))  # TODO verify
+                            best_score = min(best_score, np.linalg.norm(pa.get_standardized_data(reference=v)))  # TODO verify
                         else:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2
