@@ -177,7 +177,7 @@
 <dd><p>Algorithm framework with 3 main functions:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">ask()</span></code> which provides a candidate on which to evaluate the function to optimize.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">tell(candidate,</span> <span class="pre">value)</span></code> which lets you provide the values associated to points.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">tell(candidate,</span> <span class="pre">loss)</span></code> which lets you provide the loss associated to points.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">provide_recommendation()</span></code> which provides the best final candidate.</p></li>
 </ul>
 <p>Typically, one would call <code class="code docutils literal notranslate"><span class="pre">ask()</span></code> num_workers times, evaluate the
@@ -322,7 +322,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 <dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+<dd class="field-odd"><p>The candidate with minimal loss. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
 on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -379,13 +379,13 @@ creating a new candidate with <code class="code docutils literal notranslate"><s
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.tell">
-<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the optimizer with the evaluation of a fitness value for a candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<em>np.ndarray</em>) – point where the function was evaluated</p></li>
-<li><p><strong>value</strong> (<em>float</em>) – value of the function</p></li>
+<li><p><strong>loss</strong> (<em>float/list/np.ndarray</em>) – loss of the function (or multi-objective function</p></li>
 </ul>
 </dd>
 </dl>
@@ -1038,7 +1038,7 @@ average of the final population.</p></li>
 <dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+<dd class="field-odd"><p>The candidate with minimal loss. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
 on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1059,7 +1059,7 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 <dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The candidate with minimal value. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
+<dd class="field-odd"><p>The candidate with minimal loss. <code class="code docutils literal notranslate"><span class="pre">p.Parameters</span></code> have field <code class="code docutils literal notranslate"><span class="pre">args</span></code> and <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> which can be directly used
 on the function (<code class="code docutils literal notranslate"><span class="pre">objective_function(*candidate.args,</span> <span class="pre">**candidate.kwargs)</span></code>).</p>
 </dd>
 <dt class="field-even">Return type</dt>
