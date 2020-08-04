@@ -14,7 +14,7 @@ def test_concrete_model_without_constraints():
     model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
     model.obj = pyomo.Objective(expr = (model.x[1]-0.5)**2 + (model.x[2]-0.5)**2)
 
-    func = core.Pyomo('Pyomo Model', model)
+    func = core.Pyomo(model)
     optimizer = ng.optimizers.NGO(parametrization=func.parametrization, budget=100)
     recommendation = optimizer.minimize(func.function)
 
@@ -32,7 +32,7 @@ def test_concrete_model_with_constraints():
     model.Constraint1 = pyomo.Constraint(rule=lambda m: m.x[0] >= 1)
     model.Constraint2 = pyomo.Constraint(rule=lambda m: m.x[1] >= 0.8)
 
-    func = core.Pyomo('Pyomo Model', model)
+    func = core.Pyomo(model)
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=100)
     recommendation = optimizer.minimize(func.function)
 
@@ -56,7 +56,7 @@ def test_abstract_model_with_constraints():
     filename = os.path.join(dirname, "test_model_1.dat")
     model = abs_model.create_instance(filename)
 
-    func = core.Pyomo('Pyomo Model', model)
+    func = core.Pyomo(model)
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=200)
     recommendation = optimizer.minimize(func.function)
 
@@ -76,7 +76,7 @@ def test_pyomo_set():
     model.obj = pyomo.Objective(rule=square)
     model.constraint1 = pyomo.Constraint(rule=lambda m: m.x >= 2)
 
-    func = core.Pyomo('Pyomo Model', model)
+    func = core.Pyomo(model)
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=100)
     recommendation = optimizer.minimize(func.function)
 

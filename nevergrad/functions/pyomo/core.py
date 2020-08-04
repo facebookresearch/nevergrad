@@ -80,8 +80,6 @@ class Pyomo(base.ExperimentFunction):
 
     Parameters
     ----------
-    name: str
-        problem name
     model: pyomo.environ.model
         Pyomo model
 
@@ -96,7 +94,7 @@ class Pyomo(base.ExperimentFunction):
     - Any changes on the model externally can lead to unexpected behaviours.
     """
 
-    def __init__(self, name : str, model : pyomo.Model) -> None:
+    def __init__(self, model : pyomo.Model) -> None:
         if isinstance(model, pyomo.ConcreteModel):
             self._model_instance = model.clone() # To enable the objective function to run in parallel
         else:
@@ -109,6 +107,7 @@ class Pyomo(base.ExperimentFunction):
         self.all_objectives = []
 
         #Relevant document: https://pyomo.readthedocs.io/en/stable/working_models.html
+
         for v in self._model_instance.component_objects(pyomo.Var, active=True):
             self.all_vars.append(v)
             _make_pyomo_variable_to_parametrization(v, instru_params)
@@ -117,11 +116,13 @@ class Pyomo(base.ExperimentFunction):
         for v in self._model_instance.component_objects(pyomo.Constraint, active=True):
             self.all_constraints.append(v)
         for v in self._model_instance.component_objects(pyomo.Objective, active=True):
+            if v.sense == -1:
+                print(f"Only minimization problem is supported. The value of the objective function {v.name} will be multiplied by -1.")
             self.all_objectives.append(v)
 
         if not self.all_objectives:
             raise NotImplementedError("Cannot find objective function")
-    
+
         if len(self.all_objectives) > 1:
             raise NotImplementedError("Multi-objective function is not supported yet.")
 
@@ -129,14 +130,18 @@ class Pyomo(base.ExperimentFunction):
         for c_idx in range(0, len(self.all_constraints)):
             instru.register_cheap_constraint(partial(self._pyomo_constraint_wrapper, c_idx))
         super().__init__(function=partial(self._pyomo_obj_function_wrapper, 0), parametrization=instru) # Single objective
-        self.register_initialization(name=name, model=self._model_instance)
-        self._descriptors.update(name=name)
+
+        exp_tag = ",".join([n.name for n in self.all_objectives])
+        exp_tag += "|" + ",".join([n.name for n in self.all_vars])
+        exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
+        self.register_initialization(name=exp_tag, model=self._model_instance)
+        self._descriptors.update(name=exp_tag)
 
 
     def _pyomo_obj_function_wrapper(self, i, **k_model_variables) -> float: # type: ignore
         for k, v in k_model_variables.items():
             exec(f"self._model_instance.{k} = {v}") # exec-used: ignore
-        return pyomo.value(self.all_objectives[i]) #Single objective assumption
+        return pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense) #Single objective assumption
 
 
     def _pyomo_constraint_wrapper(self, i, instru) -> bool: # type: ignore

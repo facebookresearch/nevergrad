@@ -52,11 +52,11 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    optimization.rst
    parametrization.rst
    machinelearning.rst
-   pyomo.rst
-   optimizers_ref.rst
+      optimizers_ref.rst
    parametrization_ref.rst
    benchmarking.rst
    benchmarks.rst
+   pyomo.rst
    windows.md
    contributing.rst
    opencompetition2020.md
