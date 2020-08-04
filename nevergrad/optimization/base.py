@@ -121,8 +121,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._num_tell_not_asked = 0
         self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = []
-        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = deque()
+        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
+        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -327,12 +327,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._num_tell += 1
 
     # pylint: disable=unused-argument
-    def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.Loss:
+    def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
             self._hypervolume_pareto = HypervolumePareto()
         return self._hypervolume_pareto.add(candidate)
 
-    def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
         if not isinstance(loss, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             raise TypeError(f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.')
@@ -437,13 +437,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             return self.current_bests["pessimistic"].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
         self._internal_tell_candidate(candidate, loss)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was "asked".
         """
         data = candidate.get_standardized_data(reference=self.parametrization)
@@ -453,7 +453,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return self.parametrization.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
-    def _internal_tell(self, x: tp.ArrayLike, loss: tp.Loss) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         pass
 
     def _internal_ask(self) -> tp.ArrayLike:
@@ -466,7 +466,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def minimize(
         self,
-        objective_function: tp.Callable[..., tp.TmpLoss],
+        objective_function: tp.Callable[..., tp.Loss],
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
@@ -507,8 +507,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = []
-        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.TmpLoss]]] = deque()
+        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
+        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask

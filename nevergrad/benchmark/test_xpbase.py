@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import sys
+import numbers
 import contextlib
 from unittest.mock import patch
 import numpy as np
@@ -97,8 +98,8 @@ class Function(ExperimentFunction):
         return float(x[0])
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:
-        assert isinstance(loss, float)
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+        assert isinstance(loss, numbers.Number)
         return 5 - loss
 
 

@@ -2,6 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+import numbers
 from operator import add
 import numpy as np
 import nevergrad as ng
@@ -21,8 +22,8 @@ class Function(ExperimentFunction):
         return x + y
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:
-        assert isinstance(loss, (int, float))
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+        assert isinstance(loss, numbers.Number)
         return 5 - loss
 
 

@@ -34,7 +34,7 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self: EF, function: tp.Callable[..., tp.TmpLoss], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
@@ -70,10 +70,10 @@ class ExperimentFunction:
         self._parametrization.freeze()
 
     @property
-    def function(self) -> tp.Callable[..., tp.TmpLoss]:
+    def function(self) -> tp.Callable[..., tp.Loss]:
         return self._function
 
-    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.TmpLoss:
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
         """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
         """
         return self._function(*args, **kwargs)
@@ -132,7 +132,7 @@ class ExperimentFunction:
         output.multiobjective_upper_bounds = self.multiobjective_upper_bounds
         return output
 
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.TmpLoss) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:  # pylint: disable=unused-argument
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
         By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
         function and the pseudo time can be a function of the function inputs and output.
