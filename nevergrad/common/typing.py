@@ -41,7 +41,7 @@ import numpy as _np
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]
 PathLike = Union[str, Path]
-Loss = float  # Union[float, ArrayLike]
+FloatLoss = float
 
 
 # %% Protocol definitions for executor typing

@@ -215,7 +215,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             new_value = args[0]
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
-    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def tell(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -260,7 +260,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
         if not isinstance(loss, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             raise TypeError(f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.')
@@ -365,13 +365,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             return self.current_bests["pessimistic"].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
         self._internal_tell_candidate(candidate, loss)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was "asked".
         """
         data = candidate.get_standardized_data(reference=self.parametrization)
@@ -381,7 +381,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return self.parametrization.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
-    def _internal_tell(self, x: tp.ArrayLike, loss: tp.Loss) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         pass
 
     def _internal_ask(self) -> tp.ArrayLike:
