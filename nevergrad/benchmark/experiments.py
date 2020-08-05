@@ -70,6 +70,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
+
 # We register only the sequuential counterparts for the moment.
 @registry.register
 def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -151,6 +152,38 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for budget in [2000, 4000, 8000]:
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+# pylint: disable=redefined-outer-name
+@registry.register
+def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Parallel optimization with small budgets
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "RealSpacePSO", "RealSpaceSqrtPSO",
+              "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
+    optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell", "Cobyla", "NGO", "Shiwa"]
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
+    names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
+    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    # funcs
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation)
+        for name in names
+        for rotation in [True, False]
+        for d in [2, 4, 8]
+    ]
+    budgets = [10, 50, 100, 200, 400]
+    for optim in optims:
+        for function in functions:
+            for budget in budgets:
+                for nw in [2, 8, 16]:
+                    for batch in [True, False]:
+                        if nw < budget / 4:
+                            xp = Experiment(function, optim, num_workers=nw, budget=budget, batch_mode=batch, seed=next(seedg))
+                            if not xp.is_incoherent:
+                                yield xp
 
 
 @registry.register
