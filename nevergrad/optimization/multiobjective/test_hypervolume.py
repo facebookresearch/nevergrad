@@ -11,7 +11,7 @@
 
 import numpy as np
 
-from nevergrad.functions.multiobjective.hypervolume import (
+from .hypervolume import (
     VectorNode,
     VectorLinkedList,
     HypervolumeIndicator,

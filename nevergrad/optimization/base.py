@@ -14,6 +14,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
 from nevergrad.common.decorators import Registry
 from . import utils
+from .multiobjective import HypervolumePareto
 
 
 registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
@@ -110,6 +111,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.pruning: tp.Optional[_PruningCallable] = utils.Pruning.sensible_default(
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
+        # multiobjective
+        self._hypervolume_pareto: tp.Optional[HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
         self._suggestions: tp.Deque[p.Parameter] = deque()
@@ -118,8 +121,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._num_tell_not_asked = 0
         self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
-        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
+        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
+        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -133,6 +136,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """int: Dimension of the optimization space.
         """
         return self.parametrization.dimension
+
+    @property
+    def num_objectives(self) -> int:
+        if not self._num_tell and self._hypervolume_pareto is None:
+            raise RuntimeError('Unknown number of objectives, provide a "tell" first.')
+        return 1 if self._hypervolume_pareto is None else self._hypervolume_pareto.num_objectives
 
     @property
     def num_ask(self) -> int:
@@ -152,6 +161,33 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         (or were suggested).
         """
         return self._num_tell_not_asked
+
+    def pareto_front(
+        self,
+        size: tp.Optional[int] = None,
+        subset: str = "random",
+        subset_tentatives: int = 12
+    ) -> tp.List[p.Parameter]:
+        """Pareto front, as a list of Parameter. The losses can be accessed through
+        parameter.losses
+
+        Parameters
+        ------------
+        size:  int (optional)
+            if provided, selects a subset of the full pareto front with the given maximum size
+        subset: str
+            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
+        subset_tentatives: int
+            number of random tentatives for finding a better subset
+
+        Returns
+        --------
+        list
+            the list of Parameter of the pareto front
+        """
+        if self._hypervolume_pareto is None:
+            raise RuntimeError("No pareto front with a single objective")
+        return self._hypervolume_pareto.pareto_front(size=size, subset=subset, subset_tentatives=subset_tentatives)
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file.
@@ -215,7 +251,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             new_value = args[0]
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
-    def tell(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+    # pylint: disable=too-many-branches
+    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -238,6 +275,23 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Alternatively, you can provide a suggestion with :code:`optimizer.suggest(*args, **kwargs)`, the next :code:`ask`
         will use this suggestion.
         """
+        # Check loss type
+        if isinstance(loss, (Real, float)):
+            # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
+            loss = float(loss)
+        elif isinstance(loss, (tuple, list, np.ndarray)):
+            loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
+        elif not isinstance(loss, np.ndarray):
+            raise TypeError(
+                f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
+            )
+        # check loss length
+        if self.num_tell:
+            expected = self.num_objectives
+            actual = 1 if isinstance(loss, float) else loss.size
+            if actual != expected:
+                raise ValueError(f"Expected {expected} loss(es) (like previous ones) but received {actual}.")
+        # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
                 "'tell' must be provided with the candidate.\n"
@@ -246,12 +300,30 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
                 "the next ask"
             )
-        candidate.loss = loss
+        # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, loss)
-        self._update_archive_and_bests(candidate, loss)
+        # add reference if provided
+        if isinstance(candidate, p.MultiobjectiveReference):
+            if self._hypervolume_pareto is not None:
+                raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
+            if not isinstance(loss, np.ndarray):
+                raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
+            self._hypervolume_pareto = HypervolumePareto(upper_bounds=loss)
+            if candidate.value is None:
+                return
+            candidate = candidate.value
+        # preprocess multiobjective loss
+        if isinstance(loss, np.ndarray):
+            candidate._losses = loss
+        if not isinstance(loss, float):
+            loss = self._preprocess_multiobjective(candidate)
+        candidate.loss = loss
+        assert isinstance(loss, float)
+        if isinstance(loss, float):
+            self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
@@ -259,6 +331,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._internal_tell_not_asked(candidate, loss)
             self._num_tell_not_asked += 1
         self._num_tell += 1
+
+    def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
+        if self._hypervolume_pareto is None:
+            self._hypervolume_pareto = HypervolumePareto()
+        return self._hypervolume_pareto.add(candidate)
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
@@ -394,7 +471,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def minimize(
         self,
-        objective_function: tp.Callable[..., float],
+        objective_function: tp.Callable[..., tp.Loss],
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
@@ -435,8 +512,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
-        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
+        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
+        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
