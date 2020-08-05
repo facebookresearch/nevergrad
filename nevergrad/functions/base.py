@@ -204,26 +204,36 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
         pass  # better avoir bugs for this
 
 
-class PackedExperiment(ExperimentFunction):
+class MultiExperiment(ExperimentFunction):
     """Pack several mono-objective experiments into a multiobjective experiment
+
 
     Parameters
     ----------
     experiments: iterable of ExperimentFunction
+
+    Notes
+    -----
+    - packing of multiobjective experiments is not supported.
+    - parametrization must match between all functions (only their name is checked as initialization)
+    - there is no descriptor for the packed functions, except the name (concatenetion of packed function names).
     """
 
     def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike) -> None:
-        self._experiments = list(experiments)
-        assert self._experiments
-        assert all(xp.multiobjective_upper_bounds is None for xp in self._experiments), "Packing multiobjective xps is not supported."
-        super().__init__(self._multi_func, self._experiments[0].parametrization)
+        xps = list(experiments)
+        assert xps
+        assert len(xps) == len({id(xp) for xp in xps}), "All experiments must be different instances"
+        assert all(xp.multiobjective_upper_bounds is None for xp in xps), "Packing multiobjective xps is not supported."
+        assert all(xps[0].parametrization.name == xp.parametrization.name for xp in xps[1:]), "Parametrization do not match"
+        super().__init__(self._multi_func, xps[0].parametrization)
         self.multiobjective_upper_bounds = np.array(upper_bounds)
-        # TODO add descriptors?
+        self._descriptors.update(name=",".join(xp._descriptors.get("name", "#unknown#") for xp in xps))
+        self._experiments = xps
 
     def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
         outputs = [f(*args, **kwargs) for f in self._experiments]
         return np.array(outputs)
 
-    def copy(self) -> "PackedExperiment":
+    def copy(self) -> "MultiExperiment":
         assert self.multiobjective_upper_bounds is not None
-        return PackedExperiment([f.copy() for f in self._experiments], self.multiobjective_upper_bounds)
+        return MultiExperiment([f.copy() for f in self._experiments], self.multiobjective_upper_bounds)

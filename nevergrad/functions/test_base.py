@@ -5,6 +5,7 @@
 
 import typing as tp
 import numpy as np
+import pytest
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from . import base
@@ -68,6 +69,15 @@ def test_callable_parametrization() -> None:
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), p.Scalar(2).set_mutation(sigma=2))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
+
+
+def test_packed_function() -> None:
+    ifunc = base.ExperimentFunction(_Callable(), p.Scalar(1))
+    with pytest.raises(AssertionError):
+        base.MultiExperiment([ifunc, ifunc], [100, 100])
+    pfunc = base.MultiExperiment([ifunc, ifunc.copy()], [100, 100])
+    np.testing.assert_equal(pfunc.descriptors["name"], "_Callable,_Callable")
+    np.testing.assert_array_equal(pfunc(-3), [3, 3])
 
 
 def test_deterministic_data_setter() -> None:

@@ -1,3 +1,5 @@
+.. _machinelearning:
+
 Examples - Nevergrad for machine learning
 =========================================
 
@@ -33,7 +35,7 @@ If you want something fully parallel (the number of workers can be equal to the 
 If you are optimizing weights in reinforcement learning, you might use :code:`TBPSA` (high noise) or :code:`CMA` (low noise).
 
 
-Below are 3 examples : 
+Below are 3 examples :
 
  1. the optimization of continuous hyperparameters. It is also presented in an asynchronous setting. All other examples are based on the ask and tell interface, which can be synchronous or not but relies on the user for setting up asynchronicity.
  2. the optimization of mixed (continuous and discrete) hyperparameters.
@@ -305,5 +307,3 @@ Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/master/_modules/ray
 Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/next/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
 Nevergrad is interfaced in `IOH Profiler <http://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
-
-

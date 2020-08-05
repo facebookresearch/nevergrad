@@ -1,5 +1,3 @@
-.. _machinelearning:
-
 How to perform optimization
 ===========================
 
@@ -176,7 +174,7 @@ When optimizing hyperparameters as e.g. in machine learning. If you don't know w
 Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):
 
 - use :code:`TransitionChoice` for discrete variables, taking care that the default value is in the middle.
-- Use :code:`ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
+- Use :code:`ScrHammersleySearchPlusMiddlePoint` (:code:`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
 
 Example of chaining, or inoculation, or initialization of an evolutionary algorithm
@@ -223,8 +221,8 @@ Multiobjective minimization is a **work in progress** in :code:`nevergrad`. It i
 
  - **not stable**: the API may be updated at any time, hopefully to make it simpler and more intuitive.
  - **not robust**: there are probably corner cases we have not investigated yet.
- - **not scalable**: it is not yet clear how the current version will work with large number of losses, or large budget.
- - **not optimal**: this currently transforms multiobjective functions into monoobjective functions, hence loosing some structure and making the function dynamic, which some optimizers are not designed to work on.
+ - **not scalable**: it is not yet clear how the current version will work with large number of losses, or large budget. For now the features have been implemented without time complexity considerations.
+ - **not optimal**: this currently transforms multiobjective functions into monoobjective functions, hence losing some structure and making the function dynamic, which some optimizers are not designed to work on.
 
 In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!
 
