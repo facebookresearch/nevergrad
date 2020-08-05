@@ -781,12 +781,14 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Realworld optimization. This experiment contains:
+
      - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
      - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
      - The 007 game: 1 function, noisy.
      - PowerSystem: a power system simulation problem.
      - STSP: a simple TSP problem.
-     MLDA stuff, except the Perceptron.
+     -  MLDA, except the Perceptron.
+
     Budget 25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800.
     Sequential or 10-parallel or 100-parallel.
     """

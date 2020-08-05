@@ -1,3 +1,5 @@
+.. _machinelearning:
+
 How to perform optimization
 ===========================
 
@@ -166,11 +168,10 @@ Let us say that we want to minimize :code:`(x[0]-.5)**2 + (x[1]-.5)**2` under th
 Optimizing machine learning hyperparameters
 -------------------------------------------
 
-When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see [parametrization](parametrization.md)) to use:
+When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see :ref:`Parametrization <parametrizing>` to use:
 
 - use :code:`Choice` for discrete variables
-- use :code:`TwoPointsDE` with :code:`num_workers` equal to the number of workers available to you.
-See the [machine learning example](machinelearning.md) for more.
+- use :code:`TwoPointsDE` with :code:`num_workers` equal to the number of workers available to you. See the :ref:`machine learning examples <machinelearning>` for more.
 
 Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):
 
