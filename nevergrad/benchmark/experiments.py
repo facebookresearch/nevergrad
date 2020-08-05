@@ -160,7 +160,7 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """Parallel optimization with small budgets
     """
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "RealSpacePSO", "RealSpaceSqrtPSO",
+    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "RealSpacePSO",
               "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
               "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
     optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell", "Cobyla", "NGO", "Shiwa"]
