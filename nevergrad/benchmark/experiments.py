@@ -10,7 +10,7 @@ import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
-from nevergrad.functions.base import PackedExperiment
+from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
@@ -1103,17 +1103,17 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA",
               "CMA", "OnePlusOne", "TwoPointsDE"]
-    mofuncs: tp.List[PackedExperiment] = []
+    mofuncs: tp.List[MultiExperiment] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs.append(PackedExperiment([ArtificialFunction(name1, block_dimension=7),
-                                             ArtificialFunction(name2, block_dimension=7)],
-                                            upper_bounds=np.array((50., 50.))))
+            mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                            ArtificialFunction(name2, block_dimension=7)],
+                                           upper_bounds=np.array((50., 50.))))
             for name3 in ["sphere", "ellipsoid"]:
-                mofuncs.append(PackedExperiment([ArtificialFunction(name1, block_dimension=6),
-                                                 ArtificialFunction(name3, block_dimension=6),
-                                                 ArtificialFunction(name2, block_dimension=6)],
-                                                upper_bounds=np.array((100, 100, 1000.))))
+                mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=6),
+                                                ArtificialFunction(name3, block_dimension=6),
+                                                ArtificialFunction(name2, block_dimension=6)],
+                                               upper_bounds=np.array((100, 100, 1000.))))
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(2000, 4001, 400)):
