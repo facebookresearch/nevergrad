@@ -639,6 +639,18 @@ Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kw
 </dd></dl>
 
 <dl class="py method">
+<dt id="nevergrad.p.Parameter.losses">
+<em class="property">property </em><code class="sig-name descname">losses</code><a class="headerlink" href="#nevergrad.p.Parameter.losses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pssibly multiobjective losses which were told
+to the optimizer along this parameter.
+In case of mono-objective loss, losses is the array containing this loss as sole element</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This API is highly experimental</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
 <dt id="nevergrad.p.Parameter.mutate">
 <code class="sig-name descname">mutate</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.mutate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mutate parameters of the instance, and then its value</p>

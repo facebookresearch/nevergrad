@@ -241,11 +241,13 @@ Defining the following parametrization instead will optimize on both <code class
 </div>
 <div class="section" id="ask-and-tell-interface">
 <h2>Ask and tell interface<a class="headerlink" href="#ask-and-tell-interface" title="Permalink to this headline">¶</a></h2>
-<p>An <em>ask and tell</em> interface is also available. The 3 key methods for this interface are respectively:
-- <code class="code docutils literal notranslate"><span class="pre">ask</span></code>: suggest a candidate on which to evaluate the function to optimize.
-- <code class="code docutils literal notranslate"><span class="pre">tell</span></code>: for updated the optimizer with the value of the function for a candidate.
-- <code class="code docutils literal notranslate"><span class="pre">provide_recommendation</span></code>: returns the candidate the algorithms considers the best.
-For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute <code class="code docutils literal notranslate"><span class="pre">no_parallelization=True</span></code> however do not support this.</p>
+<p>An <em>ask and tell</em> interface is also available. The 3 key methods for this interface are respectively:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">ask</span></code>: suggest a candidate on which to evaluate the function to optimize.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">tell</span></code>: for updated the optimizer with the value of the function for a candidate.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">provide_recommendation</span></code>: returns the candidate the algorithms considers the best.</p></li>
+</ul>
+<p>For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute <code class="code docutils literal notranslate"><span class="pre">no_parallelization=True</span></code> however do not support this.</p>
 <p>The <code class="code docutils literal notranslate"><span class="pre">Parameter</span></code> class holds attribute <code class="code docutils literal notranslate"><span class="pre">value</span></code> which contain the actual value to evaluate through the function.</p>
 <p>Here is a simpler example in the sequential case (this is what happens in the <code class="code docutils literal notranslate"><span class="pre">optimize</span></code> method for <code class="code docutils literal notranslate"><span class="pre">num_workers=1</span></code>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
@@ -275,15 +277,17 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>
-<p>All algorithms have strengths and weaknesses. Questionable rules of thumb could be:
-- <code class="code docutils literal notranslate"><span class="pre">TwoPointsDE</span></code> is excellent in many cases, including very high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code>.
-- <code class="code docutils literal notranslate"><span class="pre">PortfolioDiscreteOnePlusOne</span></code> is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it’s possibly a good choice for hyperparameter choice.
-- <code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code> is a simple robust method for continuous parameters with <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> &lt; 8.
-- <code class="code docutils literal notranslate"><span class="pre">CMA</span></code> is excellent for control (e.g. neurocontrol) when the environment is not very noisy (num_workers ~50 ok) and when the budget is large (e.g. 1000 x the dimension).
-- <code class="code docutils literal notranslate"><span class="pre">TBPSA</span></code> is excellent for problems corrupted by noise, in particular overparameterized (neural) ones; very high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> ok).
-- <code class="code docutils literal notranslate"><span class="pre">PSO</span></code> is excellent in terms of robustness, high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> ok.
-- <code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> is excellent for super parallel cases (fully one-shot, i.e. <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> = budget included) or for very multimodal cases (such as some of our MLDA problems); don’t use softmax with this optimizer.
-- <code class="code docutils literal notranslate"><span class="pre">RandomSearch</span></code> is the classical random search baseline; don’t use softmax with this optimizer.</p>
+<p>All algorithms have strengths and weaknesses. Questionable rules of thumb could be:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">TwoPointsDE</span></code> is excellent in many cases, including very high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">PortfolioDiscreteOnePlusOne</span></code> is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it’s possibly a good choice for hyperparameter choice.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code> is a simple robust method for continuous parameters with <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> &lt; 8.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">CMA</span></code> is excellent for control (e.g. neurocontrol) when the environment is not very noisy (num_workers ~50 ok) and when the budget is large (e.g. 1000 x the dimension).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">TBPSA</span></code> is excellent for problems corrupted by noise, in particular overparameterized (neural) ones; very high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> ok).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">PSO</span></code> is excellent in terms of robustness, high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> ok.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> is excellent for super parallel cases (fully one-shot, i.e. <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> = budget included) or for very multimodal cases (such as some of our MLDA problems); don’t use softmax with this optimizer.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">RandomSearch</span></code> is the classical random search baseline; don’t use softmax with this optimizer.</p></li>
+</ul>
 </div>
 <div class="section" id="telling-non-asked-points-or-suggesting-points">
 <h2>Telling non-asked points, or suggesting points<a class="headerlink" href="#telling-non-asked-points-or-suggesting-points" title="Permalink to this headline">¶</a></h2>
@@ -324,9 +328,8 @@ with the provided <code class="code docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="adding-callbacks">
 <h2>Adding callbacks<a class="headerlink" href="#adding-callbacks" title="Permalink to this headline">¶</a></h2>
-<p>You can add callbacks to the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods through the <code class="code docutils literal notranslate"><span class="pre">register_callback</span></code>  method.
-The functions/callbacks registeed on <code class="code docutils literal notranslate"><span class="pre">ask</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">callback</span> <span class="pre">(optimizer)</span></code> and functions registered on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>
-must have signature <code class="code docutils literal notranslate"><span class="pre">function(optimizer,</span> <span class="pre">candidate,</span> <span class="pre">value)</span></code>.</p>
+<p>You can add callbacks to the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods through the <code class="code docutils literal notranslate"><span class="pre">register_callback</span></code> method.
+The functions/callbacks registered on <code class="code docutils literal notranslate"><span class="pre">ask</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">callback</span> <span class="pre">(optimizer)</span></code> and functions registered on <code class="code docutils literal notranslate"><span class="pre">tell</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">function(optimizer,</span> <span class="pre">candidate,</span> <span class="pre">value)</span></code>.</p>
 <p>The example below shows a callback which prints <code class="code docutils literal notranslate"><span class="pre">candidate</span></code> and <code class="code docutils literal notranslate"><span class="pre">value</span></code> on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
@@ -366,13 +369,16 @@ Let us say that we want to minimize <code class="code docutils literal notransla
 </div>
 <div class="section" id="optimizing-machine-learning-hyperparameters">
 <h2>Optimizing machine learning hyperparameters<a class="headerlink" href="#optimizing-machine-learning-hyperparameters" title="Permalink to this headline">¶</a></h2>
-<p>When optimizing hyperparameters as e.g. in machine learning. If you don’t know what variables (see [parametrization](parametrization.md)) to use:
-- use <code class="code docutils literal notranslate"><span class="pre">Choice</span></code> for discrete variables
-- use <code class="code docutils literal notranslate"><span class="pre">TwoPointsDE</span></code> with <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> equal to the number of workers available to you.
-See the [machine learning example](machinelearning.md) for more.</p>
-<p>Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):
-- use <code class="code docutils literal notranslate"><span class="pre">TransitionChoice</span></code> for discrete variables, taking care that the default value is in the middle.
-- Use <code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> (<cite>PlusMiddlePoint</cite> only if you have continuous parameters or good default values for discrete parameters).</p>
+<p>When optimizing hyperparameters as e.g. in machine learning. If you don’t know what variables (see <a class="reference internal" href="parametrization.html#parametrizing"><span class="std std-ref">Parametrization</span></a> to use:</p>
+<ul class="simple">
+<li><p>use <code class="code docutils literal notranslate"><span class="pre">Choice</span></code> for discrete variables</p></li>
+<li><p>use <code class="code docutils literal notranslate"><span class="pre">TwoPointsDE</span></code> with <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> equal to the number of workers available to you. See the <a class="reference internal" href="machinelearning.html#machinelearning"><span class="std std-ref">machine learning examples</span></a> for more.</p></li>
+</ul>
+<p>Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):</p>
+<ul class="simple">
+<li><p>use <code class="code docutils literal notranslate"><span class="pre">TransitionChoice</span></code> for discrete variables, taking care that the default value is in the middle.</p></li>
+<li><p>Use <code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> (<code class="code docutils literal notranslate"><span class="pre">PlusMiddlePoint</span></code> only if you have continuous parameters or good default values for discrete parameters).</p></li>
+</ul>
 </div>
 <div class="section" id="example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">
 <h2>Example of chaining, or inoculation, or initialization of an evolutionary algorithm<a class="headerlink" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm" title="Permalink to this headline">¶</a></h2>
@@ -407,8 +413,18 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </div>
 <div class="section" id="multiobjective-minimization-with-nevergrad">
 <h2>Multiobjective minimization with Nevergrad<a class="headerlink" href="#multiobjective-minimization-with-nevergrad" title="Permalink to this headline">¶</a></h2>
-<p>Multiobjective minimization is a work in progress in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>, you should expect a few API changes before it converges to a stable solution.
-Let us minimize <code class="code docutils literal notranslate"><span class="pre">f1</span></code> and <code class="code docutils literal notranslate"><span class="pre">f2</span></code> (two objective functions) assuming that values above 2.5 are of no interest.</p>
+<p>Multiobjective minimization is a <strong>work in progress</strong> in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>. It is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>not stable</strong>: the API may be updated at any time, hopefully to make it simpler and more intuitive.</p></li>
+<li><p><strong>not robust</strong>: there are probably corner cases we have not investigated yet.</p></li>
+<li><p><strong>not scalable</strong>: it is not yet clear how the current version will work with large number of losses, or large budget. For now the features have been implemented without time complexity considerations.</p></li>
+<li><p><strong>not optimal</strong>: this currently transforms multiobjective functions into monoobjective functions, hence losing some structure and making the function dynamic, which some optimizers are not designed to work on.</p></li>
+</ul>
+</div></blockquote>
+<p>In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!</p>
+<p>The initial API that was added into <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> to work with multiobjective functions uses a function wrapper to convert them into monoobjective functions.
+Let us minimize <code class="code docutils literal notranslate"><span class="pre">f1</span></code> and <code class="code docutils literal notranslate"><span class="pre">f2</span></code> (two objective functions) assuming that values above 2.5 are of no interest:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 <span class="kn">from</span> <span class="nn">nevergrad.functions</span> <span class="kn">import</span> <span class="n">MultiobjectiveFunction</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -426,6 +442,42 @@ Let us minimize <code class="code docutils literal notranslate"><span class="pre
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;random&quot;</span><span class="p">)])</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;loss-covering&quot;</span><span class="p">)])</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;domain-covering&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>We are currently working on an <strong>new experimental API</strong> allowing users to directly <code class="code docutils literal notranslate"><span class="pre">tell</span></code> the results as an array or list of floats. When this API is stabilized and proved to work, it will probably replace the older one. Here is an example on how to use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">multiobjective</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Example: &quot;</span><span class="p">,</span> <span class="n">multiobjective</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])))</span>
+<span class="c1"># &gt;&gt;&gt; Example: [5.0, 2.0]</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">CMA</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1"># it&#39;s not strictly necessary but highly advised to provide an</span>
+<span class="c1"># upper bound reference for the losses (if not provided, such upper</span>
+<span class="c1"># bound is automatically inferred with the first few &quot;tell&quot;)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">MultiobjectiveReference</span><span class="p">(),</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="c1"># note that you can provide a Parameter to MultiobjectiveReference,</span>
+<span class="c1"># which will be passed to the optimizer</span>
+
+<span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">multiobjective</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># The function embeds its Pareto-front:</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pareto front:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">optimizer</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">losses</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2"> with losses </span><span class="si">{</span><span class="n">param</span><span class="o">.</span><span class="n">losses</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># &gt;&gt;&gt; Array{(3,)}:[0. 0. 0.] with loss [0. 3.]</span>
+<span class="c1">#     Array{(3,)}:[0.39480968 0.98105712 0.55785803] with loss [1.42955333 0.56210368]</span>
+<span class="c1">#     Array{(3,)}:[1.09901515 0.97673712 0.97153943] with loss [3.10573857 0.01115516]</span>
+
+<span class="c1"># It can also provide subsets:</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Random subset:&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;random&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loss-covering subset:&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;loss-covering&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Domain-covering subset:&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;domain-covering&quot;</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>

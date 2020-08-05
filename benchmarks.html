@@ -541,6 +541,14 @@ Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="nevergrad.benchmark.experiments.new_multiobjective_example">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">new_multiobjective_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.new_multiobjective_example" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
+Dimension 6 and 7.
+Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.newdoe">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">newdoe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.newdoe" title="Permalink to this definition">¶</a></dt>
 <dd><p>One shot optimization of 3 classical objective functions (sphere, rastrigin, cigar), simplified.
@@ -633,17 +641,17 @@ With or without noise dissymmetry.</p>
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.realworld">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">realworld</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.realworld" title="Permalink to this definition">¶</a></dt>
-<dd><dl>
-<dt>Realworld optimization. This experiment contains:</dt><dd><ul class="simple">
+<dd><p>Realworld optimization. This experiment contains:</p>
+<blockquote>
+<div><ul class="simple">
 <li><p>a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.</p></li>
 <li><p>ARCoating <a class="reference external" href="https://arxiv.org/abs/1904.02907">https://arxiv.org/abs/1904.02907</a>: 1 function.</p></li>
 <li><p>The 007 game: 1 function, noisy.</p></li>
 <li><p>PowerSystem: a power system simulation problem.</p></li>
 <li><p>STSP: a simple TSP problem.</p></li>
+<li><p>MLDA, except the Perceptron.</p></li>
 </ul>
-<p>MLDA stuff, except the Perceptron.</p>
-</dd>
-</dl>
+</div></blockquote>
 <p>Budget 25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800.
 Sequential or 10-parallel or 100-parallel.</p>
 </dd></dl>

@@ -237,7 +237,7 @@ which can be directly used on the function (<code class="code docutils literal n
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.minimize">
-<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable[[…], float]</span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typing.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable[[…], Union[float, Tuple[float, …], List[float], numpy.ndarray]]</span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typing.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimization (minimization) procedure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -297,6 +297,28 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="nevergrad.optimizers.base.Optimizer.pareto_front">
+<code class="sig-name descname">pareto_front</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">subset</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'random'</span></em>, <em class="sig-param"><span class="n">subset_tentatives</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>nevergrad.parametrization.core.Parameter<span class="p">]</span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.pareto_front" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pareto front, as a list of Parameter. The losses can be accessed through
+parameter.losses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – if provided, selects a subset of the full pareto front with the given maximum size</p></li>
+<li><p><strong>subset</strong> (<em>str</em>) – method for selecting the subset (“random, “loss-covering”, “domain-covering”, “hypervolume”)</p></li>
+<li><p><strong>subset_tentatives</strong> (<em>int</em>) – number of random tentatives for finding a better subset</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the list of Parameter of the pareto front</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
 </dd>
 </dl>
 </dd></dl>
@@ -379,7 +401,7 @@ creating a new candidate with <code class="code docutils literal notranslate"><s
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.tell">
-<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">Union[float, Tuple[float, …], List[float], numpy.ndarray]</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the optimizer with the evaluation of a fitness value for a candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
