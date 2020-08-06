@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Examples - Working with Pyomo model &mdash; nevergrad  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation and configuration on Windows" href="windows.html" />
+    <link rel="prev" title="Examples of benchmarks" href="benchmarks.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nevergrad
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples - Working with Pyomo model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#concrete-model">Concrete Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#abstract-model">Abstract Model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="windows.html">Installation and configuration on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nevergrad</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Examples - Working with Pyomo model</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/pyomo.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="examples-working-with-pyomo-model">
+<h1>Examples - Working with Pyomo model<a class="headerlink" href="#examples-working-with-pyomo-model" title="Permalink to this headline">¶</a></h1>
+<p>Pyomo is an open source software package for modeling and solving mathematical programs in Python <a class="reference internal" href="#hart2011" id="id1"><span>[Hart2011]</span></a>.
+This section gives an example of how to optimize Pyomo models using Nevergrad.</p>
+<div class="section" id="concrete-model">
+<h2>Concrete Model<a class="headerlink" href="#concrete-model" title="Permalink to this headline">¶</a></h2>
+<p>Let us create a <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code> instance using Pyomo.
+In a <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, each component is fully initialized.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyomo</span>
+
+<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">((</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">Var</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyomo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">square</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">Constraint1</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">Constraint2</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the above model, it is clear that the parameter in the objective function is <code class="code docutils literal notranslate"><span class="pre">x</span></code>, which is an indexed variable subjected to two constraints.
+Nevergrad has provided an utility to parse the Pyomo model to enable you to create <code class="code docutils literal notranslate"><span class="pre">ExperimentFunction</span></code> automatically.
+Such <code class="code docutils literal notranslate"><span class="pre">ExperimentFunction</span></code> contains the parameters, constraints, and an objective function to be optimized.
+Note that only single objective model is supported by the utility.
+To do this, you should first import new module.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<span class="kn">import</span> <span class="nn">nevergrad.functions.pyomo</span> <span class="k">as</span> <span class="nn">ng_pyomo</span>
+</pre></div>
+</div>
+<p>In our example as shown below, <code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code> optimizer is used to minimize the objective function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">func</span> <span class="o">=</span> <span class="n">ng_pyomo</span><span class="o">.</span><span class="n">Pyomo</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">parametrization</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">function</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, the result can be read using</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;x[0]&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;x[1]&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="abstract-model">
+<h2>Abstract Model<a class="headerlink" href="#abstract-model" title="Permalink to this headline">¶</a></h2>
+<p>Pyomo model has to be fully constructed before you solve the model.
+When you define an <code class="code docutils literal notranslate"><span class="pre">AbstractModel</span></code>, construction occurs in two phases.
+First of all, you declare and attach components to the model, those components are empty containers and not fully constructed.
+Next, you will fill in the containers using the <code class="code docutils literal notranslate"><span class="pre">create_instance()</span></code> method.
+The <code class="code docutils literal notranslate"><span class="pre">create_instance()</span></code> method allows you to take the abstract model and optional data and returns a new <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code> instance.
+You are recommended to use <code class="code docutils literal notranslate"><span class="pre">DataPortal</span></code> in Pyomo to load data in various format.
+You may refer to the <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/working_abstractmodels/data/dataportals.html">Pyomo documentation</a> for the details.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">DataPortal</span><span class="p">()</span>
+<span class="n">data</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">data_path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">abstract_model</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">abstract_model</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="citation">
+<dt class="label" id="hart2011"><span class="brackets"><a class="fn-backref" href="#id1">Hart2011</a></span></dt>
+<dd><p>Hart, William E., Jean-Paul Watson, and David L. Woodruff. “Pyomo: modeling and solving mathematical programs in Python.” Mathematical Programming Computation 3, no. 3 (2011): 219-260.</p>
+</dd>
+</dl>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="windows.html" class="btn btn-neutral float-right" title="Installation and configuration on Windows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="benchmarks.html" class="btn btn-neutral float-left" title="Examples of benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Facebook AI Research
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

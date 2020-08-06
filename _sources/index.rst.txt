@@ -56,6 +56,7 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    parametrization_ref.rst
    benchmarking.rst
    benchmarks.rst
+   pyomo.rst
    windows.md
    contributing.rst
    opencompetition2020.md
