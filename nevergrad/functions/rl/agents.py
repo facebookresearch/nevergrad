@@ -128,6 +128,7 @@ class TorchAgentFunction(ExperimentFunction):
         try:  # safeguard against nans
             with torch.no_grad():
                 reward = self.runner.run(self.agent)
+
         except RuntimeError as e:
             warnings.warn(f"Returning 0 after error: {e}")
             reward = 0.0

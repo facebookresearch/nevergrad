@@ -128,6 +128,7 @@ class Photonics(base.ExperimentFunction):
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         # pylint: disable=not-callable
         loss = self.function(x)
+        assert isinstance(loss, float)
         base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 

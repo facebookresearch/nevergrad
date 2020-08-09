@@ -32,6 +32,7 @@ class Parameter:
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
+        self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -42,6 +43,22 @@ class Parameter:
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
+
+    @property
+    def losses(self) -> np.ndarray:
+        """Pssibly multiobjective losses which were told
+        to the optimizer along this parameter.
+        In case of mono-objective loss, losses is the array containing this loss as sole element
+
+        Note
+        ----
+        This API is highly experimental
+        """
+        if self._losses is not None:
+            return self._losses
+        if self.loss is not None:
+            return np.array([self.loss], dtype=float)
+        raise RuntimeError("No loss was provided")
 
     @property
     def value(self) -> tp.Any:
@@ -382,7 +399,7 @@ class Constant(Parameter):
 
     def __init__(self, value: tp.Any) -> None:
         super().__init__()
-        if isinstance(value, Parameter):
+        if isinstance(value, Parameter) and not isinstance(self, MultiobjectiveReference):
             raise TypeError("Only non-parameters can be wrapped in a Constant")
         self._value = value
 
@@ -440,6 +457,15 @@ def as_parameter(param: tp.Any) -> Parameter:
         return param
     else:
         return Constant(param)
+
+
+class MultiobjectiveReference(Constant):
+
+    def __init__(self, parameter: tp.Optional[Parameter] = None) -> None:
+        if parameter is not None and not isinstance(parameter, Parameter):
+            raise TypeError("MultiobjectiveReference should either take no argument or a parameter which will "
+                            f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})")
+        super().__init__(parameter)
 
 
 class Dict(Parameter):
