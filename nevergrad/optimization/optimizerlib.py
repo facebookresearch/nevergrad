@@ -1888,7 +1888,6 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, value)
 
 
-@registry.register
 class NGOpt(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
@@ -1967,3 +1966,7 @@ class NGOpt(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         self.optim.tell(candidate, value)
 
+
+@registry.register
+class NGOpt(NGOpt2):
+    pass
