@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 import warnings
 import numpy as np
 from scipy import stats
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
@@ -89,6 +89,7 @@ class _DE(base.Optimizer):
         # internals
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+        self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self.llambda)
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
@@ -97,8 +98,8 @@ class _DE(base.Optimizer):
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
             return self.current_bests[self._config.recommendation].parameter
-        med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
-        good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
+        med_fitness = np.median([p.loss for p in self.population.values() if p.loss is not None])
+        good_guys = [p for p in self.population.values() if p.loss is not None and p.loss < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].parameter
         data: tp.Any = sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)
@@ -115,6 +116,7 @@ class _DE(base.Optimizer):
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
             candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
+            candidate.loss = float("inf")
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
@@ -138,25 +140,23 @@ class _DE(base.Optimizer):
             candidate.set_standardized_data(donor, deterministic=False, reference=self.parametrization)
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         uid = candidate.heritage["lineage"]
         self._uid_queue.tell(uid)
-        candidate._meta["value"] = value
         if uid not in self.population:
-            self._internal_tell_not_asked(candidate, value)
+            self._internal_tell_not_asked(candidate, loss)
             return
-        parent_value = self.population[uid]._meta.get("value", float("inf"))
-        if value <= parent_value:
+        parent_value: float = self.population[uid].loss  # type: ignore
+        if loss <= parent_value:
             self.population[uid] = candidate
-        elif self._config.propagate_heritage and value <= float("inf"):
+        elif self._config.propagate_heritage and loss <= float("inf"):
             self.population[uid].heritage.update(candidate.heritage)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["value"] = value
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         worst: tp.Optional[p.Parameter] = None
         if len(self.population) >= self.llambda:
-            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
-            if worst._meta.get("value", float("inf")) < value:
+            worst = max(self.population.values(), key=lambda p: p.loss)
+            if worst.loss < loss:  # type: ignore
                 return  # no need to update
             else:
                 uid = worst.heritage["lineage"]
