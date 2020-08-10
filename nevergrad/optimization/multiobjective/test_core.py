@@ -4,10 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-import typing as tp
 from unittest import SkipTest
 import numpy as np
 import pytest
+import nevergrad.common.typing as tp
 import nevergrad as ng
 from .. import base
 from ..optimizerlib import registry
@@ -46,6 +46,10 @@ def test_num_losses_error(losses: tp.Tuple[tp.Any, tp.Any]) -> None:
         opt.tell(cand, losses[1])
 
 
+def mofunc(array: np.ndarray) -> np.ndarray:
+    return abs(array - 1)
+
+
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_multiobjective(name: str) -> None:  # pylint: disable=redefined-outer-name
     if "BO" in name:
@@ -55,8 +59,13 @@ def test_optimizers_multiobjective(name: str) -> None:  # pylint: disable=redefi
         warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
         optimizer = registry[name](parametrization=4, budget=100)
         candidate = optimizer.ask()
-        optimizer.tell(candidate, [12, 12])
-        optimizer.ask()
+        optimizer.tell(candidate, mofunc(candidate.value))
+    # to be tested
+    optimizer.ask()
+    to_be_tested = {"DE"}  # specific mo adapatation
+    assert not to_be_tested - set(registry), "Testing some unknown optimizers"
+    if optimizer.name in to_be_tested:
+        optimizer.minimize(mofunc)
 
 
 # pylint: disable=redefined-outer-name,unsubscriptable-object,
