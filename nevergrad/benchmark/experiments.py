@@ -1139,16 +1139,14 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
     optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
                ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name("TwoPointsDE-noadapt")]
     mofuncs: tp.List[MultiExperiment] = []
-    for name1 in ["sphere", "cigar"]:
-        for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                            ArtificialFunction(name2, block_dimension=7)],
-                                           upper_bounds=np.array((50., 50.))))
-            for name3 in ["sphere", "ellipsoid"]:
-                mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=6),
-                                                ArtificialFunction(name3, block_dimension=6),
-                                                ArtificialFunction(name2, block_dimension=6)],
-                                               upper_bounds=np.array((100, 100, 1000.))))
+    for name1, name2 in itertools.product(["sphere"], ["sphere", "cigar"]):
+        mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                        ArtificialFunction(name2, block_dimension=7)],
+                                       upper_bounds=[100, 100]))
+        mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=6),
+                                        ArtificialFunction("sphere", block_dimension=6),
+                                        ArtificialFunction(name2, block_dimension=6)],
+                                       upper_bounds=[100, 100, 100.]))
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(2000, 4001, 400)):
