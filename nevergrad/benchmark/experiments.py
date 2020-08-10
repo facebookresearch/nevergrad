@@ -1139,7 +1139,7 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
     optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
                ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name("TwoPointsDE-noadapt")]
     mofuncs: tp.List[MultiExperiment] = []
-    for name1, name2 in itertools.product(["sphere"], ["sphere", "cigar"]):
+    for name1, name2 in itertools.product(["sphere"], ["sphere", "hm"]):
         mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=7),
                                         ArtificialFunction(name2, block_dimension=7)],
                                        upper_bounds=[100, 100]))
