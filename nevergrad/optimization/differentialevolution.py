@@ -131,7 +131,8 @@ class _DE(base.Optimizer):
         # redefine the different parents in case of multiobjective optimization
         if self._first_tell_done and self._config.multiobjective_adaptation and self.num_objectives > 1:
             pareto = self.pareto_front()
-            best = parent if parent in pareto else self._rng.choice(pareto)
+            if pareto:
+                best = parent if parent in pareto else self._rng.choice(pareto)
             if len(pareto) > 2:  # otherwise, not enough diversity
                 a, b = self._rng.choice(pareto, size=2, replace=False)
         # define donor

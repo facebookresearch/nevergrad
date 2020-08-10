@@ -29,11 +29,29 @@ def test_hypervolume_pareto_function() -> None:
         param = ng.p.Tuple(*(ng.p.Scalar(x) for x in tup))
         param._losses = np.array(tup)
         values.append(hvol.add(param))
-    expected = [10, 10, -400, -2500.0, -2500.0, -2470.0, -3300.0, -4100.0]
+    expected = [20, 10, -400, -2500.0, -2500.0, -2470.0, -3300.0, -4100.0]
     assert values == expected, f"Expected {expected} but got {values}"
     front = [p.value for p in hvol.pareto_front()]
     expected_front = [(50, 50), (30, 60), (60, 30)]
     assert front == expected_front, f"Expected {expected_front} but got {front}"
+
+
+def test_hypervolume_pareto_with_no_good_point() -> None:
+    hvol = core.HypervolumePareto((100, 100))
+    tuples = [(110, 110),
+              (110, 90),
+              (90, 110)]
+    values = []
+    for tup in tuples:
+        param = ng.p.Tuple(*(ng.p.Scalar(x) for x in tup))
+        param._losses = np.array(tup)
+        values.append(hvol.add(param))
+    expected = [20, 10, 10]
+    assert values == expected, f"Expected {expected} but got {values}"
+    front = [p.value for p in hvol.pareto_front()]
+    expected_front = [(110, 90), (90, 110)]
+    assert front == expected_front, f"Expected {expected_front} but got {front}"
+    assert hvol._best_volume == -10  # used in xps
 
 
 @pytest.mark.parametrize("losses", [(12, [3, 4]), ([3, 4], 12)])  # type: ignore
@@ -47,7 +65,7 @@ def test_num_losses_error(losses: tp.Tuple[tp.Any, tp.Any]) -> None:
 
 
 def mofunc(array: np.ndarray) -> np.ndarray:
-    return abs(array - 1)
+    return abs(array - 1)  # type: ignore
 
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
