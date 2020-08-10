@@ -116,9 +116,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
+        self._first_tell_done = False  # set to True at the beginning of the first tell
         self._suggestions: tp.Deque[p.Parameter] = deque()
         self._num_ask = 0
-        self._num_tell = 0
+        self._num_tell = 0  # increases after each successful tell
         self._num_tell_not_asked = 0
         self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
@@ -140,7 +141,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def num_objectives(self) -> int:
-        if not self._num_tell and self._hypervolume_pareto is None:
+        if not self._first_tell_done:
             raise RuntimeError('Unknown number of objectives, provide a "tell" first.')
         return 1 if self._hypervolume_pareto is None else self._hypervolume_pareto.num_objectives
 
@@ -303,6 +304,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             )
         # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
+        self._first_tell_done = True
         # call callbacks for logging etc...
         for callback in self._callbacks.get("tell", []):
             callback(self, candidate, loss)

@@ -127,8 +127,9 @@ class _DE(base.Optimizer):
         uids = list(self.population)
         indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
         data_a, data_b = (indiv.get_standardized_data(reference=self.parametrization) for indiv in indivs)
+        best = self.current_bests["pessimistic"].x
         donor = (data + self._config.F1 * (data_a - data_b) +
-                 self._config.F2 * (self.current_bests["pessimistic"].x - data))
+                 self._config.F2 * (best - data))
         candidate.parents_uids.extend([i.uid for i in indivs])
         # apply crossover
         co = self._config.crossover
@@ -146,8 +147,14 @@ class _DE(base.Optimizer):
         if uid not in self.population:
             self._internal_tell_not_asked(candidate, loss)
             return
-        parent_value: float = self.population[uid].loss  # type: ignore
-        if loss <= parent_value:
+        parent = self.population[uid]
+        parent_value: float = parent.loss  # type: ignore
+        mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
+        if not mo_adapt and loss <= parent_value:
+            self.population[uid] = candidate
+        elif mo_adapt and (parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()):
+            # multiobjective case, with adaptation,
+            # randomly replaces the parent depending on the number of better losses
             self.population[uid] = candidate
         elif self._config.propagate_heritage and loss <= float("inf"):
             self.population[uid].heritage.update(candidate.heritage)
@@ -205,6 +212,9 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     popsize: int, "standard", "dimension", "large"
         size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
         and "large" max(num_workers, 30, 7 * dimension).
+    multiobjective_adaptation: bool
+        Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
+        activated by default because the non-multiobjective implementation is performing very badly.
     """
 
     def __init__(
@@ -218,6 +228,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         F2: float = .8,
         popsize: tp.Union[str, int] = "standard",
         propagate_heritage: bool = False,  # experimental
+        multiobjective_adaptation: bool = True,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
@@ -234,6 +245,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
+        self.multiobjective_adaptation = multiobjective_adaptation
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)
