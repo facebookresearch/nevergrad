@@ -45,6 +45,7 @@ class HypervolumePareto:
         self._pareto: tp.List[p.Parameter] = []
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
+        self._pareto_needs_filtering = False
 
     @property
     def num_objectives(self) -> int:
@@ -68,6 +69,7 @@ class HypervolumePareto:
             return 0.
         if self._hypervolume is None:
             self._hypervolume = HypervolumeIndicator(self._upper_bounds)
+            self._pareto_needs_filtering = True
         # get rid of points over the upper bounds
         if (losses - self._upper_bounds > 0).any():
             return float(np.max(losses - self._upper_bounds))
@@ -77,13 +79,13 @@ class HypervolumePareto:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
             self._pareto.append(parameter)
+            self._pareto_needs_filtering = True
             return -new_volume
         else:
             # This point is not on the front
             # First we prune.
-            self._filter_pareto_front()
             distance_to_pareto = float("Inf")
-            for param in self._pareto:
+            for param in self.pareto_front():
                 stored_losses = param.losses
                 # TODO the following is probably not good at all:
                 # -> +inf if no point is strictly better (but lower if it is)
@@ -129,7 +131,8 @@ class HypervolumePareto:
         list
             the list of Parameter of the pareto front
         """
-        self._filter_pareto_front()
+        if self._pareto_needs_filtering:
+            self._filter_pareto_front()
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":

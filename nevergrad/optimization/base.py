@@ -186,9 +186,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         --------
         list
             the list of Parameter of the pareto front
+
+        Note
+        ----
+        During non-multiobjective optimization, this returns the current pessimistic best
         """
         if self._hypervolume_pareto is None:
-            raise RuntimeError("No pareto front with a single objective")
+            return [self.current_bests["pessimistic"].parameter]
         return self._hypervolume_pareto.pareto_front(size=size, subset=subset, subset_tentatives=subset_tentatives)
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
@@ -305,9 +309,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
         self._first_tell_done = True
-        # call callbacks for logging etc...
-        for callback in self._callbacks.get("tell", []):
-            callback(self, candidate, loss)
         # add reference if provided
         if isinstance(candidate, p.MultiobjectiveReference):
             if self._hypervolume_pareto is not None:
@@ -323,8 +324,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             candidate._losses = loss
         if not isinstance(loss, float):
             loss = self._preprocess_multiobjective(candidate)
+        # call callbacks for logging etc...
         candidate.loss = loss
         assert isinstance(loss, float)
+        for callback in self._callbacks.get("tell", []):
+            # multiobjective reference is not handled :s
+            # but this allows obtaining both scalar and multiobjective loss (through losses)
+            callback(self, candidate, loss)
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:

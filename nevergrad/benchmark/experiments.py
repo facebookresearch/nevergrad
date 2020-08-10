@@ -1134,8 +1134,10 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
     Budget 2000, 2400, 2800, 3200, 3600, 4000.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA",
-              "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims: tp.List[tp.Any] = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA",
+                               "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
+               ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name("TwoPointsDE-noadapt")]
     mofuncs: tp.List[MultiExperiment] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:

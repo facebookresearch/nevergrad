@@ -121,16 +121,24 @@ class _DE(base.Optimizer):
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        candidate = self.population[self._uid_queue.ask()].spawn_child()
+        parent = self.population[self._uid_queue.ask()]
+        candidate = parent.spawn_child()
         data = candidate.get_standardized_data(reference=self.parametrization)
-        # define donor
+        # define all the different parents
         uids = list(self.population)
-        indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
-        data_a, data_b = (indiv.get_standardized_data(reference=self.parametrization) for indiv in indivs)
-        best = self.current_bests["pessimistic"].x
+        a, b = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
+        best = self.current_bests["pessimistic"].parameter
+        # redefine the different parents in case of multiobjective optimization
+        if self._first_tell_done and self._config.multiobjective_adaptation and self.num_objectives > 1:
+            pareto = self.pareto_front()
+            best = parent if parent in pareto else self._rng.choice(pareto)
+            if len(pareto) > 2:  # otherwise, not enough diversity
+                a, b = self._rng.choice(pareto, size=2, replace=False)
+        # define donor
+        data_a, data_b, data_best = (indiv.get_standardized_data(reference=self.parametrization) for indiv in (a, b, best))
         donor = (data + self._config.F1 * (data_a - data_b) +
-                 self._config.F2 * (best - data))
-        candidate.parents_uids.extend([i.uid for i in indivs])
+                 self._config.F2 * (data_best - data))
+        candidate.parents_uids.extend([i.uid for i in (a, b)])
         # apply crossover
         co = self._config.crossover
         if co == "parametrization":
