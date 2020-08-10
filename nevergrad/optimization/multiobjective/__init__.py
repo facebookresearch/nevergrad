@@ -4,4 +4,5 @@
 # LICENSE file in the root directory of this source tree.
 
 from .core import HypervolumePareto as HypervolumePareto
+from .core import AUTO_BOUND as AUTO_BOUND
 from .hypervolume import HypervolumeIndicator as HypervolumeIndicator
