@@ -1131,7 +1131,7 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
     Dimension 6 and 7.
-    Budget 2000, 2400, 2800, 3200, 3600, 4000.
+    Budget 400 to 2000
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA",
@@ -1149,7 +1149,7 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
                                        upper_bounds=[100, 100, 100.]))
     for mofunc in mofuncs:
         for optim in optims:
-            for budget in list(range(2000, 4001, 400)):
+            for budget in list(range(400, 2001, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
