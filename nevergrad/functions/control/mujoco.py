@@ -6,12 +6,6 @@
 import gym
 import numpy as np
 
-# Test for mucojo installation
-try:
-    import mujoco_py
-except ModuleNotFoundError:
-    raise("Mujoco-py not installed.")
-
 
 class GenericMujocoEnv:
     def __init__(self, env_name, state_mean, state_std, policy_dim, num_rollouts,
@@ -24,7 +18,6 @@ class GenericMujocoEnv:
         self.env.seed(random_state)
 
     def __call__(self, x):
-        # assert np.all(x <= self.ub) and np.all(x >= self.lb)
         M = x.reshape(self.policy_dim)
 
         returns = []
