@@ -191,9 +191,9 @@ among which at least <code class="code docutils literal notranslate"><span class
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>parametrization</strong> (<em>int</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – either the dimension of the optimization space, or its parametrization</p></li>
-<li><p><strong>budget</strong> (<em>int/None</em>) – number of allowed evaluations</p></li>
-<li><p><strong>num_workers</strong> (<em>int</em>) – number of evaluations which will be run in parallel at once</p></li>
+<li><p><strong>parametrization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>) – either the dimension of the optimization space, or its parametrization</p></li>
+<li><p><strong>budget</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int/None</span></code>) – number of allowed evaluations</p></li>
+<li><p><strong>num_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – number of evaluations which will be run in parallel at once</p></li>
 </ul>
 </dd>
 </dl>
@@ -238,20 +238,20 @@ which can be directly used on the function (<code class="code docutils literal n
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.minimize">
-<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable[[…], Union[float, Tuple[float, …], List[float], numpy.ndarray]]</span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typing.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">minimize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective_function</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span><span class="p">…</span><span class="p">]</span><span class="p">, </span>Union<span class="p">[</span>float<span class="p">, </span>Tuple<span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">executor</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>nevergrad.common.typing.ExecutorLike<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_mode</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbosity</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.minimize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimization (minimization) procedure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>objective_function</strong> (<em>callable</em>) – A callable to optimize (minimize)</p></li>
-<li><p><strong>executor</strong> (<em>Executor</em>) – An executor object, with method <code class="code docutils literal notranslate"><span class="pre">submit(callable,</span> <span class="pre">*args,</span> <span class="pre">**kwargs)</span></code> and returning a Future-like object
+<li><p><strong>objective_function</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">callable</span></code>) – A callable to optimize (minimize)</p></li>
+<li><p><strong>executor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Executor</span></code>) – An executor object, with method <code class="code docutils literal notranslate"><span class="pre">submit(callable,</span> <span class="pre">*args,</span> <span class="pre">**kwargs)</span></code> and returning a Future-like object
 with methods <code class="code docutils literal notranslate"><span class="pre">done()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> and <code class="code docutils literal notranslate"><span class="pre">result()</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code>. The executor role is to dispatch the execution of
 the jobs locally/on a cluster/with multithreading depending on the implementation.
 Eg: <code class="code docutils literal notranslate"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code></p></li>
-<li><p><strong>batch_mode</strong> (<em>bool</em>) – when <code class="code docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">=</span> <span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>, whether jobs are executed by batch (<code class="code docutils literal notranslate"><span class="pre">n</span></code> function evaluations are launched,
+<li><p><strong>batch_mode</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – when <code class="code docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">=</span> <span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>, whether jobs are executed by batch (<code class="code docutils literal notranslate"><span class="pre">n</span></code> function evaluations are launched,
 we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
 another one)</p></li>
-<li><p><strong>verbosity</strong> (<em>int</em>) – print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)</p></li>
+<li><p><strong>verbosity</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -310,9 +310,9 @@ parameter.losses</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>size</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – if provided, selects a subset of the full pareto front with the given maximum size</p></li>
-<li><p><strong>subset</strong> (<em>str</em>) – method for selecting the subset (“random, “loss-covering”, “domain-covering”, “hypervolume”)</p></li>
-<li><p><strong>subset_tentatives</strong> (<em>int</em>) – number of random tentatives for finding a better subset</p></li>
+<li><p><strong>size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span> <span class="pre">(optional)</span></code>) – if provided, selects a subset of the full pareto front with the given maximum size</p></li>
+<li><p><strong>subset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – method for selecting the subset (“random, “loss-covering”, “domain-covering”, “hypervolume”)</p></li>
+<li><p><strong>subset_tentatives</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – number of random tentatives for finding a better subset</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -322,6 +322,10 @@ parameter.losses</p>
 <dd class="field-odd"><p>list</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>During non-multiobjective optimization, this returns the current pessimistic best</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -356,14 +360,14 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.register_callback">
-<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">callback</span><span class="p">:</span> <span class="n">Union[Callable[[Optimizer, p.Parameter, float], None], Callable[[Optimizer], None]]</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">register_callback</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">callback</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer" title="nevergrad.optimizers.base.Optimizer">Optimizer</a><span class="p">, </span>p.Parameter<span class="p">, </span>float<span class="p">]</span><span class="p">, </span>None<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer" title="nevergrad.optimizers.base.Optimizer">Optimizer</a><span class="p">]</span><span class="p">, </span>None<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.register_callback" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a callback method called either when <cite>tell</cite> or <cite>ask</cite> are called, with the same
 arguments (including the optimizer / self). This can be useful for custom logging.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<em>str</em>) – name of the method to register the callback for (either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code>)</p></li>
-<li><p><strong>callback</strong> (<em>callable</em>) – a callable taking the same parameters as the method it is registered upon (including self)</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the method to register the callback for (either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code>)</p></li>
+<li><p><strong>callback</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">callable</span></code>) – a callable taking the same parameters as the method it is registered upon (including self)</p></li>
 </ul>
 </dd>
 </dl>
@@ -383,8 +387,8 @@ It will be asked at the next call (last in first out).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>*args</strong> (<em>Any</em>) – positional arguments matching the parametrization pattern.</p></li>
-<li><p><strong>*kwargs</strong> (<em>Any</em>) – keyword arguments matching the parametrization pattern.</p></li>
+<li><p><strong>*args</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – positional arguments matching the parametrization pattern.</p></li>
+<li><p><strong>*kwargs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – keyword arguments matching the parametrization pattern.</p></li>
 </ul>
 </dd>
 </dl>
@@ -402,13 +406,13 @@ creating a new candidate with <code class="code docutils literal notranslate"><s
 
 <dl class="py method">
 <dt id="nevergrad.optimizers.base.Optimizer.tell">
-<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">Union[float, Tuple[float, …], List[float], numpy.ndarray]</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">tell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">candidate</span><span class="p">:</span> <span class="n">nevergrad.parametrization.core.Parameter</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>float<span class="p">, </span>Tuple<span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.tell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the optimizer with the evaluation of a fitness value for a candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>np.ndarray</em>) – point where the function was evaluated</p></li>
-<li><p><strong>loss</strong> (<em>float/list/np.ndarray</em>) – loss of the function (or multi-objective function</p></li>
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – point where the function was evaluated</p></li>
+<li><p><strong>loss</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float/list/np.ndarray</span></code>) – loss of the function (or multi-objective function</p></li>
 </ul>
 </dd>
 </dl>
@@ -439,7 +443,7 @@ will use this suggestion.</p>
 <dd><p>Dumps the optimizer to a pickle file at every call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the pickle file</p>
+<dd class="field-odd"><p><strong>filepath</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>) – path to the pickle file</p>
 </dd>
 </dl>
 </dd></dl>
@@ -452,9 +456,9 @@ optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>filepath</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – the path to dump data to</p></li>
-<li><p><strong>append</strong> (<em>bool</em>) – whether to append the file (otherwise it replaces it)</p></li>
-<li><p><strong>order</strong> (<em>int</em>) – order of the internal/model parameters to extract</p></li>
+<li><p><strong>filepath</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pathlib.Path</span></code>) – the path to dump data to</p></li>
+<li><p><strong>append</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to append the file (otherwise it replaces it)</p></li>
+<li><p><strong>order</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – order of the internal/model parameters to extract</p></li>
 </ul>
 </dd>
 </dl>
@@ -481,7 +485,7 @@ optimization.</p>
 <dd><p>Loads data from the log file, and splits lists (arrays) into multiple arguments</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>max_list_elements</strong> (<em>int</em>) – Maximum number of elements displayed from the array, each element is given a
+<dd class="field-odd"><p><strong>max_list_elements</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Maximum number of elements displayed from the array, each element is given a
 unique id of type list_name#i0_i1_…</p>
 </dd>
 </dl>
@@ -493,7 +497,7 @@ unique id of type list_name#i0_i1_…</p>
 <dd><p>Converts the logs into an hiplot experiment for display.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>max_list_elements</strong> (<em>int</em>) – maximum number of elements of list/arrays to export (only the first elements are extracted)</p>
+<dd class="field-odd"><p><strong>max_list_elements</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – maximum number of elements of list/arrays to export (only the first elements are extracted)</p>
 </dd>
 </dl>
 <p class="rubric">Example</p>
@@ -536,9 +540,9 @@ unique id of type list_name#i0_i1_…</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>OptimizerClass</strong> (<em>type</em>) – class of the optimizer to configure</p></li>
-<li><p><strong>config</strong> (<em>dict</em>) – dictionnary of all the configurations</p></li>
-<li><p><strong>as_config</strong> (<em>bool</em>) – whether to provide all config as kwargs to the optimizer instantiation (default, see ConfiguredCMA for an example),
+<li><p><strong>OptimizerClass</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code>) – class of the optimizer to configure</p></li>
+<li><p><strong>config</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – dictionnary of all the configurations</p></li>
+<li><p><strong>as_config</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to provide all config as kwargs to the optimizer instantiation (default, see ConfiguredCMA for an example),
 or through a config kwarg referencing self. (if True, see EvolutionStrategy for an example)</p></li>
 </ul>
 </dd>
@@ -554,9 +558,9 @@ or through a config kwarg referencing self. (if True, see EvolutionStrategy for 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>instrumentation</strong> (<em>int</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Instrumentation" title="nevergrad.p.Instrumentation"><em>Instrumentation</em></a>) – either the dimension of the optimization space, or its instrumentation</p></li>
-<li><p><strong>budget</strong> (<em>int/None</em>) – number of allowed evaluations</p></li>
-<li><p><strong>num_workers</strong> (<em>int</em>) – number of evaluations which will be run in parallel at once</p></li>
+<li><p><strong>instrumentation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Instrumentation</span></code>) – either the dimension of the optimization space, or its instrumentation</p></li>
+<li><p><strong>budget</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int/None</span></code>) – number of allowed evaluations</p></li>
+<li><p><strong>num_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – number of evaluations which will be run in parallel at once</p></li>
 </ul>
 </dd>
 </dl>
@@ -590,8 +594,8 @@ Each algorithm is fed with what happened before it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>optimizers</strong> (<em>list of Optimizer classes</em>) – the sequence of optimizers to use</p></li>
-<li><p><strong>budgets</strong> (<em>list of int</em>) – the corresponding budgets for each optimizer but the last one</p></li>
+<li><p><strong>optimizers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span> <span class="pre">classes</span></code>) – the sequence of optimizers to use</p></li>
+<li><p><strong>budgets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the corresponding budgets for each optimizer but the last one</p></li>
 </ul>
 </dd>
 </dl>
@@ -599,7 +603,7 @@ Each algorithm is fed with what happened before it.</p>
 
 <dl class="py class">
 <dt id="nevergrad.families.DifferentialEvolution">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'optimistic'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">F1</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">F2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'standard'</span></em>, <em class="sig-param"><span class="n">propagate_heritage</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">DifferentialEvolution</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">initialization</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">recommendation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'optimistic'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">F1</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">F2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'standard'</span></em>, <em class="sig-param"><span class="n">propagate_heritage</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">multiobjective_adaptation</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.DifferentialEvolution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Differential evolution is typically used for continuous optimization.
 It uses differences between points in the population for doing mutations in fruitful directions;
 it is therefore a kind of covariance adaptation without any explicit covariance,
@@ -615,19 +619,21 @@ Initial population: pure random.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>initialization</strong> (<em>&quot;LHS&quot;</em><em>, </em><em>&quot;QR&quot;</em><em> or </em><em>&quot;gaussian&quot;</em>) – algorithm/distribution used for the initialization phase</p></li>
-<li><p><strong>scale</strong> (<em>float</em><em> or </em><em>str</em>) – scale of random component of the updates</p></li>
-<li><p><strong>recommendation</strong> (<em>&quot;pessimistic&quot;</em><em>, </em><em>&quot;optimistic&quot;</em><em>, </em><em>&quot;mean&quot;</em><em> or </em><em>&quot;noisy&quot;</em>) – choice of the criterion for the best point to recommend</p></li>
-<li><p><strong>crossover</strong> (<em>float</em><em> or </em><em>str</em>) – crossover rate value, or strategy among:
+<li><p><strong>initialization</strong> (<code class="docutils literal notranslate"><span class="pre">&quot;LHS&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;QR&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;gaussian&quot;</span></code>) – algorithm/distribution used for the initialization phase</p></li>
+<li><p><strong>scale</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – scale of random component of the updates</p></li>
+<li><p><strong>recommendation</strong> (<code class="docutils literal notranslate"><span class="pre">&quot;pessimistic&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;optimistic&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;mean&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;noisy&quot;</span></code>) – choice of the criterion for the best point to recommend</p></li>
+<li><p><strong>crossover</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – crossover rate value, or strategy among:
 - “dimension”: crossover rate of  1 / dimension,
 - “random”: different random (uniform) crossover rate at each iteration
 - “onepoint”: one point crossover
 - “twopoints”: two points crossover
 - “parametrization”: use the parametrization recombine method</p></li>
-<li><p><strong>F1</strong> (<em>float</em>) – differential weight #1</p></li>
-<li><p><strong>F2</strong> (<em>float</em>) – differential weight #2</p></li>
-<li><p><strong>popsize</strong> (<em>int</em><em>, </em><em>&quot;standard&quot;</em><em>, </em><em>&quot;dimension&quot;</em><em>, </em><em>&quot;large&quot;</em>) – size of the population to use. “standard” is max(num_workers, 30), “dimension” max(num_workers, 30, dimension +1)
+<li><p><strong>F1</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – differential weight #1</p></li>
+<li><p><strong>F2</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – differential weight #2</p></li>
+<li><p><strong>popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;standard&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;dimension&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;large&quot;</span></code>) – size of the population to use. “standard” is max(num_workers, 30), “dimension” max(num_workers, 30, dimension +1)
 and “large” max(num_workers, 30, 7 * dimension).</p></li>
+<li><p><strong>multiobjective_adaptation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Automatically adapts to handle multiobjective case.  This is a very basic <strong>experimental</strong> version,
+activated by default because the non-multiobjective implementation is performing very badly.</p></li>
 </ul>
 </dd>
 </dl>
@@ -642,13 +648,13 @@ the population size is large.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>isotropic</strong> (<em>bool</em>) – isotropic version on EMNA if True, i.e. we have an
+<li><p><strong>isotropic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – isotropic version on EMNA if True, i.e. we have an
 identity matrix for the Gaussian, else  we here consider the separable
 version, meaning we have a diagonal matrix for the Gaussian (anisotropic)</p></li>
-<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+<li><p><strong>naive</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – set to False for noisy problem, so that the best points will be an
 average of the final population.</p></li>
-<li><p><strong>population_size_adaptation</strong> (<em>bool</em>) – population size automatically adapts to the landscape</p></li>
-<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
+<li><p><strong>population_size_adaptation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – population size automatically adapts to the landscape</p></li>
+<li><p><strong>initial_popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optional[int]</span></code>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
 </ul>
 </dd>
 </dl>
@@ -670,13 +676,13 @@ This class is a wrapper over the <a class="reference external" href="https://git
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>initialization</strong> (<em>str</em>) – Initialization algorithms (None, “Hammersley”, “random” or “LHS”)</p></li>
-<li><p><strong>init_budget</strong> (<em>int</em><em> or </em><em>None</em>) – Number of initialization algorithm steps</p></li>
-<li><p><strong>middle_point</strong> (<em>bool</em>) – whether to sample the 0 point first</p></li>
-<li><p><strong>utility_kind</strong> (<em>str</em>) – Type of utility function to use among “ucb”, “ei” and “poi”</p></li>
-<li><p><strong>utility_kappa</strong> (<em>float</em>) – Kappa parameter for the utility function</p></li>
-<li><p><strong>utility_xi</strong> (<em>float</em>) – Xi parameter for the utility function</p></li>
-<li><p><strong>gp_parameters</strong> (<em>dict</em>) – dictionnary of parameters for the gaussian process</p></li>
+<li><p><strong>initialization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Initialization algorithms (None, “Hammersley”, “random” or “LHS”)</p></li>
+<li><p><strong>init_budget</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – Number of initialization algorithm steps</p></li>
+<li><p><strong>middle_point</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to sample the 0 point first</p></li>
+<li><p><strong>utility_kind</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Type of utility function to use among “ucb”, “ei” and “poi”</p></li>
+<li><p><strong>utility_kappa</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Kappa parameter for the utility function</p></li>
+<li><p><strong>utility_xi</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Xi parameter for the utility function</p></li>
+<li><p><strong>gp_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – dictionnary of parameters for the gaussian process</p></li>
 </ul>
 </dd>
 </dl>
@@ -691,7 +697,7 @@ performs quite well in such a context - this is naturally close to (1+lambda).</
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>noise_handling</strong> (<em>str</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><em>Tuple</em></a><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em>) – <p>Method for handling the noise. The name can be:</p>
+<li><p><strong>noise_handling</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple[str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float]</span></code>) – <p>Method for handling the noise. The name can be:</p>
 <ul>
 <li><p><cite>”random”</cite>: a random point is reevaluated regularly, this uses the one-fifth adaptation rule,
 going back to Schumer and Steiglitz (1968). It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p></li>
@@ -699,7 +705,7 @@ going back to Schumer and Steiglitz (1968). It was independently rediscovered by
 <li><p>a coefficient can to tune the regularity of these reevaluations (default .05)</p></li>
 </ul>
 </p></li>
-<li><p><strong>mutation</strong> (<em>str</em>) – <p>One of the available mutations from:</p>
+<li><p><strong>mutation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>One of the available mutations from:</p>
 <ul>
 <li><p><cite>”gaussian”</cite>: standard mutation by adding a Gaussian random variable (with progressive
 widening) to the best pessimistic point</p></li>
@@ -716,7 +722,7 @@ widening) to the best pessimistic point</p></li>
 Dang &amp; Lehre “Self-adaptation of Mutation Rates in Non-elitist Population”, 2016)</p></li>
 </ul>
 </p></li>
-<li><p><strong>crossover</strong> (<em>bool</em>) – whether to add a genetic crossover step every other iteration.</p></li>
+<li><p><strong>crossover</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to add a genetic crossover step every other iteration.</p></li>
 </ul>
 </dd>
 </dl>
@@ -736,9 +742,9 @@ many noisy optimization problems, even in large dimension</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+<li><p><strong>naive</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – set to False for noisy problem, so that the best points will be an
 average of the final population.</p></li>
-<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
+<li><p><strong>initial_popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optional[int]</span></code>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
 </ul>
 </dd>
 </dl>
@@ -759,9 +765,9 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>stupid</strong> (<em>bool</em>) – Provides a random recommendation instead of the best point so far (for baseline)</p></li>
-<li><p><strong>middle_point</strong> (<em>bool</em>) – enforces that the first suggested point (ask) is zero.</p></li>
-<li><p><strong>opposition_mode</strong> (<em>str</em><em> or </em><em>None</em>) – <dl class="simple">
+<li><p><strong>stupid</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Provides a random recommendation instead of the best point so far (for baseline)</p></li>
+<li><p><strong>middle_point</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – enforces that the first suggested point (ask) is zero.</p></li>
+<li><p><strong>opposition_mode</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – <dl class="simple">
 <dt>symmetrizes exploration wrt the center: (e.g. <a class="reference external" href="https://ieeexplore.ieee.org/document/4424748">https://ieeexplore.ieee.org/document/4424748</a>)</dt><dd><ul>
 <li><p>full symmetry if “opposite”</p></li>
 <li><p>random * symmetric if “quasi”</p></li>
@@ -769,8 +775,8 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 </dd>
 </dl>
 </p></li>
-<li><p><strong>cauchy</strong> (<em>bool</em>) – use a Cauchy distribution instead of Gaussian distribution</p></li>
-<li><p><strong>scale</strong> (<em>float</em><em> or </em><em>&quot;random&quot;</em>) – <dl class="simple">
+<li><p><strong>cauchy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – use a Cauchy distribution instead of Gaussian distribution</p></li>
+<li><p><strong>scale</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;random&quot;</span></code>) – <dl class="simple">
 <dt>scalar for multiplying the suggested point values, or string:</dt><dd><ul>
 <li><p>”random”: uses a randomized pattern for the scale.</p></li>
 <li><p>”auto”: scales in function of dimension and budget (version 1: sigma = (1+log(budget)) / (4log(dimension)) )</p></li>
@@ -779,7 +785,7 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 </dd>
 </dl>
 </p></li>
-<li><p><strong>recommendation_rule</strong> (<em>str</em>) – “average_of_best” or “pessimistic” or “average_of_exp_best”; “pessimistic” is
+<li><p><strong>recommendation_rule</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – “average_of_best” or “pessimistic” or “average_of_exp_best”; “pessimistic” is
 the default and implies selecting the pessimistic best.</p></li>
 </ul>
 </dd>
@@ -794,15 +800,15 @@ by ensuring more uniformity.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sampler</strong> (<em>str</em>) – Choice of the sampler among “Halton”, “Hammersley” and “LHS”.</p></li>
-<li><p><strong>scrambled</strong> (<em>bool</em>) – Adds scrambling to the search; much better in high dimension and rarely worse
+<li><p><strong>sampler</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Choice of the sampler among “Halton”, “Hammersley” and “LHS”.</p></li>
+<li><p><strong>scrambled</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Adds scrambling to the search; much better in high dimension and rarely worse
 than the original search.</p></li>
-<li><p><strong>middle_point</strong> (<em>bool</em>) – enforces that the first suggested point (ask) is zero.</p></li>
-<li><p><strong>cauchy</strong> (<em>bool</em>) – use Cauchy inverse distribution instead of Gaussian when fitting points to real space
+<li><p><strong>middle_point</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – enforces that the first suggested point (ask) is zero.</p></li>
+<li><p><strong>cauchy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – use Cauchy inverse distribution instead of Gaussian when fitting points to real space
 (instead of box).</p></li>
-<li><p><strong>scale</strong> (<em>float</em><em> or </em><em>&quot;random&quot;</em>) – scalar for multiplying the suggested point values.</p></li>
-<li><p><strong>rescaled</strong> (<em>bool</em><em> or </em><em>str</em>) – rescales the sampling pattern to reach the boundaries and/or applies automatic rescaling.</p></li>
-<li><p><strong>recommendation_rule</strong> (<em>str</em>) – “average_of_best” or “pessimistic”; “pessimistic” is the default and implies selecting the pessimistic best.</p></li>
+<li><p><strong>scale</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;random&quot;</span></code>) – scalar for multiplying the suggested point values.</p></li>
+<li><p><strong>rescaled</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – rescales the sampling pattern to reach the boundaries and/or applies automatic rescaling.</p></li>
+<li><p><strong>recommendation_rule</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – “average_of_best” or “pessimistic”; “pessimistic” is the default and implies selecting the pessimistic best.</p></li>
 </ul>
 </dd>
 </dl>
@@ -831,7 +837,7 @@ This is actually an import from scipy-optimize, including Sequential Quadratic P
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>method</strong> (<em>str</em>) – <p>Name of the method to use among:</p>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>Name of the method to use among:</p>
 <ul>
 <li><p>Nelder-Mead</p></li>
 <li><p>COBYLA</p></li>
@@ -840,7 +846,7 @@ approximating the objective function by quadratic models.</p></li>
 <li><p>Powell</p></li>
 </ul>
 </p></li>
-<li><p><strong>random_restart</strong> (<em>bool</em>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
+<li><p><strong>random_restart</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
 spent yet (otherwise, restarts from best point)</p></li>
 </ul>
 </dd>
@@ -910,8 +916,8 @@ Each algorithm is fed with what happened before it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>optimizers</strong> (<em>list of Optimizer classes</em>) – the sequence of optimizers to use</p></li>
-<li><p><strong>budgets</strong> (<em>list of int</em>) – the corresponding budgets for each optimizer but the last one</p></li>
+<li><p><strong>optimizers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span> <span class="pre">classes</span></code>) – the sequence of optimizers to use</p></li>
+<li><p><strong>budgets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the corresponding budgets for each optimizer but the last one</p></li>
 </ul>
 </dd>
 </dl>
@@ -924,9 +930,9 @@ Each algorithm is fed with what happened before it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>num_optims</strong> (<em>int</em>) – number of optimizers</p></li>
-<li><p><strong>num_vars</strong> (<em>optional list of int</em>) – number of variable per optimizer.</p></li>
-<li><p><strong>progressive</strong> (<em>optional bool</em>) – whether we progressively add optimizers.</p></li>
+<li><p><strong>num_optims</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – number of optimizers</p></li>
+<li><p><strong>num_vars</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">optional</span> <span class="pre">list</span></code> of <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – number of variable per optimizer.</p></li>
+<li><p><strong>progressive</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">optional</span> <span class="pre">bool</span></code>) – whether we progressively add optimizers.</p></li>
 </ul>
 </dd>
 </dl>
@@ -941,9 +947,9 @@ Wikipedia provides a beautiful illustration ;) (see link)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>transform</strong> (<em>str</em>) – name of the transform to use to map from PSO optimization space to R-space.</p></li>
-<li><p><strong>wide</strong> (<em>bool</em>) – if True: legacy initialization in [-1,1] box mapped to R</p></li>
-<li><p><strong>popsize</strong> (<em>int</em>) – population size of the particle swarm. Defaults to max(40, num_workers)</p></li>
+<li><p><strong>transform</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the transform to use to map from PSO optimization space to R-space.</p></li>
+<li><p><strong>wide</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – if True: legacy initialization in [-1,1] box mapped to R</p></li>
+<li><p><strong>popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – population size of the particle swarm. Defaults to max(40, num_workers)</p></li>
 </ul>
 </dd>
 </dl>
@@ -982,13 +988,13 @@ the population size is large.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>isotropic</strong> (<em>bool</em>) – isotropic version on EMNA if True, i.e. we have an
+<li><p><strong>isotropic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – isotropic version on EMNA if True, i.e. we have an
 identity matrix for the Gaussian, else  we here consider the separable
 version, meaning we have a diagonal matrix for the Gaussian (anisotropic)</p></li>
-<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+<li><p><strong>naive</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – set to False for noisy problem, so that the best points will be an
 average of the final population.</p></li>
-<li><p><strong>population_size_adaptation</strong> (<em>bool</em>) – population size automatically adapts to the landscape</p></li>
-<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
+<li><p><strong>population_size_adaptation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – population size automatically adapts to the landscape</p></li>
+<li><p><strong>initial_popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optional[int]</span></code>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1127,13 +1133,13 @@ This class is a wrapper over the <a class="reference external" href="https://git
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>initialization</strong> (<em>str</em>) – Initialization algorithms (None, “Hammersley”, “random” or “LHS”)</p></li>
-<li><p><strong>init_budget</strong> (<em>int</em><em> or </em><em>None</em>) – Number of initialization algorithm steps</p></li>
-<li><p><strong>middle_point</strong> (<em>bool</em>) – whether to sample the 0 point first</p></li>
-<li><p><strong>utility_kind</strong> (<em>str</em>) – Type of utility function to use among “ucb”, “ei” and “poi”</p></li>
-<li><p><strong>utility_kappa</strong> (<em>float</em>) – Kappa parameter for the utility function</p></li>
-<li><p><strong>utility_xi</strong> (<em>float</em>) – Xi parameter for the utility function</p></li>
-<li><p><strong>gp_parameters</strong> (<em>dict</em>) – dictionnary of parameters for the gaussian process</p></li>
+<li><p><strong>initialization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Initialization algorithms (None, “Hammersley”, “random” or “LHS”)</p></li>
+<li><p><strong>init_budget</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – Number of initialization algorithm steps</p></li>
+<li><p><strong>middle_point</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to sample the 0 point first</p></li>
+<li><p><strong>utility_kind</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Type of utility function to use among “ucb”, “ei” and “poi”</p></li>
+<li><p><strong>utility_kappa</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Kappa parameter for the utility function</p></li>
+<li><p><strong>utility_xi</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Xi parameter for the utility function</p></li>
+<li><p><strong>gp_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – dictionnary of parameters for the gaussian process</p></li>
 </ul>
 </dd>
 </dl>
@@ -1154,11 +1160,11 @@ This optimizer wraps an external implementation: <a class="reference external" h
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>scale</strong> (<em>float</em>) – scale of the search</p></li>
-<li><p><strong>popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>] </em><em>= None</em>) – population size, should be n * self.num_workers for int n &gt;= 1.
+<li><p><strong>scale</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – scale of the search</p></li>
+<li><p><strong>popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></code>) – population size, should be n * self.num_workers for int n &gt;= 1.
 default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))</p></li>
-<li><p><strong>diagonal</strong> (<em>bool</em>) – use the diagonal version of CMA (advised in big dimension)</p></li>
-<li><p><strong>fcmaes</strong> (<em>bool = False</em>) – use fast implementation, doesn’t support diagonal=True.
+<li><p><strong>diagonal</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – use the diagonal version of CMA (advised in big dimension)</p></li>
+<li><p><strong>fcmaes</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></code>) – use fast implementation, doesn’t support diagonal=True.
 produces equivalent results, preferable for high dimensions or
 if objective function evaluation is fast.</p></li>
 </ul>
@@ -1175,7 +1181,7 @@ performs quite well in such a context - this is naturally close to (1+lambda).</
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>noise_handling</strong> (<em>str</em><em> or </em><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><em>Tuple</em></a><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em>) – <p>Method for handling the noise. The name can be:</p>
+<li><p><strong>noise_handling</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple[str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float]</span></code>) – <p>Method for handling the noise. The name can be:</p>
 <ul>
 <li><p><cite>”random”</cite>: a random point is reevaluated regularly, this uses the one-fifth adaptation rule,
 going back to Schumer and Steiglitz (1968). It was independently rediscovered by Devroye (1972) and Rechenberg (1973).</p></li>
@@ -1183,7 +1189,7 @@ going back to Schumer and Steiglitz (1968). It was independently rediscovered by
 <li><p>a coefficient can to tune the regularity of these reevaluations (default .05)</p></li>
 </ul>
 </p></li>
-<li><p><strong>mutation</strong> (<em>str</em>) – <p>One of the available mutations from:</p>
+<li><p><strong>mutation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>One of the available mutations from:</p>
 <ul>
 <li><p><cite>”gaussian”</cite>: standard mutation by adding a Gaussian random variable (with progressive
 widening) to the best pessimistic point</p></li>
@@ -1200,7 +1206,7 @@ widening) to the best pessimistic point</p></li>
 Dang &amp; Lehre “Self-adaptation of Mutation Rates in Non-elitist Population”, 2016)</p></li>
 </ul>
 </p></li>
-<li><p><strong>crossover</strong> (<em>bool</em>) – whether to add a genetic crossover step every other iteration.</p></li>
+<li><p><strong>crossover</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to add a genetic crossover step every other iteration.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1220,9 +1226,9 @@ many noisy optimization problems, even in large dimension</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>naive</strong> (<em>bool</em>) – set to False for noisy problem, so that the best points will be an
+<li><p><strong>naive</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – set to False for noisy problem, so that the best points will be an
 average of the final population.</p></li>
-<li><p><strong>initial_popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
+<li><p><strong>initial_popsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optional[int]</span></code>) – initial (and minimal) population size (default: 4 x dimension)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1315,11 +1321,11 @@ A discrete optimization algorithm, introduced in and often used as a first basel
 
 <dl class="py function">
 <dt id="nevergrad.optimization.optimizerlib.learn_on_k_best">
-<code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">learn_on_k_best</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">archive</span><span class="p">:</span> <span class="n">nevergrad.optimization.utils.Archive<span class="p">[</span>nevergrad.optimization.utils.MultiValue<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">k</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; Union[Tuple[float, …], List[float], numpy.ndarray]<a class="headerlink" href="#nevergrad.optimization.optimizerlib.learn_on_k_best" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">learn_on_k_best</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">archive</span><span class="p">:</span> <span class="n">nevergrad.optimization.utils.Archive<span class="p">[</span>nevergrad.optimization.utils.MultiValue<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">k</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>Tuple<span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.learn_on_k_best" title="Permalink to this definition">¶</a></dt>
 <dd><p>Approximate optimum learnt from the k best.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>archive</strong> (<em>utils.Archive</em><em>[</em><em>utils.Value</em><em>]</em>) – </p>
+<dd class="field-odd"><p><strong>archive</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">utils.Archive[utils.Value]</span></code>) – </p>
 </dd>
 </dl>
 </dd></dl>

@@ -211,15 +211,15 @@ The parametrization subpackage will help you do thanks to:</p>
 </table>
 <span class="target" id="module-nevergrad.p"></span><dl class="py class">
 <dt id="nevergrad.p.Array">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional[Union[Tuple[float, …], List[float], numpy.ndarray]]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="p">:</span> <span class="n">Optional[Tuple[int, …]]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>int<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
 <p>Array parameter with customizable mutation and recombination.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>np.ndarray</em><em>, or </em><em>None</em>) – initial value of the array (defaults to 0, with a provided shape)</p></li>
-<li><p><strong>shape</strong> (<em>tuple of ints</em><em>, or </em><em>None</em>) – shape of the array, to be provided iff init is not provided</p></li>
-<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+<li><p><strong>init</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span></code>, or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – initial value of the array (defaults to 0, with a provided shape)</p></li>
+<li><p><strong>shape</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code> of <code class="xref py py-class docutils literal notranslate"><span class="pre">ints</span></code>, or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – shape of the array, to be provided iff init is not provided</p></li>
+<li><p><strong>mutable_sigma</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
 </ul>
 </dd>
 </dl>
@@ -235,9 +235,9 @@ set_bounds, set_mutation, set_integer_casting</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>lower</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value</p></li>
-<li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value</p></li>
-<li><p><strong>method</strong> (<em>str</em>) – <p>One of the following choices:</p>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – minimum value</p></li>
+<li><p><strong>upper</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – maximum value</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>One of the following choices:</p>
 <ul>
 <li><dl class="simple">
 <dt>”bouncing”: bounce on border (at most once). This is a variant of clipping,</dt><dd><p>avoiding bounds over-samping (default).</p>
@@ -256,7 +256,7 @@ close to the bounds), and reaching the bounds is equivalent to reaching the infi
 to unexpected behaviors.</p></li>
 </ul>
 </p></li>
-<li><p><strong>full_range_sampling</strong> (<em>Optional bool</em>) – Changes the default behavior of the “sample” method (aka creating a child and mutating it from the current instance)
+<li><p><strong>full_range_sampling</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optional</span> <span class="pre">bool</span></code>) – Changes the default behavior of the “sample” method (aka creating a child and mutating it from the current instance)
 or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
 the while range of the bounds. The “sample” method is used by some algorithms to create an initial population.
 This is activated by default if both bounds are provided.</p></li>
@@ -297,12 +297,12 @@ a sigma lower than 1. In those cases, you should rather use a TransitionChoice i
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma</strong> (<em>Array/Log</em><em> or </em><em>float</em>) – The standard deviation of the mutation. If a Parameter is provided, it will replace the current
+<li><p><strong>sigma</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Array/Log</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The standard deviation of the mutation. If a Parameter is provided, it will replace the current
 value. If a float is provided, it will either replace a previous float value, or update the value
 of the Parameter.</p></li>
-<li><p><strong>exponent</strong> (<em>float</em>) – exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
+<li><p><strong>exponent</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
 x2 or /2 “on average” on the value at each mutation.</p></li>
-<li><p><strong>custom</strong> (<em>str</em><em> or </em><a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – custom mutation which can be a string (“gaussian” or “cauchy”)
+<li><p><strong>custom</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>) – custom mutation which can be a string (“gaussian” or “cauchy”)
 or Mutation/Recombination like object
 or a Parameter which value is either of those</p></li>
 </ul>
@@ -335,11 +335,11 @@ updated during the optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>choices</strong> (<em>list</em>) – a list of possible values or Parameters for the variable.</p></li>
-<li><p><strong>repetitions</strong> (<em>None</em><em> or </em><em>int</em>) – set to an integer <code class="code docutils literal notranslate"><span class="pre">n</span></code> if you want <code class="code docutils literal notranslate"><span class="pre">n</span></code> similar choices sampled independently (each with its own distribution)
+<li><p><strong>choices</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>) – a list of possible values or Parameters for the variable.</p></li>
+<li><p><strong>repetitions</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – set to an integer <code class="code docutils literal notranslate"><span class="pre">n</span></code> if you want <code class="code docutils literal notranslate"><span class="pre">n</span></code> similar choices sampled independently (each with its own distribution)
 This is equivalent to <code class="code docutils literal notranslate"><span class="pre">Tuple(*[Choice(options)</span> <span class="pre">for</span> <span class="pre">_</span> <span class="pre">in</span> <span class="pre">range(n)])</span></code> but can be
 30x faster for large <code class="code docutils literal notranslate"><span class="pre">n</span></code>.</p></li>
-<li><p><strong>deterministic</strong> (<em>bool</em>) – whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
+<li><p><strong>deterministic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to always draw the most likely choice (hence avoiding the stochastic behavior, but loosing
 continuity)</p></li>
 </ul>
 </dd>
@@ -392,7 +392,7 @@ either directly the provided values if they are not Parameter instances, or the 
 Parameters. It also implements a getter to access the Parameters directly if need be.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the dict</p>
+<dd class="field-odd"><p><strong>**parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – the objects or Parameter which will provide values for the dict</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -436,13 +436,13 @@ multiparameter functions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>float</em><em> or </em><em>None</em>) – initial value of the variable. If not provided, it is set to the middle of lower and upper in log space</p></li>
-<li><p><strong>exponent</strong> (<em>float</em><em> or </em><em>None</em>) – exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
+<li><p><strong>init</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – initial value of the variable. If not provided, it is set to the middle of lower and upper in log space</p></li>
+<li><p><strong>exponent</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – exponent for the log mutation: an exponent of 2.0 will lead to mutations by factors between around 0.5 and 2.0
 By default, it is set to either 2.0, or if the parameter is completely bounded to a factor so that bounds are
 at 3 sigma in the transformed space.</p></li>
-<li><p><strong>lower</strong> (<em>float</em><em> or </em><em>None</em>) – minimum value if any (&gt; 0)</p></li>
-<li><p><strong>upper</strong> (<em>float</em><em> or </em><em>None</em>) – maximum value if any</p></li>
-<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – minimum value if any (&gt; 0)</p></li>
+<li><p><strong>upper</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>) – maximum value if any</p></li>
+<li><p><strong>mutable_sigma</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
 </ul>
 </dd>
 </dl>
@@ -460,10 +460,10 @@ at 3 sigma in the transformed space.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>init</strong> (<em>optional float</em>) – initial value of the scalar (defaults to 0.0 if both bounds are not provided)</p></li>
-<li><p><strong>lower</strong> (<em>optional float</em>) – minimum value if any</p></li>
-<li><p><strong>upper</strong> (<em>optional float</em>) – maximum value if any</p></li>
-<li><p><strong>mutable_sigma</strong> (<em>bool</em>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
+<li><p><strong>init</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">optional</span> <span class="pre">float</span></code>) – initial value of the scalar (defaults to 0.0 if both bounds are not provided)</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">optional</span> <span class="pre">float</span></code>) – minimum value if any</p></li>
+<li><p><strong>upper</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">optional</span> <span class="pre">float</span></code>) – maximum value if any</p></li>
+<li><p><strong>mutable_sigma</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether the mutation standard deviation must mutate as well (for mutation based algorithms)</p></li>
 </ul>
 </dd>
 </dl>
@@ -479,7 +479,7 @@ Also, if init is not provided, it will be set to the middle value.</p></li>
 
 <dl class="py class">
 <dt id="nevergrad.p.TransitionChoice">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">TransitionChoice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">transitions</span><span class="p">:</span> <span class="n">Union[Tuple[float, …], List[float], numpy.ndarray, nevergrad.parametrization.data.Array]</span> <span class="o">=</span> <span class="default_value">1.0, 1.0</span></em>, <em class="sig-param"><span class="n">repetitions</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.TransitionChoice" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">TransitionChoice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">transitions</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">, </span>nevergrad.parametrization.data.Array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0, 1.0</span></em>, <em class="sig-param"><span class="n">repetitions</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.TransitionChoice" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.choice.BaseChoice</span></code></p>
 <p>Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
 The choices can be Parameters, in which case there value will be returned instead.
@@ -487,8 +487,8 @@ The chosen parameter is drawn using transitions between current choice and the n
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>choices</strong> (<em>list</em>) – a list of possible values or Parameters for the variable.</p></li>
-<li><p><strong>transitions</strong> (<em>np.ndarray</em><em> or </em><a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><em>Array</em></a>) – the transition weights. During transition, the direction (forward or backward will be drawn with
+<li><p><strong>choices</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>) – a list of possible values or Parameters for the variable.</p></li>
+<li><p><strong>transitions</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span></code> or <a class="reference internal" href="#nevergrad.p.Array" title="nevergrad.p.Array"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a>) – the transition weights. During transition, the direction (forward or backward will be drawn with
 equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
 the probability to remain in the same state, the second to move one step (backward or forward) and so on.</p></li>
 </ul>
@@ -540,7 +540,7 @@ if they are not Parameter instances, or the value of those Parameters.
 It also implements a getter to access the Parameters directly if need be.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>**parameters</strong> (<em>Any</em>) – the objects or Parameter which will provide values for the tuple</p>
+<dd class="field-odd"><p><strong>**parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – the objects or Parameter which will provide values for the tuple</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -604,7 +604,7 @@ fully represent the state of the instance. Also, in stochastic cases, the value 
 deduced from the data (eg.: categorical variable, for which data includes sampling weights for each value)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>reference</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – the reference instance for representation in the standardized data space. This keyword parameter is
+<dd class="field-odd"><p><strong>reference</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>) – the reference instance for representation in the standardized data space. This keyword parameter is
 mandatory to make the code clearer.
 If you use “self”, this method will always return a zero vector.</p>
 </dd>
@@ -686,7 +686,7 @@ It can be seeded/replaced.</p>
 other instances.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>*others</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – other instances of the same type than this instance.</p>
+<dd class="field-odd"><p><strong>*others</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>) – other instances of the same type than this instance.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -697,7 +697,7 @@ other instances.</p>
 <dd><p>Registers a new constraint on the parameter values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – function which, given the value of the instance, returns whether it satisfies the constraints.</p>
+<dd class="field-odd"><p><strong>func</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>) – function which, given the value of the instance, returns whether it satisfies the constraints.</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -740,21 +740,21 @@ the <cite>register_cheap_constraint</cite> method</p>
 <dd><p>Sets a name and return the current instrumentation (for chaining)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – new name to use to represent the Parameter</p>
+<dd class="field-odd"><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – new name to use to represent the Parameter</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.set_standardized_data">
-<code class="sig-name descname">set_standardized_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Union[Tuple[float, …], List[float], numpy.ndarray]</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">reference</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>P<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">deterministic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.set_standardized_data" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_standardized_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">reference</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>P<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">deterministic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.set_standardized_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates the value of the provided reference (or self) using the standardized data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>np.ndarray</strong> – the representation of the value in the optimization space</p></li>
-<li><p><strong>reference</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><em>Parameter</em></a>) – the reference point for representing the data (“self”, if not provided)</p></li>
-<li><p><strong>deterministic</strong> (<em>bool</em>) – whether the value should be deterministically drawn (max probability) in the case of stochastic parameters</p></li>
+<li><p><strong>reference</strong> (<a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>) – the reference point for representing the data (“self”, if not provided)</p></li>
+<li><p><strong>deterministic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether the value should be deterministically drawn (max probability) in the case of stochastic parameters</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -779,7 +779,7 @@ is sampled from the same data, and mutates independently from the parentp.
 If a new value is provided, it will be set to the new instance</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>new_value</strong> (<em>anything</em><em> (</em><em>optional</em><em>)</em>) – if provided, it will update the new instance value (cannot be used at the same time as new_data).</p>
+<dd class="field-odd"><p><strong>new_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">anything</span> <span class="pre">(optional)</span></code>) – if provided, it will update the new instance value (cannot be used at the same time as new_data).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>a new instance of the same class, with same content/internal-model parameters/…
