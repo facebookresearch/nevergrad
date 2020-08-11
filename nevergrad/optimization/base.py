@@ -370,7 +370,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = best
             else:
-                if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
+                # only replace if strictly better, this is important for multiobjective optimizatio
+                # through hypervolume
+                if self.archive[x].get_estimation(name) < self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = self.archive[x]
                 # deactivated checks
                 # if not (np.isnan(loss) or loss == np.inf):
