@@ -245,6 +245,8 @@ We are currently working on an **new experimental API** allowing users to direct
     :start-after: DOC_MULTIOBJ_OPT_0
     :end-before: DOC_MULTIOBJ_OPT_1
 
+Note that `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
+
 
 Reproducibility
 ---------------

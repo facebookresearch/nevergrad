@@ -130,3 +130,13 @@ def test_equality() -> None:
     xp1 = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=2)
     xp2 = xpbase.Experiment(func, optimizer="RandomSearch", budget=300, num_workers=2)
     assert xp1 != xp2
+
+
+def test_multiobjective_experiment() -> None:
+    mofunc = MultiExperiment([ArtificialFunction("sphere", block_dimension=7),
+                              ArtificialFunction("cigar", block_dimension=7)],
+                             upper_bounds=np.array((50., 50.)))
+    xp = xpbase.Experiment(mofunc, optimizer="TwoPointsDE", budget=100, num_workers=1)
+    summary = xp.run()
+    loss: float = summary["loss"]
+    assert loss < 1e9

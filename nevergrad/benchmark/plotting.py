@@ -313,8 +313,12 @@ def create_plots(
             description = description[:140] + hash_ + description[-140:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
-        xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-        xpplotter.save(out_filepath)
+        try:
+            xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
+        except Exception as e:
+            warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
+        else:
+            xpplotter.save(out_filepath)
     plt.close("all")
 
 

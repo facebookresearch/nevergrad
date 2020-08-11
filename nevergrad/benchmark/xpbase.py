@@ -246,7 +246,7 @@ class Experiment:
                     self._optimizer,
                     pfunc,
                     batch_mode=executor.batch_mode,
-                    executor=executor
+                    executor=executor,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self.recommendation = self._optimizer.provide_recommendation()  # get the recommendation anyway
