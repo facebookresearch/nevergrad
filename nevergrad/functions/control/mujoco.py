@@ -21,7 +21,7 @@ class GenericMujocoEnv:
         M = x.reshape(self.policy_dim)
 
         returns = []
-        for i in range(self.num_rollouts):
+        for _ in range(self.num_rollouts):
             obs = self.env.reset()
             done = False
             totalr = 0.
