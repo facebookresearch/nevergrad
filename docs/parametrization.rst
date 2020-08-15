@@ -123,7 +123,7 @@ You can then directly perform optimization on a function given its parametrizati
     :end-before: DOC_PARAM_2
 
 
-Here is a glipse of what happens on the optimization space:
+Here is a glimpse of what happens on the optimization space:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
