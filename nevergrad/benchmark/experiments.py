@@ -23,7 +23,7 @@ from nevergrad.functions.images import Image
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.control import Ant, Swimmer, HalfCheetah, Hopper, Walker2d, Humanoid
+from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
