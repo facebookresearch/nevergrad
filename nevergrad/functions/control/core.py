@@ -92,7 +92,7 @@ class Walker2d(BaseFunction):
                  4.235747025296144, 8.980030325898877]
 
 
-class Humanoid(ExperimentFunction):
+class Humanoid(BaseFunction):
     env_name = 'Humanoid-v2'
     policy_dim = (17, 376)
     # These values are from https://github.com/modestyachts/ARS/tree/master/trained_policies/Humanoid-v1/policy_reward_11600
