@@ -25,6 +25,23 @@ class BaseFunction(ExperimentFunction):
                                random_state=self.random_state)
         return env(x.reshape(self.policy_dim))
 
+    @property
+    def env_name(self):
+        raise NotImplementedError
+
+    @property
+    def state_mean(self):
+        raise NotImplementedError
+
+    @property
+    def state_std(self):
+        raise NotImplementedError
+
+    @property
+    def policy_dim(self):
+        raise NotImplementedError
+
+
 
 class Ant(BaseFunction):
     env_name = 'Ant-v2'
