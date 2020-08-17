@@ -897,12 +897,12 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
-    funcs = [Ant(num_rollouts=5, random_state=seed),
-             Swimmer(num_rollouts=5, random_state=seed),
-             HalfCheetah(num_rollouts=5, random_state=seed),
-             Hopper(num_rollouts=5, random_state=seed),
-             Walker2d(num_rollouts=5, random_state=seed),
-             Humanoid(num_rollouts=5, random_state=seed)
+    funcs = [control.Ant(num_rollouts=5, random_state=seed),
+             control.Swimmer(num_rollouts=5, random_state=seed),
+             control.HalfCheetah(num_rollouts=5, random_state=seed),
+             control.Hopper(num_rollouts=5, random_state=seed),
+             control.Walker2d(num_rollouts=5, random_state=seed),
+             control.Humanoid(num_rollouts=5, random_state=seed)
              ]
     optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne"]
 
