@@ -10,6 +10,7 @@ import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
+from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
@@ -68,6 +69,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     internal_generator = mltuning(seed, overfitter=True)
     for xp in internal_generator:
         yield xp
+
 
 # We register only the sequuential counterparts for the moment.
 @registry.register
@@ -152,6 +154,38 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
+# pylint: disable=redefined-outer-name
+@registry.register
+def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Parallel optimization with small budgets
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "TBPSA", "DiagonalCMA", "CMA", "PSO", "RealSpacePSO",
+              "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE", "OnePlusOne",
+              "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "CMandAS2", "CMandAS"]
+    optims += ["SQP", "Powell", "chainCMASQP", "chainCMAPowell", "Cobyla", "NGO", "Shiwa"]
+    names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
+    names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
+    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    # funcs
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation)
+        for name in names
+        for rotation in [True, False]
+        for d in [2, 4, 8]
+    ]
+    budgets = [10, 50, 100, 200, 400]
+    for optim in optims:
+        for function in functions:
+            for budget in budgets:
+                for nw in [2, 8, 16]:
+                    for batch in [True, False]:
+                        if nw < budget / 4:
+                            xp = Experiment(function, optim, num_workers=nw, budget=budget, batch_mode=batch, seed=next(seedg))
+                            if not xp.is_incoherent:
+                                yield xp
+
+
 @registry.register
 def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Comparison of optimization algorithms equipped with distinct instrumentations.
@@ -188,7 +222,6 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                 yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
-
 @registry.register
 def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of instrum_discrete."""
@@ -210,7 +243,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                         for budget in [50, 500, 5000, 50000]:
                             yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
 
-                            
+
 @registry.register
 def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Very difficult objective functions: one is highly multimodal (infinitely many local optima),
@@ -429,7 +462,6 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for budget in [3000, 10000]:
                 for nw in [1]:
                     yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
 
 
 @registry.register
@@ -782,12 +814,14 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Realworld optimization. This experiment contains:
+
      - a subset of MLDA (excluding the perceptron: 10 functions rescaled or not.
      - ARCoating https://arxiv.org/abs/1904.02907: 1 function.
      - The 007 game: 1 function, noisy.
      - PowerSystem: a power system simulation problem.
      - STSP: a simple TSP problem.
-     MLDA stuff, except the Perceptron.
+     -  MLDA, except the Perceptron.
+
     Budget 25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800.
     Sequential or 10-parallel or 100-parallel.
     """
@@ -843,8 +877,8 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [Rocket()]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "SQP", "Powell", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "RandomSearch", "HaltonSearch",
-             "MiniDE"]
+              "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "RandomSearch", "HaltonSearch",
+              "MiniDE"]
     if default_optims is not None:
         optims = default_optims
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
@@ -864,7 +898,7 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     even if white-box methods are not included though they could do this more efficiently.
     10, 100, 1000, 10000 cities.
     Budgets doubling from 25, 50, 100, 200, ... up  to 25600
-    
+
     """
     funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
@@ -889,10 +923,10 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO",
-             "ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-             "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
-             "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
-             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+              "ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
+              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
+              "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
+              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -913,9 +947,9 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         funcs += [PowerSystem(dams, depth=2, width=3)]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
-             "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13"]
+              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+              "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
+              "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13"]
     if default_optims is not None:
         optims = default_optims
     optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
@@ -947,8 +981,8 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
-             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-             "RandomScaleRandomSearch", "MiniDE", "NGO", "Shiwa", "DiagonalCMA"]
+              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+              "RandomScaleRandomSearch", "MiniDE", "NGO", "Shiwa", "DiagonalCMA"]
     if default_optims is not None:
         optims = default_optims
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -989,7 +1023,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """AR coating. Problems about optical properties of nanolayers."""
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "Cobyla", "SQP", "Powell", "ScrHammersleySearch", "PSO",
-             "OnePlusOne", "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
+              "OnePlusOne", "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom"]
     if default_optims is not None:
         optims = default_optims
     # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -1070,6 +1104,7 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
     Dimension 6 and 7.
     Budget 2000, 2400, 2800, 3200, 3600, 4000.
     """
+    # hopefully this can be deprecated in favor of the new integrated version
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA", "CMA", "OnePlusOne", "TwoPointsDE"]
     if default_optims is not None:
@@ -1088,6 +1123,33 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
     for mofunc in mofuncs:
         for optim in optims:
             for budget in list(range(2000, 4001, 400)):
+                for nw in [1, 100]:
+                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
+    Dimension 6 and 7.
+    Budget 100 to 3200
+    """
+    seedg = create_seed_generator(seed)
+    optims: tp.List[tp.Any] = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA",
+                               "CMA", "OnePlusOne", "TwoPointsDE"]
+    optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
+               ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name("TwoPointsDE-noadapt")]
+    mofuncs: tp.List[MultiExperiment] = []
+    for name1, name2 in itertools.product(["sphere"], ["sphere", "hm"]):
+        mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                        ArtificialFunction(name2, block_dimension=7)],
+                                       upper_bounds=[100, 100]))
+        mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=6),
+                                        ArtificialFunction("sphere", block_dimension=6),
+                                        ArtificialFunction(name2, block_dimension=6)],
+                                       upper_bounds=[100, 100, 100.]))
+    for mofunc in mofuncs:
+        for optim in optims:
+            for budget in [100, 200, 400, 800, 1600, 3200]:
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
@@ -1121,7 +1183,8 @@ def manyobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def pbt(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    optimizers = ["CMA", "TwoPointsDE", "Shiwa", "OnePlusOne", "DE" ,"PSO", "NaiveTBPSA", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "PortfolioNoisyDiscreteOnePlusOne"]  # type: ignore
+    optimizers = ["CMA", "TwoPointsDE", "Shiwa", "OnePlusOne", "DE", "PSO", "NaiveTBPSA",
+                  "RecombiningOptimisticNoisyDiscreteOnePlusOne", "PortfolioNoisyDiscreteOnePlusOne"]  # type: ignore
     for func in PBT.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
@@ -1154,7 +1217,7 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                         offsprings=pop * 5)
           for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
     optims = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA",
-             "SplitCMA5", "Shiwa", "NGO", "MultiCMA", "CMandAS2", "SplitCMA13"] + es  # type: ignore
+              "SplitCMA5", "Shiwa", "NGO", "MultiCMA", "CMandAS2", "SplitCMA13"] + es  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for method in ["clipping", "tanh"]:  # , "arctan"]:
