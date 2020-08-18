@@ -1888,7 +1888,7 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, value)
 
 
-class NGOpt(base.Optimizer):
+class NGOpt2(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
