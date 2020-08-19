@@ -17,7 +17,7 @@ def test_gym() -> None:
 
     x = func.parametrization.value
     np.testing.assert_array_equal(x, [[0., 0.]])
-    value = func(input)
+    value = func(x)
     np.testing.assert_almost_equal(value, 0.)
 
     x = func.parametrization.sample().value
