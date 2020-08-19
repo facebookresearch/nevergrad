@@ -15,12 +15,12 @@ class MountainCarContinuous(BaseFunction):
 def test_gym() -> None:
     func = MountainCarContinuous(num_rollouts=5)
 
-    input = func.parametrization.value
-    np.testing.assert_array_equal(input, [[0., 0.]])
+    x = func.parametrization.value
+    np.testing.assert_array_equal(x, [[0., 0.]])
     value = func(input)
     np.testing.assert_almost_equal(value, 0.)
 
-    input = func.parametrization.sample().value
-    assert not np.array_equal(input, [[0., 0.]])
+    x = func.parametrization.sample().value
+    assert not np.array_equal(x, [[0., 0.]])
     value = func(func.parametrization.sample().value)
     assert value != 0
