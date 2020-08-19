@@ -40,6 +40,7 @@ class BaseFunction(ExperimentFunction):
         self.num_rollouts = num_rollouts
         self.random_state = random_state
         self.register_initialization(num_rollouts=num_rollouts, random_state=random_state)
+        self.add_descriptors(num_rollouts=num_rollouts)
 
     def _simulate(self, x: np.ndarray) -> float:
         env = GenericMujocoEnv(env_name=self.env_name,
