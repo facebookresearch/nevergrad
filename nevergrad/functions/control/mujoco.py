@@ -8,6 +8,21 @@ import numpy as np
 
 
 class GenericMujocoEnv:
+    """This class evaluates policy of OpenAI Gym environment.
+
+    Parameters
+    -----------
+    env_name: str
+        Gym environment name
+    state_mean: list
+        Average state values of multiple independent runs.
+    state_std: list
+        Standard deviation of state values of multiple independent runs.
+    num_rollouts: int
+        number of independent runs.
+    random_state: int or None
+        random state for reproducibility in Gym environment.
+    """
     def __init__(self, env_name, state_mean, state_std, num_rollouts,
                  random_state):
         self.mean = np.array(state_mean)
@@ -17,6 +32,8 @@ class GenericMujocoEnv:
         self.env.seed(random_state)
 
     def __call__(self, x):
+        """Compute average cummulative reward of given policy.
+        """
         returns = []
         for _ in range(self.num_rollouts):
             obs = self.env.reset()

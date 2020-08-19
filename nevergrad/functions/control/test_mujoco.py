@@ -14,7 +14,13 @@ class MountainCarContinuous(BaseFunction):
 
 def test_gym() -> None:
     func = MountainCarContinuous(num_rollouts=5)
-    value = func(np.zeros(func.dimension))
+
+    input = func.parametrization.value
+    np.testing.assert_array_equal(input, [[0., 0.]])
+    value = func(input)
     np.testing.assert_almost_equal(value, 0.)
-    value = func(np.random.rand(func.dimension))
+
+    input = func.parametrization.sample().value
+    assert not np.array_equal(input, [[0., 0.]])
+    value = func(func.parametrization.sample().value)
     assert value != 0

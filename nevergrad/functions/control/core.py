@@ -11,6 +11,30 @@ from ..base import ExperimentFunction
 from .mujoco import GenericMujocoEnv
 
 class BaseFunction(ExperimentFunction):
+    """This (abstract) class is a generic wrapper of OpenAI Gym env for policy evaluation.
+    Attributes need to be override accordingly for concrete working function.
+
+    Attributes.
+    ------------
+    env_name: str
+        Gym environment name
+    policy_dim: tuple
+        Shape of the policy
+    state_mean: list
+        Average state values of multiple independent runs.
+        Current implementations uses values from https://github.com/modestyachts/ARS
+    state_std: list
+        Standard deviation of state values of multiple independent runs.
+        Current implementations uses values from https://github.com/modestyachts/ARS
+
+    Parameters
+    -----------
+    num_rollouts: int
+        number of independent runs.
+    random_state: int or None
+        random state for reproducibility in Gym environment.
+    """
+
     def __init__(self, num_rollouts: int, random_state: tp.Optional[int] = None) -> None:
         super().__init__(self._simulate, p.Array(shape=self.policy_dim))
         self.num_rollouts = num_rollouts
@@ -23,7 +47,7 @@ class BaseFunction(ExperimentFunction):
                                state_std=self.state_std,
                                num_rollouts=self.num_rollouts,
                                random_state=self.random_state)
-        return env(x.reshape(self.policy_dim))
+        return env(x)
 
     @property
     def env_name(self):
