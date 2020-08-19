@@ -102,25 +102,25 @@ def test_parametrization() -> None:
     # DOC_PARAM_0
     arg1 = ng.p.Choice(["Helium", "Nitrogen", "Oxygen"])
     arg2 = ng.p.TransitionChoice(["Solid", "Liquid", "Gas"])
-    values = ng.p.Tuple(ng.p.Scalar(), ng.p.Scalar())
+    values = ng.p.Tuple(ng.p.Scalar().set_integer_casting(), ng.p.Scalar())
 
-    instru = ng.p.Instrumentation(arg1, arg2, "blublu", dimension=values)
+    instru = ng.p.Instrumentation(arg1, arg2, "blublu", amount=values)
     print(instru.dimension)
     # >>> 6
     # DOC_PARAM_1
 
-    def myfunction(arg1, arg2, arg3, dimension=(2, 2)):
+    def myfunction(arg1, arg2, arg3, amount=(2, 2)):
         print(arg1, arg2, arg3)
-        return dimension[0]**2 + dimension[1]**2
+        return amount[0]**2 + amount[1]**2
 
     optimizer = ng.optimizers.OnePlusOne(parametrization=instru, budget=100)
     recommendation = optimizer.minimize(myfunction)
     print(recommendation.value)
-    # >>> (('Helium', 'Gas', 'blublu'), {'value': (-0.00014738768964717153, 0.0006602471804655007)})
+    # >>> (('Helium', 'Gas', 'blublu'), {'value': (0, 0.0006602471804655007)})
     # DOC_PARAM_2
-    instru2 = instru.spawn_child().set_standardized_data([-80, 80, -80, 0, 3.0, 5.0])
+    instru2 = instru.spawn_child().set_standardized_data([-80, 80, -80, 0, 3, 5.0])
     assert instru2.args == ('Nitrogen', 'Liquid', 'blublu')
-    assert instru2.kwargs == {'dimension': (3.0, 5.0)}
+    assert instru2.kwargs == {'amount': (3, 5.0)}
     # DOC_PARAM_3
 
 

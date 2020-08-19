@@ -102,7 +102,7 @@ Let's define the parametrization for a function taking 3 positional arguments an
 - :code:`arg1 = ng.p.Choice([["Helium", "Nitrogen", "Oxygen"]])` is the first positional argument, which can take 3 possible values, without any order, the selection is made stochasticly through the sampling of a softmax. It is encoded by 3 values (the softmax weights) in the "standardized space".
 - :code:`arg2 = ng.p.TransitionChoice(["Solid", "Liquid", "Gas"])` is the second one, it encodes the choice (i.e. 1 dimension) through a single index which can mutate in a continuous way.
 - third argument will be kept constant to :code:`blublu`
-- :code:`values = ng.p.Tuple(ng.p.Scalar(), ng.p.Scalar())` which represents a tuple of two scalars both in the parameter space, and in the "standardized space"
+- :code:`values = ng.p.Tuple(ng.p.Scalar().set_integer_casting(), ng.p.Scalar())` which represents a tuple of two scalars with different numeric types in the parameter space, and in the "standardized space"
 
 We then define a parameter holding all these parameters, with a standardized space of dimension 6 (as the sum of the dimensions above):
 
@@ -135,7 +135,7 @@ With this code:
 
 - :code:`Nitrogen` is selected because proba(e) = exp(80) / (exp(80) + exp(-80) + exp(-80)) = 1
 - :code:`Liquid` is selected because the index for `Liquid` is around 0 in the standardized space.
-- :code:`dimension=(3.0, 5.0)` because the last two values of the standardized space (i.e. 3.0, 5.0) corresponds to the value of the last kwargs.
+- :code:`amount=(3, 5.0)` because the last two values of the standardized space (i.e. 3.0, 5.0) corresponds to the value of the last kwargs.
 
 
 Parametrizing external code
