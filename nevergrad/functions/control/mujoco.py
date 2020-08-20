@@ -32,7 +32,7 @@ class GenericMujocoEnv:
         self.env.seed(random_state)
 
     def __call__(self, x):
-        """Compute average cummulative reward of given policy.
+        """Compute average cummulative reward of a given policy.
         """
         returns = []
         for _ in range(self.num_rollouts):

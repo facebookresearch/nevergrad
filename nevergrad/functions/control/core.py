@@ -12,20 +12,20 @@ from .mujoco import GenericMujocoEnv
 
 class BaseFunction(ExperimentFunction):
     """This (abstract) class is a generic wrapper of OpenAI Gym env for policy evaluation.
-    Attributes need to be override accordingly for concrete working function.
+    Attributes need to be override accordingly to have concrete working function.
 
     Attributes.
     ------------
     env_name: str
-        Gym environment name
+        Gym OpenAI environment name
     policy_dim: tuple
         Shape of the policy
     state_mean: list
         Average state values of multiple independent runs.
-        Current implementations uses values from https://github.com/modestyachts/ARS
+        Current implementations use values from https://github.com/modestyachts/ARS
     state_std: list
         Standard deviation of state values of multiple independent runs.
-        Current implementations uses values from https://github.com/modestyachts/ARS
+        Current implementations use values from https://github.com/modestyachts/ARS
 
     Parameters
     -----------
