@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from pathlib import Path
 import numpy as np
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
@@ -41,9 +42,9 @@ def test_concrete_model_example() -> None:
     np.testing.assert_almost_equal(recommendation.kwargs['x[0]'], 1.0, decimal=1)
     np.testing.assert_almost_equal(recommendation.kwargs['x[1]'], 0.8, decimal=1)
 
-def test_abstract_model_example():
+
+def test_abstract_model_example() -> None:
     import pyomo.environ as pyomo
-    import os
 
     def square(m):
         return pyomo.quicksum((m.x[i] - 0.5)**2 for i in m.x)
@@ -59,8 +60,7 @@ def test_abstract_model_example():
     import nevergrad.functions.pyomo as ng_pyomo
 
     # Load the values of the parameters from external file
-    dirname = os.path.dirname(__file__)
-    data_path = os.path.join(dirname, "test_model_1.dat")
+    data_path = str(Path(__file__).with_name("test_model_1.dat"))
 
     # DOC_ABSTRACT_100
     data = pyomo.DataPortal()
