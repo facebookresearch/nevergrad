@@ -2,6 +2,9 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+#
+# Trained policies were extracted from https://github.com/modestyachts/ARS
+# under their own license. See ARS_LICENSE file in this file's directory
 
 
 import numpy as np
