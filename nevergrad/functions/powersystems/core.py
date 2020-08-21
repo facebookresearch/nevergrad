@@ -120,19 +120,21 @@ class PowerSystem(ExperimentFunction):
     def get_num_vars(self) -> tp.List[tp.Any]:
         return [m.dimension for m in self.dam_agents]
 
-#    def _simulate_power_system(self, x: np.ndarray) -> float:
-    def _simulate_power_system(self, *x: np.ndarray) -> float:
+    def _simulate_power_system(self, *arrays: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
-        assert len(x) == 1, f"len(x)={len(x)} instead of 1."  # This basically shows how much I don't get it.
-        x = x[0]
-        assert len(x) == len(dam_agents), f"{len(x)} arrays for {len(dam_agents)} agents: {x}."
-        #for a in dam_agents:
-        #    assert len(x) >= a.dimension
-        #    a.set_parameters(np.array(x[:a.dimension]))
-        #    x = x[a.dimension:]
-        for i, a in enumerate(dam_agents):
-            a.set_parameters(np.array(x[i]))
+        def flatten(l):
+            flist = []
+            flist.extend([list(l)]) if (type(l) not in [list, tuple]) else [flist.extend(flatten(e)) for e in l]
+            return flist
+        x = flatten(arrays)
+        for a in dam_agents:
+            assert len(x) >= a.dimension, f"x = {x}."
+            a.set_parameters(np.array(x[:a.dimension]))
+            x = x[a.dimension:]
+        assert len(x) == 0, f"x = {x} after distributing weights."
+        #for i, a in enumerate(dam_agents):
+        #    a.set_parameters(np.array(x[i]))
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
