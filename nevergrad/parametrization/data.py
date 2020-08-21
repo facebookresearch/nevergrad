@@ -130,7 +130,7 @@ class Array(core.Parameter):
                 raise ValueError(err_msg)
             self._value = np.array(init, copy=False)
         elif shape is not None:
-            assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape)
+            assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape), f"Shape incorrect: {shape}."
             self._value = np.zeros(shape)
         else:
             raise ValueError(err_msg)

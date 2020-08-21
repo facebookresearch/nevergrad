@@ -313,3 +313,16 @@ def test_version_consistency() -> None:
     )
     volume = hv.compute(front)
     assert volume == 11113.0
+
+
+def test_reference_no_pointy() -> None:
+    reference = np.array([10, 10])
+    hv = HypervolumeIndicator(reference)
+    front = np.array(
+        [
+            (11, 9),
+            (9, 11),
+        ]
+    )
+    volume = hv.compute(front)
+    assert volume == -3  # not sure this is expected

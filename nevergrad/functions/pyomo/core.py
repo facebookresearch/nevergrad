@@ -2,21 +2,27 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import typing as tp
 from functools import partial
 import numpy as np
-import pyomo.environ as pyomo # type: ignore
+import pyomo.environ as pyomo
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from .. import base
 
-def _convert_to_ng_name(pyomo_var_key):
+
+ParamDict = tp.Dict[str, p.Parameter]
+
+
+def _convert_to_ng_name(pyomo_var_key: tp.Any) -> str:
     if isinstance(pyomo_var_key, str):
         return '"' + str(pyomo_var_key) + '"'
     else:
         return str(pyomo_var_key)
 
 
-def _make_pyomo_range_set_to_parametrization(domain : pyomo.RangeSet, params : dict, params_name : str):
+def _make_pyomo_range_set_to_parametrization(
+    domain: pyomo.RangeSet, params: ParamDict, params_name: str
+) -> ParamDict:
     # https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Sets.html
     # Refer to the implementation in pyomo/core/base/set.py
     ranges = list(domain.ranges())
@@ -32,26 +38,26 @@ def _make_pyomo_range_set_to_parametrization(domain : pyomo.RangeSet, params : d
                 ub = float(np.nextafter(ub, -1))
             params[params_name] = p.Scalar(lower=lb, upper=ub)
             if ranges[0].step in [-1, 1]:
-                params[params_name].set_integer_casting() #May consider using nested param
+                # May consider using nested param
+                params[params_name].set_integer_casting()  # type: ignore
         else:
-            raise NotImplementedError(f"Cannot handle range type {type(ranges[0])}")             
+            raise NotImplementedError(f"Cannot handle range type {type(ranges[0])}")
     elif isinstance(domain, pyomo.FiniteSimpleRangeSet):
         # Need to handle step size
-        params[params_name] = p.Choice([range(*r) for r in domain.ranges()]) #Assume the ranges do not overlapped
+        params[params_name] = p.Choice([range(*r) for r in domain.ranges()])  # Assume the ranges do not overlapped
     else:
         raise NotImplementedError(f"Cannot handle domain type {type(domain)}")
     return params
 
 
-def _make_pyomo_variable_to_parametrization(model_component : pyomo.Var, params : dict):
+def _make_pyomo_variable_to_parametrization(model_component: pyomo.Var, params: ParamDict) -> ParamDict:
     # https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Sets.html
     # Refer to the implementation in pyomo/core/base/var.py
     # To further improve the readability function, we should find out how to represent {None: ng.p.Scalar(), 1: ng.p.Scalar()} in ng.p.Dict
     # We do not adopt nested parameterization, which will require type information between string and int.
     # Such conversion has to be done in _pyomo_obj_function_wrapper and _pyomo_constraint_wrapper, which slows down optimization.
-    if not (isinstance(model_component, pyomo.base.var.IndexedVar) or isinstance(model_component, pyomo.base.var.SimpleVar)):
-        raise NotImplementedError # Normally, Pyomo will create a set for the indices used by a variable
-
+    if not isinstance(model_component, (pyomo.base.var.IndexedVar, pyomo.base.var.SimpleVar)):
+        raise NotImplementedError  # Normally, Pyomo will create a set for the indices used by a variable
     for k, v in model_component._data.items():
         if isinstance(v, pyomo.base.var._GeneralVarData):
             if v.is_fixed():
@@ -71,7 +77,6 @@ def _make_pyomo_variable_to_parametrization(model_component : pyomo.Var, params 
                 raise NotImplementedError(f"Cannot handle domain type {type(v.domain)}")
         else:
             raise NotImplementedError(f"Cannot handle variable type {type(v)}")
-
     return params
 
 
@@ -94,19 +99,19 @@ class Pyomo(base.ExperimentFunction):
     - Any changes on the model externally can lead to unexpected behaviours.
     """
 
-    def __init__(self, model : pyomo.Model) -> None:
+    def __init__(self, model: pyomo.Model) -> None:
         if isinstance(model, pyomo.ConcreteModel):
-            self._model_instance = model.clone() # To enable the objective function to run in parallel
+            self._model_instance = model.clone()  # To enable the objective function to run in parallel
         else:
             raise NotImplementedError("AbstractModel is not supported. Please use create_instance() in Pyomo to create a model instance.")
 
-        instru_params: tp.Dict[tp.Any, tp.Any] = {}
-        self.all_vars = []
-        self.all_params = []
-        self.all_constraints = []
-        self.all_objectives = []
+        instru_params: ParamDict = {}
+        self.all_vars: tp.List[pyomo.Var] = []
+        self.all_params: tp.List[pyomo.Param] = []
+        self.all_constraints: tp.List[pyomo.Constraint] = []
+        self.all_objectives: tp.List[pyomo.Objective] = []
 
-        #Relevant document: https://pyomo.readthedocs.io/en/stable/working_models.html
+        # Relevant document: https://pyomo.readthedocs.io/en/stable/working_models.html
 
         for v in self._model_instance.component_objects(pyomo.Var, active=True):
             self.all_vars.append(v)
@@ -129,7 +134,7 @@ class Pyomo(base.ExperimentFunction):
         instru = p.Instrumentation(**instru_params)
         for c_idx in range(0, len(self.all_constraints)):
             instru.register_cheap_constraint(partial(self._pyomo_constraint_wrapper, c_idx))
-        super().__init__(function=partial(self._pyomo_obj_function_wrapper, 0), parametrization=instru) # Single objective
+        super().__init__(function=partial(self._pyomo_obj_function_wrapper, 0), parametrization=instru)  # Single objective
 
         exp_tag = ",".join([n.name for n in self.all_objectives])
         exp_tag += "|" + ",".join([n.name for n in self.all_vars])
@@ -137,20 +142,19 @@ class Pyomo(base.ExperimentFunction):
         self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
-
-    def _pyomo_obj_function_wrapper(self, i, **k_model_variables) -> float: # type: ignore
+    def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         for k, v in k_model_variables.items():
-            exec(f"self._model_instance.{k} = {v}") # exec-used: ignore
-        return pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense) #Single objective assumption
+            # TODO find a way to avoid exec
+            exec(f"self._model_instance.{k} = {v}")  # pylint: disable=exec-used
+        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
 
-
-    def _pyomo_constraint_wrapper(self, i, instru) -> bool: # type: ignore
+    def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
         k_model_variables = instru[1]
-        # Combine all constriants into single one
+        # Combine all constraints into single one
         for k, v in k_model_variables.items():
-            exec(f"self._model_instance.{k} = {v}") # exec-used: ignore
+            exec(f"self._model_instance.{k} = {v}")  # pylint: disable=exec-used
         if isinstance(self.all_constraints[i], pyomo.base.constraint.SimpleConstraint):
-            return pyomo.value(self.all_constraints[i].expr(self._model_instance))
+            return bool(pyomo.value(self.all_constraints[i].expr(self._model_instance)))
         elif isinstance(self.all_constraints[i], pyomo.base.constraint.IndexedConstraint):
             ret = True
             for k, c in self.all_constraints[i].items():
