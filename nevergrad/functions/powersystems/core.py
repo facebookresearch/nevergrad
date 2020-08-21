@@ -34,6 +34,7 @@ class Agent():
         return sum([np.prod(l.shape) for l in self.layers])
 
     def set_parameters(self, ww: tp.Any) -> None:
+        ww = np.concatenate(ww)
         w = [w for w in ww]
         assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}."
         for i in range(len(self.layers)):
