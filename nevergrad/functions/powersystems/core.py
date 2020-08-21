@@ -130,7 +130,7 @@ class PowerSystem(ExperimentFunction):
         #    a.set_parameters(np.array(x[:a.dimension]))
         #    x = x[a.dimension:]
         for i, a in enumerate(dam_agents):
-            a.set_parameters(np.array(*x[i]))
+            a.set_parameters(np.array(x[i]))
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
