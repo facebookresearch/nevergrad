@@ -36,7 +36,7 @@ class Agent():
     def set_parameters(self, ww: tp.Any) -> None:
         w = [w for w in ww]
         assert isinstance(w[0], float)
-        assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}."
+        assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}: {w}."
         for i in range(len(self.layers)):
             s = np.prod(self.layers[i].shape)
             self.layers[i] = np.reshape(np.array(w[:s]), self.layers[i].shape)  # TODO @oteytaud new name?
@@ -124,6 +124,8 @@ class PowerSystem(ExperimentFunction):
     def _simulate_power_system(self, *x: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
+        assert len(x) == 1, f"len(x)={len(x)} instead of 1."  # This basically shows how much I don't get it.
+        x = x[0]
         assert len(x) == len(dam_agents), f"{len(x)} arrays for {len(dam_agents)} agents: {x}."
         #for a in dam_agents:
         #    assert len(x) >= a.dimension
