@@ -35,7 +35,7 @@ class Agent():
 
     def set_parameters(self, ww: tp.Any) -> None:
         w = [w for w in ww]
-        assert len(w) == self.dimension
+        assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}."
         for i in range(len(self.layers)):
             s = np.prod(self.layers[i].shape)
             self.layers[i] = np.reshape(np.array(w[:s]), self.layers[i].shape)  # TODO @oteytaud new name?
