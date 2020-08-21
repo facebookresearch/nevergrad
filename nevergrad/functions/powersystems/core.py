@@ -6,6 +6,7 @@
 # This code is based on a code and ideas by Emmanuel Centeno and Antoine Moreau,
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
+from collections import Iterable
 import typing as tp
 from math import pi, cos, sin
 import matplotlib.pyplot as plt
@@ -123,11 +124,15 @@ class PowerSystem(ExperimentFunction):
     def _simulate_power_system(self, *arrays: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
-        def flatten(l):
-            flist = []
-            flist.extend([list(l)]) if (type(l) not in [list, tuple]) else [flist.extend(flatten(e)) for e in l]
-            return flist
-        x = flatten(arrays)
+        # Deep, robust flattening of any nesting of iterables.
+        def flatten(obj):
+             for i in obj:
+                 if isinstance(i, Iterable):
+                     yield from flatten(i)
+                 else:
+                     yield i
+        x = list(flatten(arrays))
+        # Now applying:
         for a in dam_agents:
             assert len(x) >= a.dimension, f"x = {x}."
             a.set_parameters(np.array(x[:a.dimension]))
