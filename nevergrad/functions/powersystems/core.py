@@ -34,8 +34,8 @@ class Agent():
         return sum([np.prod(l.shape) for l in self.layers])
 
     def set_parameters(self, ww: tp.Any) -> None:
-        ww = np.concatenate(ww)
         w = [w for w in ww]
+        assert isinstance(w[0], float)
         assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}."
         for i in range(len(self.layers)):
             s = np.prod(self.layers[i].shape)
@@ -124,6 +124,7 @@ class PowerSystem(ExperimentFunction):
     def _simulate_power_system(self, *x: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
+        assert len(x) == len(dam_agents), f"{len(x)} arrays for {len(dam_agents)} agents."
         for i, a in enumerate(dam_agents):
             a.set_parameters(np.array(x[i]))
         self.marginal_costs = []
