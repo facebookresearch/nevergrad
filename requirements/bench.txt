@@ -10,3 +10,4 @@ pandas>=0.23.4
 pyproj>=2.6.1
 Pillow
 tqdm
+pyomo>=5.7

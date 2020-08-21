@@ -84,5 +84,6 @@ class ARCoating(base.ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         loss = self.function(x)
+        assert isinstance(loss, float)
         base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
         return loss

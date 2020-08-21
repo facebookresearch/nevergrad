@@ -6,7 +6,7 @@
 import random
 import numpy as np
 import nevergrad.common.typing as tp
-from .hypervolume import HypervolumeIndicator
+from nevergrad.optimization.multiobjective import HypervolumeIndicator
 
 
 # pylint: disable=too-many-instance-attributes
