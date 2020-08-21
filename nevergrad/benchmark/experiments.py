@@ -519,7 +519,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     elif (small and not noise):
         budgets = [10, 20, 40]
     if hd:
-        optims += ["SplitCMA9", "SplitCMA5", "SplitCMA13"]
+        optims += ["SplitCMA9", "SplitCMA5", "SplitCMA13", "SplitCMAAuto"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -923,10 +923,10 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO",
-              "ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
-              "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+             "ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
+             "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
+             "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
+             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -947,13 +947,13 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         funcs += [PowerSystem(dams, depth=2, width=3)]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
-              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-              "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
-              "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13"]
+             "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
+             "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
+             "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13", "SplitCMAAuto"]
     if default_optims is not None:
         optims = default_optims
-    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
+    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
+               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
                "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     budgets = [1600, 3200, 6400, 12800]
     for budget in budgets:
@@ -1003,8 +1003,8 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                                                          ("Ruspini", 50), ("German towns", 100)] for rescale in [True, False]
     ]
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
+    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
+              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
     if default_optims is not None:
         optims = default_optims
