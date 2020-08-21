@@ -10,7 +10,7 @@ from . import core
 
 def test_powersystem() -> None:
     func = core.PowerSystem()
-    x = [7 * np.random.rand(func.dimension / 13) for _ in range(13)]
+    x = [7 * np.random.rand(func.dimension // 13) for _ in range(13)]
     value = func.function(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
 
