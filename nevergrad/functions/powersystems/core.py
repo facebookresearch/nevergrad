@@ -138,8 +138,6 @@ class PowerSystem(ExperimentFunction):
             a.set_parameters(np.array(x[:a.dimension]))
             x = x[a.dimension:]
         assert len(x) == 0, f"x = {x} after distributing weights."
-        #for i, a in enumerate(dam_agents):
-        #    a.set_parameters(np.array(x[i]))
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
