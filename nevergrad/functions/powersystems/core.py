@@ -110,8 +110,7 @@ class PowerSystem(ExperimentFunction):
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
         # dimension = int(sum([a.dimension for a in dam_agents]))
-        #parameter = p.Parameter(p.Tuple(p.Array(shape=(a.dimension,)) for a in dam_agents))a
-        parameter = p.Instrumentation(p.Array(shape=(a.dimension,)) for a in dam_agents)
+        parameter = p.Instrumentation(*[p.Array(shape=(a.dimension,)) for a in dam_agents])
         super().__init__(self._simulate_power_system, parameter)
         self.register_initialization(**params)
         self.dam_agents = dam_agents
@@ -120,7 +119,8 @@ class PowerSystem(ExperimentFunction):
     def get_num_vars(self) -> tp.List[tp.Any]:
         return [m.dimension for m in self.dam_agents]
 
-    def _simulate_power_system(self, x: np.ndarray) -> float:
+#    def _simulate_power_system(self, x: np.ndarray) -> float:
+    def ._simulate_power_system(self, *arrays: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
         for a in dam_agents:
