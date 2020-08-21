@@ -120,7 +120,7 @@ class PowerSystem(ExperimentFunction):
         return [m.dimension for m in self.dam_agents]
 
 #    def _simulate_power_system(self, x: np.ndarray) -> float:
-    def ._simulate_power_system(self, *arrays: np.ndarray) -> float:
+    def _simulate_power_system(self, *arrays: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
         for a in dam_agents:
