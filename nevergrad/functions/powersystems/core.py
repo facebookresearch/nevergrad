@@ -127,7 +127,6 @@ class PowerSystem(ExperimentFunction):
             assert len(x) >= a.dimension
             a.set_parameters(np.array(x[:a.dimension]))
             x = x[a.dimension:]
-        assert not x.size
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
