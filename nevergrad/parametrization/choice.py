@@ -4,9 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import discretization
 from . import utils
 from . import core
@@ -252,7 +251,7 @@ class TransitionChoice(BaseChoice):
     def __init__(
             self,
             choices: tp.Iterable[tp.Any],
-            transitions: tp.Union[ArrayLike, Array] = (1.0, 1.0),
+            transitions: tp.Union[tp.ArrayLike, Array] = (1.0, 1.0),
             repetitions: tp.Optional[int] = None,
     ) -> None:
         choices = list(choices)

@@ -54,9 +54,11 @@ Ask and tell interface
 ----------------------
 
 An *ask and tell* interface is also available. The 3 key methods for this interface are respectively:
+
 - :code:`ask`: suggest a candidate on which to evaluate the function to optimize.
 - :code:`tell`: for updated the optimizer with the value of the function for a candidate.
 - :code:`provide_recommendation`: returns the candidate the algorithms considers the best.
+
 For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute :code:`no_parallelization=True` however do not support this.
 
 The :code:`Parameter` class holds attribute :code:`value` which contain the actual value to evaluate through the function.
@@ -88,6 +90,7 @@ Also, **you can print the full list of optimizers** with:
 
 
 All algorithms have strengths and weaknesses. Questionable rules of thumb could be:
+
 - :code:`TwoPointsDE` is excellent in many cases, including very high :code:`num_workers`.
 - :code:`PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
 - :code:`OnePlusOne` is a simple robust method for continuous parameters with :code:`num_workers` < 8.
@@ -131,9 +134,8 @@ There are two ways to inoculate information you already have about some points:
 Adding callbacks
 ----------------
 
-You can add callbacks to the :code:`ask` and :code:`tell` methods through the :code:`register_callback`  method.
-The functions/callbacks registeed on :code:`ask` must have signature :code:`callback (optimizer)` and functions registered on :code:`tell`
-must have signature :code:`function(optimizer, candidate, value)`.
+You can add callbacks to the :code:`ask` and :code:`tell` methods through the :code:`register_callback` method.
+The functions/callbacks registered on :code:`ask` must have signature :code:`callback (optimizer)` and functions registered on :code:`tell` must have signature :code:`function(optimizer, candidate, value)`.
 
 The example below shows a callback which prints :code:`candidate` and :code:`value` on :code:`tell`:
 
@@ -164,14 +166,15 @@ Let us say that we want to minimize :code:`(x[0]-.5)**2 + (x[1]-.5)**2` under th
 Optimizing machine learning hyperparameters
 -------------------------------------------
 
-When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see [parametrization](parametrization.md)) to use:
+When optimizing hyperparameters as e.g. in machine learning. If you don't know what variables (see :ref:`Parametrization <parametrizing>` to use:
+
 - use :code:`Choice` for discrete variables
-- use :code:`TwoPointsDE` with :code:`num_workers` equal to the number of workers available to you.
-See the [machine learning example](machinelearning.md) for more.
+- use :code:`TwoPointsDE` with :code:`num_workers` equal to the number of workers available to you. See the :ref:`machine learning examples <machinelearning>` for more.
 
 Or if you want something more aimed at robustly outperforming random search in highly parallel settings (one-shot):
+
 - use :code:`TransitionChoice` for discrete variables, taking care that the default value is in the middle.
-- Use :code:`ScrHammersleySearchPlusMiddlePoint` (`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
+- Use :code:`ScrHammersleySearchPlusMiddlePoint` (:code:`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
 
 Example of chaining, or inoculation, or initialization of an evolutionary algorithm
@@ -214,15 +217,35 @@ We can then minimize as usual:
 Multiobjective minimization with Nevergrad
 ------------------------------------------
 
-Multiobjective minimization is a work in progress in :code:`nevergrad`, you should expect a few API changes before it converges to a stable solution.
-Let us minimize :code:`f1` and :code:`f2` (two objective functions) assuming that values above 2.5 are of no interest.
+Multiobjective minimization is a **work in progress** in :code:`nevergrad`. It is:
 
+ - **not stable**: the API may be updated at any time, hopefully to make it simpler and more intuitive.
+ - **not robust**: there are probably corner cases we have not investigated yet.
+ - **not scalable**: it is not yet clear how the current version will work with large number of losses, or large budget. For now the features have been implemented without time complexity considerations.
+ - **not optimal**: this currently transforms multiobjective functions into monoobjective functions, hence losing some structure and making the function dynamic, which some optimizers are not designed to work on.
+
+In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!
+
+
+The initial API that was added into :code:`nevergrad` to work with multiobjective functions uses a function wrapper to convert them into monoobjective functions.
+Let us minimize :code:`f1` and :code:`f2` (two objective functions) assuming that values above 2.5 are of no interest:
 
 .. literalinclude:: ../nevergrad/functions/multiobjective/test_core.py
     :language: python
     :dedent: 4
     :start-after: DOC_MULTIOBJ_0
     :end-before: DOC_MULTIOBJ_1
+
+
+We are currently working on an **new experimental API** allowing users to directly :code:`tell` the results as an array or list of floats. When this API is stabilized and proved to work, it will probably replace the older one. Here is an example on how to use it:
+
+.. literalinclude:: ../nevergrad/optimization/multiobjective/test_core.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_MULTIOBJ_OPT_0
+    :end-before: DOC_MULTIOBJ_OPT_1
+
+Note that `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
 
 
 Reproducibility

@@ -11,3 +11,4 @@ pyproj>=2.6.1
 Pillow
 tqdm
 torchvision
+pyomo>=5.7

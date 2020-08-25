@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List
+import typing as tp
 import warnings
 import numpy as np
 from ..common import testing
@@ -16,7 +16,7 @@ from . import discretization
     borderline_cases_100=(100, [-np.inf, np.inf, np.nan], [0, 99, 0]),
     borderline_cases_2=(2, [-np.inf, np.inf, np.nan], [0, 1, 0]),
 )
-def test_thresholding_discretization(arity: int, data: List[float], expected: List[float]) -> None:
+def test_thresholding_discretization(arity: int, data: tp.List[float], expected: tp.List[float]) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         output = discretization.threshold_discretization(data, arity)
