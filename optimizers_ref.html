@@ -1081,10 +1081,15 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.NGOpt">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NGOpt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOpt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="nevergrad.optimization.optimizerlib.NGOpt2">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">NGOpt2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOpt2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map.</p>
 <dl class="py method">
-<dt id="nevergrad.optimization.optimizerlib.NGOpt.recommend">
-<code class="sig-name descname">recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOpt.recommend" title="Permalink to this definition">¶</a></dt>
+<dt id="nevergrad.optimization.optimizerlib.NGOpt2.recommend">
+<code class="sig-name descname">recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; nevergrad.parametrization.core.Parameter<a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOpt2.recommend" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides the best candidate to use as a minimum, given the budget that was used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
