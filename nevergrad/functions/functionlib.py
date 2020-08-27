@@ -146,8 +146,8 @@ class ArtificialFunction(ExperimentFunction):
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        parametrization = p.Array(shape=(1,)) if hashing else (
-                p.Instrumentation(*[p.Array(shape=(int(block_dimension),)) for a in range(num_blocks)] if useless_variables == 0 else (self._dimension,)).set_name(""))
+        parametrization = p.Array(shape=(1,)).set_name("") if hashing else (
+                p.Instrumentation(*[p.Array(shape=(int(block_dimension),)) for a in range(num_blocks)]) if useless_variables == 0 else p.Array((self._dimension,)).set_name(""))
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
