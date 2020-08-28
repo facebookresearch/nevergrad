@@ -1994,12 +1994,12 @@ class NGOpt4(base.Optimizer):
                 optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne  # type: ignore
         elif arity > 0:
             if arity == 2:
-                optimClass = DiscreteOnePlusOne
+                optimClass = DiscreteOnePlusOne  # type: ignore
             else:
                 if arity < 5:
-                    optimClass = AdaptiveDiscreteOnePlusOne
+                    optimClass = AdaptiveDiscreteOnePlusOne  # type: ignore
                 else:
-                    optimClass = CMandAS2  # Softmax recommended! How could we "encourage" this ?
+                    optimClass = CMandAS2  # type: ignore
             #optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
         else:
             # pylint: disable=too-many-nested-blocks
