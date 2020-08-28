@@ -1971,7 +1971,9 @@ class NGOpt2(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
         self.optim.tell(candidate, value)
 
-
+ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "ProgD13", register=True
+)
 @registry.register
 class NGOpt4(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
@@ -2005,7 +2007,7 @@ class NGOpt4(base.Optimizer):
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.fully_continuous and self.dimension > 100:
                 # Waow, this is actually a discrete algorithm.
-                optimClass = ProgDOptimizer13  # My guess is that we could do better by a sophisticated use of dimension / budget.
+                optimClass = ProgD13  # My guess is that we could do better by a sophisticated use of dimension / budget.
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
