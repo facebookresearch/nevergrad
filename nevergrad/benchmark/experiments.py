@@ -1111,7 +1111,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         func = rl.agents.TorchAgentFunction(agents[archi], runner,
                                                             reward_postprocessing=lambda x: 1 - x)
                         opt_budget = env_budget // num_repetitions
-                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers,
+                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, # type: ignore
                                          seed=next(seedg))  # type: ignore
 
 
@@ -1289,7 +1289,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     func_mix = Photonics("bragg", 80, bounding_method="clipping")
     param = func_mix.parametrization
     param.set_name("mix")
-    param.set_recombination(
+    param.set_recombination( # type: ignore
         ng.p.Choice([ng.p.mutation.Crossover(axis=1), ng.p.mutation.RavelCrossover()]))  # type: ignore
     muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1, size=5), ng.p.mutation.Translation(axis=1)]
     muts += [ng.p.mutation.LocalGaussian(axes=1, size=10)]

@@ -4,6 +4,7 @@ xlrd>=1.2.0
 matplotlib>=2.2.3
 gym>=0.12.1
 torch>=1.2.0
+torchvision
 hiplot
 fcmaes>=0.9.5.6
 pandas>=0.23.4
