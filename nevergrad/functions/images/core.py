@@ -64,7 +64,7 @@ class TestClassifier(nn.Module):
         self.model = nn.Linear(image_size * image_size * 3, 10)
 
     def forward(self, x):
-        return self.model(x.flatten(x.shape[0], -1))
+        return self.model(x.view(x.shape[0], -1))
 
 
 # pylint: disable=too-many-arguments

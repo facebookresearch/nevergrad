@@ -13,6 +13,7 @@ def test_images_adversarial() -> None:
     label = 3
     func = core.ImageAdversarial.from_testbed("test", label=label, targeted=targeted, epsilon=epsilon)
     x = np.zeros(func.image.shape)
+
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
     other_func = func.copy()

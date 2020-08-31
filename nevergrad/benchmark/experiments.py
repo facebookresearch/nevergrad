@@ -1261,14 +1261,14 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     if default_optims is not None:
         optims = default_optims
-        for method in ["clipping", "tanh"]:  # , "arctan"]:
-            for name in ["bragg", "chirped", "morpho"]:
-                func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method)
-                for budget in [1e3, 1e4, 1e5, 1e6]:
-                    for algo in optims:
-                        xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+    for method in ["clipping", "tanh"]:  # , "arctan"]:
+        for name in ["bragg", "chirped", "morpho"]:
+            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method)
+            for budget in [1e3, 1e4, 1e5, 1e6]:
+                for algo in optims:
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
@@ -1325,10 +1325,11 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
             return self.model(self.norm(x))
 
     image_size = 224
-    data_folder = "/datasets01_101/imagenet_full_size/061417/val"
+    data_folder = "pouet"  # "/datasets01_101/imagenet_full_size/061417/val"
     if not os.path.exists(data_folder):
-        print("this path does not exist")
-        return
+        x, y = torch.zeros(1, 3, 224, 224), 0
+        data_loader = [(x, y)]
+        path_exist = False
     else:
         data_loader = torch.utils.data.DataLoader(
             torchvision.datasets.ImageFolder(data_folder,
@@ -1340,18 +1341,17 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
             shuffle=True,
             num_workers=8,
             pin_memory=True)
+        path_exist = True
 
     classifier = Resnet50()
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     for i, (data, target) in enumerate(data_loader):
-        if i > 1:
-            continue
         _, pred = torch.max(classifier(data), axis=1)
-        if pred == target:
+        if pred == target or (not path_exist):
             func = ImageAdversarial(classifier, image=data[0], label=int(target), targeted=False,
                                     epsilon=0.05)
-            for budget in [1000, 10000, 100000]:
+            for budget in [10]:
                 for num_workers in [1]:
                     for algo in optims:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
