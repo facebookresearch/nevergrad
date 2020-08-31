@@ -1111,7 +1111,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         func = rl.agents.TorchAgentFunction(agents[archi], runner,
                                                             reward_postprocessing=lambda x: 1 - x)
                         opt_budget = env_budget // num_repetitions
-                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers, # type: ignore
+                        yield Experiment(func, optim, budget=opt_budget, num_workers=num_workers,  # type: ignore
                                          seed=next(seedg))  # type: ignore
 
 
@@ -1289,7 +1289,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     func_mix = Photonics("bragg", 80, bounding_method="clipping")
     param = func_mix.parametrization
     param.set_name("mix")
-    param.set_recombination( # type: ignore
+    param.set_recombination(  # type: ignore
         ng.p.Choice([ng.p.mutation.Crossover(axis=1), ng.p.mutation.RavelCrossover()]))  # type: ignore
     muts = ["gaussian", "cauchy", ng.p.mutation.Jumping(axis=1, size=5), ng.p.mutation.Translation(axis=1)]
     muts += [ng.p.mutation.LocalGaussian(axes=1, size=10)]
@@ -1299,7 +1299,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for algo in default_optims if default_optims is not None else optims:
             yield Experiment(func, algo, int(budget), num_workers=1, seed=xpseed)
         for f in [func, func_nostruct, func_mix]:
-            for algo in recombinable: # type: ignore
+            for algo in recombinable:  # type: ignore
                 yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
 
 
@@ -1347,6 +1347,8 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     for i, (data, target) in enumerate(data_loader):
+        if i > 1:
+            continue
         _, pred = torch.max(classifier(data), axis=1)
         if pred == target or (not path_exist):
             func = ImageAdversarial(classifier, image=data[0], label=int(target), targeted=False,
