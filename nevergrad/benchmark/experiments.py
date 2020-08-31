@@ -1299,7 +1299,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for algo in default_optims if default_optims is not None else optims:
             yield Experiment(func, algo, int(budget), num_workers=1, seed=xpseed)
         for f in [func, func_nostruct, func_mix]:
-            for algo in recombinable:
+            for algo in recombinable: # type: ignore
                 yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
 
 
