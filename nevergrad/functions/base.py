@@ -60,7 +60,7 @@ class ExperimentFunction:
         self._symmetry = symmetry
         self._inner_function = function
         if self._symmetry != 0:
-            self._function = _symmetrized_function
+            self._function = self.symmetrized_function
         else:
             self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
