@@ -17,36 +17,6 @@ class ExperimentFunctionCopyError(NotImplementedError):
     """Raised when the experiment function fails to copy itself (for benchmarks)
     """
 
-class ArrayExperimentFunction(ExperimentFunction):
-    """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function."""
-
-    def symmetrized_function(self: AEF, x: tp.Any):
-        assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
-        assert len(x.shape) == 1, "only one-dimensional arrays for now."
-        y = x
-        symmetry: int = self._symmetry
-        for i in range(len(y)):
-            if symmetry % 2 == 1:
-                y[i] = -x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
-            symmetry = symmetry // 2
-        return self._inner_function(y)  # type: ignore
-
-    def __init__(self: AEF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
-        """ Same parameters as ExperimentFunction, plus "symmetry".
-        symmetry: an int, 0 by default.
-        if not zero, a symmetrization is applied to the input; each of the 2^d possible values
-        for symmetry % 2^d gives one different function.
-        Makes sense if and only if (1) the input is a single ndarray (2) the domains are symmetric."""
-        super().__init__(function, parametrization)
-        assert isinstance(parametrization, p.Array)
-        self._inner_function = self._function
-        self._symmetry = symmetry
-        if self._symmetry != 0:
-            self._function = self.symmetrized_function
-        else:
-            self._function = function
-
-
 class ExperimentFunction:
     """Combines a function and its parametrization for running experiments (see benchmark subpackage)
 
@@ -232,6 +202,36 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
                 print(f"New best value for {identifier}: {loss}\nwith: {string}")
     except Exception:  # pylint: disable=broad-except
         pass  # better avoir bugs for this
+
+
+class ArrayExperimentFunction(ExperimentFunction):
+    """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function."""
+
+    def symmetrized_function(self: AEF, x: tp.Any):
+        assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
+        assert len(x.shape) == 1, "only one-dimensional arrays for now."
+        y = x
+        symmetry: int = self._symmetry
+        for i in range(len(y)):
+            if symmetry % 2 == 1:
+                y[i] = -x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
+            symmetry = symmetry // 2
+        return self._inner_function(y)  # type: ignore
+
+    def __init__(self: AEF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
+        """ Same parameters as ExperimentFunction, plus "symmetry".
+        symmetry: an int, 0 by default.
+        if not zero, a symmetrization is applied to the input; each of the 2^d possible values
+        for symmetry % 2^d gives one different function.
+        Makes sense if and only if (1) the input is a single ndarray (2) the domains are symmetric."""
+        super().__init__(function, parametrization)
+        assert isinstance(parametrization, p.Array)
+        self._inner_function = self._function
+        self._symmetry = symmetry
+        if self._symmetry != 0:
+            self._function = self.symmetrized_function
+        else:
+            self._function = function
 
 
 class MultiExperiment(ExperimentFunction):
