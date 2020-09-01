@@ -34,7 +34,7 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
@@ -43,7 +43,14 @@ class ExperimentFunction:
         self._parametrization: p.Parameter
         self.parametrization = parametrization
         self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
-        self._function = function
+        def symmetrized_function(x: tp.Any):
+            y = x
+            for i in range(len(y)):
+                if symmetry % 2 == 1:
+                    y[i] = -x[i]  # We should rather symmetrize w.r.t the center of Parameter.
+                symmetry = symmetry // 2
+            return function(y)
+        self._function = symmetrized_function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__

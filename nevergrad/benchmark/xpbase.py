@@ -138,20 +138,12 @@ class Experiment:
     def __init__(self, function: fbase.ExperimentFunction,
                  optimizer: tp.Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: tp.Optional[int] = None,
-                 symmetry: bool = False,
                  ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
                                                                 "derive from ng.functions.ExperimentFunction")
         assert function.dimension, "Nothing to optimize"
-        seed_copy = seed if seed and symmetry else 0
-        def symmetrized_function(x: tp.Any):
-            y = x
-            for i in range(len(y)):
-                if seed_copy % 2 == 1:
-                    y[i] = -x[i]  # We should rather symmetrize w.r.t the center of Parameter.
-            return function(y)
 
-        self.function = symmetrized_function
+        self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
