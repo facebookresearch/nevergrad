@@ -41,12 +41,12 @@ class ExperimentFunction:
     def symmetrized_function(self: EF, x: tp.Any):
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         y = x
-        symmetry = self._symmetry
+        symmetry: int = self._symmetry
         for i in range(len(y)):
             if symmetry % 2 == 1:
                 y[i] = -x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
             symmetry = symmetry // 2
-        return self._inner_function(y)
+        return self._inner_function(y)  # type: ignore
 
     def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
         assert callable(function)
