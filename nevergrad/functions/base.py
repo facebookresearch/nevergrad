@@ -38,7 +38,7 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def symmetrized_function(x: tp.Any):
+    def symmetrized_function(self: EF, x: tp.Any):
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         y = x
         symmetry = self._symmetry
