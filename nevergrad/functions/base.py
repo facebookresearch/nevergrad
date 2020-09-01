@@ -10,6 +10,7 @@ import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
+AEF = tp.TypeVar("AEF", bound="ArrayExperimentFunction")
 
 
 class ExperimentFunctionCopyError(NotImplementedError):
@@ -19,7 +20,7 @@ class ExperimentFunctionCopyError(NotImplementedError):
 class ArrayExperimentFunction(ExperimentFunction):
     """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function."""
 
-    def symmetrized_function(self: EF, x: tp.Any):
+    def symmetrized_function(self: AEF, x: tp.Any):
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         assert len(x.shape) == 1, "only one-dimensional arrays for now."
         y = x
@@ -30,7 +31,7 @@ class ArrayExperimentFunction(ExperimentFunction):
             symmetry = symmetry // 2
         return self._inner_function(y)  # type: ignore
 
-    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
+    def __init__(self: AEF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
         """ Same parameters as ExperimentFunction, plus "symmetry".
         symmetry: an int, 0 by default.
         if not zero, a symmetrization is applied to the input; each of the 2^d possible values
