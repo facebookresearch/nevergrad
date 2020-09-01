@@ -142,7 +142,6 @@ class Experiment:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
                                                                 "derive from ng.functions.ExperimentFunction")
         assert function.dimension, "Nothing to optimize"
-
         self.function = function
         self.seed = seed  # depending on the inner workings of the function, the experiment may not be repeatable
         self.optimsettings = OptimizerSettings(optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode)
