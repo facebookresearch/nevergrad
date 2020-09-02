@@ -184,7 +184,7 @@ def get_pyomo_list():
     rosenbrock.y = pyomo.Var(initialize= 1.0, bounds=(-2, 2)) 
     rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
     
-    pyomo_list = [Pyomo(rosenbrock)]
+    yield Pyomo(rosenbrock)
     
     
     # Knapsack
@@ -206,7 +206,7 @@ def get_pyomo_list():
         knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
         knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
     
-        pyomo_list += [Pyomo(knapsack)]
+        yield Pyomo(knapsack)
     
     for N in [3, 10, 30, 100]:
         print(f"Creating Pmedian{N}")
@@ -236,7 +236,4 @@ def get_pyomo_list():
             for m in pmedian.Customers: 
                 pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
         pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
-        pyomo_list += [Pyomo(pmedian)]
-    
-    return pyomo_list   
-    
+        yield Pyomo(pmedian)
