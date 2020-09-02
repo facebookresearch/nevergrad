@@ -29,6 +29,7 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.pyomo.core import pyomo_list as pyomo_list
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
@@ -894,6 +895,27 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Pyomo models.
+    TODO: we need a comparison with Pyomo solves, and non-linear/complex variants of this.
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "SQP", "Powell", "ScrHammersleySearch", "PSO", "OnePlusOne",
+              "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "RandomSearch",
+              "HaltonSearch", "MiniDE"]
+    if default_optims is not None:
+        optims = default_optims
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        for num_workers in [1, 30]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in pyomo_list:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp

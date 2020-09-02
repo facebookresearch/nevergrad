@@ -211,6 +211,5 @@ for n in pmedian.Locations:
 
 
 # Converting to Nevergrad.
-pyomo_rosenbrok = Pyomo(rosenbrock)
-pyomo_pmedian = Pyomo(pmedian)
-pyomo_knapsack = Pyomo(knapsack)
+pyomo_list = [Pyomo(rosenbrock), Pyomo(pmedian), Pyomo(knapsack)]
+
