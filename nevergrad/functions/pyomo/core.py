@@ -193,8 +193,8 @@ M = 4
 P = 3 
 d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
 pmedian = pyomo.ConcreteModel() 
-pmedian.Locations = range(N) 
-pmedian.Customers = range(M) 
+pmedian.Locations = range(1, N) 
+pmedian.Customers = range(1, M) 
 pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
 pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
 
