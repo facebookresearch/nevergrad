@@ -235,7 +235,7 @@ def get_pyomo_list():
         for n in pmedian.Locations: 
             for m in pmedian.Customers: 
                 pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
-                pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
+        pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
         pyomo_list += [Pyomo(pmedian)]
     
     return pyomo_list   
