@@ -198,8 +198,8 @@ for N in [3, 10, 30, 100]:
         d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
     else:
         d = {}
-        for i in range(1, N):
-            for j in range(1, M):
+        for i in range(1, N + 1):
+            for j in range(1, M + 1):
                 d[(i, j)] = ((N * 17 + i * 13 + j * 7) % 100) + 1.
     pmedian = pyomo.ConcreteModel() 
     pmedian.Locations = range(1, N+1) 
