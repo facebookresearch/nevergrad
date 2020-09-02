@@ -198,14 +198,14 @@ pmedian.Customers = range(M)
 pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
 pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
 
-pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*model.x[n,m] for n in model.Locations for m in pmedian.Customers))
-model.single_x = pyomo.ConstraintList()
-for m in model.Customers:
-    pmedian.single_x.add(sum(model.x[n,m] for n in model.Locations) == 1.0) 
+pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*pmedian.x[n,m] for n in pmedian.Locations for m in pmedian.Customers))
+pmedian.single_x = pyomo.ConstraintList()
+for m in pmedian.Customers:
+    pmedian.single_x.add(sum(pmedian.x[n,m] for n in pmedian.Locations) == 1.0) 
 
 pmedian.bound_y = pyomo.ConstraintList()
-for n in model.Locations: 
-    for m in model.Customers: 
+for n in pmedian.Locations: 
+    for m in pmedian.Customers: 
         pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
         pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
 
