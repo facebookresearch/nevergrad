@@ -189,7 +189,6 @@ def get_pyomo_list():
     rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
     yield Pyomo(rosenbrock)
 
-def get_extended_pyomo_list():
     # Knapsack
     for num_items in [4, 14, 44, 134]:
         print(f"Creating Knapsack{num_items}")
@@ -209,7 +208,9 @@ def get_extended_pyomo_list():
         knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
         knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
         yield Pyomo(knapsack)
-    
+ 
+
+def get_extended_pyomo_list():
     for N in [3, 10, 30, 100]:
         print(f"Creating Pmedian{N}")
         # P-median
