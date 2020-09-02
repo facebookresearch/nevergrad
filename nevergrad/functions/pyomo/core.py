@@ -197,7 +197,7 @@ def get_pyomo_list():
         knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
         knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
     
-        pyomo_list += Pyomo(knapsack)]
+        pyomo_list += [Pyomo(knapsack)]
     
     for N in [3, 10, 30, 100]:
         print(f"Creating Pmedian{N}")
