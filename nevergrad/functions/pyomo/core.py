@@ -210,8 +210,7 @@ def get_pyomo_list():
         yield Pyomo(knapsack)
  
 
-def get_extended_pyomo_list():
-    for N in [3, 10, 30, 100]:
+    for N in [3, 10]:
         print(f"Creating Pmedian{N}")
         # P-median
         M = N + 1
