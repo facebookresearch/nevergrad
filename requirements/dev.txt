@@ -1,4 +1,4 @@
-ipopt>=0.2.0
+glpk>=0.4.6
 mypy>=0.770
 pytest>=4.3.0
 pytest-cov>=2.6.1
