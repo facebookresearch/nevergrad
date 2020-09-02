@@ -207,7 +207,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
 class ArrayExperimentFunction(ExperimentFunction):
     """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function."""
 
-    def symmetrized_function(self: AEF, x: tp.Any):
+    def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         assert len(x.shape) == 1, "only one-dimensional arrays for now."
         y = x
