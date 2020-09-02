@@ -110,6 +110,7 @@ class Pyomo(base.ExperimentFunction):
         self.all_params: tp.List[pyomo.Param] = []
         self.all_constraints: tp.List[pyomo.Constraint] = []
         self.all_objectives: tp.List[pyomo.Objective] = []
+        self._best_pyomo_val: float = 0.
 
         # Relevant document: https://pyomo.readthedocs.io/en/stable/working_models.html
 
@@ -143,11 +144,19 @@ class Pyomo(base.ExperimentFunction):
         #self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
+    def translate(self, budget):
+        """Stores in self._best_pyomo_val the best value obtained by a solver on the same instance for a given budget in a sequential optimization.
+        TODO: investigate what Pyomo does in the parallel case."""
+        solver  = SolverFactory('ipopt')
+        solver.options['max_iter'] = budget
+        solver.solve(self._model_instance, tee=False)
+        self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
+        
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         for k, v in k_model_variables.items():
             # TODO find a way to avoid exec
             exec(f"self._model_instance.{k} = {v}")  # pylint: disable=exec-used
-        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
+        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense)) - self._best_pyomo_val  # Single objective assumption
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
         k_model_variables = instru[1]

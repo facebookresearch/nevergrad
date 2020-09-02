@@ -917,7 +917,10 @@ def pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in pyomo_list:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        translated_fu = fu.copy()
+                        if num_workers == 1:
+                            translated_fu.translate(budget=budget)
+                        xp = Experiment(translated_fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
 
