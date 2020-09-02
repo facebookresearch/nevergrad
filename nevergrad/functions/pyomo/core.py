@@ -164,3 +164,49 @@ class Pyomo(base.ExperimentFunction):
             return ret
         else:
             raise NotImplementedError(f"Constraint type {self.all_constraints[i].ctype} is not supported yet.")
+
+
+# Simple Pyomo models, based on https://www.ima.umn.edu/materials/2017-2018.2/W8.21-25.17/26326/3_PyomoFundamentals.pdf.
+
+# Rosenbrock
+rosenbrock = ConcreteModel() 
+rosenbrock.x = Var( initialize=-1.2, bounds=(-2, 2) ) 
+rosenbrock.y = Var( initialize= 1.0, bounds=(-2, 2) ) 
+rosenbrock.obj = Objective( expr= (1-model.x)**2 + 100*(model.y-model.x**2)**2, sense= minimize )
+
+
+# Knapsack
+items = ['hammer', 'wrench', 'screwdriver', 'towel'] 
+v = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
+w = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
+W_max = 14 
+
+knapsack = ConcreteModel() 
+knapsack.x = Var( items, within=Binary ) 
+knapsack.value = Objective( expr = sum( v[i]*model.x[i] for i in items ), sense = maximize ) knapsack.weight = Constraint( expr = sum( w[i]*model.x[i] for i in items ) <= W_max )
+
+
+# P-median
+N = 3 
+M = 4 
+P = 3 
+d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
+pmedian = ConcreteModel() 
+pmedian.Locations = range(N) 
+pmedian.Customers = range(M) 
+pmedian.x = Var( model.Locations, model.Customers, bounds=(0.0,1.0) ) 
+pmedian.y = Var( model.Locations, within=Binary )
+
+pmedian.obj = Objective( expr = sum( d[n,m]*model.x[n,m] for n in model.Locations for m in pmedian.Customers ) ) model.single_x = ConstraintList() for m in model.Customers: pmedian.single_x.add( sum( model.x[n,m] for n in model.Locations ) == 1.0 ) 
+pmedian.bound_y = ConstraintList()
+
+for n in model.Locations: 
+    for m in model.Customers: 
+        pmedian.bound_y.add( pmedian.x[n,m] <= model.y[n] ) 
+        pmedian.num_facilities = Constraint( expr=sum( pmedian.y[n] for n in pmedian.Locations ) == P )
+
+
+# Converting to Nevergrad.
+pyomo_rosenbrok = Pyomo(rosenbrock)
+pyomo_pmedian = Pyomo(pmedian)
+pyomo_knapsack = Pyomo(knapsack)
