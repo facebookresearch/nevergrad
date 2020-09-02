@@ -188,29 +188,37 @@ knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), se
 knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
 
 
-# P-median
-N = 3 
-M = 4 
-P = 3 
-d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
-pmedian = pyomo.ConcreteModel() 
-pmedian.Locations = range(1, N) 
-pmedian.Customers = range(1, M) 
-pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
-pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
+pyomo_list = [Pyomo(rosenbrock), Pyomo(knapsack)]
 
-pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*pmedian.x[n,m] for n in pmedian.Locations for m in pmedian.Customers))
-pmedian.single_x = pyomo.ConstraintList()
-for m in pmedian.Customers:
-    pmedian.single_x.add(sum(pmedian.x[n,m] for n in pmedian.Locations) == 1.0) 
-
-pmedian.bound_y = pyomo.ConstraintList()
-for n in pmedian.Locations: 
-    for m in pmedian.Customers: 
-        pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
-        pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
+for N in [3, 10, 30, 100]:
+    # P-median
+    M = N + 1
+    P = N
+    if N == 3:
+        d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
+    else:
+        d = {}
+        for i in range(1, N):
+            for j in range(1, M):
+                d[(i, j)] = ((N * 17 + i * 13 + j * 7) % 100) + 1.
+    pmedian = pyomo.ConcreteModel() 
+    pmedian.Locations = range(1, N+1) 
+    pmedian.Customers = range(1, M+1) 
+    pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
+    pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
+    
+    pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*pmedian.x[n,m] for n in pmedian.Locations for m in pmedian.Customers))
+    pmedian.single_x = pyomo.ConstraintList()
+    for m in pmedian.Customers:
+        pmedian.single_x.add(sum(pmedian.x[n,m] for n in pmedian.Locations) == 1.0) 
+    
+    pmedian.bound_y = pyomo.ConstraintList()
+    for n in pmedian.Locations: 
+        for m in pmedian.Customers: 
+            pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
+            pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
+    pyomo_list += [Pyomo(pmedian)]
 
 
 # Converting to Nevergrad.
-pyomo_list = [Pyomo(rosenbrock), Pyomo(pmedian), Pyomo(knapsack)]
 
