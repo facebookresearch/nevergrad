@@ -188,7 +188,8 @@ def get_pyomo_list():
     rosenbrock.y = pyomo.Var(initialize=1.0, bounds=(-2, 2)) 
     rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
     yield Pyomo(rosenbrock)
-    
+
+def get_extended_pyomo_list():
     # Knapsack
     for num_items in [4, 14, 44, 134]:
         print(f"Creating Knapsack{num_items}")
