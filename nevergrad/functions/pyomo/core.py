@@ -177,7 +177,6 @@ def get_pyomo_list():
     
     yield Pyomo(rosenbrock)
     
-    
     # Knapsack
     for num_items in [4, 14, 44, 134]:
         print(f"Creating Knapsack{num_items}")
