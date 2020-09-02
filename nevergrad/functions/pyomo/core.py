@@ -168,65 +168,66 @@ class Pyomo(base.ExperimentFunction):
 
 
 # Simple Pyomo models, based on https://www.ima.umn.edu/materials/2017-2018.2/W8.21-25.17/26326/3_PyomoFundamentals.pdf.
-
-# Rosenbrock
-rosenbrock = pyomo.ConcreteModel() 
-rosenbrock.x = pyomo.Var(initialize=-1.2, bounds=(-2, 2)) 
-rosenbrock.y = pyomo.Var(initialize= 1.0, bounds=(-2, 2)) 
-rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
-
-pyomo_list = [Pyomo(rosenbrock)]
-
-
-# Knapsack
-for num_items in [4, 14, 44, 134]:
-    if num_items == 4:
-        items = ['hammer', 'wrench', 'screwdriver', 'towel'] 
-        v = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
-        w = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
-        W_max = 14 
-    else:
-        items = [str(i) for i in range(num_items)]
-        v = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
-        w = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
-        W_max = 3 * num_items + 2
-
-    knapsack = pyomo.ConcreteModel() 
-    knapsack.x = pyomo.Var(items, within=pyomo.Binary) 
-    knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
-    knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
-
-    pyomo_list += Pyomo(knapsack)]
-
-for N in [3, 10, 30, 100]:
-    # P-median
-    M = N + 1
-    P = N
-    if N == 3:
-        d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
-    else:
-        d = {}
-        for i in range(1, N + 1):
-            for j in range(1, M + 1):
-                d[(i, j)] = ((N * 17 + i * 13 + j * 7) % 100) + 1.
-    pmedian = pyomo.ConcreteModel() 
-    pmedian.Locations = range(1, N+1) 
-    pmedian.Customers = range(1, M+1) 
-    pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
-    pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
+def get_pyomo_list():
+    # Rosenbrock
+    rosenbrock = pyomo.ConcreteModel() 
+    rosenbrock.x = pyomo.Var(initialize=-1.2, bounds=(-2, 2)) 
+    rosenbrock.y = pyomo.Var(initialize= 1.0, bounds=(-2, 2)) 
+    rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
     
-    pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*pmedian.x[n,m] for n in pmedian.Locations for m in pmedian.Customers))
-    pmedian.single_x = pyomo.ConstraintList()
-    for m in pmedian.Customers:
-        pmedian.single_x.add(sum(pmedian.x[n,m] for n in pmedian.Locations) == 1.0) 
+    pyomo_list = [Pyomo(rosenbrock)]
     
-    pmedian.bound_y = pyomo.ConstraintList()
-    for n in pmedian.Locations: 
-        for m in pmedian.Customers: 
-            pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
-            pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
-    pyomo_list += [Pyomo(pmedian)]
-
-
-# Converting to Nevergrad.
-
+    
+    # Knapsack
+    for num_items in [4, 14, 44, 134]:
+        print(f"Creating Knapsack{num_items}")
+        if num_items == 4:
+            items = ['hammer', 'wrench', 'screwdriver', 'towel'] 
+            v = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
+            w = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
+            W_max = 14 
+        else:
+            items = [str(i) for i in range(num_items)]
+            v = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
+            w = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
+            W_max = 3 * num_items + 2
+    
+        knapsack = pyomo.ConcreteModel() 
+        knapsack.x = pyomo.Var(items, within=pyomo.Binary) 
+        knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
+        knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
+    
+        pyomo_list += Pyomo(knapsack)]
+    
+    for N in [3, 10, 30, 100]:
+        print(f"Creating Pmedian{N}")
+        # P-median
+        M = N + 1
+        P = N
+        if N == 3:
+            d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
+        else:
+            d = {}
+            for i in range(1, N + 1):
+                for j in range(1, M + 1):
+                    d[(i, j)] = ((N * 17 + i * 13 + j * 7) % 100) + 1.
+        pmedian = pyomo.ConcreteModel() 
+        pmedian.Locations = range(1, N+1) 
+        pmedian.Customers = range(1, M+1) 
+        pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
+        pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
+        
+        pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*pmedian.x[n,m] for n in pmedian.Locations for m in pmedian.Customers))
+        pmedian.single_x = pyomo.ConstraintList()
+        for m in pmedian.Customers:
+            pmedian.single_x.add(sum(pmedian.x[n,m] for n in pmedian.Locations) == 1.0) 
+        
+        pmedian.bound_y = pyomo.ConstraintList()
+        for n in pmedian.Locations: 
+            for m in pmedian.Customers: 
+                pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
+                pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
+        pyomo_list += [Pyomo(pmedian)]
+    
+    return pyomo_list   
+    
