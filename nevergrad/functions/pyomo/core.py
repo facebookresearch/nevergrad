@@ -46,7 +46,7 @@ def _make_pyomo_range_set_to_parametrization(
         # Need to handle step size
         params[params_name] = p.Choice([range(*r) for r in domain.ranges()])  # Assume the ranges do not overlapped
     else:
-        raise NotImplementedError(f"Cannot handle domain type {type(domain)}")
+        raise NotImplementedError(f"Cannot handle domain type {type(domain)} with num_ranges == {num_ranges}")
     return params
 
 
@@ -73,6 +73,12 @@ def _make_pyomo_variable_to_parametrization(model_component: pyomo.Var, params: 
                     params[params_name] = p.Choice(list(v.domain.ordered_data()))
                 else:
                     params[params_name] = p.Choice(list(v.domain.data()))
+            elif isinstance(v.domain, pyomo.RealSet) and not v.domains.bounds()[0] and not v.domains.bounds()[1]:
+                params[params_name] = p.Scalar()
+            elif isinstance(v.domain, pyomo.RealSet):
+                assert v.domain.bounds()[0], f"{k} ==> {v.domain.bounds()[0]}"
+                assert v.domain.bounds()[1], f"{k} ==> {v.domain.bounds()[1]}"
+                params[params_name] = p.Scalar(lower=v.domain.bounds()[0], upper=v.domain.bounds()[1])
             else:
                 raise NotImplementedError(f"Cannot handle domain type {type(v.domain)}")
         else:
@@ -169,12 +175,18 @@ class Pyomo(base.ExperimentFunction):
 
 # Simple Pyomo models, based on https://www.ima.umn.edu/materials/2017-2018.2/W8.21-25.17/26326/3_PyomoFundamentals.pdf.
 def get_pyomo_list():
-    # Rosenbrock
+    model = pyomo.ConcreteModel()
+    model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
+    model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
+    yield Pyomo(model)
+
+    # Rosenbrock --- pb with continuous variables! NotImplementedError: Cannot handle domain type <class 'pyomo.core.kernel.set_types.RealSet'>
+    # I don't get it, because it looks like the code above should accept bounded ranges.
     rosenbrock = pyomo.ConcreteModel() 
+    #rosenbrock.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals, bounds=(-2, 2))
     rosenbrock.x = pyomo.Var(initialize=-1.2, bounds=(-2, 2)) 
-    rosenbrock.y = pyomo.Var(initialize= 1.0, bounds=(-2, 2)) 
+    rosenbrock.y = pyomo.Var(initialize=1.0, bounds=(-2, 2)) 
     rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
-    
     yield Pyomo(rosenbrock)
     
     # Knapsack
@@ -195,7 +207,6 @@ def get_pyomo_list():
         knapsack.x = pyomo.Var(items, within=pyomo.Binary) 
         knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
         knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
-    
         yield Pyomo(knapsack)
     
     for N in [3, 10, 30, 100]:
@@ -227,5 +238,3 @@ def get_pyomo_list():
                 pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
         pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
         yield Pyomo(pmedian)
-    
-    
