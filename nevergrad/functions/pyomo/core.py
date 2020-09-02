@@ -195,8 +195,8 @@ d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.
 pmedian = pyomo.ConcreteModel() 
 pmedian.Locations = range(N) 
 pmedian.Customers = range(M) 
-pmedian.x = pyomo.Var(model.Locations, model.Customers, bounds=(0.0,1.0)) 
-pmedian.y = pyomo.Var(model.Locations, within=pyomo.Binary)
+pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
+pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
 
 pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*model.x[n,m] for n in model.Locations for m in pmedian.Customers))
 model.single_x = pyomo.ConstraintList()
