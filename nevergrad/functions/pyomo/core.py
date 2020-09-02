@@ -139,7 +139,8 @@ class Pyomo(base.ExperimentFunction):
         exp_tag = ",".join([n.name for n in self.all_objectives])
         exp_tag += "|" + ",".join([n.name for n in self.all_vars])
         exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
-        self.register_initialization(name=exp_tag, model=self._model_instance)
+        self.register_initialization(model=self._model_instance)
+        #self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
