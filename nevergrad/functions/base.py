@@ -243,7 +243,7 @@ class ArrayExperimentFunction(ExperimentFunction):
     def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         assert len(x.shape) == 1, "only one-dimensional arrays for now."
-        y = x
+        y = np.array(x, copy=True)
         symmetry: int = self._symmetry  # type: ignore
         for i in range(len(y)):
             if symmetry % 2 == 1:
