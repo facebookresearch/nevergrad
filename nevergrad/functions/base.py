@@ -245,8 +245,8 @@ class ArrayExperimentFunction(ExperimentFunction):
         symmetry: int = self._symmetry  # type: ignore
         for i in range(len(y)):
             if symmetry % 2 == 1:
-                if parametrization.bounds[0] is not None and parametrization.bounds[1] is not None:
-                    middle = (parametrization.bounds[0][i] + parametrization.bounds[1][i]) / 2.
+                if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:
+                    middle = (self.parametrization.bounds[0][i] + self.parametrization.bounds[1][i]) / 2.
                 else:
                     middle = 0.
                 y[i] = middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
