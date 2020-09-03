@@ -24,11 +24,11 @@ def test_experiment_function() -> None:
         plop=p.Choice([3, 4]),
     ))
     iarrayfunc = base.ArrayExperimentFunction(lambda x: sum(x),   # type: ignore
-        p.Array(shape=(10,)),
+        p.Array(shape=(10,)).set_bounds(-0.5, 6.),
         symmetry=247,
     )
     iarrayfunc2 = base.ArrayExperimentFunction(lambda x: sum(x),   # type: ignore
-        p.Array(shape=(10,)),
+        p.Array(shape=(10,)).set_bounds(-0.5, 6.),
         symmetry=111,
     )
     np.testing.assert_equal(ifunc.dimension, 8)
