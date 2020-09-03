@@ -235,8 +235,7 @@ class ArrayExperimentFunction(ExperimentFunction):
         assert symmetry < 2 ** self.dimension
         self._inner_function = self._function
         # The number 11111111111111111111111 is prime (using a prime is an overkill but ok).
-        symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
-        self._symmetry = symmetry
+        self._symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
         if self._symmetry != 0:
             self._function = self.symmetrized_function
         else:
