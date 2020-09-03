@@ -333,7 +333,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
-            loss += candidate.penalty(self.num_ask, self.budget)
+            penalty = candidate.penalty(self.num_ask, self.budget)
+            if isinstance(loss, float):
+                loss += penalty
+            else:
+                for i in range(len(loss)):
+                    loss[i] += penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
