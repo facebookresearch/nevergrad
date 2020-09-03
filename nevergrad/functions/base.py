@@ -239,6 +239,8 @@ class ArrayExperimentFunction(ExperimentFunction):
             self._function = self.symmetrized_function
         else:
             self._function = function
+        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
+        self.register_initialization(**params)
 
     def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
