@@ -47,6 +47,11 @@ def test_empty_parameters(param: par.Dict) -> None:
 def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
     return True
 
+def _one(*args: tp.Any, **kwargs: tp.Any) -> float:  # pylint: disable=unused-argument
+    return 1.
+
+def _minus_one(*args: tp.Any, **kwargs: tp.Any) -> float:  # pylint: disable=unused-argument
+    return -1.
 
 @pytest.mark.parametrize("param", [par.Array(shape=(2, 2)),  # type: ignore
                                    par.Array(init=np.ones(3)).set_mutation(sigma=3, exponent=5),
@@ -231,6 +236,12 @@ def test_endogeneous_constraint() -> None:
     param = par.Scalar(1.0, mutable_sigma=True)
     param.sigma.register_cheap_constraint(_false)
     assert not param.satisfies_constraints()
+    param2 = par.Scalar(1.0, mutable_sigma=True)
+    param2.sigma.register_cheap_constraint(_one)
+    assert param2.satisfies_constraints()
+    param2 = par.Scalar(1.0, mutable_sigma=True)
+    param2.sigma.register_cheap_constraint(_minus_one)
+    assert not param2.satisfies_constraints()
 
 
 @pytest.mark.parametrize(  # type: ignore
