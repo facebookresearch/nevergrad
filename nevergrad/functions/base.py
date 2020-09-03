@@ -208,6 +208,7 @@ class ArrayExperimentFunction(ExperimentFunction):
     Extends ExperimentFunction, in the special case of an array, by allowing the creation of symmetries
     of a single function. We can create ArrayExperimentFunction(callable, symmetry=i) for i in range(0, 2**d)
     when the callable works on R^d.
+    Works only if there are no constraints.
 
     Parameters
     ----------
@@ -229,6 +230,7 @@ class ArrayExperimentFunction(ExperimentFunction):
         super().__init__(function, parametrization)
         assert isinstance(parametrization, p.Array), f"{type(parametrization)} is not p.Array; {parametrization.parameters}."
         assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
+        assert len(parametrization.constraints_checker) == 0
         assert symmetry >= 0
         assert symmetry < 2 ** self.dimension
         self._inner_function = self._function
@@ -245,7 +247,7 @@ class ArrayExperimentFunction(ExperimentFunction):
         symmetry: int = self._symmetry  # type: ignore
         for i in range(len(y)):
             if symmetry % 2 == 1:
-                if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:
+                if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
                     middle = (self.parametrization.bounds[0][i] + self.parametrization.bounds[1][i]) / 2.
                 else:
                     middle = 0.
