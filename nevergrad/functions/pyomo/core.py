@@ -73,12 +73,6 @@ def _make_pyomo_variable_to_parametrization(model_component: pyomo.Var, params: 
                     params[params_name] = p.Choice(list(v.domain.ordered_data()))
                 else:
                     params[params_name] = p.Choice(list(v.domain.data()))
-            elif isinstance(v.domain, pyomo.RealSet) and not v.domains.bounds()[0] and not v.domains.bounds()[1]:
-                params[params_name] = p.Scalar()
-            elif isinstance(v.domain, pyomo.RealSet):
-                assert v.domain.bounds()[0], f"{k} ==> {v.domain.bounds()[0]}"
-                assert v.domain.bounds()[1], f"{k} ==> {v.domain.bounds()[1]}"
-                params[params_name] = p.Scalar(lower=v.domain.bounds()[0], upper=v.domain.bounds()[1])
             else:
                 raise NotImplementedError(f"Cannot handle domain type {type(v.domain)}")
         else:
