@@ -33,8 +33,8 @@ def test_experiment_function() -> None:
     )
     np.testing.assert_equal(ifunc.dimension, 8)
     np.testing.assert_equal(iarrayfunc.dimension, 10)
-    assert (iarrayfunc(np.zeros(10)) == iarrayfunc.copy()(np.zeros(10))).all()
-    assert (iarrayfunc(np.ones(10)) != iarrayfunc2(np.ones(10))).any()
+    assert iarrayfunc(np.zeros(10)) == iarrayfunc.copy()(np.zeros(10))
+    assert iarrayfunc(np.ones(10)) != iarrayfunc2(np.ones(10))
     data = [-100.0, 100, 1, 2, 3, 4, 100, -100]
     args0, kwargs0 = ifunc.parametrization.spawn_child().set_standardized_data(data).value
     output = ifunc(*args0, **kwargs0)  # this is very stupid and should be removed when Parameter is in use
