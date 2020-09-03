@@ -87,6 +87,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self._max_constraints_trials: tp.Optional[int] = None
+        self._constraint_penalization: float = 0.
         self.budget = budget
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -333,7 +334,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
-            penalty = candidate.penalty(self.num_ask, self.budget)
+            penalty = self._constraint_penalization * candidate.penalty(self.num_ask, self.budget)
             if isinstance(loss, float):
                 loss += penalty
             else:
