@@ -338,8 +338,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if isinstance(loss, float):
                 loss += penalty
             else:
-                for i in range(len(loss)):
-                    loss[i] += penalty
+                for i in range(len(loss)):  # type: ignore
+                    loss[i] += penalty  # type: ignore
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
