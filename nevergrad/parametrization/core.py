@@ -286,7 +286,7 @@ class Parameter:
         val = self.value
         return (1.1**(num_ask/np.sqrt(budget))) * sum(float_penalty(func(val)) for func in self._constraint_checkers)
 
-    def register_cheap_constraint(self, func: tp.Callable[[tp.Any], tp.Union[bool, float]]) -> None:
+    def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
 
         Parameters
