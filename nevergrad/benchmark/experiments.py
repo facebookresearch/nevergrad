@@ -900,7 +900,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
-#@registry.register  # We do not register for now -- gray-box constraints (constraints with float values) first.
+@registry.register
 def pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Pyomo models.
     TODO: we need a comparison with Pyomo solves, and non-linear/complex variants of this.
