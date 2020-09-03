@@ -277,7 +277,7 @@ class Parameter:
             return True
         val = self.value
         def ok(x: tp.Union[bool, float]) -> bool:
-            return x if isinstance(x, bool) else (x >= 0)
+            return x >= 0. if isinstance(x, float) else x
         return all(ok(func(val)) for func in self._constraint_checkers)
 
     def penalty(self, num_ask: int, budget: int, exponent: float):
