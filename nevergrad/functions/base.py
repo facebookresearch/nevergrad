@@ -230,7 +230,7 @@ class ArrayExperimentFunction(ExperimentFunction):
         super().__init__(function, parametrization)
         assert isinstance(parametrization, p.Array), f"{type(parametrization)} is not p.Array; {parametrization.parameters}."
         assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
-        assert len(parametrization.constraints_checker) == 0
+        assert len(parametrization._constraints_checkers) == 0
         assert symmetry >= 0
         assert symmetry < 2 ** self.dimension
         self._inner_function = self._function
@@ -248,7 +248,7 @@ class ArrayExperimentFunction(ExperimentFunction):
         for i in range(len(y)):
             if symmetry % 2 == 1:
                 if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
-                    middle = (self.parametrization.bounds[0][i] + self.parametrization.bounds[1][i]) / 2.
+                    middle = (self.parametrization.bounds[0][i] + self.parametrization.bounds[1][i]) / 2.  # type: ignore
                 else:
                     middle = 0.
                 y[i] = middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
