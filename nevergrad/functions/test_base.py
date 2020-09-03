@@ -23,10 +23,10 @@ def test_experiment_function() -> None:
         constkwarg="blublu",
         plop=p.Choice([3, 4]),
     ))
-    iarrayfunc = base.ArrayExperimentFunction(_arg_return, p.Instrumentation(  # type: ignore
+    iarrayfunc = base.ArrayExperimentFunction(_arg_return,   # type: ignore
         p.Array(shape=(10,)),
         symmetry=247,
-    ))
+    )
     np.testing.assert_equal(ifunc.dimension, 8)
     data = [-100.0, 100, 1, 2, 3, 4, 100, -100]
     args0, kwargs0 = ifunc.parametrization.spawn_child().set_standardized_data(data).value

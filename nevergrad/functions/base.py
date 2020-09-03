@@ -227,9 +227,10 @@ class ArrayExperimentFunction(ExperimentFunction):
         for symmetry % 2^d gives one different function.
         Makes sense if and only if (1) the input is a single ndarray (2) the domains are symmetric."""
         super().__init__(function, parametrization)
-        assert isinstance(parametrization, p.Array)
+        assert isinstance(parametrization, p.Array), f"{type(parametrization)} is not p.Array; {parametrization.parameters}."
+        assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
         assert symmetry >= 0
-        assert symmetry < 2 ** dimension
+        assert symmetry < 2 ** self.dimension
         self._inner_function = self._function
         self._symmetry = symmetry
         if self._symmetry != 0:
@@ -244,7 +245,11 @@ class ArrayExperimentFunction(ExperimentFunction):
         symmetry: int = self._symmetry  # type: ignore
         for i in range(len(y)):
             if symmetry % 2 == 1:
-                y[i] = -x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
+                if parametrization.bounds[0] is not None and parametrization.bounds[1] is not None:
+                    middle = (parametrization.bounds[0][i] + parametrization.bounds[1][i]) / 2.
+                else:
+                    middle = 0.
+                y[i] = middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
             symmetry = symmetry // 2
         return self._inner_function(y)  # type: ignore
 
