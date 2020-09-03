@@ -335,11 +335,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraint_penalization * candidate.penalty(self.num_ask, self.budget)
-            if isinstance(loss, float):
-                loss += penalty
-            else:
-                for i in range(len(loss)):
-                    loss[i] += penalty
+            assert isinstance(loss, float)
+            assert isinstance(penalty, float)
+            loss = loss + penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
