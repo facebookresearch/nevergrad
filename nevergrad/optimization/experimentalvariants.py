@@ -13,6 +13,7 @@ from .optimizerlib import (
     ParametrizedCMA,
     ConfiguredPSO,
     ConfSplitOptimizer,
+    NGOpt2,
     ParametrizedBO,
     EMNA,
 )
