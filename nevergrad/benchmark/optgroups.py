@@ -37,8 +37,8 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
     return optims
 
 
-def get_str_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]:
-    return [optim.name for optim in get_optimizers(names, seed)]
+def get_str_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[str]:
+    return [optim.name if not isinstance(optim, str) else optim for optim in get_optimizers(names, seed)]
 
 
 @registry.register
