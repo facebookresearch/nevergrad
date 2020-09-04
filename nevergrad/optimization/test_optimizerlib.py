@@ -441,7 +441,7 @@ def test_shiwa_dim1() -> None:
      ("NGOpt", 1, 10, 2, "MetaModel"),
      ("NGOpt", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
      ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
-     ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
+     ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
      ("NGO", 1, 10, 1, "Cobyla"),
      ("NGO", 1, 10, 2, "CMA"),
      ]  # pylint: disable=too-many-arguments
