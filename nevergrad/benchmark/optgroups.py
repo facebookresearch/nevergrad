@@ -37,6 +37,10 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
     return optims
 
 
+def get_str_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]:
+    return [optim.name for optim in get_optimizers(names, seed)]
+
+
 @registry.register
 def large() -> tp.List[Optim]:
     return ["NGO", "Shiwa", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE",

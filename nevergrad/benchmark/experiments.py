@@ -35,6 +35,7 @@ from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 from .optgroups import get_optimizers
+from .optgroups import get_str_optimizers
 
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
@@ -519,7 +520,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd:
         optims += ["OnePlusOne"]
     if hd and noise:
-        optims += get_optimizers("splitters", seed=next(seedg))
+        optims += get_str_optimizers("splitters", seed=next(seedg))
 
     if default_optims is not None:
         optims = default_optims
@@ -676,7 +677,7 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "NGOpt2"]
-    optims += get_optimizers("splitters", seed=next(seedg))
+    optims += get_str_optimizers("splitters", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     # optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
@@ -709,7 +710,7 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]   
-    optims += get_optimizers("splitters", seed=next(seedg))
+    optims += get_str_optimizers("splitters", seed=next(seedg))
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
         ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
@@ -952,7 +953,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO",
               "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "NGOpt2"]
-    optims += get_optimizers("splitters", seed=next(seedg))
+    optims += get_str_optimizers("splitters", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -979,7 +980,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     if default_optims is not None:
         optims = default_optims
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    optims += get_optimizers("splitters", seed=next(seedg))
+    optims += get_str_optimizers("splitters", seed=next(seedg))
     budgets = [1600, 3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -1032,7 +1033,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
 
     optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
-    optims += get_optimizers("splitters", seed=next(seedg))
+    optims += get_str_optimizers("splitters", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for budget in [1000, 10000]:

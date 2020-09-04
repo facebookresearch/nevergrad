@@ -303,7 +303,7 @@ ProgONOPO9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_opt
 ProgONOPO13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgONOPO13", register=True
 )
-ProgONOPOInf = ConfSplitOptimizer(num_optims=1e7, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
+ProgONOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
     "ProgONOPOInf", register=True
 )
 ProgONOPOAuto = ConfSplitOptimizer(progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
@@ -322,13 +322,13 @@ ProgODOPO9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_opt
 ProgODOPO13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgODOPO13", register=True
 )
-ProgODOPOInf = ConfSplitOptimizer(num_optims=1e7, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+ProgODOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgODOPOInf", register=True
 )
 ProgODOPOAuto = ConfSplitOptimizer(progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgODOPOAuto", register=True
 )
-ProgNGOpt2 = ConfSplitOptimizer(progressive=True, multivariate_optimizer=NGOpt2).set_name(
+ProgNGOpt2 = ConfSplitOptimizer(progressive=True, multivariate_optimizer=NGOpt2).set_name(  # type:ignore
     "ProgNGOpt2", register=True
 )
 
