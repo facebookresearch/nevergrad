@@ -519,8 +519,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd:
         optims += ["OnePlusOne"]
     if hd and noise:
-        optims += ["ProgODOPO9", "ProgODOPO5", "ProgODOPO13"]
-        optims += ["ProgODOPO9", "ProgODOPO5", "ProgODOPO13"]
+        optims += get_optimizers("splitters", seed=next(seedg))
 
     if default_optims is not None:
         optims = default_optims
@@ -676,9 +675,8 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     With or without noise dissymmetry.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "NGOpt2"]
+    optims += get_optimizers("splitters", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     # optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
@@ -710,9 +708,8 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 25000, 50000, 100000.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]   
+    optims += get_optimizers("splitters", seed=next(seedg))
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
         ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
@@ -953,10 +950,9 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO",
-              "ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
               "CMA", "QrDE", "SplitCMA5", "NGO", "Shiwa", "DiagonalCMA",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "NGOpt2"]
+    optims += get_optimizers("splitters", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -982,9 +978,8 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13", "SplitCMAAuto"]
     if default_optims is not None:
         optims = default_optims
-    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
-               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
-               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims += get_optimizers("splitters", seed=next(seedg))
     budgets = [1600, 3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -1036,9 +1031,8 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     seedg = create_seed_generator(seed)
 
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
+    optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
+    optims += get_optimizers("splitters", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for budget in [1000, 10000]:

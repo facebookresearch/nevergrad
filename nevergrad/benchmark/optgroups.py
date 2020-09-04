@@ -57,6 +57,11 @@ def competence_map() -> tp.List[Optim]:
 
 
 @registry.register
+def splitters() -> tp.List[Optim]:
+    return sorted(x for x in ng.optimizers.registry if "Prog" in x)
+
+
+@registry.register
 def competitive() -> tp.List[Optim]:
     """A set of competitive algorithms
     """
