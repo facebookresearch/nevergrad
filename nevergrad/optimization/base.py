@@ -170,6 +170,22 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         return self._num_tell_not_asked
 
+    def set_constraints_management(max_constraints_trials: int, constraint_penalization: float, constraint_penalty_exponent: float,
+            penalize_cheap_violations: bool, memorize_constraint_failures: bool):
+        """We try max_constraints_trials random explorations for satisfying constraints.
+        The finally chosen point, if it does not satisfy constraints, is penalized as shown in the tell function.
+        """
+        assert max_constraints_trials >= 0
+        self._max_constraints_trials = max_constraints_trials
+        assert constraint_penalization >= 0.
+        self._constraint_penalization = constraint_penalization
+        assert constraint_penalty_exponent >= 1.
+        self._constraint_penalty_exponent = constraint_penalty_exponent
+        self._penalize_cheap_violations = penalize_cheap_violations
+        self._memorize_constraint_failures = memorize_constraint_failures
+        assert not (memorize_constraint_failures and penalize_cheap_violations)  # both simultaneously does not make sense.
+            #if self._penalize_cheap_violations or (k == MAX_TENTATIVES - 2 and self._memorize_constraint_failures):  # a tell may help before last tentative
+
     def pareto_front(
         self,
         size: tp.Optional[int] = None,
@@ -420,7 +436,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
+            if self._penalize_cheap_violations or (k == MAX_TENTATIVES - 2 and self._memorize_constraint_failures):  # a tell may help before last tentative
                 self._internal_tell_candidate(candidate, float("Inf"))
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
             if k == MAX_TENTATIVES - 1:

@@ -57,6 +57,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
               "DoubleFastGADiscreteOnePlusOne", "PSO", "BO", "MetaTuneRecentering"]
     if default_optims is not None:
         optims = default_optims
+    optims += ["Shiwa"] + ["ShiwaC" + str(i) for i in range(9)]
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (
@@ -131,6 +132,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NoisyDiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
     if default_optims is not None:
         optims = default_optims
+    optims += ["Shiwa"] + ["ShiwaC" + str(i) for i in range(9)]
     for optim in optims:
         for function in functions:
             for budget in [50, 500, 5000, 50000]:
@@ -661,6 +663,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims = get_optimizers("large", seed=next(seedg))
+            optims += ["Shiwa"] + ["ShiwaC" + str(i) for i in range(9)]
             for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
