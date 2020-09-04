@@ -170,7 +170,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         return self._num_tell_not_asked
 
-    def set_constraints_management(max_constraints_trials: int, constraint_penalization: float, constraint_penalty_exponent: float,
+    def set_constraints_management(self, max_constraints_trials: int, constraint_penalization: float, constraint_penalty_exponent: float,
             penalize_cheap_violations: bool, memorize_constraint_failures: bool):
         """We try max_constraints_trials random explorations for satisfying constraints.
         The finally chosen point, if it does not satisfy constraints, is penalized as shown in the tell function.
