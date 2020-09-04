@@ -2074,6 +2074,6 @@ class NGOpt4(base.Optimizer):
 
 
 @registry.register
-class NGOpt(NGOpt2):
+class NGOpt(NGOpt4):
     pass
 
