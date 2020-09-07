@@ -489,10 +489,34 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
+def _positive_sum(data: np.ndarray) -> bool:  # This one is Boolean.
+    if not isinstance(data, np.ndarray):
+        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+    return float(np.sum(data)) > 0
+
+
+def _positive_diff(data: np.ndarray) -> float:
+    if not isinstance(data, np.ndarray):
+        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+    return float(np.sum(data[::2]) - np.sum(data[1::2]))
+
+
+def _positive_second_diff(data: np.ndarray) -> float:
+    if not isinstance(data, np.ndarray):
+        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+    return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
+
+
+def _ball(data: np.ndarray) -> float:
+    if not isinstance(data, np.ndarray):
+        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+    return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
+
+
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-           noise: bool = False, hd: bool = False) -> tp.Iterator[Experiment]:
+        noise: bool = False, hd: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     Dimension 2, 10 and 50.
@@ -532,6 +556,17 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
+    # Constraints.
+    assert constraints < 5, "We have only four possible constraints."
+    for func in functions:
+        if constraints > 0:
+            func.parametrization.register_cheap_constraint(_positive_sum)
+        if constraints > 1:
+            func.parametrization.register_cheap_constraint(_positive_diff)
+        if constraints > 2:
+            func.parametrization.register_cheap_constraint(_positive_second_diff)
+        if constraints > 3:
+            func.parametrization.register_cheap_constraint(_ball)
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise):
         budgets = [40000, 80000, 160000, 320000]
@@ -552,6 +587,23 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     internal_generator = yabbob(seed, hd=True, noise=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    internal_generator = yabbob(seed, constraints=1)
+    for xp in internal_generator:
+        yield xp
+    internal_generator = yabbob(seed, constraints=2)
+    for xp in internal_generator:
+        yield xp
+    internal_generator = yabbob(seed, constraints=3)
+    for xp in internal_generator:
+        yield xp
+    internal_generator = yabbob(seed, constraints=4)
     for xp in internal_generator:
         yield xp
 
@@ -642,11 +694,6 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 if not xp.is_incoherent:
                     yield xp
 
-
-def _positive_sum(data: np.ndarray) -> bool:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(data)) > 0
 
 
 @registry.register
