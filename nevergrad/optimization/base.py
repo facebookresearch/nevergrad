@@ -14,7 +14,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
 from nevergrad.common.decorators import Registry
 from . import utils
-from .multiobjective import HypervolumePareto
+from . import multiobjective as mobj
 
 
 registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
@@ -112,12 +112,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
         # multiobjective
-        self._hypervolume_pareto: tp.Optional[HypervolumePareto] = None
+        self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
+        self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
+        self._first_tell_done = False  # set to True at the beginning of the first tell
         self._suggestions: tp.Deque[p.Parameter] = deque()
         self._num_ask = 0
-        self._num_tell = 0
+        self._num_tell = 0  # increases after each successful tell
         self._num_tell_not_asked = 0
         self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
@@ -139,7 +141,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def num_objectives(self) -> int:
-        if not self._num_tell and self._hypervolume_pareto is None:
+        if not self._first_tell_done:
             raise RuntimeError('Unknown number of objectives, provide a "tell" first.')
         return 1 if self._hypervolume_pareto is None else self._hypervolume_pareto.num_objectives
 
@@ -184,9 +186,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         --------
         list
             the list of Parameter of the pareto front
+
+        Note
+        ----
+        During non-multiobjective optimization, this returns the current pessimistic best
         """
         if self._hypervolume_pareto is None:
-            raise RuntimeError("No pareto front with a single objective")
+            return [self.current_bests["pessimistic"].parameter]
         return self._hypervolume_pareto.pareto_front(size=size, subset=subset, subset_tentatives=subset_tentatives)
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
@@ -302,16 +308,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             )
         # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
-        # call callbacks for logging etc...
-        for callback in self._callbacks.get("tell", []):
-            callback(self, candidate, loss)
+        self._first_tell_done = True
         # add reference if provided
         if isinstance(candidate, p.MultiobjectiveReference):
             if self._hypervolume_pareto is not None:
                 raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
-            self._hypervolume_pareto = HypervolumePareto(upper_bounds=loss)
+            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss)
             if candidate.value is None:
                 return
             candidate = candidate.value
@@ -320,8 +324,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             candidate._losses = loss
         if not isinstance(loss, float):
             loss = self._preprocess_multiobjective(candidate)
+        # call callbacks for logging etc...
         candidate.loss = loss
         assert isinstance(loss, float)
+        for callback in self._callbacks.get("tell", []):
+            # multiobjective reference is not handled :s
+            # but this allows obtaining both scalar and multiobjective loss (through losses)
+            callback(self, candidate, loss)
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
@@ -334,7 +343,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
-            self._hypervolume_pareto = HypervolumePareto()
+            self._hypervolume_pareto = mobj.HypervolumePareto(auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND)
         return self._hypervolume_pareto.add(candidate)
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:

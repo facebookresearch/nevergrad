@@ -118,6 +118,7 @@ class _OnePlusOne(base.Optimizer):
                                      mutator.get_roulette(self.archive, num=2))
             return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
+
         mutation = self.mutation
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (self._rng.normal(0, 1, self.dimension) if mutation == "gaussian" else
@@ -231,6 +232,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         crossover: bool = False
     ) -> None:
         super().__init__(_OnePlusOne, locals())
+
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
@@ -550,6 +552,7 @@ class _TBPSA(base.Optimizer):
             # Sorting the population.
             self.children.sort(key=lambda c: c.loss)
             # Computing the new parent.
+
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = sum(c.get_standardized_data(reference=self.parametrization)  # type: ignore
@@ -868,15 +871,22 @@ class SplitOptimizer(base.Optimizer):
             progressive: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if num_vars is not None:
-            if num_optims is not None:
+        if num_vars is not None:  # The user has specified how are the splits (s)he wants.
+            if num_optims is not None:  # (S)he also specifies the number of splits.
                 assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
-            else:
+            else:  # Better: we deduce the number of splits.
                 num_optims = len(num_vars)
             assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
-        else:
-            if num_optims is None:  # if no num_vars and no num_optims, just assume 2.
-                num_optims = 2
+        else:  # The user did not specify the number of vars per split.
+            if num_optims is None:  # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
+                if isinstance(parametrization, p.Parameter):
+                    param_val = [x[1] for x in sorted(parametrization.value.items(), key=lambda x: int(x[0]))]
+                    num_vars = []
+                    for param_v in param_val:
+                        num_vars += [param_v.dimension if isinstance(param_v, p.Parameter) else 1]
+                    num_optims = len(num_vars)
+                else:  # Desperate situation: just split in 2.
+                    num_optims = 2
             # if num_vars not given: we will distribute variables equally.
         if num_optims > self.dimension:
             num_optims = self.dimension
@@ -1515,11 +1525,12 @@ class _Chain(base.Optimizer):
         self.optimizers: tp.List[base.Optimizer] = []
         converter = {"num_workers": self.num_workers, "dimension": self.dimension,
                      "half": self.budget // 2 if self.budget else self.num_workers,
+                     "third": self.budget // 3 if self.budget else self.num_workers,
                      "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers}
-        self.budgets = [converter[b] if isinstance(b, str) else b for b in budgets]
+        self.budgets = [max(1, converter[b]) if isinstance(b, str) else b for b in budgets]
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
-        assert all(x in ("half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets)
+        assert all(x in ("third", "half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
 
@@ -1566,8 +1577,15 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
+
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
+chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name("chainDiagonalCMAPowell", register=True)
+chainDiagonalCMAPowell.no_parallelization = True
+chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name("chainNaiveTBPSAPowell", register=True)
+chainNaiveTBPSAPowell.no_parallelization = True
+chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name("chainNaiveTBPSACMAPowell", register=True)
+chainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
@@ -1879,8 +1897,7 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, loss)
 
 
-@registry.register
-class NGOpt(base.Optimizer):
+class NGOpt2(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
@@ -1915,13 +1932,13 @@ class NGOpt(base.Optimizer):
                             elif self.dimension < 5 and budget < 100:
                                 optimClass = DiagonalCMA  # type: ignore
                             elif self.dimension < 5 and budget < 500:
-                                optimClass = MetaModel  # type: ignore
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)  # type: ignore
                             else:
                                 optimClass = NaiveTBPSA  # type: ignore
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = chainCMAPowell  # type: ignore
+                                optimClass = chainNaiveTBPSACMAPowell  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
@@ -1955,5 +1972,108 @@ class NGOpt(base.Optimizer):
     def recommend(self) -> p.Parameter:
         return self.optim.recommend()
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, value)
+
+ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
+    "ProgD13", register=True
+)
+@registry.register
+class NGOpt4(base.Optimizer):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        # Extracting info as far as possible.
+        descr = self.parametrization.descriptors
+        self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
+        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
+        # We multiply check that it's continuous.
+        self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            if budget > 10000:
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+            else:
+                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+        elif arity > 0:
+            if arity == 2:
+                optimClass = DiscreteOnePlusOne  # type: ignore
+            else:
+                if arity < 5:
+                    optimClass = AdaptiveDiscreteOnePlusOne  # type: ignore
+                else:
+                    optimClass = CMandAS2  # type: ignore
+            #optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
+        else:
+            # pylint: disable=too-many-nested-blocks
+            if self.has_noise and self.fully_continuous and self.dimension > 100:
+                # Waow, this is actually a discrete algorithm.
+                optimClass = ProgD13  # My guess is that we could do better by a sophisticated use of dimension / budget.
+            else:
+                if self.has_noise and self.fully_continuous:
+                    if budget > 100:
+                        optimClass = SQP
+                    else:
+                        # This is the realm of population control. FIXME: should we pair with a bandit ?
+                        optimClass = TBPSA  # type: ignore
+                else:
+                    if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
+                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
+                    else:
+                        if num_workers > budget / 5:
+                            if num_workers > budget / 2. or budget < self.dimension:
+                                optimClass = MetaTuneRecentering  # type: ignore
+                            elif self.dimension < 5 and budget < 100:
+                                optimClass = DiagonalCMA  # type: ignore
+                            elif self.dimension < 5 and budget < 500:
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)  # type: ignore
+                            else:
+                                optimClass = NaiveTBPSA  # type: ignore
+                        else:
+                            # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                            if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
+                                optimClass = chainNaiveTBPSACMAPowell  # type: ignore
+                            else:
+                                if num_workers == 1 and budget < self.dimension * 30:
+                                    if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                        optimClass = OnePlusOne  # type: ignore
+                                    elif self.dimension < 5:
+                                        optimClass = MetaModel  # type: ignore
+                                    else:
+                                        optimClass = Cobyla  # type: ignore
+                                else:
+                                    if self.dimension > 2000:  # DE is great in such a case (?).
+                                        optimClass = DE  # type: ignore
+                                    else:
+                                        if self.dimension < 10 and budget < 500:
+                                            optimClass = MetaModel  # type: ignore
+                                        else:
+                                            if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
+                                                optimClass = DiagonalCMA  # type: ignore
+                                            elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
+                                                optimClass = MetaModel  # type: ignore
+                                            else:
+                                                optimClass = CMA  # type: ignore
+        self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        return self.optim.ask()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self.optim.tell(candidate, loss)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, value)
+
+
+@registry.register
+class NGOpt(NGOpt4):
+    pass
+
