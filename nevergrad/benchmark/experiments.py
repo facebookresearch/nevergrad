@@ -934,7 +934,8 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              control.Walker2d(num_rollouts=5, random_state=seed),
              control.Humanoid(num_rollouts=5, random_state=seed)
              ]
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne"]
+    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
+              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
     for budget in [500, 1000, 3000, 5000]:
         for num_workers in [1]:
