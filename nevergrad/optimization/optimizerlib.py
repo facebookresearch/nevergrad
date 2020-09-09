@@ -903,7 +903,7 @@ class SplitOptimizer(base.Optimizer):
             # Building the parametrization for blocs. Unfortunately forwards everywhere, this might be suboptimal; work in progress.
             self.parametrizations += [p.Array(shape=(self.num_vars[i],))]
             descr = self.parametrization.descriptors
-            self.parametrizations[-1].descriptors = descr
+            self.parametrizations[-1]._descriptors = descr.copy()
             all_params = paramhelpers.flatten_parameter(self.parametrization)
             has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values()) or descr.has_discrete_not_softmax
             self.parametrizations[-1].descriptors.has_discrete_not_softmax = has_discrete_not_softmax
