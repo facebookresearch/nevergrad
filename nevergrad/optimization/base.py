@@ -455,11 +455,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or (k == MAX_TENTATIVES - 2 and self._memorize_constraint_failures):  # a tell may help before last tentative
+            if self._penalize_cheap_violations or (k == self._max_constraints_trials - 2 and self._memorize_constraint_failures):  # a tell may help before last tentative
                 self._internal_tell_candidate(candidate, float("Inf"))
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-            if k == MAX_TENTATIVES - 1:
-                warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+            if k == self._max_constraints_trials - 1:
+                warnings.warn(f"Could not bypass the constraint after {self._max_constraints_trials} tentatives, sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
