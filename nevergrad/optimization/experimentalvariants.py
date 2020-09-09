@@ -333,7 +333,6 @@ ProgNGOpt4 = ConfSplitOptimizer(progressive=True, multivariate_optimizer=NGOpt4)
 )
 
 
-
 # Random search
 Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
 StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)
