@@ -594,18 +594,13 @@ def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    internal_generator = yabbob(seed, constraints=1)
-    for xp in internal_generator:
-        yield xp
-    internal_generator = yabbob(seed, constraints=2)
-    for xp in internal_generator:
-        yield xp
-    internal_generator = yabbob(seed, constraints=3)
-    for xp in internal_generator:
-        yield xp
-    internal_generator = yabbob(seed, constraints=4)
-    for xp in internal_generator:
-        yield xp
+    for i in range(1, 5):
+        internal_generator = yabbob(seed, constraints=i)
+        j = 0
+        for xp in internal_generator:
+            j = j + 1
+            if j % 4 == i - 1:  # We use only one test case out of 4, due to computational cost.
+                yield xp
 
 
 @registry.register
