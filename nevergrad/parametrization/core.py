@@ -38,7 +38,8 @@ class Parameter:
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
+        #self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
+        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
@@ -277,14 +278,9 @@ class Parameter:
             return True
         val = self.value
         def ok(x: tp.Union[bool, float]) -> bool:
+            """Adapts a constraints (possibly formulated as a float >= 0 or as a bool) to the generic boolean case."""
             return x >= 0. if isinstance(x, float) else x
         return all(ok(func(val)) for func in self._constraint_checkers)
-
-    def penalty(self, num_ask: int, budget: int, exponent: float):
-        def float_penalty(x: tp.Union[bool, float]) -> float:
-            return 1 if x is False else 0 if x is True else -x if x < 0 else 0
-        val = self.value
-        return (exponent ** (num_ask / np.sqrt(budget))) * sum(float_penalty(func(val)) for func in self._constraint_checkers)
 
     def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
@@ -292,7 +288,8 @@ class Parameter:
         Parameters
         ----------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraints.
+            function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
+            or a float which is >= 0. if the constraint is satisfied (if output = float).
 
         Note
         ----
