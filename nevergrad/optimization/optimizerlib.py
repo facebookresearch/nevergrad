@@ -908,7 +908,8 @@ class SplitOptimizer(base.Optimizer):
             has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values()) or descr.has_discrete_not_softmax
             self.parametrizations[-1].descriptors.has_discrete_not_softmax = has_discrete_not_softmax
             arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
-            self.parametrizations[-1].descriptors.arity = arity 
+            self.parametrizations[-1].descriptors.big_arity = arity > 4 
+            self.parametrizations[-1].descriptors.arity2 = arity == 2
 
             for param in self.parametrizations:
                 param.random_state = self.parametrization.random_state
@@ -2001,8 +2002,10 @@ class NGOpt4(base.Optimizer):
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values()) or descr.has_discrete_not_softmax
         arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
-        if descr.arity > 0:
-            arity = max(arity, descr.arity)
+        if descr.big_arity:
+            arity = max(arity, 5)
+        if descr.arity2:
+            arity = max(arity, 2)
 
         # We multiply check that it's continuous.
         self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0

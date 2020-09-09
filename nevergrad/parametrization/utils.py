@@ -28,6 +28,9 @@ class Descriptors:
         continuous: bool = True,
         metrizable: bool = True,
         ordered: bool = True,
+        has_discrete_not_softmax: bool = False,
+        big_arity: bool = False,
+        arity2: bool = False,
     ) -> None:
         self.deterministic = deterministic
         self.deterministic_function = deterministic_function
@@ -36,6 +39,9 @@ class Descriptors:
         self.ordered = ordered
         self.monoobjective = monoobjective
         self.not_manyobjective = not_manyobjective
+        self.has_discrete_not_softmax = has_discrete_not_softmax
+        self.big_arity = big_arity
+        self.arity2 = arity2
 
     def __and__(self, other: "Descriptors") -> "Descriptors":
         values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
