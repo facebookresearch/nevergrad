@@ -30,6 +30,7 @@ from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
+#from .lamcts import LamctsOptimizer  # noqa: F403
 
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -1307,7 +1308,6 @@ class PolyCMA(CM):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers) for _ in range(20)]
-
         self.budget_before_choosing = budget // 3
 
 
@@ -2073,6 +2073,4 @@ class NGOpt4(base.Optimizer):
         self.optim.tell(candidate, value)
 
 
-@registry.register
-class NGOpt(NGOpt4):
-    pass
+Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)
