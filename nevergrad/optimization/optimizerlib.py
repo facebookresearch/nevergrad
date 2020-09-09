@@ -900,7 +900,14 @@ class SplitOptimizer(base.Optimizer):
                 self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
 
             assert self.num_vars[i] >= 1, "At least one variable per optimizer."
+            # Building the parametrization for blocs. Unfortunately forwards everywhere, this might be suboptimal; work in progress.
             self.parametrizations += [p.Array(shape=(self.num_vars[i],))]
+            descr = self.parametrization.descriptors
+            self.parametrizations[-1].descriptors.update(descr)
+            all_params = paramhelpers.flatten_parameter(self.parametrization)
+            has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values()) or descr.has_discrete_not_softmax
+            self.parametrizations[-1].descriptors.has_discrete_not_softmax = has_discrete_not_softmax
+
             for param in self.parametrizations:
                 param.random_state = self.parametrization.random_state
             assert len(self.optims) == i
@@ -1659,7 +1666,7 @@ class NGO(base.Optimizer):
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
+        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values()) or descr.has_discrete_not_softmax
         # pylint: disable=too-many-nested-blocks
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
@@ -1990,8 +1997,11 @@ class NGOpt4(base.Optimizer):
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
+        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values()) or descr.has_discrete_not_softmax
         arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
+        if descr["arity"] > 0:
+            arity = max(arity, descr.arity)
+
         # We multiply check that it's continuous.
         self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
