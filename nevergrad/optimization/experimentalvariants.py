@@ -13,7 +13,7 @@ from .optimizerlib import (
     ParametrizedCMA,
     ConfiguredPSO,
     ConfSplitOptimizer,
-    NGOpt2,
+    NGOpt4,
     ParametrizedBO,
     EMNA,
 )
@@ -328,8 +328,8 @@ ProgODOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=True, multivari
 ProgODOPOAuto = ConfSplitOptimizer(progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgODOPOAuto", register=True
 )
-ProgNGOpt2 = ConfSplitOptimizer(progressive=True, multivariate_optimizer=NGOpt2).set_name(  # type:ignore
-    "ProgNGOpt2", register=True
+ProgNGOpt4 = ConfSplitOptimizer(progressive=True, multivariate_optimizer=NGOpt4).set_name(  # type:ignore
+    "ProgNGOpt4", register=True
 )
 
 
