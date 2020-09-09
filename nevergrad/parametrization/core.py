@@ -288,7 +288,8 @@ class Parameter:
         Parameters
         ----------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraints.
+            function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
+            or a float which is >= 0. if the constraint is satisfied (if output = float).
 
         Note
         ----
