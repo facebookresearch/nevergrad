@@ -170,11 +170,22 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         return self._num_tell_not_asked
 
+    def penalty(self, candidate: p.Parameter):
+        def float_penalty(x: tp.Union[bool, float]) -> float:
+            """Unifies penalties as float (bool=False becomes 1)."""
+            return 1 if x is False else 0 if x is True else -x if x < 0 else 0
+        # Extract useful data from self.
+        val = candidate.value
+        budget = self.budget
+        num_ask = self._num_ask
+        exponent = self._constraint_penalty_exponent
+        return self._constraint_penalization * (exponent ** (num_ask / np.sqrt(budget))) * sum(float_penalty(func(val)) for func in self._constraint_checkers)
+
     def set_constraints_management(self, max_constraints_trials: tp.Optional[int] = None,
             constraint_penalization: tp.Optional[float] = None, constraint_penalty_exponent: tp.Optional[float] = None,
             penalize_cheap_violations: tp.Optional[bool] = None, memorize_constraint_failures: tp.Optional[bool] = None):
         """Try max_constraints_trials random explorations for satisfying constraints.
-        The finally chosen point, if it does not satisfy constraints, is penalized as shown in the tell function,
+        The finally chosen point, if it does not satisfy constraints, is penalized as shown in the penalty function,
         using coeffcieints mentioned here.
         Parameters
         ----------
@@ -374,7 +385,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
-            penalty = self._constraint_penalization * candidate.penalty(self.num_ask, self.budget, self._constraint_penalty_exponent)
+            penalty = penalty(candidate)
             assert isinstance(loss, float)
             assert isinstance(penalty, float)
             loss = loss + penalty
