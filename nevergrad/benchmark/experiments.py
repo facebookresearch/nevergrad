@@ -935,9 +935,9 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              control.Humanoid(num_rollouts=5, random_state=seed)
              ]
     optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
+              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering", "Lamcts"]
 
-    for budget in [500, 1000, 3000, 5000]:
+    for budget in [8000, 16000, 32000, 64000]:  # [500, 1000, 3000, 5000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
