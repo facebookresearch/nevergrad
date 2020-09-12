@@ -131,7 +131,7 @@ class Pyomo(base.ExperimentFunction):
         if len(self.all_objectives) > 1:
             raise NotImplementedError("Multi-objective function is not supported yet.")
 
-        self._value_assignment_code_obj = None
+        self._value_assignment_code_obj = ""
 
         instru = p.Instrumentation(**instru_params)
         for c_idx in range(0, len(self.all_constraints)):
@@ -146,7 +146,7 @@ class Pyomo(base.ExperimentFunction):
 
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
-        if self._value_assignment_code_obj is None:
+        if self._value_assignment_code_obj == "":
             code_str = ""
             for k in k_model_variables:
                 code_str += f"self._model_instance.{k} = k_model_variables['{k}']\n"
