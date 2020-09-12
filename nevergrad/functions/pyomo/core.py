@@ -168,7 +168,7 @@ class Pyomo(base.ExperimentFunction):
             return bool(pyomo.value(self.all_constraints[i].expr(self._model_instance)))
         elif isinstance(self.all_constraints[i], pyomo.base.constraint.IndexedConstraint):
             ret = True
-            for k, c in self.all_constraints[i].items():
+            for _, c in self.all_constraints[i].items():
                 ret = ret and pyomo.value(c.expr(self._model_instance))
                 if not ret:
                     break
