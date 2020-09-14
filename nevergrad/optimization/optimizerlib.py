@@ -1589,6 +1589,19 @@ chainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
+class robust_slow(ASCMADEQRthird):
+    """Algorithm selection, with DE and a chaining. Active selection at 1/4."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.optims = [
+            chainNaiveTBPSACMAPowell(self.parametrization, budget=None, num_workers=num_workers),
+            DE(self.parametrization, budget=None, num_workers=num_workers),
+        ]  # noqa: F405
+        self.budget_before_choosing = budget // 4
+
+
+@registry.register
 class cGA(base.Optimizer):
     """`Compact Genetic Algorithm <https://ieeexplore.ieee.org/document/797971>`_.
     A discrete optimization algorithm, introduced in and often used as a first baseline.
@@ -2036,6 +2049,101 @@ class NGOpt4(base.Optimizer):
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
                                 optimClass = chainNaiveTBPSACMAPowell  # type: ignore
+                            else:
+                                if num_workers == 1 and budget < self.dimension * 30:
+                                    if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                        optimClass = OnePlusOne  # type: ignore
+                                    elif self.dimension < 5:
+                                        optimClass = MetaModel  # type: ignore
+                                    else:
+                                        optimClass = Cobyla  # type: ignore
+                                else:
+                                    if self.dimension > 2000:  # DE is great in such a case (?).
+                                        optimClass = DE  # type: ignore
+                                    else:
+                                        if self.dimension < 10 and budget < 500:
+                                            optimClass = MetaModel  # type: ignore
+                                        else:
+                                            if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
+                                                optimClass = DiagonalCMA  # type: ignore
+                                            elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
+                                                optimClass = MetaModel  # type: ignore
+                                            else:
+                                                optimClass = CMA  # type: ignore
+        self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        return self.optim.ask()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, value)
+
+
+@registry.register
+class NGOpt5(base.Optimizer):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        # Extracting info as far as possible.
+        descr = self.parametrization.descriptors
+        self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
+        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
+        # We multiply check that it's continuous.
+        self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            if budget > 10000:
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+            else:
+                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+        elif arity > 0:
+            if arity == 2:
+                optimClass = DiscreteOnePlusOne  # type: ignore
+            else:
+                if arity < 5:
+                    optimClass = AdaptiveDiscreteOnePlusOne  # type: ignore
+                else:
+                    optimClass = CMandAS2  # type: ignore
+            #optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
+        else:
+            # pylint: disable=too-many-nested-blocks
+            if self.has_noise and self.fully_continuous and self.dimension > 100:
+                # Waow, this is actually a discrete algorithm.
+                optimClass = ProgD13  # My guess is that we could do better by a sophisticated use of dimension / budget.
+            else:
+                if self.has_noise and self.fully_continuous:
+                    if budget > 100:
+                        optimClass = SQP
+                    else:
+                        # This is the realm of population control. FIXME: should we pair with a bandit ?
+                        optimClass = TBPSA  # type: ignore
+                else:
+                    if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
+                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
+                    else:
+                        if num_workers > budget / 5:
+                            if num_workers > budget / 2. or budget < self.dimension:
+                                optimClass = MetaTuneRecentering  # type: ignore
+                            elif self.dimension < 5 and budget < 100:
+                                optimClass = DiagonalCMA  # type: ignore
+                            elif self.dimension < 5 and budget < 500:
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)  # type: ignore
+                            else:
+                                optimClass = NaiveTBPSA  # type: ignore
+                        else:
+                            # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                            if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
+                                optimClass = robust_slow(self.parametrization, budget, num_workers)  # noqa: F405
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
