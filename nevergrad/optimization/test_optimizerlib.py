@@ -75,7 +75,7 @@ def check_optimizer(
                 raise SkipTest("When many algorithms are in the portfolio we are not good for small budget.")
             # now optimize :)
             candidate = optimizer.minimize(fitness)
-        if verify_value and "chain" not in str(optimizer_cls):
+        if verify_value and "chain" not in str(optimizer_cls) and "slow" not in str(optimizer_cls):
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
