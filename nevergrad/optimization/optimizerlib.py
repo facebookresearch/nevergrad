@@ -1594,6 +1594,7 @@ class robust_slow(ASCMADEQRthird):
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
         self.optims = [
             chainNaiveTBPSACMAPowell(self.parametrization, budget=None, num_workers=num_workers),
             DE(self.parametrization, budget=None, num_workers=num_workers),
@@ -2143,7 +2144,7 @@ class NGOpt5(base.Optimizer):
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = robust_slow(self.parametrization, budget, num_workers)  # noqa: F405
+                                optimClass = robust_slow(self.parametrization, budget, num_workers)  # type: ignore
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
