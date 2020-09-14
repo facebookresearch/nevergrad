@@ -1592,6 +1592,8 @@ chainNaiveTBPSACMAPowell.no_parallelization = True
 class robust_slow(ASCMADEQRthird):
     """Algorithm selection, with DE and a chaining. Active selection at 1/4."""
 
+    no_parallelization = True
+
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
