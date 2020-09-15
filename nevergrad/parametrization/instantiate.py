@@ -9,9 +9,9 @@ import tempfile
 import operator
 import contextlib
 from pathlib import Path
-from typing import Union, List, Any, Optional, Generator, Set, Match, Dict
 import numpy as np
-from ..common import testing
+import nevergrad.common.typing as tp
+from nevergrad.common import testing
 from . import utils
 
 
@@ -19,7 +19,7 @@ LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file
 COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#", ".m": "%"}
 
 
-def _convert_to_string(data: Any, extension: str) -> str:
+def _convert_to_string(data: tp.Any, extension: str) -> str:
     """Converts the data into a string to be injected in a file
     """
     if isinstance(data, np.ndarray):
@@ -37,29 +37,29 @@ class Placeholder:
 
     pattern = r'NG_ARG' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
 
-    def __init__(self, name: str, comment: Optional[str]) -> None:
+    def __init__(self, name: str, comment: tp.Optional[str]) -> None:
         self.name = name
         self.comment = comment
 
     @classmethod
-    def finditer(cls, text: str) -> List['Placeholder']:
+    def finditer(cls, text: str) -> tp.List['Placeholder']:
         prog = re.compile(cls.pattern)
         return [cls(x.group("name"), x.group("comment")) for x in prog.finditer(text)]
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.name!a}, {self.comment!a})'
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: tp.Any) -> bool:
         if self.__class__ == other.__class__:
             return (self.name, self.comment) == (other.name, other.comment)
         return False
 
     @classmethod
-    def sub(cls, text: str, extension: str, replacers: Dict[str, Any]) -> str:
-        found: Set[str] = set()
+    def sub(cls, text: str, extension: str, replacers: tp.Dict[str, tp.Any]) -> str:
+        found: tp.Set[str] = set()
         kwargs = {x: _convert_to_string(y, extension) for x, y in replacers.items()}
 
-        def _replacer(regex: Match[str]) -> str:
+        def _replacer(regex: tp.Match[str]) -> str:
             name = regex.group("name")
             if name in found:
                 raise RuntimeError(f'Trying to remplace a second time placeholder "{name}"')
@@ -75,7 +75,7 @@ class Placeholder:
         return text
 
 
-def symlink_folder_tree(folder: Union[Path, str], shadow_folder: Union[Path, str]) -> None:
+def symlink_folder_tree(folder: tp.Union[Path, str], shadow_folder: tp.Union[Path, str]) -> None:
     """Utility for copying the tree structure of a folder and symlinking all files
     This can help creating lightweight copies of a project, for instantiating several
     copies with different parameters.
@@ -128,14 +128,14 @@ class FileTextFunction:
             text = "\n".join(lines)
         self.placeholders = Placeholder.finditer(text)
         self._text = text
-        self.parameters: Set[str] = set()
+        self.parameters: tp.Set[str] = set()
         for x in self.placeholders:
             if x.name not in self.parameters:
                 self.parameters.add(x.name)
             else:
                 raise RuntimeError(f'Found duplicate placeholder (names must be unique) with name "{x.name}" in file:\n{self.filepath}')
 
-    def __call__(self, **kwargs: Any) -> str:
+    def __call__(self, **kwargs: tp.Any) -> str:
         testing.assert_set_equal(kwargs, self.parameters, err_msg="Wrong input parameters.")
         return Placeholder.sub(self._text, self.filepath.suffix, replacers=kwargs)
 
@@ -164,15 +164,15 @@ class FolderInstantiator:
         variable to a shared directory
     """
 
-    def __init__(self, folder: Union[Path, str], clean_copy: bool = False) -> None:
+    def __init__(self, folder: tp.Union[Path, str], clean_copy: bool = False) -> None:
         self._clean_copy = None
         self.folder = Path(folder).expanduser().absolute()
         assert self.folder.exists(), f"{folder} does not seem to exist"
         if clean_copy:
             self._clean_copy = utils.TemporaryDirectoryCopy(str(folder))
             self.folder = self._clean_copy.copyname
-        self.file_functions: List[FileTextFunction] = []
-        names: Set[str] = set()
+        self.file_functions: tp.List[FileTextFunction] = []
+        names: tp.Set[str] = set()
         for fp in self.folder.glob("**/*"):  # TODO filter out all hidden files (+ build files?)
             if fp.is_file() and fp.suffix.lower() in COMMENT_CHARS:
                 file_func = FileTextFunction(fp)
@@ -188,10 +188,10 @@ class FolderInstantiator:
         return f'{self.__class__.__name__}("{self.folder}") with files:\n{self.file_functions}'
 
     @property
-    def placeholders(self) -> List[Placeholder]:
+    def placeholders(self) -> tp.List[Placeholder]:
         return [p for f in self.file_functions for p in f.placeholders]
 
-    def instantiate_to_folder(self, outfolder: Union[Path, str], kwargs: Dict[str, Any]) -> None:
+    def instantiate_to_folder(self, outfolder: tp.Union[Path, str], kwargs: tp.Dict[str, tp.Any]) -> None:
         testing.assert_set_equal(kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters.")
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
@@ -203,7 +203,7 @@ class FolderInstantiator:
                 f.write(file_func(**{x: y for x, y in kwargs.items() if x in file_func.parameters}))
 
     @contextlib.contextmanager
-    def instantiate(self, **kwargs: Any) -> Generator[Path, None, None]:
+    def instantiate(self, **kwargs: tp.Any) -> tp.Generator[Path, None, None]:
         with tempfile.TemporaryDirectory() as tempfolder:
             subtempfolder = Path(tempfolder) / self.folder.name
             self.instantiate_to_folder(subtempfolder, kwargs)
@@ -250,12 +250,12 @@ class FolderFunction:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, folder: Union[Path, str], command: List[str], verbose: bool = False, clean_copy: bool = False) -> None:
+    def __init__(self, folder: tp.Union[Path, str], command: tp.List[str], verbose: bool = False, clean_copy: bool = False) -> None:
         self.command = command
         self.verbose = verbose
         self.postprocessings = [get_last_line_as_float]
         self.instantiator = FolderInstantiator(folder, clean_copy=clean_copy)
-        self.last_full_output: Optional[str] = None
+        self.last_full_output: tp.Optional[str] = None
 
     @staticmethod
     def register_file_type(suffix: str, comment_chars: str) -> None:
@@ -266,14 +266,14 @@ class FolderFunction:
         COMMENT_CHARS[suffix] = comment_chars
 
     @property
-    def placeholders(self) -> List[Placeholder]:
+    def placeholders(self) -> tp.List[Placeholder]:
         return self.instantiator.placeholders
 
-    def __call__(self, **kwargs: Any) -> Any:
+    def __call__(self, **kwargs: tp.Any) -> tp.Any:
         with self.instantiator.instantiate(**kwargs) as folder:
             if self.verbose:
                 print(f"Running {self.command} from {folder.parent} which holds {folder}")
-            output: Any = utils.CommandFunction(self.command, cwd=folder.parent)()
+            output: tp.Any = utils.CommandFunction(self.command, cwd=folder.parent)()
         if self.verbose:
             print(f"FolderFunction recovered full output:\n{output}")
         self.last_full_output = output.strip()

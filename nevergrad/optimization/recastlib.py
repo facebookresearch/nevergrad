@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional, Callable, Dict
 import numpy as np
 from scipy import optimize as scipyoptimize
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
@@ -17,7 +17,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
-        budget: Optional[int] = None,
+        budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
         method: str = "Nelder-Mead",
@@ -25,7 +25,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
-        self.initial_guess: Optional[base.ArrayLike] = None
+        self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
@@ -37,7 +37,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
 
-    def get_optimization_function(self) -> Callable[[Callable[[base.ArrayLike], float]], base.ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(
@@ -50,7 +50,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
-    def _optimization_function(self, objective_function: Callable[[base.ArrayLike], float]) -> base.ArrayLike:
+    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
@@ -59,7 +59,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
+            options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
                 best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
@@ -76,7 +76,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
 class ScipyOptimizer(base.ConfiguredOptimizer):
     """Wrapper over Scipy optimizer implementations, in standard ask and tell format.
-Sequential Quadratic Programming. Inside Nevergrad, this code is in https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py; this is actually an import from scipy-optimize. It is very powerful e.g. in continuous noisy optimization. It is based on approximating the objective function by quadratic models.
+    This is actually an import from scipy-optimize, including Sequential Quadratic Programming,
 
     Parameters
     ----------

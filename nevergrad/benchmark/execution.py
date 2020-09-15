@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import heapq
+import typing as tp
 from collections import deque
-from typing import List, Callable, Any, NamedTuple, Tuple, Dict, Optional, Deque
 from nevergrad.functions import ExperimentFunction
 
 
@@ -14,7 +14,7 @@ class MockedTimedJob:
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, func: Callable[..., Any], args: Tuple[Any, ...], kwargs: Dict[str, Any],
+    def __init__(self, func: tp.Callable[..., tp.Any], args: tp.Tuple[tp.Any, ...], kwargs: tp.Dict[str, tp.Any],
                  executor: "MockedTimedExecutor") -> None:
         self._executor = executor
         self._time = executor.time  # time at instantiation
@@ -23,8 +23,8 @@ class MockedTimedJob:
         self._args = args
         self._kwargs = kwargs
         # job specific
-        self._output: Any = None
-        self._delay: Optional[float] = None  # float when properly job is computed
+        self._output: tp.Any = None
+        self._delay: tp.Optional[float] = None  # float when properly job is computed
         self._done = False
         self._is_read = False  # for the record
 
@@ -45,7 +45,7 @@ class MockedTimedJob:
             if isinstance(self._func, ExperimentFunction):
                 self._delay = max(0, self._func.compute_pseudotime((self._args, self._kwargs), self._output))
 
-    def result(self) -> Any:
+    def result(self) -> tp.Any:
         """Return the result if "done()" is true, and raises
         a RuntimeError otherwise.
         """
@@ -60,7 +60,7 @@ class MockedTimedJob:
         return f'{self.__class__.__name__}<value={self._output}, done={self._done}, read={self._is_read}>)'
 
 
-class OrderedJobs(NamedTuple):
+class OrderedJobs(tp.NamedTuple):
     """Handle for sorting jobs by release_time (or submission order in case of tie)
     """
     release_time: float
@@ -79,8 +79,8 @@ class MockedTimedExecutor:
 
     def __init__(self, batch_mode: bool = False) -> None:
         self.batch_mode = batch_mode
-        self._to_be_processed: Deque[MockedTimedJob] = deque()
-        self._steady_priority_queue: List[OrderedJobs] = []
+        self._to_be_processed: tp.Deque[MockedTimedJob] = deque()
+        self._steady_priority_queue: tp.List[OrderedJobs] = []
         self._order = 0
         self._time = 0.
 
@@ -88,7 +88,7 @@ class MockedTimedExecutor:
     def time(self) -> float:
         return self._time
 
-    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> MockedTimedJob:
+    def submit(self, fn: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> MockedTimedJob:
         job = MockedTimedJob(fn, args, kwargs, self)
         self._to_be_processed.append(job)  # save for later processing
         return job

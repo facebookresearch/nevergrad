@@ -5,10 +5,9 @@
 
 import uuid
 import itertools
-import typing as tp
 import numpy as np
 from scipy import stats
-from ..common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 
 
 class Transform:
@@ -102,7 +101,7 @@ class Exponentiate(Transform):
         return np.log(y) / (float(self.coeff) * np.log(self.base))  # type: ignore
 
 
-BoundType = tp.Optional[tp.Union[ArrayLike, float]]
+BoundType = tp.Optional[tp.Union[tp.ArrayLike, float]]
 
 
 def _f(x: BoundType) -> BoundType:
@@ -157,8 +156,8 @@ class TanhBound(BoundTransform):
 
     def __init__(
         self,
-        a_min: tp.Union[ArrayLike, float],
-        a_max: tp.Union[ArrayLike, float]
+        a_min: tp.Union[tp.ArrayLike, float],
+        a_max: tp.Union[tp.ArrayLike, float]
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         if self.a_min is None or self.a_max is None:
@@ -230,8 +229,8 @@ class ArctanBound(BoundTransform):
 
     def __init__(
         self,
-        a_min: tp.Union[ArrayLike, float],
-        a_max: tp.Union[ArrayLike, float]
+        a_min: tp.Union[tp.ArrayLike, float],
+        a_max: tp.Union[tp.ArrayLike, float]
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         if self.a_min is None or self.a_max is None:

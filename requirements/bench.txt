@@ -11,3 +11,5 @@ pyproj>=2.6.1
 Pillow
 tqdm
 IOHexperimenter>=0.2.5
+torchvision
+pyomo>=5.7

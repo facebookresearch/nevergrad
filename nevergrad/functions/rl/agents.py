@@ -6,7 +6,7 @@
 import warnings
 import operator
 import copy as _copy
-from typing import Dict, Any, Optional, Callable, Tuple
+import typing as tp
 import gym
 import numpy as np
 from nevergrad.common.tools import pytorch_import_fix
@@ -32,7 +32,7 @@ class RandomAgent(base.Agent):
         assert isinstance(env.action_space, gym.spaces.Discrete)
         self.num_outputs = env.action_space.n
 
-    def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
+    def act(self, observation: tp.Any, reward: tp.Any, done: bool, info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None) -> tp.Any:
         return np.random.randint(self.num_outputs)
 
     def copy(self) -> "RandomAgent":
@@ -47,7 +47,7 @@ class Agent007(base.Agent):
         self.env = env
         assert isinstance(env, envs.DoubleOSeven) or (isinstance(env, base.SingleAgentEnv) and isinstance(env.env, envs.DoubleOSeven))
 
-    def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
+    def act(self, observation: tp.Any, reward: tp.Any, done: bool, info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None) -> tp.Any:
         my_amm, my_prot, their_amm, their_prot = observation  # pylint: disable=unused-variable
         if their_prot == 4 and my_amm:
             action = "fire"
@@ -81,7 +81,7 @@ class TorchAgent(base.Agent):
     def from_module_maker(
         cls,
         env: gym.Env,
-        module_maker: Callable[[Tuple[int, ...], int], nn.Module],
+        module_maker: tp.Callable[[tp.Tuple[int, ...], int], nn.Module],
         deterministic: bool = True
     ) -> "TorchAgent":
         assert isinstance(env.action_space, gym.spaces.Discrete)
@@ -89,7 +89,7 @@ class TorchAgent(base.Agent):
         module = module_maker(env.observation_space.shape, env.action_space.n)
         return cls(module, deterministic=deterministic)
 
-    def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
+    def act(self, observation: tp.Any, reward: tp.Any, done: bool, info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None) -> tp.Any:
         obs = torch.from_numpy(observation.astype(np.float32))
         forward = self.module.forward(obs)  # type: ignore
         probas = F.softmax(forward, dim=0)
@@ -101,7 +101,7 @@ class TorchAgent(base.Agent):
     def copy(self) -> "TorchAgent":
         return TorchAgent(_copy.deepcopy(self.module), self.deterministic)
 
-    def load_state_dict(self, state_dict: Dict[str, np.ndarray]) -> None:
+    def load_state_dict(self, state_dict: tp.Dict[str, np.ndarray]) -> None:
         # pylint: disable=not-callable
         self.module.load_state_dict({x: torch.tensor(y.astype(np.float32)) for x, y in state_dict.items()})
 
@@ -113,7 +113,7 @@ class TorchAgentFunction(ExperimentFunction):
     _num_test_evaluations = 1000
 
     def __init__(
-        self, agent: TorchAgent, env_runner: base.EnvironmentRunner, reward_postprocessing: Callable[[float], float] = operator.neg
+        self, agent: TorchAgent, env_runner: base.EnvironmentRunner, reward_postprocessing: tp.Callable[[float], float] = operator.neg
     ) -> None:
         assert isinstance(env_runner.env, gym.Env)
         self.agent = agent.copy()
@@ -128,13 +128,14 @@ class TorchAgentFunction(ExperimentFunction):
         try:  # safeguard against nans
             with torch.no_grad():
                 reward = self.runner.run(self.agent)
+
         except RuntimeError as e:
             warnings.warn(f"Returning 0 after error: {e}")
             reward = 0.0
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
-    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -143,18 +144,18 @@ class TorchAgentFunction(ExperimentFunction):
 
 
 class Perceptron(nn.Module):
-    def __init__(self, input_shape: Tuple[int, ...], output_size: int) -> None:
+    def __init__(self, input_shape: tp.Tuple[int, ...], output_size: int) -> None:
         super().__init__()  # type: ignore
         assert len(input_shape) == 1
         self.head = nn.Linear(input_shape[0], output_size)  # type: ignore
 
-    def forward(self, *args: Any) -> Any:
+    def forward(self, *args: tp.Any) -> tp.Any:
         assert len(args) == 1
         return self.head(args[0])
 
 
 class DenseNet(nn.Module):
-    def __init__(self, input_shape: Tuple[int, ...], output_size: int) -> None:
+    def __init__(self, input_shape: tp.Tuple[int, ...], output_size: int) -> None:
         super().__init__()  # type: ignore
         assert len(input_shape) == 1
         self.lin1 = nn.Linear(input_shape[0], 16)  # type: ignore
@@ -162,7 +163,7 @@ class DenseNet(nn.Module):
         self.lin3 = nn.Linear(16, 16)  # type: ignore
         self.head = nn.Linear(16, output_size)  # type: ignore
 
-    def forward(self, *args: Any) -> Any:
+    def forward(self, *args: tp.Any) -> tp.Any:
         assert len(args) == 1
         x = F.relu(self.lin1(args[0]))
         x = F.relu(self.lin2(x))

@@ -6,6 +6,6 @@ competence_map = ['NGO', 'Shiwa']
 
 competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
-large = ['NGO', 'Shiwa', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'ASCMADEthird', 'ASCMADEQRthird', 'ASCMA2PDEthird', 'CMandAS2', 'CMandAS', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'MetaModel']
+large = ['NGO', 'Shiwa', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'ASCMADEthird', 'ASCMADEQRthird', 'ASCMA2PDEthird', 'CMandAS2', 'CMandAS', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'MetaModel', 'PolyCMA', 'ManyCMA']
 
 spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']

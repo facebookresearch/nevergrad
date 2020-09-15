@@ -8,9 +8,9 @@ import time
 import warnings
 import inspect
 import datetime
-import typing as tp
 from pathlib import Path
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
@@ -80,7 +80,7 @@ class ParametersLogger:
             self._filepath.unlink()  # missing_ok argument added in python 3.8
         self._filepath.parent.mkdir(exist_ok=True, parents=True)
 
-    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, value: float) -> None:
+    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         data = {"#parametrization": optimizer.parametrization.name,
                 "#optimizer": optimizer.name,
                 "#session": self._session,
@@ -91,7 +91,10 @@ class ParametersLogger:
                 "#lineage": candidate.heritage["lineage"],
                 "#generation": candidate.generation,
                 "#parents_uids": [],
-                "#loss": value}
+                "#loss": loss}
+        if optimizer.num_objectives > 1:  # multiobjective losses
+            data.update({f"#losses#{k}": val for k, val in enumerate(candidate.losses)})
+            data["#pareto-length"] = len(optimizer.pareto_front())
         if hasattr(optimizer, "_configured_optimizer"):
             configopt = optimizer._configured_optimizer  # type: ignore
             if isinstance(configopt, base.ConfiguredOptimizer):

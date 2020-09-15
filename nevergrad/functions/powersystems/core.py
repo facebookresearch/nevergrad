@@ -6,6 +6,7 @@
 # This code is based on a code and ideas by Emmanuel Centeno and Antoine Moreau,
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
+from collections import Iterable
 import typing as tp
 from math import pi, cos, sin
 import matplotlib.pyplot as plt
@@ -35,7 +36,8 @@ class Agent():
 
     def set_parameters(self, ww: tp.Any) -> None:
         w = [w for w in ww]
-        assert len(w) == self.dimension
+        assert isinstance(w[0], float)
+        assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}: {w}."
         for i in range(len(self.layers)):
             s = np.prod(self.layers[i].shape)
             self.layers[i] = np.reshape(np.array(w[:s]), self.layers[i].shape)  # TODO @oteytaud new name?
@@ -109,8 +111,9 @@ class PowerSystem(ExperimentFunction):
         dam_agents: tp.List[tp.Any] = []
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        dimension = int(sum([a.dimension for a in dam_agents]))
-        super().__init__(self._simulate_power_system, p.Array(shape=(dimension,)))
+        # dimension = int(sum([a.dimension for a in dam_agents]))
+        parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in dam_agents])
+        super().__init__(self._simulate_power_system, parameter)
         self.register_initialization(**params)
         self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
@@ -118,14 +121,23 @@ class PowerSystem(ExperimentFunction):
     def get_num_vars(self) -> tp.List[tp.Any]:
         return [m.dimension for m in self.dam_agents]
 
-    def _simulate_power_system(self, x: np.ndarray) -> float:
+    def _simulate_power_system(self, *arrays: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
+        # Deep, robust flattening of any nesting of iterables.
+        def flatten(obj):
+             for i in obj:
+                 if isinstance(i, Iterable):
+                     yield from flatten(i)
+                 else:
+                     yield i
+        x = list(flatten(arrays))
+        # Now applying:
         for a in dam_agents:
-            assert len(x) >= a.dimension
+            assert len(x) >= a.dimension, f"x = {x}."
             a.set_parameters(np.array(x[:a.dimension]))
             x = x[a.dimension:]
-        assert not x.size
+        assert len(x) == 0, f"x = {x} after distributing weights."
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)

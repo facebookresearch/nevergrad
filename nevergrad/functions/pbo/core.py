@@ -1,7 +1,7 @@
 from IOHexperimenter import IOH_function, W_model_function
 import numpy as np
 import nevergrad as ng
-from nevergrad.common.typetools import ArrayLike
+from nevergrad.common.typing import ArrayLike
 from .. import base
 
 class PBOFunction(base.ExperimentFunction):

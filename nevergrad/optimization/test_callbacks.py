@@ -3,17 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any
 from pathlib import Path
 import numpy as np
 import nevergrad as ng
+import nevergrad.common.typing as tp
 from . import optimizerlib
 from . import callbacks
 
 
 # pylint: disable=unused-argument
-def _func(x: Any, y: Any, blublu: str, array: Any) -> float:
-    return 12
+def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any, multiobjective: bool = False) -> tp.Loss:
+    return 12 if not multiobjective else [12, 12]
 
 
 def test_log_parameters(tmp_path: Path) -> None:
@@ -37,6 +37,22 @@ def test_log_parameters(tmp_path: Path) -> None:
     # deletion
     logger = callbacks.ParametersLogger(filepath, append=False)
     assert not logger.load()
+
+
+def test_multiobjective_log_parameters(tmp_path: Path) -> None:
+    filepath = tmp_path / "logs.txt"
+    instrum = ng.p.Instrumentation(None,
+                                   2.0,
+                                   blublu="blublu",
+                                   array=ng.p.Array(shape=(3, 2)),
+                                   multiobjective=True)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=2)
+    optimizer.register_callback("tell", ng.callbacks.ParametersLogger(filepath, append=False))
+    optimizer.minimize(_func, verbosity=2)
+    # pickling
+    logger = callbacks.ParametersLogger(filepath)
+    logs = logger.load_flattened()
+    assert len(logs) == 2
 
 
 def test_dump_callback(tmp_path: Path) -> None:
