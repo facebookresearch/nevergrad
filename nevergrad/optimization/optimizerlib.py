@@ -2074,3 +2074,8 @@ class NGOpt4(base.Optimizer):
 
 
 Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)
+
+
+@registry.register
+class NGOpt(NGOpt2):
+    pass
