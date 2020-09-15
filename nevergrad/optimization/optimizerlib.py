@@ -1598,8 +1598,8 @@ class robust_slow(ASCMADEQRthird):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            chainNaiveTBPSACMAPowell(self.parametrization, budget=None, num_workers=num_workers),
-            DE(self.parametrization, budget=None, num_workers=num_workers),
+            chainNaiveTBPSACMAPowell(self.parametrization, budget=budget, num_workers=num_workers),  # unfair for Powell...
+            DE(self.parametrization, budget=budget, num_workers=num_workers),
         ]  # noqa: F405
         self.budget_before_choosing = budget // 4
 
