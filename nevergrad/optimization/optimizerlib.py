@@ -1598,10 +1598,10 @@ class robust_slow(ASCMADEQRthird):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            chainNaiveTBPSACMAPowell(self.parametrization, budget=budget, num_workers=num_workers),  # unfair for Powell...
-            DE(self.parametrization, budget=budget, num_workers=num_workers),
+            chainNaiveTBPSACMAPowell(self.parametrization, budget=budget - (budget // 2), num_workers=num_workers),  # unfair for Powell...
+            DE(self.parametrization, budget=budget // 2, num_workers=num_workers),
         ]  # noqa: F405
-        self.budget_before_choosing = budget // 4
+        self.budget_before_choosing = (budget * 9) // 10
 
 
 @registry.register
@@ -2090,7 +2090,7 @@ class NGOpt4(base.Optimizer):
 
 
 @registry.register
-class NGOpt5(base.Optimizer):
+class NGOpt6(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
