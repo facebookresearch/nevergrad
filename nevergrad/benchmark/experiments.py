@@ -935,8 +935,9 @@ def one_rollout_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
              control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
              control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
+
     funcs2 = []
-    for sigma in [1]:
+    for sigma in [1., 0.1, 0.01, 0.001, 10., 100., 1000.]:
         for func in funcs:
             f = func.copy()
             f.parametrization.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
@@ -950,7 +951,7 @@ def one_rollout_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
+                    for fu in funcs2:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
