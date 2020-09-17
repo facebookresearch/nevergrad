@@ -40,8 +40,7 @@ class BaseFunction(ExperimentFunction):
     """
 
     def __init__(self, num_rollouts: int, random_state: tp.Optional[int] = None) -> None:
-        super().__init__(self._simulate,
-                         p.Array(shape=self.policy_dim))#.set_mutation(sigma=1 / np.sqrt(np.prod(self.policy_dim))))
+        super().__init__(self._simulate, p.Array(shape=self.policy_dim))
         self.num_rollouts = num_rollouts
         self.random_state = random_state
         self.register_initialization(num_rollouts=num_rollouts, random_state=random_state)
