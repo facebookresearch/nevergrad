@@ -923,16 +923,16 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def all_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def scaled_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
     num_rollouts = 1
-    funcs = [control.Ant(num_rollouts=num_rollouts, random_state=seed),
-             control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
              control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
              control.Hopper(num_rollouts=num_rollouts, random_state=seed),
              control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, random_state=seed),
              control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
 
