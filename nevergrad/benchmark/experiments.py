@@ -923,7 +923,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def one_rollout_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def all_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
@@ -936,18 +936,18 @@ def one_rollout_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
              control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
 
+    sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
     funcs2 = []
-    for sigma in [1., 0.1, 0.01, 0.001, 10., 100., 1000.]:
-        for func in funcs:
-            f = func.copy()
-            f.parametrization.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
-            f.parametrization.freeze()
-            funcs2.append(f)
+    for i in range(6):
+        f = funcs[i].copy()
+        f.parametrization.set_mutation(sigma=sigmas[i]).set_name(f"sigma={sigmas[i]}")
+        f.parametrization.freeze()
+        funcs2.append(f)
     optims = ["NGOpt5", "RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
               "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering",
               "Lamcts", "NGOpt4", "DiagonalCMA", "SQP", "MiniDE"]
 
-    for budget in [500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
+    for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
