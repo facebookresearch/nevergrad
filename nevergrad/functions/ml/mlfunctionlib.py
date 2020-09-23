@@ -7,6 +7,7 @@ import typing as tp
 from functools import partial
 import numpy as np
 import sklearn.datasets
+from .k512 import adversarial_k512
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
 
@@ -201,10 +202,11 @@ class MLTuning(ExperimentFunction):
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
-            assert dataset in ["boston", "diabetes"]
+            assert dataset in ["boston", "diabetes", "adversarial_k512"]
             assert data_dimension is None
             data = {"boston": sklearn.datasets.load_boston,
                     "diabetes": sklearn.datasets.load_diabetes,
+                    "adversarial_k512": adversarial_k512,
                     }[dataset](return_X_y=True)
 
             # Half the dataset for training.
