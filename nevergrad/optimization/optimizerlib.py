@@ -1896,7 +1896,7 @@ class MetaModel(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
 
-
+@registry.register
 class NGOpt2(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
@@ -2076,4 +2076,3 @@ class NGOpt4(base.Optimizer):
 @registry.register
 class NGOpt(NGOpt4):
     pass
-
