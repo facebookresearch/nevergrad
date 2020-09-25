@@ -11,7 +11,7 @@ class PBOFunction(base.ExperimentFunction):
     Parameters
     ----------
     fid: int
-        function number (for a list of functions, please see the documentation https://arxiv.org/abs/1810.05281)
+        function number (for a list of functions, please see the documentation https://www.sciencedirect.com/science/article/abs/pii/S1568494619308099)
     iid: int
         the instance of the function, specifies the transformations in variable and objective space
     dim: int
