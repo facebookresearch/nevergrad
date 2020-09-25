@@ -17,6 +17,7 @@ from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions.base import MultiExperiment
+from nevergrad.functions.base import get_best_from_leaderboard
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
@@ -1312,9 +1313,13 @@ def big_photons(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
             func = Photonics(name, 60 if name == "morpho" else 100, bounding_method=method)
+            best = get_best_from_leaderboard(f'{name},{func.dimension}')
+            assert best is not None
+            assert len(best) == func.dimension
             for budget in [1e3, 1e4, 1e5, 1e6, 1e7, 1e8]:
                 for algo in optims:
-                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
+                    suggestion = func.parametrization.spawn_child().set_standardized_data(best)
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg), suggestion=suggestion)
                     if not xp.is_incoherent:
                         yield xp
 

@@ -138,6 +138,7 @@ class Experiment:
     def __init__(self, function: fbase.ExperimentFunction,
                  optimizer: tp.Union[str, obase.ConfiguredOptimizer], budget: int, num_workers: int = 1,
                  batch_mode: bool = True, seed: tp.Optional[int] = None,
+                 suggestion: tp.Optional[p.Parameter] = None,
                  ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), ("All experiment functions should "
                                                                 "derive from ng.functions.ExperimentFunction")
@@ -148,6 +149,7 @@ class Experiment:
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
         self.recommendation: tp.Optional[p.Parameter] = None
         self._optimizer: tp.Optional[obase.Optimizer] = None  # to be able to restore stopped/checkpointed optimizer
+        self._suggestion = suggestion
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
@@ -235,6 +237,8 @@ class Experiment:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
         assert self._optimizer.budget is not None, "A budget must be provided"
+        if self._suggestion:
+            self._optimizer.suggest(self._suggestion)
         t0 = time.time()
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
