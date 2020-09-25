@@ -1298,6 +1298,28 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def big_photons(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
+    seedg = create_seed_generator(seed)
+    popsizes = [20, 40, 80]
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
+                                        offsprings=pop * 5)
+          for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
+    optims = ["TwoPointsDE", "DE", "RealSpacePSO", "PSO", "OnePlusOne", "ParametrizationDE", "NaiveTBPSA",
+              "SplitCMA5", "Shiwa", "NGO", "MultiCMA", "CMandAS2", "SplitCMA13"] + es  # type: ignore
+    if default_optims is not None:
+        optims = default_optims
+    for method in ["clipping", "tanh"]:  # , "arctan"]:
+        for name in ["bragg", "chirped", "morpho"]:
+            func = Photonics(name, 60 if name == "morpho" else 100, bounding_method=method)
+            for budget in [1e3, 1e4, 1e5, 1e6, 1e7, 1e8]:
+                for algo in optims:
+                    xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
 def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror."""
     seedg = create_seed_generator(seed)
