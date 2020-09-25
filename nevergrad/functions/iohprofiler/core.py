@@ -117,4 +117,4 @@ class WModelFunction(base.ExperimentFunction):
                                      neutrality=neutrality, ruggedness=ruggedness, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
-        return float(self.f_internal(x))
+        return -float(self.f_internal(x))
