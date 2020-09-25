@@ -1312,7 +1312,7 @@ def big_photons(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         optims = default_optims
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
-            dimension = 60 if name == "morpho" else 100, 
+            dimension = 60 if name == "morpho" else 100
             func = Photonics(name, dimension, bounding_method=method)
             best = get_best_from_leaderboard(f'{name},{dimension}')
             assert best is not None
