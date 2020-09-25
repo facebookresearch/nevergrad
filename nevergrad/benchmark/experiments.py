@@ -32,7 +32,7 @@ from nevergrad.functions.rocket import Rocket
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
-from nevergrad.functions.pbo import PBOFunction, WModelFunction
+from nevergrad.functions.iohprofiler import PBOFunction, WModelFunction
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
