@@ -1329,6 +1329,8 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for algo in recombinable:  # type: ignore
                 yield Experiment(f, algo, int(budget), num_workers=1, seed=xpseed)
 
+
+@registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     class Normalize(nn.Module):
         def __init__(self, mean, std):
