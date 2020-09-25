@@ -1314,8 +1314,9 @@ def big_photons(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for name in ["bragg", "chirped", "morpho"]:
             dimension = 60 if name == "morpho" else 100
             func = Photonics(name, dimension, bounding_method=method)
-            best = get_best_from_leaderboard(f'{name},{dimension}')
-            assert best is not None
+            naming = f'{name},{dimension}'
+            best = get_best_from_leaderboard(naming)
+            assert best is not None, naming + " not in the leaderboard."
             assert len(best) == func.dimension
             for budget in [1e3, 1e4, 1e5, 1e6, 1e7, 1e8]:
                 for algo in optims:
