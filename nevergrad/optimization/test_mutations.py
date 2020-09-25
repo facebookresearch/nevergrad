@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union, List
+import typing as tp
 import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
@@ -64,7 +64,7 @@ def test_get_roulette(num: int, expected: str) -> None:
     twopoints=("twopoints", 16, [0, 0, 3, 4, 0, 0]),
     twopoints_special=("twopoints", 20, [0, 0, 0, 0, 5, 6]),  # redraws since bounds was [0, 6]
 )
-def test_de_crossover(crossover_param: Union[str, float], seed: int, expected: List[int]) -> None:
+def test_de_crossover(crossover_param: tp.Union[str, float], seed: int, expected: tp.List[int]) -> None:
     rng = np.random.RandomState(seed)
     crossover = Crossover(rng, crossover_param)
     donor = np.arange(1, len(expected) + 1)

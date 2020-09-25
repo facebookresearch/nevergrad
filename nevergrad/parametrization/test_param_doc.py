@@ -80,7 +80,7 @@ def test_param_example() -> None:
     #  'char': 'a'}
 
     # increase the step/sigma for array
-    # (note that it's adviced to to this during the creation
+    # (note that it's advised to to this during the creation
     #  of the variable:
     #  array=ng.p.Array(shape=(2,)).set_mutation(sigma=10))
     param["array"].set_mutation(sigma=10)  # type: ignore

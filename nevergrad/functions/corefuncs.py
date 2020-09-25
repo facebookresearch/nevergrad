@@ -3,17 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, List, Callable
+import typing as tp
 from math import exp, sqrt, tanh
 import numpy as np
 from nevergrad.parametrization import discretization
 from nevergrad.common.decorators import Registry
 
 
-registry: Registry[Callable[[np.ndarray], float]] = Registry()
+registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
-def onemax(x: List[int]) -> float:
+def onemax(x: tp.List[int]) -> float:
     """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
     It is originally designed for lists of bits. It just counts the number of 1,
@@ -24,7 +24,7 @@ def onemax(x: List[int]) -> float:
     return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
-def leadingones(x: List[int]) -> float:
+def leadingones(x: tp.List[int]) -> float:
     """leadingones is the second most classical discrete function, adapted for minimization.
 
     Returns len(x) - number of initial 1. I.e.
@@ -38,7 +38,7 @@ def leadingones(x: List[int]) -> float:
     return 0
 
 
-def jump(x: List[int]) -> float:  # TODO: docstring?
+def jump(x: tp.List[int]) -> float:  # TODO: docstring?
     """There exists variants of jump functions; we are in minimization.
 
     The principle of a jump function is that local descent does not succeed.
@@ -65,7 +65,7 @@ class DelayedSphere:
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
         x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
