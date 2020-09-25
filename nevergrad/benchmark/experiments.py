@@ -1320,7 +1320,7 @@ def big_photons(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             assert best is None or len(best) == func.dimension
             for budget in [1e3, 1e4, 1e5, 1e6, 1e7, 1e8]:
                 for algo in optims:
-                    suggestion = func.parametrization.spawn_child().set_standardized_data(best) if best else None
+                    suggestion = func.parametrization.spawn_child().set_standardized_data(best) if best is not None else None
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg), suggestion=suggestion)
                     if not xp.is_incoherent:
                         yield xp
