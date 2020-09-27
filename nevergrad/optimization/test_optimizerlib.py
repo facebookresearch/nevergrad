@@ -193,7 +193,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
     budget = {"WidePSO": 100, "PSO": 200, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
-    if isinstance(optimizer_cls, (optlib.DifferentialEvolution, optlib.EvolutionStrategy)):
+    if isinstance(optimizer_cls, (optlib.DifferentialEvolution, optlib.EvolutionStrategy, optlib.NSGAII)):
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
@@ -240,6 +240,14 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
     optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
+
+
+@testing.parametrized(
+    nsgaii=("NSGAII", 10, 10, 30),
+)
+def test_nsga_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
+    optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
+    np.testing.assert_equal(optim.max_popsize, expected)  # type: ignore
 
 
 def test_portfolio_budget() -> None:
