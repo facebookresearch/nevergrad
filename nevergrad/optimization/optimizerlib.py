@@ -148,7 +148,7 @@ class _OnePlusOne(base.Optimizer):
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
             elif mutation == "coordinatewiseadaptive":
                 self._modified_variables = np.array([True] * self.dimension)
-                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables)
+                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables, self._arity)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
