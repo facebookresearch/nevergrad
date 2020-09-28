@@ -147,7 +147,8 @@ class _OnePlusOne(base.Optimizer):
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
             elif mutation == "coordinatewiseadaptive":
-                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity)
+                self._modified_variables = np.array([True] * self.dimension)
+                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
@@ -187,6 +188,12 @@ class _OnePlusOne(base.Optimizer):
         if self.mutation == "adaptive":
             factor = 1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1., factor * self._adaptive_mr)
+        if self.mutation == "coordinatewiseadaptive":
+            factor = 1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            for i in range(self.dimension):
+                if self._modified_variables[i]:
+                    self._velocity[i] *= factor 
+                    self._velocity = max(self._velocity, 1.)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
