@@ -1,20 +1,11 @@
-
-import warnings
 import numpy as np
 from scipy import stats
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from nevergrad.optimization.utils import UidQueue
 from . import base
-from .base import IntOrParameter
 from . import sequences
 #from . import differentialevolution
 from .evolution_ops import rankers as rankers
-
-
-from enum import Enum
-from typing import TypeVar, List
-
 
 class _NondominatedSortingGeneticAlgorithmII(base.Optimizer):
     """"NSGA-II

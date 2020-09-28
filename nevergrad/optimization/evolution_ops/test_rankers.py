@@ -1,4 +1,3 @@
-import warnings
 import random
 import numpy as np
 import nevergrad as ng
