@@ -58,13 +58,17 @@ class Mutator:
             boolean_vector = [self.random_state.rand() > (float(u) / dimension) for _ in parent]
         return [s if b else self.random_state.normal(0., 1.) for (b, s) in zip(boolean_vector, parent)]
 
-    def coordinatewise_mutation(self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike) -> tp.ArrayLike:
+    def coordinatewise_mutation(self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int) -> tp.ArrayLike:
         dimension = len(parent)
         boolean_vector = [False for _ in parent]
         while not any(boolean_vector):
             boolean_vector = [self.random_state.rand() < (1. / dimension) for _ in parent]
-        return [s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) in zip(boolean_vector, parent, velocity)] # Approximate! TODO
-        
+        parent_data = discretization.threshold_discretization(np.asarray(parent.data), arity=arity)
+
+        data = discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
+                                                                in zip(boolean_vector, parent_data, velocity)])
+        return data
+    
     def discrete_mutation(self, parent: tp.ArrayLike) -> tp.ArrayLike:
         dimension = len(parent)
         boolean_vector = [True for _ in parent]
