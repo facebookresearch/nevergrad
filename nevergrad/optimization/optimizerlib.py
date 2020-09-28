@@ -67,10 +67,15 @@ class _OnePlusOne(base.Optimizer):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive",
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive", "coordinatewiseadaptive",
                             "portfolio", "discreteBSO", "doerr"], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
+        if mutation == "coordinatewiseadaptive":
+            all_params = paramhelpers.flatten_parameter(self.parametrization)
+            arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
+            self._arity = arity
+            self._velocity = np.random.uniform(size=self.dimension) * arity / 4.
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -141,6 +146,8 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+            elif mutation == "coordinatewiseadaptive":
+                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
