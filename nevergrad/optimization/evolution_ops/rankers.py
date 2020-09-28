@@ -136,7 +136,7 @@ class FastNonDominatedRanking:
         candidates_dominated: tp.List[tp.List[int]] = [[] for _ in range(n_cand)]
 
         # front[i] contains the list of solutions belonging to front i
-        front = [[] for _ in range(n_cand + 1)]
+        front: tp.List[tp.List[int]] = [[] for _ in range(n_cand + 1)]
 
         uids = list(candidates)
         for c1 in range(n_cand - 1):
