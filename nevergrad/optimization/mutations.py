@@ -5,6 +5,8 @@
 
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.parametrization import discretization
+
 from . import utils
 
 
@@ -63,11 +65,10 @@ class Mutator:
         boolean_vector = [False for _ in parent]
         while not any(boolean_vector):
             boolean_vector = [self.random_state.rand() < (1. / dimension) for _ in parent]
-        parent_data = discretization.threshold_discretization(np.asarray(parent.data), arity=arity)
+        discrete_data = discretization.threshold_discretization(parent, arity=arity)
 
-        data = discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
-                                                                in zip(boolean_vector, parent_data, velocity)])
-        return data
+        return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
+                                                                in zip(boolean_vector, discrete_data, velocity)])
     
     def discrete_mutation(self, parent: tp.ArrayLike) -> tp.ArrayLike:
         dimension = len(parent)
