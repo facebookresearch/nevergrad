@@ -4,7 +4,7 @@ import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
 from . import sequences
-#from . import differentialevolution
+from .base import IntOrParameter
 from .evolution_ops import rankers as rankers
 
 class _NondominatedSortingGeneticAlgorithmII(base.Optimizer):
