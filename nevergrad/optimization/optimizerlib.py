@@ -68,7 +68,7 @@ class _OnePlusOne(base.Optimizer):
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive",
-                            "portfolio", "discreteBSO", "doerr"], f"Unkwnown mutation: '{mutation}'"
+                            "portfolio", "discreteBSO", "lengler", "doerr"], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
         self.noise_handling = noise_handling
@@ -141,7 +141,13 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
-            elif mutation == "doerr":
+            elif mutation == "lengler":
+                alpha = 1.54468
+                intensity: float = self.dimension * (alpha * np.log(self._num_ask) / self._num_ask)
+                if intensity < 1:
+                    intensity = 1
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
                 if self._rng.uniform() < self._doerr_epsilon:
