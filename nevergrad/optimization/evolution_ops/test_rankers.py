@@ -2,6 +2,8 @@ import warnings
 import random
 import numpy as np
 import nevergrad as ng
+import nevergrad.common.typing as tp
+from nevergrad.parametrization import parameter as p
 from . import rankers
 
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
@@ -12,12 +14,12 @@ def test_crowding_distance() -> None:
         ng.p.Scalar(lower=0, upper=2),
         ng.p.Scalar(lower=0, upper=2))
 
-    candidates = []
+    candidates: tp.List[p.Parameter] = []
     v = sorted([random.uniform(0.01, 0.99) for i in range(4)])
     loss_values = [[0.0, 5.0], [v[0], v[3]], [v[1], v[2]], [1.0, 0.0]]
     for i, v in enumerate(loss_values):
         candidates.append(params.spawn_child().set_standardized_data(v))
-        candidates[i].loss = np.array(v)
+        candidates[i]._losses = np.array(v)
     crowding_distance = rankers.CrowdingDistance()
     crowding_distance.compute_distance(candidates)
 
@@ -48,7 +50,7 @@ def test_fast_non_dominated_ranking() -> None:
         expected_frontier = []
         for v in vals:
             candidate = params.spawn_child().set_standardized_data(v)
-            candidate.loss = np.array(v)
+            candidate._losses = np.array(v)
             candidates[candidate.uid] = candidate
             expected_frontier.append(candidate)
         expected_frontiers.append(expected_frontier)

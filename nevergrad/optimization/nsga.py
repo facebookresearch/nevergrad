@@ -25,7 +25,7 @@ class _NondominatedSortingGeneticAlgorithmII(base.Optimizer):
             parametrization: IntOrParameter,
             budget: tp.Optional[int] = None,
             num_workers: int = 1,
-            config: tp.Optional["NSGA-II"] = None
+            config: tp.Optional["NondominatedSortingGeneticAlgorithmII"] = None
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # config

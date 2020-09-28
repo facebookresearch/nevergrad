@@ -7,14 +7,14 @@ class CrowdingDistance:
     """
 
     def accumulate_distance_per_objective(self, front: tp.List[p.Parameter], i: int):
-        is_multiobj: bool = isinstance(front[0].loss, np.ndarray)
+        is_multiobj: bool = len(front[0].losses) > 1 #isinstance(front[0].loss, np.ndarray)
         assert (not is_multiobj and (i == 0)) or is_multiobj
 
         # Sort the population by objective i
         if is_multiobj:
-            front = sorted(front, key=lambda x: x.loss[i])
-            objective_minn = front[0].loss[i]
-            objective_maxn = front[-1].loss[i]
+            front = sorted(front, key=lambda x: x.losses[i])
+            objective_minn = front[0].losses[i]
+            objective_maxn = front[-1].losses[i]
             assert objective_minn <= objective_maxn
 
             # Set the crowding distance
@@ -25,7 +25,7 @@ class CrowdingDistance:
             # to the absolute normalized difference in the function values of two
             # adjacent solutions.
             for j in range(1, len(front) - 1):
-                distance = front[j + 1].loss[i] - front[j - 1].loss[i]
+                distance = front[j + 1].losses[i] - front[j - 1].losses[i]
 
                 # Check if minimum and maximum are the same (in which case do nothing)
                 if objective_maxn - objective_minn == 0:
@@ -50,7 +50,10 @@ class CrowdingDistance:
             # to the absolute normalized difference in the function values of two
             # adjacent solutions.
             for j in range(1, len(front) - 1):
-                distance = front[j + 1].loss - front[j - 1].loss
+                if front[j + 1].loss is None or front[j - 1].loss is None:
+                    distance = 0
+                else:
+                    distance = front[j + 1].loss - front[j - 1].loss
 
                 # Check if minimum and maximum are the same (in which case do nothing)
                 if objective_maxn - objective_minn == 0:
@@ -83,8 +86,8 @@ class CrowdingDistance:
         for i in range(len(front)):
             front[i]._meta['crowding_distance'] = 0.0
 
-        if isinstance(front[0].loss, np.ndarray):
-            number_of_objectives = len(front[0].loss)
+        if isinstance(front[0].losses, np.ndarray):
+            number_of_objectives = len(front[0].losses)
         else:
             number_of_objectives = 1
 
@@ -127,10 +130,10 @@ class FastNonDominatedRanking:
         """
         n_cand: int = len(candidates)
         # dominated_by_cnt[i]: number of candidates dominating ith candidate
-        dominated_by_cnt = [0] * n_cand #[0 for _ in range(len(candidates))]
+        dominated_by_cnt: tp.List[int] = [0] * n_cand #[0 for _ in range(len(candidates))]
 
         # candidates_dominated[i]: List of candidates dominated by ith candidate
-        candidates_dominated = [[] for _ in range(n_cand)]
+        candidates_dominated: tp.List[tp.List[int]] = [[] for _ in range(n_cand)]
 
         # front[i] contains the list of solutions belonging to front i
         front = [[] for _ in range(n_cand + 1)]
