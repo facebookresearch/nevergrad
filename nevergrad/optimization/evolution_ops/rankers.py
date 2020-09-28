@@ -53,7 +53,8 @@ class CrowdingDistance:
                 if front[j + 1].loss is None or front[j - 1].loss is None:
                     distance = 0
                 else:
-                    distance = front[j + 1].loss - front[j - 1].loss
+                    distance = (front[j + 1].loss if front[j + 1].loss is not None else 0)
+                    distance -= (front[j - 1].loss if front[j - 1].loss is not None else 0)
 
                 # Check if minimum and maximum are the same (in which case do nothing)
                 if objective_maxn - objective_minn == 0:
