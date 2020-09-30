@@ -114,6 +114,7 @@ class PowerSystem(ExperimentFunction):
         # dimension = int(sum([a.dimension for a in dam_agents]))
         parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in dam_agents])
         super().__init__(self._simulate_power_system, parameter)
+        self.parametrization.descriptors.deterministic_function = False
         self.register_initialization(**params)
         self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
