@@ -199,16 +199,19 @@ def create_plots(
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
     required = {"optimizer_name", "budget", "loss", "elapsed_time", "elapsed_budget"}
+    excluded = {x for x in set(df.columns) if x.startswith('{') and x.endswith('}')}  # ignore all descriptors starting enclosed in "{ }"
+
     missing = required - set(df.columns)
     assert not missing, f"Missing fields: {missing}"
     output_folder = Path(output_folder)
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
-    descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
+    # all other columns are descriptors
+    descriptors = sorted(set(df.columns) - (excluded | required | {"instrum_str", "seed", "pseudotime"}))
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     # now those should be actual interesting descriptors
-    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))
+    all_descriptors = sorted(set(df.columns) - (excluded | required | {"instrum_str", "seed", "pseudotime"}))
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
@@ -245,6 +248,7 @@ def create_plots(
             if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.
                 # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                 # (typically when attribute1 and attribute2 are correlated).
+                # pylint:disable=consider-using-set-comprehension
                 try:
                     xindices = sorted(set([c[0] for c in df.unique(fixed)]))
                 except TypeError:
@@ -313,6 +317,7 @@ def create_plots(
             description = description[:140] + hash_ + description[-140:]
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
+        # pylint: disable=broad-except
         try:
             xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
         except Exception as e:
@@ -499,6 +504,7 @@ def split_long_title(title: str) -> str:
     """
     if len(title) <= 60:
         return title
+    # pylint: disable=unnecessary-comprehension
     comma_indices = np.where(np.array([c for c in title]) == ",")[0]
     if not comma_indices.size:
         return title
