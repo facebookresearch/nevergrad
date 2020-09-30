@@ -12,8 +12,65 @@ from nevergrad.functions import ArtificialFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
+from .perfcap.experiments import perfcap_experiment
+
 # pylint: disable=stop-iteration-return, too-many-nested-blocks
 
+
+@registry.register
+def perfcap_bench1(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment1.json", seedg)
+
+@registry.register
+def perfcap_bench2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment2.json", seedg)
+
+@registry.register
+def perfcap_bench3(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment3.json", seedg)
+
+@registry.register
+def perfcap_bench4(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment4.json", seedg)
+
+@registry.register
+def perfcap_bench5(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment5.json", seedg)
+
+@registry.register
+def perfcap_bench6(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment6.json", seedg)
+
+@registry.register
+def perfcap_bench7(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment7.json", seedg)
+
+@registry.register
+def perfcap_bench8(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment8.json", seedg)
+
+@registry.register
+def perfcap_bench9(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment9.json", seedg)
+
+@registry.register
+def perfcap_bench10(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment10.json", seedg)
+
+@registry.register
+def perfcap_bench11(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    return perfcap_experiment("experiment11.json", seedg)
 
 @registry.register
 def basic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

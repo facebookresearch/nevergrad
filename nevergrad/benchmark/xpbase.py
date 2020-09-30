@@ -181,6 +181,7 @@ class Experiment:
         except fbase.ExperimentFunctionCopyError as c_e:
             raise c_e
         except Exception as e:  # pylint: disable=broad-except
+                                # pyline: disable=duplicate-code
             # print the case and the traceback
             self.result["error"] = e.__class__.__name__
             print(f"Error when applying {self}:", file=sys.stderr)
@@ -196,6 +197,8 @@ class Experiment:
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         reco = self.recommendation
+        self.result[r"{recommendation}"] = reco     # log recommendation,
+        # but exclude from fight plots by encapsulating its name inside "{ }"
         assert self._optimizer is not None
         if self._optimizer._hypervolume_pareto is None:
             # ExperimentFunction can directly override this if need be

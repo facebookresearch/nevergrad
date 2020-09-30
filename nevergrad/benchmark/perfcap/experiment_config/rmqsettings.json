@@ -1,0 +1,5 @@
+{
+    "uri": "amqp://user:pass@127.0.0.1:5672",
+    "ng_exchange_in": "ng-bench.in",
+    "ng_exchange_out": "ng-bench.out"
+}
