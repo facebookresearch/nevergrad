@@ -50,7 +50,7 @@ class PerfcapExperiment(Experiment):
             print(f"Error when applying {self}:", file=sys.stderr)
             traceback.print_exc()
             print("\n", file=sys.stderr)
-            self._experiment_manager._stop_experiment(self.function.experiment_tag_id)     # disable rmq service if needed
+            self._experiment_manager._stop_experiment(self.function.experiment_tag_id, None)     # disable rmq service if needed
             return self.get_description()
 
         ret = super().run()
@@ -380,19 +380,25 @@ class ExperimentManager:
             self._logger.error("Error while parsing reply for register experiment from benchmark server")
             raise ex
 
-    def _unregister_experiment(self, experiment_tag_id, converged_pose: tp.Dict[int, tp.List[float]]) -> None:
+    def _unregister_experiment(self, experiment_tag_id, converged_pose: tp.Union[None,tp.Dict[int, tp.List[float]]]) -> None:
         """
         Unregister Experiment, when experiment finishes. This causes benchmark server to flush logs and output meshes
         for this experiment.
         This function is called by PerfcapExeriment class at the end of the experiment
         """
         self._logger.info("Unregistering experiment with tag id %s", experiment_tag_id)
-        pose_dict = [{"joint_id": jid, "values": vals} for (jid, vals) in converged_pose.items()]
-        msg = {
-            "action": "stop_experiment",
-            "experiment_tag_id": experiment_tag_id,
-            "pose": pose_dict
-        }
+        if converged_pose is not None:
+            pose_dict = [{"joint_id": jid, "values": vals} for (jid, vals) in converged_pose.items()]
+            msg = {
+                "action": "stop_experiment",
+                "experiment_tag_id": experiment_tag_id,
+                "pose": pose_dict
+            }
+        else:
+            msg = {
+                "action": "stop_experiment",
+                "experiment_tag_id": experiment_tag_id,
+            }
         res = self._rmq_service.request_forced(msg)
         try:
             status = Status(res["status"])
@@ -423,7 +429,7 @@ class ExperimentManager:
         self._set_experiment()
         self._register_experiment(experiment_tag_id)
 
-    def _stop_experiment(self, experiment_tag_id: str, converged_pose: tp.Dict[int, tp.List[float]]):
+    def _stop_experiment(self, experiment_tag_id: str, converged_pose: tp.Union[None,tp.Dict[int, tp.List[float]]]):
         """
         This will unregister the experiment from Perfcap Benchmark Server, causing any server logging to flush.
         This function is called by PerfcapExperiment at the end of the experiment run.
