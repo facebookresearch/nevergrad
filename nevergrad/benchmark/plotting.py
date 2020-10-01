@@ -24,6 +24,7 @@ from .exporttable import export_table
 
 
 _DPI = 250
+_target_file_for_aggregated_result = None  # Could be ~/ng_aggregated_result.txt if you want to store results there when you plot.
 
 
 # %% Basic tools
@@ -272,6 +273,9 @@ def create_plots(
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
+
+            print("Archiving results per description.")
+            fplotter.set_target_survey_file(_target_file_for_aggregated_result)
 
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
@@ -543,6 +547,10 @@ class FightPlotter:
         # self._fig.colorbar(im, cax=cax)
         self._fig.colorbar(self._cax, cax=cax)  # , orientation='horizontal')
         plt.tight_layout()
+        self._target_survey_file: tp.Optional[str] = None
+
+    def set_target_survey_file(target_survey_file: str):
+        self._target_survey_file = target_survey_file
 
     @staticmethod
     def winrates_from_selection(df: utils.Selector, categories: tp.List[str], num_rows: int = 5) -> pd.DataFrame:
@@ -575,6 +583,12 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
+        if self._target_survey_file:
+            with open(self._target_survey_file, "a+") as f:
+            for i in len(sorted_names):
+                for j in range(i, len(sorted_names)):
+                    f.write(" ".join(categories), sorted_names[i], sorted_names[j])
+
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, :len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
