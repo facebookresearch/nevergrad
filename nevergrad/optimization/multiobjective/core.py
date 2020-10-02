@@ -158,9 +158,11 @@ class HypervolumePareto:
                 for v in self._pareto:
                     best_score = float("inf") if subset != "eps" else 0.
                     for pa in tentative:
-                        if subset == "loss-covering":
+                        if subset == "loss-covering":  # equivalent to IGD.
                             best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
                         elif subset == "eps":
+                            # Eps is the epsilon indicator described e.g.
+                            # here: https://hal.archives-ouvertes.fr/hal-01159961v2/document
                             best_score = max(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
                             best_score = min(best_score, np.linalg.norm(pa.get_standardized_data(reference=v)))  # TODO verify
