@@ -199,19 +199,19 @@ def get_pyomo_list():
         print(f"Creating Knapsack{num_items}")
         if num_items == 4:
             items = ['hammer', 'wrench', 'screwdriver', 'towel'] 
-            v = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
-            w = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
+            values = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
+            weights = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
             W_max = 14 
         else:
             items = [str(i) for i in range(num_items)]
-            v = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
-            w = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
+            values = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
+            weights = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
             W_max = 3 * num_items + 2
     
         knapsack = pyomo.ConcreteModel() 
         knapsack.x = pyomo.Var(items, within=pyomo.Binary) 
-        knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
-        knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
+        knapsack.value = pyomo.Objective(expr=sum(values[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
+        knapsack.weight = pyomo.Constraint(expr=sum(weights[i]*knapsack.x[i] for i in items) <= W_max)
         yield Pyomo(knapsack)
  
 
