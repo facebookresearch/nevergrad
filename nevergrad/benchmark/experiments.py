@@ -3,15 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import typing as tp
 import itertools
 import numpy as np
-import torch
-import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
-from torchvision.models import resnet50
 import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
@@ -1331,57 +1325,11 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    class Normalize(nn.Module):
-        def __init__(self, mean, std):
-            super().__init__()
-            self.mean = torch.Tensor(mean)
-            self.std = torch.Tensor(std)
-
-        def forward(self, x):
-            return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
-
-    class Resnet50(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                                  std=[0.229, 0.224, 0.225])
-            self.model = resnet50(pretrained=True)
-
-        def forward(self, x):
-            return self.model(self.norm(x))
-
-    image_size = 224
-    data_folder = "pouet"  # "/datasets01_101/imagenet_full_size/061417/val"
-    if not os.path.exists(data_folder):
-        x, y = torch.zeros(1, 3, 224, 224), 0
-        data_loader = [(x, y)]
-        path_exist = False
-    else:
-        data_loader = torch.utils.data.DataLoader(
-            torchvision.datasets.ImageFolder(data_folder,
-                                             transforms.Compose([
-                                                 transforms.Resize(image_size),
-                                                 transforms.CenterCrop(image_size),
-                                                 transforms.ToTensor()])),
-            batch_size=1,
-            shuffle=True,
-            num_workers=8,
-            pin_memory=True)
-        path_exist = True
-
-    classifier = Resnet50()
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    for i, (data, target) in enumerate(data_loader):
-        if i > 1:
-            continue
-        _, pred = torch.max(classifier(data), axis=1)
-        if pred == target or (not path_exist):
-            func = ImageAdversarial(classifier, image=data[0], label=int(target), targeted=False,
-                                    epsilon=0.05)
-            for budget in [10]:
-                for num_workers in [1]:
-                    for algo in optims:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+    for func in ImageAdversarial.make_benchmark_functions("imagenet"):
+        for budget in [10]:
+            for num_workers in [1]:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp

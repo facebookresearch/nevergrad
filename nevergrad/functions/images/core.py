@@ -9,9 +9,14 @@ import numpy as np
 import PIL.Image
 import torch.nn as nn
 import torch
+import torchvision
+from torchvision.models import resnet50
+import torchvision.transforms as tr
 
 import nevergrad as ng
+import nevergrad.common.typing as tp
 from .. import base
+# pylint: disable=abstract-method
 
 
 class Image(base.ExperimentFunction):
@@ -58,16 +63,43 @@ class Image(base.ExperimentFunction):
         return value
 
 
+# #### Adversarial attacks ##### #
+
+
+class Normalize(nn.Module):
+
+    def __init__(self, mean: tp.ArrayLike, std: tp.ArrayLike) -> None:
+        super().__init__()
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
+
+
+class Resnet50(nn.Module):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+        self.model = resnet50(pretrained=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model(self.norm(x))
+
+
 class TestClassifier(nn.Module):
-    def __init__(self, image_size: int = 224):
+
+    def __init__(self, image_size: int = 224) -> None:
         super().__init__()
         self.model = nn.Linear(image_size * image_size * 3, 10)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x.view(x.shape[0], -1))
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 class ImageAdversarial(base.ExperimentFunction):
 
     def __init__(self, classifier: nn.Module, image: torch.Tensor, label: int = 0, targeted: bool = False,
@@ -98,27 +130,16 @@ class ImageAdversarial(base.ExperimentFunction):
         self.add_descriptors(label=label, targeted=targeted, epsilon=epsilon)
 
     @classmethod
-    def from_testbed(
+    def _with_tag(
             cls,
-            name: str,
-            label: int = 0,
-            targeted: bool = False,
-            epsilon: float = 0.05
+            tags: tp.Dict[str, str],
+            **kwargs: tp.Any,
     ) -> "ImageAdversarial":
-        if name == "test":
-            imsize = 224
-            classifier = TestClassifier(imsize)
-            image = torch.rand((3, imsize, imsize))
-        else:
-            raise ValueError(f'Testbed "{name}" is not implemented, check implementation in {__file__}')
-        func = cls(classifier=classifier, image=image, label=label, targeted=targeted, epsilon=epsilon)
-        # clean up and update decsriptors
+        func = cls(**kwargs)
+        func.add_descriptors(**tags)
+        func._initialization_func = cls._with_tag  # type: ignore
         assert func._initialization_kwargs is not None
-        for d in ["classifier", "image"]:
-            del func._initialization_kwargs[d]
-        func._initialization_kwargs["name"] = name
-        func._initialization_func = cls.from_testbed  # type: ignore
-        func._descriptors.update(name=name)
+        func._initialization_kwargs["tags"] = tags
         return func
 
     def _loss(self, x: np.ndarray) -> float:
@@ -126,8 +147,39 @@ class ImageAdversarial(base.ExperimentFunction):
         image_adv = torch.clamp(self.image + x, 0, 1)
         image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
         output_adv = self.classifier(image_adv)
-        if self.targeted:
-            value = self.criterion(output_adv, self.label)
+        value = float(self.criterion(output_adv, self.label).item())
+        return value * (1.0 if self.targeted else -1.0)
+
+    @classmethod
+    def make_benchmark_functions(
+            cls,
+            name: str,
+    ) -> tp.Generator["ImageAdversarial", None, None]:
+        tags = {"benchmark": name}
+        if name == "test":
+            imsize = 224
+            classifier = TestClassifier(imsize)
+            image = torch.rand((3, imsize, imsize))
+            yield cls._with_tag(tags=tags, classifier=classifier, image=image,
+                                label=0, targeted=False)
+        elif name == "imagenet":
+            classifier = Resnet50()
+            imsize = 224
+            transform = tr.Compose([tr.Resize(imsize), tr.CenterCrop(imsize), tr.ToTensor()])
+            ifolder = torchvision.datasets.ImageFolder(data_folder, transform)
+            data_loader = torch.utils.DataLoader(ifolder, batch_size=1, shuffle=True,
+                                                 num_workers=8, pin_memory=True)
+            for _, (data, target) in enumerate(data_loader):
+                _, pred = torch.max(classifier(data), axis=1)
+                if pred == target:
+                    func = cls._with_tag(tags=tags, classifier=classifier, image=data[0],
+                                         label=int(target), targeted=False, epsilon=0.05)
+            yield func
         else:
-            value = -self.criterion(output_adv, self.label)
-        return float(value.item())
+            raise ValueError(f'Unknown benchmark case "{name}"')
+
+    # @classmethod
+#         x, y = torch.zeros(1, 3, 224, 224), 0
+#         path_exist = True
+#         data_loader = [(x, y)]
+#         path_exist = False
