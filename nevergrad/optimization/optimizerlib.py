@@ -147,7 +147,7 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
-             elif mutation == "doerr":
+            elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
                 if self._rng.uniform() < self._doerr_epsilon:
