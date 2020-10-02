@@ -34,7 +34,6 @@ from .recastlib import *  # noqa: F403
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
-OptCls = tp.Union[tp.Type[base.Optimizer], base.ConfiguredOptimizer]
 
 # # # # # optimizers # # # # #
 
@@ -878,8 +877,8 @@ class SplitOptimizer(base.Optimizer):
             num_workers: int = 1,
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
-            multivariate_optimizer: OptCls = CMA,
-            monovariate_optimizer: OptCls = RandomSearch,
+            multivariate_optimizer: base.OptCls = CMA,
+            monovariate_optimizer: base.OptCls = RandomSearch,
             progressive: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -970,8 +969,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         *,
         num_optims: tp.Optional[int] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
-        multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+        multivariate_optimizer: base.OptCls = CMA,
+        monovariate_optimizer: base.OptCls = RandomSearch,
         progressive: bool = False
     ) -> None:
         super().__init__(SplitOptimizer, locals())
