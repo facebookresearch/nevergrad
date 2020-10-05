@@ -234,7 +234,6 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         super().__init__(_OnePlusOne, locals())
 
 
-
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
@@ -841,21 +840,33 @@ class SPSA(base.Optimizer):
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
-    num_optims: number of optimizers
-    num_vars: number of variable per optimizer.
-    progressive: True if we want to progressively add optimizers during the optimization run.
-    If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
+    Parameters
+    ---------
+    num_optims: int or None
+        number of optimizers
+    num_vars: int or None
+        number of variable per optimizer.
+    progressive: bool
+        True if we want to progressively add optimizers during the optimization run.
+        If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
 
-    E.g. for 5 optimizers, each of them working on 2 variables, we can use:
+    Example
+    -------
+    for 5 optimizers, each of them working on 2 variables, one can use:
+
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
     or equivalently:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
-    Given that all optimizers have the same number of variables, we can also do:
+    Given that all optimizers have the same number of variables, one can also run:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
 
-    This is 5 parallel (by num_workers = 5).
+    Note
+    ----
+    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
 
-    Be careful! The variables refer to the deep representation used by optimizers.
+    Caution
+    -------
+    The variables refer to the deep representation used by optimizers.
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
@@ -866,78 +877,77 @@ class SplitOptimizer(base.Optimizer):
             num_workers: int = 1,
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
-            multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+            multivariate_optimizer: base.OptCls = CMA,
+            monovariate_optimizer: base.OptCls = RandomSearch,
             progressive: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
+        self._progressive = progressive
+        subparams: tp.List[p.Parameter] = []
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
-            if num_optims is not None:  # (S)he also specifies the number of splits.
-                assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
-            else:  # Better: we deduce the number of splits.
-                num_optims = len(num_vars)
             assert sum(num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
-        else:  # The user did not specify the number of vars per split.
-            if num_optims is None:  # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
-                if isinstance(parametrization, p.Parameter):
-                    param_val = [x[1] for x in sorted(parametrization.value.items(), key=lambda x: int(x[0]))]
-                    num_vars = []
-                    for param_v in param_val:
-                        num_vars += [param_v.dimension if isinstance(param_v, p.Parameter) else 1]
-                    num_optims = len(num_vars)
-                else:  # Desperate situation: just split in 2.
-                    num_optims = 2
+            if num_optims is None:  # we deduce the number of splits.
+                num_optims = len(num_vars)
+            assert num_optims == len(num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
+        elif num_optims is None:
+            # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
+            if isinstance(parametrization, p.Parameter):
+                subparams = [x[1] for x in paramhelpers.split_as_data_parameters(parametrization)]
+                if len(subparams) == 1:
+                    subparams.clear()
+                num_optims = len(subparams)
+            if not subparams:  # Desperate situation: just split in 2.
+                num_optims = 2
+        if not subparams:
             # if num_vars not given: we will distribute variables equally.
-        if num_optims > self.dimension:
-            num_optims = self.dimension
-        self.num_optims = num_optims
-        self.progressive = progressive
-        self.optims: tp.List[tp.Any] = []
-        self.num_vars: tp.List[tp.Any] = num_vars if num_vars else []
-        self.parametrizations: tp.List[tp.Any] = []
-        for i in range(self.num_optims):
-            if not self.num_vars or len(self.num_vars) < i + 1:
-                self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
-
-            assert self.num_vars[i] >= 1, "At least one variable per optimizer."
-            self.parametrizations += [p.Array(shape=(self.num_vars[i],))]
-            for param in self.parametrizations:
-                param.random_state = self.parametrization.random_state
-            assert len(self.optims) == i
-            if self.num_vars[i] > 1:
-                self.optims += [multivariate_optimizer(self.parametrizations[i], budget, num_workers)]  # noqa: F405
-            else:
-                self.optims += [monovariate_optimizer(self.parametrizations[i], budget, num_workers)]  # noqa: F405
-
-        assert sum(
-            self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
+            assert num_optims is not None
+            num_optims = min(num_optims, self.dimension)
+            num_vars = num_vars if num_vars else []
+            for i in range(num_optims):
+                if len(num_vars) < i + 1:
+                    num_vars += [(self.dimension // num_optims) + (self.dimension % num_optims > i)]
+                assert num_vars[i] >= 1, "At least one variable per optimizer."
+                subparams += [p.Array(shape=(num_vars[i],))]
+        # synchronize random state and create optimizers
+        self.optims: tp.List[base.Optimizer] = []
+        mono, multi = monovariate_optimizer, multivariate_optimizer
+        for param in subparams:
+            param.random_state = self.parametrization.random_state
+            self.optims.append((multi if param.dimension > 1 else mono)(param, budget, num_workers))
+        # final check for dimension
+        assert sum(opt.dimension for opt in self.optims) == self.dimension, (
+            "sum of sub-dimensions should be equal to the total dimension."
+        )
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        data: tp.List[tp.Any] = []
-        for i in range(self.num_optims):
-            if self.progressive:
+        candidates: tp.List[p.Parameter] = []
+        for i, opt in enumerate(self.optims):
+            if self._progressive:
                 assert self.budget is not None
-                if i > 0 and i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
-                    data += [0.] * self.num_vars[i]
+                if i > 0 and i / len(self.optims) > np.sqrt(2.0 * self.num_ask / self.budget):
+                    candidates.append(opt.parametrization.spawn_child())  # unchanged
                     continue
-            opt = self.optims[i]
-            data += list(opt.ask().get_standardized_data(reference=opt.parametrization))
-        assert len(data) == self.dimension
-        return self.parametrization.spawn_child().set_standardized_data(data)
+            candidates.append(opt.ask())
+        data = np.concatenate([c.get_standardized_data(reference=opt.parametrization)
+                               for c, opt in zip(candidates, self.optims)], axis=0)
+        cand = self.parametrization.spawn_child().set_standardized_data(data)
+        self._subcandidates[cand.uid] = candidates
+        return cand
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        n = 0
-        for i in range(self.num_optims):
-            opt = self.optims[i]
-            local_data = list(data)[n:n + self.num_vars[i]]
-            n += self.num_vars[i]
-            assert len(local_data) == self.num_vars[i]
-            local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
-            opt.tell(local_candidate, loss)
+        candidates = self._subcandidates.pop(candidate.uid)
+        for cand, opt in zip(candidates, self.optims):
+            opt.tell(cand, loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        start = 0
+        for opt in self.optims:
+            local_data = data[start:start + opt.dimension]
+            start += opt.dimension
+            local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
+            opt.tell(local_candidate, loss)
 
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
@@ -957,10 +967,10 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        num_optims: int = 2,
+        num_optims: tp.Optional[int] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
-        multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-        monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+        multivariate_optimizer: base.OptCls = CMA,
+        monovariate_optimizer: base.OptCls = RandomSearch,
         progressive: bool = False
     ) -> None:
         super().__init__(SplitOptimizer, locals())
@@ -1577,7 +1587,6 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
-
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
 chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name("chainDiagonalCMAPowell", register=True)
@@ -1896,6 +1905,15 @@ class MetaModel(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
 
+
+def _as_choice_tag(param: p.Parameter) -> p.BaseChoice.ChoiceTag:
+    # arrays inherit tags to identify them as bound to a choice
+    if p.BaseChoice.ChoiceTag in param.heritage:
+        return param.heritage[p.BaseChoice.ChoiceTag]  # type ignore
+    arity = len(param.choices) if isinstance(param, p.BaseChoice) else -1
+    return p.BaseChoice.ChoiceTag(type(param), arity)
+
+
 @registry.register
 class NGOpt2(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
@@ -1907,34 +1925,36 @@ class NGOpt2(base.Optimizer):
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
-        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
+        choicetags = [_as_choice_tag(x) for x in all_params.values()]
+        self.has_discrete_not_softmax = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
+        arity: int = max(ct.arity for ct in choicetags)
+        optimClass: base.OptCls
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif arity > 0:
-            optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
+            optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
                 # noise and discrete: let us merge evolution and bandits.
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
             else:
                 if self.has_noise and self.fully_continuous:
                     # This is the real of population control. FIXME: should we pair with a bandit ?
-                    optimClass = TBPSA  # type: ignore
+                    optimClass = TBPSA
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
+                        optimClass = DoubleFastGADiscreteOnePlusOne
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                optimClass = MetaTuneRecentering  # type: ignore
+                                optimClass = MetaTuneRecentering
                             elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA  # type: ignore
+                                optimClass = DiagonalCMA
                             elif self.dimension < 5 and budget < 500:
-                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)  # type: ignore
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100])
                             else:
-                                optimClass = NaiveTBPSA  # type: ignore
+                                optimClass = NaiveTBPSA
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
@@ -1942,24 +1962,24 @@ class NGOpt2(base.Optimizer):
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne  # type: ignore
+                                        optimClass = OnePlusOne
                                     elif self.dimension < 5:
-                                        optimClass = MetaModel  # type: ignore
+                                        optimClass = MetaModel
                                     else:
-                                        optimClass = Cobyla  # type: ignore
+                                        optimClass = Cobyla
                                 else:
                                     if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE  # type: ignore
+                                        optimClass = DE
                                     else:
                                         if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel  # type: ignore
+                                            optimClass = MetaModel
                                         else:
                                             if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
-                                                optimClass = DiagonalCMA  # type: ignore
+                                                optimClass = DiagonalCMA
                                             elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
-                                                optimClass = MetaModel  # type: ignore
+                                                optimClass = MetaModel
                                             else:
-                                                optimClass = CMA  # type: ignore
+                                                optimClass = CMA
         self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
@@ -1974,6 +1994,7 @@ class NGOpt2(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
         self.optim.tell(candidate, value)
+
 
 ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
     "ProgD13", register=True
@@ -1993,20 +2014,19 @@ class NGOpt4(base.Optimizer):
         arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
         # We multiply check that it's continuous.
         self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
+        optimClass: base.OptCls
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            if budget > 10000:
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
-            else:
-                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+            mutation = "portfolio" if budget > 1000 else "discrete"
+            optimClass = ParametrizedOnePlusOne(crossover=True, mutation=mutation, noise_handling="optimistic")
         elif arity > 0:
             if arity == 2:
-                optimClass = DiscreteOnePlusOne  # type: ignore
+                optimClass = DiscreteOnePlusOne
             else:
                 if arity < 5:
-                    optimClass = AdaptiveDiscreteOnePlusOne  # type: ignore
+                    optimClass = AdaptiveDiscreteOnePlusOne
                 else:
-                    optimClass = CMandAS2  # type: ignore
-            #optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
+                    optimClass = CMandAS2
+            # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.fully_continuous and self.dimension > 100:
@@ -2018,46 +2038,46 @@ class NGOpt4(base.Optimizer):
                         optimClass = SQP
                     else:
                         # This is the realm of population control. FIXME: should we pair with a bandit ?
-                        optimClass = TBPSA  # type: ignore
+                        optimClass = TBPSA
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
+                        optimClass = DoubleFastGADiscreteOnePlusOne
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                optimClass = MetaTuneRecentering  # type: ignore
+                                optimClass = MetaTuneRecentering
                             elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA  # type: ignore
+                                optimClass = DiagonalCMA
                             elif self.dimension < 5 and budget < 500:
-                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining", register=True)  # type: ignore
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100])
                             else:
-                                optimClass = NaiveTBPSA  # type: ignore
+                                optimClass = NaiveTBPSA
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = chainNaiveTBPSACMAPowell  # type: ignore
+                                optimClass = chainNaiveTBPSACMAPowell
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne  # type: ignore
+                                        optimClass = OnePlusOne
                                     elif self.dimension < 5:
-                                        optimClass = MetaModel  # type: ignore
+                                        optimClass = MetaModel
                                     else:
-                                        optimClass = Cobyla  # type: ignore
+                                        optimClass = Cobyla
                                 else:
                                     if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE  # type: ignore
+                                        optimClass = DE
                                     else:
                                         if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel  # type: ignore
+                                            optimClass = MetaModel
                                         else:
                                             if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
-                                                optimClass = DiagonalCMA  # type: ignore
+                                                optimClass = DiagonalCMA
                                             elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
-                                                optimClass = MetaModel  # type: ignore
+                                                optimClass = MetaModel
                                             else:
-                                                optimClass = CMA  # type: ignore
-        self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
+                                                optimClass = CMA
+        self.optim = optimClass(self.parametrization, budget, num_workers)
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
     def _internal_ask_candidate(self) -> p.Parameter:

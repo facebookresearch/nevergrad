@@ -62,6 +62,22 @@ def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iter
 
 
 @testing.parametrized(
+    # updating this tests requires checking manually through prints
+    # that everything works as intended
+    v_tuple_choice_dict=(p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
+                         ['0.choices.0.x', '0.choices.1', '0.weights']),
+    multiple=(p.Instrumentation(p.Scalar(init=12, lower=12, upper=12.01),
+                                x=p.Choice([3, p.Log(lower=0.01, upper=0.1)]),
+                                z=p.Array(init=[12, 12]).set_bounds(lower=12, upper=15),
+                                y=p.Array(init=[1, 1])),
+              ['0', 'x.choices.1', 'x.weights', 'y', 'z']),
+)
+def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> None:
+    output = helpers.split_as_data_parameters(param)
+    assert [x[0] for x in output] == names
+
+
+@testing.parametrized(
     order_0=(0, ("", "choices.0.x", "choices.1", "weights")),
     order_1=(1, ("", "choices.0.x", "choices.1", "weights", "choices.1#sigma", "choices.0.x#sigma")),
     order_2=(2, ("", "choices.0.x", "choices.1", "weights", "choices.1#sigma", "choices.0.x#sigma", "choices.1#sigma#sigma")),
