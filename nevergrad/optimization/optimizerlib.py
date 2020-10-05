@@ -1896,11 +1896,11 @@ class Shiwa(NGOptBase):
         else:
             if not self.parametrization.descriptors.metrizable:
                 if self.dimension < 60:
-                    self.optim = NGO(self.parametrization, budget, num_workers)
+                    self.optim = NGOptBase(self.parametrization, budget, num_workers)
                 else:
                     self.optim = CMA(self.parametrization, budget, num_workers)
             else:
-                self.optim = NGO(self.parametrization, budget, num_workers)
+                self.optim = NGOptBase(self.parametrization, budget, num_workers)
         optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
 
@@ -2000,11 +2000,6 @@ class NGOpt2(base.Optimizer):
         self.optim.tell(candidate, value)
 
 
-ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgD13", register=True
-)
-
-
 @registry.register
 class NGOpt4(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
@@ -2037,7 +2032,8 @@ class NGOpt4(base.Optimizer):
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.fully_continuous and self.dimension > 100:
                 # Waow, this is actually a discrete algorithm.
-                optimClass = ProgD13  # My guess is that we could do better by a sophisticated use of dimension / budget.
+                optimClass = ConfSplitOptimizer(num_optims=13, progressive=True,
+                                                multivariate_optimizer=OptimisticDiscreteOnePlusOne)
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
