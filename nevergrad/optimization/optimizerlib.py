@@ -2016,10 +2016,8 @@ class NGOpt4(base.Optimizer):
         self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
         optimClass: base.OptCls
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            if budget > 10000:
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-            else:
-                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne
+            mutation = "portfolio" if budget > 1000 else "discrete"
+            optimClass = ParametrizedOnePlusOne(crossover=True, mutation=mutation, noise_handling="optimistic")
         elif arity > 0:
             if arity == 2:
                 optimClass = DiscreteOnePlusOne
