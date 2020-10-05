@@ -151,35 +151,29 @@ class ImageAdversarial(base.ExperimentFunction):
         return value * (1.0 if self.targeted else -1.0)
 
     @classmethod
-    def make_benchmark_functions(
+    def make_folder_functions(
             cls,
-            name: str,
+            folder: tp.Optional[tp.PathLike],
+            model: str = "resnet50",
     ) -> tp.Generator["ImageAdversarial", None, None]:
-        tags = {"benchmark": name}
-        if name == "test":
-            imsize = 224
-            classifier = TestClassifier(imsize)
-            image = torch.rand((3, imsize, imsize))
-            yield cls._with_tag(tags=tags, classifier=classifier, image=image,
-                                label=0, targeted=False)
-        elif name == "imagenet":
-            classifier = Resnet50()
-            imsize = 224
-            transform = tr.Compose([tr.Resize(imsize), tr.CenterCrop(imsize), tr.ToTensor()])
-            ifolder = torchvision.datasets.ImageFolder(data_folder, transform)
+        assert model in {"resnet50", "test"}
+        tags = {"folder": "#FAKE#" if folder is None else Path(folder).name, "model": model}
+        classifier: tp.Any = Resnet50() if model == "resnet50" else TestClassifier()
+        imsize = 224
+        transform = tr.Compose([tr.Resize(imsize), tr.CenterCrop(imsize), tr.ToTensor()])
+        if folder is None:
+            x = torch.zeros(1, 3, 224, 224)
+            _, pred = torch.max(classifier(x), axis=1)
+            data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
+        elif Path(folder).is_dir():
+            ifolder = torchvision.datasets.ImageFolder(folder, transform)
             data_loader = torch.utils.DataLoader(ifolder, batch_size=1, shuffle=True,
                                                  num_workers=8, pin_memory=True)
-            for _, (data, target) in enumerate(data_loader):
-                _, pred = torch.max(classifier(data), axis=1)
-                if pred == target:
-                    func = cls._with_tag(tags=tags, classifier=classifier, image=data[0],
-                                         label=int(target), targeted=False, epsilon=0.05)
-            yield func
         else:
-            raise ValueError(f'Unknown benchmark case "{name}"')
-
-    # @classmethod
-#         x, y = torch.zeros(1, 3, 224, 224), 0
-#         path_exist = True
-#         data_loader = [(x, y)]
-#         path_exist = False
+            raise ValueError(f"{folder} is not a valid folder.")
+        for data, target in data_loader:
+            _, pred = torch.max(classifier(data), axis=1)
+            if pred == target:
+                func = cls._with_tag(tags=tags, classifier=classifier, image=data[0],
+                                     label=int(target), targeted=False, epsilon=0.05)
+                yield func

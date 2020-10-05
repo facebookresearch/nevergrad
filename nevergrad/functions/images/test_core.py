@@ -8,7 +8,7 @@ from . import core
 
 
 def test_images_adversarial() -> None:
-    func = next(core.ImageAdversarial.make_benchmark_functions("test"))
+    func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
     x = np.zeros(func.image.shape)
 
     value = func(x)  # should not touch boundaries, so value should be < np.inf

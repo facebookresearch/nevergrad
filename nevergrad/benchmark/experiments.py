@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
+import warnings
 import typing as tp
 import itertools
 import numpy as np
@@ -1327,7 +1329,10 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    for func in ImageAdversarial.make_benchmark_functions("imagenet"):
+    folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
+    if folder is None:
+        warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
+    for func in ImageAdversarial.make_folder_functions(folder=folder):
         for budget in [10]:
             for num_workers in [1]:
                 for algo in optims:
