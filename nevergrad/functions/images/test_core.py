@@ -10,12 +10,20 @@ from . import core
 def test_images_adversarial() -> None:
     func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
     x = np.zeros(func.image.shape)
-
-    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    value = func(x)
     assert value < np.inf
     other_func = func.copy().copy()
     value2 = other_func(x)
-    assert value2 < np.inf
+    assert value2 == value  # same function
+
+
+def test_image_adversarial_eval() -> None:
+    func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
+    output = func.evaluation_function(func.parametrization.value)
+    assert output == 0
+    func.targeted = True
+    output = func.evaluation_function(func.parametrization.value)
+    assert output == 1
 
 
 def test_images() -> None:

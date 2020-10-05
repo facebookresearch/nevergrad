@@ -129,26 +129,25 @@ class ImageAdversarial(base.ExperimentFunction):
         # classifier and image cant be set as descriptors
         self.add_descriptors(label=label, targeted=targeted, epsilon=epsilon)
 
-    @classmethod
-    def _with_tag(
-            cls,
-            tags: tp.Dict[str, str],
-            **kwargs: tp.Any,
-    ) -> "ImageAdversarial":
-        func = cls(**kwargs)
-        func.add_descriptors(**tags)
-        func._initialization_func = cls._with_tag  # type: ignore
-        assert func._initialization_kwargs is not None
-        func._initialization_kwargs["tags"] = tags
-        return func
-
     def _loss(self, x: np.ndarray) -> float:
-        x = torch.Tensor(x)
-        image_adv = torch.clamp(self.image + x, 0, 1)
-        image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
-        output_adv = self.classifier(image_adv)
+        output_adv = self._get_classifier_output(x)
         value = float(self.criterion(output_adv, self.label).item())
         return value * (1.0 if self.targeted else -1.0)
+
+    def _get_classifier_output(self, x: np.ndarray) -> tp.Any:
+        y = torch.Tensor(x)
+        image_adv = torch.clamp(self.image + y, 0, 1)
+        image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
+        return self.classifier(image_adv)
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        """Returns wheter the attack worked or not
+        """
+        output_adv = self._get_classifier_output(x)
+        _, pred = torch.max(output_adv, axis=1)
+        actual = int(self.label)
+        return float(pred == actual if self.targeted else pred != actual)
 
     @classmethod
     def make_folder_functions(
@@ -156,6 +155,20 @@ class ImageAdversarial(base.ExperimentFunction):
             folder: tp.Optional[tp.PathLike],
             model: str = "resnet50",
     ) -> tp.Generator["ImageAdversarial", None, None]:
+        """
+
+        Parameters
+        ----------
+        folder: str or None
+            folder to use for reference images. If None, 1 random image is created.
+        model: str
+            model name to use
+
+        Yields
+        ------
+        ExperimentFunction
+            an experiment function corresponding to 1 of the image of the provided folder dataset.
+        """
         assert model in {"resnet50", "test"}
         tags = {"folder": "#FAKE#" if folder is None else Path(folder).name, "model": model}
         classifier: tp.Any = Resnet50() if model == "resnet50" else TestClassifier()
@@ -177,3 +190,17 @@ class ImageAdversarial(base.ExperimentFunction):
                 func = cls._with_tag(tags=tags, classifier=classifier, image=data[0],
                                      label=int(target), targeted=False, epsilon=0.05)
                 yield func
+
+    @classmethod
+    def _with_tag(
+            cls,
+            tags: tp.Dict[str, str],
+            **kwargs: tp.Any,
+    ) -> "ImageAdversarial":
+        # generates an instance with a hack so that additional tags are propagated to copies
+        func = cls(**kwargs)
+        func.add_descriptors(**tags)
+        func._initialization_func = cls._with_tag  # type: ignore
+        assert func._initialization_kwargs is not None
+        func._initialization_kwargs["tags"] = tags
+        return func
