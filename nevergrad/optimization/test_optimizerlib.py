@@ -462,3 +462,15 @@ def test_bo_ordering() -> None:
     )
     cand = optim.ask()
     optim.tell(cand, 12)
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "name,expected", [("NGOpt2", ["CMA", "CMandAS2"]),
+                      ]
+)
+def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
+    param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    Opt = optlib.registry[name]
+    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
+    names = [o.optim.name for o in opt.optims]  # type: ignore
+    assert names == expected
