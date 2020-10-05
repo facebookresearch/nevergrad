@@ -135,6 +135,7 @@ class ImageAdversarial(base.ExperimentFunction):
         return value * (1.0 if self.targeted else -1.0)
 
     def _get_classifier_output(self, x: np.ndarray) -> tp.Any:
+        # call to the classifier given the input array
         y = torch.Tensor(x)
         image_adv = torch.clamp(self.image + y, 0, 1)
         image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
@@ -142,7 +143,7 @@ class ImageAdversarial(base.ExperimentFunction):
 
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
-        """Returns wheter the attack worked or not
+        """Returns wether the attack worked or not
         """
         output_adv = self._get_classifier_output(x)
         _, pred = torch.max(output_adv, axis=1)
