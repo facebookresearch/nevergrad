@@ -689,6 +689,28 @@ This class is a wrapper over the <a class="reference external" href="https://git
 </dd></dl>
 
 <dl class="py class">
+<dt id="nevergrad.families.ParametrizedCMA">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedCMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">scale</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">popsize</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">diagonal</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fcmaes</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">random_init</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedCMA" title="Permalink to this definition">¶</a></dt>
+<dd><p>CMA-ES optimizer,
+This evolution strategy uses a Gaussian sampling, iteratively modified
+for searching in the best directions.
+This optimizer wraps an external implementation: <a class="reference external" href="https://github.com/CMA-ES/pycma">https://github.com/CMA-ES/pycma</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scale</strong> (<em>float</em>) – scale of the search</p></li>
+<li><p><strong>popsize</strong> (<em>Optional</em><em>[</em><em>int</em><em>] </em><em>= None</em>) – population size, should be n * self.num_workers for int n &gt;= 1.
+default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))</p></li>
+<li><p><strong>diagonal</strong> (<em>bool</em>) – use the diagonal version of CMA (advised in big dimension)</p></li>
+<li><p><strong>fcmaes</strong> (<em>bool = False</em>) – use fast implementation, doesn’t support diagonal=True.
+produces equivalent results, preferable for high dimensions or
+if objective function evaluation is fast.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
 <dt id="nevergrad.families.ParametrizedOnePlusOne">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.families.</code><code class="sig-name descname">ParametrizedOnePlusOne</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">noise_handling</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>Tuple<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">crossover</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedOnePlusOne" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple but sometimes powerfull class of optimization algorithm.
@@ -925,7 +947,7 @@ Each algorithm is fed with what happened before it.</p>
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.ConfSplitOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfSplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">num_optims</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">2</span></em>, <em class="sig-param"><span class="n">num_vars</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multivariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">CMA</span></em>, <em class="sig-param"><span class="n">monovariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">RandomSearch</span></em>, <em class="sig-param"><span class="n">progressive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfSplitOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">ConfSplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">num_optims</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_vars</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multivariate_optimizer</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>ConfiguredOptimizer<span class="p">, </span>Type<span class="p">[</span>Optimizer<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">CMA</span></em>, <em class="sig-param"><span class="n">monovariate_optimizer</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>ConfiguredOptimizer<span class="p">, </span>Type<span class="p">[</span>Optimizer<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">RandomSearch</span></em>, <em class="sig-param"><span class="n">progressive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfSplitOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Configurable split optimizer</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1315,21 +1337,34 @@ Efficient implementation of Enhanced Adaptive Simultaneous Perturbation Algorith
 
 <dl class="py class">
 <dt id="nevergrad.optimization.optimizerlib.SplitOptimizer">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">num_optims</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_vars</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multivariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">CMA</span></em>, <em class="sig-param"><span class="n">monovariate_optimizer</span><span class="p">:</span> <span class="n">nevergrad.optimization.base.ConfiguredOptimizer</span> <span class="o">=</span> <span class="default_value">RandomSearch</span></em>, <em class="sig-param"><span class="n">progressive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SplitOptimizer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.optimization.optimizerlib.</code><code class="sig-name descname">SplitOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parametrization</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>nevergrad.parametrization.core.Parameter<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">budget</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">num_optims</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_vars</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multivariate_optimizer</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>ConfiguredOptimizer<span class="p">, </span>Type<span class="p">[</span>Optimizer<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">CMA</span></em>, <em class="sig-param"><span class="n">monovariate_optimizer</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>ConfiguredOptimizer<span class="p">, </span>Type<span class="p">[</span>Optimizer<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">RandomSearch</span></em>, <em class="sig-param"><span class="n">progressive</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.SplitOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Combines optimizers, each of them working on their own variables.</p>
-<p>num_optims: number of optimizers
-num_vars: number of variable per optimizer.
-progressive: True if we want to progressively add optimizers during the optimization run.
-If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.</p>
-<p>E.g. for 5 optimizers, each of them working on 2 variables, we can use:
-opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_optims</strong> (<em>int</em><em> or </em><em>None</em>) – number of optimizers</p></li>
+<li><p><strong>num_vars</strong> (<em>int</em><em> or </em><em>None</em>) – number of variable per optimizer.</p></li>
+<li><p><strong>progressive</strong> (<em>bool</em>) – True if we want to progressively add optimizers during the optimization run.
+If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>for 5 optimizers, each of them working on 2 variables, one can use:</p>
+<p>opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
 or equivalently:
 opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
-Given that all optimizers have the same number of variables, we can also do:
+Given that all optimizers have the same number of variables, one can also run:
 opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)</p>
-<p>This is 5 parallel (by num_workers = 5).</p>
-<p>Be careful! The variables refer to the deep representation used by optimizers.
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.</p>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The variables refer to the deep representation used by optimizers.
 For example, a categorical variable with 5 possible values becomes 5 continuous variables.</p>
+</div>
 </dd></dl>
 
 <dl class="py class">
