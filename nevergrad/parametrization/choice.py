@@ -27,8 +27,8 @@ class BaseChoice(core.Dict):
         @classmethod
         def as_tag(cls, param: core.Parameter) -> "BaseChoice.ChoiceTag":
             # arrays inherit tags to identify them as bound to a choice
-            if cls in param.heritage:
-                output = param.heritage[cls]
+            if cls in param.heritage:  # type: ignore
+                output = param.heritage[cls]  # type: ignore
                 assert isinstance(output, cls)
                 return output
             arity = len(param.choices) if isinstance(param, BaseChoice) else -1
