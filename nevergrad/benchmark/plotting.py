@@ -195,6 +195,9 @@ def create_plots(
         df = df.drop(columns="dimension")
         if "parametrization" in set(df.columns):
             df = df.drop(columns="parametrization")
+    if "num_repetitions" in set(df.columns):
+        df.loc[:, "optimizer_name"] = df.loc[:, "optimizer_name"] + df.loc[:, "num_repetitions"].apply(str)
+        df = df.drop(columns="num_repetitions")            
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
