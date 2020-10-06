@@ -1974,33 +1974,24 @@ class NGOpt2(NGOptBase):
 
 
 @registry.register
-class NGOpt4(base.Optimizer):
+class NGOpt4(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # override because it is different from NGOptBase (bug?)
+        self.has_discrete_not_softmax = self._has_discrete
+        self.fully_continuous = self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
+        budget, num_workers = self.budget, self.num_workers
         assert budget is not None
-        # Extracting info as far as possible.
-        descr = self.parametrization.descriptors
-        self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
-        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
-        # We multiply check that it's continuous.
-        self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
         optimClass: base.OptCls
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             mutation = "portfolio" if budget > 1000 else "discrete"
             optimClass = ParametrizedOnePlusOne(crossover=True, mutation=mutation, noise_handling="optimistic")
-        elif arity > 0:
-            if arity == 2:
+        elif self._arity > 0:
+            if self._arity == 2:
                 optimClass = DiscreteOnePlusOne
             else:
-                if arity < 5:
-                    optimClass = AdaptiveDiscreteOnePlusOne
-                else:
-                    optimClass = CMandAS2
-            # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
+                optimClass = AdaptiveDiscreteOnePlusOne if self._arity < 5 else CMandAS2
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.fully_continuous and self.dimension > 100:
@@ -2052,20 +2043,7 @@ class NGOpt4(base.Optimizer):
                                                 optimClass = MetaModel
                                             else:
                                                 optimClass = CMA
-        self.optim = optimClass(self.parametrization, budget, num_workers)
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        return self.optim.ask()
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, loss)
-
-    def recommend(self) -> p.Parameter:
-        return self.optim.recommend()
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, value)
+        return optimClass
 
 
 @registry.register
