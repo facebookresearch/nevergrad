@@ -1653,72 +1653,6 @@ class cGA(base.Optimizer):
             self._previous_value_candidate = None
 
 
-# Discussions with Jialin Liu and Fabien Teytaud helped the following development.
-# This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
-@registry.register
-class NGO(base.Optimizer):
-    """Nevergrad optimizer by competence map."""
-    one_shot = True
-
-    # pylint: disable=too-many-branches
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        descr = self.parametrization.descriptors
-        self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        self.fully_continuous = descr.continuous
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
-        # pylint: disable=too-many-nested-blocks
-        if self.has_noise and self.has_discrete_not_softmax:
-            # noise and discrete: let us merge evolution and bandits.
-            if self.dimension < 60:
-                self.optim: base.Optimizer = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
-            else:
-                self.optim = CMA(self.parametrization, budget, num_workers)
-        else:
-            if self.has_noise and self.fully_continuous:
-                # This is the real of population control. FIXME: should we pair with a bandit ?
-                self.optim = TBPSA(self.parametrization, budget, num_workers)
-            else:
-                if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                    self.optim = DoubleFastGADiscreteOnePlusOne(self.parametrization, budget, num_workers)
-                else:
-                    if num_workers > budget / 5:
-                        if num_workers > budget / 2. or budget < self.dimension:
-                            self.optim = MetaRecentering(self.parametrization, budget, num_workers)  # noqa: F405
-                        else:
-                            self.optim = NaiveTBPSA(self.parametrization, budget, num_workers)  # noqa: F405
-                    else:
-                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                        if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                            self.optim = chainCMAPowell(self.parametrization, budget, num_workers)  # noqa: F405
-                        else:
-                            if num_workers == 1 and budget < self.dimension * 30:
-                                if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                    self.optim = OnePlusOne(self.parametrization, budget, num_workers)  # noqa: F405
-                                else:
-                                    self.optim = Cobyla(self.parametrization, budget, num_workers)  # noqa: F405
-                            else:
-                                if self.dimension > 2000:  # DE is great in such a case (?).
-                                    self.optim = DE(self.parametrization, budget, num_workers)  # noqa: F405
-                                else:
-                                    self.optim = CMA(self.parametrization, budget, num_workers)  # noqa: F405
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        return self.optim.ask()
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, loss)
-
-    def recommend(self) -> p.Parameter:
-        return self.optim.recommend()
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, loss)
-
-
 class _EMNA(base.Optimizer):
     """Simple Estimation of Multivariate Normal Algorithm (EMNA).
     """
@@ -1859,27 +1793,6 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
 @registry.register
-class Shiwa(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
-        else:
-            if not self.parametrization.descriptors.metrizable:
-                if self.dimension < 60:
-                    self.optim = NGO(self.parametrization, budget, num_workers)
-                else:
-                    self.optim = CMA(self.parametrization, budget, num_workers)
-            else:
-                self.optim = NGO(self.parametrization, budget, num_workers)
-        optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
-
-
-@registry.register
 class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
@@ -1904,6 +1817,97 @@ class MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+
+# Discussions with Jialin Liu and Fabien Teytaud helped the following development.
+# This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
+@registry.register
+class NGOptBase(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    # pylint: disable=too-many-branches
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        descr = self.parametrization.descriptors
+        self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        self.fully_continuous = descr.continuous
+        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
+        self.optim = self._select_optimizer_cls()(self.parametrization, budget, num_workers)
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # pylint: disable=too-many-nested-blocks
+        assert self.budget is not None
+        if self.has_noise and self.has_discrete_not_softmax:
+            # noise and discrete: let us merge evolution and bandits.
+            if self.dimension < 60:
+                cls: base.OptCls = DoubleFastGADiscreteOnePlusOne
+            else:
+                cls = CMA
+        else:
+            if self.has_noise and self.fully_continuous:
+                # This is the real of population control. FIXME: should we pair with a bandit ?
+                cls = TBPSA
+            else:
+                if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
+                    cls = DoubleFastGADiscreteOnePlusOne
+                else:
+                    if self.num_workers > self.budget / 5:
+                        if self.num_workers > self.budget / 2. or self.budget < self.dimension:
+                            cls = MetaRecentering
+                        else:
+                            cls = NaiveTBPSA
+                    else:
+                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                        if self.num_workers == 1 and self.budget > 6000 and self.dimension > 7:  # Let us go memetic.
+                            cls = chainCMAPowell
+                        else:
+                            if self.num_workers == 1 and self.budget < self.dimension * 30:
+                                # One plus one so good in large ratio "dimension / budget".
+                                cls = OnePlusOne if self.dimension > 30 else Cobyla
+                            else:
+                                # DE is great in such a case (?).
+                                cls = DE if self.dimension > 2000 else CMA
+        return cls
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        return self.optim.ask()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+
+@registry.register
+class Shiwa(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
+        else:
+            if not self.parametrization.descriptors.metrizable:
+                if self.dimension < 60:
+                    self.optim = NGOptBase(self.parametrization, budget, num_workers)
+                else:
+                    self.optim = CMA(self.parametrization, budget, num_workers)
+            else:
+                self.optim = NGOptBase(self.parametrization, budget, num_workers)
+        optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
+
+
+@registry.register
+class NGO(NGOptBase):  # compatibility
+    pass
 
 
 def _as_choice_tag(param: p.Parameter) -> p.BaseChoice.ChoiceTag:
@@ -1996,9 +2000,6 @@ class NGOpt2(base.Optimizer):
         self.optim.tell(candidate, value)
 
 
-ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgD13", register=True
-)
 @registry.register
 class NGOpt4(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
@@ -2031,7 +2032,8 @@ class NGOpt4(base.Optimizer):
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.fully_continuous and self.dimension > 100:
                 # Waow, this is actually a discrete algorithm.
-                optimClass = ProgD13  # My guess is that we could do better by a sophisticated use of dimension / budget.
+                optimClass = ConfSplitOptimizer(num_optims=13, progressive=True,
+                                                multivariate_optimizer=OptimisticDiscreteOnePlusOne)
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
