@@ -880,6 +880,7 @@ class SplitOptimizer(base.Optimizer):
             multivariate_optimizer: base.OptCls = CMA,
             monovariate_optimizer: base.OptCls = RandomSearch,
             progressive: bool = False,
+            non_deterministic_descriptor: bool = True,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
@@ -909,6 +910,9 @@ class SplitOptimizer(base.Optimizer):
                     num_vars += [(self.dimension // num_optims) + (self.dimension % num_optims > i)]
                 assert num_vars[i] >= 1, "At least one variable per optimizer."
                 subparams += [p.Array(shape=(num_vars[i],))]
+        if non_deterministic_descriptor:
+            for param in subparams:
+                param.descriptors.deterministic_function = False
         # synchronize random state and create optimizers
         self.optims: tp.List[base.Optimizer] = []
         mono, multi = monovariate_optimizer, multivariate_optimizer
@@ -951,7 +955,7 @@ class SplitOptimizer(base.Optimizer):
 
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
-    """Configurable split optimizer
+    """"Combines optimizers, each of them working on their own variables.
 
     Parameters
     ----------
@@ -961,6 +965,9 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         number of variable per optimizer.
     progressive: optional bool
         whether we progressively add optimizers.
+    non_deterministic_descriptor: bool
+        subparts parametrization descriptor is set to noisy function.
+        This can have an impact for optimizer selection for NGOpt optimizers.
     """
 
     # pylint: disable=unused-argument
@@ -971,7 +978,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_vars: tp.Optional[tp.List[int]] = None,
         multivariate_optimizer: base.OptCls = CMA,
         monovariate_optimizer: base.OptCls = RandomSearch,
-        progressive: bool = False
+        progressive: bool = False,
+        non_deterministic_descriptor: bool = True,
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 

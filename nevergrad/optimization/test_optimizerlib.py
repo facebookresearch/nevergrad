@@ -465,8 +465,7 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name,expected", [("NGOpt2", ["CMA", "CMandAS2"]),
-                      ]
+    "name,expected", [("NGOpt2", ["TBPSA", "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne"])]
 )
 def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
