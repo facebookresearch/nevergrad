@@ -1832,9 +1832,12 @@ class NGOptBase(base.Optimizer):
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.TransitionChoice) for x in all_params.values())
+        choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
+        self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self.optim = self._select_optimizer_cls()(self.parametrization, budget, num_workers)
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
+        # debut print
+        optim = self.optim if not isinstance(self.optim, NGOptBase) else self.optim.optim
+        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # pylint: disable=too-many-nested-blocks
@@ -1888,34 +1891,19 @@ class NGOptBase(base.Optimizer):
 class Shiwa(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
+    def _select_optimizer_cls(self) -> base.OptCls:
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
+            optCls: base.OptCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         else:
-            if not self.parametrization.descriptors.metrizable:
-                if self.dimension < 60:
-                    self.optim = NGOptBase(self.parametrization, budget, num_workers)
-                else:
-                    self.optim = CMA(self.parametrization, budget, num_workers)
-            else:
-                self.optim = NGOptBase(self.parametrization, budget, num_workers)
-        optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
+            optCls = NGOptBase
+            if self.dimension > 60 and not self.parametrization.descriptors.metrizable:
+                optCls = CMA
+        return optCls
 
 
 @registry.register
 class NGO(NGOptBase):  # compatibility
     pass
-
-
-def _as_choice_tag(param: p.Parameter) -> p.BaseChoice.ChoiceTag:
-    # arrays inherit tags to identify them as bound to a choice
-    if p.BaseChoice.ChoiceTag in param.heritage:
-        return param.heritage[p.BaseChoice.ChoiceTag]  # type ignore
-    arity = len(param.choices) if isinstance(param, p.BaseChoice) else -1
-    return p.BaseChoice.ChoiceTag(type(param), arity)
 
 
 @registry.register
@@ -1929,7 +1917,7 @@ class NGOpt2(base.Optimizer):
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
-        choicetags = [_as_choice_tag(x) for x in all_params.values()]
+        choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         arity: int = max(ct.arity for ct in choicetags)
         optimClass: base.OptCls
