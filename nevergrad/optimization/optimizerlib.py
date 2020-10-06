@@ -1842,7 +1842,6 @@ class NGOptBase(base.Optimizer):
             self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
             optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
             logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
-            print("PRINT: %s selected %s optimizer.", *(x.name for x in (self, optim)))
         return self._optim
 
     def _select_optimizer_cls(self) -> base.OptCls:
