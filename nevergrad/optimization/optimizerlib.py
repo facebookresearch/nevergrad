@@ -1849,10 +1849,7 @@ class NGOptBase(base.Optimizer):
         assert self.budget is not None
         if self.has_noise and self.has_discrete_not_softmax:
             # noise and discrete: let us merge evolution and bandits.
-            if self.dimension < 60:
-                cls: base.OptCls = DoubleFastGADiscreteOnePlusOne
-            else:
-                cls = CMA
+            cls: base.OptCls = DoubleFastGADiscreteOnePlusOne if self.dimension < 60 else CMA
         else:
             if self.has_noise and self.fully_continuous:
                 # This is the real of population control. FIXME: should we pair with a bandit ?
@@ -1901,7 +1898,7 @@ class Shiwa(NGOptBase):
             optCls: base.OptCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         else:
             optCls = NGOptBase
-            if self.dimension > 60 and not self.parametrization.descriptors.metrizable:
+            if self.dimension >= 60 and not self.parametrization.descriptors.metrizable:
                 optCls = CMA
         return optCls
 
