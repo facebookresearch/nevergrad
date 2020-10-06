@@ -304,6 +304,9 @@ def create_plots(
     data = XpPlotter.make_data(df, normalized_loss=True)
     xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
     xpplotter.save(out_filepath)
+    data_unnormalized = XpPlotter.make_data(df, normalized_loss=False)
+    xpplotter = XpPlotter(data_unnormalized, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
+    xpplotter.save(output_folder / "xpresults_all_unnormalized.png)    
     # Now one xp plot per case.
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
