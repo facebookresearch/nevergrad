@@ -1141,58 +1141,8 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                          seed=next(seedg))  # type: ignore
 
 
-# Intermediate definition for building a multiobjective problem.
-class PackedFunctions(ExperimentFunction):
-
-    def __init__(self, functions: tp.List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
-        self._functions = functions
-        assert len(functions) > 0
-        self._upper_bounds = upper_bounds
-        self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
-        super().__init__(self.multiobjective, self._functions[0].parametrization)
-        self._parametrization.descriptors.not_manyobjective = len(functions) < 4
-        self._parametrization.descriptors.monoobjective = len(functions) == 1
-        # TODO add descriptors?
-
-    def _mo(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
-        return np.array([f(*args, **kwargs) for f in self._functions])
-
-    def copy(self) -> "PackedFunctions":
-        return PackedFunctions([f.copy() for f in self._functions], self._upper_bounds)
-
-
 @registry.register
 def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
-    Dimension 6 and 7.
-    Budget 2000, 2400, 2800, 3200, 3600, 4000.
-    """
-    # hopefully this can be deprecated in favor of the new integrated version
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA", "CMA", "OnePlusOne",
-              "TwoPointsDE"]
-    if default_optims is not None:
-        optims = default_optims
-    mofuncs: tp.List[PackedFunctions] = []
-    for name1 in ["sphere", "cigar"]:
-        for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
-                                         ArtificialFunction(name2, block_dimension=7)],
-                                        upper_bounds=np.array((50., 50.)))]
-            for name3 in ["sphere", "ellipsoid"]:
-                mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
-                                             ArtificialFunction(name3, block_dimension=6),
-                                             ArtificialFunction(name2, block_dimension=6)],
-                                            upper_bounds=np.array((100, 100, 1000.)))]
-    for mofunc in mofuncs:
-        for optim in optims:
-            for budget in list(range(2000, 4001, 400)):
-                for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
-def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
     Dimension 6 and 7.
     Budget 100 to 3200
