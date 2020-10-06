@@ -1894,12 +1894,11 @@ class Shiwa(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            optCls: base.OptCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-        else:
-            optCls = NGOptBase
-            if self.dimension >= 60 and not self.parametrization.descriptors.metrizable:
-                optCls = CMA
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not self.parametrization.descriptors.metrizable:
+            optCls = CMA
         return optCls
 
 
