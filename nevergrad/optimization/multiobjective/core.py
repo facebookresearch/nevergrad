@@ -130,7 +130,9 @@ class HypervolumePareto:
         size:  int (optional)
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
-            method for selecting the subset ("random, "loss-covering", "eps", "domain-covering", "hypervolume")
+            method for selecting the subset ("random, "loss-covering", "EPS", "domain-covering", "hypervolume")
+            EPS is the epsilon indicator described e.g.
+                here: https://hal.archives-ouvertes.fr/hal-01159961v2/document
         subset_tentatives: int
             number of random tentatives for finding a better subset
 
@@ -156,18 +158,16 @@ class HypervolumePareto:
             else:
                 score: float = 0.
                 for v in self._pareto:
-                    best_score = float("inf") if subset != "eps" else 0.
+                    best_score = float("inf") if subset != "EPS" else 0.
                     for pa in tentative:
                         if subset == "loss-covering":  # equivalent to IGD.
                             best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
-                        elif subset == "eps":
-                            # Eps is the epsilon indicator described e.g.
-                            # here: https://hal.archives-ouvertes.fr/hal-01159961v2/document
+                        elif subset == "EPS":
                             best_score = max(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
                             best_score = min(best_score, np.linalg.norm(pa.get_standardized_data(reference=v)))  # TODO verify
                         else:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
-                    score += best_score ** 2 if subset != "eps" else max(score, best_score)
+                    score += best_score ** 2 if subset != "EPS" else max(score, best_score)
                 scores += [score]
         return tentatives[scores.index(min(scores))]
