@@ -448,9 +448,9 @@ def test_shiwa_dim1() -> None:
 )
 def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any) -> None:
     with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
-        optlib.registry[name](param, budget=budget, num_workers=num_workers)
+        optlib.registry[name](param, budget=budget, num_workers=num_workers).optim  # type: ignore
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
-        match = re.match(pattern, caplog.text, re.MULTILINE)
+        match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         assert match.group("name") == expected
 

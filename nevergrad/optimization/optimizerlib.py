@@ -1834,10 +1834,16 @@ class NGOptBase(base.Optimizer):
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
-        self.optim = self._select_optimizer_cls()(self.parametrization, budget, num_workers)
-        # debut print
-        optim = self.optim if not isinstance(self.optim, NGOptBase) else self.optim.optim
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
+        self._optim: tp.Optional[base.Optimizer] = None
+
+    @property
+    def optim(self) -> base.Optimizer:
+        if self._optim is None:
+            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
+            optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
+            print("PRINT: %s selected %s optimizer.", *(x.name for x in (self, optim)))
+        return self._optim
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # pylint: disable=too-many-nested-blocks
