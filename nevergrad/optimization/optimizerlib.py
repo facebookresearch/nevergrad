@@ -1922,7 +1922,7 @@ class NGOpt2(NGOptBase):
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif self._arity > 0:
-            optimClass = DiscreteBSOOnePlusOne if self._arity > 5 else CMandAS2b
+            optimClass = DiscreteBSOOnePlusOne if self._arity > 5 else CMandAS2
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.has_discrete_not_softmax:
