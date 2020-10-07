@@ -24,11 +24,12 @@ class GenericMujocoEnv:
         random state for reproducibility in Gym environment.
     """
     def __init__(self, env_name, state_mean, state_std, num_rollouts,
-                 random_state):
+                 random_state, noise_level=0.):
         self.mean = np.array(state_mean)
         self.std = np.array(state_std)
         self.env = gym.make(env_name)
         self.num_rollouts = num_rollouts
+        self.noise_level = noise_level
         self.env.seed(random_state)
 
     def __call__(self, x):
@@ -41,6 +42,8 @@ class GenericMujocoEnv:
             totalr = 0.
             while not done:
                 action = np.dot(x, (obs - self.mean) / self.std)
+                if self.noise_level > 0.:
+                    action += self.noise_level * action * np.random.normal(size=len(action))
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
             returns.append(totalr)
