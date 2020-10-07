@@ -78,7 +78,7 @@ class BaseFunction(ExperimentFunction):
         
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         # pylint: disable=not-callable
-        loss = (sum([self.function(x) for _ in range(42)]) / 42.) if self.noise_level > 0. else self.function(x)
+        loss = (sum([self.function(x) for _ in range(42)]) / 42.) if self.noise_level > 0. else self.function(x)  # type: ignore
         assert isinstance(loss, float)
         return loss
     
