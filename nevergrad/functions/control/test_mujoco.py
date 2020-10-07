@@ -11,6 +11,7 @@ class MountainCarContinuous(BaseFunction):
     policy_dim= (1, 2)
     state_mean = [0, 0]
     state_std = [1, 1]
+    noise_level = 0.
 
 def test_gym() -> None:
     func = MountainCarContinuous(num_rollouts=5)

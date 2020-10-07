@@ -20,6 +20,7 @@ from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
+from nevergrad.functions import control
 from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
@@ -29,7 +30,6 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
@@ -972,6 +972,45 @@ def scaled_control_problem_ws_nw100(seed: tp.Optional[int] = None) -> tp.Iterato
 
 
 @registry.register
+def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iterator[Experiment]:
+    """MuJoCo testbed. Learn linear policy for different control problems.
+    Budget 500, 1000, 3000, 5000."""
+    seedg = create_seed_generator(seed)
+    funcs = [control.Ant(num_rollouts=5, random_state=seed),
+             control.Swimmer(num_rollouts=5, random_state=seed),
+             control.HalfCheetah(num_rollouts=5, random_state=seed),
+             control.Hopper(num_rollouts=5, random_state=seed),
+             control.Walker2d(num_rollouts=5, random_state=seed),
+             control.Humanoid(num_rollouts=5, random_state=seed)
+             ] if not noisy else [
+             control.NoisyAnt(num_rollouts=5, random_state=seed),
+             control.NoisySwimmer(num_rollouts=5, random_state=seed),
+             control.NoisyHalfCheetah(num_rollouts=5, random_state=seed),
+             control.NoisyHopper(num_rollouts=5, random_state=seed),
+             control.NoisyWalker2d(num_rollouts=5, random_state=seed),
+             control.NoisyHumanoid(num_rollouts=5, random_state=seed)
+    ]
+    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
+              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
+
+    for budget in [500, 1000, 3000, 5000]:
+        for num_workers in [1]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
     specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
@@ -1147,14 +1186,14 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     modules = {'mono': rl.agents.Perceptron, 'multi': rl.agents.DenseNet}
     agents = {a: rl.agents.TorchAgent.from_module_maker(base_env, m, deterministic=False) for a, m in modules.items()}
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering",
-              "Lamcts", "NGOpt4", "DiagonalCMA", "SQP", "MiniDE"]
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
-            # dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-            for optim in optims:
-                for env_budget in [500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
+            dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
+            for optim in ["PSO", "NGO", "Shiwa", "DiagonalCMA", "CMA", "DE", "TwoPointsDE", "TBPSA", "OnePlusOne",
+                          "Zero",
+                          "RandomSearch", "AlmostRotationInvariantDE", dde,
+                          "RecombiningOptimisticNoisyDiscreteOnePlusOne", "PortfolioNoisyDiscreteOnePlusOne"]:
+                for env_budget in [5000, 10000, 20000, 40000]:
                     for num_workers in [1, 10, 100]:
                         # careful, not threadsafe
                         runner = rl.EnvironmentRunner(env.copy(), num_repetitions=num_repetitions, max_step=50)

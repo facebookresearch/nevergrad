@@ -9,3 +9,9 @@ from .core import HalfCheetah as HalfCheetah
 from .core import Hopper as Hopper
 from .core import Walker2d as Walker2d
 from .core import Humanoid as Humanoid
+from .core import NoisyAnt as NoisyAnt
+from .core import NoisySwimmer as NoisySwimmer
+from .core import NoisyHalfCheetah as NoisyHalfCheetah
+from .core import NoisyHopper as NoisyHopper
+from .core import NoisyWalker2d as NoisyWalker2d
+from .core import NoisyHumanoid as NoisyHumanoid
