@@ -923,7 +923,14 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
+@registry.register
+def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
@@ -933,7 +940,14 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
              control.Hopper(num_rollouts=5, random_state=seed),
              control.Walker2d(num_rollouts=5, random_state=seed),
              control.Humanoid(num_rollouts=5, random_state=seed)
-             ]
+             ] if not noisy else [
+             control.NoisyAnt(num_rollouts=5, random_state=seed),
+             control.NoisySwimmer(num_rollouts=5, random_state=seed),
+             control.NoisyHalfCheetah(num_rollouts=5, random_state=seed),
+             control.NoisyHopper(num_rollouts=5, random_state=seed),
+             control.NoisyWalker2d(num_rollouts=5, random_state=seed),
+             control.NoisyHumanoid(num_rollouts=5, random_state=seed)
+    ]
     optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
               "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
