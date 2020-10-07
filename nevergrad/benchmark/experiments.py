@@ -923,13 +923,6 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    internal_generator = control_problem(seed, noisy=True)
-    for xp in internal_generator:
-        yield xp
-        
-        
-@registry.register
 def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
@@ -960,7 +953,14 @@ def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iter
                         if not xp.is_incoherent:
                             yield xp
 
-
+                            
+@registry.register
+def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
