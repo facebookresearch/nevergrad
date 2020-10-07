@@ -923,7 +923,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def scaled_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def scaled_control_problem_ws_nw100(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
@@ -936,19 +936,33 @@ def scaled_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
              control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
 
-    sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
+    sigmas = [1.]  # [0.01, 0.1, 1., 10., 100]
+    betas = [0.5]  # [0.5, 1., 2.]
     funcs2 = []
-    for i in range(6):
-        f = funcs[i].copy()
-        f.parametrization.set_mutation(sigma=sigmas[i]).set_name(f"sigma={sigmas[i]}")
-        f.parametrization.freeze()
-        funcs2.append(f)
-    optims = ["NGOpt5", "RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering",
-              "Lamcts", "NGOpt4", "DiagonalCMA", "SQP", "MiniDE"]
+    for i in range(1):
+        for j in range(1):
+            for k in range(4, 6):
+                f = funcs[k].copy()
+                dim = np.prod(f.policy_dim)
+                f.parametrization.set_mutation(sigma=sigmas[i] / (dim ** betas[j])).set_name(
+                    f"s={sigmas[i]},beta={betas[j]}")
+                f.parametrization.freeze()
+                funcs2.append(f)
+    optims = ["ProgODOPOInf", "ProgONOPOInf", "NGOptRL",
+              "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+              "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
 
-    for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
-        for num_workers in [1]:
+    # ["NGOptRL", "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+    #  "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # "Zero", "Powell", "Cobyla", "MetaTuneRecentering","SQP", "PSO",
+
+    for budget in [90000, 130000, 200000, 300000, 500000]:
+        # [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
+        #
+        #
+        # [75, 100, 150, 500, 3000, 4000, 5000, 8000, 16000, 32000, 64000]:
+        for num_workers in [100]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs2:
