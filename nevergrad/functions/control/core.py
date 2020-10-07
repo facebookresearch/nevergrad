@@ -75,7 +75,13 @@ class BaseFunction(ExperimentFunction):
     @property
     def noise_level(self):
         raise NotImplementedError
-
+        
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        # pylint: disable=not-callable
+        loss = (sum([self.function(x) for _ in range(42)]) / 42.) if self.noise_level > 0. else self.function(x)
+        assert isinstance(loss, float)
+        return loss
+    
 class Ant(BaseFunction):
     env_name = 'Ant-v2'
     policy_dim = (8, 111)
