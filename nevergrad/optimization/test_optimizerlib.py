@@ -440,17 +440,17 @@ def test_shiwa_dim1() -> None:
      ("NGOpt", 1, 10, 1, "MetaModel"),
      ("NGOpt", 1, 10, 2, "MetaModel"),
      ("NGOpt", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
-     ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteBSOOnePlusOne"),
-     ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "CMandAS2"),
+     ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
+     ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
      ("NGO", 1, 10, 1, "Cobyla"),
      ("NGO", 1, 10, 2, "CMA"),
      ]  # pylint: disable=too-many-arguments
 )
 def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any) -> None:
     with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
-        optlib.registry[name](param, budget=budget, num_workers=num_workers)
+        optlib.registry[name](param, budget=budget, num_workers=num_workers).optim  # type: ignore
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
-        match = re.match(pattern, caplog.text, re.MULTILINE)
+        match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         assert match.group("name") == expected
 
@@ -462,3 +462,15 @@ def test_bo_ordering() -> None:
     )
     cand = optim.ask()
     optim.tell(cand, 12)
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "name,expected", [("NGOpt2", ["CMA", "CMandAS2"]),
+                      ]
+)
+def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
+    param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    Opt = optlib.registry[name]
+    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
+    names = [o.optim.name for o in opt.optims]  # type: ignore
+    assert names == expected

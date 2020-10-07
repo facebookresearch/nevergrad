@@ -122,8 +122,8 @@ class Pyomo(base.ExperimentFunction):
         for v in self._model_instance.component_objects(pyomo.Constraint, active=True):
             self.all_constraints.append(v)
         for v in self._model_instance.component_objects(pyomo.Objective, active=True):
-            if v.sense == -1:
-                print(f"Only minimization problem is supported. The value of the objective function {v.name} will be multiplied by -1.")
+            # if v.sense == -1:
+            #    print(f"Only minimization problem is supported. The value of the objective function {v.name} will be multiplied by -1.")
             self.all_objectives.append(v)
 
         if not self.all_objectives:
@@ -131,6 +131,8 @@ class Pyomo(base.ExperimentFunction):
 
         if len(self.all_objectives) > 1:
             raise NotImplementedError("Multi-objective function is not supported yet.")
+
+        self._value_assignment_code_obj = ""
 
         instru = p.Instrumentation(**instru_params)
         for c_idx in range(0, len(self.all_constraints)):
@@ -152,22 +154,31 @@ class Pyomo(base.ExperimentFunction):
         solver.solve(self._model_instance, tee=False)
         self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
         
+
+    def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
+        if self._value_assignment_code_obj == "":
+            code_str = ""
+            for k in k_model_variables:
+                code_str += f"self._model_instance.{k} = k_model_variables['{k}']\n"
+            self._value_assignment_code_obj = compile(code_str, "<string>", "exec")
+        #TODO find a way to avoid exec
+        exec(self._value_assignment_code_obj)  # pylint: disable=exec-used
+
+
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
-        for k, v in k_model_variables.items():
-            # TODO find a way to avoid exec
-            exec(f"self._model_instance.{k} = {v}")  # pylint: disable=exec-used
-        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense)) - self._best_pyomo_val  # Single objective assumption
+        self._pyomo_value_assignment(k_model_variables)
+        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
+
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
         k_model_variables = instru[1]
         # Combine all constraints into single one
-        for k, v in k_model_variables.items():
-            exec(f"self._model_instance.{k} = {v}")  # pylint: disable=exec-used
+        self._pyomo_value_assignment(k_model_variables)
         if isinstance(self.all_constraints[i], pyomo.base.constraint.SimpleConstraint):
             return bool(pyomo.value(self.all_constraints[i].expr(self._model_instance)))
         elif isinstance(self.all_constraints[i], pyomo.base.constraint.IndexedConstraint):
             ret = True
-            for k, c in self.all_constraints[i].items():
+            for _, c in self.all_constraints[i].items():
                 ret = ret and pyomo.value(c.expr(self._model_instance))
                 if not ret:
                     break

@@ -29,7 +29,8 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.pyomo.core import get_pyomo_list
+from nevergrad.functions.pyomo.core import get_pyomo_list as get_pyomo_list
+from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from .xpbase import Experiment as Experiment
@@ -938,6 +939,31 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         optims = default_optims
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MuJoCo testbed. Learn linear policy for different control problems.
+    Budget 500, 1000, 3000, 5000."""
+    seedg = create_seed_generator(seed)
+    funcs = [control.Ant(num_rollouts=5, random_state=seed),
+             control.Swimmer(num_rollouts=5, random_state=seed),
+             control.HalfCheetah(num_rollouts=5, random_state=seed),
+             control.Hopper(num_rollouts=5, random_state=seed),
+             control.Walker2d(num_rollouts=5, random_state=seed),
+             control.Humanoid(num_rollouts=5, random_state=seed)
+             ]
+    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
+              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
+
+    for budget in [500, 1000, 3000, 5000]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:

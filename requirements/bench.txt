@@ -1,5 +1,6 @@
 requests>=2.21.0
 xlwt>=1.3.0
+glpk>=0.4.6
 xlrd>=1.2.0
 matplotlib>=2.2.3
 gym>=0.12.1
