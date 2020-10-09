@@ -12,3 +12,4 @@ Pillow
 tqdm
 torchvision
 pyomo>=5.7
+aio-pika==6.6.1
