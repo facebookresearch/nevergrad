@@ -944,7 +944,7 @@ def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iter
     optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
               "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
-    for budget in [500, 1000, 3000, 5000]:
+    for budget in [300, 1000, 4000, 10000, 30000, 40000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
