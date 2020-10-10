@@ -7,7 +7,7 @@ import itertools
 gd_nodes = ['GS1','GS2','GS3','GS5','GS7','KPCM','KPT','SHV','SRP'] ##Dispatchables with demand
 gn_nodes = ['STH','Thai','Viet'] ##Dispatchables without demand
 
-g_nodes = gd_nodes + gn_nodes 
+g_nodes = gd_nodes + gn_nodes
 print ('Gen_Nodes:',len(g_nodes))
 
 
