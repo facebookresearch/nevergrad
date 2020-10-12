@@ -923,7 +923,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iterator[Experiment]:
+def control_problem(seed: tp.Optional[int] = None, noisy: bool=False, para: bool=False) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
@@ -942,10 +942,10 @@ def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iter
              control.NoisyHumanoid(num_rollouts=5, random_state=seed)
     ]
     optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
+              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
-    for budget in [500, 1000, 3000, 5000]:
-        for num_workers in [1]:
+    for budget in [300, 500, 1000, 4000, 10000, 30000, 40000]:
+        for num_workers in [1] if not para else [100]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
@@ -961,6 +961,20 @@ def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
         yield xp
         
         
+@registry.register
+def para_noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=True, para=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
+@registry.register
+def para_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=False, para=True)
+    for xp in internal_generator:
+        yield xp
+   
+
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
