@@ -44,7 +44,7 @@ class BaseFunction(ExperimentFunction):
         self.random_state = random_state
         if self.noise_level > 0.:
             self.parametrization.descriptors.deterministic_function = False  
-        self.register_initialization(num_rollouts=num_rollouts, random_state=random_state, noise_level=self.noise_level)
+        self.register_initialization(num_rollouts=num_rollouts, random_state=random_state)
         self.add_descriptors(num_rollouts=num_rollouts)
 
     def _simulate(self, x: np.ndarray) -> float:
