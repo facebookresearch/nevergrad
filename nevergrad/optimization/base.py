@@ -433,7 +433,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         for evaluation purpose and with the current implementation, it is better to use batch_mode=True
         """
         # pylint: disable=too-many-branches
-        start_time = time.time()
         if self.budget is None:
             raise ValueError("Budget must be specified")
         if executor is None:
@@ -457,6 +456,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # # # # # Update optimizer with finished jobs # # # # #
             # this is the first thing to do when resuming an existing optimization run
             # process finished
+            if self.num_ask < 2:
+                start_time = time.time()
             if self._finished_jobs:
                 if (remaining_budget or sleeper._start is not None) and not first_iteration:
                     # ignore stop if no more suggestion is sent
