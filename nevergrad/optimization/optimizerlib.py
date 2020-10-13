@@ -321,7 +321,7 @@ class _CMA(base.Optimizer):
             except RuntimeError:
                 pass
             else:
-                self._parents = sorted(self._to_be_told, key=lambda c: c.loss)[: self._num_spawners]
+                self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
                 self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
@@ -455,7 +455,7 @@ class EDA(base.Optimizer):
         if self._POPSIZE_ADAPTATION:
             self.popsize.add_value(loss)
         if len(self.children) >= self.popsize.llambda:
-            self.children = sorted(self.children, key=lambda c: c.loss)
+            self.children = sorted(self.children, key=base._loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
             mu = self.popsize.mu
             arrays = population_data[:mu]
@@ -549,7 +549,7 @@ class _TBPSA(base.Optimizer):
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c.loss)
+            self.children.sort(key=base._loss)
             # Computing the new parent.
 
             self.parents = self.children[: self.popsize.mu]
