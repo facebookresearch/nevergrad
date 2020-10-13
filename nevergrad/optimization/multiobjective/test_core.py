@@ -123,7 +123,7 @@ def test_doc_multiobjective() -> None:
     print("Random subset:", optimizer.pareto_front(2, subset="random"))
     print("Loss-covering subset:", optimizer.pareto_front(2, subset="loss-covering"))
     print("Domain-covering subset:", optimizer.pareto_front(2, subset="domain-covering"))
-    print("EPS subset:", optimizer.pareto_front(2, subset="eps"))
+    print("EPS subset:", optimizer.pareto_front(2, subset="EPS"))
     
     # DOC_MULTIOBJ_OPT_1
     assert len(optimizer.pareto_front()) > 1
