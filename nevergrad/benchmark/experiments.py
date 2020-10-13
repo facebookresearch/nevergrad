@@ -1029,7 +1029,7 @@ def mujoco_humanoid(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering", "NGOptRL3", "NGOptRL2"]
 
     for budget in [40000, 80000, 160000, 320000, 640000]:
-        for num_workers in [1] if not para else [100]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
