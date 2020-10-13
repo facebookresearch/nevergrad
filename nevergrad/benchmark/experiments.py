@@ -934,18 +934,18 @@ def sequential_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     if default_optims is not None:
         optims = default_optims
     at_least_once = False
-    for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        for algo in optims:
-            for fu in get_pyomo_list():
-                translated_fu = fu.copy()
-                try:
-                    translated_fu.translate(budget=budget)
+    for fu in get_pyomo_list():
+        for budget in [25, 50, 100, 200, 400, 800, 1600]:
+            translated_fu = fu.copy()
+            try:
+                translated_fu.translate(budget=budget)
+                for algo in optims:
                     xp = Experiment(translated_fu, algo, budget, seed=next(seedg))
                     if not xp.is_incoherent:
                         at_least_once = True
                         yield xp
-                except RuntimeError:
-                    pass  # not solved by the Pyomo solver!
+            except RuntimeError:
+                pass  # not solved by the Pyomo solver!
     assert at_least_once
 
 @registry.register
