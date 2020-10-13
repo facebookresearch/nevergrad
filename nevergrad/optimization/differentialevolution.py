@@ -152,7 +152,7 @@ class _DE(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         uid = candidate.heritage["lineage"]
-        if uid not in self.population:
+        if uid not in self.population:  # parent was removed, revert to tell_not_asked
             self._internal_tell_not_asked(candidate, loss)
             return
         self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
