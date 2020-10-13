@@ -30,7 +30,7 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
-        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
+        self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
         self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
@@ -43,7 +43,7 @@ class Parameter:
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
-        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
+        self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
 
     @property
     def losses(self) -> np.ndarray:
