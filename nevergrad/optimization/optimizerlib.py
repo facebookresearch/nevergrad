@@ -902,7 +902,6 @@ class Portfolio(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        optim_index: int = candidate._meta["optim_index"]
         for opt in self.optims:
             try:
                 opt.tell(candidate, value)
