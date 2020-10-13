@@ -2,7 +2,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
@@ -20,6 +19,20 @@ T = tp.TypeVar("T", bound="TransitionChoice")
 
 
 class BaseChoice(core.Dict):
+
+    class ChoiceTag(tp.NamedTuple):
+        cls: tp.Type[core.Parameter]
+        arity: int
+
+        @classmethod
+        def as_tag(cls, param: core.Parameter) -> "BaseChoice.ChoiceTag":
+            # arrays inherit tags to identify them as bound to a choice
+            if cls in param.heritage:  # type: ignore
+                output = param.heritage[cls]  # type: ignore
+                assert isinstance(output, cls)
+                return output
+            arity = len(param.choices) if isinstance(param, BaseChoice) else -1
+            return cls(type(param), arity)
 
     def __init__(
         self,
@@ -156,6 +169,7 @@ class Choice(BaseChoice):
         rep = 1 if repetitions is None else repetitions
         super().__init__(choices=lchoices, repetitions=repetitions,
                          weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False))
+        self.weights.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(lchoices))
         self._deterministic = deterministic
         self._indices: tp.Optional[np.ndarray] = None
 
@@ -187,7 +201,7 @@ class Choice(BaseChoice):
         """The probabilities used to draw the value
         """
         exp = np.exp(self.weights.value)
-        return exp / np.sum(exp)
+        return exp / np.sum(exp)  # type: ignore
 
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
         indices = super()._find_and_set_value(values)
@@ -257,6 +271,7 @@ class TransitionChoice(BaseChoice):
         choices = list(choices)
         positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         positions.set_bounds(0, len(choices), method="gaussian")
+        positions.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(choices))
         super().__init__(choices=choices,
                          repetitions=repetitions,
                          positions=positions,
@@ -265,7 +280,7 @@ class TransitionChoice(BaseChoice):
 
     @property
     def indices(self) -> np.ndarray:
-        return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)
+        return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
 
     def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
         indices = super()._find_and_set_value(values)  # only one value for this class
