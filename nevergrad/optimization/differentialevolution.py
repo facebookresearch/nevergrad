@@ -155,7 +155,7 @@ class _DE(base.Optimizer):
         if uid not in self.population:
             self._internal_tell_not_asked(candidate, loss)
             return
-        self._uid_queue.tell(uid)
+        self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
         parent_value: float = parent.loss  # type: ignore
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
