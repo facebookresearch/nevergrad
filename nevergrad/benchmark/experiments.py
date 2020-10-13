@@ -940,7 +940,7 @@ def sequential_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                 translated_fu = fu.copy()
                 try:
                     translated_fu.translate(budget=budget)
-                    xp = Experiment(translated_fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    xp = Experiment(translated_fu, algo, budget, seed=next(seedg))
                     if not xp.is_incoherent:
                         at_least_once = True
                         yield xp
