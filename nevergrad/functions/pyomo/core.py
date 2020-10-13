@@ -151,21 +151,22 @@ class Pyomo(base.ExperimentFunction):
     def translate(self, budget):
         """Stores in self._best_pyomo_val the best value obtained by a solver on the same instance for a given budget in a sequential optimization.
         TODO: investigate what Pyomo does in the parallel case."""
-        solver = "glpk"
+        #solver = "glpk"
+        solver = "ipopt"
         solver  = pyomo.SolverFactory(solver)
-
+        solver.options['max_iter'] = budget
         # We check the time it takes to call the function "budget" times.
-        time_begin = time.time()
-        duplicate = self.copy()
-        optimizer = ng.optimizers.OnePlusOne(parametrization=duplicate.parametrization, budget=budget)
-        recommendation = optimizer.minimize(duplicate)
-        time_budget = max(1, int(time.time() - time_begin))
-        if solver == "glpk":
-            solver.options['tmlim'] = time_budget
-        if solver == "cplex":
-            solver.options['timelimit'] = time_budget
-        if solver == "gurobi":
-            solver.options['TimeLimit'] = time_budget
+        #time_begin = time.time()
+        #duplicate = self.copy()
+        #optimizer = ng.optimizers.OnePlusOne(parametrization=duplicate.parametrization, budget=budget)
+        #recommendation = optimizer.minimize(duplicate)
+        #time_budget = max(1, int(time.time() - time_begin))
+        #if solver == "glpk":
+        #    solver.options['tmlim'] = time_budget
+        #if solver == "cplex":
+        #    solver.options['timelimit'] = time_budget
+        #if solver == "gurobi":
+        #    solver.options['TimeLimit'] = time_budget
         solver.solve(self._model_instance, tee=False)
         self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
         

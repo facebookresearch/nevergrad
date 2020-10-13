@@ -14,7 +14,7 @@ orbs:
 executors:
   ubuntu-python37:
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.8
     working_directory: ~/repo
 
 
@@ -44,7 +44,7 @@ commands:
 
 jobs:
   install:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
       - checkout
@@ -60,7 +60,7 @@ jobs:
           name: "[no-extra] Install dependencies"
           command: |
             python3 -m venv venv
-            sudo apt install python3.7-dev libglpk-dev libgmp3-dev glpk-utils
+            sudo apt install python3.8-dev libglpk-dev libgmp3-dev glpk-utils
             . venv/bin/activate
             pip install --upgrade pip
             pip install -e .
