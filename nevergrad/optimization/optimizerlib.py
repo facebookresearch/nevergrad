@@ -137,7 +137,7 @@ class _OnePlusOne(base.Optimizer):
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, max(1, int(self._adaptive_mr * self.dimension)))
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
-                intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
+                intensity: float = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
@@ -214,7 +214,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
-
+        - `"lengler"`
     crossover: bool
         whether to add a genetic crossover step every other iteration.
 
