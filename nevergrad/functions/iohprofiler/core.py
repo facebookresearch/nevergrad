@@ -46,6 +46,12 @@ class PBOFunction(base.ExperimentFunction):
         self.register_initialization(fid=fid, iid=iid, dim=dim, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
+        #This is needed to assure the internal evaluate gets a proper array of the underlying binary values instead of the raw parameterization
+        if hasattr(x, 'value'):
+            y = x.value
+            assert(len(y) == self.f_internal.number_of_variables)
+            return -float(self.f_internal(y))
+        assert(len(x) == self.f_internal.number_of_variables)
         return -float(self.f_internal(x))
 
 
@@ -117,4 +123,10 @@ class WModelFunction(base.ExperimentFunction):
                                      neutrality=neutrality, ruggedness=ruggedness, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
+        #This is needed to assure the internal evaluate gets a proper array of the underlying binary values instead of the raw parameterization
+        if hasattr(x, 'value'):
+            y = x.value
+            assert(len(y) == self.f_internal.number_of_variables)
+            return -float(self.f_internal(y))
+        assert(len(x) == self.f_internal.number_of_variables)
         return -float(self.f_internal(x))
