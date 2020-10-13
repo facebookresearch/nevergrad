@@ -1009,7 +1009,7 @@ class Portfolio(base.Optimizer):
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
-            except TellNotAskedNotSupportedError:
+            except base.TellNotAskedNotSupportedError:
                 pass
         # Presumably better than self.optims[optim_index].tell(candidate, value)
 
@@ -1019,7 +1019,7 @@ class Portfolio(base.Optimizer):
             try:
                 opt.tell(candidate, loss)
                 at_least_one_ok = True
-            except TellNotAskedNotSupportedError:
+            except base.TellNotAskedNotSupportedError:
                 pass
         if not at_least_one_ok:
             raise TellNotAskedNotSupportedError
