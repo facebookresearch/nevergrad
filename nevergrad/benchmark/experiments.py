@@ -925,7 +925,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def control_problem(seed: tp.Optional[int] = None, noisy: bool=False, para: bool=False, scaling: bool=False) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
-    Budget 500, 1000, 3000, 5000."""
+    Budget 300, 500, 1000, 4000, 10000, 30000, 40000."""
     seedg = create_seed_generator(seed)
     funcs = [control.Ant(num_rollouts=1, random_state=seed),
              control.Swimmer(num_rollouts=1, random_state=seed),
@@ -1012,6 +1012,32 @@ def para_mujoco(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
         
         
+@registry.register
+def mujoco_humanoid(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MuJoCo testbed. Learn linear policy for Humanoid."""
+    seedg = create_seed_generator(seed)
+    funcs = [
+             control.Humanoid(num_rollouts=1, random_state=seed)
+             ]
+    # Rescaling
+    f = funcs[0].copy()
+    dim = np.prod(f.policy_dim)
+    f.parametrization.set_mutation(1. / np.sqrt(dim))  # type: ignore
+    f.parametrization.freeze()
+    funcs[0] = f
+    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne", "NaiveTBPSA", "NGOpt8",
+              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering", "NGOptRL3", "NGOptRL2"]
+
+    for budget in [40000, 80000, 160000, 320000, 640000]:
+        for num_workers in [1] if not para else [100]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+                            
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
