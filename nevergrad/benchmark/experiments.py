@@ -944,7 +944,7 @@ def sequential_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                     if not xp.is_incoherent:
                         at_least_once = True
                         yield xp
-                except:
+                except RuntimeError:
                     pass  # not solved by the Pyomo solver!
     assert at_least_once
 
