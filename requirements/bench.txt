@@ -15,4 +15,5 @@ tqdm
 torchvision
 pyomo>=5.7
 glpk
+cython
 ipopt
