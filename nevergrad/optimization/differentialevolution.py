@@ -152,10 +152,10 @@ class _DE(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         uid = candidate.heritage["lineage"]
-        self._uid_queue.tell(uid)
         if uid not in self.population:
             self._internal_tell_not_asked(candidate, loss)
             return
+        self._uid_queue.tell(uid)
         parent = self.population[uid]
         parent_value: float = parent.loss  # type: ignore
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
