@@ -9,7 +9,6 @@ from scipy import stats
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
-from .base import IntOrParameter
 from . import sequences
 
 
@@ -72,7 +71,7 @@ class _DE(base.Optimizer):
 
     def __init__(
         self,
-        parametrization: IntOrParameter,
+        parametrization: base.IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["DifferentialEvolution"] = None
@@ -171,7 +170,7 @@ class _DE(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         worst: tp.Optional[p.Parameter] = None
         if len(self.population) >= self.llambda:
-            worst = max(self.population.values(), key=lambda p: p.loss)
+            worst = max(self.population.values(), key=base._loss)
             if worst.loss < loss:  # type: ignore
                 return  # no need to update
             else:
