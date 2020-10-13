@@ -46,7 +46,7 @@ def _make_pyomo_range_set_to_parametrization(
         # Need to handle step size
         params[params_name] = p.Choice([range(*r) for r in domain.ranges()])  # Assume the ranges do not overlapped
     else:
-        raise NotImplementedError(f"Cannot handle domain type {type(domain)}")
+        raise NotImplementedError(f"Cannot handle domain type {type(domain)} with num_ranges == {num_ranges}")
     return params
 
 
@@ -189,37 +189,42 @@ class Pyomo(base.ExperimentFunction):
 
 # Simple Pyomo models, based on https://www.ima.umn.edu/materials/2017-2018.2/W8.21-25.17/26326/3_PyomoFundamentals.pdf.
 def get_pyomo_list():
-    # Rosenbrock
+    model = pyomo.ConcreteModel()
+    model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
+    model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
+    yield Pyomo(model)
+
+    # Rosenbrock --- pb with continuous variables! NotImplementedError: Cannot handle domain type <class 'pyomo.core.kernel.set_types.RealSet'>
+    # I don't get it, because it looks like the code above should accept bounded ranges.
     rosenbrock = pyomo.ConcreteModel() 
+    #rosenbrock.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals, bounds=(-2, 2))
     rosenbrock.x = pyomo.Var(initialize=-1.2, bounds=(-2, 2)) 
-    rosenbrock.y = pyomo.Var(initialize= 1.0, bounds=(-2, 2)) 
+    rosenbrock.y = pyomo.Var(initialize=1.0, bounds=(-2, 2)) 
     rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
-    
     yield Pyomo(rosenbrock)
-    
-    
+
     # Knapsack
     for num_items in [4, 14, 44, 134]:
         print(f"Creating Knapsack{num_items}")
         if num_items == 4:
             items = ['hammer', 'wrench', 'screwdriver', 'towel'] 
-            v = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
-            w = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
+            values = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
+            weights = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
             W_max = 14 
         else:
             items = [str(i) for i in range(num_items)]
-            v = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
-            w = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
+            values = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
+            weights = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
             W_max = 3 * num_items + 2
     
         knapsack = pyomo.ConcreteModel() 
         knapsack.x = pyomo.Var(items, within=pyomo.Binary) 
-        knapsack.value = pyomo.Objective(expr=sum(v[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
-        knapsack.weight = pyomo.Constraint(expr=sum(w[i]*knapsack.x[i] for i in items) <= W_max)
-    
+        knapsack.value = pyomo.Objective(expr=sum(values[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
+        knapsack.weight = pyomo.Constraint(expr=sum(weights[i]*knapsack.x[i] for i in items) <= W_max)
         yield Pyomo(knapsack)
-    
-    for N in [3, 10, 30, 100]:
+ 
+
+    for N in [3, 10]:
         print(f"Creating Pmedian{N}")
         # P-median
         M = N + 1

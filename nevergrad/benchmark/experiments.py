@@ -29,7 +29,7 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.pyomo.core import get_pyomo_list as get_pyomo_list
+from nevergrad.functions.pyomo.core import get_pyomo_list
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
