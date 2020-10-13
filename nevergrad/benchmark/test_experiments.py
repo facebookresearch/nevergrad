@@ -27,7 +27,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket", "mldakmeans",
                     "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning", "control_problem",
                     "noisy_control_problem", "para_noisy_control_problem", "para_control_problem", "mujoco",
-                    "noisy_mujoco", "para_noisy_mujoco", "para_mujoco"}:
+                    "noisy_mujoco", "para_noisy_mujoco", "para_mujoco", "mujoco_humanoid"}:
         check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
