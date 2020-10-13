@@ -25,7 +25,8 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
     if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket", "mldakmeans",
-                    "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning", "control_problem"}:
+                    "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning", "control_problem", "pyomo",
+                    "sequential_pyomo"}:
         check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -53,10 +54,13 @@ def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Opt
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     generators = [maker() for _ in range(2)]
     # check 1 sample
+    print("a")
     sample = next(maker())
+    print("b")
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
     for k, (elem1, elem2) in enumerate(itertools.zip_longest(*generators)):
+        print("c")
         assert not elem1.is_incoherent, f"Incoherent settings should be filtered out from generator:\n{elem1}"
         try:
             assert elem1 == elem2  # much faster but lacks explicit message
@@ -67,6 +71,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
                 err_msg=f"Two paths on the generator differed (see element #{k})\n"
                         "Generators need to be deterministic in order to split the workload!",
             )
+    print("d")
 
 
 def check_seedable(maker: tp.Any, short: bool = False) -> None:
