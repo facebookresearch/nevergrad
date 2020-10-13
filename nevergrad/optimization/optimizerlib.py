@@ -137,7 +137,7 @@ class _OnePlusOne(base.Optimizer):
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, max(1, int(self._adaptive_mr * self.dimension)))
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
-                intensity: float = int(self.dimension - self._num_ask * self.dimension / self.budget)
+                intensity = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
