@@ -2,14 +2,21 @@
 
 ## master
 
-- `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't
-  resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).
-  Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
-- `Choice` now takes a new `repetitions` parameters for sampling several times,
-  it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be around 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670).
+**Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
 
+- as an **experimental** feature, `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
+- `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
+- `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
 
-## 0.4.1 (2019-05-07)
+## 0.4.2 (2020-08-04)
+
+- `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).  Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
+- `Choice` and `TransitionChoice` can now take a `repetitions` parameters for sampling several times, it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be up to 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670) [#696](https://github.com/facebookresearch/nevergrad/pull/696).
+- Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684) and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
+
+This version should be robust. Following versions may become more unstable as we will add more native multiobjective optimization as an **experimental** feature. We also are in the process of simplifying the naming pattern for the "NGO/Shiwa" type optimizers which may cause some changes in the future.
+
+## 0.4.1 (2020-05-07)
 
 - `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
 - `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
@@ -21,7 +28,7 @@
 - Started implementing more ML-oriented testbeds [#642](https://github.com/facebookresearch/nevergrad/pull/642)
 
 
-## v0.4.0 (2019-03-09)
+## v0.4.0 (2020-03-09)
 
 ### Breaking and important changes
 
@@ -52,7 +59,7 @@
   if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
 
 
-## v0.3.2 (2019-02-05)
+## v0.3.2 (2020-02-05)
 
 
 ### Breaking changes (possibly for next version)
@@ -78,7 +85,7 @@
 - `DE` algorithms comply with the new parametrization system and can be set to use parameter's recombination.
 - Fixed array as bounds in `Array` parameters
 
-## v0.3.1 (2019-01-23)
+## v0.3.1 (2020-01-23)
 
 **Note**: this is the first step to propagate the instrumentation/parametrization framework.
  Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/).
@@ -98,7 +105,7 @@
 - `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
  optimizer was created, using the previous initial sampling method [#467](https://github.com/facebookresearch/nevergrad/pull/467).
 
-## v0.3.0 (2019-01-08)
+## v0.3.0 (2020-01-08)
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
 

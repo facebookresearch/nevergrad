@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 import warnings
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import core
 from . import utils
 from . import transforms as trans
@@ -89,7 +89,7 @@ class Mutation(core.Parameter):
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
@@ -117,7 +117,7 @@ class Array(core.Parameter):
     def __init__(
             self,
             *,
-            init: tp.Optional[ArrayLike] = None,
+            init: tp.Optional[tp.ArrayLike] = None,
             shape: tp.Optional[tp.Tuple[int, ...]] = None,
             mutable_sigma: bool = False
     ) -> None:
@@ -130,7 +130,7 @@ class Array(core.Parameter):
                 raise ValueError(err_msg)
             self._value = np.array(init, copy=False)
         elif shape is not None:
-            assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape)
+            assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape), f"Shape incorrect: {shape}."
             self._value = np.zeros(shape)
         else:
             raise ValueError(err_msg)
@@ -169,7 +169,7 @@ class Array(core.Parameter):
         return self._value
 
     @value.setter
-    def value(self, value: ArrayLike) -> None:
+    def value(self, value: tp.ArrayLike) -> None:
         self._check_frozen()
         self._ref_data = None
         if not isinstance(value, (np.ndarray, tuple, list)):
@@ -203,7 +203,7 @@ class Array(core.Parameter):
         self: A,
         lower: BoundValue = None,
         upper: BoundValue = None,
-        method: str = "clipping",
+        method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
         a_min: BoundValue = None,
         a_max: BoundValue = None,
@@ -219,6 +219,8 @@ class Array(core.Parameter):
         method: str
             One of the following choices:
 
+            - "bouncing": bounce on border (at most once). This is a variant of clipping,
+               avoiding bounds over-samping (default).
             - "clipping": clips the values inside the bounds. This is efficient but leads
               to over-sampling on the bounds.
             - "constraint": adds a constraint (see register_cheap_constraint) which leads to rejecting mutations
@@ -257,15 +259,18 @@ class Array(core.Parameter):
             if (bounds[0] >= bounds[1]).any():  # type: ignore
                 raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
         # update instance
-        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound)
+        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound,
+                          gaussian=trans.CumulativeDensity)
+        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
         if method in transforms:
-            if self.exponent is not None and method != "clipping":
+            if self.exponent is not None and method not in ("clipping", "bouncing"):
                 raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
             self.bound_transform = transforms[method](*bounds)
         elif method == "constraint":
             self.register_cheap_constraint(checker)
         else:
-            raise ValueError(f"Unknown method {method}")
+            avail = ["constraint"] + list(transforms)
+            raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
         self.bounds = bounds  # type: ignore
         self.full_range_sampling = full_range_sampling
         # warn if sigma is too large for range
@@ -357,7 +362,7 @@ class Array(core.Parameter):
         Note
         ----
         Using integer casting makes the parameter discrete which can make the optimization more
-        difficult. It is especially ill-adviced to use this with a range smaller than 10, or
+        difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
         self.integer = True
@@ -542,4 +547,4 @@ class Log(Scalar):
         super().__init__(init=init, mutable_sigma=mutable_sigma)
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, method="clipping", full_range_sampling=bounded and no_init)
+            self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)

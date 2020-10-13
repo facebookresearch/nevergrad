@@ -8,12 +8,12 @@
 
 from math import sqrt, tan, pi
 import numpy as np
+import nevergrad.common.typing as tp
 import nevergrad as ng
-from nevergrad.common.typetools import ArrayLike
 from .. import base
 
 
-def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
+def impedance_pix(x: tp.ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
     """Normalized impedance Z/Z0
     ep0, epf:  epsilons in et out
     lam: lambda in nanometers
@@ -50,7 +50,7 @@ class ARCoating(base.ExperimentFunction):
     University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
     """
 
-    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "clipping") -> None:
+    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "bouncing") -> None:
         # Wave length range
         self.lambdas = np.arange(400, 900, 5)  # lambda values from min to max, in nm
         # AR parameters
@@ -84,5 +84,6 @@ class ARCoating(base.ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         loss = self.function(x)
+        assert isinstance(loss, float)
         base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
         return loss

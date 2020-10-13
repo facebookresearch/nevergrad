@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# import os
 import sys
 import time
 import contextlib
 import typing as tp
+# from unittest import SkipTest
 from pathlib import Path
 from nevergrad.common import testing
 from . import parameter as p
@@ -26,6 +28,8 @@ def test_command_function() -> None:
     command = f"{sys.executable} -m nevergrad.parametrization.test_utils".split()
     word = "testblublu12"
     output = utils.CommandFunction(command)(word)
+    # if os.environ.get("CIRCLECI", False):
+    #     raise SkipTest("Failing in CircleCI")  # TODO investigate why
     assert output is not None
     assert word in output, f'Missing word "{word}" in output:\n{output}'
     try:
@@ -58,6 +62,22 @@ def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iter
 
 
 @testing.parametrized(
+    # updating this tests requires checking manually through prints
+    # that everything works as intended
+    v_tuple_choice_dict=(p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
+                         ['0.choices.0.x', '0.choices.1', '0.weights']),
+    multiple=(p.Instrumentation(p.Scalar(init=12, lower=12, upper=12.01),
+                                x=p.Choice([3, p.Log(lower=0.01, upper=0.1)]),
+                                z=p.Array(init=[12, 12]).set_bounds(lower=12, upper=15),
+                                y=p.Array(init=[1, 1])),
+              ['0', 'x.choices.1', 'x.weights', 'y', 'z']),
+)
+def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> None:
+    output = helpers.split_as_data_parameters(param)
+    assert [x[0] for x in output] == names
+
+
+@testing.parametrized(
     order_0=(0, ("", "choices.0.x", "choices.1", "weights")),
     order_1=(1, ("", "choices.0.x", "choices.1", "weights", "choices.1#sigma", "choices.0.x#sigma")),
     order_2=(2, ("", "choices.0.x", "choices.1", "weights", "choices.1#sigma", "choices.0.x#sigma", "choices.1#sigma#sigma")),
@@ -72,6 +92,19 @@ def test_flatten_parameter_order(order: int, keys: tp.Iterable[str]) -> None:
 def test_descriptors() -> None:
     desc = utils.Descriptors(ordered=False)
     assert repr(desc) == "Descriptors(ordered=False)"
+
+
+@testing.parametrized(
+    dict_param=(p.Dict(x=p.Scalar(), y=12), p.Dict, -1),
+    scalar=(p.Scalar(), p.Scalar, -1),
+    array=(p.Array(shape=(3, 2)), p.Array, -1),
+    choice=(p.Choice([1, 2, 3]), p.Choice, 3),
+    choice_weight=(p.Choice([1, 2, 3]).weights, p.Choice, 3),
+)
+def test_parameter_as_choice_tag(param: p.Parameter, cls: tp.Type[p.Parameter], arity: int) -> None:
+    tag = p.BaseChoice.ChoiceTag.as_tag(param)
+    assert tag.cls == cls
+    assert tag.arity == arity
 
 
 def do_nothing(*args: tp.Any, **kwargs: tp.Any) -> int:
