@@ -1025,8 +1025,8 @@ def mujoco_humanoid(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     f.parametrization.set_mutation(1. / np.sqrt(dim))  # type: ignore
     f.parametrization.freeze()
     funcs[0] = f
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne", "NaiveTBPSA", "NGOpt8",
-              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering", "NGOptRL3", "NGOptRL2"]
+    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne", "NaiveTBPSA",
+              "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
     for budget in [40000, 80000, 160000, 320000, 640000]:
         for num_workers in [1]:
