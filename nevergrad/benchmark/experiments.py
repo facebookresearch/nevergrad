@@ -923,7 +923,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def control_problem(seed: tp.Optional[int] = None, noisy: bool=False, para: bool=False) -> tp.Iterator[Experiment]:
+def control_problem(seed: tp.Optional[int] = None, noisy: bool=False, para: bool=False, scaling: bool=False) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
@@ -941,6 +941,15 @@ def control_problem(seed: tp.Optional[int] = None, noisy: bool=False, para: bool
              control.NoisyWalker2d(num_rollouts=1, random_state=seed),
              control.NoisyHumanoid(num_rollouts=1, random_state=seed)
     ]
+    if scaling:
+        funcs2 = []
+        for k in range(len(funcs)):
+            f = funcs[k].copy()
+            dim = np.prod(f.policy_dim)
+            f.parametrization.set_mutation(sigma=sigmas[i] / (np.sqrt(dim))).set_name(f"1/sqrt(d)")
+            f.parametrization.freeze()
+            funcs2.append(f)
+        funcs = funcs2
     optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
               "NGOpt", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
@@ -975,6 +984,34 @@ def para_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
         yield xp
    
 
+@registry.register
+def mujoco(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, scaling=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
+@registry.register
+def noisy_mujoco(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=True, scaling=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
+@registry.register
+def para_noisy_mujoco(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=True, para=True, scaling=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
+@registry.register
+def para_mujoco(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = control_problem(seed, noisy=False, para=True, scaling=True)
+    for xp in internal_generator:
+        yield xp
+        
+        
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
