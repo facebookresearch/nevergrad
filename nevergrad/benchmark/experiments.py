@@ -1373,7 +1373,7 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     for i, (data, target) in enumerate(data_loader):
-        if i > 1:
+        if i > 50:
             continue
         _, pred = torch.max(classifier(data), axis=1)
         if pred == target or (not path_exist):
