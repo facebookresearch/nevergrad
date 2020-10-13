@@ -946,7 +946,7 @@ def control_problem(seed: tp.Optional[int] = None, noisy: bool=False, para: bool
         for k in range(len(funcs)):
             f = funcs[k].copy()
             dim = np.prod(f.policy_dim)
-            f.parametrization.set_mutation(1. / np.sqrt(dim)).set_name(f"1/sqrt(d)")
+            f.parametrization.set_mutation(1. / np.sqrt(dim))
             f.parametrization.freeze()
             funcs2.append(f)
         funcs = funcs2
