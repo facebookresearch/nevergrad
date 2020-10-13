@@ -1022,7 +1022,7 @@ class Portfolio(base.Optimizer):
             except base.TellNotAskedNotSupportedError:
                 pass
         if not at_least_one_ok:
-            raise TellNotAskedNotSupportedError
+            raise base.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):
