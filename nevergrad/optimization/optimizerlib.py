@@ -1801,29 +1801,6 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
 @registry.register
-class Shiwa(NGO):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            self.optim = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne(self.parametrization, budget, num_workers)
-        else:
-            if not self.parametrization.descriptors.metrizable:
-                if self.dimension < 60:
-                    self.optim = NGO(self.parametrization, budget, num_workers)
-                else:
-                    self.optim = CMA(self.parametrization, budget, num_workers)
-            else:
-                self.optim = NGO(self.parametrization, budget, num_workers)
-        optim = self.optim if not isinstance(self.optim, NGO) else self.optim.optim
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
-
-
-
-
-@registry.register
 class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
