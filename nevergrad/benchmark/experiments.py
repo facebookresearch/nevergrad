@@ -917,13 +917,36 @@ def pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in get_pyomo_list():
-                        translated_fu = fu.copy()
-                        if num_workers == 1:
-                            translated_fu.translate(budget=budget)
-                        xp = Experiment(translated_fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
 
+
+@registry.register
+def sequential_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Pyomo models.
+    TODO: we need a comparison with Pyomo solves, and non-linear/complex variants of this.
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["NaiveTBPSA", "SQP", "Powell", "ScrHammersleySearch", "PSO", "OnePlusOne",
+              "NGO", "Shiwa", "DiagonalCMA", "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "RandomSearch",
+              "HaltonSearch", "MiniDE"]
+    if default_optims is not None:
+        optims = default_optims
+    at_least_once = False
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        for algo in optims:
+            for fu in get_pyomo_list():
+                translated_fu = fu.copy()
+                try:
+                    translated_fu.translate(budget=budget)
+                    xp = Experiment(translated_fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        at_least_once = True
+                        yield xp
+                except:
+                    pass  # not solved by the Pyomo solver!
+    assert at_least_once
 
 @registry.register
 def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
