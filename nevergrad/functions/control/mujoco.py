@@ -43,7 +43,7 @@ class GenericMujocoEnv:
             while not done:
                 action = np.dot(x, (obs - self.mean) / self.std)
                 if self.noise_level > 0.:
-                    action += self.noise_level * action * np.random.normal(size=len(action))
+                    action += self.noise_level * action * self.parametrization.random_state.normal(size=len(action))
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
             returns.append(totalr)
