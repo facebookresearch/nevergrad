@@ -381,3 +381,77 @@ HCHAvgCauchyScrHammersleySearch = SamplingSearch(
 HCHAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_hull_best").set_name("HCHAvgLHSSearch", register=True)
 HCHAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_hull_best").set_name(
     "HCHAvgCauchyLHSSearch", register=True)
+
+
+# Old variants of NGOpt (to be deleted at some point ?)
+@registry.register
+class NGOpt4(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # override because it is different from NGOptBase (bug?)
+        self.has_discrete_not_softmax = self._has_discrete
+        self.fully_continuous = self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
+        budget, num_workers = self.budget, self.num_workers
+        assert budget is not None
+        optimClass: base.OptCls
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            mutation = "portfolio" if budget > 1000 else "discrete"
+            optimClass = ParametrizedOnePlusOne(crossover=True, mutation=mutation, noise_handling="optimistic")
+        elif self._arity > 0:
+            if self._arity == 2:
+                optimClass = DiscreteOnePlusOne
+            else:
+                optimClass = AdaptiveDiscreteOnePlusOne if self._arity < 5 else CMandAS2
+        else:
+            # pylint: disable=too-many-nested-blocks
+            if self.has_noise and self.fully_continuous and self.dimension > 100:
+                # Waow, this is actually a discrete algorithm.
+                optimClass = ConfSplitOptimizer(num_optims=13, progressive=True,
+                                                multivariate_optimizer=OptimisticDiscreteOnePlusOne)
+            else:
+                if self.has_noise and self.fully_continuous:
+                    if budget > 100:
+                        optimClass = SQP
+                    else:
+                        # This is the realm of population control. FIXME: should we pair with a bandit ?
+                        optimClass = TBPSA
+                else:
+                    if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
+                        optimClass = DoubleFastGADiscreteOnePlusOne
+                    else:
+                        if num_workers > budget / 5:
+                            if num_workers > budget / 2. or budget < self.dimension:
+                                optimClass = MetaTuneRecentering
+                            elif self.dimension < 5 and budget < 100:
+                                optimClass = DiagonalCMA
+                            elif self.dimension < 5 and budget < 500:
+                                optimClass = Chaining([DiagonalCMA, MetaModel], [100])
+                            else:
+                                optimClass = NaiveTBPSA
+                        else:
+                            # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                            if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
+                                optimClass = chainNaiveTBPSACMAPowell
+                            else:
+                                if num_workers == 1 and budget < self.dimension * 30:
+                                    if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                        optimClass = OnePlusOne
+                                    elif self.dimension < 5:
+                                        optimClass = MetaModel
+                                    else:
+                                        optimClass = Cobyla
+                                else:
+                                    if self.dimension > 2000:  # DE is great in such a case (?).
+                                        optimClass = DE
+                                    else:
+                                        if self.dimension < 10 and budget < 500:
+                                            optimClass = MetaModel
+                                        else:
+                                            if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
+                                                optimClass = DiagonalCMA
+                                            elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
+                                                optimClass = MetaModel
+                                            else:
+                                                optimClass = CMA
+        return optimClass
