@@ -1459,10 +1459,11 @@ class _BO(base.Optimizer):
         self._fake_function._registered.clear()
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-        if self.archive:
-            return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
-        else:
+        if not self.archive:
             return None
+        return self._transform.backward(
+            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+        )
 
 
 class ParametrizedBO(base.ConfiguredOptimizer):
