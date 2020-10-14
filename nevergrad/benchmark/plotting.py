@@ -694,6 +694,7 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
 
 
 def main() -> None:
+    merge_param = "{optimizer_name},{parametrization}"
     parser = argparse.ArgumentParser(description="Create plots from an experiment data file")
     parser.add_argument("filepath", type=str, help="filepath containing the experiment data")
     parser.add_argument(
@@ -705,7 +706,8 @@ def main() -> None:
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
     parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
     parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
-    parser.add_argument("--merge-pattern", type=str, default="", help="if present, parametrization is merge into the optimizer name")
+    parser.add_argument("--merge-pattern", type=str, default="", help="if present, optimizer name is updated according to the pattern as "
+                        f"an f-string. --merge-parametrization is equivalent to using --merge-pattern with {merge_param!r}")
     args = parser.parse_args()
     exp_df = utils.Selector.read_csv(args.filepath)
     # merging names
@@ -714,7 +716,7 @@ def main() -> None:
         if args.merge_pattern:
             raise ValueError("Cannot specify both merge-pattern and merge-parametrization "
                              "(merge-parametrization is equivalent to merge-pattern='{optimizer_name},{parametrization}')")
-        merge_pattern = "{optimizer_name},{parametrization}"
+        merge_pattern = merge_param
     if merge_pattern:
         exp_df = merge_optimizer_name_pattern(exp_df, merge_pattern)
     #
