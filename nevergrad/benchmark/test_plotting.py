@@ -162,7 +162,7 @@ def test_merge_parametrization_and_optimizer() -> None:
         columns=["optimizer_name", "parametrization", "val"],
         data=[["o1", "p1", 1], ["o1", "p2", 2], ["o2", "p1", 3]]
     )
-    out = plotting.merge_optimizer_name_pattern(utils.Selector(df), "{otimizer_name},{parametrization}")
+    out = plotting.merge_optimizer_name_pattern(utils.Selector(df), "{optimizer_name},{parametrization}")
     assert isinstance(out, utils.Selector)
     assert out["optimizer_name"].tolist() == ["o1,p1", "o1,p2", "o2"]
     assert out["val"].tolist() == [1, 2, 3]

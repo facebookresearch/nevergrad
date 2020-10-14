@@ -513,7 +513,7 @@ def split_long_title(title: str) -> str:
     """
     if len(title) <= 60:
         return title
-    comma_indices = np.where(np.array(title) == ",")[0]
+    comma_indices = np.where(np.array(list(title)) == ",")[0]
     if not comma_indices.size:
         return title
     best_index = comma_indices[np.argmin(abs(comma_indices - len(title) // 2))]
