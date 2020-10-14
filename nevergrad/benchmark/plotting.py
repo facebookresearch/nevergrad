@@ -5,6 +5,7 @@
 
 import os
 import re
+import string
 import hashlib
 import warnings
 import argparse
@@ -131,18 +132,31 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     return output  # type: ignore
 
 
-def _aggregate(df: pd.Series) -> str:
-    return ",".join(x for x in df if isinstance(x, str) and x)
+class PatternAggregate:
+
+    def __init__(self, pattern: str) -> None:
+        self._pattern = pattern
+
+    def __call__(self, df: pd.Series) -> str:
+        return self._pattern.format(**df.to_dict())
 
 
-def merge_parametrization_and_optimizer(df: utils.Selector) -> utils.Selector:
-    okey, pkey = "optimizer_name", "parametrization"
-    if len(df.unique(pkey)) > 1:
+def merge_optimizer_name_pattern(df: utils.Selector, pattern: str) -> utils.Selector:
+    """Merge the optimizer name with other descriptors based on a pattern
+    """
+    okey = "optimizer_name"
+    elements = [tup[1] for tup in string.Formatter().parse(pattern) if tup[1] is not None]
+    assert okey in elements, (
+        f"Missing optimizer key {okey!r} in merge pattern.\nEg: " + 'pattern="{optimizer_name}_{parametrization}"'
+    )
+    others = [x for x in elements if x != okey]
+    aggregate = PatternAggregate(pattern)
+    if len(df.unique(others)) > 1:
         for optim in df.unique(okey):
             inds = df.loc[:, okey] == optim
-            if len(df.loc[inds, :].unique(pkey)) > 1:
-                df.loc[inds, okey] = df.loc[inds, [okey, pkey]].agg(_aggregate, axis=1)
-    return df.drop(columns=pkey)  # type: ignore
+            if len(df.loc[inds, :].unique(others)) > 1:
+                df.loc[inds, okey] = df.loc[inds, elements].agg(aggregate, axis=1)
+    return df.drop(columns=others)  # type: ignore
 
 
 def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Selector:
@@ -691,10 +705,19 @@ def main() -> None:
     parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
     parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
     parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
+    parser.add_argument("--merge-pattern", type=str, default="", help="if present, parametrization is merge into the optimizer name")
     args = parser.parse_args()
     exp_df = utils.Selector.read_csv(args.filepath)
+    # merging names
+    merge_pattern = args.merge_pattern
     if args.merge_parametrization:
-        exp_df = merge_parametrization_and_optimizer(exp_df)
+        if args.merge_pattern:
+            raise ValueError("Cannot specify both merge-pattern and merge-parametrization "
+                             "(merge-parametrization is equivalent to merge-pattern='{optimizer_name},{parametrization}')")
+        merge_pattern = "{optimizer_name},{parametrization}"
+    if merge_pattern:
+        exp_df = merge_optimizer_name_pattern(exp_df, merge_pattern)
+    #
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
