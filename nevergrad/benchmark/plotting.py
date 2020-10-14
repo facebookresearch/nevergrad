@@ -166,7 +166,7 @@ def create_plots(
     output_folder: tp.PathLike,
     max_combsize: int = 1,
     xpaxis: str = "budget",
-    competencemaps: bool = False
+    competencemaps: bool = False,
 ) -> None:
     """Saves all representing plots to the provided folder
 
@@ -354,6 +354,19 @@ class XpPlotter:
         title: str, name_style: tp.Optional[tp.Dict[str, tp.Any]] = None,
         xaxis: str = "budget"
     ) -> None:
+        # Very dirty hack, find better.
+        if "Swimmer" in title:
+            threshold = -325
+        if "Hopper" in title:
+            threshold = -3120
+        if "Cheetah" in title:
+            threshold = -3430
+        if "Walker" in title:
+            threshold = -4390
+        if "Ant" in title:
+            threshold = -3580
+        if "Humanoid" in title:
+            threshold = -6000
         if name_style is None:
             name_style = NameStyle()
         upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf)
@@ -400,6 +413,8 @@ class XpPlotter:
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
+        if threshold:
+            plt.plot([min(all_x), max(all_x)], [threshold, threshold], label='target')
         self.add_legends(legend_infos)
         # global info
         self._ax.set_title(split_long_title(title))
