@@ -355,6 +355,7 @@ class XpPlotter:
         xaxis: str = "budget"
     ) -> None:
         # Very dirty hack, find better.
+        threshold = float("NaN")
         if "Swimmer" in title:
             threshold = -325
         if "Hopper" in title:
