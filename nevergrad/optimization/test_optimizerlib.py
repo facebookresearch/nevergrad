@@ -456,12 +456,16 @@ def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int
 
 
 def test_bo_ordering() -> None:
-    optim = ng.optimizers.ParametrizedBO(initialization='Hammersley')(
-        parametrization=ng.p.Choice(range(12)),
-        budget=10
-    )
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+        optim = ng.optimizers.ParametrizedBO(initialization='Hammersley')(
+            parametrization=ng.p.Choice(range(12)),
+            budget=10
+        )
     cand = optim.ask()
     optim.tell(cand, 12)
+    optim.provide_recommendation()
 
 
 @pytest.mark.parametrize(  # type: ignore
