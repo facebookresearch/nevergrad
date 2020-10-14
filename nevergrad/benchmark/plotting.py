@@ -260,13 +260,13 @@ def create_plots(
                 # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                 # (typically when attribute1 and attribute2 are correlated).
                 try:
-                    xindices = sorted(set([c[0] for c in df.unique(fixed)]))
+                    xindices = sorted(set(c[0] for c in df.unique(fixed)))
                 except TypeError:
-                    xindices = list(set([c[0] for c in df.unique(fixed)]))
+                    xindices = list(set(c[0] for c in df.unique(fixed)))
                 try:
-                    yindices = sorted(set([c[1] for c in df.unique(fixed)]))
+                    yindices = sorted(set(c[1] for c in df.unique(fixed)))
                 except TypeError:
-                    yindices = list(set([c[1] for c in df.unique(fixed)]))
+                    yindices = list(set(c[1] for c in df.unique(fixed)))
                 for _ in range(len(xindices)):
                     best_algo += [[]]
                 for i in range(len(xindices)):
@@ -329,7 +329,7 @@ def create_plots(
         data = XpPlotter.make_data(subdf)
         try:
             xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
@@ -513,7 +513,7 @@ def split_long_title(title: str) -> str:
     """
     if len(title) <= 60:
         return title
-    comma_indices = np.where(np.array([c for c in title]) == ",")[0]
+    comma_indices = np.where(np.array(title) == ",")[0]
     if not comma_indices.size:
         return title
     best_index = comma_indices[np.argmin(abs(comma_indices - len(title) // 2))]
