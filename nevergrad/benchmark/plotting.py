@@ -413,7 +413,7 @@ class XpPlotter:
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
-        if threshold:
+        if threshold and lowerbound < threshold:
             plt.plot([min(all_x), max(all_x)], [threshold, threshold], label='target')
         self.add_legends(legend_infos)
         # global info
