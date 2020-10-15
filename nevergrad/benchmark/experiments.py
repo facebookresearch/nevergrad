@@ -940,7 +940,7 @@ def sequential_translated_pyomo(seed: tp.Optional[int] = None, parallel: bool = 
             num_workers = budget // 7 if parallel else 1
             translated_fu = fu.copy()
             try:
-                translated_fu.translate(budget=(budget + num_workers - 1) // num_workers if not hard else budget)
+                translated_fu.add_loss_offset(budget=(budget + num_workers - 1) // num_workers if not hard else budget)
                 for algo in optims:
                     xp = Experiment(translated_fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
