@@ -144,7 +144,7 @@ class Pyomo(base.ExperimentFunction):
         exp_tag = ",".join([n.name for n in self.all_objectives])
         exp_tag += "|" + ",".join([n.name for n in self.all_vars])
         exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
-        self.register_initialization(model=self._model_instance)
+        self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
         #self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
@@ -169,7 +169,6 @@ class Pyomo(base.ExperimentFunction):
         #    solver.options['TimeLimit'] = time_budget
         solver.solve(self._model_instance, tee=False)
         self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
-        self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
         
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
