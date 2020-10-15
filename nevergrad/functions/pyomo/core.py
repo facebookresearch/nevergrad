@@ -169,6 +169,7 @@ class Pyomo(base.ExperimentFunction):
         #    solver.options['TimeLimit'] = time_budget
         solver.solve(self._model_instance, tee=False)
         self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
+        self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
         
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
@@ -183,7 +184,8 @@ class Pyomo(base.ExperimentFunction):
 
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         self._pyomo_value_assignment(k_model_variables)
-        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
+        translation = self._best_pyomo_val if not np.isnan(self._best_pyomo_val) else 0.
+        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense)) - translation  # Single objective assumption
 
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
