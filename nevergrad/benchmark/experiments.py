@@ -924,7 +924,7 @@ def pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def sequential_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def sequential_translated_pyomo(seed: tp.Optional[int] = None, parallel: bool = False, hard: bool = False) -> tp.Iterator[Experiment]:
     """Pyomo models.
     TODO: we need a comparison with Pyomo solves, and non-linear/complex variants of this.
     """
@@ -937,17 +937,33 @@ def sequential_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     at_least_once = False
     for fu in get_pyomo_list():
         for budget in [25, 50, 100, 200, 400, 800, 1600]:
+            num_workers = budget // 7 if parallel else 1
             translated_fu = fu.copy()
             try:
-                translated_fu.translate(budget=budget)
+                translated_fu.translate(budget=(budget + num_workers - 1) // num_workers if not hard else budget)
                 for algo in optims:
-                    xp = Experiment(translated_fu, algo, budget, seed=next(seedg))
+                    xp = Experiment(translated_fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
                         at_least_once = True
                         yield xp
             except RuntimeError:
-                pass  # not solved by the Pyomo solver!
+                assert False, "We want pyomo solvers for everything" ## not solved by the Pyomo solver!
     assert at_least_once
+
+
+@registry.register
+def parallel_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = sequential_translated_pyomo(seed, parallel=True, hard = False)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def hard_parallel_translated_pyomo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    internal_generator = sequential_translated_pyomo(seed, parallel=True, hard = True)
+    for xp in internal_generator:
+        yield xp
+
 
 @registry.register
 def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
