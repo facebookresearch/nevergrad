@@ -30,7 +30,7 @@ def leadingones(x: tp.List[int]) -> float:
     Returns len(x) - number of initial 1. I.e.
     leadingones([0 1 1 1]) = 4,
     leadingones([1 1 1 1]) = 0,
-    leadingones([1 0 0 0]) = 1.
+    leadingones([1 0 0 0]) = 3.
     """
     for i, x_ in enumerate(list(x)):
         if int(round(x_)) != 1:
