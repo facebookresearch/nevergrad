@@ -13,5 +13,5 @@ Pillow
 tqdm
 torchvision
 pyomo>=5.7
-cython>=3.0
+Cython>=3.0
 ipopt
