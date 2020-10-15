@@ -101,7 +101,7 @@ class Pyomo(base.ExperimentFunction):
     - Any changes on the model externally can lead to unexpected behaviours.
     """
 
-    def __init__(self, model: pyomo.Model) -> None:
+    def __init__(self, model: pyomo.Model, best_pyomo_val: float=float("nan")) -> None:
         if isinstance(model, pyomo.ConcreteModel):
             self._model_instance = model.clone()  # To enable the objective function to run in parallel
         else:
@@ -112,7 +112,7 @@ class Pyomo(base.ExperimentFunction):
         self.all_params: tp.List[pyomo.Param] = []
         self.all_constraints: tp.List[pyomo.Constraint] = []
         self.all_objectives: tp.List[pyomo.Objective] = []
-        self._best_pyomo_val: float = 0.
+        self._best_pyomo_val: float = best_pyomo_val
 
         # Relevant document: https://pyomo.readthedocs.io/en/stable/working_models.html
 
@@ -169,6 +169,7 @@ class Pyomo(base.ExperimentFunction):
         #    solver.options['TimeLimit'] = time_budget
         solver.solve(self._model_instance, tee=False)
         self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
+        self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
         
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:

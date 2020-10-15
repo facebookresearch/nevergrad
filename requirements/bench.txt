@@ -12,5 +12,5 @@ Pillow
 tqdm
 torchvision
 pyomo>=5.7
-pyomo.solvers
 IOHexperimenter>=0.2.8
+pyomo.solvers
