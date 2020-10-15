@@ -148,7 +148,7 @@ class Pyomo(base.ExperimentFunction):
         #self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
-    def translate(self, budget):
+    def add_loss_offset(self, budget: int) ->None:
         """Stores in self._best_pyomo_val the best value obtained by a solver on the same instance for a given budget in a sequential optimization.
         TODO: investigate what Pyomo does in the parallel case."""
         #solver = "glpk"
