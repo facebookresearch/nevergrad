@@ -63,7 +63,6 @@ jobs:
             #sudo apt install python3.7-dev libglpk-dev libgmp3-dev glpk-utils
             . venv/bin/activate
             pip install --upgrade pip
-            pip install Cython six
             pip install -e .
 
       - run:
