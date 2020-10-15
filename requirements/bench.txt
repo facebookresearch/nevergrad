@@ -12,7 +12,5 @@ Pillow
 tqdm
 torchvision
 pyomo>=5.7
-Cython
-Ipopt>=3.13.2
-six
+pyomo.solvers
 IOHexperimenter>=0.2.8
