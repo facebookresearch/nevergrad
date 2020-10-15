@@ -65,6 +65,7 @@ jobs:
             pip install --upgrade pip
             pip install Cython six
             pip install -e .
+            conda install -c conda-forge cyipopt
 
       - run:
           name: "[no-extra] Print installation"

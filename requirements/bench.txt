@@ -15,5 +15,4 @@ torchvision
 pyomo>=5.7
 cython>=0.29.0
 six
-ipopt
 IOHexperimenter>=0.2.8
