@@ -1444,7 +1444,10 @@ class _BO(base.Optimizer):
                 sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
                     init
                 ](self.dimension, budget=init_budget, scrambling=(init == "Hammersley"), random_state=self._rng)
-                for point in sampler:
+                for k, point in enumerate(sampler):
+                    if not k and self.middle_point and np.linalg.norm(point - 0.5) < 1e-6:
+                        # resampling middle point, this is useless, let's redraw randomly
+                        point = self._bo._space.random_sample()
                     self._bo.probe(point, lazy=True)
             else:  # default
                 for _ in range(init_budget):
@@ -1461,6 +1464,7 @@ class _BO(base.Optimizer):
         data = self._transform.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
+        print("Sending", candidate.value)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
