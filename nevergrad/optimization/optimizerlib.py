@@ -1464,7 +1464,6 @@ class _BO(base.Optimizer):
         data = self._transform.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
-        print("Sending", candidate.value)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
