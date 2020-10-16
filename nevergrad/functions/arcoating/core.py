@@ -8,13 +8,12 @@
 
 from math import sqrt, tan, pi
 import numpy as np
+import nevergrad.common.typing as tp
 import nevergrad as ng
-from nevergrad.common.typetools import ArrayLike
-from nevergrad.parametrization.utils import Crossover
 from .. import base
 
 
-def impedance_pix(x: ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
+def impedance_pix(x: tp.ArrayLike, dpix: float, lam: float, ep0: float, epf: float) -> float:
     """Normalized impedance Z/Z0
     ep0, epf:  epsilons in et out
     lam: lambda in nanometers
@@ -51,7 +50,7 @@ class ARCoating(base.ExperimentFunction):
     University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
     """
 
-    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "clipping") -> None:
+    def __init__(self, nbslab: int = 10, d_ar: int = 400, bounding_method: str = "bouncing") -> None:
         # Wave length range
         self.lambdas = np.arange(400, 900, 5)  # lambda values from min to max, in nm
         # AR parameters
@@ -66,7 +65,7 @@ class ARCoating(base.ExperimentFunction):
         array = ng.p.Array(init=init, mutable_sigma=True,)
         array.set_mutation(sigma=sigma)
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
-        array.set_recombination(Crossover(0)).set_name("")
+        array.set_recombination(ng.p.mutation.Crossover(0)).set_name("")
         super().__init__(self._get_minimum_average_reflexion, array)
         self.register_initialization(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
         self._descriptors.update(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
@@ -85,5 +84,6 @@ class ARCoating(base.ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         loss = self.function(x)
+        assert isinstance(loss, float)
         base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
         return loss

@@ -3,12 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 from pathlib import Path
-from nevergrad.parametrization import parameter as p
+import numbers
 import numpy as np
-import pandas as pd
-
+import nevergrad.common.typing as tp
+from nevergrad.parametrization import parameter as p
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
@@ -35,13 +34,15 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
-    def __init__(self, function: tp.Callable[..., float], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
+        self._initialization_func: tp.Callable[..., EF] = self.__class__
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
         self._parametrization: p.Parameter
         self.parametrization = parametrization
+        self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
@@ -67,14 +68,12 @@ class ExperimentFunction:
     def parametrization(self, parametrization: p.Parameter) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
-        # TODO change to parametrization
-        self._descriptors.update(parametrization=parametrization.name, dimension=parametrization.dimension)
 
     @property
-    def function(self) -> tp.Callable[..., float]:
+    def function(self) -> tp.Callable[..., tp.Loss]:
         return self._function
 
-    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
         """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
         """
         return self._function(*args, **kwargs)
@@ -84,7 +83,12 @@ class ExperimentFunction:
         """Description of the function parameterization, as a dict. This base class implementation provides function_class,
             noise_level, transform and dimension
         """
-        return dict(self._descriptors)  # Avoid external modification
+        desc = dict(self._descriptors)  # Avoid external modification
+        desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
+        return desc
+
+    def add_descriptors(self, **kwargs: tp.Optional[tp.Hashable]) -> None:
+        self._descriptors.update(kwargs)
 
     def __repr__(self) -> str:
         """Shows the function name and its summary
@@ -101,7 +105,7 @@ class ExperimentFunction:
         """
         if other.__class__ != self.__class__:
             return False
-        return bool(self._descriptors == other._descriptors)
+        return bool(self._descriptors == other._descriptors) and self.parametrization.name == other.parametrization.name
 
     def copy(self: EF) -> EF:
         """Provides a new equivalent instance of the class, possibly with
@@ -114,7 +118,9 @@ class ExperimentFunction:
                                                   "(and make sure you don't use the same parametrization in the process), or "
                                                   "initialization parameters should be registered through 'register_initialization'")
             kwargs = {x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._initialization_kwargs.items()}
-            output = self.__class__(**kwargs)
+            output = self._initialization_func(**kwargs)
+            if output.parametrization.name != self.parametrization.name:
+                output.parametrization = self.parametrization.copy()
             if not output.equivalent_to(self):
                 raise ExperimentFunctionCopyError(f"Copy of {self} with descriptors {self._descriptors} returned non-equivalent\n"
                                                   f"{output} with descriptors {output._descriptors}.")
@@ -123,9 +129,10 @@ class ExperimentFunction:
             output = self.__class__(self.function, self.parametrization.copy())
             output._descriptors = self.descriptors
         output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+        output.multiobjective_upper_bounds = self.multiobjective_upper_bounds
         return output
 
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:  # pylint: disable=unused-argument
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
         By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
         function and the pseudo time can be a function of the function inputs and output.
@@ -154,7 +161,9 @@ class ExperimentFunction:
         *args, **kwargs
             same as the actual function
         """
-        return self.function(*args, **kwargs)
+        output = self.function(*args, **kwargs)
+        assert isinstance(output, numbers.Number), "evaluation_function can only be called on monoobjective experiments."
+        return output
 
 
 def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:
@@ -173,6 +182,8 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     verbose: bool
         whether to also print a message if the leaderboard was updated
     """
+    # pylint: disable=import-outside-toplevel
+    import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
     loss = np.round(loss, decimals=12)  # this is probably already too precise for the machine
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])
@@ -191,3 +202,38 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
                 print(f"New best value for {identifier}: {loss}\nwith: {string}")
     except Exception:  # pylint: disable=broad-except
         pass  # better avoir bugs for this
+
+
+class MultiExperiment(ExperimentFunction):
+    """Pack several mono-objective experiments into a multiobjective experiment
+
+
+    Parameters
+    ----------
+    experiments: iterable of ExperimentFunction
+
+    Notes
+    -----
+    - packing of multiobjective experiments is not supported.
+    - parametrization must match between all functions (only their name is checked as initialization)
+    - there is no descriptor for the packed functions, except the name (concatenetion of packed function names).
+    """
+
+    def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike) -> None:
+        xps = list(experiments)
+        assert xps
+        assert len(xps) == len({id(xp) for xp in xps}), "All experiments must be different instances"
+        assert all(xp.multiobjective_upper_bounds is None for xp in xps), "Packing multiobjective xps is not supported."
+        assert all(xps[0].parametrization.name == xp.parametrization.name for xp in xps[1:]), "Parametrization do not match"
+        super().__init__(self._multi_func, xps[0].parametrization)
+        self.multiobjective_upper_bounds = np.array(upper_bounds)
+        self._descriptors.update(name=",".join(xp._descriptors.get("name", "#unknown#") for xp in xps))
+        self._experiments = xps
+
+    def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
+        outputs = [f(*args, **kwargs) for f in self._experiments]
+        return np.array(outputs)
+
+    def copy(self) -> "MultiExperiment":
+        assert self.multiobjective_upper_bounds is not None
+        return MultiExperiment([f.copy() for f in self._experiments], self.multiobjective_upper_bounds)

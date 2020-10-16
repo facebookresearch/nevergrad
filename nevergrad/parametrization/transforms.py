@@ -5,10 +5,9 @@
 
 import uuid
 import itertools
-from typing import Optional, Union, Tuple
 import numpy as np
 from scipy import stats
-from ..common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 
 
 class Transform:
@@ -102,16 +101,32 @@ class Exponentiate(Transform):
         return np.log(y) / (float(self.coeff) * np.log(self.base))  # type: ignore
 
 
+BoundType = tp.Optional[tp.Union[tp.ArrayLike, float]]
+
+
+def _f(x: BoundType) -> BoundType:
+    """Format for prints:
+    array with one scalars are converted to floats
+    """
+    if isinstance(x, (np.ndarray, list, tuple)):
+        x = np.array(x, copy=False)
+        if x.shape == (1,):
+            x = float(x[0])
+    if isinstance(x, float) and x.is_integer():
+        x = int(x)
+    return x
+
+
 class BoundTransform(Transform):  # pylint: disable=abstract-method
 
     def __init__(
         self,
-        a_min: Optional[Union[ArrayLike, float]] = None,
-        a_max: Optional[Union[ArrayLike, float]] = None
+        a_min: BoundType = None,
+        a_max: BoundType = None
     ) -> None:
         super().__init__()
-        self.a_min: Optional[np.ndarray] = None
-        self.a_max: Optional[np.ndarray] = None
+        self.a_min: tp.Optional[np.ndarray] = None
+        self.a_max: tp.Optional[np.ndarray] = None
         for name, value in [("a_min", a_min), ("a_max", a_max)]:
             if value is not None:
                 isarray = isinstance(value, (tuple, list, np.ndarray))
@@ -121,7 +136,7 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
                 raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")
         if self.a_min is None and self.a_max is None:
             raise ValueError("At least one bound must be specified")
-        self.shape: Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
+        self.shape: tp.Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
 
     def _check_shape(self, x: np.ndarray) -> None:
         for dims in itertools.zip_longest(x.shape, self.shape, fillvalue=1):
@@ -141,15 +156,15 @@ class TanhBound(BoundTransform):
 
     def __init__(
         self,
-        a_min: Union[ArrayLike, float],
-        a_max: Union[ArrayLike, float]
+        a_min: tp.Union[tp.ArrayLike, float],
+        a_max: tp.Union[tp.ArrayLike, float]
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         if self.a_min is None or self.a_max is None:
             raise ValueError("Both bounds must be specified")
         self._b = .5 * (self.a_max + self.a_min)
         self._a = .5 * (self.a_max - self.a_min)
-        self.name = f"Th({a_min},{a_max})"
+        self.name = f"Th({_f(a_min)},{_f(a_max)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
@@ -169,20 +184,30 @@ class Clipping(BoundTransform):
     Parameters
     ----------
     a_min: float or None
+        lower bound
     a_max: float or None
+        upper bound
+    bounce: bool
+        bounce (once) on borders instead of just clipping
     """
 
     def __init__(
         self,
-        a_min: Optional[Union[ArrayLike, float]] = None,
-        a_max: Optional[Union[ArrayLike, float]] = None
+        a_min: BoundType = None,
+        a_max: BoundType = None,
+        bounce: bool = False,
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
-        self.name = f"Cl({a_min},{a_max})"
+        self._bounce = bounce
+        b = ",b" if bounce else ""
+        self.name = f"Cl({_f(a_min)},{_f(a_max)}{b})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return np.clip(x, self.a_min, self.a_max)  # type: ignore
+        out = np.clip(x, self.a_min, self.a_max)
+        if self._bounce:
+            out = np.clip(2 * out - x, self.a_min, self.a_max)
+        return out  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
@@ -204,40 +229,68 @@ class ArctanBound(BoundTransform):
 
     def __init__(
         self,
-        a_min: Union[ArrayLike, float],
-        a_max: Union[ArrayLike, float]
+        a_min: tp.Union[tp.ArrayLike, float],
+        a_max: tp.Union[tp.ArrayLike, float]
     ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         if self.a_min is None or self.a_max is None:
             raise ValueError("Both bounds must be specified")
         self._b = .5 * (self.a_max + self.a_min)
         self._a = (self.a_max - self.a_min) / np.pi
-        self.name = f"At({a_min},{a_max})"
+        self.name = f"At({_f(a_min)},{_f(a_max)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return self._b + self._a * np.arctan(x)  # type: ignore
+        return self._b + self._a * np.arctan(x)
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
         if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
-        return np.tan((y - self._b) / self._a)  # type: ignore
+        return np.tan((y - self._b) / self._a)
 
 
-class CumulativeDensity(Transform):
+class CumulativeDensity(BoundTransform):
     """Bounds all real values into [0, 1] using a gaussian cumulative density function (cdf)
     Beware, cdf goes very fast to its limits.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = "Cd()"
+    def __init__(
+        self,
+        lower: float = 0.0,
+        upper: float = 1.0,
+        eps: float = 1e-9
+    ) -> None:
+        super().__init__(a_min=lower, a_max=upper)
+        self._b = lower
+        self._a = upper - lower
+        self._eps = eps
+        self.name = f"Cd({_f(lower)},{_f(upper)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return stats.norm.cdf(x)  # type: ignore
+        return self._a * stats.norm.cdf(x) + self._b
 
     def backward(self, y: np.ndarray) -> np.ndarray:
-        if np.max(y) > 1 or np.min(y) < 0:
-            raise ValueError("Only data between 0 and 1 can be transformed back (bounds lead to infinity).")
-        return stats.norm.ppf(y)  # type: ignore
+        if (y > self.a_max).any() or (y < self.a_min).any():
+            raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.\nGot: {y}")
+        y = np.clip((y - self._b) / self._a, self._eps, 1 - self._eps)
+        return stats.norm.ppf(y)
+
+
+class Fourrier(Transform):
+
+    def __init__(
+        self,
+        axes: tp.Union[int, tp.Sequence[int]] = 0
+    ) -> None:
+        super().__init__()
+        self.axes: tp.Tuple[int, ...] = (axes,) if isinstance(axes, int) else tuple(axes)  # type: ignore
+        self.name = f"F({axes})"
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        if any(x.shape[a] % 2 for a in self.axes):
+            raise ValueError(f"Only even shapes are allowed for Fourrier transform, got {x.shape}")
+        return np.fft.rfftn(x, axes=self.axes, norm="ortho")  # type: ignore
+
+    def backward(self, y: np.ndarray) -> np.ndarray:
+        return np.fft.irfftn(y, axes=self.axes, norm="ortho")  # type: ignore

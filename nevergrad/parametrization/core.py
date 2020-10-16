@@ -8,9 +8,8 @@ import warnings
 import operator
 import functools
 from collections import OrderedDict
-import typing as tp
 import numpy as np
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from . import utils
 # pylint: disable=no-value-for-parameter
 
@@ -31,7 +30,9 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
-        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
+        self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
+        self.loss: tp.Optional[float] = None  # associated loss
+        self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
@@ -41,7 +42,23 @@ class Parameter:
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
-        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
+        self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
+
+    @property
+    def losses(self) -> np.ndarray:
+        """Pssibly multiobjective losses which were told
+        to the optimizer along this parameter.
+        In case of mono-objective loss, losses is the array containing this loss as sole element
+
+        Note
+        ----
+        This API is highly experimental
+        """
+        if self._losses is not None:
+            return self._losses
+        if self.loss is not None:
+            return np.array([self.loss], dtype=float)
+        raise RuntimeError("No loss was provided")
 
     @property
     def value(self) -> tp.Any:
@@ -149,7 +166,7 @@ class Parameter:
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -227,7 +244,10 @@ class Parameter:
         self.set_name(name)  # with_name allows chaining
 
     def __repr__(self) -> str:
-        return f"{self.name}:{self.value}"
+        strings = [self.name]
+        if not callable(self.value):  # not a mutation
+            strings.append(str(self.value))
+        return ":".join(strings)
 
     def set_name(self: P, name: str) -> P:
         """Sets a name and return the current instrumentation (for chaining)
@@ -273,7 +293,7 @@ class Parameter:
         - constraints should be fast to compute.
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
-            warnings.warn("Lambda as constraint is not adviced because it may not be picklable.")
+            warnings.warn("Lambda as constraint is not advised because it may not be picklable.")
         self._constraint_checkers.append(func)
 
     # %% random state
@@ -337,7 +357,8 @@ class Parameter:
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(self, Constant):  # nevermind constants (since they dont spawn children)
-            raise RuntimeError(f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead")
+            raise RuntimeError(f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
+                               "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)")
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params
@@ -350,6 +371,7 @@ class Parameter:
         This is used to run multiple experiments
         """
         child = self.spawn_child()
+        child._name = self._name
         child.random_state = None
         return child
 
@@ -377,7 +399,7 @@ class Constant(Parameter):
 
     def __init__(self, value: tp.Any) -> None:
         super().__init__()
-        if isinstance(value, Parameter):
+        if isinstance(value, Parameter) and not isinstance(self, MultiobjectiveReference):
             raise TypeError("Only non-parameters can be wrapped in a Constant")
         self._value = value
 
@@ -396,14 +418,20 @@ class Constant(Parameter):
 
     @value.setter
     def value(self, value: tp.Any) -> None:
-        if not (value == self._value or value is self._value):
+        different = False
+        if isinstance(value, np.ndarray):
+            if not np.equal(value, self._value).all():
+                different = True
+        elif not (value == self._value or value is self._value):
+            different = True
+        if different:
             raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
 
     def get_standardized_data(self: P, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
@@ -429,6 +457,15 @@ def as_parameter(param: tp.Any) -> Parameter:
         return param
     else:
         return Constant(param)
+
+
+class MultiobjectiveReference(Constant):
+
+    def __init__(self, parameter: tp.Optional[Parameter] = None) -> None:
+        if parameter is not None and not isinstance(parameter, Parameter):
+            raise TypeError("MultiobjectiveReference should either take no argument or a parameter which will "
+                            f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})")
+        super().__init__(parameter)
 
 
 class Dict(Parameter):
@@ -488,8 +525,11 @@ class Dict(Parameter):
 
     @value.setter
     def value(self, value: tp.Dict[str, tp.Any]) -> None:
+        cls = self.__class__.__name__
+        if not isinstance(value, dict):
+            raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
         if set(value) != set(self._content):
-            raise ValueError(f"Got input keys {set(value)} but expected {set(self._content)}")
+            raise ValueError(f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}")
         for key, val in value.items():
             as_parameter(self._content[key]).value = val
 

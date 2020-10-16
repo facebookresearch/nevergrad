@@ -6,16 +6,15 @@
 import argparse
 from pathlib import Path
 from concurrent import futures
-from typing import Optional, Union, List
-from ..common.typetools import PathLike
-from ..common import tools
+import nevergrad.common.typing as tp
+from . import utils
 from . import core
 from . import plotting
 
 
 # pylint: disable=too-many-arguments
-def launch(experiment: str, num_workers: int = 1, seed: Optional[int] = None,
-           cap_index: Optional[int] = None, output: Optional[PathLike] = None) -> Path:
+def launch(experiment: str, num_workers: int = 1, seed: tp.Optional[int] = None,
+           cap_index: tp.Optional[int] = None, output: tp.Optional[tp.PathLike] = None) -> Path:
     """Launch experiment with given names and selection modulo
     max_index can be specified to provide a limited number of settings
     """
@@ -58,10 +57,16 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def repeated_launch(experiment: str, num_workers: int = 1, seed: Optional[int] = None,
-                    cap_index: Optional[int] = None, output: Optional[PathLike] = None,
-                    plot: Union[bool, PathLike] = False, imports: Optional[List[PathLike]] = None,
-                    repetitions: int = 1) -> None:
+def repeated_launch(
+    experiment: str,
+    num_workers: int = 1,
+    seed: tp.Optional[int] = None,
+    cap_index: tp.Optional[int] = None,
+    output: tp.Optional[tp.PathLike] = None,
+    plot: tp.Union[bool, tp.PathLike] = False,
+    imports: tp.Optional[tp.List[tp.PathLike]] = None,
+    repetitions: int = 1
+) -> None:
     """Launch experiment with given names and selection module
     max_index can be specified to provide a limited number of settings
     This repeats the plan several times and increments the seed.
@@ -79,7 +84,7 @@ def repeated_launch(experiment: str, num_workers: int = 1, seed: Optional[int] =
                          seed=None if seed is None else seed + k)
     # save plots if need be
     if plot:
-        df = tools.Selector.read_csv(csvpath)
+        df = utils.Selector.read_csv(csvpath)
         if isinstance(plot, bool):
             plot = str(Path(csvpath).with_suffix("")) + "_plots"
         print(f"Saving plots into folder: {plot}")

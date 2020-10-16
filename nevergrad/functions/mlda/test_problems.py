@@ -22,7 +22,7 @@ def test_clustering() -> None:
     num_clusters = 5
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
-        func = problems.Clustering.from_mlda(name="Ruspini", num_clusters=num_clusters, rescale=True)
+        func = problems.Clustering.from_mlda(name="Ruspini", num_clusters=num_clusters, rescale=True).copy()
         np.testing.assert_equal(func.dimension, 10)
     func(np.arange(10).reshape((num_clusters, -1)))
     instru_str = "Array{(5,2)}"
@@ -42,12 +42,12 @@ def test_compute_perceptron() -> None:
         for k in range(3):
             z += p[6 + k] * np.tanh(p[3 + k] + p[k] * x)
         square_sum += (z - y)**2
-    output = problems.Perceptron(data[:, 0], data[:, 1])(p)
+    output = problems.Perceptron(data[:, 0], data[:, 1]).copy()(p)
     np.testing.assert_almost_equal(output, square_sum / 5)
 
 
 def test_perceptron() -> None:
-    func = problems.Perceptron.from_mlda(name="quadratic")
+    func = problems.Perceptron.from_mlda(name="quadratic").copy()
     output = func([k for k in range(10)])
     np.testing.assert_almost_equal(output, 876.837, decimal=4)
     np.testing.assert_equal(func.descriptors["name"], "quadratic")
@@ -61,13 +61,13 @@ def test_sammon_mapping(name: str) -> None:
     data = np.arange(6).reshape(3, 2) if name == "Virus" else pd.DataFrame(data=np.arange(12).reshape(3, 4))
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
-        func = problems.SammonMapping.from_mlda(name=name)
+        func = problems.SammonMapping.from_mlda(name=name).copy()
     value = func(np.arange(6).reshape((-1, 2)))
     np.testing.assert_almost_equal(value, 0 if name == "Virus" else 5.152, decimal=4)
 
 
 def test_sammon_circle() -> None:
-    func = problems.SammonMapping.from_2d_circle()
+    func = problems.SammonMapping.from_2d_circle().copy()
     assert np.max(func._proximity) <= 2.
 
 
@@ -75,7 +75,7 @@ def test_landscape() -> None:
     data = np.arange(6).reshape(3, 2)
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
-        func = problems.Landscape(transform=None)
+        func = problems.Landscape(transform=None).copy()
         sfunc = problems.Landscape(transform="square")
     np.testing.assert_equal(func(0, 0), 5)
     np.testing.assert_equal(func(-.2, -0.2), 5)
@@ -93,7 +93,7 @@ def test_landscape_gaussian() -> None:
     data = np.arange(6).reshape(3, 2)
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
-        func = problems.Landscape(transform="gaussian")
+        func = problems.Landscape(transform="gaussian").copy()
     output = func.parametrization.spawn_child().set_standardized_data([-144, -144]).args
     np.testing.assert_equal(output, [0, 0])  # should be mapped to 0, 0
     output = func.parametrization.spawn_child().set_standardized_data([144, 144]).args

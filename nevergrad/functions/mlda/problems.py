@@ -8,11 +8,10 @@
 # - Marcus Gallagher, University of Queensland
 # - Mike Preuss, LIACS, Leiden University
 
-from typing import Optional
 import numpy as np
 import scipy.spatial
-from nevergrad.common.typetools import ArrayLike
 from nevergrad.parametrization import parameter as p
+import nevergrad.common.typing as tp
 from ..base import ExperimentFunction
 from . import datasets
 
@@ -68,6 +67,10 @@ class Clustering(ExperimentFunction):
         assert name in ["Ruspini", "German towns"]
         points = datasets.get_data(name)
         pb = cls(points=points, num_clusters=num_clusters, rescale=rescale)
+        assert pb._initialization_kwargs is not None
+        del pb._initialization_kwargs["points"]
+        pb._initialization_kwargs["name"] = name
+        pb._initialization_func = cls.from_mlda  # type: ignore
         pb._descriptors.update(name=name)
         return pb
 
@@ -115,9 +118,11 @@ class Perceptron(ExperimentFunction):
         data = datasets.make_perceptron_data(name)
         pb = cls(data[:, 0], data[:, 1])
         pb._descriptors.update(name=name)
+        pb._initialization_kwargs = {"name": name}
+        pb._initialization_func = cls.from_mlda  # type: ignore
         return pb
 
-    def apply(self, parameters: ArrayLike) -> np.ndarray:
+    def apply(self, parameters: tp.ArrayLike) -> np.ndarray:
         """Apply the perceptron transform to x using the provided parameters
 
         Parameters
@@ -137,7 +142,7 @@ class Perceptron(ExperimentFunction):
         output: np.ndarray = np.sum(tmp, axis=1) + parameters[-1]
         return output
 
-    def _compute_loss(self, x: ArrayLike) -> float:
+    def _compute_loss(self, x: tp.ArrayLike) -> float:
         """Compute perceptron
         """
         gx = self.apply(x)
@@ -186,6 +191,8 @@ class SammonMapping(ExperimentFunction):
             proximity = scipy.spatial.distance_matrix(raw_data, raw_data)  # for Virus, the proximity matrix must be computed
         pb = cls(proximity)
         pb._descriptors.update(name=name, rescale=rescale)
+        pb._initialization_kwargs = {"name": name, "rescale": rescale}
+        pb._initialization_func = cls.from_mlda  # type: ignore
         return pb
 
     @classmethod
@@ -198,6 +205,8 @@ class SammonMapping(ExperimentFunction):
         data[:, 1] = np.imag(idata)
         instance = cls(scipy.spatial.distance_matrix(data, data))
         instance._descriptors.update(name="circle", num_points=num_points)
+        instance._initialization_kwargs = {"num_points": num_points}
+        instance._initialization_func = cls.from_2d_circle  # type: ignore
         return instance
 
     def _compute_distance(self, x: np.ndarray) -> float:
@@ -228,7 +237,7 @@ class Landscape(ExperimentFunction):
       since it is an artificial rescaling to greyscale of a color image.
     """
 
-    def __init__(self, transform: Optional[str] = None) -> None:
+    def __init__(self, transform: tp.Optional[str] = None) -> None:
         super().__init__(self._get_pixel_value, p.Instrumentation(p.Scalar(), p.Scalar()).set_name("standard"))
         self.register_initialization(transform=transform)
         self._image = datasets.get_data("Landscape")

@@ -6,10 +6,9 @@
 import time
 import warnings
 import threading
-from typing import Any, Callable, Dict, Optional, List
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from nevergrad.common.typetools import ArrayLike
 from . import base
 from .base import IntOrParameter
 
@@ -30,21 +29,21 @@ class Message:
     - "meta" attribute is only there for more implementation specific usages.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         self.args = args
         self.kwargs = kwargs
-        self.meta: Dict[str, Any] = {}  # for none Thread caller purposes
-        self._result: Optional[Any] = None
+        self.meta: tp.Dict[str, tp.Any] = {}  # for none Thread caller purposes
+        self._result: tp.Optional[tp.Any] = None
         self.done = False
 
     @property
-    def result(self) -> Any:
+    def result(self) -> tp.Any:
         if not self.done:
             raise RuntimeError("Result was not provided (not done)")
         return self._result
 
     @result.setter
-    def result(self, value: Any) -> None:
+    def result(self, value: tp.Any) -> None:
         self.done = True
         self._result = value
 
@@ -70,16 +69,16 @@ class _MessagingThread(threading.Thread):
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, caller: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+    def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__()
-        self.messages: List[Message] = []
+        self.messages: tp.List[Message] = []
         self.call_count = 0
-        self.error: Optional[Exception] = None
+        self.error: tp.Optional[Exception] = None
         self._kill_order = False
         self._caller = caller
         self._args = args
         self._kwargs = kwargs
-        self.output: Optional[Any] = None  # TODO add a "done" attribute ?
+        self.output: tp.Optional[tp.Any] = None  # TODO add a "done" attribute ?
         self._last_evaluation_duration = 0.0001
 
     def run(self) -> None:
@@ -93,7 +92,7 @@ class _MessagingThread(threading.Thread):
         except Exception as e:  # pylint: disable=broad-except
             self.error = e
 
-    def _fake_callable(self, *args: Any, **kwargs: Any) -> Any:
+    def _fake_callable(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         """Appends a message in the messages attribute of the thread when
         the caller needs an evaluation, and wait for it to be provided
         to return it to the caller
@@ -122,7 +121,7 @@ class MessagingThread:
     """Encapsulate the inner thread, so that kill order is automatically called at deletion.
     """
 
-    def __init__(self, caller: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+    def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         self._thread = _MessagingThread(caller, *args, **kwargs)
         self._thread.start()
 
@@ -130,15 +129,15 @@ class MessagingThread:
         return self._thread.is_alive()
 
     @property
-    def output(self) -> Any:
+    def output(self) -> tp.Any:
         return self._thread.output
 
     @property
-    def error(self) -> Optional[Exception]:
+    def error(self) -> tp.Optional[Exception]:
         return self._thread.error
 
     @property
-    def messages(self) -> List[Message]:
+    def messages(self) -> tp.List[Message]:
         return self._thread.messages
 
     def stop(self) -> None:
@@ -167,12 +166,12 @@ class RecastOptimizer(base.Optimizer):
 
     recast = True
 
-    def __init__(self, parametrization: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1) -> None:
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
-        self._messaging_thread: Optional[MessagingThread] = None  # instantiate at runtime
+        self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
-    def get_optimization_function(self) -> Callable[[Callable[..., Any]], ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
         """Return an optimization procedure function (taking a function to optimize as input)
 
         Note
@@ -190,7 +189,7 @@ class RecastOptimizer(base.Optimizer):
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
-        messages: List[Message] = []
+        messages: tp.List[Message] = []
         t0 = time.time()
         while not messages and self._messaging_thread.is_alive():
             messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
@@ -202,7 +201,8 @@ class RecastOptimizer(base.Optimizer):
             warnings.warn("Underlying optimizer has already converged, returning random points",
                           FinishedUnderlyingOptimizerWarning)
             self._check_error()
-            return np.random.normal(0, 1, self.dimension)  # type: ignore
+            data = np.random.normal(0, 1, self.dimension)
+            return self.parametrization.spawn_child().set_standardized_data(data)
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
@@ -232,14 +232,15 @@ class RecastOptimizer(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
-    def _internal_provide_recommendation(self) -> base.ArrayLike:
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
         else the best pessimistic point.
         """
-        assert self._messaging_thread is not None, 'Optimization was not even started'
-        if self._messaging_thread.output is not None:
+        if (self._messaging_thread is not None and
+                self._messaging_thread.output is not None):
             return self._messaging_thread.output  # type: ignore
-        return self.current_bests["pessimistic"].x
+        else:
+            return None  # use default
 
     def __del__(self) -> None:
         # explicitly ask the thread to stop (better be safe :))

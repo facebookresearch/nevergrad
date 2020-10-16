@@ -5,14 +5,13 @@
 
 import hashlib
 import itertools
-import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.parametrization import utils as putils
 from nevergrad.common import tools
-from nevergrad.common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 from .base import ExperimentFunction
 from .multiobjective import MultiobjectiveFunction
+from .pbt import PBT as PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
 
@@ -45,7 +44,7 @@ class ArtificialVariable:
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
             self._transforms.append(utils.Transform(transform_inds, translation_factor=self.translation_factor, rotation=self.rotation))
 
-    def process(self, data: ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+    def process(self, data: tp.ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
         if not self._transforms:
             self._initialize()
         if self.hashing:
@@ -171,7 +170,7 @@ class ArtificialFunction(ExperimentFunction):
         """
         return sorted(corefuncs.registry)
 
-    def _transform(self, x: ArrayLike) -> np.ndarray:
+    def _transform(self, x: tp.ArrayLike) -> np.ndarray:
         data = self.transform_var.process(x)
         return np.array(data)
 
@@ -192,11 +191,11 @@ class ArtificialFunction(ExperimentFunction):
         data = self._transform(args[0])
         return self.function_from_transform(data)
 
-    def noisy_function(self, x: ArrayLike) -> float:
+    def noisy_function(self, x: tp.ArrayLike) -> float:
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
         args, kwargs = input_parameter
@@ -206,7 +205,7 @@ class ArtificialFunction(ExperimentFunction):
             data = self._transform(args[0])
             total = 0.
             for block in data:
-                total += self._func.compute_pseudotime(((block,), {}), value)  # type: ignore
+                total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore
             return total
         return 1.
 
@@ -242,10 +241,12 @@ class FarOptimumFunction(ExperimentFunction):
         self._optimum = np.array(optimum, dtype=float)
         parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
         init = np.array([1.0, 1.0] if independent_sigma else [1.0], dtype=float)
-        parametrization.set_mutation(
-            sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)  # type: ignore
+        sigma = (
+            p.Array(init=init).set_mutation(exponent=2.0)
+            if mutable_sigma else p.Constant(init)
         )
-        parametrization.set_recombination("average" if recombination == "average" else putils.Crossover())
+        parametrization.set_mutation(sigma=sigma)
+        parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
         super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
         descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,

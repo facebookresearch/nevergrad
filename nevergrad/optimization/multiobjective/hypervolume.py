@@ -28,6 +28,7 @@ class VectorNode:
     The `dominated_flag` is used to skip dominated points (see section III.C).
     The VectorNode data structure is introduced in section III.A of the original paper..
     """
+
     def __init__(self, dimension: int, coordinates: tp.Optional[tp.Union[np.ndarray, tp.List[float]]] = None) -> None:
         self.dimension = dimension
         self.coordinates = np.array(coordinates, copy=False)
@@ -71,6 +72,7 @@ class VectorNode:
 
 class VectorLinkedList:
     """ Linked list structure with list of VectorNodes as elements."""
+
     def __init__(self, dimension: int) -> None:
         self.dimension = dimension
         self.sentinel = VectorNode(dimension)
@@ -188,6 +190,7 @@ class HypervolumeIndicator:
     paper `An Improved Dimension-Sweep Algorithm for the Hypervolume Indicator`
     by C.M. Fonseca et all, IEEE Congress on Evolutionary Computation, 2006.
     """
+
     def __init__(self, reference_point: np.ndarray) -> None:
         self.reference_point = np.array(reference_point, copy=False)
         self.dimension = self.reference_point.size
@@ -225,7 +228,7 @@ class HypervolumeIndicator:
     def recursive_hypervolume(self, dimension: int) -> float:
         """ Recursive hypervolume computation. The algorithm is provided by Algorithm 3.
         of the original paper."""
-        if self.multilist.chain_length(dimension-1) == 0:
+        if self.multilist.chain_length(dimension - 1) == 0:
             return 0
         assert self.multilist is not None
         if dimension == 0:
@@ -247,7 +250,7 @@ class HypervolumeIndicator:
         for node in self.multilist.reverse_iterate(dimension, start=current_node):
             assert node is not None
             current_node = node
-            if self.multilist.chain_length(dimension-1) > 1 and (
+            if self.multilist.chain_length(dimension - 1) > 1 and (
                     node.coordinates[dimension] > self.reference_bounds[dimension]
                     or node.prev[dimension].coordinates[dimension] >= self.reference_bounds[dimension]
             ):
@@ -263,11 +266,11 @@ class HypervolumeIndicator:
                 break
 
         # Line 13
-        if self.multilist.chain_length(dimension-1) > 1:
+        if self.multilist.chain_length(dimension - 1) > 1:
             # Line 14
             hypervolume = current_node.prev[dimension].volume[dimension]
             hypervolume += current_node.prev[dimension].area[dimension] * (
-                    current_node.coordinates[dimension] - current_node.prev[dimension].coordinates[dimension]
+                current_node.coordinates[dimension] - current_node.prev[dimension].coordinates[dimension]
             )
         else:
             current_node.configure_area(dimension)
@@ -282,7 +285,7 @@ class HypervolumeIndicator:
             assert node is not None
             # Line 18
             hypervolume += node.prev[dimension].area[dimension] * (
-                    node.coordinates[dimension] - node.prev[dimension].coordinates[dimension]
+                node.coordinates[dimension] - node.prev[dimension].coordinates[dimension]
             )
             # Line 19
             self.reference_bounds[dimension] = node.coordinates[dimension]

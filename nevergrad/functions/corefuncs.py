@@ -3,17 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, List, Callable
+import typing as tp
 from math import exp, sqrt, tanh
 import numpy as np
 from nevergrad.parametrization import discretization
 from nevergrad.common.decorators import Registry
 
 
-registry = Registry[Callable[[np.ndarray], float]]()
+registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
-def onemax(x: List[int]) -> float:
+def onemax(x: tp.List[int]) -> float:
     """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
     It is originally designed for lists of bits. It just counts the number of 1,
@@ -24,13 +24,13 @@ def onemax(x: List[int]) -> float:
     return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
-def leadingones(x: List[int]) -> float:
+def leadingones(x: tp.List[int]) -> float:
     """leadingones is the second most classical discrete function, adapted for minimization.
 
     Returns len(x) - number of initial 1. I.e.
     leadingones([0 1 1 1]) = 4,
     leadingones([1 1 1 1]) = 0,
-    leadingones([1 0 0 0]) = 1.
+    leadingones([1 0 0 0]) = 3.
     """
     for i, x_ in enumerate(list(x)):
         if int(round(x_)) != 1:
@@ -38,7 +38,7 @@ def leadingones(x: List[int]) -> float:
     return 0
 
 
-def jump(x: List[int]) -> float:  # TODO: docstring?
+def jump(x: tp.List[int]) -> float:  # TODO: docstring?
     """There exists variants of jump functions; we are in minimization.
 
     The principle of a jump function is that local descent does not succeed.
@@ -65,7 +65,7 @@ class DelayedSphere:
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
         x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
@@ -311,7 +311,6 @@ def lunacek(x: np.ndarray) -> float:
 # following functions using discretization should not be used with translation/rotation
 
 
-
 @registry.register_with_info(no_transform=True)
 def hardonemax(y: np.ndarray) -> float:
     """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
@@ -353,7 +352,7 @@ def onemax5(y: np.ndarray) -> float:
     """Softmax discretization of onemax with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return onemax(discretization.softmax_discretization(y, 5))
+    return onemax(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)
@@ -361,7 +360,7 @@ def jump5(y: np.ndarray) -> float:
     """Softmax discretization of jump with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return jump(discretization.softmax_discretization(y, 5))
+    return jump(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)
@@ -369,7 +368,7 @@ def leadingones5(y: np.ndarray) -> float:
     """Softmax discretization of leadingones with 5 possibles values.
 
     This multiplies the dimension by 5."""
-    return leadingones(discretization.softmax_discretization(y, 5))
+    return leadingones(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)

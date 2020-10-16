@@ -6,19 +6,18 @@
 import datetime
 import warnings
 import itertools
-import typing as tp
 import importlib.util
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import nevergrad.common.typing as tp
+from nevergrad.optimization.utils import SequentialExecutor
 from .experiments import registry as registry
 from .experiments import Experiment as Experiment
-from ..common import tools
-from ..common.typetools import ExecutorLike, JobLike, PathLike
-from ..optimization.utils import SequentialExecutor
+from . import utils
 
 
-def import_additional_module(filepath: PathLike) -> None:
+def import_additional_module(filepath: tp.PathLike) -> None:
     """Imports an additional file at runtime
 
     Parameter
@@ -108,7 +107,7 @@ class BenchmarkChunk:
         self._id = (
             datetime.datetime.now().strftime("%y-%m-%d_%H%M")
             + "_"
-            + "".join(np.random.choice([x for x in "abcdefghijklmnopqrstuvwxyz"], 4))
+            + "".join(np.random.choice(list("abcdefghijklmnopqrstuvwxyz"), 4))
         )
 
     @property
@@ -163,7 +162,7 @@ class BenchmarkChunk:
     def __len__(self) -> int:
         return len(self.moduler)
 
-    def compute(self, process_function: tp.Optional[tp.Callable[["BenchmarkChunk", Experiment], None]] = None) -> tools.Selector:
+    def compute(self, process_function: tp.Optional[tp.Callable[["BenchmarkChunk", Experiment], None]] = None) -> utils.Selector:
         """Run all the experiments and returns the result dataframe.
 
         Parameters
@@ -193,7 +192,7 @@ class BenchmarkChunk:
             self.summaries.append(summary)
             self._current_experiment = None
             print(f"Finished {indstr}", flush=True)
-        return tools.Selector(data=self.summaries)
+        return utils.Selector(data=self.summaries)
 
 
 # pylint: disable=too-many-arguments
@@ -201,10 +200,10 @@ def _submit_jobs(
     experiment_name: str,
     num_workers: int = 1,
     seed: tp.Optional[int] = None,
-    executor: tp.Optional[ExecutorLike] = None,
+    executor: tp.Optional[tp.ExecutorLike] = None,
     print_function: tp.Optional[tp.Callable[[Experiment], None]] = None,
     cap_index: tp.Optional[int] = None,
-) -> tp.List[JobLike[tools.Selector]]:
+) -> tp.List[tp.JobLike[utils.Selector]]:
     """Submits a job for computation
 
     Parameters
@@ -232,7 +231,7 @@ def _submit_jobs(
         if num_workers > 1:
             raise ValueError("An executor must be provided to run multiple jobs in parallel")
         executor = SequentialExecutor()
-    jobs: tp.List[JobLike[tools.Selector]] = []
+    jobs: tp.List[tp.JobLike[utils.Selector]] = []
     bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
     # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
     next(registry[experiment_name]())
@@ -248,10 +247,10 @@ def compute(
     experiment_name: str,
     num_workers: int = 1,
     seed: tp.Optional[int] = None,
-    executor: tp.Optional[ExecutorLike] = None,
+    executor: tp.Optional[tp.ExecutorLike] = None,
     print_function: tp.Optional[tp.Callable[[tp.Dict[str, tp.Any]], None]] = None,
     cap_index: tp.Optional[int] = None,
-) -> tools.Selector:
+) -> utils.Selector:
     """Submits a job for computation
 
     Parameters
@@ -278,4 +277,4 @@ def compute(
     # pylint: disable=unused-argument
     jobs = _submit_jobs(**locals())
     dfs = [j.result() for j in jobs]
-    return tools.Selector(pd.concat(dfs))
+    return utils.Selector(pd.concat(dfs))

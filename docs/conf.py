@@ -38,7 +38,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.autosummary',
               'recommonmark',
-             ]
+              ]
 
 source_suffix = {
     '.rst': 'restructuredtext',
@@ -68,3 +68,7 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+# -- Other --
+linkcheck_ignore = [r'https://gecco-2020.sigevo.org/*',
+                    r'https://arxiv.org/abs/*']  # Transient certificate error :(

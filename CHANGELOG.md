@@ -2,28 +2,64 @@
 
 ## master
 
+**Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
+
+- as an **experimental** feature, `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
+- `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
+- `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
+
+## 0.4.2 (2020-08-04)
+
+- `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).  Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
+- `Choice` and `TransitionChoice` can now take a `repetitions` parameters for sampling several times, it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be up to 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670) [#696](https://github.com/facebookresearch/nevergrad/pull/696).
+- Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684) and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
+
+This version should be robust. Following versions may become more unstable as we will add more native multiobjective optimization as an **experimental** feature. We also are in the process of simplifying the naming pattern for the "NGO/Shiwa" type optimizers which may cause some changes in the future.
+
+## 0.4.1 (2020-05-07)
+
+- `Archive` now stores the best corresponding candidate. This requires twice the memory compared to before the change. [#594](https://github.com/facebookresearch/nevergrad/pull/594)
+- `Parameter` now holds a `loss: Optional[float]` attribute which is set and used by optimizers after the `tell` method.
+- Quasi-random samplers (`LHSSearch`, `HammersleySearch`, `HaltonSearch` etc...) now sample in the full range of bounded variables when the `full_range_sampling` is `True` [#598](https://github.com/facebookresearch/nevergrad/pull/598). This required some ugly hacks, help is most welcome to find nices solutions.
+- `full_range_sampling` is activated by default if both range are provided in `Array.set_bounds`.
+- Propagate parametrization system features (generation tracking, ...) to `OnePlusOne` based algorithms [#599](https://github.com/facebookresearch/nevergrad/pull/599).
+- Moved the `Selector` dataframe overlay so that basic requirements do not include `pandas` (only necessary for benchmarks) [#609](https://github.com/facebookresearch/nevergrad/pull/609)
+- Changed the version name pattern (removed the `v`) to unify with `pypi` versions. Expect more frequent intermediary versions to be pushed (deployment has now been made pseudo-automatic).
+- Started implementing more ML-oriented testbeds [#642](https://github.com/facebookresearch/nevergrad/pull/642)
+
+
+## v0.4.0 (2020-03-09)
+
+### Breaking and important changes
+
 - Removed all deprecated code [#499](https://github.com/facebookresearch/nevergrad/pull/499). That includes:
   - `instrumentation` as init parameter of an `Optimizer` (replaced by `parametrization`)
   - `instrumentation` as attribute of an `Optimizer` (replaced by `parametrization`)
   - `candidate_maker` (not needed anymore)
   - `optimize` methods of `Optimizer` (renamed to `minimize`)
   - all the `instrumentation` subpackage (replaced by `parametrization`) and its legacy methods (`set_cheap_constraint_checker` etc)
-- Propagate parametrization system features (generation tracking, ...) to `TBPSA`, `PSO` and `EDA` based algorithms.
-- Rewrote multiobjective core system [#484](https://github.com/facebookresearch/nevergrad/pull/484).
 - Removed `ParametrizedOptimizer` and `OptimizerFamily` in favor of `ConfiguredOptimizer` with simpler usage [#518](https://github.com/facebookresearch/nevergrad/pull/518) [#521](https://github.com/facebookresearch/nevergrad/pull/521).
-- Activated Windows CI (still a bit flaky, with a few deactivated tests).
-- Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
-- Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
 - Some variants of algorithms have been removed from the `ng.optimizers` namespace to simplify it. All such variants can be easily created
   using the corresponding `ConfiguredOptimizer`. Also, adding `import nevergrad.optimization.experimentalvariants` will populate `ng.optimizers.registry`
   with all variants, and they are all available for benchmarks [#528](https://github.com/facebookresearch/nevergrad/pull/528).
 - Renamed `a_min` and `a_max` in `Array`, `Scalar` and `Log` parameters for clarity.
   Using old names will raise a deprecation warning for the time being.
+- `archive` is pruned much more often (eg.: for `num_workers=1`, usually pruned to 100 elements when reaching 1000),
+  so you should not rely on it for storing all results, use a callback instead [#571](https://github.com/facebookresearch/nevergrad/pull/571).
+  If this is a problem for you, let us know why and we'll find a solution!
+
+### Other changes
+
+- Propagate parametrization system features (generation tracking, ...) to `TBPSA`, `PSO` and `EDA` based algorithms.
+- Rewrote multiobjective core system [#484](https://github.com/facebookresearch/nevergrad/pull/484).
+- Activated Windows CI (still a bit flaky, with a few deactivated tests).
+- Better callbacks in `np.callbacks`, including exporting to [`hiplot`](https://github.com/facebookresearch/hiplot).
+- Activated [documentation](https://facebookresearch.github.io/nevergrad/) on github pages.
 - Scalar now takes optional `lower` and `upper` bounds at initialization, and `sigma` (and optionnally `init`)
   if is automatically set to a sensible default [#536](https://github.com/facebookresearch/nevergrad/pull/536).
 
 
-## v0.3.2 (2019-02-05)
+## v0.3.2 (2020-02-05)
 
 
 ### Breaking changes (possibly for next version)
@@ -49,7 +85,7 @@
 - `DE` algorithms comply with the new parametrization system and can be set to use parameter's recombination.
 - Fixed array as bounds in `Array` parameters
 
-## v0.3.1 (2019-01-23)
+## v0.3.1 (2020-01-23)
 
 **Note**: this is the first step to propagate the instrumentation/parametrization framework.
  Learn more on the [Facebook user group](https://www.facebook.com/notes/nevergrad-users/moving-to-new-parametrization-upcoming-unstability-and-breaking-changes/639090766861215/).
@@ -69,7 +105,7 @@
 - `PSO` now uses initialization by sampling the parametrization, instead of sampling all the real space. A new `WidePSO`
  optimizer was created, using the previous initial sampling method [#467](https://github.com/facebookresearch/nevergrad/pull/467).
 
-## v0.3.0 (2019-01-08)
+## v0.3.0 (2020-01-08)
 
 **Note**: this version is stable, but the following versions will include breaking changes which may cause instability. The aim of this changes will be to update the instrumentation system for more flexibility. See PR #323 and [Fb user group](https://www.facebook.com/groups/nevergradusers/) for more information.
 

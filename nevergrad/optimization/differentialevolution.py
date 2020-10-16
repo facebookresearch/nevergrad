@@ -3,13 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 import warnings
 import numpy as np
 from scipy import stats
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
-from .base import IntOrParameter
 from . import sequences
 
 
@@ -72,7 +71,7 @@ class _DE(base.Optimizer):
 
     def __init__(
         self,
-        parametrization: IntOrParameter,
+        parametrization: base.IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["DifferentialEvolution"] = None
@@ -82,23 +81,28 @@ class _DE(base.Optimizer):
         self._config = DifferentialEvolution() if config is None else config
         self.scale = float(1. / np.sqrt(self.dimension)) if isinstance(self._config.scale, str) else self._config.scale
         pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
-        self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
+        if isinstance(self._config.popsize, int):
+            self.llambda = self._config.popsize
+        else:
+            self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         # internals
         if budget is not None and budget < 60:
             warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+        self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self.llambda)
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[sequences.Sampler] = None
 
-    def _internal_provide_recommendation(self) -> np.ndarray:  # This is NOT the naive version. We deal with noise.
+    def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
-            return self.current_bests[self._config.recommendation].x
-        med_fitness = np.median([p._meta["value"] for p in self.population.values() if "value" in p._meta])
-        good_guys = [p for p in self.population.values() if p._meta.get("value", med_fitness + 1) < med_fitness]
+            return self.current_bests[self._config.recommendation].parameter
+        med_fitness = np.median([p.loss for p in self.population.values() if p.loss is not None])
+        good_guys = [p for p in self.population.values() if p.loss is not None and p.loss < med_fitness]
         if not good_guys:
-            return self.current_bests["pessimistic"].x
-        return sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)  # type: ignore
+            return self.current_bests["pessimistic"].parameter
+        data: tp.Any = sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)
+        return self.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
@@ -111,19 +115,30 @@ class _DE(base.Optimizer):
                                     if self.sampler is None else stats.norm.ppf(self.sampler()))
             candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
+            candidate.loss = float("inf")
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        candidate = self.population[self._uid_queue.ask()].spawn_child()
+        parent = self.population[self._uid_queue.ask()]
+        candidate = parent.spawn_child()
         data = candidate.get_standardized_data(reference=self.parametrization)
-        # define donor
+        # define all the different parents
         uids = list(self.population)
-        indivs = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
-        data_a, data_b = (indiv.get_standardized_data(reference=self.parametrization) for indiv in indivs)
+        a, b = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
+        best = self.current_bests["pessimistic"].parameter
+        # redefine the different parents in case of multiobjective optimization
+        if self._first_tell_done and self._config.multiobjective_adaptation and self.num_objectives > 1:
+            pareto = self.pareto_front()
+            if pareto:
+                best = parent if parent in pareto else self._rng.choice(pareto)
+            if len(pareto) > 2:  # otherwise, not enough diversity
+                a, b = self._rng.choice(pareto, size=2, replace=False)
+        # define donor
+        data_a, data_b, data_best = (indiv.get_standardized_data(reference=self.parametrization) for indiv in (a, b, best))
         donor = (data + self._config.F1 * (data_a - data_b) +
-                 self._config.F2 * (self.current_bests["pessimistic"].x - data))
-        candidate.parents_uids.extend([i.uid for i in indivs])
+                 self._config.F2 * (data_best - data))
+        candidate.parents_uids.extend([i.uid for i in (a, b)])
         # apply crossover
         co = self._config.crossover
         if co == "parametrization":
@@ -134,23 +149,29 @@ class _DE(base.Optimizer):
             candidate.set_standardized_data(donor, deterministic=False, reference=self.parametrization)
         return candidate
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         uid = candidate.heritage["lineage"]
-        self._uid_queue.tell(uid)
-        candidate._meta["value"] = value
-        if uid not in self.population:
-            self._internal_tell_not_asked(candidate, value)
+        if uid not in self.population:  # parent was removed, revert to tell_not_asked
+            self._internal_tell_not_asked(candidate, loss)
             return
-        parent_value = self.population[uid]._meta.get("value", float("inf"))
-        if value <= parent_value:
+        self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
+        parent = self.population[uid]
+        parent_value: float = parent.loss  # type: ignore
+        mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
+        if not mo_adapt and loss <= parent_value:
             self.population[uid] = candidate
+        elif mo_adapt and (parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()):
+            # multiobjective case, with adaptation,
+            # randomly replaces the parent depending on the number of better losses
+            self.population[uid] = candidate
+        elif self._config.propagate_heritage and loss <= float("inf"):
+            self.population[uid].heritage.update(candidate.heritage)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        candidate._meta["value"] = value
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         worst: tp.Optional[p.Parameter] = None
-        if not len(self.population) < self.llambda:
-            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
-            if worst._meta.get("value", float("inf")) < value:
+        if len(self.population) >= self.llambda:
+            worst = max(self.population.values(), key=base._loss)
+            if worst.loss < loss:  # type: ignore
                 return  # no need to update
             else:
                 uid = worst.heritage["lineage"]
@@ -163,11 +184,18 @@ class _DE(base.Optimizer):
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class DifferentialEvolution(base.ConfiguredOptimizer):
-    """Differential evolution algorithms.
+    """ Differential evolution is typically used for continuous optimization.
+    It uses differences between points in the population for doing mutations in fruitful directions;
+    it is therefore a kind of covariance adaptation without any explicit covariance,
+    making it super fast in high dimension. This class implements several variants of differential
+    evolution, some of them adapted to genetic mutations as in
+    `Holland’s work <https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)#Two-point_and_k-point_crossover>`_),
+    (this combination is termed :code:`TwoPointsDE` in Nevergrad, corresponding to :code:`crossover="twopoints"`),
+    or to the noisy setting (coined :code:`NoisyDE`, corresponding to :code:`recommendation="noisy"`).
+    In that last case, the optimizer returns the mean of the individuals with fitness better than median,
+    which might be stupid sometimes though.
 
-    Default pop size is 30
-    We return the mean of the individuals with fitness better than median, which might be stupid sometimes.
-    Default settings are CR =.5, F1=.8, F2=.8, curr-to-best.
+    Default settings are CR =.5, F1=.8, F2=.8, curr-to-best, pop size is 30
     Initial population: pure random.
 
     Parameters
@@ -189,9 +217,12 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         differential weight #1
     F2: float
         differential weight #2
-    popsize: "standard", "dimension", "large"
+    popsize: int, "standard", "dimension", "large"
         size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
         and "large" max(num_workers, 30, 7 * dimension).
+    multiobjective_adaptation: bool
+        Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
+        activated by default because the non-multiobjective implementation is performing very badly.
     """
 
     def __init__(
@@ -203,21 +234,26 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         crossover: tp.Union[str, float] = .5,
         F1: float = .8,
         F2: float = .8,
-        popsize: str = "standard"
+        popsize: tp.Union[str, int] = "standard",
+        propagate_heritage: bool = False,  # experimental
+        multiobjective_adaptation: bool = True,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QR"]
         assert isinstance(scale, float) or scale == "mini"
-        assert popsize in ["large", "dimension", "standard"]
+        if not isinstance(popsize, int):
+            assert popsize in ["large", "dimension", "standard"]
         assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
         self.initialization = initialization
         self.scale = scale
         self.recommendation = recommendation
+        self.propagate_heritage = propagate_heritage
         self.F1 = F1
         self.F2 = F2
         self.crossover = crossover
         self.popsize = popsize
+        self.multiobjective_adaptation = multiobjective_adaptation
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)

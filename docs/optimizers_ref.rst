@@ -4,7 +4,7 @@ Optimizers API Reference
 Optimizer API
 -------------
 
-All te optimizers share the following common API:
+All the optimizers share the following common API:
 
 .. autoclass:: nevergrad.optimizers.base.Optimizer
     :members:
@@ -20,7 +20,7 @@ Callbacks can be registered through the :code:`optimizer.register_callback` for
 `ng.callbacks` namespace.
 
 .. automodule:: nevergrad.callbacks
-    :members: OptimizerDump, ParametersLogger
+    :members: OptimizerDump, ParametersLogger, ProgressBar
 
 Configurable optimizers
 -----------------------

@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union, List
+import typing as tp
 import numpy as np
-from ..common import testing
+import nevergrad as ng
+from nevergrad.common import testing
 from . import utils
 from .mutations import Mutator
 from .differentialevolution import Crossover
@@ -46,10 +47,11 @@ def test_run_with_array(name: str) -> None:
     all_4=(4, 0.5),
 )
 def test_get_roulette(num: int, expected: str) -> None:
+    param = ng.p.Scalar(init=12.0)
     rng = np.random.RandomState(24)
-    archive = utils.Archive[utils.Value]()
+    archive: utils.Archive[utils.MultiValue] = utils.Archive()
     for k in range(4):
-        archive[np.array([k + .5])] = utils.Value(k)
+        archive[np.array([k + .5])] = utils.MultiValue(param, k, reference=param)
     output = Mutator(rng).get_roulette(archive, num)
     np.testing.assert_equal(output, expected)
 
@@ -62,7 +64,7 @@ def test_get_roulette(num: int, expected: str) -> None:
     twopoints=("twopoints", 16, [0, 0, 3, 4, 0, 0]),
     twopoints_special=("twopoints", 20, [0, 0, 0, 0, 5, 6]),  # redraws since bounds was [0, 6]
 )
-def test_de_crossover(crossover_param: Union[str, float], seed: int, expected: List[int]) -> None:
+def test_de_crossover(crossover_param: tp.Union[str, float], seed: int, expected: tp.List[int]) -> None:
     rng = np.random.RandomState(seed)
     crossover = Crossover(rng, crossover_param)
     donor = np.arange(1, len(expected) + 1)

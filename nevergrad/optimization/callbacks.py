@@ -6,10 +6,11 @@
 import json
 import time
 import warnings
+import inspect
 import datetime
-import typing as tp
 from pathlib import Path
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
@@ -77,8 +78,9 @@ class ParametersLogger:
         self._order = order
         if self._filepath.exists() and not append:
             self._filepath.unlink()  # missing_ok argument added in python 3.8
+        self._filepath.parent.mkdir(exist_ok=True, parents=True)
 
-    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, value: float) -> None:
+    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         data = {"#parametrization": optimizer.parametrization.name,
                 "#optimizer": optimizer.name,
                 "#session": self._session,
@@ -89,7 +91,10 @@ class ParametersLogger:
                 "#lineage": candidate.heritage["lineage"],
                 "#generation": candidate.generation,
                 "#parents_uids": [],
-                "#loss": value}
+                "#loss": loss}
+        if optimizer.num_objectives > 1:  # multiobjective losses
+            data.update({f"#losses#{k}": val for k, val in enumerate(candidate.losses)})
+            data["#pareto-length"] = len(optimizer.pareto_front())
         if hasattr(optimizer, "_configured_optimizer"):
             configopt = optimizer._configured_optimizer  # type: ignore
             if isinstance(configopt, base.ConfiguredOptimizer):
@@ -100,6 +105,8 @@ class ParametersLogger:
             data["#parents_uids"] = candidate.parents_uids
         for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
             val = param.value
+            if inspect.ismethod(val):
+                val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
             if isinstance(param, p.Array):
                 val = param.sigma.value
@@ -107,8 +114,8 @@ class ParametersLogger:
         try:  # avoid bugging as much as possible
             with self._filepath.open("a") as f:
                 f.write(json.dumps(data) + "\n")
-        except Exception:  # pylint: disable=broad-except
-            warnings.warn("Failing to json data")
+        except Exception as e:  # pylint: disable=broad-except
+            warnings.warn(f"Failing to json data: {e}")
 
     def load(self) -> tp.List[tp.Dict[str, tp.Any]]:
         """Loads data from the log file
@@ -166,7 +173,12 @@ class ParametersLogger:
           - github repo: https://github.com/facebookresearch/hiplot
           - documentation: https://facebookresearch.github.io/hiplot/
         """
-        import hiplot as hip
+        # pylint: disable=import-outside-toplevel
+        try:
+            import hiplot as hip
+        except ImportError as e:
+            raise ImportError(f"{self.__class__.__name__} requires hiplot which is not installed by default "
+                              "(pip install hiplot)") from e
         exp = hip.Experiment()
         for xp in self.load_flattened(max_list_elements=max_list_elements):
             dp = hip.Datapoint(
@@ -195,3 +207,33 @@ class OptimizerDump:
 
     def __call__(self, opt: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
         opt.dump(self._filepath)
+
+
+class ProgressBar:
+    """Progress bar to register as callback in an optimizer
+    """
+
+    def __init__(self) -> None:
+        self._progress_bar: tp.Any = None
+        self._current = 0
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if self._progress_bar is None:
+            # pylint: disable=import-outside-toplevel
+            try:
+                from tqdm import tqdm  # Inline import to avoid additional dependency
+            except ImportError as e:
+                raise ImportError(f"{self.__class__.__name__} requires tqdm which is not installed by default "
+                                  "(pip install tqdm)") from e
+            self._progress_bar = tqdm()
+            self._progress_bar.total = optimizer.budget
+            self._progress_bar.update(self._current)
+        self._progress_bar.update(1)
+        self._current += 1
+
+    def __getstate__(self) -> tp.Dict[str, tp.Any]:
+        """Used for pickling (tqdm is not picklable)
+        """
+        state = dict(self.__dict__)
+        state["_progress_bar"] = None
+        return state
