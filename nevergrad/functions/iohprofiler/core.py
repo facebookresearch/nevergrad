@@ -111,7 +111,7 @@ class WModelFunction(base.ExperimentFunction):
         if instrumentation == "Softmax":
             parameterization: ng.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
         else:
-            parametrization = ng.p.TransitionChoice(range(arity), repetitions=nv)        
+            parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)        
         super().__init__(self._evaluation_internal, parameterization)
         self.descriptors.update(base_function=base_function, iid=iid, dummy=dummy, epistasis=epistasis,
                                 neutrality=neutrality, ruggedness=ruggedness)
