@@ -166,6 +166,9 @@ def test_merge_parametrization_and_optimizer() -> None:
     assert isinstance(out, utils.Selector)
     assert out["optimizer_name"].tolist() == ["o1,p1", "o1,p2", "o2"]
     assert out["val"].tolist() == [1, 2, 3]
+    # nothing to do
+    out = plotting.merge_optimizer_name_pattern(utils.Selector(df), "")
+    assert out["optimizer_name"].tolist() == ["o1", "o1", "o2"]
 
 
 def test_normalized_losses() -> None:

@@ -156,6 +156,7 @@ def merge_optimizer_name_pattern(df: utils.Selector, pattern: str, merge_paramet
         pattern = _PARAM_MERGE_PATTERN
     if not pattern:
         return df
+    df = df.copy()
     okey = "optimizer_name"
     elements = [tup[1] for tup in string.Formatter().parse(pattern) if tup[1] is not None]
     assert okey in elements, (
