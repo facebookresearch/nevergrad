@@ -15,7 +15,7 @@ registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 class DiscreteFunction:
 
-    def __init__(name: str, arity: int=2) -> tp.Any
+    def __init__(self, name: str, arity: int=2) -> tp.Any:
         """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
         It is originally designed for lists of bits. It just counts the number of 1,
@@ -36,7 +36,7 @@ class DiscreteFunction:
         self.name = name
         self.arity = arity
     
-    def __call__(x: tp.List[int]) -> float:
+    def __call__(self, x: tp.List[int]) -> float:
 
         arity = self.arity
 
@@ -59,12 +59,13 @@ class DiscreteFunction:
             if o == n or o <= n - m:
                 return n - m - o
             return o  # Deceptive part.
+        assert False, f"Unknown function type {self.name}."
+
 
 onemax = DiscreteFunction("onemax")
 leadingones = DiscreteFunction("leadingones")
 jump = DiscreteFunction("jump")
 
-        assert False, f"Unknown function type {self.name}."
 
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
