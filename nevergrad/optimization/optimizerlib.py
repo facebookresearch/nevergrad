@@ -2220,7 +2220,7 @@ class NGOpt5(base.Optimizer):
 
 
 @registry.register
-class NGOpt8(base.Optimizer):
+class NGOpt8lm(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
@@ -2325,7 +2325,7 @@ class NGOpt(NGOpt2):
 
 
 @registry.register
-class NGOptRL(base.Optimizer):
+class NGOptRLlm(base.Optimizer):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
