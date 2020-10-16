@@ -29,7 +29,6 @@ from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
-from .experimentalvariants import RecombiningOptimisticNoisyDiscreteOnePlusOne
 
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -2082,6 +2081,9 @@ class NGOpt4(NGOptBase):
 ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True,
                              multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name("ProgD13", register=True)
 
+RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
+                                                                      noise_handling="optimistic").set_name(
+    "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
 @registry.register
