@@ -49,21 +49,21 @@ class Mutator:
         p = 1. / np.arange(1, max_mutations)**1.5
         p /= np.sum(p)
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
-        return self.portfolio_discrete_mutation(parent, u=u, arity=arity)
+        return self.portfolio_discrete_mutation(parent, intensity=u, arity=arity)
 
-    def portfolio_discrete_mutation(self, parent: tp.ArrayLike, u: tp.Optional[int] = None, arity: int = 2) -> tp.ArrayLike:
+    def portfolio_discrete_mutation(self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2) -> tp.ArrayLike:
         """Mutation discussed in
         https://arxiv.org/pdf/1606.05551v1.pdf
         We mutate a randomly drawn number of variables in average.
         """
         dimension = len(parent)
-        if u is None:
-            u = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
+        if intensity is None:
+            intensity = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
         if dimension == 1:  # corner case.
             return self.random_state.normal(0., 1., size=1)  # type: ignore
         boolean_vector = [True for _ in parent]
         while all(boolean_vector) and dimension != 1:
-            boolean_vector = [self.random_state.rand() > (float(u) / dimension) for _ in parent]
+            boolean_vector = [self.random_state.rand() > (float(intensity) / dimension) for _ in parent]
         return [s if b else self.other_random(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
