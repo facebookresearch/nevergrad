@@ -112,20 +112,21 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     # errors with no recommendation
     nandf = df.select(loss=np.isnan)
     for row in nandf.itertuples():
-        msg = f'Removing "{row.optimizer_name}" with dimension {row.dimension}: '
-        msg += f'got error "{row.error}"' if isinstance(row.error, str) else 'recommended a nan'
+        msg = f'Removing "{row.optimizer_name}"'
+        msg += f" with dimension {row.dimension}" if hasattr(row, "dimension") else ""
+        msg += f': got error "{row.error}"' if isinstance(row.error, str) else 'recommended a nan'
         warnings.warn(msg)
     # error with recorded recommendation
     handlederrordf = df.select(error=lambda x: isinstance(x, str) and x, loss=lambda x: not np.isnan(x))
     for row in handlederrordf.itertuples():
         warnings.warn(
-            f'Keeping non-optimal recommendation of "{row.optimizer_name}" ' f'with dimension {row.dimension} which raised "{row.error}".'
+            f'Keeping non-optimal recommendation of "{row.optimizer_name}" '
+            f'with dimension {row.dimension if hasattr(row, "dimension") else "UNKNOWN"} which raised "{row.error}".'
         )
     err_inds = set(nandf.index)
     output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
     # cast nans in loss to infinity
     df.loc[np.isnan(df.loss), "loss"] = float("inf")
-    print(df)
     #
     assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
     output = utils.Selector(output.reset_index(drop=True))
@@ -151,11 +152,12 @@ def merge_optimizer_name_pattern(df: utils.Selector, pattern: str) -> utils.Sele
     )
     others = [x for x in elements if x != okey]
     aggregate = PatternAggregate(pattern)
-    if len(df.unique(others)) > 1:
-        for optim in df.unique(okey):
-            inds = df.loc[:, okey] == optim
-            if len(df.loc[inds, :].unique(others)) > 1:
-                df.loc[inds, okey] = df.loc[inds, elements].agg(aggregate, axis=1)
+    sub = df.loc[:, elements].fillna("")
+    if len(sub.unique(others)) > 1:
+        for optim in sub.unique(okey):
+            inds = sub.loc[:, okey] == optim
+            if len(sub.loc[inds, :].unique(others)) > 1:
+                df.loc[inds, okey] = sub.loc[inds, elements].agg(aggregate, axis=1)
     return df.drop(columns=others)  # type: ignore
 
 
@@ -167,9 +169,9 @@ def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Sele
     # Average normalized plot with everything.
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-        losses = subdf.loc[:, "loss"]
+        losses = np.array(subdf.loc[:, "loss"])
         m = min(losses)
-        M = max(losses)
+        M = max(losses[losses < float("inf")])
         df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
     return df  # type: ignore
 
@@ -433,17 +435,6 @@ class XpPlotter:
     def add_legends(self, legend_infos: tp.List[LegendInfo]) -> None:
         """Adds the legends
         """
-        # # old way (keep it for fast hacking of plots if need be)
-        # # this creates a legend box on the bottom, and algorithm names on the right with some angle to avoid overlapping
-        # self._overlays.append(self._ax.legend(fontsize=7, ncol=2, handlelength=3,
-        #                                       loc='upper center', bbox_to_anchor=(0.5, -0.2)))
-        # upperbound = self._ax.get_ylim()[1]
-        # filtered_legend_infos = [i for i in legend_infos if i.y <= upperbound]
-        # for k, info in enumerate(filtered_legend_infos):
-        #     angle = 30 - 60 * k / len(legend_infos)
-        #     self._overlays.append(self._ax.text(info.x, info.y, info.text, {'ha': 'left', 'va': 'top' if angle < 0 else 'bottom'},
-        #                                         rotation=angle))
-        # new way
         ax = self._ax
         trans = ax.transScale + ax.transLimits
         fontsize = 10.0
@@ -489,7 +480,8 @@ class XpPlotter:
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
-            optim_vals[optim]["num_eval"] = np.array(groupeddf.count().loc[optim, "loss"])
+            num_eval = np.array(groupeddf.count().loc[optim, "loss"])
+            optim_vals[optim]["num_eval"] = num_eval
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
