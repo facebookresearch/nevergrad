@@ -685,8 +685,21 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
     return new_positions.tolist()
 
 
+_PARAM_MERGE_PATTERN = "{optimizer_name},{parametrization}"
+
+
+def _merge_pattern(df: utils.Selector, merge_parametrization: bool, merge_pattern: str) -> utils.Selector:
+    if merge_parametrization:
+        if merge_pattern:
+            raise ValueError("Cannot specify both merge-pattern and merge-parametrization "
+                             "(merge-parametrization is equivalent to merge-pattern='{optimizer_name},{parametrization}')")
+        merge_pattern = _PARAM_MERGE_PATTERN
+    if merge_pattern:
+        df = merge_optimizer_name_pattern(df, merge_pattern)
+    return df
+
+
 def main() -> None:
-    merge_param = "{optimizer_name},{parametrization}"
     parser = argparse.ArgumentParser(description="Create plots from an experiment data file")
     parser.add_argument("filepath", type=str, help="filepath containing the experiment data")
     parser.add_argument(
@@ -699,18 +712,10 @@ def main() -> None:
     parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
     parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
     parser.add_argument("--merge-pattern", type=str, default="", help="if present, optimizer name is updated according to the pattern as "
-                        f"an f-string. --merge-parametrization is equivalent to using --merge-pattern with {merge_param!r}")
+                        f"an f-string. --merge-parametrization is equivalent to using --merge-pattern with {_PARAM_MERGE_PATTERN!r}")
     args = parser.parse_args()
-    exp_df = utils.Selector.read_csv(args.filepath)
+    exp_df = _merge_pattern(utils.Selector.read_csv(args.filepath), args.merge_parametrization, args.merge_pattern)
     # merging names
-    merge_pattern = args.merge_pattern
-    if args.merge_parametrization:
-        if args.merge_pattern:
-            raise ValueError("Cannot specify both merge-pattern and merge-parametrization "
-                             "(merge-parametrization is equivalent to merge-pattern='{optimizer_name},{parametrization}')")
-        merge_pattern = merge_param
-    if merge_pattern:
-        exp_df = merge_optimizer_name_pattern(exp_df, merge_pattern)
     #
     output_dir = args.output
     if output_dir is None:
