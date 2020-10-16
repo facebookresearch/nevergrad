@@ -19,7 +19,7 @@ class Mutator:
 
     def other_random(v: float, arity: int):
         w = v
-        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization([v], arity)
+        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization([v], arity):
             w = self.random_state.normal(0., 1.)
         return w
         
