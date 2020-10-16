@@ -223,7 +223,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
                 elif instrum_str == "Threshold":
                     # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-                    instrum = ng.p.Array(init=(arity) * np.random.uniform(size=nv)).set_bounds(0, arity)  # type: ignore
+                    instrum = ng.p.Array(init=0.5 + (arity) * np.random.uniform(size=nv)).set_bounds(0, arity)  # type: ignore
                 else:
                     assert instrum_str == "Unordered"
                     instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
