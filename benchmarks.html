@@ -356,20 +356,7 @@ The following plot was created with command:</p>
 <code class="sig-prename descclassname">nevergrad.benchmark.frozenexperiments.</code><code class="sig-name descname">small_discrete</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.frozenexperiments.small_discrete" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<span class="target" id="module-nevergrad.benchmark.experiments"></span><dl class="py class">
-<dt id="nevergrad.benchmark.experiments.PackedFunctions">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">PackedFunctions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">functions</span><span class="p">:</span> <span class="n">List<span class="p">[</span>nevergrad.functions.functionlib.ArtificialFunction<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">upper_bounds</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.benchmark.experiments.PackedFunctions" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="nevergrad.benchmark.experiments.PackedFunctions.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#nevergrad.benchmark.experiments.PackedFunctions" title="nevergrad.benchmark.experiments.PackedFunctions">nevergrad.benchmark.experiments.PackedFunctions</a><a class="headerlink" href="#nevergrad.benchmark.experiments.PackedFunctions.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides a new equivalent instance of the class, possibly with
-different random initialization, to provide different equivalent test cases
-when using different seeds.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
+<span class="target" id="module-nevergrad.benchmark.experiments"></span><dl class="py function">
 <dt id="nevergrad.benchmark.experiments.adversarial_attack">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">adversarial_attack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.adversarial_attack" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -496,15 +483,6 @@ Onemax, Leadingones, Jump function.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="nevergrad.benchmark.experiments.manyobjective_example">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">manyobjective_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.manyobjective_example" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optimization of 6 objective functions in Cigar, Rastrigin, Rosenbrock, Sphere, Ellipsoid, Cigar, Hm.
-Dimension 6 and 7.
-Sequential or 100-parallel.
-Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.mlda">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">mlda</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.mlda" title="Permalink to this definition">¶</a></dt>
 <dd><p>MLDA (machine learning and data analysis) testbed.</p>
@@ -538,7 +516,7 @@ Sequential.</p>
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">multiobjective_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.multiobjective_example" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
 Dimension 6 and 7.
-Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
+Budget 100 to 3200</p>
 </dd></dl>
 
 <dl class="py function">
@@ -551,14 +529,6 @@ Budget 2000, 2400, 2800, 3200, 3600, 4000.</p>
 <dt id="nevergrad.benchmark.experiments.naiveseqmltuning">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">naiveseqmltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.naiveseqmltuning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="nevergrad.benchmark.experiments.new_multiobjective_example">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">new_multiobjective_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.new_multiobjective_example" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
-Dimension 6 and 7.
-Budget 100 to 3200</p>
 </dd></dl>
 
 <dl class="py function">
