@@ -145,7 +145,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
             instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
-            onemax, leadingones, jump = corefuncs.discrete_functions(arity)
+            onemax = corefuncs.DiscreteFunction("onemax", arity)
+            leadingones = corefuncs.DiscreteFunction("leadingones", arity)
+            jump = corefuncs.DiscreteFunction("jump", arity)
             for discrete_func in [onemax, leadingones, jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 dfunc._descriptors.update(arity=arity)
@@ -217,7 +219,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            onemax, leadingones, jump = corefuncs.discrete_functions(arity)
+            onemax = corefuncs.DiscreteFunction("onemax", arity)
+            leadingones = corefuncs.DiscreteFunction("leadingones", arity)
+            jump = corefuncs.DiscreteFunction("jump", arity)
             for instrum_str in ["Threshold", "Softmax", "Unordered"]:
                 if instrum_str == "Softmax":
                     instrum = ng.p.Choice(range(arity), repetitions=nv)  # type: ignore
@@ -249,7 +253,9 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            onemax, leadingones, jump = corefuncs.discrete_functions(arity)
+            onemax = corefuncs.DiscreteFunction("onemax", arity)
+            leadingones = corefuncs.DiscreteFunction("leadingones", arity)
+            jump = corefuncs.DiscreteFunction("jump", arity)
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
                 instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
