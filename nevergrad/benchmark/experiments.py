@@ -252,8 +252,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                init = np.random.RandomState(seed=next(seedg)).uniform(-0.5, arity -0.5, size=nv)
-                instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore                
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                     dfunc = ExperimentFunction(discrete_func, instrum)
                     dfunc.add_descriptors(arity=arity)
