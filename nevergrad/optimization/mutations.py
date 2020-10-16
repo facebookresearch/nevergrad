@@ -23,13 +23,13 @@ class Mutator:
             w = self.random_state.normal(0., 1.)
         return w
         
-    def doerr_discrete_mutation(self, parent: tp.ArrayLike) -> tp.ArrayLike:
+    def doerr_discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         """Mutation as in the fast 1+1-ES, Doerr et al. The exponent is 1.5.
         """
         dimension = len(parent)
         if dimension < 5:
             return self.discrete_mutation(parent)
-        return self.doubledoerr_discrete_mutation(parent, max_ratio=.5)
+        return self.doubledoerr_discrete_mutation(parent, max_ratio=.5, arity=arity)
 
     def doubledoerr_discrete_mutation(self, parent: tp.ArrayLike, max_ratio: float = 1., arity: int = 2) -> tp.ArrayLike:
         """Doerr's recommendation above can mutate up to half variables
