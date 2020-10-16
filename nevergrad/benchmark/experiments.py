@@ -1388,10 +1388,11 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
                             yield xp
 
 
+@registry.register
 def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete"]
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]
 
     seedg = create_seed_generator(seed)
     for dim in [16, 64, 100]:
