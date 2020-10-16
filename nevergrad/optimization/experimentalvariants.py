@@ -67,9 +67,9 @@ PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 PortfolioNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="random", mutation="portfolio"
 ).set_name("PortfolioNoisyDiscreteOnePlusOne", register=True)
-RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="discrete", noise_handling="optimistic"
-).set_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
+# RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
+#     crossover=True, mutation="discrete", noise_handling="optimistic"
+# ).set_name("RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 # BO
 RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
