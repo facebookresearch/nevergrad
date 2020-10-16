@@ -923,6 +923,52 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def scaled_control_problem_ws_2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MuJoCo testbed. Learn linear policy for different control problems.
+    Budget 500, 1000, 3000, 5000."""
+    seedg = create_seed_generator(seed)
+    num_rollouts = 1
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
+             control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
+             control.Hopper(num_rollouts=num_rollouts, random_state=seed),
+             control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, random_state=seed),
+             control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
+             ]
+
+    sigmas = [1.]  # [0.01, 0.1, 1., 10., 100]
+    betas = [0.5]  # [0.5, 1., 2.]
+    funcs2 = []
+    for i in range(1):
+        for j in range(1):
+            for k in range(6):
+                f = funcs[k].copy()
+                dim = np.prod(f.policy_dim)
+                f.parametrization.set_mutation(sigma=sigmas[i] / (dim ** betas[j])).set_name(
+                    f"s={sigmas[i]},beta={betas[j]}")
+                f.parametrization.freeze()
+                funcs2.append(f)
+    optims = ["ProgODOPOInf", "ProgONOPOInf", "NGOptRL",
+              "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+              "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # ["NGOptRL", "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+    #  "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # "Zero", "Powell", "Cobyla", "MetaTuneRecentering","SQP", "PSO",
+
+    for budget in [300, 1000, 4000, 10000, 30000, 40000]:
+        # [90000, 130000, 200000, 300000, 500000]:
+        # [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
+        for num_workers in [1]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs2:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+@registry.register
 def scaled_control_problem_ws_nw100(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
@@ -941,7 +987,7 @@ def scaled_control_problem_ws_nw100(seed: tp.Optional[int] = None) -> tp.Iterato
     funcs2 = []
     for i in range(1):
         for j in range(1):
-            for k in range(4, 6):
+            for k in range(6):
                 f = funcs[k].copy()
                 dim = np.prod(f.policy_dim)
                 f.parametrization.set_mutation(sigma=sigmas[i] / (dim ** betas[j])).set_name(
@@ -957,11 +1003,9 @@ def scaled_control_problem_ws_nw100(seed: tp.Optional[int] = None) -> tp.Iterato
 
     # "Zero", "Powell", "Cobyla", "MetaTuneRecentering","SQP", "PSO",
 
-    for budget in [90000, 130000, 200000, 300000, 500000]:
+    for budget in [300, 1000, 4000, 10000, 30000, 40000]:
+        # [90000, 130000, 200000, 300000, 500000]:
         # [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
-        #
-        #
-        # [75, 100, 150, 500, 3000, 4000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [100]:
             if num_workers < budget:
                 for algo in optims:
@@ -972,43 +1016,105 @@ def scaled_control_problem_ws_nw100(seed: tp.Optional[int] = None) -> tp.Iterato
 
 
 @registry.register
-def control_problem(seed: tp.Optional[int] = None, noisy: bool=False) -> tp.Iterator[Experiment]:
+def noisy_control_problem_sequential(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
-    funcs = [control.Ant(num_rollouts=5, random_state=seed),
-             control.Swimmer(num_rollouts=5, random_state=seed),
-             control.HalfCheetah(num_rollouts=5, random_state=seed),
-             control.Hopper(num_rollouts=5, random_state=seed),
-             control.Walker2d(num_rollouts=5, random_state=seed),
-             control.Humanoid(num_rollouts=5, random_state=seed)
-             ] if not noisy else [
-             control.NoisyAnt(num_rollouts=5, random_state=seed),
-             control.NoisySwimmer(num_rollouts=5, random_state=seed),
-             control.NoisyHalfCheetah(num_rollouts=5, random_state=seed),
-             control.NoisyHopper(num_rollouts=5, random_state=seed),
-             control.NoisyWalker2d(num_rollouts=5, random_state=seed),
-             control.NoisyHumanoid(num_rollouts=5, random_state=seed)
-    ]
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
+    funcs = [control.NoisyAnt(num_rollouts=1, random_state=seed),
+             control.NoisySwimmer(num_rollouts=1, random_state=seed),
+             control.NoisyHalfCheetah(num_rollouts=1, random_state=seed),
+             control.NoisyHopper(num_rollouts=1, random_state=seed),
+             control.NoisyWalker2d(num_rollouts=1, random_state=seed),
+             control.NoisyHumanoid(num_rollouts=1, random_state=seed)
+             ]
 
-    for budget in [500, 1000, 3000, 5000]:
+    sigmas = [1.]  # [0.01, 0.1, 1., 10., 100]
+    betas = [0.5]  # [0.5, 1., 2.]
+    funcs2 = []
+    for i in range(1):
+        for j in range(1):
+            for k in range(6):
+                f = funcs[k].copy()
+                dim = np.prod(f.policy_dim)
+                f.parametrization.set_mutation(sigma=sigmas[i] / (dim ** betas[j])).set_name(
+                    f"s={sigmas[i]},beta={betas[j]}")
+                f.parametrization.freeze()
+                funcs2.append(f)
+    optims = ["ProgODOPOInf", "ProgONOPOInf", "NGOptRL",
+              "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+              "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # ["NGOptRL", "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+    #  "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # "Zero", "Powell", "Cobyla", "MetaTuneRecentering","SQP", "PSO",
+
+    for budget in [50, 75, 100, 150, 200, 250, 300,
+                   400, 500, 1000, 3000, 5000, 8000, 16000,
+                   32000, 64000, 90000, 130000, 200000, 300000, 500000]:
+        #
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
+                    for fu in funcs2:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
 
 
 @registry.register
-def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    internal_generator = control_problem(seed, noisy=True)
-    for xp in internal_generator:
-        yield xp
+def noisy_control_problem_parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MuJoCo testbed. Learn linear policy for different control problems.
+    Budget 500, 1000, 3000, 5000."""
+    seedg = create_seed_generator(seed)
+    funcs = [control.NoisyAnt(num_rollouts=1, random_state=seed),
+             control.NoisySwimmer(num_rollouts=1, random_state=seed),
+             control.NoisyHalfCheetah(num_rollouts=1, random_state=seed),
+             control.NoisyHopper(num_rollouts=1, random_state=seed),
+             control.NoisyWalker2d(num_rollouts=1, random_state=seed),
+             control.NoisyHumanoid(num_rollouts=1, random_state=seed)
+             ]
 
+    sigmas = [1.]  # [0.01, 0.1, 1., 10., 100]
+    betas = [0.5]  # [0.5, 1., 2.]
+    funcs2 = []
+    for i in range(1):
+        for j in range(1):
+            for k in range(6):
+                f = funcs[k].copy()
+                dim = np.prod(f.policy_dim)
+                f.parametrization.set_mutation(sigma=sigmas[i] / (dim ** betas[j])).set_name(
+                    f"s={sigmas[i]},beta={betas[j]}")
+                f.parametrization.freeze()
+                funcs2.append(f)
+    optims = ["ProgODOPOInf", "ProgONOPOInf", "NGOptRL",
+              "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+              "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # ["NGOptRL", "RandomSearch", "Shiwa", "CMA", "OnePlusOne",
+    #  "DE", "DiagonalCMA", "MiniDE", "NGOpt8"]
+
+    # "Zero", "Powell", "Cobyla", "MetaTuneRecentering","SQP", "PSO",
+
+    for budget in [50, 75, 100, 150, 200, 250, 300,
+                   400, 500, 1000, 3000, 5000, 8000, 16000,
+                   32000, 64000, 90000, 130000, 200000, 300000, 500000]:
+
+        for num_workers in [100]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs2:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+# @registry.register
+# def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+#     internal_generator = control_problem(seed, noisy=True)
+#     for xp in internal_generator:
+#         yield xp
+#
 
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
