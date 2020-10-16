@@ -60,6 +60,7 @@ jobs:
           name: "[no-extra] Install dependencies"
           command: |
             python3 -m venv venv
+            #sudo apt install python3.7-dev libglpk-dev libgmp3-dev glpk-utils
             . venv/bin/activate
             pip install --upgrade pip
             pip install -e .

@@ -4,8 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 from functools import partial
 import numpy as np
+import time
 import pyomo.environ as pyomo
 import nevergrad.common.typing as tp
+import nevergrad as ng
 from nevergrad.parametrization import parameter as p
 from .. import base
 
@@ -46,7 +48,7 @@ def _make_pyomo_range_set_to_parametrization(
         # Need to handle step size
         params[params_name] = p.Choice([range(*r) for r in domain.ranges()])  # Assume the ranges do not overlapped
     else:
-        raise NotImplementedError(f"Cannot handle domain type {type(domain)}")
+        raise NotImplementedError(f"Cannot handle domain type {type(domain)} with num_ranges == {num_ranges}")
     return params
 
 
@@ -99,7 +101,7 @@ class Pyomo(base.ExperimentFunction):
     - Any changes on the model externally can lead to unexpected behaviours.
     """
 
-    def __init__(self, model: pyomo.Model) -> None:
+    def __init__(self, model: pyomo.Model, best_pyomo_val: float=float("nan")) -> None:
         if isinstance(model, pyomo.ConcreteModel):
             self._model_instance = model.clone()  # To enable the objective function to run in parallel
         else:
@@ -110,6 +112,7 @@ class Pyomo(base.ExperimentFunction):
         self.all_params: tp.List[pyomo.Param] = []
         self.all_constraints: tp.List[pyomo.Constraint] = []
         self.all_objectives: tp.List[pyomo.Objective] = []
+        self._best_pyomo_val: float = best_pyomo_val
 
         # Relevant document: https://pyomo.readthedocs.io/en/stable/working_models.html
 
@@ -141,9 +144,33 @@ class Pyomo(base.ExperimentFunction):
         exp_tag = ",".join([n.name for n in self.all_objectives])
         exp_tag += "|" + ",".join([n.name for n in self.all_vars])
         exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
-        self.register_initialization(name=exp_tag, model=self._model_instance)
+        self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
+        #self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
+    def add_loss_offset(self, budget: int) ->None:
+        """Stores in self._best_pyomo_val the best value obtained by a solver on the same instance for a given budget in a sequential optimization.
+        TODO: investigate what Pyomo does in the parallel case."""
+        #solver = "glpk"
+        solver = "ipopt"
+        solver  = pyomo.SolverFactory(solver)
+        solver.options['max_iter'] = budget
+        # We check the time it takes to call the function "budget" times.
+        #time_begin = time.time()
+        #duplicate = self.copy()
+        #optimizer = ng.optimizers.OnePlusOne(parametrization=duplicate.parametrization, budget=budget)
+        #recommendation = optimizer.minimize(duplicate)
+        #time_budget = max(1, int(time.time() - time_begin))
+        #if solver == "glpk":
+        #    solver.options['tmlim'] = time_budget
+        #if solver == "cplex":
+        #    solver.options['timelimit'] = time_budget
+        #if solver == "gurobi":
+        #    solver.options['TimeLimit'] = time_budget
+        solver.solve(self._model_instance, tee=False)
+        self._best_pyomo_val = float(pyomo.value(self.all_objectives[0] * self.all_objectives[0].sense))
+        self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
+        
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
         if self._value_assignment_code_obj == "":
@@ -157,7 +184,8 @@ class Pyomo(base.ExperimentFunction):
 
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         self._pyomo_value_assignment(k_model_variables)
-        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
+        translation = self._best_pyomo_val if not np.isnan(self._best_pyomo_val) else 0.
+        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense)) - translation  # Single objective assumption
 
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
@@ -175,3 +203,71 @@ class Pyomo(base.ExperimentFunction):
             return ret
         else:
             raise NotImplementedError(f"Constraint type {self.all_constraints[i].ctype} is not supported yet.")
+
+
+# Simple Pyomo models, based on https://www.ima.umn.edu/materials/2017-2018.2/W8.21-25.17/26326/3_PyomoFundamentals.pdf.
+def get_pyomo_list():
+    model = pyomo.ConcreteModel()
+    model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
+    model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
+    yield Pyomo(model)
+
+    # Rosenbrock --- pb with continuous variables! NotImplementedError: Cannot handle domain type <class 'pyomo.core.kernel.set_types.RealSet'>
+    # I don't get it, because it looks like the code above should accept bounded ranges.
+    rosenbrock = pyomo.ConcreteModel() 
+    #rosenbrock.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals, bounds=(-2, 2))
+    rosenbrock.x = pyomo.Var(initialize=-1.2, bounds=(-2, 2)) 
+    rosenbrock.y = pyomo.Var(initialize=1.0, bounds=(-2, 2)) 
+    rosenbrock.obj = pyomo.Objective(expr=(1-rosenbrock.x)**2 + 100*(rosenbrock.y-rosenbrock.x**2)**2, sense=pyomo.minimize)
+    yield Pyomo(rosenbrock)
+
+    # Knapsack
+    for num_items in [4, 14, 44, 134]:
+        print(f"Creating Knapsack{num_items}")
+        if num_items == 4:
+            items = ['hammer', 'wrench', 'screwdriver', 'towel'] 
+            values = {'hammer':8, 'wrench':3, 'screwdriver':6, 'towel':11} 
+            weights = {'hammer':5, 'wrench':7, 'screwdriver':4, 'towel':3} 
+            W_max = 14 
+        else:
+            items = [str(i) for i in range(num_items)]
+            values = {str(i): (17 * i + num_items * 3) % (7 * num_items) for i in range(num_items)}
+            weights = {str(i): (13 * i + num_items * 23) % (6 * num_items) for i in range(num_items)}
+            W_max = 3 * num_items + 2
+    
+        knapsack = pyomo.ConcreteModel() 
+        knapsack.x = pyomo.Var(items, within=pyomo.Binary) 
+        knapsack.value = pyomo.Objective(expr=sum(values[i]*knapsack.x[i] for i in items), sense=pyomo.maximize) 
+        knapsack.weight = pyomo.Constraint(expr=sum(weights[i]*knapsack.x[i] for i in items) <= W_max)
+        yield Pyomo(knapsack)
+ 
+
+    for N in [3, 10]:
+        print(f"Creating Pmedian{N}")
+        # P-median
+        M = N + 1
+        P = N
+        if N == 3:
+            d = {(1, 1): 1.7, (1, 2): 7.2, (1, 3): 9.0, (1, 4): 8.3, (2, 1): 2.9, (2, 2): 6.3, (2, 3): 9.8, (2, 4): 0.7, (3, 1): 4.5, (3, 2): 4.8, (3, 3): 4.2, (3, 4): 9.3} 
+        else:
+            d = {}
+            for i in range(1, N + 1):
+                for j in range(1, M + 1):
+                    d[(i, j)] = ((N * 17 + i * 13 + j * 7) % 100) + 1.
+        pmedian = pyomo.ConcreteModel() 
+        pmedian.Locations = range(1, N+1) 
+        pmedian.Customers = range(1, M+1) 
+        pmedian.x = pyomo.Var(pmedian.Locations, pmedian.Customers, bounds=(0.0,1.0)) 
+        pmedian.y = pyomo.Var(pmedian.Locations, within=pyomo.Binary)
+        
+        pmedian.obj = pyomo.Objective(expr=sum(d[n,m]*pmedian.x[n,m] for n in pmedian.Locations for m in pmedian.Customers))
+        pmedian.single_x = pyomo.ConstraintList()
+        for m in pmedian.Customers:
+            pmedian.single_x.add(sum(pmedian.x[n,m] for n in pmedian.Locations) == 1.0) 
+        
+        pmedian.bound_y = pyomo.ConstraintList()
+        for n in pmedian.Locations: 
+            for m in pmedian.Customers: 
+                pmedian.bound_y.add(pmedian.x[n,m] <= pmedian.y[n] ) 
+        pmedian.num_facilities = pyomo.Constraint(expr=sum(pmedian.y[n] for n in pmedian.Locations ) == P)
+        yield Pyomo(pmedian)
