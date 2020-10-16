@@ -16,7 +16,7 @@ def test_discrete_mutation() -> None:
     data = [0.1, -.1, 1]
     rng = np.random.RandomState(12)
     output = Mutator(rng).discrete_mutation(data)
-    np.testing.assert_almost_equal(output, [-.33, -.1, .02], decimal=2)
+    np.testing.assert_almost_equal(output, [-.33, -.1, -.42], decimal=2)
 
 
 def test_crossover() -> None:
