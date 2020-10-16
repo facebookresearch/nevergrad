@@ -929,11 +929,11 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
     num_rollouts = 1
-    funcs = [control.Ant(num_rollouts=num_rollouts, random_state=seed),
-             control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
              control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
              control.Hopper(num_rollouts=num_rollouts, random_state=seed),
              control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, random_state=seed),
              control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
 
@@ -941,7 +941,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs2 = []
     for i in range(6):
         f = funcs[i].copy()
-        param: ng.p.Array = f.parametrization.copy() # type: ignore
+        param: ng.p.Array = f.parametrization.copy()  # type: ignore
         param.set_mutation(sigma=sigmas[i]).set_name(f"sigma={sigmas[i]}")
         f.parametrization = param
         f.parametrization.freeze()
