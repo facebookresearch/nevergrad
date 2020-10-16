@@ -61,7 +61,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
-        self.arity_for_discrete_mutation == arity
+        self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
             if isinstance(noise_handling, str):
