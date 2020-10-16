@@ -68,14 +68,9 @@ def check_optimizer(
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
             # some optimizers finish early
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
-            # skip BO error on windows (issue #506)
-            if "BO" in optimizer.name:
-                raise SkipTest("BO is currently not well supported")
-            if "Many" in optimizer.name:
-                raise SkipTest("When many algorithms are in the portfolio we are not good for small budget.")
             # now optimize :)
             candidate = optimizer.minimize(fitness)
-        if verify_value and "chain" not in str(optimizer_cls):
+        if verify_value:
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
@@ -131,11 +126,13 @@ def test_optimizers(name: str) -> None:
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
         assert optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls, "Similar configuration are not equal"
-    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in ["BO", "Discrete"])
+    # some classes of optimizer are eigher slow or not good with small budgets:
+    nameparts = ["Many", "chain", "BO", "Discrete"]
+    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in nameparts)
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
-        check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 2, verify_value=verify)
+        check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 4, verify_value=verify)
 
 
 class RecommendationKeeper:
@@ -181,8 +178,8 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
-    if "BO" in name:
-        raise SkipTest("BO not cool these days for some reason!")
+    # if "BO" in name:
+    #     raise SkipTest("BO not cool these days for some reason!")
     # set up environment
     optimizer_cls = registry[name]
     if name in UNSEEDABLE:
@@ -352,6 +349,15 @@ def test_bo_parametrization_and_parameters() -> None:
     # make sure underlying BO optimizer gets instantiated correctly
     new_candidate = opt.parametrization.spawn_child(new_value=((True,), {}))
     opt.tell(new_candidate, 0.0)
+
+
+def test_bo_init() -> None:
+    arg = ng.p.Scalar(init=4, lower=1, upper=10).set_integer_casting()
+    gp_param = {'alpha': 1e-3, 'normalize_y': True,
+                'n_restarts_optimizer': 5, 'random_state': None}
+    my_opt = ng.optimizers.ParametrizedBO(gp_parameters=gp_param, initialization=None)
+    optimizer = my_opt(parametrization=arg, budget=10)
+    optimizer.minimize(np.abs)
 
 
 def test_chaining() -> None:
