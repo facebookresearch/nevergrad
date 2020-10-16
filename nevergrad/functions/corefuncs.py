@@ -21,7 +21,7 @@ def onemax(x: tp.List[int]) -> float:
     It also works in the continuous case but in that cases discretizes the
     input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
     """
-    return len(x) - sum(1 if int(np.floor(w + 1.e-7)) == 1 else 0 for w in x)
+    return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
 
 
 def leadingones(x: tp.List[int]) -> float:
@@ -33,7 +33,7 @@ def leadingones(x: tp.List[int]) -> float:
     leadingones([1 0 0 0]) = 3.
     """
     for i, x_ in enumerate(list(x)):
-        if int(np.floor(x_ + 1.e-7)) != 1:
+        if int(round(x_)) != 1:
             return len(x) - i
     return 0
 
