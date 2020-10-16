@@ -847,22 +847,29 @@ class SPSA(base.Optimizer):
 
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
-
-    num_optims: number of optimizers
-    num_vars: number of variable per optimizer.
-    progressive: True if we want to progressively add optimizers during the optimization run.
-    If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
-
-    E.g. for 5 optimizers, each of them working on 2 variables, we can use:
+    Parameters
+    ---------
+    num_optims: int or None
+        number of optimizers
+    num_vars: int or None
+        number of variable per optimizer.
+    progressive: bool
+        True if we want to progressively add optimizers during the optimization run.
+        If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
+    Example
+    -------
+    for 5 optimizers, each of them working on 2 variables, one can use:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
     or equivalently:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
-    Given that all optimizers have the same number of variables, we can also do:
+    Given that all optimizers have the same number of variables, one can also run:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
-
-    This is 5 parallel (by num_workers = 5).
-
-    Be careful! The variables refer to the deep representation used by optimizers.
+    Note
+    ----
+    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
+    Caution
+    -------
+    The variables refer to the deep representation used by optimizers.
     For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
@@ -873,30 +880,32 @@ class SplitOptimizer(base.Optimizer):
             num_workers: int = 1,
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
-            multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
+            multivariate_optimizer: base.OptCls = CMA,
+            monovariate_optimizer: base.OptCls = RandomSearch,
             progressive: bool = False,
             non_deterministic_descriptor: bool = True,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
+        self._progressive = progressive
+        subparams: tp.List[p.Parameter] = []
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
-            if num_optims is not None:  # (S)he also specifies the number of splits.
-                assert num_optims == len(
-                    num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
-            else:  # Better: we deduce the number of splits.
-                num_optims = len(num_vars)
             assert sum(
                 num_vars) == self.dimension, f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
-        else:  # The user did not specify the number of vars per split.
-            if num_optims is None:  # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
-                if isinstance(parametrization, p.Parameter):
-                    param_val = [x[1] for x in sorted(parametrization.value.items(), key=lambda x: int(x[0]))]
-                    num_vars = []
-                    for param_v in param_val:
-                        num_vars += [param_v.dimension if isinstance(param_v, p.Parameter) else 1]
-                    num_optims = len(num_vars)
-                else:  # Desperate situation: just split in 2.
-                    num_optims = 2
+            if num_optims is None:  # we deduce the number of splits.
+                num_optims = len(num_vars)
+            assert num_optims == len(
+                num_vars), f"The number {num_optims} of optimizers should match len(num_vars)={len(num_vars)}."
+        elif num_optims is None:
+            # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
+            if isinstance(parametrization, p.Parameter):
+                subparams = [x[1] for x in paramhelpers.split_as_data_parameters(parametrization)]
+                if len(subparams) == 1:
+                    subparams.clear()
+                num_optims = len(subparams)
+            if not subparams:  # Desperate situation: just split in 2.
+                num_optims = 2
+        if not subparams:
             # if num_vars not given: we will distribute variables equally.
             assert num_optims is not None
             num_optims = min(num_optims, self.dimension)
@@ -921,31 +930,33 @@ class SplitOptimizer(base.Optimizer):
         )
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        data: tp.List[tp.Any] = []
-        for i in range(self.num_optims):
-            if self.progressive:
+        candidates: tp.List[p.Parameter] = []
+        for i, opt in enumerate(self.optims):
+            if self._progressive:
                 assert self.budget is not None
-                if i > 0 and i / self.num_optims > np.sqrt(2.0 * self._num_ask / self.budget):
-                    data += [0.] * self.num_vars[i]
+                if i > 0 and i / len(self.optims) > np.sqrt(2.0 * self.num_ask / self.budget):
+                    candidates.append(opt.parametrization.spawn_child())  # unchanged
                     continue
-            opt = self.optims[i]
-            data += list(opt.ask().get_standardized_data(reference=opt.parametrization))
-        assert len(data) == self.dimension
-        return self.parametrization.spawn_child().set_standardized_data(data)
+            candidates.append(opt.ask())
+        data = np.concatenate([c.get_standardized_data(reference=opt.parametrization)
+                               for c, opt in zip(candidates, self.optims)], axis=0)
+        cand = self.parametrization.spawn_child().set_standardized_data(data)
+        self._subcandidates[cand.uid] = candidates
+        return cand
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        data = candidate.get_standardized_data(reference=self.parametrization)
-        n = 0
-        for i in range(self.num_optims):
-            opt = self.optims[i]
-            local_data = list(data)[n:n + self.num_vars[i]]
-            n += self.num_vars[i]
-            assert len(local_data) == self.num_vars[i]
-            local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
-            opt.tell(local_candidate, loss)
+        candidates = self._subcandidates.pop(candidate.uid)
+        for cand, opt in zip(candidates, self.optims):
+            opt.tell(cand, loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        start = 0
+        for opt in self.optims:
+            local_data = data[start:start + opt.dimension]
+            start += opt.dimension
+            local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
+            opt.tell(local_candidate, loss)
 
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
@@ -966,14 +977,14 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-        self,
-        *,
-        num_optims: tp.Optional[int] = None,
-        num_vars: tp.Optional[tp.List[int]] = None,
-        multivariate_optimizer: base.OptCls = CMA,
-        monovariate_optimizer: base.OptCls = RandomSearch,
-        progressive: bool = False,
-        non_deterministic_descriptor: bool = True,
+            self,
+            *,
+            num_optims: tp.Optional[int] = None,
+            num_vars: tp.Optional[tp.List[int]] = None,
+            multivariate_optimizer: base.OptCls = CMA,
+            monovariate_optimizer: base.OptCls = RandomSearch,
+            progressive: bool = False,
+            non_deterministic_descriptor: bool = True,
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
