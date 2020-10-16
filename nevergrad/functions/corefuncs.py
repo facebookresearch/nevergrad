@@ -15,7 +15,7 @@ registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 class DiscreteFunction:
 
-    def __init__(self, name: str, arity: int=2) -> tp.Any:
+    def __init__(self, name: str, arity: int=2):
         """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
         It is originally designed for lists of bits. It just counts the number of 1,
