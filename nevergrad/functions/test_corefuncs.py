@@ -54,8 +54,8 @@ def test_genzcornerpeak_inf() -> None:
     genzgaussianpeakintegral=(corefuncs.genzgaussianpeakintegral, 0.10427, None),
     minusgenzgaussianpeakintegral=(corefuncs.minusgenzgaussianpeakintegral, -0.10427, None),
     linear=(corefuncs.linear, 0.57969, None),
-    onemax5=(corefuncs.onemax5, 8, np.arange(50)),
-    jump5=(corefuncs.jump5, 6, np.arange(50)),
+    onemax5=(corefuncs.onemax5, 9, np.arange(50)),
+    jump5=(corefuncs.jump5, 7, np.arange(50)),
     leadingones5=(corefuncs.leadingones5, 10, np.arange(50)),
 )
 def test_core_function_values(func: tp.Callable[[np.ndarray], float], expected: float, data: tp.Optional[tp.List[float]]) -> None:
