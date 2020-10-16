@@ -1432,30 +1432,33 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
+            init_budget = max(2, int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget))
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
             # init
             init = self.initialization
             if self.middle_point:
                 self._bo.probe([0.5] * self.dimension, lazy=True)
-            elif init is None:
-                self._bo._queue.add(self._bo._space.random_sample())
-            if init is not None:
-                init_budget = int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget)
-                init_budget -= self.middle_point
-                if init_budget > 0:
-                    sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
-                        init
-                    ](self.dimension, budget=init_budget, scrambling=(init == "Hammersley"), random_state=self._rng)
-                    for point in sampler:
-                        self._bo.probe(point, lazy=True)
+                init_budget -= 1
+            if init is not None and init_budget > 0:
+                sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
+                    init
+                ](self.dimension, budget=init_budget, scrambling=(init == "Hammersley"), random_state=self._rng)
+                for k, point in enumerate(sampler):
+                    if not k and self.middle_point and np.linalg.norm(point - 0.5) < 1e-6:
+                        # resampling middle point, this is useless, let's redraw randomly
+                        point = self._bo._space.random_sample()
+                    self._bo.probe(point, lazy=True)
+            else:  # default
+                for _ in range(init_budget):
+                    self._bo.probe(self._bo._space.random_sample(), lazy=True)
         return self._bo
 
     def _internal_ask_candidate(self) -> p.Parameter:
         util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
-        try:
+        if self.bo._queue:
             x_probe = next(self.bo._queue)
-        except StopIteration:
+        else:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
         data = self._transform.backward(np.array(x_probe, copy=False))
