@@ -20,7 +20,6 @@ from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
-from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
@@ -144,7 +143,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 dfunc._descriptors.update(arity=arity)
@@ -152,12 +151,12 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
-    mofuncs: tp.List[PackedFunctions] = []
-
     # The multiobjective case.
+    # TODO the upper bounds are really not well set for this experiment with cigar
+    mofuncs: tp.List[MultiExperiment] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+            mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
                                          ArtificialFunction(name2, block_dimension=7)],
                                         upper_bounds=np.array((50., 50.)))]
     for mofunc in mofuncs:
@@ -218,7 +217,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Threshold", "Softmax", "Unordered"]:
                 if instrum_str == "Softmax":
-                    instrum = ng.p.Choice(range(arity), repetitions=nv)  # type: ignore
+                    instrum = ng.p.Choice(range(arity), repetitions=nv)
                     # Equivalent to, but much faster than, the following:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
                 elif instrum_str == "Threshold":
@@ -249,7 +248,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                     dfunc = ExperimentFunction(discrete_func, instrum)
                     dfunc.add_descriptors(arity=arity)
@@ -1142,58 +1141,8 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                          seed=next(seedg))  # type: ignore
 
 
-# Intermediate definition for building a multiobjective problem.
-class PackedFunctions(ExperimentFunction):
-
-    def __init__(self, functions: tp.List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
-        self._functions = functions
-        assert len(functions) > 0
-        self._upper_bounds = upper_bounds
-        self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
-        super().__init__(self.multiobjective, self._functions[0].parametrization)
-        self._parametrization.descriptors.not_manyobjective = len(functions) < 4
-        self._parametrization.descriptors.monoobjective = len(functions) == 1
-        # TODO add descriptors?
-
-    def _mo(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
-        return np.array([f(*args, **kwargs) for f in self._functions])
-
-    def copy(self) -> "PackedFunctions":
-        return PackedFunctions([f.copy() for f in self._functions], self._upper_bounds)
-
-
 @registry.register
 def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
-    Dimension 6 and 7.
-    Budget 2000, 2400, 2800, 3200, 3600, 4000.
-    """
-    # hopefully this can be deprecated in favor of the new integrated version
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA", "CMA", "OnePlusOne",
-              "TwoPointsDE"]
-    if default_optims is not None:
-        optims = default_optims
-    mofuncs: tp.List[PackedFunctions] = []
-    for name1 in ["sphere", "cigar"]:
-        for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
-                                         ArtificialFunction(name2, block_dimension=7)],
-                                        upper_bounds=np.array((50., 50.)))]
-            for name3 in ["sphere", "ellipsoid"]:
-                mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
-                                             ArtificialFunction(name3, block_dimension=6),
-                                             ArtificialFunction(name2, block_dimension=6)],
-                                            upper_bounds=np.array((100, 100, 1000.)))]
-    for mofunc in mofuncs:
-        for optim in optims:
-            for budget in list(range(2000, 4001, 400)):
-                for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
-def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
     Dimension 6 and 7.
     Budget 100 to 3200
@@ -1216,32 +1165,6 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
     for mofunc in mofuncs:
         for optim in optims:
             for budget in [100, 200, 400, 800, 1600, 3200]:
-                for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
-def manyobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimization of 6 objective functions in Cigar, Rastrigin, Rosenbrock, Sphere, Ellipsoid, Cigar, Hm.
-    Dimension 6 and 7.
-    Sequential or 100-parallel.
-    Budget 2000, 2400, 2800, 3200, 3600, 4000.
-    """
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA", "CMA", "OnePlusOne",
-              "TwoPointsDE"]
-    if default_optims is not None:
-        optims = default_optims
-    mofuncs: tp.List[PackedFunctions] = []
-    name_combinations = itertools.product(["sphere", "cigar"], ["sphere", "hm"], ["sphere", "ellipsoid"],
-                                          ["rastrigin", "rosenbrock"], ["hm", "rosenbrock"], ["rastrigin", "cigar"])
-    for names in name_combinations:
-        mofuncs += [PackedFunctions([ArtificialFunction(name, block_dimension=6) for name in names],
-                                    upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
-    for mofunc in mofuncs:
-        for optim in optims:
-            for budget in list(range(100, 5901, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
