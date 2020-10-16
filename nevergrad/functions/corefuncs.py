@@ -13,43 +13,51 @@ from nevergrad.common.decorators import Registry
 registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
-def onemax(x: tp.List[int]) -> float:
-    """onemax(x) is the most classical case of discrete functions, adapted to minimization.
+def discrete_functions(arity: int=2) -> tp.Any:
+    
+    def onemax(x: tp.List[int]) -> float:
+        """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
-    It is originally designed for lists of bits. It just counts the number of 1,
-    and returns len(x) - number of ones..
-    It also works in the continuous case but in that cases discretizes the
-    input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
-    """
-    return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
-
-
-def leadingones(x: tp.List[int]) -> float:
-    """leadingones is the second most classical discrete function, adapted for minimization.
-
-    Returns len(x) - number of initial 1. I.e.
-    leadingones([0 1 1 1]) = 4,
-    leadingones([1 1 1 1]) = 0,
-    leadingones([1 0 0 0]) = 3.
-    """
-    for i, x_ in enumerate(list(x)):
-        if int(round(x_)) != 1:
-            return len(x) - i
-    return 0
+        It is originally designed for lists of bits. It just counts the number of 1,
+        and returns len(x) - number of ones..
+        It also works in the continuous case but in that cases discretizes the
+        input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
+        """
+        result = 0
+        for i, x_ in enumerate(list(x)):
+            result += 1 if (x_ == round(i % arity)) else 0
+        return len(x) - result
 
 
-def jump(x: tp.List[int]) -> float:  # TODO: docstring?
-    """There exists variants of jump functions; we are in minimization.
+    def leadingones(x: tp.List[int]) -> float:
+        """leadingones is the second most classical discrete function, adapted for minimization.
 
-    The principle of a jump function is that local descent does not succeed.
-    Jumps are necessary.
-    """
-    n = len(x)
-    m = n // 4
-    o = n - onemax(x)
-    if o == n or o <= n - m:
-        return n - m - o
-    return o  # Deceptive part.
+        Returns len(x) - number of initial 1. I.e.
+        leadingones([0 1 1 1]) = 4,
+        leadingones([1 1 1 1]) = 0,
+        leadingones([1 0 0 0]) = 3.
+        """
+        for i, x_ in enumerate(list(x)):
+            if int(round(x_)) != i % arity:
+                return len(x) - i
+        return 0
+
+
+    def jump(x: tp.List[int]) -> float:  # TODO: docstring?
+        """There exists variants of jump functions; we are in minimization.
+
+        The principle of a jump function is that local descent does not succeed.
+        Jumps are necessary.
+        """
+        n = len(x)
+        m = n // 4
+        o = n - onemax(x)
+        if o == n or o <= n - m:
+            return n - m - o
+        return o  # Deceptive part.
+    return onemax, leadingones, jump
+
+onemax, leadingones, jump = discrete_functions()
 
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
