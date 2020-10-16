@@ -17,7 +17,7 @@ class Mutator:
     def __init__(self, random_state: np.random.RandomState) -> None:
         self.random_state = random_state
 
-    def other_random(v: float, arity: int):
+    def other_random(self, v: float, arity: int):
         w = v
         while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization([v], arity):
             w = self.random_state.normal(0., 1.)
@@ -64,14 +64,14 @@ class Mutator:
         boolean_vector = [True for _ in parent]
         while all(boolean_vector) and dimension != 1:
             boolean_vector = [self.random_state.rand() > (float(u) / dimension) for _ in parent]
-        return [s if b else other_random(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        return [s if b else self.other_random(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         dimension = len(parent)
         boolean_vector = [True for _ in parent]
         while all(boolean_vector):
             boolean_vector = [self.random_state.rand() > (1. / dimension) for _ in parent]
-        return [s if b else other_random(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        return [s if b else self.other_random(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike) -> tp.ArrayLike:
         mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
