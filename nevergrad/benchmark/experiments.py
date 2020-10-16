@@ -217,7 +217,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            onemax, leadingones, jump = discrete_functions(arity)
+            onemax, leadingones, jump = corefuncs.discrete_functions(arity)
             for instrum_str in ["Threshold", "Softmax", "Unordered"]:
                 if instrum_str == "Softmax":
                     instrum = ng.p.Choice(range(arity), repetitions=nv)  # type: ignore
@@ -229,7 +229,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 else:
                     assert instrum_str == "Unordered"
                     instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
-                for discrete_func in [conemax, leadingones, jump]:
+                for discrete_func in [onemax, leadingones, jump]:
                     dfunc = ExperimentFunction(discrete_func, instrum)
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
