@@ -178,12 +178,14 @@ def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-out
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
-    # set up environment
-    optimizer_cls = registry[name]
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
+    if "BO" in name:
+        raise SkipTest("BO differs from one computer to another")
+    # set up environment
+    optimizer_cls = registry[name]
     np.random.seed(None)
-    if optimizer_cls.recast or "SplitOptimizer" in name:
+    if optimizer_cls.recast:
         np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
@@ -202,9 +204,9 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         # the following context manager speeds up BO tests
         # BEWARE: BO tests are deterministic but can get different results from a computer to another.
         # Reducing the precision could help in this regard.
-        patched = partial(acq_max, n_warmup=10000, n_iter=2)
-        with patch("bayes_opt.bayesian_optimization.acq_max", patched):
-            recom = optim.minimize(fitness)
+        # patched = partial(acq_max, n_warmup=10000, n_iter=2)
+        # with patch("bayes_opt.bayesian_optimization.acq_max", patched):
+        recom = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
         raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
