@@ -32,6 +32,7 @@ from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
+from nevergrad.functions.iohprofiler import PBOFunction
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -1109,13 +1110,6 @@ def noisy_control_problem_parallel(seed: tp.Optional[int] = None) -> tp.Iterator
                             yield xp
 
 
-# @registry.register
-# def noisy_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-#     internal_generator = control_problem(seed, noisy=True)
-#     for xp in internal_generator:
-#         yield xp
-#
-
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
@@ -1554,3 +1548,19 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+
+def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    # Discrete, unordered.
+    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
+              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete"]
+
+    seedg = create_seed_generator(seed)
+    for dim in [16, 64, 100]:
+        for fid in range(1, 24):
+            for iid in range(1, 5):
+                func = PBOFunction(fid, iid, dim)
+                for optim in optims:
+                    for nw in [1, 10]:
+                        for budget in [100, 1000, 10000]:
+                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))

@@ -328,7 +328,7 @@ class _CMA(base.Optimizer):
             except RuntimeError:
                 pass
             else:
-                self._parents = sorted(self._to_be_told, key=lambda c: c.loss)[: self._num_spawners]
+                self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
                 self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
@@ -462,7 +462,7 @@ class EDA(base.Optimizer):
         if self._POPSIZE_ADAPTATION:
             self.popsize.add_value(loss)
         if len(self.children) >= self.popsize.llambda:
-            self.children = sorted(self.children, key=lambda c: c.loss)
+            self.children = sorted(self.children, key=base._loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
             mu = self.popsize.mu
             arrays = population_data[:mu]
@@ -556,7 +556,7 @@ class _TBPSA(base.Optimizer):
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c.loss)
+            self.children.sort(key=base._loss)
             # Computing the new parent.
 
             self.parents = self.children[: self.popsize.mu]
@@ -876,6 +876,7 @@ class SplitOptimizer(base.Optimizer):
             multivariate_optimizer: base.ConfiguredOptimizer = CMA,
             monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
             progressive: bool = False,
+            non_deterministic_descriptor: bool = True,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
@@ -897,29 +898,27 @@ class SplitOptimizer(base.Optimizer):
                 else:  # Desperate situation: just split in 2.
                     num_optims = 2
             # if num_vars not given: we will distribute variables equally.
-        if num_optims > self.dimension:
-            num_optims = self.dimension
-        self.num_optims = num_optims
-        self.progressive = progressive
-        self.optims: tp.List[tp.Any] = []
-        self.num_vars: tp.List[tp.Any] = num_vars if num_vars else []
-        self.parametrizations: tp.List[tp.Any] = []
-        for i in range(self.num_optims):
-            if not self.num_vars or len(self.num_vars) < i + 1:
-                self.num_vars += [(self.dimension // self.num_optims) + (self.dimension % self.num_optims > i)]
-
-            assert self.num_vars[i] >= 1, "At least one variable per optimizer."
-            self.parametrizations += [p.Array(shape=(self.num_vars[i],))]
-            for param in self.parametrizations:
-                param.random_state = self.parametrization.random_state
-            assert len(self.optims) == i
-            if self.num_vars[i] > 1:
-                self.optims += [multivariate_optimizer(self.parametrizations[i], budget, num_workers)]  # noqa: F405
-            else:
-                self.optims += [monovariate_optimizer(self.parametrizations[i], budget, num_workers)]  # noqa: F405
-
-        assert sum(
-            self.num_vars) == self.dimension, f"sum(num_vars)={sum(self.num_vars)} should be equal to the dimension {self.dimension}."
+            assert num_optims is not None
+            num_optims = min(num_optims, self.dimension)
+            num_vars = num_vars if num_vars else []
+            for i in range(num_optims):
+                if len(num_vars) < i + 1:
+                    num_vars += [(self.dimension // num_optims) + (self.dimension % num_optims > i)]
+                assert num_vars[i] >= 1, "At least one variable per optimizer."
+                subparams += [p.Array(shape=(num_vars[i],))]
+        if non_deterministic_descriptor:
+            for param in subparams:
+                param.descriptors.deterministic_function = False
+        # synchronize random state and create optimizers
+        self.optims: tp.List[base.Optimizer] = []
+        mono, multi = monovariate_optimizer, multivariate_optimizer
+        for param in subparams:
+            param.random_state = self.parametrization.random_state
+            self.optims.append((multi if param.dimension > 1 else mono)(param, budget, num_workers))
+        # final check for dimension
+        assert sum(opt.dimension for opt in self.optims) == self.dimension, (
+            "sum of sub-dimensions should be equal to the total dimension."
+        )
 
     def _internal_ask_candidate(self) -> p.Parameter:
         data: tp.List[tp.Any] = []
@@ -950,7 +949,7 @@ class SplitOptimizer(base.Optimizer):
 
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
-    """Configurable split optimizer
+    """"Combines optimizers, each of them working on their own variables.
 
     Parameters
     ----------
@@ -960,17 +959,21 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         number of variable per optimizer.
     progressive: optional bool
         whether we progressively add optimizers.
+    non_deterministic_descriptor: bool
+        subparts parametrization descriptor is set to noisy function.
+        This can have an impact for optimizer selection for NGOpt optimizers.
     """
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            num_optims: int = 2,
-            num_vars: tp.Optional[tp.List[int]] = None,
-            multivariate_optimizer: base.ConfiguredOptimizer = CMA,
-            monovariate_optimizer: base.ConfiguredOptimizer = RandomSearch,
-            progressive: bool = False
+        self,
+        *,
+        num_optims: tp.Optional[int] = None,
+        num_vars: tp.Optional[tp.List[int]] = None,
+        multivariate_optimizer: base.OptCls = CMA,
+        monovariate_optimizer: base.OptCls = RandomSearch,
+        progressive: bool = False,
+        non_deterministic_descriptor: bool = True,
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
@@ -1476,10 +1479,11 @@ class _BO(base.Optimizer):
         self._fake_function._registered.clear()
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-        if self.archive:
-            return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
-        else:
+        if not self.archive:
             return None
+        return self._transform.backward(
+            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+        )
 
 
 class ParametrizedBO(base.ConfiguredOptimizer):
