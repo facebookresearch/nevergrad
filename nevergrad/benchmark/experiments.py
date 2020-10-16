@@ -223,7 +223,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     # Equivalent to, but much faster than, the following:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
                 else:
-                    assume instrum_str == "Threshold":
+                    assume instrum_str == "Threshold"
                     # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
                     init = np.random.RandomState(seed=next(seedg)).uniform(-0.5, arity -0.5, size=nv)
                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
