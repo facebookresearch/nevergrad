@@ -157,7 +157,7 @@ class _OnePlusOne(base.Optimizer):
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             else:
-                func: tp.Callable[[tp.ArrayLike], tp.ArrayLike] = {  # type: ignore
+                func: tp.Any = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
