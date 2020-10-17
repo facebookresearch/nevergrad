@@ -55,6 +55,12 @@ def test_genzcornerpeak_inf() -> None:
     minusgenzgaussianpeakintegral=(corefuncs.minusgenzgaussianpeakintegral, -0.10427, None),
     linear=(corefuncs.linear, 0.57969, None),
 )
+def test_core_function_values(func: tp.Callable[[np.ndarray], float], expected: float, data:
+tp.Optional[tp.List[float]]) -> None:
+    if data is None:
+        data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
+    value = func(np.array(data))
+    np.testing.assert_almost_equal(value, expected, decimal=5)
 
 
 def test_styblinksitang() -> None:
