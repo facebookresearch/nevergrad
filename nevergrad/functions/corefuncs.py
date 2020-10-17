@@ -42,12 +42,12 @@ class DiscreteFunction:
 
         if self.name == "onemax":
             result = 0
-            for i, x_ in enumerate(list(x)):
+            for i, x_ in enumerate(x):
                 result += 1 if (x_ == round(i % arity)) else 0
             return len(x) - result
 
         if self.name == "leadingones":
-            for i, x_ in enumerate(list(x)):
+            for i, x_ in enumerate(x):
                 if int(round(x_)) != i % arity:
                     return len(x) - i
             return 0
