@@ -118,13 +118,6 @@ def test_functionlib_copy() -> None:
     assert func is not func2
 
 
-def test_artifificial_function_with_jump() -> None:
-    func1 = functionlib.ArtificialFunction("sphere", 5)
-    func2 = functionlib.ArtificialFunction("jump5", 5)
-    np.testing.assert_equal(func1.transform_var.only_index_transform, False)
-    np.testing.assert_equal(func2.transform_var.only_index_transform, True)
-
-
 def test_compute_pseudotime() -> None:
     x = np.array([2., 2])
     func = functionlib.ArtificialFunction("sphere", 2)
