@@ -6,7 +6,6 @@
 import typing as tp
 from math import exp, sqrt, tanh
 import numpy as np
-from nevergrad.parametrization import discretization
 from nevergrad.common.decorators import Registry
 
 
