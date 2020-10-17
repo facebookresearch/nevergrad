@@ -1392,15 +1392,13 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
 def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]
-
     seedg = create_seed_generator(seed)
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
                 func = PBOFunction(fid, iid, dim)
-                for optim in optims:
+                for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
+                              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
                             yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))
