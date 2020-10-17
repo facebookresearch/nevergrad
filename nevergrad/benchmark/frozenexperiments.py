@@ -40,21 +40,6 @@ def repeated_basic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def small_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    names = ["hardonemax5", "hardjump5", "hardleadingones5"]
-    optims = sorted(x for x, y in optimizers.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x
-                    and "SSNEA" not in x)
-    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-                 for name in names for bd in [30] for uv_factor in [5, 10] for n_blocks in [1]]
-    for func in functions:
-        for optim in optims:
-            for budget in [100, 400, 700, 1000, 1300, 1600, 1900, 2200, 2500, 2800, 3000]:  # , 10000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
 def illcond(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
