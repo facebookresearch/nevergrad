@@ -120,6 +120,7 @@ class TorchAgentFunction(ExperimentFunction):
         self.runner = env_runner.copy()
         self.reward_postprocessing = reward_postprocessing
         super().__init__(self.compute, self.agent.instrumentation.copy().set_name(""))
+        self.parametrization.descriptors.deterministic_function = False        
         self.register_initialization(agent=agent, env_runner=env_runner, reward_postprocessing=reward_postprocessing)
         self._descriptors.update(num_repetitions=self.runner.num_repetitions, archi=self.agent.module.__class__.__name__)
 
