@@ -59,6 +59,9 @@ class _OnePlusOne(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._sigma: float = 1
+        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
+        self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -130,17 +133,18 @@ class _OnePlusOne(base.Optimizer):
             pessimistic_data = pessimistic.get_standardized_data(reference=ref)
             if mutation == "crossover":
                 if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                    data = mutator.portfolio_discrete_mutation(pessimistic_data)
+                    data = mutator.portfolio_discrete_mutation(pessimistic_data, arity=self.arity_for_discrete_mutation)
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
             elif mutation == "adaptive":
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, max(1, int(self._adaptive_mr * self.dimension)))
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=max(1, int(self._adaptive_mr * self.dimension)),
+                                                           arity=self.arity_for_discrete_mutation)
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
                 intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
@@ -151,15 +155,15 @@ class _OnePlusOne(base.Optimizer):
                     index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             else:
-                func: tp.Callable[[tp.ArrayLike], tp.ArrayLike] = {  # type: ignore
+                func: tp.Any = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
-                data = func(pessimistic_data)
+                data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:

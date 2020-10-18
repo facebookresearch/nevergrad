@@ -221,14 +221,16 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             onemax = corefuncs.DiscreteFunction("onemax", arity)
             leadingones = corefuncs.DiscreteFunction("leadingones", arity)
             jump = corefuncs.DiscreteFunction("jump", arity)
-            for instrum_str in ["Threshold", "Softmax", "Unordered"]:
+            for instrum_str in ["Unordered", "Softmax"]:
                 if instrum_str == "Softmax":
                     instrum = ng.p.Choice(range(arity), repetitions=nv)
                     # Equivalent to, but much faster than, the following:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
-                elif instrum_str == "Threshold":
-                    # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-                    instrum = ng.p.Array(init=(arity // 2) * np.ones((nv,))).set_bounds(0, arity)  # type: ignore
+#                 else:
+#                     assert instrum_str == "Threshold"
+#                     # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+#                     init = np.random.RandomState(seed=next(seedg)).uniform(-0.5, arity -0.5, size=nv)
+#                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
                 else:
                     assert instrum_str == "Unordered"
                     instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
@@ -1320,17 +1322,17 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
                             yield xp
 
 
+@registry.register
 def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete"]
-
+    dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
     seedg = create_seed_generator(seed)
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
                 func = PBOFunction(fid, iid, dim)
-                for optim in optims:
+                for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
+                              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
-                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))
+                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
