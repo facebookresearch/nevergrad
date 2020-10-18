@@ -21,9 +21,9 @@ def test_significantly_mutate() -> None:
     output = Mutator(rng).significantly_mutate(0.3, 3)
     np.testing.assert_almost_equal(output, 0.75314, decimal=4)
     for _ in range(10):
-        output = Mutator(rng).significantly_mutate(0.1)
+        output = Mutator(rng).significantly_mutate(0.1, 2)
         np.testing.assert_less(output, 0.)
-        output = Mutator(rng).significantly_mutate(output)
+        output = Mutator(rng).significantly_mutate(output, 2)
         np.testing.assert_less(0., output)
         
 def test_discrete_mutation() -> None:
