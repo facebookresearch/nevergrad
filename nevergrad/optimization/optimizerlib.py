@@ -147,7 +147,7 @@ class _OnePlusOne(base.Optimizer):
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "lengler":
                 alpha = 1.54468
-                intensity = float(max(1.0, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
