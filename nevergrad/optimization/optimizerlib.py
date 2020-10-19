@@ -2079,11 +2079,10 @@ class NGOpt4(NGOptBase):
 
 
 ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True,
-                             multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name("ProgD13", register=True)
+                             multivariate_optimizer=OptimisticDiscreteOnePlusOne)
 
 RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
-                                                                      noise_handling="optimistic").set_name(
-    "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
+                                                                      noise_handling="optimistic")
 
 
 @registry.register
@@ -2103,22 +2102,22 @@ class NGOpt8(base.Optimizer):
         self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             if budget > 10000:
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
             else:
-                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne  # type: ignore
+                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne
         elif arity > 0:
             if budget < 1000 and num_workers == 1:
-                optimClass = DiscreteBSOOnePlusOne  # type: ignore
+                optimClass = DiscreteBSOOnePlusOne
             elif num_workers > 2:
-                optimClass = CMandAS2  # type: ignore
+                optimClass = CMandAS2
             elif arity == 2:
-                optimClass = DiscreteOnePlusOne  # type: ignore
+                optimClass = DiscreteOnePlusOne
             else:
                 if arity < 5:
-                    optimClass = AdaptiveDiscreteOnePlusOne  # type: ignore
+                    optimClass = AdaptiveDiscreteOnePlusOne
                 else:
-                    optimClass = CMandAS2  # type: ignore
-            # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2  # type: ignore
+                    optimClass = CMandAS2
+            # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
         else:
             # pylint: disable=too-many-nested-blocks
             if self.has_noise and self.fully_continuous and self.dimension > 100:
@@ -2133,44 +2132,44 @@ class NGOpt8(base.Optimizer):
                         optimClass = TBPSA  # type: ignore
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                        optimClass = DoubleFastGADiscreteOnePlusOne  # type: ignore
+                        optimClass = DoubleFastGADiscreteOnePlusOne
                     else:
                         if num_workers > budget / 5:
                             if num_workers > budget / 2. or budget < self.dimension:
-                                optimClass = MetaTuneRecentering  # type: ignore
+                                optimClass = MetaTuneRecentering
                             elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA  # type: ignore
+                                optimClass = DiagonalCMA
                             elif self.dimension < 5 and budget < 500:
                                 optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining",
                                                                                                 register=True)  # type: ignore
                             else:
-                                optimClass = NaiveTBPSA  # type: ignore
+                                optimClass = NaiveTBPSA
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = chainCMAPowell  # type: ignore
+                                optimClass = chainCMAPowell
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne  # type: ignore
+                                        optimClass = OnePlusOne
                                     elif self.dimension < 5:
-                                        optimClass = MetaModel  # type: ignore
+                                        optimClass = MetaModel
                                     else:
-                                        optimClass = Cobyla  # type: ignore
+                                        optimClass = Cobyla
                                 else:
                                     if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE  # type: ignore
+                                        optimClass = DE
                                     else:
                                         if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel  # type: ignore
+                                            optimClass = MetaModel
                                         else:
                                             if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
-                                                optimClass = DiagonalCMA  # type: ignore
+                                                optimClass = DiagonalCMA
                                             elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
-                                                optimClass = MetaModel  # type: ignore
+                                                optimClass = MetaModel
                                             else:
-                                                optimClass = CMA  # type: ignore
-        self.optim = optimClass(self.parametrization, budget, num_workers)  # type: ignore
+                                                optimClass = CMA
+        self.optim = optimClass(self.parametrization, budget, num_workers)
         logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
 
     def _internal_ask_candidate(self) -> p.Parameter:
