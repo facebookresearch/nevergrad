@@ -147,7 +147,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for discrete_func in ["onemax", "leadingones", "jump"]:
                 discrete_func = corefuncs.DiscreteFunction(name, arity)
                 dfunc = ExperimentFunction(discrete_func, instrum)
-                dfunc._descriptors.update(arity=arity)
+                dfunc.add_descriptors(arity=arity)
                 for optim in optims:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
