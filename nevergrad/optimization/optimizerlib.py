@@ -59,6 +59,9 @@ class _OnePlusOne(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._sigma: float = 1
+        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
+        self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -130,17 +133,18 @@ class _OnePlusOne(base.Optimizer):
             pessimistic_data = pessimistic.get_standardized_data(reference=ref)
             if mutation == "crossover":
                 if self._num_ask % 2 == 0 or len(self.archive) < 3:
-                    data = mutator.portfolio_discrete_mutation(pessimistic_data)
+                    data = mutator.portfolio_discrete_mutation(pessimistic_data, arity=self.arity_for_discrete_mutation)
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
             elif mutation == "adaptive":
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, max(1, int(self._adaptive_mr * self.dimension)))
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=max(1, int(self._adaptive_mr * self.dimension)),
+                                                           arity=self.arity_for_discrete_mutation)
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
                 intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
@@ -151,15 +155,15 @@ class _OnePlusOne(base.Optimizer):
                     index = self._doerr_mutation_rewards.index(max(self._doerr_mutation_rewards))
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
-                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity)
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             else:
-                func: tp.Callable[[tp.ArrayLike], tp.ArrayLike] = {  # type: ignore
+                func: tp.Any = {  # type: ignore
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
-                data = func(pessimistic_data)
+                data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
@@ -321,7 +325,7 @@ class _CMA(base.Optimizer):
             except RuntimeError:
                 pass
             else:
-                self._parents = sorted(self._to_be_told, key=lambda c: c.loss)[: self._num_spawners]
+                self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
                 self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
@@ -455,7 +459,7 @@ class EDA(base.Optimizer):
         if self._POPSIZE_ADAPTATION:
             self.popsize.add_value(loss)
         if len(self.children) >= self.popsize.llambda:
-            self.children = sorted(self.children, key=lambda c: c.loss)
+            self.children = sorted(self.children, key=base._loss)
             population_data = [c.get_standardized_data(reference=self.parametrization) for c in self.children]
             mu = self.popsize.mu
             arrays = population_data[:mu]
@@ -549,7 +553,7 @@ class _TBPSA(base.Optimizer):
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c.loss)
+            self.children.sort(key=base._loss)
             # Computing the new parent.
 
             self.parents = self.children[: self.popsize.mu]
@@ -1432,30 +1436,33 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
+            init_budget = max(2, int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget))
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
             # init
             init = self.initialization
             if self.middle_point:
                 self._bo.probe([0.5] * self.dimension, lazy=True)
-            elif init is None:
-                self._bo._queue.add(self._bo._space.random_sample())
-            if init is not None:
-                init_budget = int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget)
-                init_budget -= self.middle_point
-                if init_budget > 0:
-                    sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
-                        init
-                    ](self.dimension, budget=init_budget, scrambling=(init == "Hammersley"), random_state=self._rng)
-                    for point in sampler:
-                        self._bo.probe(point, lazy=True)
+                init_budget -= 1
+            if init is not None and init_budget > 0:
+                sampler = {"Hammersley": sequences.HammersleySampler, "LHS": sequences.LHSSampler, "random": sequences.RandomSampler}[
+                    init
+                ](self.dimension, budget=init_budget, scrambling=(init == "Hammersley"), random_state=self._rng)
+                for k, point in enumerate(sampler):
+                    if not k and self.middle_point and np.linalg.norm(point - 0.5) < 1e-6:
+                        # resampling middle point, this is useless, let's redraw randomly
+                        point = self._bo._space.random_sample()
+                    self._bo.probe(point, lazy=True)
+            else:  # default
+                for _ in range(init_budget):
+                    self._bo.probe(self._bo._space.random_sample(), lazy=True)
         return self._bo
 
     def _internal_ask_candidate(self) -> p.Parameter:
         util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
-        try:
+        if self.bo._queue:
             x_probe = next(self.bo._queue)
-        except StopIteration:
+        else:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
         data = self._transform.backward(np.array(x_probe, copy=False))
@@ -1477,10 +1484,11 @@ class _BO(base.Optimizer):
         self._fake_function._registered.clear()
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-        if self.archive:
-            return self._transform.backward(np.array([self.bo.max["params"][f"x{i}"] for i in range(self.dimension)]))
-        else:
+        if not self.archive:
             return None
+        return self._transform.backward(
+            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+        )
 
 
 class ParametrizedBO(base.ConfiguredOptimizer):

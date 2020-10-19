@@ -38,7 +38,7 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 
 
 @registry.register
-def large() -> tp.List[Optim]:
+def large() -> tp.Sequence[Optim]:
     return ["NGO", "Shiwa", "DiagonalCMA", "CMA", "PSO", "DE", "MiniDE", "QrDE", "MiniQrDE", "LhsDE",
             "OnePlusOne", "SQP", "Cobyla", "Powell",
             "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
@@ -47,28 +47,28 @@ def large() -> tp.List[Optim]:
 
 
 @registry.register
-def cma() -> tp.List[Optim]:
+def cma() -> tp.Sequence[Optim]:
     return ["DiagonalCMA", "CMA"]
 
 
 @registry.register
-def competence_map() -> tp.List[Optim]:
+def competence_map() -> tp.Sequence[Optim]:
     return ["NGO", "Shiwa"]
 
 
 @registry.register
-def competitive() -> tp.List[Optim]:
+def competitive() -> tp.Sequence[Optim]:
     """A set of competitive algorithms
     """
     return get_optimizers("cma", "competence_map") + ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "OnePlusOne", "TwoPointsDE"]
 
 
 @registry.register
-def all_bo() -> tp.List[Optim]:
+def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
 
 @registry.register
-def spsa() -> tp.List[Optim]:
+def spsa() -> tp.Sequence[Optim]:
     # return sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
     return ["NaiveTBPSA", "SPSA", "TBPSA"]
