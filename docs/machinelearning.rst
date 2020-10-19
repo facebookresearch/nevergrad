@@ -306,4 +306,6 @@ Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/master/_modules/ray
 
 Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/next/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
-Nevergrad is interfaced in `IOH Profiler <http://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
+Nevergrad is interfaced in `IOH Profiler <https://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
+
+Nevergrad is interfaced in `MixSimulator <https://github.com/Foloso/MixSimulator/>`_, a useful tool to get the optimal parameters for an electrical mix.
