@@ -145,8 +145,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for arity in [2, 7]:
             instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
             for name in ["onemax", "leadingones", "jump"]:
-                discrete_func = corefuncs.DiscreteFunction(name, arity)
-                dfunc = ExperimentFunction(discrete_func, instrum)
+                dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum)
                 dfunc.add_descriptors(arity=arity)
                 for optim in optims:
                     for nw in [1, 10]:
@@ -253,8 +252,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                 assert instrum_str == "Unordered"
                 instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
                 for name in ["onemax", "leadingones", "jump"]:
-                    discrete_func = corefuncs.DiscreteFunction(name, arity)
-                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum)
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
