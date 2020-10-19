@@ -9,7 +9,6 @@ orbs:
   win: circleci/windows@2.2.0
 
 
-
 # the set up in which the ubuntu jobs will run:
 executors:
   ubuntu-python37:
