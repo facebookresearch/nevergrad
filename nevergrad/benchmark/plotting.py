@@ -16,6 +16,8 @@ from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import unicode
+import unicodedata
 import nevergrad.common.typing as tp
 from . import utils
 from .exporttable import export_table
@@ -28,15 +30,15 @@ _DPI = 250
 
 # %% Basic tools
 
-def slugify(value: str) -> str:
+def _slugify(value: str) -> str:
     """
     Normalizes string, converts to lowercase, removes non-alpha characters,
     and converts spaces to hyphens.
     """
     import unicodedata
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
-    value = unicode(re.sub('[-\s]+', '-', value))
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')  # type: ignore
+    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())  # type: ignore
+    value = unicode(re.sub('[-\s]+', '-', value))  # type: ignore
     # ...
     return value
 
@@ -283,7 +285,7 @@ def create_plots(
                 best_algo[xindices.index(case[0])][yindices.index(case[1])] = fplotter.winrates.index[0]
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
-            name = "fight_all.png" if name == "fight_.png" else slugify(name)
+            name = "fight_all.png" if name == "fight_.png" else _slugify(name)
 
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
@@ -300,7 +302,7 @@ def create_plots(
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
-                name = slugify(name)
+                name = _slugify(name)
                 export_table(str(output_folder / name), xindices, yindices, best_algo)
                 print("Competence map data:", fixed, case, best_algo)
 
@@ -324,7 +326,7 @@ def create_plots(
         if len(description) > 280:
             hash_ = hashlib.md5(bytes(description, 'utf8')).hexdigest()
             description = description[:140] + hash_ + description[-140:]
-            description = slugify(description)
+            description = _slugify(description)
         out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
         data = XpPlotter.make_data(subdf)
         try:
