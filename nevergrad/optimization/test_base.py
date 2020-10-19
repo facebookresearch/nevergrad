@@ -99,10 +99,10 @@ def test_base_optimizer() -> None:
     np.testing.assert_array_equal(zeroptim.ask().args[0], [0, 0])
 
 def test_float_penalty() -> None:
-    np.testing.assert_equal(_float_penalty(True), 0.)
-    np.testing.assert_equal(_float_penalty(False), 1.)
-    np.testing.assert_equal(_float_penalty(.7), 0.)
-    np.testing.assert_equal(_float_penalty(-1.3), 1.3)
+    np.testing.assert_equal(base._float_penalty(True), 0.)
+    np.testing.assert_equal(base._float_penalty(False), 1.)
+    np.testing.assert_equal(base._float_penalty(.7), 0.)
+    np.testing.assert_equal(base._float_penalty(-1.3), 1.3)
 
 def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer = optimizerlib.OnePlusOne(parametrization=1, budget=100, num_workers=5)
