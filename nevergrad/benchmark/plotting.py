@@ -16,7 +16,6 @@ from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import unicode
 import unicodedata
 import nevergrad.common.typing as tp
 from . import utils
