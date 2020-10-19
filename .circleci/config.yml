@@ -9,7 +9,6 @@ orbs:
   win: circleci/windows@2.2.0
 
 
-
 # the set up in which the ubuntu jobs will run:
 executors:
   ubuntu-python37:
@@ -68,6 +67,11 @@ jobs:
           name: "[no-extra] Print installation"
           when: always
           command: |
+            if [[ -z "$CIRCLE_REPOSITORY_URL" ]]; then
+                echo "CIRCLE_REPOSITORY_URL must be provided in environment" 1>&2
+                exit 1
+            fi
+            echo "This is on $CIRCLE_REPOSITORY_URL."
             . venv/bin/activate
             pip freeze
 
@@ -191,7 +195,12 @@ jobs:
 
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+          command: |
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+              echo "Deploying"
+              gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+            fi
 
 
   windows-pytests:
@@ -255,10 +264,14 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            . venv/bin/activate
-            du -h nevergrad-build/dist/*
-            twine check nevergrad-build/dist/nevergrad-*
-            twine upload nevergrad-build/dist/nevergrad-* --verbose
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+              echo "Deploying"
+              . venv/bin/activate
+              du -h nevergrad-build/dist/*
+              twine check nevergrad-build/dist/nevergrad-*
+              twine upload nevergrad-build/dist/nevergrad-* --verbose
+            fi
 
 
 workflows:
