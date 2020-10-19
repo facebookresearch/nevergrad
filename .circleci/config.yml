@@ -123,9 +123,9 @@ jobs:
           name: Build docs
           command: |
             . venv/bin/activate
-            echo "This is on $CIRCLE_PROJECT_REPONAME."
-            if [[ -z "$CIRCLE_PROJECT_REPONAME" ]]; then
-                echo "CIRCLE_PROJECT_REPONAME must be provided in environment" 1>&2
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ -z "$CIRCLE_REPOSITORY_URL" ]]; then
+                echo "CIRCLE_REPOSITORY_URL must be provided in environment" 1>&2
                 exit 1
             fi
             echo "This is $ORGNAME github organization."
@@ -197,8 +197,8 @@ jobs:
       - run:
           name: Deploy docs to gh-pages branch
           command: |
-            echo "This is on $CIRCLE_PROJECT_REPONAME."
-            if [[ "$CIRCLE_PROJECT_REPONAME" == "*facebookresearch*" ]]; then
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == "*facebookresearch*" ]]; then
               echo "Deploying"
               gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
             fi
@@ -265,8 +265,8 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            echo "This is on $CIRCLE_PROJECT_REPONAME."
-            if [[ "$CIRCLE_PROJECT_REPONAME" == "*facebookresearch*" ]]; then
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == "*facebookresearch*" ]]; then
               echo "Deploying"
               . venv/bin/activate
               du -h nevergrad-build/dist/*
