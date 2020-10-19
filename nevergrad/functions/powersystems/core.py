@@ -6,8 +6,8 @@
 # This code is based on a code and ideas by Emmanuel Centeno and Antoine Moreau,
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
-from collections import Iterable
 import typing as tp
+from collections import abc
 from math import pi, cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ class Agent():
         return sum([np.prod(l.shape) for l in self.layers])
 
     def set_parameters(self, ww: tp.Any) -> None:
-        w = [w for w in ww]
+        w = list(ww)
         assert isinstance(w[0], float)
         assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}: {w}."
         for i in range(len(self.layers)):
@@ -114,6 +114,7 @@ class PowerSystem(ExperimentFunction):
         # dimension = int(sum([a.dimension for a in dam_agents]))
         parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in dam_agents])
         super().__init__(self._simulate_power_system, parameter)
+        self.parametrization.descriptors.deterministic_function = False
         self.register_initialization(**params)
         self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
@@ -125,12 +126,13 @@ class PowerSystem(ExperimentFunction):
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
         # Deep, robust flattening of any nesting of iterables.
+
         def flatten(obj):
-             for i in obj:
-                 if isinstance(i, Iterable):
-                     yield from flatten(i)
-                 else:
-                     yield i
+            for i in obj:
+                if isinstance(i, abc.Iterable):
+                    yield from flatten(i)
+                else:
+                    yield i
         x = list(flatten(arrays))
         # Now applying:
         for a in dam_agents:

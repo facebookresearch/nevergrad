@@ -121,8 +121,8 @@ class Pyomo(base.ExperimentFunction):
         for v in self._model_instance.component_objects(pyomo.Constraint, active=True):
             self.all_constraints.append(v)
         for v in self._model_instance.component_objects(pyomo.Objective, active=True):
-            if v.sense == -1:
-                print(f"Only minimization problem is supported. The value of the objective function {v.name} will be multiplied by -1.")
+            # if v.sense == -1:
+            #    print(f"Only minimization problem is supported. The value of the objective function {v.name} will be multiplied by -1.")
             self.all_objectives.append(v)
 
         if not self.all_objectives:

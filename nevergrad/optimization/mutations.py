@@ -17,15 +17,24 @@ class Mutator:
     def __init__(self, random_state: np.random.RandomState) -> None:
         self.random_state = random_state
 
-    def doerr_discrete_mutation(self, parent: tp.ArrayLike) -> tp.ArrayLike:
+    def significantly_mutate(self, v: float, arity: int):
+        """Randomly drawn a normal value, and redraw until it's different after discretization by the quantiles
+        1/arity, 2/arity, ..., (arity-1)/arity.
+        """
+        w = v
+        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization([v], arity):
+            w = self.random_state.normal(0., 1.)
+        return w
+        
+    def doerr_discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         """Mutation as in the fast 1+1-ES, Doerr et al. The exponent is 1.5.
         """
         dimension = len(parent)
         if dimension < 5:
             return self.discrete_mutation(parent)
-        return self.doubledoerr_discrete_mutation(parent, max_ratio=.5)
+        return self.doubledoerr_discrete_mutation(parent, max_ratio=.5, arity=arity)
 
-    def doubledoerr_discrete_mutation(self, parent: tp.ArrayLike, max_ratio: float = 1.) -> tp.ArrayLike:
+    def doubledoerr_discrete_mutation(self, parent: tp.ArrayLike, max_ratio: float = 1., arity: int = 2) -> tp.ArrayLike:
         """Doerr's recommendation above can mutate up to half variables
         in average.
         In our high-arity context, we might need more than that.
@@ -43,22 +52,22 @@ class Mutator:
         p = 1. / np.arange(1, max_mutations)**1.5
         p /= np.sum(p)
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
-        return self.portfolio_discrete_mutation(parent, u=u)
+        return self.portfolio_discrete_mutation(parent, intensity=u, arity=arity)
 
-    def portfolio_discrete_mutation(self, parent: tp.ArrayLike, u: tp.Optional[int] = None) -> tp.ArrayLike:
+    def portfolio_discrete_mutation(self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2) -> tp.ArrayLike:
         """Mutation discussed in
         https://arxiv.org/pdf/1606.05551v1.pdf
         We mutate a randomly drawn number of variables in average.
         """
         dimension = len(parent)
-        if u is None:
-            u = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
+        if intensity is None:
+            intensity = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
         if dimension == 1:  # corner case.
             return self.random_state.normal(0., 1., size=1)  # type: ignore
         boolean_vector = [True for _ in parent]
         while all(boolean_vector) and dimension != 1:
-            boolean_vector = [self.random_state.rand() > (float(u) / dimension) for _ in parent]
-        return [s if b else self.random_state.normal(0., 1.) for (b, s) in zip(boolean_vector, parent)]
+            boolean_vector = [self.random_state.rand() > (float(intensity) / dimension) for _ in parent]
+        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def coordinatewise_mutation(self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int) -> tp.ArrayLike:
         dimension = len(parent)
@@ -70,12 +79,12 @@ class Mutator:
         return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
                                                                 in zip(boolean_vector, discrete_data, velocity)])
     
-    def discrete_mutation(self, parent: tp.ArrayLike) -> tp.ArrayLike:
+    def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         dimension = len(parent)
         boolean_vector = [True for _ in parent]
         while all(boolean_vector):
             boolean_vector = [self.random_state.rand() > (1. / dimension) for _ in parent]
-        return [s if b else self.random_state.normal(0., 1.) for (b, s) in zip(boolean_vector, parent)]
+        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike) -> tp.ArrayLike:
         mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
