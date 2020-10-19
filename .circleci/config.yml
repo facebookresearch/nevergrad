@@ -123,12 +123,11 @@ jobs:
           name: Build docs
           command: |
             . venv/bin/activate
-            echo "This is on $CIRCLE_REPOSITORY_URL."
             if [[ -z "$CIRCLE_REPOSITORY_URL" ]]; then
                 echo "CIRCLE_REPOSITORY_URL must be provided in environment" 1>&2
                 exit 1
             fi
-            echo "This is $ORGNAME github organization."
+            echo "This is on $CIRCLE_REPOSITORY_URL."
             cd docs/
             make html
             make linkcheck
