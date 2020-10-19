@@ -252,7 +252,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
                 instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
-                for discrete_func in ["onemax", "leadingones", "jump"]:
+                for name in ["onemax", "leadingones", "jump"]:
                     discrete_func = corefuncs.DiscreteFunction(name, arity)
                     dfunc = ExperimentFunction(discrete_func, instrum)
                     dfunc.add_descriptors(arity=arity)
