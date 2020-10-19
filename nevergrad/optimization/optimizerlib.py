@@ -45,6 +45,14 @@ class _OnePlusOne(base.Optimizer):
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
+    
+    Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
+    discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
+    
+    Discrete is the most classical discrete mutation operator,
+    DoubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
+    DiscreteBSO corresponds to a decreasing schedule of mutation rate.
+    Adaptive and Doerr correspond to various self-adaptive mutation rates.
     """
 
     def __init__(
@@ -218,7 +226,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
-        - `"lengler"`
+        - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
     crossover: bool
         whether to add a genetic crossover step every other iteration.
 
@@ -245,6 +253,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name("DiscreteLenglerOnePlusOne", register=True)
+
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
