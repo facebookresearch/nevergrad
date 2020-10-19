@@ -194,7 +194,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         exponent = self._constraint_penalty_exponent
         return self._constraint_penalization * (exponent ** (num_ask / np.sqrt(budget))) * sum(_float_penalty(func(val)) for func in candidate._constraint_checkers)
 
-    def set_constraints_management(self, max_constraints_trials: tp.Optional[int] = None,
+    def _set_constraints_management(self, max_constraints_trials: tp.Optional[int] = None,
             constraint_penalization: tp.Optional[float] = None, constraint_penalty_exponent: tp.Optional[float] = None,
             penalize_cheap_violations: tp.Optional[bool] = None, memorize_constraint_failures: tp.Optional[bool] = None):
         """Try max_constraints_trials random explorations for satisfying constraints.
