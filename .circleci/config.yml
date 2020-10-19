@@ -198,7 +198,7 @@ jobs:
           name: Deploy docs to gh-pages branch
           command: |
             echo "This is on $CIRCLE_REPOSITORY_URL."
-            if [[ "$CIRCLE_REPOSITORY_URL" == *"/facebookresearch/"* ]]; then
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
               echo "Deploying"
               gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
             fi
@@ -266,7 +266,7 @@ jobs:
           name: upload to pypi
           command: |
             echo "This is on $CIRCLE_REPOSITORY_URL."
-            if [[ "$CIRCLE_REPOSITORY_URL" == *"/facebookresearch/"* ]]; then
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
               echo "Deploying"
               . venv/bin/activate
               du -h nevergrad-build/dist/*
@@ -295,11 +295,11 @@ workflows:
       - docs-deploy:
           requires:
             - install
-          # filters:
-          #   branches:
-          #     only: master
-          #   tags:
-          #     only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+          filters:
+            branches:
+              only: master
+            tags:
+              only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
       - pypi-deploy:
           requires:
             - install
