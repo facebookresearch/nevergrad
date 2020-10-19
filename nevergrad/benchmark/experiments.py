@@ -229,8 +229,8 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 else:
                     assert instrum_str == "Unordered"
                     instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
-                for discrete_func in [onemax, leadingones, jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum)
+                for name in ["onemax", "leadingones", "jump"]:
+                    dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum)
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
