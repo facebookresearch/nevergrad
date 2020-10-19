@@ -216,9 +216,6 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            onemax = corefuncs.DiscreteFunction("onemax", arity)
-            leadingones = corefuncs.DiscreteFunction("leadingones", arity)
-            jump = corefuncs.DiscreteFunction("jump", arity)
             for instrum_str in ["Unordered", "Softmax"]:
                 if instrum_str == "Softmax":
                     instrum = ng.p.Choice(range(arity), repetitions=nv)
