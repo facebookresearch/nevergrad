@@ -45,7 +45,11 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """To be raised by optimizers which do not support the tell_not_asked interface.
     """
 
-
+# Converts constraint outptus into float penalties.
+def _float_penalty(x: tp.Union[bool, float]) -> float:
+    """Unifies penalties as float (bool=False becomes 1)."""
+    return 1 if x is False else 0 if x is True else -x if x < 0 else 0
+    
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
@@ -81,6 +85,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
+
+    
+    
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
@@ -170,10 +177,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         (or were suggested).
         """
         return self._num_tell_not_asked
-
-    def _float_penalty(x: tp.Union[bool, float]) -> float:
-        """Unifies penalties as float (bool=False becomes 1)."""
-        return 1 if x is False else 0 if x is True else -x if x < 0 else 0
         
     def penalty_(self, candidate: p.Parameter):
 
