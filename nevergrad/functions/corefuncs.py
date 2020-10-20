@@ -50,7 +50,7 @@ class DiscreteFunction:
     def leadingones(self, x: tp.ArrayLike) -> float:
         diff = np.round(x) - (np.arange(len(x)) % self._arity)
         nonzeros = np.nonzero(diff)[0]
-        return len(x) - nonzeros[0] if nonzeros.size else 0
+        return float(len(x) - nonzeros[0] if nonzeros.size else 0)
         # For the record: (TODO: remove)
         # for i, x_ in enumerate(x):
         #     if int(round(x_)) != i % self._arity:
