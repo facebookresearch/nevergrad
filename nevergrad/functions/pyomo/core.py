@@ -133,7 +133,7 @@ class Pyomo(base.ExperimentFunction):
 
         self._value_assignment_code_obj = ""
 
-        instru = p.Instrumentation(**instru_params)
+        instru = p.Instrumentation(**instru_params).set_name("")
         for c_idx in range(0, len(self.all_constraints)):
             instru.register_cheap_constraint(partial(self._pyomo_constraint_wrapper, c_idx))
         super().__init__(function=partial(self._pyomo_obj_function_wrapper, 0), parametrization=instru)  # Single objective
@@ -144,21 +144,18 @@ class Pyomo(base.ExperimentFunction):
         self.register_initialization(name=exp_tag, model=self._model_instance)
         self._descriptors.update(name=exp_tag)
 
-
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
         if self._value_assignment_code_obj == "":
             code_str = ""
             for k in k_model_variables:
                 code_str += f"self._model_instance.{k} = k_model_variables['{k}']\n"
             self._value_assignment_code_obj = compile(code_str, "<string>", "exec")
-        #TODO find a way to avoid exec
+        # TODO find a way to avoid exec
         exec(self._value_assignment_code_obj)  # pylint: disable=exec-used
-
 
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         self._pyomo_value_assignment(k_model_variables)
         return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
-
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
         k_model_variables = instru[1]

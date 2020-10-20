@@ -143,7 +143,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
             for name in ["onemax", "leadingones", "jump"]:
                 dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum)
                 dfunc.add_descriptors(arity=arity)
@@ -217,7 +217,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax"]:
                 if instrum_str == "Softmax":
-                    instrum = ng.p.Choice(range(arity), repetitions=nv)
+                    instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
                     # Equivalent to, but much faster than, the following:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
 #                 else:
@@ -227,7 +227,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
                 else:
                     assert instrum_str == "Unordered"
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
                 for name in ["onemax", "leadingones", "jump"]:
                     dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum)
                     dfunc.add_descriptors(arity=arity)
@@ -250,7 +250,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
                 for name in ["onemax", "leadingones", "jump"]:
                     dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum)
                     dfunc.add_descriptors(arity=arity)
