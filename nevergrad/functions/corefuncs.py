@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 from math import exp, sqrt, tanh
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.common.decorators import Registry
 
 
@@ -14,7 +14,7 @@ registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 class DiscreteFunction:
 
-    def __init__(self, name: str, arity: int=2):
+    def __init__(self, name: str, arity: int = 2) -> None:
         """onemax(x) is the most classical case of discrete functions, adapted to minimization.
 
         It is originally designed for lists of bits. It just counts the number of 1,
@@ -31,40 +31,39 @@ class DiscreteFunction:
 
         The principle of a jump function is that local descent does not succeed.
         Jumps are necessary.
-        """
-        self.name = name
-        self.arity = arity
-    
-    def __call__(self, x: tp.List[int]) -> float:
+        """  # TODO update to explain arities and other than leadingones + the examples are actually wrong
+        self._arity = arity
+        self._func = dict(onemax=self.onemax, leadingones=self.leadingones, jump=self.jump)[name]
 
-        arity = self.arity
+    def __call__(self, x: tp.ArrayLike) -> float:
+        return self._func(x)
 
-        if self.name == "onemax":
-            result = 0
-            for i, x_ in enumerate(x):
-                result += 1 if (x_ == round(i % arity)) else 0
-            return len(x) - result
+    def onemax(self, x: tp.ArrayLike) -> float:
+        diff = np.round(x) - (np.arange(len(x)) % self._arity)
+        return float(np.sum(diff != 0))
+        # For the record: (TODO: remove)
+        # result = 0
+        # for i, x_ in enumerate(x):
+        #     result += 1 if (x_ == round(i % self._arity)) else 0
+        #     return len(x) - result
 
-        if self.name == "leadingones":
-            for i, x_ in enumerate(x):
-                if int(round(x_)) != i % arity:
-                    return len(x) - i
-            return 0
+    def leadingones(self, x: tp.ArrayLike) -> float:
+        diff = np.round(x) - (np.arange(len(x)) % self._arity)
+        nonzeros = np.nonzero(diff)[0]
+        return float(len(x) - nonzeros[0] if nonzeros.size else 0)
+        # For the record: (TODO: remove)
+        # for i, x_ in enumerate(x):
+        #     if int(round(x_)) != i % self._arity:
+        #         return len(x) - i
+        # return 0
 
-        if self.name == "jump":
-            n = len(x)
-            m = n // 4
-            o = n - onemax(x)
-            if o == n or o <= n - m:
-                return n - m - o
-            return o  # Deceptive part.
-        assert False, f"Unknown function type {self.name}."
-
-
-onemax = DiscreteFunction("onemax")
-leadingones = DiscreteFunction("leadingones")
-jump = DiscreteFunction("jump")
-
+    def jump(self, x: tp.ArrayLike) -> float:
+        n = len(x)
+        m = n // 4
+        o = n - self.onemax(x)
+        if o == n or o <= n - m:
+            return n - m - o
+        return o  # Deceptive part.
 
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
