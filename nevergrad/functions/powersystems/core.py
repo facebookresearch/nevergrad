@@ -112,7 +112,7 @@ class PowerSystem(ExperimentFunction):
         for _ in range(num_dams):
             dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
         # dimension = int(sum([a.dimension for a in dam_agents]))
-        parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in dam_agents])
+        parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in dam_agents]).set_name("")
         super().__init__(self._simulate_power_system, parameter)
         self.parametrization.descriptors.deterministic_function = False
         self.register_initialization(**params)
