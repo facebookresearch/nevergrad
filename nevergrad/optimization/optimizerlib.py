@@ -1634,7 +1634,7 @@ class HyperOpt(base.Optimizer):
             spec = hyperopt.base.spec_from_misc(new_trial["misc"])
             spec = {k: v.item() for k, v in spec.items()}
             config = hyperopt.space_eval(self.space, spec)
-            candidate.value = p.Instrumentation(**config["args"], **config["kwargs"]).value
+            candidate.value = p.Instrumentation(*config["args"], **config["kwargs"]).value
 
         candidate._meta["trial_id"] = new_trial["tid"]
         return candidate
