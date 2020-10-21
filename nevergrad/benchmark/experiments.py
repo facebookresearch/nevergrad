@@ -934,7 +934,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["OnePlusOne","NGOpt","NGOptRL","CMA","DE","PSO"]
     if default_optims is not None:
         optims = default_optims
-    seq = np.arrange(0,1601,20)
+    seq = np.arange(0,1601,20)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
