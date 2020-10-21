@@ -52,7 +52,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
 
     # First, a few functions with constraints.
     optims = ["Shiwa", "DE", "DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "CMA", "MetaRecentering",
-              "DoubleFastGADiscreteOnePlusOne", "PSO", "BO", "MetaTuneRecentering"]
+              "DoubleFastGADiscreteOnePlusOne", "PSO", "BO", "MetaTuneRecentering", "HyperOpt"]
     if default_optims is not None:
         optims = default_optims
     for dimension in [None, 1, 2, 3]:
