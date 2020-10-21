@@ -7,9 +7,11 @@ import logging
 from collections import deque
 import warnings
 import cma
+import hyperopt
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
+from hyperopt import hp, Trials, Domain, tpe
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
@@ -1532,6 +1534,138 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
+
+
+@registry.register
+class HyperOpt(base.Optimizer):
+    # pylint: disable=too-many-instance-attributes
+    """Hyperopt: Distributed Asynchronous Hyper-parameter Optimization.
+    This class is a wrapper over the `hyperopt <https://github.com/hyperopt/hyperopt>` package.
+
+    Parameters
+    ----------
+    parametrization: int or Parameter
+        Parametrization object
+    budget: int
+        Number of iterations
+    num_workers: int
+        Number of workers
+    prior_weight: float (default 1.0)
+        Smoothing factor to avoid having zero probabilities
+    n_startup_jobs: int (default 20)
+        Number of random uniform suggestions at initialization
+    n_EI_candidates: int (default 24)
+        Number of generated candidates during EI maximization
+    gamma: float (default 0.25)
+        Threshold to split between l(x) and g(x), see eq. 2 in
+        https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
+    verbose: bool (default False)
+        Hyperopt algorithm verbosity
+
+    Note
+    ----
+    HyperOpt is described in Bergstra, James S., et al.
+    "Algorithms for hyper-parameter optimization."
+    Advances in neural information processing systems. 2011.
+    """
+    no_parallelization = True
+
+    def __init__(self, parametrization: IntOrParameter,
+                 budget: tp.Optional[int] = None,
+                 num_workers: int = 1,
+                 *,
+                 prior_weight=1.0,
+                 n_startup_jobs=20,
+                 n_EI_candidates=24,
+                 gamma=0.25,
+                 verbose=False) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        try:
+            # try to convert parametrization to hyperopt search space
+            if not isinstance(parametrization, p.Instrumentation): raise NotImplementedError
+            self.space = {}
+            self.space["args"] = {str(param_name): self.get_search_space(param_name, param)
+                          for param_name, param in parametrization[0]._content.items()}
+            self.space["kwargs"] = {str(param_name): self.get_search_space(param_name, param)
+                          for param_name, param in parametrization[1]._content.items()}
+        except NotImplementedError:
+            self._transform = transforms.ArctanBound(0, 1)
+            self.space = {f"x_{i}": hp.uniform(f"x_{i}", 0, 1) for i in range(self.dimension)}
+
+        self.trials = Trials()
+        self.domain = Domain(fn=None, expr=self.space, pass_expr_memo_ctrl=False)
+        self.tpe_args = {
+            "prior_weight": prior_weight,
+            "n_startup_jobs": n_startup_jobs,
+            "n_EI_candidates": n_EI_candidates,
+            "gamma": gamma,
+            "verbose": verbose
+        }
+
+    def get_search_space(self, param_name, param):
+        if isinstance(param, p.Choice):
+            return hp.choice(param_name, list(param.choices.value))
+        elif isinstance(param, p.Log):
+            return hp.loguniform(param_name, np.log(param.bounds[0][0]), np.log(param.bounds[1][0]))
+        elif isinstance(param, p.Scalar):
+            if param.integer:
+                return hp.randint(param_name, int(param.bounds[0][0]), int(param.bounds[1][0]))
+            else:
+                return hp.uniform(param_name, param.bounds[0][0], param.bounds[1][0])
+        elif isinstance(param, p.Constant):
+            return hp.choice(param_name, [param.value])
+
+        raise NotImplementedError
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # Inspired from FMinIter class (hyperopt)
+        next_id = self.trials.new_trial_ids(1)
+        new_trial = tpe.suggest(next_id, self.domain, self.trials,
+                                self._rng.randint(2 ** 31 - 1), **self.tpe_args)[0]
+        self.trials.insert_trial_doc(new_trial)
+        self.trials.refresh()
+
+        candidate = self.parametrization.spawn_child()
+        if hasattr(self, "_transform"):
+            data = np.array([new_trial["misc"]["vals"][f"x_{i}"][0] for i in range(self.dimension)], copy=False)
+            data = self._transform.backward(data)
+            candidate.set_standardized_data(data)
+        else:
+            spec = hyperopt.base.spec_from_misc(new_trial["misc"])
+            spec = {k: v.item() for k, v in spec.items()}
+            config = hyperopt.space_eval(self.space, spec)
+            candidate.value = p.Instrumentation(**config["args"], **config["kwargs"]).value
+
+        candidate._meta["trial_id"] = new_trial["tid"]
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
+        result = {"loss": loss, "status": "ok"}
+        if "trial_id" in candidate._meta:
+            tid = candidate._meta["trial_id"]
+            assert self.trials._dynamic_trials[tid]["state"] == hyperopt.JOB_STATE_NEW
+        else:
+            # Tell not asked
+            next_id = self.trials.new_trial_ids(1)
+            new_trial = hyperopt.rand.suggest(next_id, self.domain, self.trials, self._rng.randint(2 ** 31 - 1))
+            self.trials.insert_trial_docs(new_trial)
+            self.trials.refresh()
+            if hasattr(self, "_transform"):
+                data = candidate.get_standardized_data(reference=self.parametrization)
+                data = self._transform.forward(data)
+                new_trial[0]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
+            else:
+                new_trial[0]["misc"]["vals"] = {k: [v] for k, v in candidate.value[1].items()}
+
+            tid = next_id[0]
+
+        now = hyperopt.utils.coarse_utcnow()
+        self.trials._dynamic_trials[tid]["book_time"] = now
+        self.trials._dynamic_trials[tid]["refresh_time"] = now
+        self.trials._dynamic_trials[tid]["state"] = hyperopt.JOB_STATE_DONE
+        self.trials._dynamic_trials[tid]["result"] = result
+        self.trials._dynamic_trials[tid]["refresh_time"] = hyperopt.utils.coarse_utcnow()
+        self.trials.refresh()
 
 
 class _Chain(base.Optimizer):
