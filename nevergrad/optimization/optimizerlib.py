@@ -1567,7 +1567,6 @@ class HyperOpt(base.Optimizer):
     HyperOpt is described in Bergstra, James S., et al.
     "Algorithms for hyper-parameter optimization."
     Advances in neural information processing systems. 2011
-    https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
     """
     no_parallelization = True
 
