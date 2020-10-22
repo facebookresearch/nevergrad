@@ -1584,10 +1584,10 @@ class HyperOpt(base.Optimizer):
             # try to convert parametrization to hyperopt search space
             if not isinstance(parametrization, p.Instrumentation): raise NotImplementedError
             self.space = {}
-            self.space["args"] = {str(param_name): self.get_search_space(param_name, param)
-                          for param_name, param in parametrization[0]._content.items()}
-            self.space["kwargs"] = {str(param_name): self.get_search_space(param_name, param)
-                          for param_name, param in parametrization[1]._content.items()}
+            self.space["args"] = {str(idx_param): self.get_search_space(str(idx_param), parametrization[0][idx_param])
+                          for idx_param in range(len(parametrization[0].value))}
+            self.space["kwargs"] = {param_name: self.get_search_space(param_name, parametrization[1][param_name])
+                          for param_name in parametrization[1].value.keys()}
         except NotImplementedError:
             self._transform = transforms.ArctanBound(0, 1)
             self.space = {f"x_{i}": hp.uniform(f"x_{i}", 0, 1) for i in range(self.dimension)}
@@ -1614,7 +1614,6 @@ class HyperOpt(base.Optimizer):
                 return hp.uniform(param_name, param.bounds[0][0], param.bounds[1][0])
         elif isinstance(param, p.Constant):
             return hp.choice(param_name, [param.value])
-
         raise NotImplementedError
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1634,7 +1633,8 @@ class HyperOpt(base.Optimizer):
             spec = hyperopt.base.spec_from_misc(new_trial["misc"])
             spec = {k: v.item() for k, v in spec.items()}
             config = hyperopt.space_eval(self.space, spec)
-            candidate.value = p.Instrumentation(**config["args"], **config["kwargs"]).value
+            config["args"] = [config["args"][str(i)] for i in range(len(config["args"]))]
+            candidate.value = p.Instrumentation(*config["args"], **config["kwargs"]).value
 
         candidate._meta["trial_id"] = new_trial["tid"]
         return candidate
@@ -1655,7 +1655,10 @@ class HyperOpt(base.Optimizer):
                 data = self._transform.forward(data)
                 new_trial[0]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
             else:
-                new_trial[0]["misc"]["vals"] = {k: [v] for k, v in candidate.value[1].items()}
+                new_trial[0]["misc"]["vals"] = {
+                        "args": {str(idx): [v] for idx, v in enumerate(candidate.value[0])},
+                        "kwargs": {k: [v] for k, v in candidate.value[1].items()}
+                }
 
             tid = next_id[0]
 

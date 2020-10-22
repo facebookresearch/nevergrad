@@ -484,6 +484,41 @@ def test_bo_ordering() -> None:
     optim.provide_recommendation()
 
 
+def test_hyperopt_parametrization() -> None:
+    list_simple_parametrizations = [
+        ng.p.Choice(list(range(10))),
+        ng.p.Scalar(lower=0, upper=1),
+        ng.p.Scalar(lower=0, upper=1).set_integer_casting(),
+        ng.p.Log(lower=1e-3, upper=1e3),
+        ng.p.Array(init=np.zeros(10))
+    ]
+    for parametrization in list_simple_parametrizations:
+        optim = registry["HyperOpt"](parametrization=parametrization, budget=2)
+        cand = optim.ask()
+        optim.tell(cand, 0)
+        assert hasattr(optim, "_transform")
+
+    list_complex_parametrizations = [
+        # Hyperopt do not support array
+        ng.p.Instrumentation(*list_simple_parametrizations[:-1]),
+        ng.p.Instrumentation(a=list_simple_parametrizations[0],
+                             b=list_simple_parametrizations[1],
+                             c=list_simple_parametrizations[2],
+                             d=list_simple_parametrizations[3]),
+        ng.p.Instrumentation(list_simple_parametrizations[0],
+                             a=list_simple_parametrizations[1]),
+        ng.p.Instrumentation(list_simple_parametrizations[0],
+                             a=list_simple_parametrizations[1])
+    ]
+    for parametrization in list_complex_parametrizations:
+        optim = registry["HyperOpt"](parametrization=parametrization, budget=2)
+        cand = optim.ask()
+        optim.tell(cand, 0)
+        assert not hasattr(optim, "_transform")
+        assert len(parametrization.args) == len(cand.value[0])
+        assert len(parametrization.kwargs) == len(cand.value[1])
+
+
 @pytest.mark.parametrize(  # type: ignore
     "name,expected", [("NGOpt2", ["TBPSA", "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne"])]
 )
