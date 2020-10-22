@@ -7,11 +7,11 @@ import logging
 from collections import deque
 import warnings
 import cma
-import hyperopt
+import hyperopt # type: ignore
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
-from hyperopt import hp, Trials, Domain, tpe
+from hyperopt import hp, Trials, Domain, tpe # type: ignore
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
@@ -1540,7 +1540,7 @@ BO = ParametrizedBO().set_name("BO", register=True)
 class HyperOpt(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
     """Hyperopt: Distributed Asynchronous Hyper-parameter Optimization.
-    This class is a wrapper over the `hyperopt <https://github.com/hyperopt/hyperopt>` package.
+    This class is a wrapper over the `hyperopt <https://github.com/hyperopt/hyperopt>`_ package.
 
     Parameters
     ----------
@@ -1558,7 +1558,7 @@ class HyperOpt(base.Optimizer):
         Number of generated candidates during EI maximization
     gamma: float (default 0.25)
         Threshold to split between l(x) and g(x), see eq. 2 in
-        https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
+
     verbose: bool (default False)
         Hyperopt algorithm verbosity
 
@@ -1566,7 +1566,8 @@ class HyperOpt(base.Optimizer):
     ----
     HyperOpt is described in Bergstra, James S., et al.
     "Algorithms for hyper-parameter optimization."
-    Advances in neural information processing systems. 2011.
+    Advances in neural information processing systems. 2011
+    https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
     """
     no_parallelization = True
 
@@ -1584,9 +1585,9 @@ class HyperOpt(base.Optimizer):
             # try to convert parametrization to hyperopt search space
             if not isinstance(parametrization, p.Instrumentation): raise NotImplementedError
             self.space = {}
-            self.space["args"] = {str(idx_param): self.get_search_space(str(idx_param), parametrization[0][idx_param])
+            self.space["args"] = {str(idx_param): self.get_search_space(str(idx_param), parametrization[0][idx_param]) # type: ignore
                           for idx_param in range(len(parametrization[0].value))}
-            self.space["kwargs"] = {param_name: self.get_search_space(param_name, parametrization[1][param_name])
+            self.space["kwargs"] = {param_name: self.get_search_space(param_name, parametrization[1][param_name]) # type: ignore
                           for param_name in parametrization[1].value.keys()}
         except NotImplementedError:
             self._transform = transforms.ArctanBound(0, 1)
