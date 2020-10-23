@@ -1568,7 +1568,7 @@ class HyperOpt(base.Optimizer):
     "Algorithms for hyper-parameter optimization."
     Advances in neural information processing systems. 2011
     """
-    no_parallelization = True
+    no_parallelization = False
 
     def __init__(self, parametrization: IntOrParameter,
                  budget: tp.Optional[int] = None,
@@ -1583,11 +1583,7 @@ class HyperOpt(base.Optimizer):
         try:
             # try to convert parametrization to hyperopt search space
             if not isinstance(parametrization, p.Instrumentation): raise NotImplementedError
-            self.space = {}
-            self.space["args"] = {str(idx_param): self.get_search_space(str(idx_param), parametrization[0][idx_param]) # type: ignore
-                          for idx_param in range(len(parametrization[0].value))}
-            self.space["kwargs"] = {param_name: self.get_search_space(param_name, parametrization[1][param_name]) # type: ignore
-                          for param_name in parametrization[1].value.keys()}
+            self.space = self._get_search_space(parametrization.name, parametrization)
         except NotImplementedError:
             self._transform = transforms.ArctanBound(0, 1)
             self.space = {f"x_{i}": hp.uniform(f"x_{i}", 0, 1) for i in range(self.dimension)}
@@ -1602,18 +1598,40 @@ class HyperOpt(base.Optimizer):
             "verbose": verbose
         }
 
-    def get_search_space(self, param_name, param):
-        if isinstance(param, p.Choice):
+    def _get_search_space(self, param_name, param):
+        if isinstance(param, p.Instrumentation):
+            space = {}
+            space["args"] = {
+                    str(idx_param): self._get_search_space(str(idx_param), param[0][idx_param]) # type: ignore
+                    for idx_param in range(len(param[0].value))
+            }
+            space["kwargs"] = {
+                    param_name: self._get_search_space(param_name, param[1][param_name]) # type: ignore
+                    for param_name in param[1].value.keys()
+            }
+            return space
+        elif isinstance(param, (p.Log, p.Scalar)):
+            if (param.bounds[0][0] is None) or (param.bounds[1][0] is None):
+                raise ValueError(f"Scalar {param_name} not bounded.")
+            elif isinstance(param, p.Log):
+                return hp.loguniform(label=param_name,
+                                     low=np.log(param.bounds[0][0]),
+                                     high=np.log(param.bounds[1][0]))
+            elif isinstance(param, p.Scalar):
+                if param.integer:
+                    return hp.randint(label=param_name,
+                                      low=int(param.bounds[0][0]),
+                                      high=int(param.bounds[1][0]))
+                else:
+                    return hp.uniform(label=param_name,
+                                      low=param.bounds[0][0],
+                                      high=param.bounds[1][0])
+        elif isinstance(param, p.Choice):
             return hp.choice(param_name, list(param.choices.value))
-        elif isinstance(param, p.Log):
-            return hp.loguniform(param_name, np.log(param.bounds[0][0]), np.log(param.bounds[1][0]))
-        elif isinstance(param, p.Scalar):
-            if param.integer:
-                return hp.randint(param_name, int(param.bounds[0][0]), int(param.bounds[1][0]))
-            else:
-                return hp.uniform(param_name, param.bounds[0][0], param.bounds[1][0])
         elif isinstance(param, p.Constant):
             return hp.choice(param_name, [param.value])
+
+        # Hyperopt do not support array
         raise NotImplementedError
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1647,20 +1665,23 @@ class HyperOpt(base.Optimizer):
         else:
             # Tell not asked
             next_id = self.trials.new_trial_ids(1)
-            new_trial = hyperopt.rand.suggest(next_id, self.domain, self.trials, self._rng.randint(2 ** 31 - 1))
+            new_trial = hyperopt.rand.suggest(next_id,
+                                              self.domain,
+                                              self.trials,
+                                              self._rng.randint(2 ** 31 - 1))
             self.trials.insert_trial_docs(new_trial)
             self.trials.refresh()
+            tid = next_id[0]
+
             if hasattr(self, "_transform"):
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 data = self._transform.forward(data)
-                new_trial[0]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
+                self.trials._dynamic_trials[tid]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
             else:
-                new_trial[0]["misc"]["vals"] = {
+                self.trials._dynamic_trials[tid]["misc"]["vals"] = {
                         "args": {str(idx): [v] for idx, v in enumerate(candidate.value[0])},
                         "kwargs": {k: [v] for k, v in candidate.value[1].items()}
                 }
-
-            tid = next_id[0]
 
         now = hyperopt.utils.coarse_utcnow()
         self.trials._dynamic_trials[tid]["book_time"] = now
