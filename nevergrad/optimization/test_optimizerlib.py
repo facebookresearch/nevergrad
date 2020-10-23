@@ -521,7 +521,7 @@ def test_hyperopt() -> None:
         assert not hasattr(optim, "_transform")
 
     # Test parallelization
-    for parametrization in [4, list_complex_parametrizations[-1]]:
+    for parametrization in [list_simple_parametrizations[0], list_complex_parametrizations[-1]]:
         opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)
         for k in range(40):
             cand = opt.ask()
