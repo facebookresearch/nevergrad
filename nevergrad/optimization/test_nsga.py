@@ -13,7 +13,7 @@ def test_doc_multiobjective() -> None:
     f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x - 1)**2)], upper_bounds=[2.5, 2.5])
     print(f(np.array([1.0, 2.0])))
 
-    optimizer = ng.optimizers.NSGAII(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
+    optimizer = ng.optimizers.NSGAIIES(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
     recommendation = optimizer.minimize(f)
 
     # The function embeds its Pareto-front:
@@ -32,7 +32,7 @@ def test_doc_multiobjective() -> None:
 
     # We can also run without upper_bounds: they are then computed automatically using "_auto_bound".
     f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x - 1)**2)])
-    optimizer = ng.optimizers.NSGAII(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
+    optimizer = ng.optimizers.NSGAIIES(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
     optimizer.minimize(f)
     assert len(f.pareto_front()) > 1
 

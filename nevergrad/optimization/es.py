@@ -33,11 +33,12 @@ class _EvolutionStrategy(base.Optimizer):
         self._waiting: tp.List[p.Parameter] = []
         # configuration
         self._config = EvolutionStrategy() if config is None else config
-        self._ranker = None
+        self._ranker, self._density_estimator = None, None
         if self._config.selection == "simple":
             self._internal_tell_es = self._simple_tell_candidate
         elif self._config.selection == "nsga2":
             self._ranker = rankers.FastNonDominatedRanking()
+            self._density_estimator = rankers.CrowdingDistance()
             self._internal_tell_es = self._nsga2_tell_candidate
         else:
             raise NotImplementedError
@@ -95,11 +96,11 @@ class _EvolutionStrategy(base.Optimizer):
     def _nsga2_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss): #tp.FloatLoss?
         uid = candidate.heritage["lineage"]
         #self._uid_queue.tell(uid) #request complete (asked -> told)
-        if candidate.uid not in self._population and len(self._population) < self.max_popsize:
+        if candidate.uid not in self._population and len(self._population) < self._config.popsize:
             self._population[candidate.uid] = candidate
             self._uid_queue.tell(candidate.uid) #next suggested candidate
             return
-        if len(self._waiting) <= self.max_popsize: # number of offsprings and number of parents are equal
+        if len(self._waiting) <= self._config.popsize: # number of offsprings and number of parents are equal
             self._waiting.append(candidate)
             return
         # Select candidates in the next generation
