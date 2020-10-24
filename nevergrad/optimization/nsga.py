@@ -137,6 +137,6 @@ class NondominatedSortingGeneticAlgorithmII(base.ConfiguredOptimizer):
         self.popsize = popsize
         self.scale = scale
 
-NSGAII = NondominatedSortingGeneticAlgorithmII().set_name("NSGAII", register=True)
-LhsNSGAII = NondominatedSortingGeneticAlgorithmII(initialization="LHS").set_name("LhsNSGAII", register=True)
-QrNSGAII = NondominatedSortingGeneticAlgorithmII(initialization="QR").set_name("QrNSGAII", register=True)
+# NSGAII = NondominatedSortingGeneticAlgorithmII().set_name("NSGAII", register=True)
+# LhsNSGAII = NondominatedSortingGeneticAlgorithmII(initialization="LHS").set_name("LhsNSGAII", register=True)
+# QrNSGAII = NondominatedSortingGeneticAlgorithmII(initialization="QR").set_name("QrNSGAII", register=True)

@@ -242,12 +242,12 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
 
-@testing.parametrized(
-    nsgaii=("NSGAII", 10, 10, 30),
-)
-def test_nsga_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
-    optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
-    np.testing.assert_equal(optim.max_popsize, expected)  # type: ignore
+# @testing.parametrized(
+#     nsgaii=("NSGAII", 10, 10, 30),
+# )
+# def test_nsga_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
+#     optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
+#     np.testing.assert_equal(optim.max_popsize, expected)  # type: ignore
 
 
 def test_portfolio_budget() -> None:

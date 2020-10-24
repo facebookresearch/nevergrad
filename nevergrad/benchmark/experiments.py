@@ -1100,7 +1100,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """AR coating. Problems about optical properties of nanolayers."""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
     for budget in [100 * 5 ** k for k in range(3)]:
@@ -1371,7 +1371,7 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
 
     classifier = Resnet50()
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
     for i, (data, target) in enumerate(data_loader):
         if i > 1:
             continue
