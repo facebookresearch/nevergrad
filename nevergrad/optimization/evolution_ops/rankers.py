@@ -155,6 +155,10 @@ class FastNonDominatedRanking:
                     candidates_dominated[c2].append(c1)
                     dominated_by_cnt[c1] += 1
 
+        # Reset rank
+        for _, cand in candidates.items():
+            cand._meta["non_dominated_rank"] = np.Inf
+
         # Formation of front[0], i.e. candidates that do not dominated by others
         front[0] = [c1 for c1 in range(n_cand) if dominated_by_cnt[c1] == 0]
         last_fronts = 0
@@ -174,10 +178,11 @@ class FastNonDominatedRanking:
         count = 0
         for front_i in range(last_fronts):
             count += len(front[front_i])
-            if (k is not None) and (count >= k):
-                ranked_sublists.append([candidates[uids[i]] for i in front[front_i]])
-                break
+            for cand_i in front[front_i]:
+                candidates[uids[cand_i]]._meta["non_dominated_rank"] = front_i
             ranked_sublists.append([candidates[uids[i]] for i in front[front_i]])
+            if (k is not None) and (count >= k):
+                break
 
         return ranked_sublists
         
