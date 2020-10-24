@@ -931,7 +931,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     funcs = [OptimizeMix()]
     seedg = create_seed_generator(seed)
-    optims = ["OnePlusOne","NGOpt","NGOptRL","CMA","DE","PSO"]
+    optims = ["OnePlusOne","NGOpt","CMA","DE","PSO"]
     if default_optims is not None:
         optims = default_optims
     seq = np.arange(0,1601,20)
