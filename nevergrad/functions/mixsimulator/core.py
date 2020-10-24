@@ -16,8 +16,10 @@ class OptimizeMix(ExperimentFunction):
     def __init__(self) -> None:
         mix = MixSimulator()
         mix.set_data_to("Toamasina")
-        #If time == one_week --> dim = 676
-        super().__init__(self._simulate_mix, mix.get_opt_params(676))
+        #If time == one_week --> dim = 672
+        super().__init__(self._simulate_mix, mix.get_opt_params(672))
+        #Rename parametrization
+        super().parametrization.set_name("dim672")
         self.register_initialization()
 
     def _simulate_mix(self, x: np.ndarray) -> float:
