@@ -8,7 +8,7 @@
 import numpy as np
 #from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
-from mixsimulator.MixSimulator import MixSimulator
+from mixsimulator.MixSimulator import MixSimulator  #type: ignore
 
 
 class OptimizeMix(ExperimentFunction):
