@@ -15,6 +15,7 @@ class OptimizeMix(ExperimentFunction):
 
     def __init__(self) -> None:
         mix = MixSimulator()
+        mix.set_data_to("Toamasina")
         #If time == one_week --> dim = 676
         super().__init__(self._simulate_mix, mix.get_opt_params(676))
         self.register_initialization()
