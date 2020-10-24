@@ -30,4 +30,4 @@ class OptimizeMix(ExperimentFunction):
         mix.set_data_to("Toamasina")
         mix.set_penalisation_cost(100)
         mix.set_carbon_cost(10)
-        return mix.loss_func(x)
+        return mix.loss_function(x)
