@@ -11,6 +11,7 @@ import numpy as np
 import typing as tp
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
+from .. import base
 from .mujoco import GenericMujocoEnv
 
 class BaseFunction(ExperimentFunction):
@@ -74,7 +75,7 @@ class BaseFunction(ExperimentFunction):
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
-        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
 
