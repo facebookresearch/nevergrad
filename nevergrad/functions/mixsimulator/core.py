@@ -26,16 +26,13 @@ class OptimizeMix(ExperimentFunction):
                 
     """
     def __init__(self,time: int = 168) -> None:
-        self.__mix = MixSimulator()
-        self.__mix.set_data_to("Toamasina")
-        self.__mix.set_penalisation_cost(100)
-        self.__mix.set_carbon_cost(10)
-        parameters = self.__mix.get_opt_params(time)
+        self._mix = MixSimulator()
+        self._mix.set_data_to("Toamasina")
+        self._mix.set_penalisation_cost(100)
+        self._mix.set_carbon_cost(10)
+        parameters = self._mix.get_opt_params(time)
         parameters.set_name("dims")
-        super().__init__(self._simulate_mix , parameters)
+        super().__init__(self._mix.loss_function, parameters)
         self.register_initialization(time=time)
         self.add_descriptors(time=time)
-
-    def _simulate_mix(self, x: np.ndarray) -> float:
-        return self.__mix.loss_function(x)
     
