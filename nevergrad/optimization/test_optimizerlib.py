@@ -6,6 +6,7 @@
 import re
 import time
 import random
+import inspect
 import logging
 import platform
 import tempfile
@@ -27,6 +28,7 @@ from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
+from .optimizerlib import NGOptBase
 
 
 class Fitness:
@@ -49,6 +51,7 @@ class Fitness:
         return slope, intercept
 
 
+# pylint: disable=too-many-locals
 def check_optimizer(
         optimizer_cls: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]],
         budget: int = 300,
@@ -70,15 +73,17 @@ def check_optimizer(
             warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
             # now optimize :)
             candidate = optimizer.minimize(fitness)
+        raised = False
         if verify_value:
             try:
                 np.testing.assert_array_almost_equal(candidate.args[0], optimum, decimal=1)
             except AssertionError as e:
+                raised = True
                 print(f"Attemp #{k}: failed with best point {tuple(candidate.args[0])}")
                 if k == num_attempts:
                     raise e
-            else:
-                break
+        if not raised:
+            break
     if budget > 100:
         slope, intercept = fitness.get_factors()
         print(f"For your information: slope={slope} and intercept={intercept}")
@@ -128,11 +133,13 @@ def test_optimizers(name: str) -> None:
         assert optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls, "Similar configuration are not equal"
     # some classes of optimizer are eigher slow or not good with small budgets:
     nameparts = ["Many", "chain", "BO", "Discrete"]
-    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in nameparts)
+    is_ngopt = inspect.isclass(optimizer_cls) and issubclass(optimizer_cls, NGOptBase)  # type: ignore
+    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in nameparts) and not is_ngopt
+    budget = 300 if "BO" not in name and not is_ngopt else 4
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
-        check_optimizer(optimizer_cls, budget=300 if "BO" not in name else 4, verify_value=verify)
+        check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
 
 
 class RecommendationKeeper:
