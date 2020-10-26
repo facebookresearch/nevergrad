@@ -25,7 +25,7 @@ class OptimizeMix(ExperimentFunction):
             total time over which it evaluates the mix (must be in hour)
                 
     """
-    def __init__(self,time: int = 168) -> None:
+    def __init__(self, time: int = 168) -> None:
         self._mix = MixSimulator()
         self._mix.set_data_to("Toamasina")
         self._mix.set_penalisation_cost(100)
