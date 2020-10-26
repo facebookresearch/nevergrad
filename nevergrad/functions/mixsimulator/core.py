@@ -5,7 +5,6 @@
 
 # Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
 
-import numpy as np
 from ..base import ExperimentFunction
 from mixsimulator.MixSimulator import MixSimulator  #type: ignore
 
