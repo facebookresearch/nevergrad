@@ -30,7 +30,8 @@ class OptimizeMix(ExperimentFunction):
         parameters = self._parametrization(time = time)
         super().__init__(self._simulate_mix , parameters)
         
-        self.register_initialization()
+        self.register_initialization(time=time)
+        self.add_descriptors(time=time)
 
     def _simulate_mix(self, x: np.ndarray) -> float:
         mix = MixSimulator()
