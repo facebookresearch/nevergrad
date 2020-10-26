@@ -11,6 +11,7 @@ def test_PBO(fid: int) -> None:
     assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
     assert np.isfinite(value)
 
+
 @pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])
 def test_PBO_parameterization(instrumentation) -> None:
     func = core.PBOFunction(1, 0, 16, instrumentation=instrumentation)
