@@ -27,7 +27,7 @@ class OptimizeMix(ExperimentFunction):
     """
     def __init__(self,time: int = 168) -> None:
         
-        parameters = self.parametrization(time = time)
+        parameters = self._parametrization(time = time)
         super().__init__(self._simulate_mix , parameters)
         
         self.register_initialization()
@@ -39,7 +39,7 @@ class OptimizeMix(ExperimentFunction):
         mix.set_carbon_cost(10)
         return mix.loss_function(x)
         
-    def parametrization(self,time : int = 168):
+    def _parametrization(self,time : int = 168):
         mix = MixSimulator()
         mix.set_data_to("Toamasina")
         
