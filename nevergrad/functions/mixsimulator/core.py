@@ -22,30 +22,20 @@ class OptimizeMix(ExperimentFunction):
         Parameters
         ----------
         time: int
-            total time over which it evaluates the mix (must in hour)
+            total time over which it evaluates the mix (must be in hour)
                 
     """
     def __init__(self,time: int = 168) -> None:
-        
-        parameters = self._create_parametrization(time = time)
+        self.__mix = MixSimulator()
+        self.__mix.set_data_to("Toamasina")
+        self.__mix.set_penalisation_cost(100)
+        self.__mix.set_carbon_cost(10)
+        parameters = self.__mix.get_opt_params(time)
+        parameters.set_name("dims")
         super().__init__(self._simulate_mix , parameters)
-        
         self.register_initialization(time=time)
         self.add_descriptors(time=time)
 
     def _simulate_mix(self, x: np.ndarray) -> float:
-        mix = MixSimulator()
-        mix.set_data_to("Toamasina")
-        mix.set_penalisation_cost(100)
-        mix.set_carbon_cost(10)
-        return mix.loss_function(x)
-        
-    def _create_parametrization(self,time : int = 168):
-        mix = MixSimulator()
-        mix.set_data_to("Toamasina")
-        
-        #If time == 168h (one_week) --> dim = 672
-        params = mix.get_opt_params(time)
-        params.set_name("dims")
-        
-        return params
+        return self.__mix.loss_function(x)
+    
