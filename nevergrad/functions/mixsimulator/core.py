@@ -5,8 +5,8 @@
 
 # Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
 
-from ..base import ExperimentFunction
 from mixsimulator.MixSimulator import MixSimulator  #type: ignore
+from ..base import ExperimentFunction
 
 
 class OptimizeMix(ExperimentFunction):
