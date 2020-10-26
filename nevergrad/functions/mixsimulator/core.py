@@ -6,22 +6,29 @@
 # Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
 
 import numpy as np
-#from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 from mixsimulator.MixSimulator import MixSimulator  #type: ignore
 
 
 class OptimizeMix(ExperimentFunction):
-
-    def __init__(self) -> None:
-        mix = MixSimulator()
-        mix.set_data_to("Toamasina")
+    """
+        MixSimulator is an application with an optimization model for calculating 
+        and simulating the least cost of an energy mix under certain constraints.
         
-        #If time == one_week --> dim = 672
-        params_one_week = mix.get_opt_params(672)
-        params_one_week.set_name("dim672")
+        For now, it uses a default dataset (more will be added soon).
         
-        super().__init__(self._simulate_mix,params_one_week)
+        For more information, visit : https://github.com/Foloso/MixSimulator     
+        
+        Parameters
+        ----------
+        time: int
+            total time over which it evaluates the mix (must in hour)
+                
+    """
+    def __init__(self,time: int = 168) -> None:
+        
+        parameters = self.parametrization(time = time)
+        super().__init__(self._simulate_mix , parameters)
         
         self.register_initialization()
 
@@ -31,3 +38,13 @@ class OptimizeMix(ExperimentFunction):
         mix.set_penalisation_cost(100)
         mix.set_carbon_cost(10)
         return mix.loss_function(x)
+        
+    def parametrization(self,time : int = 168):
+        mix = MixSimulator()
+        mix.set_data_to("Toamasina")
+        
+        #If time == 168h (one_week) --> dim = 672
+        params = mix.get_opt_params(time)
+        params.set_name("dims")
+        
+        return params
