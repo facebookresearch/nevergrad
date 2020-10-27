@@ -4,14 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import warnings
 import typing as tp
 import itertools
 import numpy as np
-import torch
-import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
-from torchvision.models import resnet50
 import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
@@ -20,7 +16,6 @@ from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
-from nevergrad.functions import MultiobjectiveFunction
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
@@ -29,6 +24,7 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
@@ -144,7 +140,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 dfunc._descriptors.update(arity=arity)
@@ -152,12 +148,12 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
-    mofuncs: tp.List[PackedFunctions] = []
-
     # The multiobjective case.
+    # TODO the upper bounds are really not well set for this experiment with cigar
+    mofuncs: tp.List[MultiExperiment] = []
     for name1 in ["sphere", "cigar"]:
         for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
+            mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
                                          ArtificialFunction(name2, block_dimension=7)],
                                         upper_bounds=np.array((50., 50.)))]
     for mofunc in mofuncs:
@@ -216,19 +212,21 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            for instrum_str in ["Threshold", "Softmax", "Unordered"]:
+            for instrum_str in ["Unordered", "Softmax"]:
                 if instrum_str == "Softmax":
-                    instrum = ng.p.Choice(range(arity), repetitions=nv)  # type: ignore
+                    instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
                     # Equivalent to, but much faster than, the following:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
-                elif instrum_str == "Threshold":
-                    # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-                    instrum = ng.p.Array(init=(arity // 2) * np.ones((nv,))).set_bounds(0, arity)  # type: ignore
+#                 else:
+#                     assert instrum_str == "Threshold"
+#                     # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
+#                     init = np.random.RandomState(seed=next(seedg)).uniform(-0.5, arity -0.5, size=nv)
+#                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
                 else:
                     assert instrum_str == "Unordered"
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
@@ -249,9 +247,9 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
@@ -922,6 +920,25 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
+@registry.register
+def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MixSimulator of power plants
+    Budget 20, 40, ..., 1600.
+    Sequential or 30 workers."""
+    funcs = [OptimizeMix()]
+    seedg = create_seed_generator(seed)
+    optims = ["OnePlusOne","NGOpt","CMA","DE","PSO"]
+    if default_optims is not None:
+        optims = default_optims
+    seq = np.arange(0,1601,20)
+    for budget in seq:
+        for num_workers in [1, 30]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 @registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -1142,58 +1159,8 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                          seed=next(seedg))  # type: ignore
 
 
-# Intermediate definition for building a multiobjective problem.
-class PackedFunctions(ExperimentFunction):
-
-    def __init__(self, functions: tp.List[ArtificialFunction], upper_bounds: np.ndarray) -> None:
-        self._functions = functions
-        assert len(functions) > 0
-        self._upper_bounds = upper_bounds
-        self.multiobjective = MultiobjectiveFunction(self._mo, upper_bounds)
-        super().__init__(self.multiobjective, self._functions[0].parametrization)
-        self._parametrization.descriptors.not_manyobjective = len(functions) < 4
-        self._parametrization.descriptors.monoobjective = len(functions) == 1
-        # TODO add descriptors?
-
-    def _mo(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
-        return np.array([f(*args, **kwargs) for f in self._functions])
-
-    def copy(self) -> "PackedFunctions":
-        return PackedFunctions([f.copy() for f in self._functions], self._upper_bounds)
-
-
 @registry.register
 def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
-    Dimension 6 and 7.
-    Budget 2000, 2400, 2800, 3200, 3600, 4000.
-    """
-    # hopefully this can be deprecated in favor of the new integrated version
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA", "CMA", "OnePlusOne",
-              "TwoPointsDE"]
-    if default_optims is not None:
-        optims = default_optims
-    mofuncs: tp.List[PackedFunctions] = []
-    for name1 in ["sphere", "cigar"]:
-        for name2 in ["sphere", "cigar", "hm"]:
-            mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=7),
-                                         ArtificialFunction(name2, block_dimension=7)],
-                                        upper_bounds=np.array((50., 50.)))]
-            for name3 in ["sphere", "ellipsoid"]:
-                mofuncs += [PackedFunctions([ArtificialFunction(name1, block_dimension=6),
-                                             ArtificialFunction(name3, block_dimension=6),
-                                             ArtificialFunction(name2, block_dimension=6)],
-                                            upper_bounds=np.array((100, 100, 1000.)))]
-    for mofunc in mofuncs:
-        for optim in optims:
-            for budget in list(range(2000, 4001, 400)):
-                for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
-def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
     Dimension 6 and 7.
     Budget 100 to 3200
@@ -1216,32 +1183,6 @@ def new_multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Exp
     for mofunc in mofuncs:
         for optim in optims:
             for budget in [100, 200, 400, 800, 1600, 3200]:
-                for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
-def manyobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimization of 6 objective functions in Cigar, Rastrigin, Rosenbrock, Sphere, Ellipsoid, Cigar, Hm.
-    Dimension 6 and 7.
-    Sequential or 100-parallel.
-    Budget 2000, 2400, 2800, 3200, 3600, 4000.
-    """
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    optims = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA", "CMA", "OnePlusOne",
-              "TwoPointsDE"]
-    if default_optims is not None:
-        optims = default_optims
-    mofuncs: tp.List[PackedFunctions] = []
-    name_combinations = itertools.product(["sphere", "cigar"], ["sphere", "hm"], ["sphere", "ellipsoid"],
-                                          ["rastrigin", "rosenbrock"], ["hm", "rosenbrock"], ["rastrigin", "cigar"])
-    for names in name_combinations:
-        mofuncs += [PackedFunctions([ArtificialFunction(name, block_dimension=6) for name in names],
-                                    upper_bounds=np.array((100, 100, 1000., 7., 300., 500.)))]
-    for mofunc in mofuncs:
-        for optim in optims:
-            for budget in list(range(100, 5901, 400)):
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
@@ -1332,73 +1273,30 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    class Normalize(nn.Module):
-        def __init__(self, mean, std):
-            super().__init__()
-            self.mean = torch.Tensor(mean)
-            self.std = torch.Tensor(std)
-
-        def forward(self, x):
-            return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
-
-    class Resnet50(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                                  std=[0.229, 0.224, 0.225])
-            self.model = resnet50(pretrained=True)
-
-        def forward(self, x):
-            return self.model(self.norm(x))
-
-    image_size = 224
-    data_folder = "pouet"  # "/datasets01_101/imagenet_full_size/061417/val"
-    if not os.path.exists(data_folder):
-        x, y = torch.zeros(1, 3, 224, 224), 0
-        data_loader = [(x, y)]
-        path_exist = False
-    else:
-        data_loader = torch.utils.data.DataLoader(
-            torchvision.datasets.ImageFolder(data_folder,
-                                             transforms.Compose([
-                                                 transforms.Resize(image_size),
-                                                 transforms.CenterCrop(image_size),
-                                                 transforms.ToTensor()])),
-            batch_size=1,
-            shuffle=True,
-            num_workers=8,
-            pin_memory=True)
-        path_exist = True
-
-    classifier = Resnet50()
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    for i, (data, target) in enumerate(data_loader):
-        if i > 1:
-            continue
-        _, pred = torch.max(classifier(data), axis=1)
-        if pred == target or (not path_exist):
-            func = ImageAdversarial(classifier, image=data[0], label=int(target), targeted=False,
-                                    epsilon=0.05)
-            for budget in [10]:
-                for num_workers in [1]:
-                    for algo in optims:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+    folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
+    if folder is None:
+        warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
+    for func in ImageAdversarial.make_folder_functions(folder=folder):
+        for budget in [10]:
+            for num_workers in [1]:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp
 
 
+@registry.register
 def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
-              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete"]
-
+    dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
     seedg = create_seed_generator(seed)
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
                 func = PBOFunction(fid, iid, dim)
-                for optim in optims:
+                for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
+                              "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
-                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))
+                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore

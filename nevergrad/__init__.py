@@ -13,4 +13,4 @@ from .optimization import callbacks as callbacks
 __all__ = ["optimizers", "families", "callbacks", "p", "typing"]
 
 
-__version__ = "0.4.2.post1"
+__version__ = "0.4.2.post2"
