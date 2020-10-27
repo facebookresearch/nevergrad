@@ -514,7 +514,7 @@ def test_hyperopt(parametrization, has_transform) -> None:
     optim.tell(optim.ask(), 0)
     optim.tell(parametrization.sample(), 0) # Tell not asked
     optim.tell(optim.ask(), 0)
-    assert (optim._transform is not None) == has_transform
+    assert (optim._transform is not None) == has_transform # type: ignore
 
     # Test parallelization
     opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)

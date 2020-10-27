@@ -1720,8 +1720,10 @@ class ParametrizedHyperOpt(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_HyperOpt, locals())
 
-
-HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
+try:
+    HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
+except NameError:
+    pass
 
 
 class _Chain(base.Optimizer):
