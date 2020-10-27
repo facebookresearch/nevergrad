@@ -1540,40 +1540,8 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 BO = ParametrizedBO().set_name("BO", register=True)
 
 
-@registry.register
-class HyperOpt(base.Optimizer):
+class _HyperOpt(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
-    """Hyperopt: Distributed Asynchronous Hyper-parameter Optimization.
-    This class is a wrapper over the `hyperopt <https://github.com/hyperopt/hyperopt>`_ package.
-
-    Parameters
-    ----------
-    parametrization: int or Parameter
-        Parametrization object
-    budget: int
-        Number of iterations
-    num_workers: int
-        Number of workers
-    prior_weight: float (default 1.0)
-        Smoothing factor to avoid having zero probabilities
-    n_startup_jobs: int (default 20)
-        Number of random uniform suggestions at initialization
-    n_EI_candidates: int (default 24)
-        Number of generated candidates during EI maximization
-    gamma: float (default 0.25)
-        Threshold to split between l(x) and g(x), see eq. 2 in
-
-    verbose: bool (default False)
-        Hyperopt algorithm verbosity
-
-    Note
-    ----
-    HyperOpt is described in Bergstra, James S., et al.
-    "Algorithms for hyper-parameter optimization."
-    Advances in neural information processing systems. 2011
-    """
-    no_parallelization = False
-
     def __init__(self, parametrization: IntOrParameter,
                  budget: tp.Optional[int] = None,
                  num_workers: int = 1,
@@ -1704,6 +1672,56 @@ class HyperOpt(base.Optimizer):
         self.trials._dynamic_trials[tid]["result"] = result
         self.trials._dynamic_trials[tid]["refresh_time"] = hyperopt.utils.coarse_utcnow()
         self.trials.refresh()
+
+
+class ParametrizedHyperOpt(base.ConfiguredOptimizer):
+    # pylint: disable=too-many-instance-attributes
+    """Hyperopt: Distributed Asynchronous Hyper-parameter Optimization.
+    This class is a wrapper over the `hyperopt <https://github.com/hyperopt/hyperopt>`_ package.
+
+    Parameters
+    ----------
+    parametrization: int or Parameter
+        Parametrization object
+    budget: int
+        Number of iterations
+    num_workers: int
+        Number of workers
+    prior_weight: float (default 1.0)
+        Smoothing factor to avoid having zero probabilities
+    n_startup_jobs: int (default 20)
+        Number of random uniform suggestions at initialization
+    n_EI_candidates: int (default 24)
+        Number of generated candidates during EI maximization
+    gamma: float (default 0.25)
+        Threshold to split between l(x) and g(x), see eq. 2 in
+
+    verbose: bool (default False)
+        Hyperopt algorithm verbosity
+
+    Note
+    ----
+    HyperOpt is described in Bergstra, James S., et al.
+    "Algorithms for hyper-parameter optimization."
+    Advances in neural information processing systems. 2011
+    """
+
+    no_parallelization = False
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        prior_weight: float = 1.0,
+        n_startup_jobs: int = 20,
+        n_EI_candidates: int = 24,
+        gamma: float = 0.25,
+        verbose: bool = False
+    ) -> None:
+        super().__init__(_HyperOpt, locals())
+
+
+HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
 
 
 class _Chain(base.Optimizer):
