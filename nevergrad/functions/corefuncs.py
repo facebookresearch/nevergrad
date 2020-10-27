@@ -15,18 +15,22 @@ registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 class DiscreteFunction:
 
     def __init__(self, name: str, arity: int = 2) -> None:
-        """onemax(x) is the most classical case of discrete functions, adapted to minimization.
+        """Returns a classical discrete function for test, in the domain {0,1,...,arity-1}^d.
+        The name can be onemax, leadingones, or jump.
 
+        onemax(x) is the most classical case of discrete functions, adapted to minimization.
         It is originally designed for lists of bits. It just counts the number of 1,
-        and returns len(x) - number of ones..
-        It also works in the continuous case but in that cases discretizes the
-        input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
+        and returns len(x) - number of ones. However, the present function perturbates the location of the
+        optimum, so that tests can not be easily biased by a wrong initialization. So the optimum,
+        instead of being located at (1,1,...,1), is located at (0,1,2,...,arity-1,0,1,2,...).
+        
         leadingones is the second most classical discrete function, adapted for minimization.
-
-        Returns len(x) - number of initial 1. I.e.
+        Before perturbation of the location of the optimum as above,
+        it returns len(x) - number of initial 1. I.e.
         leadingones([0 1 1 1]) = 4,
         leadingones([1 1 1 1]) = 0,
         leadingones([1 0 0 0]) = 3.
+        The present Leadingones function uses a perturbation as documented above for OneMax.
         There exists variants of jump functions; we are in minimization.
 
         The principle of a jump function is that local descent does not succeed.
@@ -41,21 +45,11 @@ class DiscreteFunction:
     def onemax(self, x: tp.ArrayLike) -> float:
         diff = np.round(x) - (np.arange(len(x)) % self._arity)
         return float(np.sum(diff != 0))
-        # For the record: (TODO: remove)
-        # result = 0
-        # for i, x_ in enumerate(x):
-        #     result += 1 if (x_ == round(i % self._arity)) else 0
-        #     return len(x) - result
 
     def leadingones(self, x: tp.ArrayLike) -> float:
         diff = np.round(x) - (np.arange(len(x)) % self._arity)
         nonzeros = np.nonzero(diff)[0]
         return float(len(x) - nonzeros[0] if nonzeros.size else 0)
-        # For the record: (TODO: remove)
-        # for i, x_ in enumerate(x):
-        #     if int(round(x_)) != i % self._arity:
-        #         return len(x) - i
-        # return 0
 
     def jump(self, x: tp.ArrayLike) -> float:
         n = len(x)
