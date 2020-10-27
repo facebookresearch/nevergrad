@@ -13,3 +13,4 @@ tqdm
 torchvision
 pyomo>=5.7
 IOHexperimenter>=0.2.8
+hyperopt

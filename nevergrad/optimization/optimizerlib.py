@@ -7,11 +7,9 @@ import logging
 from collections import deque
 import warnings
 import cma
-import hyperopt # type: ignore
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
-from hyperopt import hp, Trials, Domain, tpe # type: ignore
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
@@ -32,6 +30,12 @@ from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
+
+try:
+    import hyperopt # type: ignore
+    from hyperopt import hp, Trials, Domain, tpe # type: ignore
+except ImportError:
+    pass
 
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -1584,6 +1588,7 @@ class HyperOpt(base.Optimizer):
             # try to convert parametrization to hyperopt search space
             if not isinstance(parametrization, p.Instrumentation): raise NotImplementedError
             self.space = self._get_search_space(parametrization.name, parametrization)
+            self._transform = None
         except NotImplementedError:
             self._transform = transforms.ArctanBound(0, 1)
             self.space = {f"x_{i}": hp.uniform(f"x_{i}", 0, 1) for i in range(self.dimension)}
@@ -1627,12 +1632,22 @@ class HyperOpt(base.Optimizer):
                                       low=param.bounds[0][0],
                                       high=param.bounds[1][0])
         elif isinstance(param, p.Choice):
-            return hp.choice(param_name, list(param.choices.value))
+            return hp.choice(param_name,
+                             [self._get_search_space(param_name + "__" + str(i), param.choices[i])
+                              for i in range(len(param.choices))])
         elif isinstance(param, p.Constant):
-            return hp.choice(param_name, [param.value])
+            return param.value # hp.choice(param_name, [param.value])
 
         # Hyperopt do not support array
         raise NotImplementedError
+
+    def _dict_to_parametrization(self, x):
+        if isinstance(x, dict) and ("args" in x) and ("kwargs" in x):
+            x["args"] = tuple([self._dict_to_parametrization(x["args"][str(i)]) for i in range(len(x["args"]))])
+            x["kwargs"] = {k: self._dict_to_parametrization(v) for k, v in x["kwargs"].items()}
+            return (x["args"], x["kwargs"])
+        return x
+
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Inspired from FMinIter class (hyperopt)
@@ -1643,7 +1658,7 @@ class HyperOpt(base.Optimizer):
         self.trials.refresh()
 
         candidate = self.parametrization.spawn_child()
-        if hasattr(self, "_transform"):
+        if self._transform:
             data = np.array([new_trial["misc"]["vals"][f"x_{i}"][0] for i in range(self.dimension)], copy=False)
             data = self._transform.backward(data)
             candidate.set_standardized_data(data)
@@ -1651,8 +1666,7 @@ class HyperOpt(base.Optimizer):
             spec = hyperopt.base.spec_from_misc(new_trial["misc"])
             spec = {k: v.item() for k, v in spec.items()}
             config = hyperopt.space_eval(self.space, spec)
-            config["args"] = [config["args"][str(i)] for i in range(len(config["args"]))]
-            candidate.value = p.Instrumentation(*config["args"], **config["kwargs"]).value
+            candidate.value = self._dict_to_parametrization(config)
 
         candidate._meta["trial_id"] = new_trial["tid"]
         return candidate
@@ -1673,7 +1687,7 @@ class HyperOpt(base.Optimizer):
             self.trials.refresh()
             tid = next_id[0]
 
-            if hasattr(self, "_transform"):
+            if self._transform:
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 data = self._transform.forward(data)
                 self.trials._dynamic_trials[tid]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
