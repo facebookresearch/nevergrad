@@ -2078,15 +2078,12 @@ class NGOpt4(NGOptBase):
         return optimClass
 
 
-ProgD13 = ConfSplitOptimizer(num_optims=13, progressive=True,
-                             multivariate_optimizer=OptimisticDiscreteOnePlusOne)
-
 RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
                                                                       noise_handling="optimistic")
 
 
 @registry.register
-class NGOpt8(base.Optimizer):
+class NGOpt8(NGOpt4):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
@@ -2110,79 +2107,18 @@ class NGOpt8(base.Optimizer):
                 optimClass = DiscreteBSOOnePlusOne
             elif num_workers > 2:
                 optimClass = CMandAS2
-            elif arity == 2:
-                optimClass = DiscreteOnePlusOne
             else:
-                if arity < 5:
-                    optimClass = AdaptiveDiscreteOnePlusOne
-                else:
-                    optimClass = CMandAS2
+                return super._select_optimizer_cls()
             # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
         else:
-            # pylint: disable=too-many-nested-blocks
-            if self.has_noise and self.fully_continuous and self.dimension > 100:
-                # Waow, this is actually a discrete algorithm.
-                optimClass = ProgD13  # My guess is that we could do better by a sophisticated use of dimension / budget.
+            if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
+                    self.has_noise and self.fully_continuous) and not (num_workers > budget / 5) and (
+                    num_workers == 1 and budget > 6000 and self.dimension > 7):
+                optimClass = chainCMAPowell
             else:
-                if self.has_noise and self.fully_continuous:
-                    if budget > 100:
-                        optimClass = SQP
-                    else:
-                        # This is the realm of population control. FIXME: should we pair with a bandit ?
-                        optimClass = TBPSA  # type: ignore
-                else:
-                    if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
-                        optimClass = DoubleFastGADiscreteOnePlusOne
-                    else:
-                        if num_workers > budget / 5:
-                            if num_workers > budget / 2. or budget < self.dimension:
-                                optimClass = MetaTuneRecentering
-                            elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA
-                            elif self.dimension < 5 and budget < 500:
-                                optimClass = Chaining([DiagonalCMA, MetaModel], [100]).set_name("parachaining",
-                                                                                                register=True)  # type: ignore
-                            else:
-                                optimClass = NaiveTBPSA
-                        else:
-                            # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                            if num_workers == 1 and budget > 6000 and self.dimension > 7:  # Let us go memetic.
-                                optimClass = chainCMAPowell
-                            else:
-                                if num_workers == 1 and budget < self.dimension * 30:
-                                    if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne
-                                    elif self.dimension < 5:
-                                        optimClass = MetaModel
-                                    else:
-                                        optimClass = Cobyla
-                                else:
-                                    if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE
-                                    else:
-                                        if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel
-                                        else:
-                                            if self.dimension > 40 and num_workers > self.dimension and budget < 7 * self.dimension ** 2:
-                                                optimClass = DiagonalCMA
-                                            elif 3 * num_workers > self.dimension ** 2 and budget > self.dimension ** 2:
-                                                optimClass = MetaModel
-                                            else:
-                                                optimClass = CMA
-        self.optim = optimClass(self.parametrization, budget, num_workers)
-        logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self.optim)))
+                return super._select_optimizer_cls()
 
-    def _internal_ask_candidate(self) -> p.Parameter:
-        return self.optim.ask()
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, loss)
-
-    def recommend(self) -> p.Parameter:
-        return self.optim.recommend()
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, value)
+        return optimClass
 
 
 @registry.register
