@@ -28,6 +28,7 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
@@ -921,6 +922,25 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
+@registry.register
+def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MixSimulator of power plants
+    Budget 20, 40, ..., 1600.
+    Sequential or 30 workers."""
+    funcs = [OptimizeMix()]
+    seedg = create_seed_generator(seed)
+    optims = ["OnePlusOne","NGOpt","CMA","DE","PSO"]
+    if default_optims is not None:
+        optims = default_optims
+    seq = np.arange(0,1601,20)
+    for budget in seq:
+        for num_workers in [1, 30]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 @registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
