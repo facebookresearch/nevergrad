@@ -493,12 +493,6 @@ def test_hyperopt() -> None:
         ng.p.Log(lower=1e-3, upper=1e3),
         ng.p.Array(init=np.zeros(10))
     ]
-    for parametrization in list_simple_parametrizations:
-        optim = registry["HyperOpt"](parametrization=parametrization, budget=2)
-        optim.tell(optim.ask(), 0)
-        optim.tell(parametrization.sample(), 0) # Tell not asked
-        optim.tell(optim.ask(), 0)
-        assert hasattr(optim, "_transform")
 
     list_complex_parametrizations = [
         ng.p.Instrumentation(*list_simple_parametrizations[:-1]),
@@ -516,10 +510,10 @@ def test_hyperopt() -> None:
                              list_simple_parametrizations[2]
         ])),
         ng.p.Instrumentation(a=ng.p.Choice([
-                             ng.p.Instrumentation(list_simple_parametrizations[0],
-                                                  a=list_simple_parametrizations[1]),
-                             ng.p.Instrumentation(list_simple_parametrizations[2],
-                                                  b=list_simple_parametrizations[3]),
+                             ng.p.Instrumentation(b=list_simple_parametrizations[0],
+                                                  c=list_simple_parametrizations[1]),
+                             ng.p.Instrumentation(d=list_simple_parametrizations[2],
+                                                  e=list_simple_parametrizations[3]),
         ])),
     ]
     for parametrization in list_complex_parametrizations:
@@ -527,7 +521,7 @@ def test_hyperopt() -> None:
         optim.tell(optim.ask(), 0)
         optim.tell(parametrization.sample(), 0) # Tell not asked
         optim.tell(optim.ask(), 0)
-        assert not hasattr(optim, "_transform")
+        assert not optim._transform
 
     # Test parallelization
     for parametrization in [list_simple_parametrizations[0], list_complex_parametrizations[-1]]:
@@ -536,8 +530,6 @@ def test_hyperopt() -> None:
             cand = opt.ask()
             if not k:
                 opt.tell(cand, 1)
-
-
 
 
 @pytest.mark.parametrize(  # type: ignore
