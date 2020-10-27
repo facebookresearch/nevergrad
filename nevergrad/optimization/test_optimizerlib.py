@@ -475,52 +475,44 @@ def test_bo_ordering() -> None:
     optim.provide_recommendation()
 
 
-def test_hyperopt() -> None:
+@pytest.mark.parametrize(  # type: ignore
+    "parametrization,has_transform",
+    [(ng.p.Choice(list(range(10))), True),
+    (ng.p.Scalar(lower=0, upper=1), True),
+    (ng.p.Scalar(lower=0, upper=1).set_integer_casting(), True),
+    (ng.p.Log(lower=1e-3, upper=1e3), True),
+    (ng.p.Array(init=np.zeros(10)), True),
+    (ng.p.Instrumentation(
+                        ng.p.Scalar(lower=0, upper=1),
+                        a=ng.p.Choice(list(range(10)))
+    ), False),
+    (ng.p.Instrumentation(a=ng.p.Choice([
+                         ng.p.Choice(list(range(10))),
+                         ng.p.Scalar(lower=0, upper=1),
+                         ng.p.Log(lower=1e-3, upper=1e3)
+    ])), False),
+    (ng.p.Instrumentation(a=ng.p.Choice([
+                             ng.p.Instrumentation(b=ng.p.Choice(list(range(10))),
+                                                  c=ng.p.Log(lower=1e-3, upper=1e3)),
+                             ng.p.Instrumentation(d=ng.p.Scalar(lower=0, upper=1),
+                                                  e=ng.p.Log(lower=1e-3, upper=1e3)),
+    ])), False)
+    ]
+)
+def test_hyperopt(parametrization, has_transform) -> None:
     # Test parametrization
-    list_simple_parametrizations = [
-        ng.p.Choice(list(range(10))),
-        ng.p.Scalar(lower=0, upper=1),
-        ng.p.Scalar(lower=0, upper=1).set_integer_casting(),
-        ng.p.Log(lower=1e-3, upper=1e3),
-        ng.p.Array(init=np.zeros(10))
-    ]
-
-    list_complex_parametrizations = [
-        ng.p.Instrumentation(*list_simple_parametrizations[:-1]),
-        ng.p.Instrumentation(a=list_simple_parametrizations[0],
-                             b=list_simple_parametrizations[1],
-                             c=list_simple_parametrizations[2],
-                             d=list_simple_parametrizations[3]),
-        ng.p.Instrumentation(list_simple_parametrizations[0],
-                             a=list_simple_parametrizations[1]),
-        ng.p.Instrumentation(list_simple_parametrizations[0],
-                             a=list_simple_parametrizations[1]),
-        ng.p.Instrumentation(a=ng.p.Choice([
-                             list_simple_parametrizations[0],
-                             list_simple_parametrizations[1],
-                             list_simple_parametrizations[2]
-        ])),
-        ng.p.Instrumentation(a=ng.p.Choice([
-                             ng.p.Instrumentation(b=list_simple_parametrizations[0],
-                                                  c=list_simple_parametrizations[1]),
-                             ng.p.Instrumentation(d=list_simple_parametrizations[2],
-                                                  e=list_simple_parametrizations[3]),
-        ])),
-    ]
-    for parametrization in list_complex_parametrizations:
-        optim = registry["HyperOpt"](parametrization=parametrization, budget=3)
-        optim.tell(optim.ask(), 0)
-        optim.tell(parametrization.sample(), 0) # Tell not asked
-        optim.tell(optim.ask(), 0)
-        assert not optim._transform
+    optim = registry["HyperOpt"](parametrization=parametrization, budget=3)
+    optim.tell(optim.ask(), 0)
+    optim.tell(parametrization.sample(), 0) # Tell not asked
+    optim.tell(optim.ask(), 0)
+    assert (optim._transform is not None) == has_transform
 
     # Test parallelization
-    for parametrization in [list_simple_parametrizations[0], list_complex_parametrizations[-1]]:
-        opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)
-        for k in range(40):
-            cand = opt.ask()
-            if not k:
-                opt.tell(cand, 1)
+    opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)
+    for k in range(40):
+        cand = opt.ask()
+        if not k:
+            opt.tell(cand, 1)
 
 
 @pytest.mark.parametrize(  # type: ignore
