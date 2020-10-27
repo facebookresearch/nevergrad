@@ -1574,11 +1574,11 @@ class HyperOpt(base.Optimizer):
                  budget: tp.Optional[int] = None,
                  num_workers: int = 1,
                  *,
-                 prior_weight=1.0,
-                 n_startup_jobs=20,
-                 n_EI_candidates=24,
-                 gamma=0.25,
-                 verbose=False) -> None:
+                 prior_weight: float = 1.0,
+                 n_startup_jobs: int = 20,
+                 n_EI_candidates: int = 24,
+                 gamma: float = 0.25,
+                 verbose: bool = False) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         try:
             # try to convert parametrization to hyperopt search space
