@@ -16,7 +16,6 @@ from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
 from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import unicode
 import unicodedata
 import nevergrad.common.typing as tp
 from . import utils
@@ -35,9 +34,9 @@ def _slugify(value: str) -> str:
     Normalizes string, converts to lowercase, removes non-alpha characters,
     and converts spaces to hyphens.
     """
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')  # type: ignore
-    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())  # type: ignore
-    value = unicode(re.sub('[-\s]+', '-', value))  # type: ignore
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+    value = re.sub('[^\w\s-]', '', value).strip().lower()
+    value = re.sub('[-\s]+', '-', value)
     # ...
     return value
 
