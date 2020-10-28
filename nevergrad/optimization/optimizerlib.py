@@ -2079,7 +2079,8 @@ class NGOpt4(NGOptBase):
 
 
 RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
-                                                                      noise_handling="optimistic", register=True)
+                                                                      noise_handling="optimistic").set_name(
+    "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
 
 
 @registry.register
