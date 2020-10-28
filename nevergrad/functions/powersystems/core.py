@@ -32,14 +32,16 @@ class Agent():
     def dimension(self) -> int:
         return sum(layer.size for layer in self.layers)
 
-    def set_parameters(self, ww: tp.Any) -> None:
-        w = list(ww)
-        assert isinstance(w[0], float)
-        assert len(w) == self.dimension, f"length = {len(w)} instead of {self.dimension}: {w}."
-        for i in range(len(self.layers)):
-            s = np.prod(self.layers[i].shape)
-            self.layers[i] = np.reshape(np.array(w[:s]), self.layers[i].shape)  # TODO @oteytaud new name?
-            w = w[s:]
+    def set_parameters(self, weights: np.ndarray) -> None:
+        if weights.size != self.dimension:
+            raise ValueError(f"length = {weights.size} instead of {self.dimension}: {weights}.")
+        start = 0
+        for i, layer in enumerate(self.layers):
+            numel = layer.size
+            self.layers[i] = weights[start: start + numel].reshape(layer.shape)
+            start += numel
+        if numel != weights.size:
+            raise RuntimeError("Unexpected runtime error when distributing the weights")
 
     def get_output(self, inp: tp.Any) -> np.ndarray:
         output = np.array(inp).reshape(1, len(inp))
@@ -106,15 +108,12 @@ class PowerSystem(ExperimentFunction):
         self.average_consumption = self.constant_to_year_ratio * self.year_to_day_ratio
         self.thermal_power_capacity = self.average_consumption * np.random.rand(self.num_thermal_plants)
         self.thermal_power_prices = np.random.rand(num_thermal_plants)
-        dam_agents: tp.List[tp.Any] = []
-        for _ in range(num_dams):
-            dam_agents += [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)]
-        # dimension = int(sum([a.dimension for a in dam_agents]))
-        parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in dam_agents]).set_name("")
+        self.dam_agents = [Agent(10 + num_dams + 2 * self.num_thermal_plants, depth, width)
+                           for _ in range(num_dams)]
+        parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in self.dam_agents]).set_name("")
         super().__init__(self._simulate_power_system, parameter)
         self.parametrization.descriptors.deterministic_function = False
         self.register_initialization(**params)
-        self.dam_agents = dam_agents
         self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
     def get_num_vars(self) -> tp.List[tp.Any]:
