@@ -2087,36 +2087,28 @@ RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=
 class NGOpt8(NGOpt4):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
+    def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
-        descr = self.parametrization.descriptors
-        self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
-        self.has_discrete_not_softmax = any(isinstance(x, p.BaseChoice) for x in all_params.values())
-        arity: int = max(len(param.choices) if isinstance(param, p.BaseChoice) else -1 for param in all_params.values())
-        # We multiply check that it's continuous.
-        self.fully_continuous = descr.continuous and not self.has_discrete_not_softmax and arity < 0
+
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
-            if budget > 10000:
+            if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
             else:
                 optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne
-        elif arity > 0:
-            if budget < 1000 and num_workers == 1:
+        elif self.arity > 0:
+            if self.budget < 1000 and self.num_workers == 1:
                 optimClass = DiscreteBSOOnePlusOne
-            elif num_workers > 2:
+            elif self.num_workers > 2:
                 optimClass = CMandAS2  # type: ignore
             else:
-                return super()._select_optimizer_cls()
+                optimClass = super()._select_optimizer_cls()
         else:
             if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
-                    self.has_noise and self.fully_continuous) and not (num_workers > budget / 5) and (
-                    num_workers == 1 and budget > 6000 and self.dimension > 7):
+                    self.has_noise and self.fully_continuous) and not (self.num_workers > self.budget / 5) and (
+                    self.num_workers == 1 and self.budget > 6000 and self.dimension > 7):
                 optimClass = chainCMAPowell
             else:
-                return super()._select_optimizer_cls()
+                optimClass = super()._select_optimizer_cls()
 
         return optimClass
 
