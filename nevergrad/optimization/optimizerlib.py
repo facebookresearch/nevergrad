@@ -2089,8 +2089,7 @@ class NGOpt8(NGOpt4):
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
-        budget, num_workers = self.budget, self.num_workers
-        assert budget is not None
+        assert self.budget is not None
         optimClass: base.OptCls
 
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
