@@ -8,12 +8,13 @@ import numpy as np
 from . import core
 
 
-def test_powersystem() -> None:
+def test_powersystem_small() -> None:
     np.random.seed(12)
-    func = core.PowerSystem()
-    x = [7 * np.random.rand(func.dimension // 13) for _ in range(13)]
+    dams = 2
+    func = core.PowerSystem(num_dams=dams)
+    x = [np.random.rand(func.dimension // dams) for _ in range(dams)]
     value = func.function(*x)
-    np.testing.assert_almost_equal(value, 15433.3605375)
+    np.testing.assert_almost_equal(value, 15432.7522261)
 
 
 @patch(f"{__name__}.core.plt")
