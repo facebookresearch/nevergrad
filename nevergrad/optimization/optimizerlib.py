@@ -2089,13 +2089,16 @@ class NGOpt8(NGOpt4):
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
+        budget, num_workers = self.budget, self.num_workers
+        assert budget is not None
+        optimClass: base.OptCls
 
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
             else:
                 optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne
-        elif self.arity > 0:
+        elif self._arity > 0:
             if self.budget < 1000 and self.num_workers == 1:
                 optimClass = DiscreteBSOOnePlusOne
             elif self.num_workers > 2:
