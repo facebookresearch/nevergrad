@@ -119,23 +119,16 @@ class MLTuning(ExperimentFunction):
         self.X_test: np.ndarray
         self.y_test: np.ndarray
 
+        evalparams: tp.Dict[str, tp.Any] = {}
         if regressor == "decision_tree_depth":
             # Only the depth, as an evaluation.
             parametrization = p.Instrumentation(depth=p.Scalar(lower=1, upper=1200).set_integer_casting())
-            # We optimize only the depth, so we fix all other parameters than the depth, using "partial".
-            super().__init__(partial(self._ml_parametrization,
-                                     noise_free=False, criterion="mse",
-                                     min_samples_split=0.00001,
-                                     regressor="decision_tree",
-                                     alpha=1.0, learning_rate="no",
-                                     activation="no", solver="no"), parametrization)
-            # For the evaluation, we remove the noise.
-            self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               noise_free=not overfitter, criterion="mse",
-                                               min_samples_split=0.00001,
-                                               regressor="decision_tree",
-                                               alpha=1.0, learning_rate="no",
-                                               activation="no", solver="no")
+            # We optimize only the depth, so we fix all other parameters than the depth
+            params = dict(noise_free=False, criterion="mse",
+                          min_samples_split=0.00001,
+                          regressor="decision_tree",
+                          alpha=1.0, learning_rate="no",
+                          activation="no", solver="no")
         elif regressor == "any":
             # First we define the list of parameters in the optimization
             parametrization = p.Instrumentation(
@@ -148,13 +141,8 @@ class MLTuning(ExperimentFunction):
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),  # Learning rate schedule.
                 alpha=p.Log(lower=0.0000001, upper=1.),  # Complexity penalization.
             )
-            # Only the dimension is fixed, so "partial" is just used for fixing the dimension.
             # noise_free is False (meaning that we consider the cross-validation loss) during the optimization.
-            super().__init__(partial(self._ml_parametrization,
-                                     noise_free=False), parametrization)
-            # For the evaluation we use the test set, which is big, so noise_free = True.
-            self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               noise_free=not overfitter)
+            params = dict(noise_free=False)
         elif regressor == "decision_tree":
             # We specify below the list of hyperparameters for the decision trees.
             parametrization = p.Instrumentation(
@@ -163,16 +151,10 @@ class MLTuning(ExperimentFunction):
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
                 regressor="decision_tree",
             )
-            # We use "partial" for fixing the parameters of the neural network, given that we work on the decision tree only.
-            super().__init__(partial(self._ml_parametrization, noise_free=False,
-                                     alpha=1.0, learning_rate="no", regressor="decision_tree",
-                                     activation="no", solver="no"), parametrization)
-            # For the test we just switch noise_free to True.
-            self.evaluation_function = partial(self._ml_parametrization, criterion="mse",  # type: ignore
-                                               min_samples_split=0.00001,
-                                               regressor="decision_tree", noise_free=not overfitter,
-                                               alpha=1.0, learning_rate="no",
-                                               activation="no", solver="no")
+            params = dict(noise_free=False,
+                          alpha=1.0, learning_rate="no", regressor="decision_tree",
+                          activation="no", solver="no")
+            evalparams = dict(params, criterion="mse", min_samples_split=0.00001)
         elif regressor == "mlp":
             # Let us define the parameters of the neural network.
             parametrization = p.Instrumentation(
@@ -182,18 +164,16 @@ class MLTuning(ExperimentFunction):
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )
-            # And, using partial, we get rid of the parameters of the decision tree (we work on the neural net, not
-            # on the decision tree).
-            super().__init__(partial(self._ml_parametrization, noise_free=False,
-                                     regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1), parametrization)
-            self.evaluation_function = partial(self._ml_parametrization,  # type: ignore
-                                               regressor="mlp", noise_free=not overfitter,
-                                               depth=-3, criterion="no", min_samples_split=0.1)
+            params = dict(noise_free=False, regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1)
         else:
             assert False, f"Problem type {regressor} undefined!"
-
-        # assert data_dimension is not None or dataset[:10] != "artificial"
-        # self.get_dataset(data_dimension, dataset)
+        # build eval params if not specified
+        if not evalparams:
+            evalparams = dict(params)
+        # For the evaluation we remove the noise (unless overfitter)
+        evalparams["noise_free"] = not overfitter
+        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
+        self.evaluation_function = partial(self._ml_parametrization, **evalparams)  # type: ignore
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
 
