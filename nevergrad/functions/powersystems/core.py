@@ -43,8 +43,8 @@ class Agent():
         if start != weights.size:
             raise RuntimeError("Unexpected runtime error when distributing the weights")
 
-    def get_output(self, inp: tp.Any) -> np.ndarray:
-        output = np.array(inp).reshape(1, len(inp))
+    def get_output(self, inp: np.ndarray) -> np.ndarray:
+        output = inp.reshape(1, -1)
         for l in self.layers[:-1]:
             output = np.tanh(np.matmul(output, l))
         return np.matmul(output, self.layers[-1])  # type: ignore
@@ -163,8 +163,8 @@ class PowerSystem(ExperimentFunction):
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
 
             # Prices as a decomposition tool!
-            price: np.ndarray = np.asarray([a.get_output(np.array(x))[0][0] for a in dam_agents])
-            dam_index: np.ndarray = np.asarray(range(num_dams))
+            price: np.ndarray = np.asarray([a.get_output(x)[0][0] for a in dam_agents])
+            dam_index = np.arange(num_dams)
             price = np.concatenate((price, self.thermal_power_prices))
             capacity = np.concatenate((np.asarray(stocks), self.thermal_power_capacity))
             dam_index = np.concatenate((dam_index, [-1] * len(price)))
