@@ -27,6 +27,7 @@ DE,0.7834550046,-1.5979675035,-1.6869894188,3.2681173276,2.0050198666,2.02798768
 DiagonalCMA,1.012515477,-0.9138691467,-1.0295302074,1.2097964496,,,,,,,,,,,,
 DiscreteBSOOnePlusOne,0.0,0.0,0.0,0.0,,,,,,,,,,,,
 DiscreteDoerrOnePlusOne,0.7259745214,-0.9896241976,-0.4007924638,1.4805504707,,,,,,,,,,,,
+DiscreteLenglerOnePlusOne,0.7531428339,0.0,0.0,0.0,,,,,,,,,,,,
 DiscreteOnePlusOne,0.7531428339,0.0,0.0,1.095956118,,,,,,,,,,,,
 DoubleFastGADiscreteOnePlusOne,0.0,0.0,0.0,0.0,,,,,,,,,,,,
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne,0.0,0.0,0.0,0.0,,,,,,,,,,,,
