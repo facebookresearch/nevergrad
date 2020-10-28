@@ -11,10 +11,10 @@ from . import core
 def test_powersystem_small() -> None:
     np.random.seed(12)
     dams = 2
-    func = core.PowerSystem(num_dams=dams)
+    func = core.PowerSystem(num_dams=dams, num_years=0.2)
     x = [np.random.rand(func.dimension // dams) for _ in range(dams)]
     value = func.function(*x)
-    np.testing.assert_almost_equal(value, 15432.7522261)
+    np.testing.assert_almost_equal(value, 4265.2452009)
 
 
 @patch(f"{__name__}.core.plt")

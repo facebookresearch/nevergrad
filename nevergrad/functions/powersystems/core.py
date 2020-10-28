@@ -72,7 +72,7 @@ class PowerSystem(ExperimentFunction):
         Instantaneous variability.
     num_thermal_plants: int
         Number of thermal plants.
-    num_years: int
+    num_years: float
         Number of years.
     failure_cost: float
         Cost of not satisfying the demand. Equivalent to an expensive infinite capacity thermal plant.
@@ -86,7 +86,7 @@ class PowerSystem(ExperimentFunction):
                  back_to_normal: float = 0.5,
                  consumption_noise: float = 0.1,
                  num_thermal_plants: int = 7,
-                 num_years: int = 1,
+                 num_years: float = 1.0,
                  failure_cost: float = 500.,
                  ) -> None:
         params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
@@ -217,7 +217,6 @@ class PowerSystem(ExperimentFunction):
         consumption_per_ts = self.consumption_per_time_step
         hydro_prod_per_ts = self.hydro_prod_per_time_step
         total_hydro_prod_per_ts = [sum(h) for h in hydro_prod_per_ts]
-        # num_time_steps = int(365 * 24 * self.number_of_years)
 
         # Utility function for plotting per year or per day.
         def block(x: tp.List[float]) -> tp.List[float]:
