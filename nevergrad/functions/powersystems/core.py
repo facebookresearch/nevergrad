@@ -22,10 +22,10 @@ class Agent():
         assert layers >= 2
         self.input_size = input_size
         self.output_size = output_size
-        self.layers = [np.zeros((input_size, layer_width))]
+        self.layers = [np.zeros((layer_width, input_size))]
         for _ in range(layers - 2):
             self.layers += [np.zeros((layer_width, layer_width))]
-        self.layers += [np.zeros((layer_width, output_size))]
+        self.layers += [np.zeros((output_size, layer_width))]
         assert len(self.layers) == layers
 
     @property
@@ -45,8 +45,8 @@ class Agent():
 
     def get_output(self, data: np.ndarray) -> np.ndarray:
         for l in self.layers[:-1]:
-            data = np.tanh(l.T @ data)
-        return self.layers[-1].T @ data  # type: ignore
+            data = np.tanh(l @ data)
+        return self.layers[-1] @ data  # type: ignore
 
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
