@@ -1600,11 +1600,15 @@ class _HyperOpt(base.Optimizer):
                                       low=param.bounds[0][0],
                                       high=param.bounds[1][0])
         elif isinstance(param, p.Choice):
+            list_types = [type(param.choices[i]) for i in range(len(param.choices))
+                          if not isinstance(param.choices[i], (p.Instrumentation, p.Constant))]
+
+            if len(list_types) != len(set(list_types)): raise NotImplementedError
             return hp.choice(param_name,
                              [self._get_search_space(param_name + "__" + str(i), param.choices[i])
                               for i in range(len(param.choices))])
         elif isinstance(param, p.Constant):
-            return param.value # hp.choice(param_name, [param.value])
+            return param.value
 
         # Hyperopt do not support array
         raise NotImplementedError
@@ -1616,6 +1620,26 @@ class _HyperOpt(base.Optimizer):
             return (x["args"], x["kwargs"])
         return x
 
+    def _parametrization_to_dict(self, x, **kwargs):
+        if isinstance(x, p.Instrumentation):
+            x_dict = kwargs["default"] if "default" in kwargs else {}
+            for idx_param in range(len(x[0].value)):
+                x_dict.update(self._parametrization_to_dict(x[0][idx_param], name=str(idx_param)))
+            for name in x[1].value.keys():
+                x_dict.update(self._parametrization_to_dict(x[1][name], name=name))
+            return x_dict
+        elif isinstance(x, (p.Log, p.Scalar)):
+            return {kwargs["name"]: [x.value]}
+        elif isinstance(x, p.Choice):
+            x_dict = {}
+            for i in range(len(x.choices)):
+                if x.value == x.choices[i].value:
+                    x_dict[kwargs["name"]] = [i]
+                    if isinstance(x.choices[i], (p.Log, p.Scalar)):
+                        x_dict[kwargs["name"] + f"__{i}"] = [x.choices[i].value]
+                    elif isinstance(x.choices[i], p.Instrumentation):
+                        x_dict.update(self._parametrization_to_dict(x.choices[i]))
+            return x_dict
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Inspired from FMinIter class (hyperopt)
@@ -1641,29 +1665,9 @@ class _HyperOpt(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         result = {"loss": loss, "status": "ok"}
-        if "trial_id" in candidate._meta:
-            tid = candidate._meta["trial_id"]
-            assert self.trials._dynamic_trials[tid]["state"] == hyperopt.JOB_STATE_NEW
-        else:
-            # Tell not asked
-            next_id = self.trials.new_trial_ids(1)
-            new_trial = hyperopt.rand.suggest(next_id,
-                                              self.domain,
-                                              self.trials,
-                                              self._rng.randint(2 ** 31 - 1))
-            self.trials.insert_trial_docs(new_trial)
-            self.trials.refresh()
-            tid = next_id[0]
-
-            if self._transform:
-                data = candidate.get_standardized_data(reference=self.parametrization)
-                data = self._transform.forward(data)
-                self.trials._dynamic_trials[tid]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
-            else:
-                self.trials._dynamic_trials[tid]["misc"]["vals"] = {
-                        "args": {str(idx): [v] for idx, v in enumerate(candidate.value[0])},
-                        "kwargs": {k: [v] for k, v in candidate.value[1].items()}
-                }
+        assert "trial_id" in candidate._meta
+        tid = candidate._meta["trial_id"]
+        assert self.trials._dynamic_trials[tid]["state"] == hyperopt.JOB_STATE_NEW
 
         now = hyperopt.utils.coarse_utcnow()
         self.trials._dynamic_trials[tid]["book_time"] = now
@@ -1672,6 +1676,30 @@ class _HyperOpt(base.Optimizer):
         self.trials._dynamic_trials[tid]["result"] = result
         self.trials._dynamic_trials[tid]["refresh_time"] = hyperopt.utils.coarse_utcnow()
         self.trials.refresh()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
+        next_id = self.trials.new_trial_ids(1)
+        new_trial = hyperopt.rand.suggest(next_id,
+                                          self.domain,
+                                          self.trials,
+                                          self._rng.randint(2 ** 31 - 1))
+        self.trials.insert_trial_docs(new_trial)
+        self.trials.refresh()
+        tid = next_id[0]
+
+        if self._transform:
+            data = candidate.get_standardized_data(reference=self.parametrization)
+            data = self._transform.forward(data)
+            self.trials._dynamic_trials[tid]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
+        else:
+            null_config: dict = {k: [] for k in self.trials._dynamic_trials[tid]["misc"]["vals"].keys()}
+            new_vals: dict = self._parametrization_to_dict(candidate, default=null_config)
+            assert set(new_vals) == set(self.trials._dynamic_trials[tid]["misc"]["vals"])
+            self.trials._dynamic_trials[tid]["misc"]["vals"] = new_vals
+
+        self.trials.refresh()
+        candidate._meta["trial_id"] = tid
+        self._internal_tell_candidate(candidate, loss)
 
 
 class ParametrizedHyperOpt(base.ConfiguredOptimizer):
