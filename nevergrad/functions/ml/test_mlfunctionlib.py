@@ -35,7 +35,7 @@ from . import mlfunctionlib
         dict(regressor="any", data_dimension=2, dataset="artificial"),
         dict(activation="relu", solver="adam", alpha=0.01, learning_rate="constant", depth=3,
              criterion="mse", min_samples_split=0.001, regressor="mlp"),
-        0.0038522633,
+        0.0022022164,
     ),
     decision_tree_boston=(
         dict(regressor="decision_tree", data_dimension=None, dataset="boston"),
