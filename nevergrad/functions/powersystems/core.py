@@ -40,7 +40,7 @@ class Agent():
             numel = layer.size
             self.layers[i] = weights[start: start + numel].reshape(layer.shape)
             start += numel
-        if numel != weights.size:
+        if start != weights.size:
             raise RuntimeError("Unexpected runtime error when distributing the weights")
 
     def get_output(self, inp: tp.Any) -> np.ndarray:
@@ -129,9 +129,9 @@ class PowerSystem(ExperimentFunction):
 
         num_dams = int(self.num_dams)
         # Assume empty initial stocks.
-        stocks = [0.] * num_dams
+        stocks = np.zeros((num_dams,))
         # Nonsense delays.
-        delay = [cos(i) for i in range(num_dams)]
+        delay = np.cos(np.arange(num_dams))
         cost = 0.
         # Loop on time steps.
         num_time_steps = int(365 * 24 * self.number_of_years)
@@ -141,8 +141,7 @@ class PowerSystem(ExperimentFunction):
         for t in range(num_time_steps):
 
             # Rain
-            for dam_idx in range(num_dams):
-                stocks[dam_idx] += 0.5 * (1. + cos(2 * pi * t / (24 * 365) + delay[dam_idx])) * np.random.rand()
+            stocks += 0.5 * (1. + np.cos(2 * pi * t / (24 * 365) + delay)) * np.random.rand(num_dams)
             # Consumption model.
             base_consumption = (self.constant_to_year_ratio * self.year_to_day_ratio
                                 + 0.5 * self.year_to_day_ratio * (1. + cos(2 * pi * t / (24 * 365))) + 0.5 * (1. + cos(2 * pi * t / 24)))
