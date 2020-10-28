@@ -43,11 +43,10 @@ class Agent():
         if start != weights.size:
             raise RuntimeError("Unexpected runtime error when distributing the weights")
 
-    def get_output(self, inp: np.ndarray) -> np.ndarray:
-        output = inp.reshape(1, -1)
+    def get_output(self, data: np.ndarray) -> np.ndarray:
         for l in self.layers[:-1]:
-            output = np.tanh(np.matmul(output, l))
-        return np.matmul(output, self.layers[-1])  # type: ignore
+            data = np.tanh(l.T @ data)
+        return self.layers[-1].T @ data  # type: ignore
 
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-statements,too-many-locals
@@ -163,11 +162,11 @@ class PowerSystem(ExperimentFunction):
             x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
 
             # Prices as a decomposition tool!
-            price: np.ndarray = np.asarray([a.get_output(x)[0][0] for a in dam_agents])
+            price: np.ndarray = np.asarray([a.get_output(x)[0] for a in dam_agents])
             dam_index = np.arange(num_dams)
             price = np.concatenate((price, self.thermal_power_prices))
-            capacity = np.concatenate((np.asarray(stocks), self.thermal_power_capacity))
-            dam_index = np.concatenate((dam_index, [-1] * len(price)))
+            capacity = np.concatenate((stocks, self.thermal_power_capacity))
+            dam_index = np.concatenate((dam_index, -1 * np.ones(len(price), dtype=int)))
 
             assert len(price) == num_dams + self.num_thermal_plants
             hydro_prod: np.ndarray = np.zeros(num_dams)
