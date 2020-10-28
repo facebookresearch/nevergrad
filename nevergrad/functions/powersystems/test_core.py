@@ -9,10 +9,12 @@ from . import core
 
 
 def test_powersystem() -> None:
+    np.random.seed(12)
     func = core.PowerSystem()
     x = [7 * np.random.rand(func.dimension // 13) for _ in range(13)]
-    value = func.function(x)  # should not touch boundaries, so value should be < np.inf
-    assert value < np.inf
+    value = func.function(*x)
+    np.testing.assert_almost_equal(value, 15433.3605375)
+
 
 @patch(f"{__name__}.core.plt")
 def test_make_plots(mock_plt):
@@ -22,4 +24,3 @@ def test_make_plots(mock_plt):
     assert mock_plt.clf.call_count == 1
     assert mock_plt.subplot.call_count == 4
     assert mock_plt.savefig.call_count == 1
-    

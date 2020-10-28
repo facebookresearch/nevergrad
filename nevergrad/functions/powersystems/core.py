@@ -7,7 +7,6 @@
 # University Clermont Auvergne, CNRS, SIGMA Clermont, Institut Pascal
 
 import typing as tp
-from collections import abc
 from math import pi, cos, sin
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,8 +22,7 @@ class Agent():
         assert layers >= 2
         self.input_size = input_size
         self.output_size = output_size
-        self.layers: tp.List[tp.Any] = []
-        self.layers += [np.zeros((input_size, layer_width))]
+        self.layers = [np.zeros((input_size, layer_width))]
         for _ in range(layers - 2):
             self.layers += [np.zeros((layer_width, layer_width))]
         self.layers += [np.zeros((layer_width, output_size))]
@@ -32,7 +30,7 @@ class Agent():
 
     @property
     def dimension(self) -> int:
-        return sum([np.prod(l.shape) for l in self.layers])
+        return sum(layer.size for layer in self.layers)
 
     def set_parameters(self, ww: tp.Any) -> None:
         w = list(ww)
@@ -125,21 +123,9 @@ class PowerSystem(ExperimentFunction):
     def _simulate_power_system(self, *arrays: np.ndarray) -> float:
         failure_cost = self.failure_cost  # Cost of power demand which is not satisfied (equivalent to a expensive infinite thermal group).
         dam_agents = self.dam_agents
-        # Deep, robust flattening of any nesting of iterables.
+        for agent, array in zip(dam_agents, arrays):
+            agent.set_parameters(array)
 
-        def flatten(obj):
-            for i in obj:
-                if isinstance(i, abc.Iterable):
-                    yield from flatten(i)
-                else:
-                    yield i
-        x = list(flatten(arrays))
-        # Now applying:
-        for a in dam_agents:
-            assert len(x) >= a.dimension, f"x = {x}."
-            a.set_parameters(np.array(x[:a.dimension]))
-            x = x[a.dimension:]
-        assert len(x) == 0, f"x = {x} after distributing weights."
         self.marginal_costs = []
 
         num_dams = int(self.num_dams)
