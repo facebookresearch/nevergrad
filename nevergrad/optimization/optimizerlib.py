@@ -2078,11 +2078,6 @@ class NGOpt4(NGOptBase):
         return optimClass
 
 
-RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
-                                                                      noise_handling="optimistic").set_name(
-    "RecombiningOptimisticNoisyDiscreteOnePlusOne", register=True)
-
-
 @registry.register
 class NGOpt8(NGOpt4):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
@@ -2096,7 +2091,8 @@ class NGOpt8(NGOpt4):
             if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
             else:
-                optimClass = RecombiningOptimisticNoisyDiscreteOnePlusOne
+                optimClass = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
+                                                    noise_handling="optimistic")
         elif self._arity > 0:
             if self.budget < 1000 and self.num_workers == 1:
                 optimClass = DiscreteBSOOnePlusOne
