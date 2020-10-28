@@ -47,7 +47,7 @@ class MLTuning(ExperimentFunction):
         alpha: float,
         learning_rate: str,
         regressor: str,  # Choice of learner.
-        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
+        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train). -> not really noise
     ) -> float:
         if not self.X.size:  # lazzy initialization
             self.get_dataset(self.data_dimension, self.dataset)
@@ -57,10 +57,11 @@ class MLTuning(ExperimentFunction):
         if regressor == "decision_tree":
             regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
                                          min_samples_split=min_samples_split, random_state=0)
-        else:
-            assert regressor == "mlp", f"unknown regressor {regressor}."
+        elif regressor == "mlp":
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
+        else:
+            raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
             X = self.X
@@ -173,9 +174,15 @@ class MLTuning(ExperimentFunction):
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
-        self.evaluation_function = partial(self._ml_parametrization, **evalparams)  # type: ignore
+        self._evalparams = evalparams
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
+
+    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+        assert not args
+        # override with eval parameters (with partial, the eval parameters would be overriden by kwargs)
+        kwargs.update(self._evalparams)
+        return self._ml_parametrization(**kwargs)
 
     def get_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
         # Filling datasets.

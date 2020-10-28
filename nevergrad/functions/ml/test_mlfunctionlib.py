@@ -62,8 +62,7 @@ def test_mltuning_values(cls_params: tp.Dict[str, tp.Any], func_params: tp.Dict[
     np.random.seed(12)
     func = mlfunctionlib.MLTuning(**cls_params)
     outputs = [func(**func_params) for _ in range(2)]
-    assert outputs[0] == outputs[1]
+    assert outputs[0] == outputs[1]  # function is deterministic once initialized
     np.testing.assert_almost_equal(outputs[0], expected, decimal=8)
-    # check that evaluation function is noisefree
-    outputs_eval = [func(**func_params) for _ in range(2)]
-    assert outputs_eval[0] == outputs_eval[1]
+    # check that evaluation function is working
+    func.evaluation_function(**func_params)
