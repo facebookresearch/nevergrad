@@ -2108,7 +2108,7 @@ class NGOpt8(NGOpt4):
             elif num_workers > 2:
                 optimClass = CMandAS2
             else:
-                return super._select_optimizer_cls()
+                return super()._select_optimizer_cls()
             # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
         else:
             if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
@@ -2116,7 +2116,7 @@ class NGOpt8(NGOpt4):
                     num_workers == 1 and budget > 6000 and self.dimension > 7):
                 optimClass = chainCMAPowell
             else:
-                return super._select_optimizer_cls()
+                return super()._select_optimizer_cls()
 
         return optimClass
 
