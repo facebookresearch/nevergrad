@@ -125,7 +125,7 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
         )
     err_inds = set(nandf.index)
     # We also remove type errors, which correspond to a problem not due to the optimization algorithm.
-    typeerror_inds = set(df.select(df["error"] == "TypeError").index)
+    typeerror_inds = set(df.index[df['error'] == "TypeError"])
     output = df.loc[[i for i in df.index if i not in err_inds and i not in typeerror_inds], [c for c in df.columns if c != "error"]]
     # cast nans in loss to infinity
     df.loc[np.isnan(df.loss), "loss"] = float("inf")
