@@ -945,21 +945,32 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
-    funcs = [control.Ant(num_rollouts=5, random_state=seed),
-             control.Swimmer(num_rollouts=5, random_state=seed),
-             control.HalfCheetah(num_rollouts=5, random_state=seed),
-             control.Hopper(num_rollouts=5, random_state=seed),
-             control.Walker2d(num_rollouts=5, random_state=seed),
-             control.Humanoid(num_rollouts=5, random_state=seed)
+    num_rollouts = 1
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
+             control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
+             control.Hopper(num_rollouts=num_rollouts, random_state=seed),
+             control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, random_state=seed),
+             control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
-    for budget in [500, 1000, 3000, 5000]:
+    sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
+    funcs2 = []
+    for sigma, func in zip(sigmas, funcs):
+        f = func.copy()
+        param: ng.p.Array = f.parametrization.copy()  # type: ignore
+        param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
+        f.parametrization = param
+        f.parametrization.freeze()
+        funcs2.append(f)
+
+    optims = ["RandomSearch", "Shiwa", "CMA", "NGOpt4", "DiagonalCMA", "NGOpt8"]
+
+    for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
+                    for fu in funcs2:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp

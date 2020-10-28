@@ -1816,14 +1816,16 @@ class MetaModel(base.Optimizer):
                  multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
+        self._optim = multivariate_optimizer(self.parametrization, budget,
+                                             num_workers)  # share parametrization and its rng
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
                 len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
             try:
-                data = learn_on_k_best(self.archive, int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
+                data = learn_on_k_best(self.archive,
+                                       int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -2059,6 +2061,39 @@ class NGOpt4(NGOptBase):
                                                 optimClass = MetaModel
                                             else:
                                                 optimClass = CMA
+        return optimClass
+
+
+@registry.register
+class NGOpt8(NGOpt4):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # Extracting info as far as possible.
+        assert self.budget is not None
+        optimClass: base.OptCls
+
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            if self.budget > 10000:
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+            else:
+                optimClass = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
+                                                    noise_handling="optimistic")
+        elif self._arity > 0:
+            if self.budget < 1000 and self.num_workers == 1:
+                optimClass = DiscreteBSOOnePlusOne
+            elif self.num_workers > 2:
+                optimClass = CMandAS2  # type: ignore
+            else:
+                optimClass = super()._select_optimizer_cls()
+        else:
+            if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
+                    self.has_noise and self.fully_continuous) and not (self.num_workers > self.budget / 5) and (
+                    self.num_workers == 1 and self.budget > 6000 and self.dimension > 7):
+                optimClass = chainCMAPowell
+            else:
+                optimClass = super()._select_optimizer_cls()
+
         return optimClass
 
 
