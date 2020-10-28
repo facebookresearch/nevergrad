@@ -124,7 +124,9 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
             f'with dimension {row.dimension if hasattr(row, "dimension") else "UNKNOWN"} which raised "{row.error}".'
         )
     err_inds = set(nandf.index)
-    output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
+    # We also remove type errors, which correspond to a problem not due to the optimization algorithm.
+    typeerror_inds = set(df.select(df["error"] == "TypeError")).index
+    output = df.loc[[i for i in df.index if i not in err_inds and i not in typeerror_inds], [c for c in df.columns if c != "error"]]
     # cast nans in loss to infinity
     df.loc[np.isnan(df.loss), "loss"] = float("inf")
     #
