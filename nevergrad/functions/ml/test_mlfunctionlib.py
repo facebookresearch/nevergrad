@@ -23,7 +23,7 @@ from . import mlfunctionlib
     mlp_artificial=(
         dict(regressor="mlp", data_dimension=2, dataset="artificial"),
         dict(activation="relu", solver="adam", alpha=0.01, learning_rate="constant"),
-        0.003852263392,
+        0.002202216487,
     ),
     choosing_regressor_perceptron=(
         dict(regressor="any", data_dimension=2, dataset="artificial"),
@@ -61,6 +61,10 @@ from . import mlfunctionlib
 def test_mltuning_values(cls_params: tp.Dict[str, tp.Any], func_params: tp.Dict[str, tp.Any], expected: float) -> None:
     np.random.seed(12)
     func = mlfunctionlib.MLTuning(**cls_params)
+    if any(params.get("regressor", "") == "mlp" for params in (func_params, cls_params)):
+        # make it way faster
+        func.num_data = 12
+        func._cross_val_num = 2
     outputs = [func(**func_params) for _ in range(2)]
     assert outputs[0] == outputs[1]  # function is deterministic once initialized
     np.testing.assert_almost_equal(outputs[0], expected, decimal=8)
