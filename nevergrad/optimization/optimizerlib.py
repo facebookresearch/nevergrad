@@ -2079,7 +2079,7 @@ class NGOpt4(NGOptBase):
 
 
 RecombiningOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
-                                                                      noise_handling="optimistic")
+                                                                      noise_handling="optimistic", register=True)
 
 
 @registry.register
@@ -2106,10 +2106,9 @@ class NGOpt8(NGOpt4):
             if budget < 1000 and num_workers == 1:
                 optimClass = DiscreteBSOOnePlusOne
             elif num_workers > 2:
-                optimClass = CMandAS2
+                optimClass = CMandAS2  # type: ignore
             else:
                 return super()._select_optimizer_cls()
-            # optimClass = DiscreteBSOOnePlusOne if arity > 5 else CMandAS2
         else:
             if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
                     self.has_noise and self.fully_continuous) and not (num_workers > budget / 5) and (
