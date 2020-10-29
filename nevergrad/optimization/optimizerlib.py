@@ -79,6 +79,7 @@ class _OnePlusOne(base.Optimizer):
             arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
             self._arity = arity
             self._velocity = np.random.uniform(size=self.dimension) * arity / 4.
+            self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
