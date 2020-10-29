@@ -30,12 +30,15 @@ class DiscreteFunction:
         leadingones([0 1 1 1]) = 4,
         leadingones([1 1 1 1]) = 0,
         leadingones([1 0 0 0]) = 3.
-        The present Leadingones function uses a perturbation as documented above for OneMax.
-        There exists variants of jump functions; we are in minimization.
-
-        The principle of a jump function is that local descent does not succeed.
-        Jumps are necessary.
-        """  # TODO update to explain arities and other than leadingones + the examples are actually wrong
+        The present Leadingones function uses a perturbation as documented above for OneMax: we count the number
+        of initial correct values, a correct values being 0 for variable 1, 1 for variable 2, 2 for variable 3, and
+        so on.
+        
+        There exists variants of jump functions: the principle of a jump function is that local descent does not succeed.
+        Jumps are necessary. We are here in minimization, hence a formulation slightly different from most discrete optimization
+        papers, which usually assume maximization. We use the same perturbation as detailed above for leadingones and onemax,
+        i.e. the optimum is located at (0,1,2,...,arity-1,0,1,2,...).
+        """
         self._arity = arity
         self._func = dict(onemax=self.onemax, leadingones=self.leadingones, jump=self.jump)[name]
 
