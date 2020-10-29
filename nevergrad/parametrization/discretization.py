@@ -30,24 +30,25 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     - nans are processed as negative infs (yields 0)
     """
     x = np.array(x, copy=True)
-    assert not np.any(np.isnan(x))
     if np.any(np.isnan(x)):
         warnings.warn("Encountered NaN values for discretization")
         x[np.isnan(x)] = -np.inf
     if arity == 2:  # special case, to have 0 yield 0
         return (np.array(x) > 0).astype(int).tolist()  # type: ignore
     else:
-        y = np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
-        assert not np.any(np.isnan(y))
-        return y
+        return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 
 
 # The function below is the opposite of the function above.
 def inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
+    assert not np.any(np.isnan(indexes_arr))
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
-    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+    x = scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+    nan_indices = np.where(np.isnan(x))
+    x[nan_indices] = np.sign(indexes_arr[nan_indices]) * 500.
+    return x
 
 
 # The discretization is, by nature, not one to one.
