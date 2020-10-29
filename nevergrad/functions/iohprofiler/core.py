@@ -11,7 +11,8 @@ class PBOFunction(base.ExperimentFunction):
     Parameters
     ----------
     fid: int
-        function number (for a list of functions, please see the documentation https://www.sciencedirect.com/science/article/abs/pii/S1568494619308099)
+        function number (for a list of functions, please see the
+        `documentation <https://www.sciencedirect.com/science/article/abs/pii/S1568494619308099>>`_
     iid: int
         the instance of the function, specifies the transformations in variable and objective space
     dim: int
@@ -41,12 +42,11 @@ class PBOFunction(base.ExperimentFunction):
             parameterization: np.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
         else:
             parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
-        super().__init__(self._evaluation_internal, parameterization)
+        super().__init__(self._evaluation_internal, parameterization.set_name(instrumentation))
         self.descriptors.update(fid=fid, iid=iid)
         self.register_initialization(fid=fid, iid=iid, dim=dim, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
-        #This is needed to assure the internal evaluate gets a proper array of the underlying binary values instead of the raw parameterization
         assert len(x) == self.f_internal.number_of_variables
         return -float(self.f_internal(x))
 
@@ -112,13 +112,12 @@ class WModelFunction(base.ExperimentFunction):
             parameterization: ng.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
         else:
             parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
-        super().__init__(self._evaluation_internal, parameterization)
+        super().__init__(self._evaluation_internal, parameterization.set_name("instrumentation"))
         self.descriptors.update(base_function=base_function, iid=iid, dummy=dummy, epistasis=epistasis,
                                 neutrality=neutrality, ruggedness=ruggedness)
         self.register_initialization(base_function=base_function, iid=iid, dim=dim, dummy=dummy, epistasis=epistasis,
                                      neutrality=neutrality, ruggedness=ruggedness, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
-        #This is needed to assure the internal evaluate gets a proper array of the underlying binary values instead of the raw parameterization
         assert len(x) == self.f_internal.number_of_variables
         return -float(self.f_internal(x))

@@ -4,14 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import warnings
 import typing as tp
 import itertools
 import numpy as np
-import torch
-import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
-from torchvision.models import resnet50
 import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
@@ -28,6 +24,7 @@ from nevergrad.functions.images import Image, ImageAdversarial
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
@@ -143,7 +140,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
             for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
                 dfunc = ExperimentFunction(discrete_func, instrum)
                 dfunc._descriptors.update(arity=arity)
@@ -208,7 +205,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
               "AdaptiveDiscreteOnePlusOne",
               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete",
-              "DiscreteBSOOnePlusOne", "AnisotropicAdaptiveDiscreteOnePlusOne"]
+              "DiscreteBSOOnePlusOne", "AnisotropicAdaptiveDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
 
     if default_optims is not None:
         optims = default_optims
@@ -217,7 +214,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax"]:
                 if instrum_str == "Softmax":
-                    instrum = ng.p.Choice(range(arity), repetitions=nv)
+                    instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
                     # Equivalent to, but much faster than, the following:
                     # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
 #                 else:
@@ -227,9 +224,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
                 else:
                     assert instrum_str == "Unordered"
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)  # type: ignore
+                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
@@ -242,17 +239,18 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of instrum_discrete."""
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne", "AnisotropicAdaptiveDiscreteOnePlusOne",
-              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne", "DiscreteLenglerOnePlusOne", "FastGADiscreteOnePlusOne",
+              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne",
+              "AnisotropicAdaptiveDiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
                 for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum)
+                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
                     dfunc.add_descriptors(arity=arity)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
@@ -923,27 +921,57 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
+@registry.register
+def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MixSimulator of power plants
+    Budget 20, 40, ..., 1600.
+    Sequential or 30 workers."""
+    funcs = [OptimizeMix()]
+    seedg = create_seed_generator(seed)
+    optims = ["OnePlusOne","NGOpt","CMA","DE","PSO"]
+    if default_optims is not None:
+        optims = default_optims
+    seq = np.arange(0,1601,20)
+    for budget in seq:
+        for num_workers in [1, 30]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 @registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
-    funcs = [control.Ant(num_rollouts=5, random_state=seed),
-             control.Swimmer(num_rollouts=5, random_state=seed),
-             control.HalfCheetah(num_rollouts=5, random_state=seed),
-             control.Hopper(num_rollouts=5, random_state=seed),
-             control.Walker2d(num_rollouts=5, random_state=seed),
-             control.Humanoid(num_rollouts=5, random_state=seed)
+    num_rollouts = 1
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
+             control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
+             control.Hopper(num_rollouts=num_rollouts, random_state=seed),
+             control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, random_state=seed),
+             control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
-    for budget in [500, 1000, 3000, 5000]:
+    sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
+    funcs2 = []
+    for sigma, func in zip(sigmas, funcs):
+        f = func.copy()
+        param: ng.p.Array = f.parametrization.copy()  # type: ignore
+        param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
+        f.parametrization = param
+        f.parametrization.freeze()
+        funcs2.append(f)
+
+    optims = ["RandomSearch", "Shiwa", "CMA", "NGOpt4", "DiagonalCMA", "NGOpt8"]
+
+    for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
+                    for fu in funcs2:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
@@ -1257,60 +1285,17 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    class Normalize(nn.Module):
-        def __init__(self, mean, std):
-            super().__init__()
-            self.mean = torch.Tensor(mean)
-            self.std = torch.Tensor(std)
-
-        def forward(self, x):
-            return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
-
-    class Resnet50(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                                  std=[0.229, 0.224, 0.225])
-            self.model = resnet50(pretrained=True)
-
-        def forward(self, x):
-            return self.model(self.norm(x))
-
-    image_size = 224
-    data_folder = "pouet"  # "/datasets01_101/imagenet_full_size/061417/val"
-    if not os.path.exists(data_folder):
-        x, y = torch.zeros(1, 3, 224, 224), 0
-        data_loader = [(x, y)]
-        path_exist = False
-    else:
-        data_loader = torch.utils.data.DataLoader(
-            torchvision.datasets.ImageFolder(data_folder,
-                                             transforms.Compose([
-                                                 transforms.Resize(image_size),
-                                                 transforms.CenterCrop(image_size),
-                                                 transforms.ToTensor()])),
-            batch_size=1,
-            shuffle=True,
-            num_workers=8,
-            pin_memory=True)
-        path_exist = True
-
-    classifier = Resnet50()
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    for i, (data, target) in enumerate(data_loader):
-        if i > 1:
-            continue
-        _, pred = torch.max(classifier(data), axis=1)
-        if pred == target or (not path_exist):
-            func = ImageAdversarial(classifier, image=data[0], label=int(target), targeted=False,
-                                    epsilon=0.05)
-            for budget in [10]:
-                for num_workers in [1]:
-                    for algo in optims:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+    folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
+    if folder is None:
+        warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
+    for func in ImageAdversarial.make_folder_functions(folder=folder):
+        for budget in [10]:
+            for num_workers in [1]:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp
 
 
 @registry.register
