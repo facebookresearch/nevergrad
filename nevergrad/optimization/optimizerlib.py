@@ -197,7 +197,7 @@ class _OnePlusOne(base.Optimizer):
             for i in range(self.dimension):
                 if self._modified_variables[i]:
                     self._velocity[i] *= factor 
-                    self._velocity = min(max(self._velocity, 1.), self._arity / 4.)
+                    self._velocity[i] = min(max(self._velocity[i], 1.), self._arity / 4.)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
