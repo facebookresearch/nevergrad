@@ -30,13 +30,16 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     - nans are processed as negative infs (yields 0)
     """
     x = np.array(x, copy=True)
+    assert not np.any(np.isnan(x))
     if np.any(np.isnan(x)):
         warnings.warn("Encountered NaN values for discretization")
         x[np.isnan(x)] = -np.inf
     if arity == 2:  # special case, to have 0 yield 0
         return (np.array(x) > 0).astype(int).tolist()  # type: ignore
     else:
-        return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
+        y = np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
+        assert not np.any(np.isnan(y))
+        return y
 
 
 # The function below is the opposite of the function above.
