@@ -37,7 +37,6 @@ def _slugify(value: str) -> str:
     value = str(unicodedata.normalize('NFKD', value).encode('ascii', 'ignore'))
     value = re.sub('[^\w\s-]', '', value).strip().lower()
     value = re.sub('[-\s]+', '-', value)
-    # ...
     return value
 
 
