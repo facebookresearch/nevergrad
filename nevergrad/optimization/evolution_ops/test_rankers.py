@@ -43,14 +43,14 @@ def test_fast_non_dominated_ranking() -> None:
 
     loss_values = [[[0.0, 2.0], [1.0, 1.0]], [[0.0, 4.0], [1.0, 3.0], [3.0, 1.0]], [[2.0, 3.0], [4.0, 2.0]]]
 
-    candidates: tp.Dict[str, p.Parameter] = {}
+    candidates: tp.List[p.Parameter] = []
     expected_frontiers = []
     for vals in loss_values:
         expected_frontier = []
         for v in vals:
             candidate = params.spawn_child().set_standardized_data(v)
             candidate._losses = np.array(v)
-            candidates[candidate.uid] = candidate
+            candidates.append(candidate)
             expected_frontier.append(candidate)
         expected_frontiers.append(expected_frontier)
 
