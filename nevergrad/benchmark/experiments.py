@@ -82,7 +82,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequuential counterpart of mltuning."""
-    internal_generator = mltuning(seed, overfitter=True, seq=True)
+    internal_generator = mltuning(seed, overfitter=False, seq=True)
     for xp in internal_generator:
         yield xp
 
