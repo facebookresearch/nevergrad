@@ -33,13 +33,10 @@ class _EvolutionStrategy(base.Optimizer):
         self._waiting: tp.List[p.Parameter] = []
         # configuration
         self._config = EvolutionStrategy() if config is None else config
-        self._ranker, self._density_estimator = None, None
-        if self._config.selection == "simple":
-            self._internal_tell_es = self._simple_tell_candidate
-        elif self._config.selection == "nsga2":
-            self._ranker = rankers.FastNonDominatedRanking()
-            self._density_estimator = rankers.CrowdingDistance()
-            self._internal_tell_es = self._nsga2_tell_candidate
+        if self._config.ranker == "simple":
+            self._ranker = None
+        elif self._config.ranker == "nsga2":
+            self._ranker = rankers.NSGA2Ranking() #Note this does not control the selection mechanism
         else:
             raise NotImplementedError
 
@@ -62,10 +59,6 @@ class _EvolutionStrategy(base.Optimizer):
 
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
-        self._internal_tell_es(candidate, value)
-
-
-    def _simple_tell_candidate(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
         candidate._meta["value"] = value
         if self._config.offsprings is None:
             uid = candidate.heritage["lineage"]
@@ -85,55 +78,16 @@ class _EvolutionStrategy(base.Optimizer):
 
     def _simple_selection(self):
         choices = self._waiting + ([] if self._config.only_offsprings else list(self._population.values()))
-        choices.sort(key=lambda x: x._meta["value"])
+        if self._ranker is not None:
+            choices_rank = self._ranker.rank(choices, self._config.popsize)
+            choices.sort(key=lambda x: choices_rank[x.uid][0] if x.uid in choices_rank else float('inf'))
+        else:
+            choices.sort(key=lambda x: x._meta["value"])
         self._population = {x.uid: x for x in choices[:self._config.popsize]}
         self._uid_queue.clear()
         self._waiting.clear()
         for uid in self._population:
             self._uid_queue.tell(uid)
-
-
-    def _nsga2_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss): #tp.FloatLoss?
-        uid = candidate.heritage["lineage"]
-        #self._uid_queue.tell(uid) #request complete (asked -> told)
-        if candidate.uid not in self._population and len(self._population) < self._config.popsize:
-            self._population[candidate.uid] = candidate
-            self._uid_queue.tell(candidate.uid) #next suggested candidate
-            return
-        if len(self._waiting) <= self._config.popsize: # number of offsprings and number of parents are equal
-            self._waiting.append(candidate)
-            return
-        # Select candidates in the next generation
-        self._nsga2_selection()
-        # clean up
-        self._uid_queue.clear()
-        self._waiting.clear()
-        for uid in self._population:
-            self._uid_queue.tell(uid)
-
-
-    def _nsga2_selection(self):
-        # Refer to section C of the NSGA paper
-        popsize = len(self._population)
-        joined_population = dict(self._population)
-        for candidate in self._waiting: #_waiting stores offsprings
-            joined_population[candidate.uid] = candidate
-        fronts = self._ranker.compute_ranking(joined_population)
-        #print(fronts)
-        population_next: tp.Dict[str, p.Parameter] = {}
-        count = 0
-        for front_i in range(len(fronts)):
-            count += len(fronts[front_i])
-            if count >= popsize:
-                self._density_estimator.compute_distance(fronts[front_i])
-                self._density_estimator.sort(fronts[front_i])
-                for c_i in range(0, popsize - len(population_next)):
-                    population_next[fronts[front_i][c_i].uid] = fronts[front_i][c_i]
-                break
-            for candidate in fronts[front_i]:
-                population_next[candidate.uid] = candidate
-        self._population = population_next
-        
 
 
 class EvolutionStrategy(base.ConfiguredOptimizer):
@@ -150,19 +104,19 @@ class EvolutionStrategy(base.ConfiguredOptimizer):
             offsprings: tp.Optional[int] = None,
             only_offsprings: bool = False,
             # de_step: bool = False,
-            selection: str = "simple"
+            ranker: str = "simple"
     ) -> None:
         super().__init__(_EvolutionStrategy, locals(), as_config=True)
         assert offsprings is None or not only_offsprings or offsprings > popsize
         if only_offsprings:
             assert offsprings is not None, "only_offsprings only work if offsprings is not None (non-DE mode)"
         assert 0 <= recombination_ratio <= 1
-        assert selection in ["simple", "nsga2"]
+        assert ranker in ["simple", "nsga2"]
         self.recombination_ratio = recombination_ratio
         self.popsize = popsize
         self.offsprings = offsprings
         self.only_offsprings = only_offsprings
-        self.selection = selection
+        self.ranker = ranker
 
 
 RecES = EvolutionStrategy(recombination_ratio=1, only_offsprings=True, offsprings=60).set_name("RecES", register=True)
@@ -171,4 +125,4 @@ RecMutDE = EvolutionStrategy(recombination_ratio=1, only_offsprings=False, offsp
 ES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60).set_name("ES", register=True)
 MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=20).set_name("MixES", register=True)
 MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).set_name("MutDE", register=True)
-NSGAIIES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60, selection="nsga2").set_name("NSGAIIES", register=True)
+NSGAIIES = EvolutionStrategy(recombination_ratio=0, only_offsprings=True, offsprings=60, ranker="nsga2").set_name("NSGAIIES", register=True)

@@ -123,10 +123,10 @@ class FastNonDominatedRanking:
         return 0
 
 
-    def compute_ranking(self, candidates: tp.Dict[str, p.Parameter], k: int = None) -> tp.List[tp.List[p.Parameter]]:
+    def compute_ranking(self, candidates: tp.List[p.Parameter], k: int = None) -> tp.List[tp.List[p.Parameter]]:
         """ Compute ranking of candidates.
 
-        :param candidates: Dict of candidates.
+        :param candidates: List of candidates.
         :param k: Number of individuals.
         """
         n_cand: int = len(candidates)
@@ -139,12 +139,13 @@ class FastNonDominatedRanking:
         # front[i] contains the list of solutions belonging to front i
         front: tp.List[tp.List[int]] = [[] for _ in range(n_cand + 1)]
 
-        uids = list(candidates)
+        uid2candidate = {c.uid: c for c in candidates}
+        uids = [c.uid for c in candidates]
         for c1 in range(n_cand - 1):
             uid1 = uids[c1]
             for c2 in range(c1 + 1, n_cand):
                 uid2 = uids[c2]
-                dominance_test_result = self.compare(candidates[uid1], candidates[uid2])
+                dominance_test_result = self.compare(uid2candidate[uid1], uid2candidate[uid2])
                 #self.number_of_comparisons += 1
                 if dominance_test_result == -1:
                     # c1 wins
@@ -156,8 +157,8 @@ class FastNonDominatedRanking:
                     dominated_by_cnt[c1] += 1
 
         # Reset rank
-        for _, cand in candidates.items():
-            cand._meta["non_dominated_rank"] = np.Inf
+        for cand in candidates:
+            cand._meta["non_dominated_rank"] = float('inf')
 
         # Formation of front[0], i.e. candidates that do not dominated by others
         front[0] = [c1 for c1 in range(n_cand) if dominated_by_cnt[c1] == 0]
@@ -179,10 +180,38 @@ class FastNonDominatedRanking:
         for front_i in range(last_fronts):
             count += len(front[front_i])
             for cand_i in front[front_i]:
-                candidates[uids[cand_i]]._meta["non_dominated_rank"] = front_i
-            ranked_sublists.append([candidates[uids[i]] for i in front[front_i]])
+                uid2candidate[uids[cand_i]]._meta["non_dominated_rank"] = front_i
+            ranked_sublists.append([uid2candidate[uids[i]] for i in front[front_i]])
             if (k is not None) and (count >= k):
                 break
 
         return ranked_sublists
         
+
+class NSGA2Ranking:
+    """This class implements the multi-objective ranking function of NSGA-II.
+    """
+
+    def __init__(self):
+        self._frontier_ranker = FastNonDominatedRanking()
+        self._density_estimator = CrowdingDistance()
+
+
+    def rank(self, population: tp.List[p.Parameter], n_selected: tp.Optional[int] = None) -> tp.Dict[str, tp.Tuple[int, int, float]]:
+        selected_pop : tp.Dict[str, tp.Tuple[int, int, float]] = {}
+        frontiers = self._frontier_ranker.compute_ranking(population)
+        count = 0
+        for front_i, p_frontier in enumerate(frontiers):
+            count += len(p_frontier)
+            if n_selected is None or count >= n_selected:
+                self._density_estimator.compute_distance(p_frontier)
+                self._density_estimator.sort(p_frontier)
+                n_dist_calc = n_selected - len(selected_pop) if n_selected is not None else len(p_frontier)
+                for c_i in range(0, n_dist_calc):
+                    selected_pop[p_frontier[c_i].uid] = (front_i + c_i, front_i, p_frontier[c_i]._meta['crowding_distance'])
+                if n_selected is not None:
+                    break
+            if n_selected is not None:
+                for candidate in p_frontier:
+                    selected_pop[candidate.uid] = (front_i, front_i, float('inf'))
+        return selected_pop
