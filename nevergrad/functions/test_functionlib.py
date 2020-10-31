@@ -50,7 +50,6 @@ def test_ptb_no_overfitting() -> None:
     sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
     cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
     cigar_rot=({"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 5239413.576),
-    no_transform=({"name": "leadingones5", "block_dimension": 50, "useless_variables": 10}, 9.0),
     hashed=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True}, 12.44),
     noisy_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": .2}, 9.576),
     noisy_very_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6,
@@ -117,13 +116,6 @@ def test_functionlib_copy() -> None:
     assert func.equivalent_to(func2)
     assert func._parameters["noise_level"] == func2._parameters["noise_level"]
     assert func is not func2
-
-
-def test_artifificial_function_with_jump() -> None:
-    func1 = functionlib.ArtificialFunction("sphere", 5)
-    func2 = functionlib.ArtificialFunction("jump5", 5)
-    np.testing.assert_equal(func1.transform_var.only_index_transform, False)
-    np.testing.assert_equal(func2.transform_var.only_index_transform, True)
 
 
 def test_compute_pseudotime() -> None:
