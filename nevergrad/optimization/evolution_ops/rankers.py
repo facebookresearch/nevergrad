@@ -97,8 +97,8 @@ class CrowdingDistance:
 
     def sort(self, candidates: tp.List[p.Parameter], in_place: bool = True) -> tp.List[p.Parameter]:
         if in_place:
-            candidates.sort(key=lambda elem: elem._meta['crowding_distance'])
-        return sorted(candidates, key=lambda elem: elem._meta['crowding_distance'])
+            candidates.sort(key=lambda elem: elem._meta['crowding_distance'], reverse=True) #Larger -> Less crowded
+        return sorted(candidates, key=lambda elem: elem._meta['crowding_distance'], reverse=True)
 
 
 class FastNonDominatedRanking:
@@ -201,17 +201,20 @@ class NSGA2Ranking:
         selected_pop : tp.Dict[str, tp.Tuple[int, int, float]] = {}
         frontiers = self._frontier_ranker.compute_ranking(population)
         count = 0
+        next_rank = 0
         for front_i, p_frontier in enumerate(frontiers):
             count += len(p_frontier)
-            if n_selected is None or count >= n_selected:
+            if n_selected is None or count > n_selected:
                 self._density_estimator.compute_distance(p_frontier)
                 self._density_estimator.sort(p_frontier)
                 n_dist_calc = n_selected - len(selected_pop) if n_selected is not None else len(p_frontier)
                 for c_i in range(0, n_dist_calc):
-                    selected_pop[p_frontier[c_i].uid] = (front_i + c_i, front_i, p_frontier[c_i]._meta['crowding_distance'])
+                    selected_pop[p_frontier[c_i].uid] = (next_rank, front_i, p_frontier[c_i]._meta['crowding_distance'])
+                    next_rank += 1
                 if n_selected is not None:
                     break
             if n_selected is not None:
                 for candidate in p_frontier:
-                    selected_pop[candidate.uid] = (front_i, front_i, float('inf'))
+                    selected_pop[candidate.uid] = (next_rank, front_i, float('inf'))
+                next_rank += 1
         return selected_pop
