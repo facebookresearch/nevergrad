@@ -66,18 +66,18 @@ class Mutator:
             intensity = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
         if dimension == 1:  # corner case.
             return self.random_state.normal(0., 1., size=1)  # type: ignore
-        boolean_vector = [True for _ in parent]
+        boolean_vector = np.array(np.ones(dimension), dtype=bool)
         while all(boolean_vector) and dimension != 1:
-            boolean_vector = [self.random_state.rand() > (float(intensity) / dimension) for _ in parent]
+            boolean_vector = self.random_state.rand(dimension) > float(intensity) / dimension
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def coordinatewise_mutation(self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int) -> tp.ArrayLike:
         """This is the anisotropic counterpart of the classical 1+1 mutations in discrete domains
         with tunable intensity: it is useful for anisotropic adaptivity."""
         dimension = len(parent)
-        boolean_vector = [False for _ in parent]
+        boolean_vector = np.array(np.zeros(dimension), dtype=bool)
         while not any(boolean_vector):
-            boolean_vector = [self.random_state.rand() < (1. / dimension) for _ in parent]
+            boolean_vector = self.random.rand(dimension) < (1. / dimension)
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
         return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
                                                                 in zip(boolean_vector, discrete_data, velocity)])
@@ -85,7 +85,7 @@ class Mutator:
     def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         """This is the most classical discrete 1+1 mutation of the evolution literature."""
         dimension = len(parent)
-        boolean_vector = [True for _ in parent]
+        boolean_vector = np.array(np.ones(dimension), dtype=bool)
         while all(boolean_vector):
             boolean_vector = [self.random_state.rand() > (1. / dimension) for _ in parent]
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
