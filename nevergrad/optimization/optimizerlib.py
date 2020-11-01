@@ -53,6 +53,8 @@ class _OnePlusOne(base.Optimizer):
     DoubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
     DiscreteBSO corresponds to a decreasing schedule of mutation rate.
     Adaptive and Doerr correspond to various self-adaptive mutation rates.
+    
+    Coordinatewiseadaptive is the anisotropic counterpart of the adaptive version.
     """
 
     def __init__(
