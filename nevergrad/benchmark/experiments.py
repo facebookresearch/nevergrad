@@ -82,7 +82,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequuential counterpart of mltuning."""
-    internal_generator = mltuning(seed, overfitter=True, seq=True)
+    internal_generator = mltuning(seed, overfitter=False, seq=True)
     for xp in internal_generator:
         yield xp
 
@@ -140,10 +140,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
-            for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                dfunc = ExperimentFunction(discrete_func, instrum)
-                dfunc._descriptors.update(arity=arity)
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+            for name in ["onemax", "leadingones", "jump"]:
+                dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition"))
+                dfunc.add_descriptors(arity=arity)
                 for optim in optims:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
@@ -205,7 +205,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
               "AdaptiveDiscreteOnePlusOne",
               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete",
-              "DiscreteBSOOnePlusOne"]
+              "DiscreteBSOOnePlusOne", "DiscreteLenglerOnePlusOne"]
 
     if default_optims is not None:
         optims = default_optims
@@ -225,10 +225,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 else:
                     assert instrum_str == "Unordered"
                     instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
-                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
+                for name in ["onemax", "leadingones", "jump"]:
+                    dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str))
                     dfunc.add_descriptors(arity=arity)
-                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
@@ -239,7 +238,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of instrum_discrete."""
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne",
+    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne", "DiscreteLenglerOnePlusOne", "FastGADiscreteOnePlusOne",
               "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
@@ -247,11 +246,10 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
-                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+                for name in ["onemax", "leadingones", "jump"]:
+                    dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str))
                     dfunc.add_descriptors(arity=arity)
-                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for budget in [50, 500, 5000, 50000]:
                             yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
@@ -945,21 +943,32 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
-    funcs = [control.Ant(num_rollouts=5, random_state=seed),
-             control.Swimmer(num_rollouts=5, random_state=seed),
-             control.HalfCheetah(num_rollouts=5, random_state=seed),
-             control.Hopper(num_rollouts=5, random_state=seed),
-             control.Walker2d(num_rollouts=5, random_state=seed),
-             control.Humanoid(num_rollouts=5, random_state=seed)
+    num_rollouts = 1
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
+             control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
+             control.Hopper(num_rollouts=num_rollouts, random_state=seed),
+             control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, random_state=seed),
+             control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
-    optims = ["RandomSearch", "Shiwa", "CMA", "PSO", "OnePlusOne",
-              "NGOpt2", "DE", "Zero", "Powell", "Cobyla", "MetaTuneRecentering"]
 
-    for budget in [500, 1000, 3000, 5000]:
+    sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
+    funcs2 = []
+    for sigma, func in zip(sigmas, funcs):
+        f = func.copy()
+        param: ng.p.Array = f.parametrization.copy()  # type: ignore
+        param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
+        f.parametrization = param
+        f.parametrization.freeze()
+        funcs2.append(f)
+
+    optims = ["RandomSearch", "Shiwa", "CMA", "NGOpt4", "DiagonalCMA", "NGOpt8"]
+
+    for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
+                    for fu in funcs2:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp

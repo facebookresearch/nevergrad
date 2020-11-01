@@ -45,6 +45,14 @@ class _OnePlusOne(base.Optimizer):
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
+    
+    Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
+    discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
+    
+    Discrete is the most classical discrete mutation operator,
+    DoubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
+    DiscreteBSO corresponds to a decreasing schedule of mutation rate.
+    Adaptive and Doerr correspond to various self-adaptive mutation rates.
     """
 
     def __init__(
@@ -71,7 +79,7 @@ class _OnePlusOne(base.Optimizer):
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
         assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive",
-                            "portfolio", "discreteBSO", "doerr"], f"Unkwnown mutation: '{mutation}'"
+                            "portfolio", "discreteBSO", "lengler", "doerr"], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
         self.noise_handling = noise_handling
@@ -141,9 +149,13 @@ class _OnePlusOne(base.Optimizer):
                                                            arity=self.arity_for_discrete_mutation)
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
-                intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
+                intensity = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
+            elif mutation == "lengler":
+                alpha = 1.54468
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
@@ -214,7 +226,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
-
+        - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
     crossover: bool
         whether to add a genetic crossover step every other iteration.
 
@@ -241,6 +253,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name("DiscreteLenglerOnePlusOne", register=True)
+
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
@@ -1816,14 +1830,16 @@ class MetaModel(base.Optimizer):
                  multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
+        self._optim = multivariate_optimizer(self.parametrization, budget,
+                                             num_workers)  # share parametrization and its rng
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
                 len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
             try:
-                data = learn_on_k_best(self.archive, int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
+                data = learn_on_k_best(self.archive,
+                                       int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -2059,6 +2075,39 @@ class NGOpt4(NGOptBase):
                                                 optimClass = MetaModel
                                             else:
                                                 optimClass = CMA
+        return optimClass
+
+
+@registry.register
+class NGOpt8(NGOpt4):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # Extracting info as far as possible.
+        assert self.budget is not None
+        optimClass: base.OptCls
+
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            if self.budget > 10000:
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+            else:
+                optimClass = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
+                                                    noise_handling="optimistic")
+        elif self._arity > 0:
+            if self.budget < 1000 and self.num_workers == 1:
+                optimClass = DiscreteBSOOnePlusOne
+            elif self.num_workers > 2:
+                optimClass = CMandAS2  # type: ignore
+            else:
+                optimClass = super()._select_optimizer_cls()
+        else:
+            if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
+                    self.has_noise and self.fully_continuous) and not (self.num_workers > self.budget / 5) and (
+                    self.num_workers == 1 and self.budget > 6000 and self.dimension > 7):
+                optimClass = chainCMAPowell
+            else:
+                optimClass = super()._select_optimizer_cls()
+
         return optimClass
 
 
