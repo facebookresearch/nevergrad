@@ -7,7 +7,10 @@ class CrowdingDistance:
     """
 
     def accumulate_distance_per_objective(self, front: tp.List[p.Parameter], i: int):
-        is_multiobj: bool = len(front[0].losses) > 1 #isinstance(front[0].loss, np.ndarray)
+        if isinstance(front[0].losses, np.ndarray) and front[0].losses.shape != ():
+            is_multiobj: bool = len(front[0].losses) > 1 #isinstance(front[0].loss, np.ndarray)
+        else:
+            is_multiobj = False
         assert (not is_multiobj and (i == 0)) or is_multiobj
 
         # Sort the population by objective i
@@ -87,7 +90,7 @@ class CrowdingDistance:
         for i in range(len(front)):
             front[i]._meta['crowding_distance'] = 0.0
 
-        if isinstance(front[0].losses, np.ndarray):
+        if isinstance(front[0].losses, np.ndarray) and front[0].losses.shape != ():
             number_of_objectives = len(front[0].losses)
         else:
             number_of_objectives = 1
@@ -200,6 +203,7 @@ class NSGA2Ranking:
     def rank(self, population: tp.List[p.Parameter], n_selected: tp.Optional[int] = None) -> tp.Dict[str, tp.Tuple[int, int, float]]:
         selected_pop : tp.Dict[str, tp.Tuple[int, int, float]] = {}
         frontiers = self._frontier_ranker.compute_ranking(population)
+        print(frontiers)
         count = 0
         next_rank = 0
         for front_i, p_frontier in enumerate(frontiers):

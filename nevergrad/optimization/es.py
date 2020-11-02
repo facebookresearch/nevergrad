@@ -78,7 +78,8 @@ class _EvolutionStrategy(base.Optimizer):
     def _select(self):
         choices = self._waiting + ([] if self._config.only_offsprings else list(self._population.values()))
         if self._ranker is not None:
-            choices_rank = self._ranker.rank(choices, n_selected=self._config.popsize)
+            choices_rank = self._ranker.rank(choices, self._config.popsize)
+            choices = [x for x in choices if x.uid in choices_rank]
         else:
             choices.sort(key=lambda x: x._meta["value"])
         self._population = {x.uid: x for x in choices[:self._config.popsize]}

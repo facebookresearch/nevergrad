@@ -128,3 +128,22 @@ def test_nsga2_ranking_3() -> None:
             if rank_result[c.uid][2] != float("inf"):
                 n_non_inf += 1
         assert n_non_inf == expect_n_non_inf
+
+
+def test_nsga2_ranking_4():
+    params = ng.p.Tuple(ng.p.Scalar(lower=0, upper=2))
+    loss_values = [0.0, 1.0, -10.0, 1.0, 3.0, 1.0]
+    candidates: tp.List[p.Parameter] = []
+    expected_frontier = []
+    for v in loss_values:
+        candidate = params.spawn_child().set_standardized_data(v)
+        candidate.loss = np.array(v)
+        candidates.append(candidate)
+    ranking_method = rankers.NSGA2Ranking()
+
+    n_selected = 3
+    rank_result = ranking_method.rank(candidates, n_selected)
+    candidates.sort(key=lambda x: rank_result[x.uid][0] if x.uid in rank_result else float('inf'))
+    loss_from_rank = [r.loss for r in candidates[:n_selected]]
+    loss_from_sorted = [np.array(v) for v in sorted(loss_values)[:n_selected]]
+    assert loss_from_rank == loss_from_sorted
