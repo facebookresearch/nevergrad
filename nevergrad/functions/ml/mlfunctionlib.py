@@ -21,6 +21,7 @@ class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     We propose different possible regressors and different dimensionalities.
     In each case, Nevergrad will optimize the parameters of a scikit learning.
+
     Parameters
     ----------
     regressor: str
@@ -34,6 +35,7 @@ class MLTuning(ExperimentFunction):
         if we want the evaluation to be the same as during the optimization run. This means that instead
         of train/valid/error, we have train/valid/valid. This is for research purpose, when we want to check if an algorithm
         is particularly good or particularly bad because it fails to minimize the validation loss or because it overfits.
+
     """
 
     # Example of ML problem.
@@ -47,13 +49,12 @@ class MLTuning(ExperimentFunction):
         alpha: float,
         learning_rate: str,
         regressor: str,  # Choice of learner.
-        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
+        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train). -> not really noise
     ) -> float:
         if not self.X.size:  # lazzy initialization
             self.get_dataset(self.data_dimension, self.dataset)
         # num_cv-folds cross-validation
         result = 0.0
-        res = 0.0
         # Fit regression model
         if regressor == "decision_tree":
             regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
@@ -85,10 +86,9 @@ class MLTuning(ExperimentFunction):
 
             # Predict
             pred_test = regr.predict(X_test)
-            result += np.sum((y_test - pred_test)**2)
-            res += mean_squared_error(y_test, pred_test)
+            result += mean_squared_error(y_test, pred_test)
 
-        return res / self.num_cv  # We return a num_cv-fold validation error.
+        return result / self.num_cv  # We return a num_cv-fold validation error.
 
     def __init__(
         self,
