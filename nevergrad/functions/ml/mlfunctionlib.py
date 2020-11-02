@@ -74,12 +74,7 @@ class MLTuning(ExperimentFunction):
             return mean_squared_error(self.y_test, pred_test)
 
         # We do a cross-validation.
-        for cv in range(self.num_cv):
-            X = self.X_train_cv[cv]
-            y = self.y_train_cv[cv]
-            X_test = self.X_valid_cv[cv]
-            y_test = self.y_valid_cv[cv]
-
+        for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
 
             regr.fit(np.asarray(X), np.asarray(y))
