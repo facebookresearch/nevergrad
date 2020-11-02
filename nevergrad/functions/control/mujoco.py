@@ -43,7 +43,7 @@ class GenericMujocoEnv:
             while not done:
                 action = np.dot(x, (obs - self.mean) / self.std)
                 if y is not None:
-                    action = np.dot(np.eye(len(action)) + 1.e-4 * y, np.tanh(x))
+                    action = np.dot(np.eye(len(action)) + y, np.tanh(x))
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
             returns.append(totalr)
