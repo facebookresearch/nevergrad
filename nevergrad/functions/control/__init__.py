@@ -9,3 +9,4 @@ from .core import HalfCheetah as HalfCheetah
 from .core import Hopper as Hopper
 from .core import Walker2d as Walker2d
 from .core import Humanoid as Humanoid
+from .core import Humanoid as NeuroHumanoid
