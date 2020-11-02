@@ -101,19 +101,26 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
-# We register only the sequuential counterparts for the moment.
+# We register only the sequential counterparts for the moment.
 @registry.register
 def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequuential counterpart of mltuning."""
+    """Sequential counterpart of mltuning."""
     internal_generator = mltuning(seed, overfitter=False, seq=True)
     for xp in internal_generator:
         yield xp
 
-# We register only the sequuential counterparts for the moment.
+# We register only the sequential counterparts for the moment.
 @registry.register
 def seqsmallmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequuential counterpart of mltuning."""
+    """Sequential counterpart of mltuning."""
     internal_generator = smallmltuning(seed, overfitter=True, seq=True)
+    for xp in internal_generator:
+        yield xp
+
+@registry.register
+def naiveseqsmallmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning."""
+    internal_generator = smallmltuning(seed, overfitter=False, seq=True)
     for xp in internal_generator:
         yield xp
 
