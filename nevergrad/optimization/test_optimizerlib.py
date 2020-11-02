@@ -106,6 +106,9 @@ def check_optimizer(
     else:
         assert optimizer.num_tell == budget + 1
         assert optimizer.num_tell_not_asked == 1
+    # pickling
+    with tempfile.TemporaryDirectory() as tmp:
+        optimizer.dump(Path(tmp) / "dump.pkl")
 
 
 SLOW = [
