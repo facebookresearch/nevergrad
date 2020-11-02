@@ -44,6 +44,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
+
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
@@ -85,20 +86,6 @@ def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
-# We register only the sequential counterparts for the moment.
-@registry.register
-def seqsmallmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
-    internal_generator = smallmltuning(seed, overfitter=True, seq=True)
-    for xp in internal_generator:
-        yield xp
-
-@registry.register
-def naiveseqsmallmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
-    internal_generator = smallmltuning(seed, overfitter=False, seq=True)
-    for xp in internal_generator:
-        yield xp
 
 @registry.register
 def naiveseqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
