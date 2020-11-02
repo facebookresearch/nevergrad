@@ -41,7 +41,7 @@ class BaseFunction(ExperimentFunction):
 
     def __init__(self, num_rollouts: int, random_state: tp.Optional[int] = None) -> None:
         if self.policy_2ndlayer_dim is not None:
-            super().__init__(self._simulate, p.Tuple(p.Array(shape=self.policy_dim), p.Array(shape=self.policy_2ndlayer_dim)))
+            super().__init__(self._simulate, np.p.Instrumentation(p.Array(shape=self.policy_dim), p.Array(shape=self.policy_2ndlayer_dim)))
         else:
             super().__init__(self._simulate, p.Array(shape=self.policy_dim))
         self.num_rollouts = num_rollouts
