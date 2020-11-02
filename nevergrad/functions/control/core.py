@@ -49,7 +49,7 @@ class BaseFunction(ExperimentFunction):
         self.register_initialization(num_rollouts=num_rollouts, random_state=random_state)
         self.add_descriptors(num_rollouts=num_rollouts)
 
-    def _simulate(self, x: np.ndarray, y: tp.Optional[np.ndarray]) -> float:
+    def _simulate(self, x: np.ndarray, y: tp.Optional[np.ndarray] = None) -> float:
         env = GenericMujocoEnv(env_name=self.env_name,
                                state_mean=self.state_mean,
                                state_std=self.state_std,
@@ -78,9 +78,9 @@ class BaseFunction(ExperimentFunction):
         return None
                 
     # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self, x: np.ndarray, y: tp.Optional[np.ndarray] = None) -> float:  # type: ignore
         # pylint: disable=not-callable
-        loss = self.function(x)
+        loss = self.function(x, y)
         assert isinstance(loss, float)
         base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
