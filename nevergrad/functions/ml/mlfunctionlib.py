@@ -212,8 +212,6 @@ class MLTuning(ExperimentFunction):
             return
 
         assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
-        num_data: int = 120  # Training set size.
-        self.num_data = num_data
 
         # Training set.
         X = np.arange(0., 1., 1. / (self.num_data * data_dimension))
@@ -235,13 +233,13 @@ class MLTuning(ExperimentFunction):
         for cv in range(self._cross_val_num):
 
             # Training set.
-            X_train_cv = X[np.arange(num_data) % self._cross_val_num != cv].copy()
+            X_train_cv = X[np.arange(self.num_data) % self._cross_val_num != cv].copy()
             y_train_cv = np.sum(target_function(X_train_cv), axis=1).ravel()
             self.X_train_cv += [X_train_cv]
             self.y_train_cv += [y_train_cv]
 
             # Validation set or test set (noise_free is True for test set).
-            X_valid_cv = X[np.arange(num_data) % self._cross_val_num == cv].copy()
+            X_valid_cv = X[np.arange(self.num_data) % self._cross_val_num == cv].copy()
             X_valid_cv = X_valid_cv.reshape(-1, data_dimension)
             y_valid_cv = np.sum(target_function(X_valid_cv), axis=1).ravel()
             self.X_valid_cv += [X_valid_cv]
@@ -254,3 +252,4 @@ class MLTuning(ExperimentFunction):
         y_test = np.sum(target_function(X_test), axis=1).ravel()
         self.X_test = X_test
         self.y_test = y_test
+        
