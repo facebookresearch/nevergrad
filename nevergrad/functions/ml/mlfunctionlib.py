@@ -59,10 +59,11 @@ class MLTuning(ExperimentFunction):
         if regressor == "decision_tree":
             regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
                                          min_samples_split=min_samples_split, random_state=0)
-        else:
-            assert regressor == "mlp", f"unknown regressor {regressor}."
+        elif regressor == "mlp":
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
+        else:
+            raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
             X = self.X_train
@@ -83,7 +84,7 @@ class MLTuning(ExperimentFunction):
             pred_test = regr.predict(X_test)
             result += mean_squared_error(y_test, pred_test)
 
-        return result / self.num_cv  # We return a num_cv-fold validation error.
+        return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
     def __init__(
         self,
@@ -99,8 +100,8 @@ class MLTuning(ExperimentFunction):
         self._descriptors: tp.Dict[str, tp.Any] = {}
         self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset, overfitter=overfitter)
         self.name = regressor + f"Dim{data_dimension}"
-        self.num_data: int = 0
-        self.num_cv:int = 10
+        self.num_data = 120  # default for artificial function
+        self._cross_val_num = 10  # number of cross validation
         # Dimension does not make sense if we use a real world dataset.
         assert bool("artificial" in dataset) == bool(data_dimension is not None)
 
@@ -172,9 +173,15 @@ class MLTuning(ExperimentFunction):
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
-        self.evaluation_function = partial(self._ml_parametrization, **evalparams)  # type: ignore
+        self._evalparams = evalparams
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
+
+    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+        assert not args
+        # override with eval parameters (with partial, the eval parameters would be overriden by kwargs)
+        kwargs.update(self._evalparams)
+        return self._ml_parametrization(**kwargs)
 
     def make_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
         # Filling datasets.
@@ -194,7 +201,7 @@ class MLTuning(ExperimentFunction):
             num_train_data = len(self.X_train)
             self.num_data = num_train_data
 
-            kf = KFold(n_splits=self.num_cv)
+            kf = KFold(n_splits=self._cross_val_num)
             kf.get_n_splits(self.X_train)
 
             for train_index, valid_index in kf.split(self.X_train):
@@ -209,7 +216,7 @@ class MLTuning(ExperimentFunction):
         self.num_data = num_data
 
         # Training set.
-        X = np.arange(0., 1., 1. / (num_data * data_dimension))
+        X = np.arange(0., 1., 1. / (self.num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
         rng.shuffle(X)
 
@@ -225,16 +232,16 @@ class MLTuning(ExperimentFunction):
         self.y_train = y  # Labels of the training set.
 
         # We generate the cross-validation subsets.
-        for cv in range(self.num_cv):
+        for cv in range(self._cross_val_num):
 
             # Training set.
-            X_train_cv = X[np.arange(num_data) % self.num_cv != cv].copy()
+            X_train_cv = X[np.arange(num_data) % self._cross_val_num != cv].copy()
             y_train_cv = np.sum(target_function(X_train_cv), axis=1).ravel()
             self.X_train_cv += [X_train_cv]
             self.y_train_cv += [y_train_cv]
 
             # Validation set or test set (noise_free is True for test set).
-            X_valid_cv = X[np.arange(num_data) % self.num_cv == cv].copy()
+            X_valid_cv = X[np.arange(num_data) % self._cross_val_num == cv].copy()
             X_valid_cv = X_valid_cv.reshape(-1, data_dimension)
             y_valid_cv = np.sum(target_function(X_valid_cv), axis=1).ravel()
             self.X_valid_cv += [X_valid_cv]
