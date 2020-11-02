@@ -106,9 +106,6 @@ def check_optimizer(
     else:
         assert optimizer.num_tell == budget + 1
         assert optimizer.num_tell_not_asked == 1
-    # pickling
-    with tempfile.TemporaryDirectory() as tmp:
-        optimizer.dump(Path(tmp) / "dump.pkl")
 
 
 SLOW = [
@@ -336,17 +333,18 @@ def test_optimization_discrete_with_one_sample() -> None:
     optimizer.minimize(_square)
 
 
-@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
-# this test is added because some generic class can fail to be pickled
-def test_population_pickle(name: str) -> None:
+@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore
+def test_optim_pickle(name: str) -> None:
+    # some generic class can fail to be pickled:
     # example of work around:
     # "self.population = base.utils.Population[DEParticle]([])"
     # becomes:
     # "self.population: base.utils.Population[DEParticle] = base.utils.Population([])""
+    #
+    # Scipy optimizers also fail to be pickled, but this is more complex to solve (not supported yet)
     optim = registry[name](parametrization=12, budget=100, num_workers=2)
     with tempfile.TemporaryDirectory() as folder:
-        filepath = Path(folder) / "dump_test.pkl"
-        optim.dump(filepath)
+        optim.dump(Path(folder) / "dump_test.pkl")
 
 
 def test_bo_parametrization_and_parameters() -> None:
