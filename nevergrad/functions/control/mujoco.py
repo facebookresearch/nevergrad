@@ -31,8 +31,9 @@ class GenericMujocoEnv:
         self.num_rollouts = num_rollouts
         self.env.seed(random_state)
 
-    def __call__(self, x):
+    def __call__(self, x, y=None):
         """Compute average cummulative reward of a given policy.
+        Optionally, y is a second (neural) layer of weights.
         """
         returns = []
         for _ in range(self.num_rollouts):
@@ -41,6 +42,8 @@ class GenericMujocoEnv:
             totalr = 0.
             while not done:
                 action = np.dot(x, (obs - self.mean) / self.std)
+                if y is not None:
+                    action = np.dot(np.eye(len(action)) + 1.e-4 * y, np.tanh(x))
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
             returns.append(totalr)
