@@ -33,12 +33,11 @@ class _EvolutionStrategy(base.Optimizer):
         self._waiting: tp.List[p.Parameter] = []
         # configuration
         self._config = EvolutionStrategy() if config is None else config
-        if self._config.ranker == "simple":
-            self._ranker = None
-        elif self._config.ranker == "nsga2":
-            self._ranker = rankers.NSGA2Ranking() #Note this does not control the selection mechanism
-        else:
-            raise NotImplementedError
+        self._ranker: tp.Any = None   # TODO better typing (eventually)
+        if self._config.ranker == "nsga2":
+            self._ranker = rankers.NSGA2Ranking()
+        elif self._config.ranker != "simple":
+            raise NotImplementedError(f"Unknown ranker {self._config.ranker}")
 
 
     def _internal_ask_candidate(self) -> p.Parameter:
