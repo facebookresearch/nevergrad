@@ -50,26 +50,23 @@ def smallmltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: 
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims = ["Shiwa", "DE"]
+    optims = ["DE"]
     if default_optims is not None:
         optims = default_optims
-    for dimension in [None]:
-        for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
+    for dimension in [None, 1, 2, 3]:
+        for regressor in ["decision_tree", "decision_tree_depth"]:
             for dataset in (
-                    ["boston"] if dimension is None else ["artificialcos", "artificial",
+                    ["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial",
                                                                       "artificialsquare"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
-                for budget in [50], 150, 500]:
+                for budget in [50, 150, 500]:
                     for num_workers in [1] if seq else [1, 10, 50, 100]:  # Seq for sequential optimization experiments.
                         for optim in optims:
                             xp = Experiment(function, optim, num_workers=num_workers,
                                             budget=budget, seed=next(seedg))
                             if not xp.is_incoherent:
                                 yield xp
-
-
-
 
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
@@ -82,7 +79,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
     if default_optims is not None:
         optims = default_optims
     for dimension in [None, 1, 2, 3]:
-        for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
+        for regressor in ["decision_tree", "decision_tree_depth"]:
             for dataset in (
                     ["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial",
                                                                       "artificialsquare"]):
@@ -112,6 +109,13 @@ def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
+# We register only the sequuential counterparts for the moment.
+@registry.register
+def seqsmallmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequuential counterpart of mltuning."""
+    internal_generator = smallmltuning(seed, overfitter=True, seq=True)
+    for xp in internal_generator:
+        yield xp
 
 @registry.register
 def naiveseqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

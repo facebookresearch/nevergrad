@@ -19,7 +19,6 @@ class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     We propose different possible regressors and different dimensionalities.
     In each case, Nevergrad will optimize the parameters of a scikit learning.
-
     Parameters
     ----------
     regressor: str
@@ -33,7 +32,6 @@ class MLTuning(ExperimentFunction):
         if we want the evaluation to be the same as during the optimization run. This means that instead
         of train/valid/error, we have train/valid/valid. This is for research purpose, when we want to check if an algorithm
         is particularly good or particularly bad because it fails to minimize the validation loss or because it overfits.
-
     """
 
     # Example of ML problem.
@@ -47,21 +45,20 @@ class MLTuning(ExperimentFunction):
         alpha: float,
         learning_rate: str,
         regressor: str,  # Choice of learner.
-        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train). -> not really noise
+        noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train).
     ) -> float:
         if not self.X.size:  # lazzy initialization
-            self.make_dataset(self.data_dimension, self.dataset)
+            self.get_dataset(self.data_dimension, self.dataset)
         # 10-folds cross-validation
         result = 0.0
         # Fit regression model
         if regressor == "decision_tree":
             regr = DecisionTreeRegressor(max_depth=depth, criterion=criterion,
                                          min_samples_split=min_samples_split, random_state=0)
-        elif regressor == "mlp":
+        else:
+            assert regressor == "mlp", f"unknown regressor {regressor}."
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
-        else:
-            raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
             X = self.X
@@ -73,9 +70,17 @@ class MLTuning(ExperimentFunction):
             return float(np.sum((self.y_test - pred_test)**2) / len(self.y_test))
 
         # We do a cross-validation.
-        for X, y, X_test, y_test in zip(self.X_train, self.y_train, self.X_valid, self.y_valid):
+        for cv in range(10):
+
+            X = self.X_train[cv]
+            y = self.y_train[cv]
+            X_test = self.X_valid[cv]
+            y_test = self.y_valid[cv]
+
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
+
             regr.fit(np.asarray(X), np.asarray(y))
+
             # Predict
             pred_test = regr.predict(X_test)
             result += np.sum((y_test - pred_test)**2)
@@ -96,8 +101,7 @@ class MLTuning(ExperimentFunction):
         self._descriptors: tp.Dict[str, tp.Any] = {}
         self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset, overfitter=overfitter)
         self.name = regressor + f"Dim{data_dimension}"
-        self.num_data = 120  # default for artificial function
-        self._cross_val_num = 10  # number of cross validation
+        self.num_data: int = 0
         # Dimension does not make sense if we use a real world dataset.
         assert bool("artificial" in dataset) == bool(data_dimension is not None)
 
@@ -167,17 +171,11 @@ class MLTuning(ExperimentFunction):
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
-        self._evalparams = evalparams
+        self.evaluation_function = partial(self._ml_parametrization, **evalparams)  # type: ignore
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        assert not args
-        # override with eval parameters (with partial, the eval parameters would be overriden by kwargs)
-        kwargs.update(self._evalparams)
-        return self._ml_parametrization(**kwargs)
-
-    def make_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
+    def get_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
@@ -191,10 +189,11 @@ class MLTuning(ExperimentFunction):
             rng.shuffle(data[0].T)  # We randomly shuffle the columns.
             self.X = data[0][::2]
             self.y = data[1][::2]
-            self.num_data = len(self.X)
+            num_train_data = len(self.X)
+            self.num_data = num_train_data
             for cv in range(10):
-                train_range = np.arange(self.num_data) % 10 != cv
-                valid_range = np.arange(self.num_data) % 10 == cv
+                train_range = np.arange(num_train_data) % 10 != cv
+                valid_range = np.arange(num_train_data) % 10 == cv
                 self.X_train += [self.X[train_range]]
                 self.y_train += [self.y[train_range]]
                 self.X_valid += [self.X[valid_range]]
@@ -204,9 +203,11 @@ class MLTuning(ExperimentFunction):
             return
 
         assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
+        num_data: int = 120  # Training set size.
+        self.num_data = num_data
 
         # Training set.
-        X = np.arange(0., 1., 1. / (self.num_data * data_dimension))
+        X = np.arange(0., 1., 1. / (num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
         rng.shuffle(X)
 
@@ -220,16 +221,16 @@ class MLTuning(ExperimentFunction):
         self.y = y  # Labels of the training set.
 
         # We generate the cross-validation subsets.
-        for cv in range(self._cross_val_num):
+        for cv in range(10):
 
             # Training set.
-            X_train = X[np.arange(self.num_data) % 10 != cv].copy()
+            X_train = X[np.arange(num_data) % 10 != cv].copy()
             y_train = np.sum(target_function(X_train), axis=1).ravel()
             self.X_train += [X_train]
             self.y_train += [y_train]
 
             # Validation set or test set (noise_free is True for test set).
-            X_valid = X[np.arange(self.num_data) % 10 == cv].copy()
+            X_valid = X[np.arange(num_data) % 10 == cv].copy()
             X_valid = X_valid.reshape(-1, data_dimension)
             y_valid = np.sum(target_function(X_valid), axis=1).ravel()
             self.X_valid += [X_valid]
