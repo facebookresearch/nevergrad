@@ -52,7 +52,7 @@ class MLTuning(ExperimentFunction):
         noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train). -> not really noise
     ) -> float:
         if not self.X.size:  # lazzy initialization
-            self.get_dataset(self.data_dimension, self.dataset)
+            self.make_dataset(self.data_dimension, self.dataset)
         # num_cv-folds cross-validation
         result = 0.0
         # Fit regression model
@@ -176,7 +176,7 @@ class MLTuning(ExperimentFunction):
         self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
                                      overfitter=overfitter)
 
-    def get_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
+    def make_dataset(self, data_dimension: tp.Optional[int], dataset: str) -> None:
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
